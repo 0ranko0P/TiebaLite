@@ -1,4 +1,5 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import java.util.Properties
 
 plugins {
     autowire(libs.plugins.com.android.application)
@@ -40,12 +41,15 @@ android {
         compose = true
     }
     signingConfigs {
-        if (property.keystore.file.isNotBlank()) {
+        val properties = Properties()
+        val propFile = project.rootProject.file("signing.properties")
+        if (propFile.exists()) {
+            properties.load(propFile.inputStream())
             create("config") {
-                storeFile = file(File(rootDir, property.keystore.file))
-                storePassword = property.keystore.password
-                keyAlias = property.keystore.key.alias
-                keyPassword = property.keystore.key.password
+                storeFile = project.rootProject.file(properties.getProperty("KEYSTORE_FILE"))
+                storePassword = properties.getProperty("KEYSTORE_PASSWORD")
+                keyAlias = properties.getProperty("KEY_ALIAS")
+                keyPassword = properties.getProperty("KEY_PASSWORD")
                 enableV1Signing = true
                 enableV2Signing = true
                 enableV3Signing = true
@@ -105,7 +109,7 @@ android {
         val variant = this
         outputs.configureEach {
             val fileName =
-                "${variant.buildType.name}-${applicationVersionName}(${applicationVersionCode}).apk"
+                "${variant.buildType.name}-${android.defaultConfig.versionName}(${android.defaultConfig.versionCode}).apk"
 
             (this as BaseVariantOutputImpl).outputFileName = fileName
         }
