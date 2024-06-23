@@ -23,7 +23,7 @@ wire {
 }
 
 android {
-    buildToolsVersion = "34.0.0"
+    buildToolsVersion = "35.0.0"
     compileSdk = 34
     defaultConfig {
         applicationId = "com.huanchengfly.tieba.post"
@@ -77,7 +77,7 @@ android {
         }
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
     compileOptions {
         targetCompatibility = JavaVersion.VERSION_11
@@ -239,7 +239,7 @@ dependencies {
 
     implementation(github.matisse)
     implementation(xx.permissions)
-    implementation(com.gyf.immersionbar.immersionbar)
+    implementation(com.geyifeng.immersionbar.immersionbar)
 
     implementation(com.github.yalantis.ucrop)
 
