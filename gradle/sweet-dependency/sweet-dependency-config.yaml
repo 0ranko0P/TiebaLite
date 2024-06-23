@@ -23,14 +23,10 @@ repositories:
     scope: PLUGINS
   google:
   maven-central:
-  # 阿里云 Google 存储库镜像
-  aliyun-google-mirror:
-  # 阿里云中央存储库镜像
-  aliyun-maven-central-mirror:
-  # 阿里云公共存储库镜像
-  aliyun-maven-public-mirror:
   # JitPack
   jit-pack:
+  # 阿里云公共存储库镜像
+  aliyun-maven-public-mirror:
 
 versions:
   accompanist: 0.34.0
@@ -370,16 +366,6 @@ libraries:
       version: 10.2.3
     butterknife-compiler:
       version: 10.2.3
-  com.microsoft.appcenter:
-    appcenter-analytics:
-      alias: appcenter-analytics
-      version-ref: appcenter
-    appcenter-crashes:
-      alias: appcenter-crashes
-      version-ref: appcenter
-    appcenter-distribute:
-      alias: appcenter-distribute
-      version-ref: appcenter
   androidx.compose.runtime:
     runtime-tracing:
       alias: compose-runtime-tracing

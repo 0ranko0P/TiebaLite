@@ -11,19 +11,6 @@ plugins {
     autowire(libs.plugins.com.squareup.wire)
 }
 
-val sha: String? = System.getenv("GITHUB_SHA")
-val isCI: String? = System.getenv("CI")
-val isSelfBuild = isCI.isNullOrEmpty() || !isCI.equals("true", ignoreCase = true)
-val applicationVersionCode = property.versionCode
-var applicationVersionName = property.versionName
-val isPerVersion = property.isPreRelease
-if (isPerVersion) {
-    applicationVersionName += "-${property.preReleaseName}.${property.preReleaseVer}"
-}
-if (!isSelfBuild && !sha.isNullOrEmpty()) {
-    applicationVersionName += "+${sha.substring(0, 7)}"
-}
-
 wire {
     sourcePath {
         srcDir("src/main/protos")
@@ -42,13 +29,12 @@ android {
         minSdk = 21
         //noinspection OldTargetApi
         targetSdk = 34
-        versionCode = applicationVersionCode
-        versionName = applicationVersionName
+        versionCode = 390100
+        versionName = "4.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
-        manifestPlaceholders["is_self_build"] = "$isSelfBuild"
     }
     buildFeatures {
         compose = true
@@ -255,8 +241,4 @@ dependencies {
 
     implementation(com.jakewharton.butterknife)
     kapt(com.jakewharton.butterknife.compiler)
-
-    implementation(appcenter.analytics)
-    implementation(appcenter.crashes)
-    implementation(appcenter.distribute)
 }
