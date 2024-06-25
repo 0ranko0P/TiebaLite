@@ -22,7 +22,6 @@ import androidx.core.text.HtmlCompat
 import androidx.palette.graphics.Palette
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import butterknife.BindView
 import com.github.panpf.sketch.request.DisplayRequest
 import com.github.panpf.sketch.request.DisplayResult
 import com.github.panpf.sketch.request.LoadRequest
@@ -60,41 +59,29 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
     private var blur = 0
     private var mPalette: Palette? = null
 
-    @BindView(R.id.select_color)
-    lateinit var mSelectColor: View
+    private lateinit var mSelectColor: View
 
-    @BindView(R.id.recommend_wallpapers)
-    lateinit var recommendWallpapers: View
+    private lateinit var recommendWallpapers: View
 
-    @BindView(R.id.wallpapers_rv)
-    lateinit var recommendWallpapersRv: RecyclerView
+    private lateinit var recommendWallpapersRv: RecyclerView
 
-    @BindView(R.id.progress)
-    lateinit var mProgress: View
+    private lateinit var mProgress: View
 
-    @BindView(R.id.dark_color)
-    lateinit var darkColorBtn: TintMaterialButton
+    private lateinit var darkColorBtn: TintMaterialButton
 
-    @BindView(R.id.light_color)
-    lateinit var lightColorBtn: TintMaterialButton
+    private lateinit var lightColorBtn: TintMaterialButton
 
-    @BindView(R.id.button_back)
-    lateinit var backBtn: View
+    private lateinit var backBtn: View
 
-    @BindView(R.id.bottom_sheet)
-    lateinit var bottomSheet: LinearLayout
+    private lateinit var bottomSheet: LinearLayout
 
-    @BindView(R.id.button_finish)
-    lateinit var finishBtn: View
+    private lateinit var finishBtn: View
 
-    @BindView(R.id.mask)
-    lateinit var maskView: View
+    private lateinit var maskView: View
 
-    @BindView(R.id.experimental_tip)
-    lateinit var experimentalTipView: View
+    private lateinit var experimentalTipView: View
 
-    @BindView(R.id.color_theme)
-    lateinit var colorTheme: ViewGroup
+    private lateinit var colorTheme: ViewGroup
 
     private val selectImageLauncher = registerPickMediasLauncher { (_, uris) ->
         if (uris.isNotEmpty()) {
@@ -103,7 +90,7 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
         }
     }
 
-    var wallpapers: List<String>? = null
+    private var wallpapers: List<String>? = null
         set(value) {
             field = value
             refreshWallpapers()
@@ -235,6 +222,19 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
     @SuppressLint("ApplySharedPref", "ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mSelectColor = findViewById(R.id.select_color)
+        recommendWallpapers = findViewById(R.id.recommend_wallpapers)
+        recommendWallpapersRv = recommendWallpapers.findViewById(R.id.wallpapers_rv)
+        mProgress = findViewById(R.id.progress)
+        darkColorBtn = findViewById(R.id.dark_color)
+        lightColorBtn = findViewById(R.id.light_color)
+        backBtn = findViewById(R.id.button_back)
+        bottomSheet = findViewById(R.id.bottom_sheet)
+        finishBtn = findViewById(R.id.button_finish)
+        maskView = findViewById(R.id.mask)
+        experimentalTipView = findViewById(R.id.experimental_tip)
+        colorTheme = findViewById(R.id.color_theme)
+
         experimentalTipView.setOnClickListener {
             showDialog {
                 setTitle(R.string.title_translucent_theme_experimental_feature)
@@ -529,8 +529,6 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
     }
 
     companion object {
-        val TAG = TranslucentThemeActivity::class.java.simpleName
-        const val REQUEST_CODE_CHOOSE = 2
         fun toString(alpha: Int, red: Int, green: Int, blue: Int): String {
             val hr = Integer.toHexString(red)
             val hg = Integer.toHexString(green)

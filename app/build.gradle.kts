@@ -242,7 +242,4 @@ dependencies {
     implementation(com.geyifeng.immersionbar.immersionbar)
 
     implementation(com.github.yalantis.ucrop)
-
-    implementation(com.jakewharton.butterknife)
-    kapt(com.jakewharton.butterknife.compiler)
 }
