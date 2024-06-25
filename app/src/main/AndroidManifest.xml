@@ -71,11 +71,6 @@
         </service>
 
         <activity
-            android:name=".activities.AppFontSizeActivity"
-            android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
-            android:label="@string/title_custom_font_size"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
             android:name=".ui.page.photoview.PhotoViewActivity"
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
             android:theme="@style/AppTheme.PhotoView"

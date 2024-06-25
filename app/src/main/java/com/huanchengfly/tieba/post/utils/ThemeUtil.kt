@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
-import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.view.View
 import android.view.ViewGroup
@@ -14,31 +13,22 @@ import androidx.annotation.ColorInt
 import androidx.annotation.StyleRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.github.panpf.sketch.fetch.newFileUri
-import com.github.panpf.sketch.request.DisplayRequest
-import com.github.panpf.sketch.request.DisplayResult
-import com.github.panpf.sketch.request.execute
-import com.github.panpf.sketch.resize.Scale
 import com.google.android.material.appbar.AppBarLayout
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
-import com.huanchengfly.tieba.post.App.Companion.translucentBackground
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.BaseActivity
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.getString
-import com.huanchengfly.tieba.post.interfaces.BackgroundTintable
 import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.widgets.theme.TintSwipeRefreshLayout
-import kotlinx.coroutines.launch
 import java.util.Locale
 
 object ThemeUtil {
@@ -55,8 +45,6 @@ object ThemeUtil {
     const val KEY_DARK_THEME = "dark_theme"
     const val KEY_OLD_THEME = "old_theme"
     const val KEY_USE_DYNAMIC_THEME = "useDynamicColorTheme"
-    const val KEY_SWITCH_REASON = "switch_reason"
-    const val KEY_TRANSLUCENT_PRIMARY_COLOR = "translucent_primary_color"
     const val KEY_CUSTOM_STATUS_BAR_FONT_DARK = "custom_status_bar_font_dark"
     const val KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR = "custom_toolbar_primary_color"
     const val KEY_TRANSLUCENT_THEME_BACKGROUND_PATH = "translucent_theme_background_path"
@@ -84,19 +72,6 @@ object ThemeUtil {
 
     val dataStore: DataStore<Preferences>
         get() = INSTANCE.dataStore
-
-    fun getTextColor(context: Context?): Int {
-        return ThemeUtils.getColorByAttr(context, R.attr.colorText)
-    }
-
-    @JvmStatic
-    fun getSecondaryTextColor(context: Context?): Int {
-        return ThemeUtils.getColorByAttr(context, R.attr.colorTextSecondary)
-    }
-
-    fun switchToNightMode(context: Activity) {
-        switchToNightMode(context, true)
-    }
 
     private fun refreshUI(activity: Activity?) {
         if (activity is BaseActivity) {
@@ -317,64 +292,6 @@ object ThemeUtil {
                 R.color.theme_color_card_grey_dark
             )
         )
-    }
-
-    fun setTranslucentThemeBackground(
-        activity: BaseActivity,
-        view: View?,
-        setFitsSystemWindow: Boolean = true,
-        useCache: Boolean = false,
-    ) {
-        if (view == null) {
-            return
-        }
-        if (!isTranslucentTheme()) {
-            if (setFitsSystemWindow) {
-                setAppBarFitsSystemWindow(view, false)
-                view.fitsSystemWindows = false
-                (view as ViewGroup).clipToPadding = true
-            }
-            return
-        }
-        if (setFitsSystemWindow) {
-            if (view is CoordinatorLayout) {
-                setAppBarFitsSystemWindow(view, true)
-                view.setFitsSystemWindows(false)
-                (view as ViewGroup).clipToPadding = true
-            } else {
-                setAppBarFitsSystemWindow(view, false)
-                view.fitsSystemWindows = true
-                (view as ViewGroup).clipToPadding = false
-            }
-        }
-        view.backgroundTintList = null
-        if (view is BackgroundTintable) {
-            (view as BackgroundTintable).setBackgroundTintResId(0)
-        }
-        val backgroundFilePath = dataStore.getString(KEY_TRANSLUCENT_THEME_BACKGROUND_PATH)
-        if (backgroundFilePath == null) {
-            view.setBackgroundColor(Color.BLACK)
-            return
-        }
-        if (useCache && translucentBackground != null &&
-            (translucentBackground !is BitmapDrawable || !(translucentBackground as BitmapDrawable).bitmap.isRecycled)
-        ) {
-            view.background = translucentBackground
-            return
-        }
-        activity.launch {
-            val result = DisplayRequest(activity, newFileUri(backgroundFilePath)) {
-                resizeScale(Scale.CENTER_CROP)
-            }.execute()
-            if (result is DisplayResult.Success) {
-                if (useCache) {
-                    translucentBackground = result.drawable
-                }
-                view.background = result.drawable
-            } else {
-                view.setBackgroundColor(Color.BLACK)
-            }
-        }
     }
 
     @StyleRes
