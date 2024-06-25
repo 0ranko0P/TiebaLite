@@ -36,6 +36,8 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
                 instance = it
             }
         }
+
+        const val KEY_FONT_SCALE = "fontScale"
     }
 
     private val contextWeakReference: WeakReference<Context> = WeakReference(ctx)

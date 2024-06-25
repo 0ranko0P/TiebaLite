@@ -18,6 +18,7 @@ import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
@@ -106,4 +108,44 @@ fun TextButton(
         contentPadding = contentPadding,
         content = content
     )
+}
+
+@Composable
+fun NegativeButton(
+    modifier: Modifier = Modifier,
+    text: String,
+    color: Color = MaterialTheme.colors.onPrimary,
+    onClick: () -> Unit
+) = Button(
+    onClick = onClick,
+    modifier = modifier,
+    colors = ButtonDefaults.buttonColors(
+        backgroundColor = Color.Transparent,
+        contentColor = color,
+        disabledBackgroundColor = color.copy(alpha = ContentAlpha.disabled * 0.1f),
+        disabledContentColor = color.copy(alpha = ContentAlpha.disabled)
+    )
+) {
+    Text(text = text, color = color, fontWeight = FontWeight.Bold)
+}
+
+
+@Composable
+fun PositiveButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean,
+    onClick: () -> Unit
+) = Button(
+    onClick = onClick,
+    modifier = modifier,
+    enabled = enabled,
+    colors = ButtonDefaults.buttonColors(
+        backgroundColor = MaterialTheme.colors.primary,
+        contentColor = MaterialTheme.colors.onPrimary,
+        disabledBackgroundColor = Color.Transparent,
+        disabledContentColor = MaterialTheme.colors.onSurface.copy(0.1f)
+    )
+) {
+    Text(text = text, fontWeight = FontWeight.Bold)
 }
