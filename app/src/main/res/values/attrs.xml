@@ -97,13 +97,6 @@
         <attr name="itemTextTintList" />
     </declare-styleable>
 
-    <declare-styleable name="TintToolbar">
-        <attr name="toolbarBackgroundTint" format="color" />
-        <attr name="itemTint" format="color" />
-        <attr name="secondaryItemTint" format="color" />
-        <attr name="activeItemTint" format="color" />
-    </declare-styleable>
-
     <declare-styleable name="MyToolbar">
         <attr name="navigationButtonGravity">
             <flag name="center_vertical" value="0x10" />

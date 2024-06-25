@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.components.dialogs;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.View;
 import android.widget.Button;
@@ -80,34 +79,31 @@ public class PermissionDialog extends AlertDialog implements View.OnClickListene
         deniedBtn.setOnClickListener(this);
     }
 
-    @SuppressLint("ApplySharedPref")
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.permission_actions_allow:
-                if (getOnGrantedCallback() != null) {
-                    getOnGrantedCallback().onGranted(checkBox.isChecked());
-                }
-                if (checkBox.isChecked()) {
-                    SharedPreferencesUtil.get(v.getContext(), SharedPreferencesUtil.SP_PERMISSION)
-                            .edit()
-                            .putInt(permissionBean.getData() + "_" + permissionBean.getId(), STATE_ALLOW)
-                            .commit();
-                }
-                dismiss();
-                break;
-            case R.id.permission_actions_denied:
-                if (getOnDeniedCallback() != null) {
-                    getOnDeniedCallback().onDenied(checkBox.isChecked());
-                }
-                if (checkBox.isChecked()) {
-                    SharedPreferencesUtil.get(v.getContext(), SharedPreferencesUtil.SP_PERMISSION)
-                            .edit()
-                            .putInt(permissionBean.getData() + "_" + permissionBean.getId(), STATE_DENIED)
-                            .commit();
-                }
-                dismiss();
-                break;
+        int id = v.getId();
+        if (id == R.id.permission_actions_allow) {
+            if (getOnGrantedCallback() != null) {
+                getOnGrantedCallback().onGranted(checkBox.isChecked());
+            }
+            if (checkBox.isChecked()) {
+                SharedPreferencesUtil.get(v.getContext(), SharedPreferencesUtil.SP_PERMISSION)
+                        .edit()
+                        .putInt(permissionBean.getData() + "_" + permissionBean.getId(), STATE_ALLOW)
+                        .apply();
+            }
+            dismiss();
+        } else if (id == R.id.permission_actions_denied) {
+            if (getOnDeniedCallback() != null) {
+                getOnDeniedCallback().onDenied(checkBox.isChecked());
+            }
+            if (checkBox.isChecked()) {
+                SharedPreferencesUtil.get(v.getContext(), SharedPreferencesUtil.SP_PERMISSION)
+                        .edit()
+                        .putInt(permissionBean.getData() + "_" + permissionBean.getId(), STATE_DENIED)
+                        .apply();
+            }
+            dismiss();
         }
     }
 

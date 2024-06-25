@@ -1,113 +1,9 @@
 package com.huanchengfly.tieba.post.components.dialogs
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.content.DialogInterface
-import android.content.res.ColorStateList
 import android.graphics.Color
-import android.view.View
-import android.widget.CheckBox
-import android.widget.CompoundButton
-import android.widget.LinearLayout
 import androidx.annotation.ColorInt
-import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.FragmentActivity
-import com.huanchengfly.tieba.post.App.ThemeDelegate.getColorByAttr
-import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
-import com.jaredrummler.android.colorpicker.ColorPickerDialog
-import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 
-class CustomThemeDialog(context: Context) : AlertDialog(context),
-    View.OnClickListener, DialogInterface.OnClickListener, CompoundButton.OnCheckedChangeListener,
-    ColorPickerDialogListener {
-    private var primaryColorLayout: LinearLayout? = null
-    private var primaryColorView: View? = null
-    private var statusBarFont: CheckBox? = null
-    private var toolbarPrimaryColor: CheckBox? = null
-    private var primaryColor = 0
-    private var statusBarFontDark = false
-    private var toolbarPrimary = false
-    private fun initListener() {
-        primaryColorLayout!!.setOnClickListener(this)
-        statusBarFont!!.setOnCheckedChangeListener(this)
-        toolbarPrimaryColor!!.setOnCheckedChangeListener(this)
-    }
-
-    private fun initView() {
-        val contentView = View.inflate(context, R.layout.dialog_custom_theme, null)
-        primaryColorLayout = contentView.findViewById(R.id.custom_theme_primary_holder)
-        primaryColorView = contentView.findViewById(R.id.custom_theme_primary)
-        statusBarFont = contentView.findViewById(R.id.custom_theme_status_bar_font)
-        toolbarPrimaryColor = contentView.findViewById(R.id.custom_theme_toolbar_primary_color)
-        setView(contentView)
-        primaryColor = getColorByAttr(context, R.attr.colorPrimary, ThemeUtil.THEME_CUSTOM)
-        statusBarFontDark = context.appPreferences.customStatusBarFontDark
-        toolbarPrimary = context.appPreferences.toolbarPrimaryColor
-        refreshView()
-    }
-
-    private fun refreshView() {
-        primaryColorView!!.backgroundTintList = ColorStateList.valueOf(primaryColor)
-        statusBarFont!!.isChecked = statusBarFontDark
-        toolbarPrimaryColor!!.isChecked = toolbarPrimary
-        statusBarFont!!.visibility = if (toolbarPrimary) View.VISIBLE else View.GONE
-        ThemeUtils.refreshUI(context)
-    }
-
-    override fun onClick(v: View) {
-        if (v.id == R.id.custom_theme_primary_holder) {
-            val primaryColorPicker = ColorPickerDialog.newBuilder()
-                .setDialogTitle(R.string.title_color_picker_primary)
-                .setDialogType(ColorPickerDialog.TYPE_PRESETS)
-                .setShowAlphaSlider(false)
-                .setDialogId(0)
-                .setAllowPresets(true)
-                .setColor(primaryColor)
-                .create()
-            primaryColorPicker.setColorPickerDialogListener(this)
-            val activity = ThemeUtils.getWrapperActivity(context)
-            if (activity is FragmentActivity) {
-                primaryColorPicker.show(
-                    activity.supportFragmentManager,
-                    "ColorPicker_PrimaryColor"
-                )
-                return
-            }
-        }
-        refreshView()
-    }
-
-    @SuppressLint("ApplySharedPref")
-    override fun onClick(dialog: DialogInterface, which: Int) {
-        context.appPreferences.apply {
-            customPrimaryColor = toString(primaryColor)
-            customStatusBarFontDark = (statusBarFontDark || !toolbarPrimary)
-            toolbarPrimaryColor = toolbarPrimary
-        }
-        dialog.dismiss()
-    }
-
-    override fun onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
-        if (buttonView.id == R.id.custom_theme_status_bar_font) {
-            statusBarFontDark = isChecked
-        } else if (buttonView.id == R.id.custom_theme_toolbar_primary_color) {
-            toolbarPrimary = isChecked
-            statusBarFontDark = !isChecked
-        }
-        refreshView()
-    }
-
-    override fun onColorSelected(dialogId: Int, color: Int) {
-        if (dialogId == 0) {
-            primaryColor = color
-            refreshView()
-        }
-    }
-
-    override fun onDialogDismissed(dialogId: Int) {}
+class CustomThemeDialog {
 
     companion object {
         fun toString(alpha: Int, red: Int, green: Int, blue: Int): String {
@@ -140,13 +36,5 @@ class CustomThemeDialog(context: Context) : AlertDialog(context),
                 Color.blue(color)
             )
         }
-    }
-
-    init {
-        setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.button_finish), this)
-        setCancelable(false)
-        setTitle(R.string.title_custom_theme)
-        initView()
-        initListener()
     }
 }

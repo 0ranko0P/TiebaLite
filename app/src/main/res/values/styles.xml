@@ -92,10 +92,6 @@
         <item name="android:textColorPrimary">?colorToolbarItem</item>
         <item name="actionMenuTextColor">?colorToolbarItem</item>
         <item name="android:textColorSecondary">?colorToolbarItem</item>
-        <item name="toolbarBackgroundTint">@color/transparent</item>
-        <item name="itemTint">@color/default_color_toolbar_item</item>
-        <item name="secondaryItemTint">@color/default_color_toolbar_item_secondary</item>
-        <item name="activeItemTint">@color/default_color_toolbar_item_active</item>
     </style>
 
     <style name="Toolbar.Dark" parent="Toolbar">
@@ -106,37 +102,8 @@
         <item name="android:colorBackground">@color/theme_color_background_dark</item>
         <item name="android:colorButtonNormal">@color/theme_color_toolbar_item_dark</item>
         <item name="android:colorControlNormal">@color/theme_color_toolbar_item_dark</item>
-        <item name="toolbarBackgroundTint">@color/transparent</item>
-        <item name="itemTint">@color/default_color_toolbar_item</item>
-        <item name="secondaryItemTint">@color/default_color_toolbar_item_secondary</item>
-        <item name="activeItemTint">@color/default_color_toolbar_item_active</item>
     </style>
 
-    <style name="Toolbar.Dark.Blue" parent="Toolbar.Dark">
-        <item name="android:popupTheme">@style/OverflowMenu.Dark.Blue</item>
-        <item name="popupTheme">@style/OverflowMenu.Dark.Blue</item>
-        <item name="android:actionOverflowMenuStyle">@style/OverflowMenu.Dark.Blue</item>
-        <item name="actionOverflowMenuStyle">@style/OverflowMenu.Dark.Blue</item>
-        <item name="android:colorBackground">@color/theme_color_background_blue_dark</item>
-    </style>
-
-    <style name="Toolbar.Dark.Grey" parent="Toolbar.Dark">
-        <item name="android:popupTheme">@style/OverflowMenu.Dark.Grey</item>
-        <item name="popupTheme">@style/OverflowMenu.Dark.Grey</item>
-        <item name="android:actionOverflowMenuStyle">@style/OverflowMenu.Dark.Grey</item>
-        <item name="actionOverflowMenuStyle">@style/OverflowMenu.Dark.Grey</item>
-        <item name="android:colorBackground">@color/theme_color_background_grey_dark</item>
-    </style>
-
-    <style name="Toolbar.Dark.Amoled" parent="Toolbar.Dark">
-        <item name="android:popupTheme">@style/OverflowMenu.Dark.Amoled</item>
-        <item name="popupTheme">@style/OverflowMenu.Dark.Amoled</item>
-        <item name="android:actionOverflowMenuStyle">@style/OverflowMenu.Dark.Amoled</item>
-        <item name="actionOverflowMenuStyle">@style/OverflowMenu.Dark.Amoled</item>
-        <item name="android:colorBackground">@color/theme_color_background_amoled_dark</item>
-        <item name="android:colorButtonNormal">@color/theme_color_toolbar_item_dark</item>
-        <item name="android:colorControlNormal">@color/theme_color_toolbar_item_dark</item>
-    </style>
 
     <style name="Animation.Bottom" parent="@android:style/Animation">
         <item name="android:windowEnterAnimation">@anim/in_bottom</item>
@@ -387,7 +354,6 @@
     </style>
 
     <style name="TiebaLite.Dark.Blue" parent="AppTheme.Dark">
-        <item name="toolbarStyle">@style/Toolbar.Dark.Blue</item>
         <item name="actionOverflowMenuStyle">@style/OverflowMenu.Dark.Blue</item>
         <item name="colorPrimary">@color/theme_color_primary_blue_dark</item>
         <item name="colorAccent">@color/theme_color_accent_blue_dark</item>
@@ -404,7 +370,6 @@
     </style>
 
     <style name="TiebaLite.Dark.Grey" parent="AppTheme.Dark">
-        <item name="toolbarStyle">@style/Toolbar.Dark.Grey</item>
         <item name="actionOverflowMenuStyle">@style/OverflowMenu.Dark.Grey</item>
         <item name="colorPrimary">@color/theme_color_primary_grey_dark</item>
         <item name="colorAccent">@color/theme_color_accent_grey_dark</item>
@@ -421,7 +386,6 @@
     </style>
 
     <style name="TiebaLite.Dark.Amoled" parent="AppTheme.Dark">
-        <item name="toolbarStyle">@style/Toolbar.Dark.Amoled</item>
         <item name="actionOverflowMenuStyle">@style/OverflowMenu.Dark.Amoled</item>
         <item name="colorPrimary">@color/tieba</item>
         <item name="colorToolbar">@color/black</item>

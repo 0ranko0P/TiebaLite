@@ -77,7 +77,7 @@ private class FullScreenLayout(
         composeView.findViewTreeOnBackPressedDispatcherOwner()
             ?.let { setViewTreeOnBackPressedDispatcherOwner(it) }
 
-        setTag(R.id.compose_view_saveable_id_tag, "CustomLayout:$uniqueId")
+        setTag(androidx.compose.ui.R.id.compose_view_saveable_id_tag, "CustomLayout:$uniqueId")
     }
 
     private var content: @Composable () -> Unit by mutableStateOf({})

@@ -20,7 +20,7 @@ public class TintCheckBox extends AppCompatCheckBox {
     }
 
     public TintCheckBox(Context context, AttributeSet attrs) {
-        this(context, attrs, R.attr.checkboxStyle);
+        this(context, attrs, android.R.attr.checkboxStyle);
     }
 
     public TintCheckBox(Context context, AttributeSet attrs, int defStyleAttr) {

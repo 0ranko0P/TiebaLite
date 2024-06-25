@@ -265,10 +265,6 @@
     <string name="text_size_large">大</string>
     <string name="text_size_very_large">极大</string>
     <string name="toast_after_change_will_restart">修改已保存，即将重启 App 以应用设置</string>
-    <string name="button_detail">详情</string>
-    <string name="title_dialog_error_detail">错误详情</string>
-    <string name="button_copy_detail">复制详情</string>
-    <string name="snackbar_error">出现了一点小问题(%1$d)</string>
     <string name="toast_experimental_features_enabled">已启用实验性特性</string>
     <string name="toast_experimental_features_disabled">已禁用实验性特性</string>
     <string name="title_dialog_reply_warning">建议使用官方途径回贴</string>
