@@ -65,7 +65,6 @@ import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
@@ -102,7 +101,6 @@ import kotlin.math.min
 
 private val ImmutableHolder<Media>.url: String
     get() = ImageUtil.getUrl(
-        App.INSTANCE,
         true,
         get { originPic },
         get { bigPic },

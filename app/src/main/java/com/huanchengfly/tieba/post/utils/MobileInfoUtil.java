@@ -8,7 +8,7 @@ import android.telephony.TelephonyManager;
 public class MobileInfoUtil {
     public static final String DEFAULT_IMEI = "000000000000000";
 
-    @SuppressLint("HardwareIds")
+    @SuppressLint({"HardwareIds", "MissingPermission"})
     public static String getIMEI(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             return DEFAULT_IMEI;
@@ -23,9 +23,7 @@ public class MobileInfoUtil {
                 imei = DEFAULT_IMEI;
             }
             return imei;
-        } catch (SecurityException e) {
-            return DEFAULT_IMEI;
-        } catch (Exception e) {
+        }  catch (Exception e) {
             return DEFAULT_IMEI;
         }
     }

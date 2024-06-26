@@ -494,7 +494,7 @@ object ImageUtil {
                 type == LOAD_TYPE_AVATAR ||
                 imageLoadSettings == SETTINGS_ALL_ORIGIN ||
                 imageLoadSettings == SETTINGS_SMART_ORIGIN ||
-                (imageLoadSettings == SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected(imageView.context))
+                (imageLoadSettings == SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected())
             ) {
                 imageView.setTag(R.id.image_load_tag, true)
                 DisplayRequest.Builder(imageView.context, url)
@@ -544,15 +544,10 @@ object ImageUtil {
      * @return 要加载的图片 Url
      */
     @JvmStatic
-    fun getUrl(
-        context: Context,
-        isSmallPic: Boolean,
-        originUrl: String,
-        vararg smallPicUrls: String?
-    ): String {
+    fun getUrl(isSmallPic: Boolean, originUrl: String, vararg smallPicUrls: String?): String {
         val urls = mutableListOf(*smallPicUrls)
         if (isSmallPic) {
-            if (needReverse(context)) {
+            if (needReverse()) {
                 urls.reverse()
             }
             return urls.firstOrNull { !it.isNullOrEmpty() } ?: originUrl
@@ -560,9 +555,9 @@ object ImageUtil {
         return originUrl
     }
 
-    private fun needReverse(context: Context): Boolean {
+    private fun needReverse(): Boolean {
         return if (imageLoadSettings == SETTINGS_SMART_ORIGIN &&
-            NetworkUtil.isWifiConnected(context)
+            NetworkUtil.isWifiConnected()
         ) false
         else imageLoadSettings != SETTINGS_ALL_ORIGIN
     }

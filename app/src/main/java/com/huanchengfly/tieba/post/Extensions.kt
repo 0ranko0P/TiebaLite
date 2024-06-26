@@ -97,14 +97,6 @@ inline fun <reified T : Activity> Context.goToActivity(pre: Intent.() -> Unit) {
     startActivity(Intent(this, T::class.java).apply(pre))
 }
 
-inline fun <reified T : Activity> Fragment.goToActivity() {
-    startActivity(Intent(requireContext(), T::class.java))
-}
-
-inline fun <reified T : Activity> Fragment.goToActivity(pre: Intent.() -> Unit) {
-    startActivity(Intent(requireContext(), T::class.java).apply(pre))
-}
-
 fun Context.toastShort(text: String) {
     runCatching { Toast.makeText(this, text, Toast.LENGTH_SHORT).show() }
 }
@@ -117,22 +109,6 @@ fun ViewGroup.enableChangingLayoutTransition() {
     this.layoutTransition = LayoutTransition()
     this.layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
 }
-
-fun View.getLocationInWindow(): IntArray {
-    return IntArray(2).apply { getLocationInWindow(this) }
-}
-
-val Configuration.isPortrait: Boolean
-    get() = orientation == Configuration.ORIENTATION_PORTRAIT
-
-val Configuration.isLandscape: Boolean
-    get() = orientation == Configuration.ORIENTATION_LANDSCAPE
-
-val Configuration.isTablet: Boolean
-    get() = (screenLayout and SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE
-
-val Context.isTablet: Boolean
-    get() = resources.configuration.isTablet
 
 fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this

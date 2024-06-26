@@ -2,21 +2,13 @@ package com.huanchengfly.tieba.post.utils
 
 import android.app.Activity
 import android.content.Context
-import android.content.res.ColorStateList
-import android.graphics.Color
 import android.os.Build
 import android.view.View
-import android.view.ViewGroup
-import android.webkit.WebView
-import android.widget.TextView
-import androidx.annotation.ColorInt
 import androidx.annotation.StyleRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.google.android.material.appbar.AppBarLayout
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.R
@@ -28,7 +20,6 @@ import com.huanchengfly.tieba.post.getString
 import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import com.huanchengfly.tieba.post.ui.widgets.theme.TintSwipeRefreshLayout
 import java.util.Locale
 
 object ThemeUtil {
@@ -136,37 +127,6 @@ object ThemeUtil {
     }
 
     @JvmStatic
-    fun setChipThemeByLevel(level: String?, parent: View, vararg textViews: TextView) {
-        setChipTheme(Util.getIconColorByLevel(level), parent, *textViews)
-    }
-
-    fun setChipTheme(@ColorInt color: Int, parent: View, vararg textViews: TextView) {
-        parent.backgroundTintList = ColorStateList.valueOf(color)
-        for (textView in textViews) {
-            textView.setTextColor(ThemeUtils.getColorByAttr(parent.context, R.attr.colorOnAccent))
-        }
-    }
-
-    @JvmStatic
-    fun setThemeForSwipeRefreshLayout(swipeRefreshLayout: SwipeRefreshLayout) {
-        if (swipeRefreshLayout is TintSwipeRefreshLayout) {
-            swipeRefreshLayout.tint()
-            return
-        }
-        val context = swipeRefreshLayout.context
-        val resources = context.resources
-        if (resources != null) {
-            swipeRefreshLayout.setProgressBackgroundColorSchemeColor(resources.getColor(R.color.color_swipe_refresh_bg))
-            swipeRefreshLayout.setColorSchemeColors(
-                ThemeUtils.getColorByAttr(
-                    context,
-                    R.attr.colorAccent
-                )
-            )
-        }
-    }
-
-    @JvmStatic
     fun isNightMode(): Boolean {
         return isNightMode(getRawTheme())
     }
@@ -239,42 +199,6 @@ object ThemeUtil {
             nowTheme = "${nowTheme}_dynamic"
         }
         return nowTheme
-    }
-
-    @JvmStatic
-    fun setTranslucentThemeWebViewBackground(webView: WebView?) {
-        if (webView == null) {
-            return
-        }
-        if (!isTranslucentTheme()) {
-            return
-        }
-        webView.setBackgroundColor(Color.WHITE)
-    }
-
-    private fun setAppBarFitsSystemWindow(view: View?, appBarFitsSystemWindow: Boolean) {
-        if (view == null) return
-        if (view is AppBarLayout) {
-            view.setFitsSystemWindows(appBarFitsSystemWindow)
-            view.clipToPadding = !appBarFitsSystemWindow
-            return
-        }
-        if (view is ViewGroup) {
-            for (i in 0 until view.childCount) {
-                setAppBarFitsSystemWindow(view.getChildAt(i), appBarFitsSystemWindow)
-            }
-        }
-    }
-
-    fun setTranslucentBackground(view: View?) {
-        if (view == null) {
-            return
-        }
-        if (!isTranslucentTheme()) {
-            return
-        }
-        view.backgroundTintList = null
-        view.setBackgroundColor(Color.TRANSPARENT)
     }
 
     @JvmStatic

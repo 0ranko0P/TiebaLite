@@ -19,8 +19,6 @@
 
     <color name="color_switch_track_bg">#C4C4C4</color>
 
-    <color name="color_swipe_refresh_bg">#FFF</color>
-
     <color name="red">#FFC51100</color>
     <color name="white">#FFF</color>
     <color name="black">#000</color>

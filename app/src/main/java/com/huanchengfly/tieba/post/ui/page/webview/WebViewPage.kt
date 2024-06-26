@@ -12,6 +12,7 @@ import android.webkit.JsResult
 import android.webkit.ValueCallback
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
+import androidx.appcompat.app.AlertDialog
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.core.animateFloatAsState
@@ -72,7 +73,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.DialogUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -557,7 +557,7 @@ class MyWebChromeClient(
         message: String?,
         result: JsResult?,
     ): Boolean {
-        DialogUtil.build(view?.context ?: context)
+        AlertDialog.Builder(view?.context ?: context)
             .setMessage(message)
             .setPositiveButton(R.string.button_sure_default) { _, _ ->
                 result?.confirm()
@@ -595,7 +595,7 @@ class MyWebChromeClient(
                     .show()
             }
         } else {
-            DialogUtil.build(view.context)
+            AlertDialog.Builder(view.context)
                 .setTitle("Confirm")
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok) { _, _ ->

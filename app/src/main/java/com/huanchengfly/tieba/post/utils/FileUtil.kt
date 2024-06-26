@@ -48,74 +48,6 @@ object FileUtil {
         }
     }
 
-    /**
-     * @param context 上下文对象
-     * @param dir     存储目录
-     * @return
-     */
-    fun getFilePath(context: Context, dir: String): String {
-        var directoryPath = ""
-        //判断SD卡是否可用
-        directoryPath = if (Environment.MEDIA_MOUNTED == Environment.getExternalStorageState()) {
-            context.getExternalFilesDir(dir)!!.absolutePath
-        } else {
-            context.filesDir.toString() + File.separator + dir
-        }
-        val file = File(directoryPath)
-        if (!file.exists()) {
-            file.mkdirs()
-        }
-        return directoryPath
-    }
-
-    fun getFilePathByUri(context: Context, uri: Uri): String? {
-        val path: String?
-        if (ContentResolver.SCHEME_FILE == uri.scheme) {
-            path = uri.path
-            return path
-        }
-        if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
-            if (DocumentsContract.isDocumentUri(context, uri)) {
-                if (isExternalStorageDocument(uri)) {
-                    val docId = DocumentsContract.getDocumentId(uri)
-                    val split =
-                        docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    val type = split[0]
-                    if ("primary".equals(type, ignoreCase = true)) {
-                        path = Environment.getExternalStorageDirectory().toString() + "/" + split[1]
-                        return path
-                    }
-                } else if (isDownloadsDocument(uri)) {
-                    val id = DocumentsContract.getDocumentId(uri)
-                    val contentUri = ContentUris.withAppendedId(
-                        Uri.parse("content://downloads/public_downloads"),
-                        java.lang.Long.valueOf(id)
-                    )
-                    path = getDataColumn(context, contentUri, null, null)
-                    return path
-                } else if (isMediaDocument(uri)) {
-                    val docId = DocumentsContract.getDocumentId(uri)
-                    val split =
-                        docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    val type = split[0]
-                    var contentUri: Uri? = null
-                    if ("image" == type) {
-                        contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                    } else if ("video" == type) {
-                        contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-                    } else if ("audio" == type) {
-                        contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-                    }
-                    val selection = "_id=?"
-                    val selectionArgs = arrayOf(split[1])
-                    path = getDataColumn(context, contentUri, selection, selectionArgs)
-                    return path
-                }
-            }
-        }
-        return null
-    }
-
     private fun getDataColumn(
         context: Context,
         uri: Uri?,
@@ -132,18 +64,6 @@ object FileUtil {
                 }
             }
         return null
-    }
-
-    private fun isExternalStorageDocument(uri: Uri): Boolean {
-        return "com.android.externalstorage.documents" == uri.authority
-    }
-
-    private fun isDownloadsDocument(uri: Uri): Boolean {
-        return "com.android.providers.downloads.documents" == uri.authority
-    }
-
-    private fun isMediaDocument(uri: Uri): Boolean {
-        return "com.android.providers.media.documents" == uri.authority
     }
 
     @JvmStatic
@@ -240,32 +160,11 @@ object FileUtil {
             return false
         }
         try {
-            val fos = FileOutputStream(file)
-            fos.write(content.toByteArray())
-            fos.flush()
-            fos.close()
-            return true
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        return false
-    }
-
-    fun writeFile(file: File, inputStream: InputStream): Boolean {
-        if (!file.exists() || !file.canWrite()) {
-            return false
-        }
-        try {
-            val fos = FileOutputStream(file)
-            val buffer = ByteArray(1024)
-            var byteCount: Int
-            while (inputStream.read(buffer).also { byteCount = it } != -1) {
-                fos.write(buffer, 0, byteCount)
+            FileOutputStream(file, append).use { fos ->
+                fos.write(content.toByteArray())
+                fos.flush()
+                return true
             }
-            fos.flush()
-            fos.close()
-            inputStream.close()
-            return true
         } catch (e: IOException) {
             e.printStackTrace()
         }

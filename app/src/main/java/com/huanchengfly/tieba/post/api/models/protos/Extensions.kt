@@ -204,7 +204,6 @@ fun PostInfoList.updateAgreeStatus(
 private val PbContent.picUrl: String
     get() =
         ImageUtil.getUrl(
-            App.INSTANCE,
             true,
             originSrc,
             bigCdnSrc,

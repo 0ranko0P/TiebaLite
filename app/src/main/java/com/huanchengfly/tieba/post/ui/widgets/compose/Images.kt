@@ -65,9 +65,7 @@ fun shouldLoadImage(context: Context, skipNetworkCheck: Boolean): Boolean {
     return skipNetworkCheck
             || imageLoadSettings == ImageUtil.SETTINGS_SMART_ORIGIN
             || imageLoadSettings == ImageUtil.SETTINGS_ALL_ORIGIN
-            || (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected(
-        context
-    ))
+            || (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected())
 }
 
 @Composable

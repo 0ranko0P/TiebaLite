@@ -112,11 +112,6 @@
         <attr name="textColor" />
     </declare-styleable>
 
-    <declare-styleable name="TintMaterialCardView">
-        <attr name="materialCardBackgroundTint" format="color" />
-        <attr name="strokeColor" format="color" />
-    </declare-styleable>
-
     <declare-styleable name="TintSeekbar">
         <attr name="seekbarBackgroundTint" format="color" />
         <attr name="progressTint" format="color" />
@@ -162,10 +157,6 @@
     <declare-styleable name="TintTextInputEditText">
         <attr name="textColor" />
         <attr name="textColorHint" format="color" />
-    </declare-styleable>
-
-    <declare-styleable name="TintCollapsingToolbarLayout">
-        <attr name="textColor" />
     </declare-styleable>
 
     <declare-styleable name="RulerSeekBar">

@@ -3,7 +3,7 @@ package com.huanchengfly.tieba.post.api.retrofit.interceptors
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
-import com.huanchengfly.tieba.post.utils.isNetworkConnected
+import com.huanchengfly.tieba.post.utils.NetworkUtil.isNetworkConnected
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException

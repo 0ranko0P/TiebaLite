@@ -68,23 +68,6 @@ public class Util {
         return color;
     }
 
-    public static @Dimension
-    int getDimenByAttr(Context context, @AttrRes int attr, @Px int defaultDimen) {
-        int[] attrs = new int[]{attr};
-        TypedArray typedArray = context.obtainStyledAttributes(attrs);
-        int dimensionPixelSize = typedArray.getDimensionPixelSize(0, defaultDimen);
-        typedArray.recycle();
-        return dimensionPixelSize;
-    }
-
-    public static Drawable getDrawableByAttr(Context context, @AttrRes int attr) {
-        int[] attrs = new int[]{attr};
-        TypedArray typedArray = context.obtainStyledAttributes(attrs);
-        Drawable drawable = typedArray.getDrawable(0);
-        typedArray.recycle();
-        return drawable;
-    }
-
     public static boolean canLoadGlide(Context context) {
         if (context instanceof Activity) {
             return !((Activity) context).isDestroyed();

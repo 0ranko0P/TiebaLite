@@ -11,8 +11,4 @@ class AutoSignAlarm : BroadcastReceiver() {
             TiebaUtil.startSign(context)
         }
     }
-
-    companion object {
-        val TAG: String = "AutoSignAlarm"
-    }
 }
