@@ -55,7 +55,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.AccountUtil.parseCookie
+import com.huanchengfly.tieba.post.utils.AccountUtil.Companion.parseCookie
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -85,16 +85,7 @@ fun LoginPage(
     var loaded by rememberSaveable {
         mutableStateOf(false)
     }
-    var pageTitle by rememberSaveable {
-        mutableStateOf("")
-    }
-    val displayPageTitle by remember {
-        derivedStateOf {
-            pageTitle.ifEmpty {
-                context.getString(R.string.title_default)
-            }
-        }
-    }
+    var pageTitle = webViewState.pageTitle
     val currentHost by remember {
         derivedStateOf {
             webViewState.lastLoadedUrl?.toUri()?.host.orEmpty().lowercase()
@@ -152,7 +143,7 @@ fun LoginPage(
                 title = {
                     Column {
                         Text(
-                            text = displayPageTitle,
+                            text = pageTitle ?: stringResource(R.string.title_default),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -273,47 +264,38 @@ class LoginWebViewClient(
                 )
             }
             coroutineScope.launch {
-                AccountUtil.fetchAccountFlow(bduss, sToken, cookieStr)
+                val accountUtil = AccountUtil.getInstance()
+                accountUtil.fetchAccountFlow(bduss, sToken, cookieStr)
                     .catch {
-                        coroutineScope.launch {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            snackbarHostState.showSnackbar(
-                                context.getString(
-                                    R.string.text_login_failed,
-                                    it.getErrorMessage()
-                                ), duration = SnackbarDuration.Short
-                            )
-                        }
-                        navigator.loadUrl(LOGIN_URL)
                         isLoadingAccount = false
+                        navigator.loadUrl(LOGIN_URL)
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        snackbarHostState.showSnackbar(
+                            context.getString(
+                                R.string.text_login_failed,
+                                it.getErrorMessage()
+                            ), duration = SnackbarDuration.Short
+                        )
                     }
                     .flowOn(Dispatchers.Main)
                     .collect { account ->
                         isLoadingAccount = false
-                        AccountUtil.newAccount(account.uid, account) {
-                            if (it) {
-                                AccountUtil.switchAccount(context, account.id)
-                                coroutineScope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    snackbarHostState.showSnackbar(
-                                        context.getString(R.string.text_login_success),
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
-                                coroutineScope.launch {
-                                    delay(1500L)
-                                    nativeNavigator?.navigateUp()
-                                }
-                            } else {
-                                coroutineScope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    snackbarHostState.showSnackbar(
-                                        context.getString(R.string.text_login_failed_default),
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
-                                view.loadUrl(LOGIN_URL)
-                            }
+                        val succeed = accountUtil.saveNewAccount(account.uid, account)
+                        if (succeed) {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            snackbarHostState.showSnackbar(
+                                message = context.getString(R.string.text_login_success),
+                                duration = SnackbarDuration.Short
+                            )
+                            delay(1500L)
+                            nativeNavigator?.navigateUp()
+                        } else {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            snackbarHostState.showSnackbar(
+                                context.getString(R.string.text_login_failed_default),
+                                duration = SnackbarDuration.Short
+                            )
+                            view.loadUrl(LOGIN_URL)
                         }
                     }
             }

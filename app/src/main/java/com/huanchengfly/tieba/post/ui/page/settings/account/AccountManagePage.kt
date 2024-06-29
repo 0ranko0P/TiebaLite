@@ -44,8 +44,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.AccountUtil.AllAccounts
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
+import com.huanchengfly.tieba.post.utils.LocalAllAccounts
+import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.launchUrl
@@ -101,10 +101,10 @@ fun AccountManagePage(
                                 )
                             }
                         },
-                        onValueChange = { AccountUtil.switchAccount(context, it.toInt()) },
+                        onValueChange = { AccountUtil.getInstance().switchAccount(it.toInt()) },
                         enabled = true,
                         defaultValue = account.id.toString(),
-                        entries = AllAccounts.current.associate {
+                        entries = LocalAllAccounts.current.associate {
                             it.id.toString() to (it.nameShow ?: it.name)
                         }
                     )
@@ -166,7 +166,11 @@ fun AccountManagePage(
             prefsItem {
                 TextPref(
                     title = stringResource(id = R.string.title_exit_account),
-                    onClick = { AccountUtil.exit(context) },
+                    onClick = {
+                        val accountUtil = AccountUtil.getInstance()
+                        if (accountUtil.allAccounts.size <= 1) navigator.navigateUp()
+                        accountUtil.exit(context)
+                    },
                     leadingIcon = {
                         LeadingIcon {
                             AvatarIcon(

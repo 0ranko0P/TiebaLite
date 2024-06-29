@@ -74,7 +74,10 @@ import com.huanchengfly.tieba.post.utils.appPreferences
 @Composable
 private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
     Row(
-        modifier = modifier.placeholder(visible = true, color = ExtendedTheme.colors.chip),
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .placeholder(visible = true, color = ExtendedTheme.colors.chip)
+            .padding(vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StatCardItem(
@@ -197,9 +200,7 @@ private fun RowScope.StatCardItem(
 
 @Composable
 private fun LoginTipCard(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier,
-    ) {
+    Row(modifier = modifier) {
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -210,8 +211,7 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = ExtendedTheme.colors.text,
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
             )
         }
         Spacer(modifier = Modifier.width(16.dp))
@@ -232,9 +232,7 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
 @Composable
 fun UserPage(
     viewModel: UserViewModel = pageViewModel<UserUiIntent, UserViewModel>(
-        listOf(
-            UserUiIntent.Refresh
-        )
+        listOf(UserUiIntent.Refresh)
     )
 ) {
     val context = LocalContext.current
@@ -268,24 +266,18 @@ fun UserPage(
             .statusBarsPadding()
             .fillMaxSize()
     ) { contentPaddings ->
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = isLoading,
-            onRefresh = { viewModel.send(UserUiIntent.Refresh) })
+        val pullRefreshState = rememberPullRefreshState(isLoading, viewModel::requestRefresh)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPaddings)
                 .pullRefresh(pullRefreshState),
         ) {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(state = rememberScrollState())
-                    .fillMaxSize()
-            ) {
+            Column(modifier = Modifier.verticalScroll(state = rememberScrollState())) {
+                Spacer(modifier = Modifier.height(8.dp))
                 if (account != null) {
                     InfoCard(
                         modifier = Modifier
-                            .padding(top = 8.dp)
                             .clickable {
                                 navigator.navigate(UserProfilePageDestination(account!!.uid.toLong()))
                             }
@@ -304,9 +296,7 @@ fun UserPage(
                     )
                 } else if (isLoading) {
                     InfoCard(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 16.dp)
-                            .padding(top = 8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                         isPlaceholder = true,
                     )
                     StatCardPlaceholder(
@@ -317,11 +307,7 @@ fun UserPage(
                             .padding(vertical = 18.dp)
                     )
                 } else {
-                    LoginTipCard(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 16.dp)
-                            .padding(top = 8.dp),
-                    )
+                    LoginTipCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp))
                 }
                 if (account != null) {
                     ListMenuItem(

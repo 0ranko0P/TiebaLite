@@ -10,8 +10,8 @@ object ForceLoginInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         var headers = request.headers
-        var httpUrl = request.url
-        var body = request.body
+        val httpUrl = request.url
+        val body = request.body
 
         //是否强制登录
         var forceLogin = false

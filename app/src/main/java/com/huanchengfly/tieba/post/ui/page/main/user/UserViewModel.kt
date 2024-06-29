@@ -28,6 +28,7 @@ import javax.inject.Inject
 @Stable
 @HiltViewModel
 class UserViewModel @Inject constructor() : BaseViewModel<UserUiIntent, UserPartialChange, UserUiState, UserUiEvent>() {
+
     override fun createInitialState(): UserUiState =
         UserUiState()
 
@@ -48,32 +49,35 @@ class UserViewModel @Inject constructor() : BaseViewModel<UserUiIntent, UserPart
             )
 
         private fun UserUiIntent.Refresh.toPartialChangeFlow(): Flow<UserPartialChange> {
-            val account = AccountUtil.currentAccount
+            val accountUtil = AccountUtil.getInstance()
+            val account = accountUtil.currentAccount.value
             return if (account == null) {
                 listOf(UserPartialChange.Refresh.NotLogin).asFlow()
             } else {
                 TiebaApi.getInstance()
                     .userProfileFlow(account.uid.toLong())
                     .map<ProfileResponse, UserPartialChange> { profile ->
-                        val user = checkNotNull(profile.data_?.user)
-                        account.apply {
-                            nameShow = user.nameShow
-                            portrait = user.portrait
-                            intro = user.intro
-                            sex = user.sex.toString()
-                            fansNum = user.fans_num.toString()
-                            postNum = user.post_num.toString()
-                            threadNum = user.thread_num.toString()
-                            concernNum = user.concern_num.toString()
-                            tbAge = user.tb_age
-                            age = user.birthday_info?.age?.toString()
+                        val user = checkNotNull(profile.data_?.user) { "Empty user profile" }
+                        val updatedAccount = account.copy(
+                            nameShow = user.nameShow,
+                            portrait = user.portrait,
+                            intro = user.intro,
+                            sex = user.sex.toString(),
+                            fansNum = user.fans_num.toString(),
+                            postNum = user.post_num.toString(),
+                            threadNum = user.thread_num.toString(),
+                            concernNum = user.concern_num.toString(),
+                            tbAge = user.tb_age,
+                            age = user.birthday_info?.age?.toString(),
                             birthdayShowStatus =
-                                user.birthday_info?.birthday_show_status?.toString()
-                            birthdayTime = user.birthday_info?.birthday_time?.toString()
-                            constellation = user.birthday_info?.constellation
-                            tiebaUid = user.tieba_uid
-                            loadSuccess = true
-                            updateAll("uid = ?", uid)
+                            user.birthday_info?.birthday_show_status?.toString(),
+                            birthdayTime = user.birthday_info?.birthday_time?.toString(),
+                            constellation = user.birthday_info?.constellation,
+                            tiebaUid = user.tieba_uid,
+                            loadSuccess = true,
+                        )
+                        if (account != updatedAccount) {
+                            accountUtil.saveNewAccount(account.uid, updatedAccount)
                         }
                         UserPartialChange.Refresh.Success(account = account)
                     }
@@ -95,6 +99,8 @@ class UserViewModel @Inject constructor() : BaseViewModel<UserUiIntent, UserPart
             }
         }
     }
+
+    fun requestRefresh() = send(UserUiIntent.Refresh)
 }
 
 sealed interface UserUiIntent : UiIntent {

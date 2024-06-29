@@ -7,12 +7,11 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.AnimationSpec
@@ -68,7 +67,6 @@ import com.google.accompanist.navigation.material.BottomSheetNavigator
 import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
 import com.google.accompanist.navigation.material.ModalBottomSheetLayout
 import com.google.accompanist.systemuicontroller.SystemUiController
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
@@ -104,7 +102,6 @@ import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.compose.LaunchActivityForResult
 import com.huanchengfly.tieba.post.utils.compose.LaunchActivityRequest
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
-import com.huanchengfly.tieba.post.utils.newIntentFilter
 import com.huanchengfly.tieba.post.utils.registerPickMediasLauncher
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.requestPermission
@@ -117,15 +114,12 @@ import com.ramcosta.composedestinations.spec.Direction
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.currentDestinationFlow
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
@@ -156,7 +150,6 @@ fun rememberBottomSheetNavigator(
 
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
-    private val handler = Handler(Looper.getMainLooper())
     private val newMessageReceiver: BroadcastReceiver = NewMessageReceiver()
 
     private val notificationCountFlow: MutableSharedFlow<Int> =
@@ -257,20 +250,6 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    private fun fetchAccount() {
-        lifecycleScope.launch(Dispatchers.Main) {
-            if (AccountUtil.isLoggedIn()) {
-                AccountUtil.fetchAccountFlow()
-                    .flowOn(Dispatchers.IO)
-                    .catch { e ->
-                        toastShort(e.getErrorMessage())
-                        e.printStackTrace()
-                    }
-                    .collect()
-            }
-        }
-    }
-
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AccountUtil.isLoggedIn()) {
             requestPermission {
@@ -289,12 +268,10 @@ class MainActivityV2 : BaseComposeActivity() {
     override fun onStart() {
         super.onStart()
         runCatching {
-            ContextCompat.registerReceiver(
-                this,
-                newMessageReceiver,
-                newIntentFilter(NotifyJobService.ACTION_NEW_MESSAGE),
-                ContextCompat.RECEIVER_NOT_EXPORTED
-            )
+            val intentFilter = IntentFilter().apply {
+                addAction(NotifyJobService.ACTION_NEW_MESSAGE)
+            }
+            ContextCompat.registerReceiver(this, newMessageReceiver, intentFilter, ContextCompat.RECEIVER_NOT_EXPORTED)
             startService(Intent(this, NotifyJobService::class.java))
             val builder = JobInfo.Builder(
                 JobServiceUtil.getJobId(this),
@@ -306,9 +283,10 @@ class MainActivityV2 : BaseComposeActivity() {
             val jobScheduler = getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
             jobScheduler.schedule(builder.build())
         }
-        handler.postDelayed({
+        lifecycleScope.launch {
+            delay(2000L)
             requestNotificationPermission()
-        }, 100)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -324,7 +302,6 @@ class MainActivityV2 : BaseComposeActivity() {
 
     override fun onCreateContent(systemUiController: SystemUiController) {
         super.onCreateContent(systemUiController)
-        fetchAccount()
         initAutoSign()
     }
 

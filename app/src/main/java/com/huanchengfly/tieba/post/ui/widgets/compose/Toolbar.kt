@@ -58,7 +58,8 @@ import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClas
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
+import com.huanchengfly.tieba.post.utils.LocalAccount
+import com.huanchengfly.tieba.post.utils.LocalAllAccounts
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.compose.calcStatusBarColor
 
@@ -94,9 +95,9 @@ fun AccountNavIcon(
         val menuState = rememberMenuState()
         LongClickMenu(
             menuContent = {
-                val allAccounts = AccountUtil.allAccounts
+                val allAccounts = LocalAllAccounts.current
                 allAccounts.forEach {
-                    DropdownMenuItem(onClick = { AccountUtil.switchAccount(context, it.id) }) {
+                    DropdownMenuItem(onClick = { AccountUtil.getInstance().switchAccount(it.id) }) {
                         Box(
                             modifier = Modifier
                                 .clip(CircleShape)
@@ -315,11 +316,12 @@ fun Toolbar(
                         actions()
                     }
                 },
-                navigationIcon = (@Composable {
+                navigationIcon = {
+                    if (navigationIcon == null) return@TopAppBar
                     ProvideContentColor(color = contentColor) {
-                        navigationIcon?.invoke()
+                        navigationIcon()
                     }
-                }).takeIf { navigationIcon != null },
+                },
                 backgroundColor = backgroundColor,
                 contentColor = contentColor,
                 elevation = 0.dp

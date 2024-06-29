@@ -42,50 +42,6 @@ abstract class IOKSigner(
     }
 }
 
-/*
-class MultiAccountSigner(
-        context: Context
-) : IOKSigner(context) {
-    private val accounts: MutableList<Account> = mutableListOf()
-
-    override suspend fun start() {
-        accounts.clear()
-        accounts.addAll(AccountUtil.allAccounts)
-    }
-
-    interface ProgressListener {
-        fun onStart(
-                total: Int
-        )
-
-        fun onProgressStart(
-                signDataBean: SignDataBean,
-                current: Int,
-                total: Int
-        )
-
-        fun onProgressFinish(
-                signResultBean: SignResultBean,
-                current: Int,
-                total: Int
-        )
-
-        fun onFinish(
-                success: Boolean,
-                signedCount: Int,
-                total: Int
-        )
-
-        fun onFailure(
-                current: Int,
-                total: Int,
-                errorCode: Int,
-                errorMsg: String
-        )
-    }
-}
-*/
-
 class SingleAccountSigner(
     context: Context,
     private val account: Account
@@ -116,7 +72,7 @@ class SingleAccountSigner(
         var userName: String by Delegates.notNull()
         var tbs: String by Delegates.notNull()
         Log.i(TAG, "start")
-        AccountUtil.fetchAccountFlow(account)
+        AccountUtil.getInstance().fetchAccountFlow(account)
             .flatMapConcat { account ->
                 userName = account.name
                 tbs = account.tbs
