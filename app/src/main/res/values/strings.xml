@@ -219,7 +219,6 @@
     <string name="relative_date_after">刚刚</string>
     <string name="title_oksign_finish">签到完成</string>
     <string name="title_oksign_fail">签到失败</string>
-    <string name="text_login_first">请先登录</string>
     <string name="title_history_today">今天早些时候</string>
     <string name="title_history_before">昨天或更早</string>
     <string name="title_history_thread">贴子记录</string>

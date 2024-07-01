@@ -60,19 +60,14 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
             val loginInfo = AccountUtil.getLoginInfo()
             if (loginInfo != null) {
                 runBlocking {
-                    SingleAccountSigner(
-                        this@OKSignService,
-                        AccountUtil.getLoginInfo()!!
-                    )
-                        .apply {
-                            setProgressListener(this@OKSignService)
-                        }
-                        .start()
+                    val signer = SingleAccountSigner(this@OKSignService, loginInfo)
+                    signer.setProgressListener(this@OKSignService)
+                    signer.start()
                 }
             } else {
                 updateNotification(
                     getString(R.string.title_oksign_fail),
-                    getString(R.string.text_login_first)
+                    getString(R.string.tip_login)
                 )
                 ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
             }
