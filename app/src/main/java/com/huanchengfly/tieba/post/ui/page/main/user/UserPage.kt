@@ -43,10 +43,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.placeholder.placeholder
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
@@ -67,6 +66,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.CuidUtils
+import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -230,21 +230,11 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun UserPage(
-    viewModel: UserViewModel = pageViewModel<UserUiIntent, UserViewModel>(
-        listOf(UserUiIntent.Refresh)
-    )
-) {
+fun UserPage(viewModel: UserViewModel = viewModel()) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
-    val isLoading by viewModel.uiState.collectPartialAsState(
-        prop1 = UserUiState::isLoading,
-        initial = false
-    )
-    val account by viewModel.uiState.collectPartialAsState(
-        prop1 = UserUiState::account,
-        initial = null
-    )
+    val isLoading by viewModel.isLoading
+    val account = LocalAccount.current
 
     val switchToNightDialogState = rememberDialogState()
     ConfirmDialog(
@@ -266,7 +256,7 @@ fun UserPage(
             .statusBarsPadding()
             .fillMaxSize()
     ) { contentPaddings ->
-        val pullRefreshState = rememberPullRefreshState(isLoading, viewModel::requestRefresh)
+        val pullRefreshState = rememberPullRefreshState(isLoading, viewModel::onRefresh)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -279,15 +269,15 @@ fun UserPage(
                     InfoCard(
                         modifier = Modifier
                             .clickable {
-                                navigator.navigate(UserProfilePageDestination(account!!.uid.toLong()))
+                                navigator.navigate(UserProfilePageDestination(account.uid.toLong()))
                             }
                             .padding(horizontal = 16.dp, vertical = 16.dp),
-                        userName = account!!.nameShow ?: account!!.name,
-                        userIntro = account!!.intro ?: stringResource(id = R.string.tip_no_intro),
-                        avatar = StringUtil.getAvatarUrl(account!!.portrait),
+                        userName = account.nameShow ?: account.name,
+                        userIntro = account.intro ?: stringResource(id = R.string.tip_no_intro),
+                        avatar = StringUtil.getAvatarUrl(account.portrait),
                     )
                     StatCard(
-                        account = account!!,
+                        account = account,
                         modifier = Modifier
                             .padding(16.dp)
                             .clip(RoundedCornerShape(8.dp))

@@ -415,7 +415,6 @@ fun HomePage(
         prop1 = HomeUiState::error,
         initial = null
     )
-    val isLoggedIn = remember(account) { account != null }
     val isEmpty by remember { derivedStateOf { forums.isEmpty() } }
     val hasTopForum by remember { derivedStateOf { topForums.isNotEmpty() } }
     val showHistoryForum by remember { derivedStateOf { context.appPreferences.homePageShowHistoryForum && historyForums.isNotEmpty() } }
@@ -501,7 +500,7 @@ fun HomePage(
                     },
                     emptyScreen = {
                         EmptyScreen(
-                            loggedIn = isLoggedIn,
+                            loggedIn = account != null,
                             canOpenExplore = canOpenExplore,
                             onOpenExplore = onOpenExplore
                         )
