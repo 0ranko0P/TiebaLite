@@ -295,7 +295,7 @@ class MainActivityV2 : BaseComposeActivity() {
         window.decorView.setBackgroundColor(0)
         window.setBackgroundDrawable(ColorDrawable(0))
         launch {
-            ClientUtils.setActiveTimestamp()
+            ClientUtils.setActiveTimestamp(applicationContext)
         }
         intent?.let { checkIntent(it) }
     }
