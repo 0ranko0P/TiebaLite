@@ -63,7 +63,7 @@ fun NowAccountItem(
     modifier: Modifier = Modifier
 ) {
     val navigator = LocalNavigator.current
-    if (account != null) {
+    if (account != null) { // TODO: Simplify
         TextPref(
             title = stringResource(id = R.string.title_account_manage),
             summary = stringResource(id = R.string.summary_now_account, account.nameShow ?: account.name),

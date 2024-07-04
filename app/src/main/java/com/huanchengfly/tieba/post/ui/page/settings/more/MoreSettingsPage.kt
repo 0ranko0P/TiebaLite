@@ -43,8 +43,9 @@ import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlin.concurrent.thread
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterialApi::class)
 @Destination
@@ -73,7 +74,7 @@ fun MoreSettingsPage(
         val context = LocalContext.current
         var cacheSize by remember { mutableStateOf("0.0B") }
         LaunchedEffect(Unit) {
-            thread {
+            coroutineScope.launch(Dispatchers.IO) {
                 cacheSize = ImageCacheUtil.getCacheSize(context)
             }
         }
@@ -158,10 +159,12 @@ fun MoreSettingsPage(
                     enabled = true,
                     title = stringResource(id = R.string.title_clear_picture_cache),
                     onClick = {
-                        coroutineScope.launch {
-                            ImageCacheUtil.clearImageAllCache(context)
-                            cacheSize = "0.0B"
+                        cacheSize = "0.0B"
+                        coroutineScope.launch() {
                             snackbarHostState.showSnackbar(context.getString(R.string.toast_clear_picture_cache_success))
+                            withContext(Dispatchers.IO) {
+                                ImageCacheUtil.clearImageAllCache(context)
+                            }
                         }
                     },
                     summary = stringResource(id = R.string.tip_cache, cacheSize)

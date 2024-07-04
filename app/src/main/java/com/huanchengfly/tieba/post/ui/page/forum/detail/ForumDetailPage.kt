@@ -184,7 +184,7 @@ private fun ForumDetailContent(
 }
 
 @Composable
-private fun RowScope.StatCardItem(
+fun RowScope.StatCardItem(
     statNum: Int,
     statText: String,
 ) {

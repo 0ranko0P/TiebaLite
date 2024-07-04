@@ -2,13 +2,13 @@ package com.huanchengfly.tieba.post.ui.page.user.edit
 
 import android.app.Activity
 import android.graphics.Bitmap
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
@@ -35,7 +35,6 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -57,21 +56,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.github.panpf.sketch.compose.AsyncImage
 import com.google.accompanist.placeholder.material.placeholder
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.activities.BaseActivity
+import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -87,7 +83,6 @@ import com.huanchengfly.tieba.post.utils.ColorUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.registerPickMediasLauncher
 import com.huanchengfly.tieba.post.utils.requestPermission
 import com.huanchengfly.tieba.post.utils.shouldUsePhotoPicker
@@ -102,7 +97,7 @@ import kotlinx.coroutines.flow.onEach
 import java.io.File
 
 @AndroidEntryPoint
-class EditProfileActivity : BaseActivity() {
+class EditProfileActivity : BaseComposeActivity() {
     private val uCropLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == Activity.RESULT_OK) {
@@ -179,9 +174,7 @@ class EditProfileActivity : BaseActivity() {
     private val viewModel: EditProfileViewModel by viewModels()
 
     private val intents by lazy {
-        merge(
-            flowOf(EditProfileIntent.Init(AccountUtil.getUid() ?: "0"))
-        )
+        flowOf(EditProfileIntent.Init(AccountUtil.getUid() ?: "0"))
     }
     private val handler = Handler(Looper.getMainLooper())
     override val isNeedImmersionBar: Boolean
@@ -189,31 +182,19 @@ class EditProfileActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        setContent {
-            TiebaLiteTheme {
-                val systemUiController = rememberSystemUiController()
-                SideEffect {
-                    systemUiController.apply {
-                        setStatusBarColor(
-                            Color.Transparent,
-                            darkIcons = ThemeUtil.isStatusBarFontDark()
-                        )
-                        setNavigationBarColor(
-                            Color.Transparent,
-                            darkIcons = ThemeUtil.isNavigationBarFontDark()
-                        )
-                    }
-                }
-                PageEditProfile(viewModel, onBackPressed = { onBackPressed() })
-            }
-        }
+        window.decorView.setBackgroundColor(0)
+        window.setBackgroundDrawable(ColorDrawable(0))
         handler.post {
             intents.onEach(viewModel::send).launchIn(lifecycleScope)
         }
         viewModel.uiEventFlow
             .filterIsInstance<EditProfileEvent>()
             .collectIn(this) { handleEvent(it) }
+    }
+
+    @Composable
+    override fun Content() {
+        PageEditProfile(viewModel, onBackPressed = { onBackPressed() })
     }
 
     private fun handleEvent(event: EditProfileEvent) {

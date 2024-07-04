@@ -62,6 +62,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -341,12 +342,12 @@ fun ForumThreadListPage(
         refreshing = isRefreshing,
         onRefresh = { viewModel.send(getRefreshIntent(forumName, isGood, sortType())) }
     )
-    Box(
-        modifier = Modifier.fillMaxSize()
+    PullToRefreshLayout(
+        modifier = Modifier.fillMaxSize(),
+        onRefresh = { viewModel.requestRefresh(isGood, sortType()) },
+        refreshing = isRefreshing
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Column {
             if (isGood) {
                 GoodClassifyTabs(
                     goodClassifyHolders = goodClassifies,

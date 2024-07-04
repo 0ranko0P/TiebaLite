@@ -207,10 +207,6 @@ class ForumViewModel @Inject constructor() :
         send(ForumUiIntent.Load(forumName, sortType))
     }
 
-    fun requestRefresh(isGood: Boolean) = scope.launch {
-        emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
-    }
-
     fun onSortTypeChanged(@ForumSortType sortType: Int, isGood: Boolean) = scope.launch {
         this@ForumViewModel.sortType = sortType
         emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
@@ -245,6 +241,18 @@ class ForumViewModel @Inject constructor() :
             }
 
             ForumFabFunction.HIDE -> throw IllegalStateException("Incorrect Compose state")
+        }
+    }
+
+    fun onSignIn(forum: ForumInfo, tbs: String) {
+        if (forum.sign_in_info?.user_info?.is_sign_in != 1) {
+            send(ForumUiIntent.SignIn(forum.id, forum.name, tbs))
+        }
+    }
+
+    fun onFollow(forum: ForumInfo, tbs: String) {
+        if (forum.is_like != 1) {
+            send(ForumUiIntent.Like(forum.id, forum.name, tbs))
         }
     }
 
