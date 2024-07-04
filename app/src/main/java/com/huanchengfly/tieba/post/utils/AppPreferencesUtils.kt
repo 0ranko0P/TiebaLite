@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
+import androidx.annotation.IntDef
+import androidx.annotation.StringDef
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -19,13 +21,13 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil.TRANSLUCENT_THEME_LIGHT
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
-
 
 open class AppPreferencesUtils private constructor(ctx: Context) {
     companion object {
@@ -38,6 +40,37 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         }
 
         const val KEY_FONT_SCALE = "fontScale"
+
+        const val KEY_FORUM_FAB_FUNCTION = "forumFabFunction"
+        const val KEY_FORUM_SORT_DEFAULT = "default_sort_type"
+
+        /**
+         * 帖子排序方式
+         * */
+        @IntDef(ForumSortType.BY_REPLY, ForumSortType.BY_SEND)
+        @Retention(AnnotationRetention.SOURCE)
+        annotation class ForumSortType {
+            companion object {
+                const val BY_REPLY = 0
+                const val BY_SEND = 1
+            }
+        }
+
+        /**
+         * 吧页面悬浮按钮功能
+         *
+         * @see [AppPreferencesUtils.getForumFabFunction]
+         * */
+        @StringDef(ForumFabFunction.POST, ForumFabFunction.REFRESH, ForumFabFunction.BACK_TO_TOP, ForumFabFunction.HIDE)
+        @Retention(AnnotationRetention.SOURCE)
+        annotation class ForumFabFunction {
+            companion object {
+               const val POST = "post"
+               const val REFRESH = "refresh"
+               const val BACK_TO_TOP = "back_to_top"
+               const val HIDE = "hide"
+            }
+        }
     }
 
     private val contextWeakReference: WeakReference<Context> = WeakReference(ctx)
@@ -94,11 +127,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
     var toolbarPrimaryColor by DataStoreDelegates.boolean(
         defaultValue = false,
         key = "custom_toolbar_primary_color"
-    )
-
-    var defaultSortType by DataStoreDelegates.string(
-        key = "default_sort_type",
-        defaultValue = "0"
     )
 
     var darkTheme by DataStoreDelegates.string(key = "dark_theme", defaultValue = "grey_dark")
@@ -217,6 +245,10 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
     )
 
     var useWebView by DataStoreDelegates.boolean(defaultValue = true, key = "use_webview")
+
+    fun getForumFabFunction(): Flow<String> = preferencesDataStore.data.map {
+        it[stringPreferencesKey(KEY_FORUM_FAB_FUNCTION)] ?: ForumFabFunction.HIDE
+    }
 
     private object DataStoreDelegates {
         fun int(

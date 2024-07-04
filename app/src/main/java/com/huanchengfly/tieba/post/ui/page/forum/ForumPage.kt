@@ -1,9 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Typeface
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -51,7 +49,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -77,8 +74,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
@@ -86,22 +81,14 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.getInt
-import com.huanchengfly.tieba.post.models.ForumHistoryExtra
-import com.huanchengfly.tieba.post.models.database.History
-import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumDetailPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumSearchPostPageDestination
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListPage
-import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -122,44 +109,21 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import com.huanchengfly.tieba.post.utils.HistoryUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
-import com.huanchengfly.tieba.post.utils.requestPinShortcut
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 
-
 private val LoadDistance = 70.dp
-
-fun getSortType(
-    context: Context,
-    forumName: String,
-): Int {
-    val defaultSortType = context.appPreferences.defaultSortType?.toIntOrNull() ?: 0
-    return context.dataStore.getInt("${forumName}_sort_type", defaultSortType)
-}
-
-suspend fun setSortType(
-    context: Context,
-    forumName: String,
-    sortType: Int,
-) {
-    context.dataStore.edit {
-        it[intPreferencesKey("${forumName}_sort_type")] = sortType
-    }
-}
 
 @Composable
 private fun ForumHeaderPlaceholder(
@@ -330,31 +294,6 @@ private fun ForumHeader(
     }
 }
 
-private fun shareForum(context: Context, forumName: String) {
-    TiebaUtil.shareText(
-        context,
-        "https://tieba.baidu.com/f?kw=$forumName",
-        context.getString(R.string.title_forum, forumName)
-    )
-}
-
-private suspend fun sendToDesktop(
-    context: Context,
-    forum: ForumInfo,
-    onSuccess: () -> Unit = {},
-    onFailure: (String) -> Unit = {}
-) {
-    requestPinShortcut(
-        context,
-        "forum_${forum.id}",
-        forum.avatar,
-        context.getString(R.string.title_forum, forum.name),
-        Intent(Intent.ACTION_VIEW).setData(Uri.parse("tblite://forum/${forum.name}")),
-        onSuccess = onSuccess,
-        onFailure = onFailure
-    )
-}
-
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterialApi::class)
 @Destination(
     deepLinks = [
@@ -369,7 +308,7 @@ fun ForumPage(
 ) {
     val context = LocalContext.current
     LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(ForumUiIntent.Load(forumName, getSortType(context, forumName)))
+        viewModel.requestLoadForm(context, forumName)
         viewModel.initialized = true
     }
 
@@ -469,20 +408,7 @@ fun ForumPage(
     val unlikeDialogState = rememberDialogState()
 
     LaunchedEffect(forumInfo) {
-        if (forumInfo != null) {
-            val (forum) = forumInfo as ImmutableHolder<ForumInfo>
-            HistoryUtil.saveHistory(
-                History(
-                    title = context.getString(R.string.title_forum, forum.name),
-                    timestamp = System.currentTimeMillis(),
-                    avatar = forum.avatar,
-                    type = HistoryUtil.TYPE_FORUM,
-                    data = forum.name,
-                    extras = Json.encodeToString(ForumHistoryExtra(forum.id))
-                ),
-                true
-            )
-        }
+        forumInfo?.item?.let { viewModel.saveHistory(it) }
     }
 
     if (account != null && forumInfo != null) {
@@ -494,12 +420,7 @@ fun ForumPage(
                 )
             },
             title = {
-                Text(
-                    text = stringResource(
-                        id = R.string.title_dialog_unfollow_forum,
-                        forumName
-                    )
-                )
+                Text(text = stringResource(R.string.title_dialog_unfollow_forum, forumName))
             }
         )
     }
@@ -511,15 +432,10 @@ fun ForumPage(
             isError = isError,
             isLoading = isLoading,
             onReload = {
-                viewModel.send(
-                    ForumUiIntent.Load(
-                        forumName,
-                        getSortType(context, forumName)
-                    )
-                )
+                viewModel.requestLoadForm(context, forumName)
             },
             loadingScreen = {
-                LoadingPlaceholder(forumName)
+                LoadingPlaceholder(forumName, viewModel::shareForum)
             }
         ) {
             MyScaffold(
@@ -533,111 +449,49 @@ fun ForumPage(
                         menuContent = {
                             DropdownMenuItem(
                                 onClick = {
-                                    shareForum(context, forumName)
+                                    viewModel.shareForum(context)
                                     dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_share))
-                            }
+                                },
+                                content = { Text(stringResource(R.string.title_share)) }
+                            )
                             DropdownMenuItem(
                                 onClick = {
-                                    if (forumInfo != null) {
-                                        val (forum) = forumInfo!!
-                                        coroutineScope.launch {
-                                            sendToDesktop(
-                                                context,
-                                                forum,
-                                                onSuccess = {
-                                                    coroutineScope.launch {
-                                                        snackbarHostState.showSnackbar(
-                                                            message = context.getString(
-                                                                R.string.toast_send_to_desktop_success
-                                                            )
-                                                        )
-                                                    }
-                                                },
-                                                onFailure = {
-                                                    coroutineScope.launch {
-                                                        snackbarHostState.showSnackbar(
-                                                            message = context.getString(
-                                                                R.string.toast_send_to_desktop_failed,
-                                                                it
-                                                            )
-                                                        )
-                                                    }
-                                                }
-                                            )
-                                        }
+                                    forumInfo?.item?.let {
+                                        viewModel.sendToDesktop(context = context, forum = it)
                                     }
                                     dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_send_to_desktop))
-                            }
+                                },
+                                content = { Text(stringResource(R.string.title_send_to_desktop)) }
+                            )
                             DropdownMenuItem(
                                 onClick = {
                                     unlikeDialogState.show()
                                     dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_unfollow))
-                            }
+                                },
+                                content = { Text(stringResource(R.string.title_unfollow)) }
+                            )
                         },
                         forumId = forumInfo?.get { id }
                     )
                 },
                 floatingActionButton = {
-                    if (context.appPreferences.forumFabFunction != "hide") {
-                        FloatingActionButton(
-                            onClick = {
-                                when (context.appPreferences.forumFabFunction) {
-                                    "refresh" -> {
-                                        coroutineScope.launch {
-                                            emitGlobalEventSuspend(
-                                                ForumThreadListUiEvent.BackToTop(
-                                                    currentPage == 1
-                                                )
-                                            )
-                                            emitGlobalEventSuspend(
-                                                ForumThreadListUiEvent.Refresh(
-                                                    currentPage == 1,
-                                                    getSortType(
-                                                        context,
-                                                        forumName
-                                                    )
-                                                )
-                                            )
-                                        }
-                                    }
-
-                                    "back_to_top" -> {
-                                        coroutineScope.launch {
-                                            emitGlobalEvent(
-                                                ForumThreadListUiEvent.BackToTop(
-                                                    currentPage == 1
-                                                )
-                                            )
-                                        }
-                                    }
-
-                                    else -> {
-                                        context.toastShort(R.string.toast_feature_unavailable)
-                                    }
-                                }
+                    val fabFunction = viewModel.fab
+                    if (fabFunction == ForumFabFunction.HIDE) return@MyScaffold
+                    FloatingActionButton(
+                        onClick = { viewModel.onFabClicked(context, currentPage == 1) },
+                        backgroundColor = ExtendedTheme.colors.windowBackground,
+                        contentColor = ExtendedTheme.colors.primary,
+                        modifier = Modifier.navigationBarsPadding()
+                    ) {
+                        Icon(
+                            imageVector = when (fabFunction) {
+                                ForumFabFunction.REFRESH-> Icons.Rounded.Refresh
+                                ForumFabFunction.BACK_TO_TOP -> Icons.Rounded.VerticalAlignTop
+                                ForumFabFunction.POST -> Icons.Rounded.Add
+                                else -> throw IllegalStateException()
                             },
-                            backgroundColor = ExtendedTheme.colors.windowBackground,
-                            contentColor = ExtendedTheme.colors.primary,
-                            modifier = Modifier.navigationBarsPadding()
-                        ) {
-                            Icon(
-                                imageVector = when (context.appPreferences.forumFabFunction) {
-                                    "refresh" -> Icons.Rounded.Refresh
-                                    "back_to_top" -> Icons.Rounded.VerticalAlignTop
-                                    else -> Icons.Rounded.Add
-                                },
-                                contentDescription = null
-                            )
-                        }
+                            contentDescription = null
+                        )
                     }
                 }
             ) { contentPadding ->
@@ -653,15 +507,7 @@ fun ForumPage(
                 PullToRefreshLayout(
                     refreshing = isFakeLoading,
                     onRefresh = {
-                        coroutineScope.emitGlobalEvent(
-                            ForumThreadListUiEvent.Refresh(
-                                currentPage == 1,
-                                getSortType(
-                                    context,
-                                    forumName
-                                )
-                            )
-                        )
+                        viewModel.requestRefresh(currentPage == 1)
                         isFakeLoading = true
                     }
                 ) {
@@ -791,14 +637,7 @@ fun ForumPage(
                                     .wrapContentWidth(align = Alignment.Start)
                                     .align(Alignment.Start)
                             ) {
-                                var currentSortType by remember {
-                                    mutableIntStateOf(
-                                        getSortType(
-                                            context,
-                                            forumName
-                                        )
-                                    )
-                                }
+                                val currentSortType = viewModel.sortType
                                 TabClickMenu(
                                     selected = currentPage == 0,
                                     onClick = {
@@ -818,20 +657,14 @@ fun ForumPage(
                                                 stringResource(id = R.string.title_sort_by_reply),
                                                 stringResource(id = R.string.title_sort_by_send)
                                             ),
-                                            itemValues = persistentListOf(0, 1),
+                                            itemValues = persistentListOf(
+                                                ForumSortType.BY_REPLY,
+                                                ForumSortType.BY_SEND
+                                            ),
                                             selectedPosition = currentSortType,
                                             onItemSelected = { _, _, value, changed ->
                                                 if (changed) {
-                                                    currentSortType = value
-                                                    coroutineScope.launch {
-                                                        setSortType(context, forumName, value)
-                                                        emitGlobalEvent(
-                                                            ForumThreadListUiEvent.Refresh(
-                                                                currentPage == 1,
-                                                                value
-                                                            )
-                                                        )
-                                                    }
+                                                    viewModel.onSortTypeChanged(value, currentPage == 1)
                                                 }
                                                 dismiss()
                                             }
@@ -876,6 +709,7 @@ fun ForumPage(
                                         forumId = forumInfo!!.get { id },
                                         forumName = forumInfo!!.get { name },
                                         isGood = it == 1,
+                                        sortType = { viewModel.sortType }
                                     )
                                 }
                             }
@@ -889,14 +723,14 @@ fun ForumPage(
 
 @Composable
 fun LoadingPlaceholder(
-    forumName: String
+    forumName: String,
+    onShareClicked: (Context) -> Unit,
 ) {
     val context = LocalContext.current
 
     MyScaffold(
         backgroundColor = Color.Transparent,
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             ForumToolbar(
                 forumName = forumName,
@@ -904,12 +738,11 @@ fun LoadingPlaceholder(
                 menuContent = {
                     DropdownMenuItem(
                         onClick = {
-                            shareForum(context, forumName)
+                            onShareClicked(context)
                             dismiss()
-                        }
-                    ) {
-                        Text(text = stringResource(id = R.string.title_share))
-                    }
+                        },
+                        content = { Text(text = stringResource(id = R.string.title_share)) }
+                    )
                 }
             )
         }

@@ -1,10 +1,22 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.LikeForumResultBean
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
+import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
@@ -14,24 +26,61 @@ import com.huanchengfly.tieba.post.arch.PartialChangeProducer
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.models.ForumHistoryExtra
+import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.FrsPageRepository
+import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_FORUM_SORT_DEFAULT
+import com.huanchengfly.tieba.post.utils.HistoryUtil
+import com.huanchengfly.tieba.post.utils.TiebaUtil
+import com.huanchengfly.tieba.post.utils.appPreferences
+import com.huanchengfly.tieba.post.utils.requestPinShortcut
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @Stable
 @HiltViewModel
 class ForumViewModel @Inject constructor() :
     BaseViewModel<ForumUiIntent, ForumPartialChange, ForumUiState, ForumUiEvent>() {
+
+    private var forumName: String? = null
+
+    var fab: String = ForumFabFunction.HIDE
+
+    private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
+
+    var sortType by mutableIntStateOf(ForumSortType.BY_REPLY)
+        private set
+
+    init {
+        scope.launch {
+            fab = App.INSTANCE.appPreferences.getForumFabFunction().first()
+        }
+    }
+
     override fun createInitialState(): ForumUiState = ForumUiState()
 
     override fun createPartialChangeProducer(): PartialChangeProducer<ForumUiIntent, ForumPartialChange, ForumUiState> =
@@ -84,12 +133,11 @@ class ForumViewModel @Inject constructor() :
 
         private fun ForumUiIntent.Load.produceLoadPartialChange() =
             FrsPageRepository.frsPage(forumName, 1, 1, sortType, null, true)
-                .map {
-                    if (it.data_?.forum != null) ForumPartialChange.Load.Success(
-                        it.data_.forum,
-                        it.data_.anti?.tbs
-                    )
-                    else ForumPartialChange.Load.Failure(NullPointerException("未知错误"))
+                .map<FrsPageResponse, ForumPartialChange.Load> {
+                    if (it.data_?.forum == null) {
+                        throw NullPointerException(it.error?.error_msg ?: "未知错误")
+                    }
+                    ForumPartialChange.Load.Success(it.data_.forum, it.data_.anti?.tbs)
                 }
                 .onStart { emit(ForumPartialChange.Load.Start) }
                 .catch { emit(ForumPartialChange.Load.Failure(it)) }
@@ -135,6 +183,109 @@ class ForumViewModel @Inject constructor() :
 
         private fun ForumUiIntent.ToggleShowHeader.produceLoadPartialChange() =
             flowOf(ForumPartialChange.ToggleShowHeader(showHeader))
+    }
+
+    fun saveHistory(forum: ForumInfo) = scope.launch(Dispatchers.IO) {
+        HistoryUtil.saveHistory(
+            History(
+                title = App.INSTANCE.getString(R.string.title_forum, forum.name),
+                timestamp = System.currentTimeMillis(),
+                avatar = forum.avatar,
+                type = HistoryUtil.TYPE_FORUM,
+                data = forum.name,
+                extras = Json.encodeToString(ForumHistoryExtra(forum.id))
+            ), false
+        )
+    }
+
+    fun requestLoadForm(context: Context, forumName: String) = scope.launch {
+        this@ForumViewModel.forumName = forumName
+        sortType = withContext(Dispatchers.IO) {
+            getSortType(context, forumName).first()
+        }
+        send(ForumUiIntent.Load(forumName, sortType))
+    }
+
+    fun requestRefresh(isGood: Boolean) = scope.launch {
+        emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
+    }
+
+    fun onSortTypeChanged(@ForumSortType sortType: Int, isGood: Boolean) = scope.launch {
+        this@ForumViewModel.sortType = sortType
+        emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
+        saveSortType(forumName!!, sortType)
+    }
+
+    private suspend fun saveSortType(forumName: String, @ForumSortType sortType: Int) {
+        App.INSTANCE.dataStore.edit {
+            val key = intPreferencesKey("${forumName}_sort_type")
+            val defaultKey = stringPreferencesKey(KEY_FORUM_SORT_DEFAULT)
+            val defaultSortType = it[defaultKey]?.toIntOrNull() ?: ForumSortType.BY_REPLY
+
+            if (sortType == defaultSortType) { // Keep dataStore clean
+                it.remove(key)
+            } else {
+                it[key] = sortType
+            }
+        }
+    }
+
+    fun onFabClicked(context: Context, isGood: Boolean) {
+        when (fab) {
+            ForumFabFunction.POST -> context.toastShort(R.string.toast_feature_unavailable)
+
+            ForumFabFunction.REFRESH -> scope.launch {
+                emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood))
+                emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
+            }
+
+            ForumFabFunction.BACK_TO_TOP -> scope.launch {
+                emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood))
+            }
+
+            ForumFabFunction.HIDE -> throw IllegalStateException("Incorrect Compose state")
+        }
+    }
+
+    fun sendToDesktop(context: Context, forum: ForumInfo) = scope.launch {
+        val result = requestPinShortcut(
+            context,
+            "forum_${forum.id}",
+            forum.avatar,
+            context.getString(R.string.title_forum, forum.name),
+            Intent(Intent.ACTION_VIEW).setData(Uri.parse("tblite://forum/${forum.name}"))
+        )
+        if (result.isSuccess) {
+            context.toastShort(R.string.toast_send_to_desktop_success)
+        } else {
+            val message = result.exceptionOrNull()?.message ?: return@launch
+            context.toastShort(message)
+        }
+    }
+
+    fun shareForum(context: Context) {
+        TiebaUtil.shareText(
+            context,
+            "https://tieba.baidu.com/f?kw=$forumName",
+            context.getString(R.string.title_forum, forumName)
+        )
+    }
+
+    companion object {
+        private const val TAG = "ForumViewModel"
+
+        /**
+         * Sort preference per forum
+         *
+         * @see [ForumSortType]
+         * */
+        fun getSortType(context: Context, forumName: String): Flow<Int> {
+            return context.dataStore.data.map {
+                val defaultKey = stringPreferencesKey(KEY_FORUM_SORT_DEFAULT)
+                it[intPreferencesKey("${forumName}_sort_type")]
+                    ?:it[defaultKey]?.toIntOrNull() ?: ForumSortType.BY_REPLY
+            }
+        }
     }
 }
 

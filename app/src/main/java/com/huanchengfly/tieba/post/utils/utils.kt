@@ -144,10 +144,8 @@ suspend fun requestPinShortcut(
     shortcutId: String,
     iconImageUri: String,
     label: String,
-    shortcutIntent: Intent,
-    onSuccess: () -> Unit = {},
-    onFailure: (String) -> Unit = {}
-) {
+    shortcutIntent: Intent
+):Result<Unit> {
     if (ShortcutManagerCompat.isRequestPinShortcutSupported(context)) {
         val imageResult = LoadRequest(context, iconImageUri).execute()
         if (imageResult is LoadResult.Success) {
@@ -156,12 +154,15 @@ suspend fun requestPinShortcut(
                 .setIntent(shortcutIntent)
                 .setShortLabel(label)
                 .build()
-            val result = ShortcutManagerCompat.requestPinShortcut(context, shortcutInfo, null)
-            if (result) onSuccess() else onFailure(context.getString(R.string.launcher_not_support_pin_shortcut))
+            if (ShortcutManagerCompat.requestPinShortcut(context, shortcutInfo, null)) {
+                return Result.success(Unit)
+            }
         } else {
-            onFailure(context.getString(R.string.load_shortcut_icon_fail))
+            val cause = (imageResult as LoadResult.Error).throwable
+            val message = context.getString(R.string.load_shortcut_icon_fail)
+            return Result.failure(UnsupportedOperationException(message, cause))
         }
-    } else {
-        onFailure(context.getString(R.string.launcher_not_support_pin_shortcut))
     }
+    val message = context.getString(R.string.launcher_not_support_pin_shortcut)
+    return Result.failure(UnsupportedOperationException(message))
 }

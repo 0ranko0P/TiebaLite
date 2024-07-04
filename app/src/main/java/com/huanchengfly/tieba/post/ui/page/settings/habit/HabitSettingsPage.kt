@@ -39,6 +39,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_FORUM_FAB_FUNCTION
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_FORUM_SORT_DEFAULT
 import com.huanchengfly.tieba.post.utils.isPhotoPickerAvailable
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -135,11 +139,11 @@ fun HabitSettingsPage(
             }
             prefsItem {
                 ListPref(
-                    key = "default_sort_type",
+                    key = KEY_FORUM_SORT_DEFAULT,
                     title = stringResource(id = R.string.title_settings_default_sort_type),
                     entries = mapOf(
-                        "0" to stringResource(id = R.string.title_sort_by_reply),
-                        "1" to stringResource(id = R.string.title_sort_by_send),
+                        ForumSortType.BY_REPLY.toString() to stringResource(id = R.string.title_sort_by_reply),
+                        ForumSortType.BY_SEND.toString() to stringResource(id = R.string.title_sort_by_send),
                     ),
                     useSelectedAsSummary = true,
                     defaultValue = "0",
@@ -156,24 +160,24 @@ fun HabitSettingsPage(
             }
             prefsItem {
                 ListPref(
-                    key = "forumFabFunction",
+                    key = KEY_FORUM_FAB_FUNCTION,
                     title = stringResource(id = R.string.settings_forum_fab_function),
-                    defaultValue = "post",
+                    defaultValue = ForumFabFunction.POST,
                     leadingIcon = {
                         LeadingIcon {
                             AvatarIcon(
                                 icon = Icons.AutoMirrored.Outlined.ExitToApp,
                                 size = Sizes.Small,
-                                contentDescription = null,
+                                contentDescription = stringResource(id = R.string.settings_forum_fab_function),
                             )
                         }
                     },
                     useSelectedAsSummary = true,
                     entries = mapOf(
-                        "post" to stringResource(id = R.string.btn_post),
-                        "refresh" to stringResource(id = R.string.btn_refresh),
-                        "back_to_top" to stringResource(id = R.string.btn_back_to_top),
-                        "hide" to stringResource(id = R.string.btn_hide)
+                        ForumFabFunction.POST to stringResource(id = R.string.btn_post),
+                        ForumFabFunction.REFRESH to stringResource(id = R.string.btn_refresh),
+                        ForumFabFunction.BACK_TO_TOP to stringResource(id = R.string.btn_back_to_top),
+                        ForumFabFunction.HIDE to stringResource(id = R.string.btn_hide)
                     )
                 )
             }

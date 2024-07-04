@@ -17,12 +17,16 @@ import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.interfaces.CommonCallback
 import com.huanchengfly.tieba.post.repository.FrsPageRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.ui.page.forum.getSortType
+import com.huanchengfly.tieba.post.ui.page.forum.ForumViewModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.yield
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -173,27 +177,19 @@ object QuickPreviewUtil {
 
     private fun getForumPreviewInfoFlow(
         context: Context,
-        link: ClipBoardForumLink,
-        lifeCycle: Lifecycle? = null,
+        link: ClipBoardForumLink
     ): Flow<PreviewInfo> =
-        FrsPageRepository.frsPage(link.forumName, 1, 1, getSortType(context, link.forumName))
-            .map {
+        ForumViewModel.getSortType(context, link.forumName)
+            .map { sortType ->
+                val response = FrsPageRepository.frsPage(link.forumName, 1, 1, sortType).first()
+                val data = requireNotNull(response.data_)
                 PreviewInfo(
                     clipBoardLink = link,
                     url = link.url,
-                    title = context.getString(
-                        R.string.title_forum,
-                        link.forumName
-                    ),
-                    subtitle = it.data_?.forum?.slogan,
-                    icon = Icon(it.data_?.forum?.avatar)
+                    title = context.getString(R.string.title_forum, link.forumName),
+                    subtitle = data.forum?.slogan,
+                    icon = Icon(data.forum?.avatar)
                 )
-            }
-            .catch { it.printStackTrace() }
-            .apply {
-                if (lifeCycle != null) {
-                    flowWithLifecycle(lifeCycle)
-                }
             }
 
     fun getPreviewInfoFlow(
@@ -202,7 +198,7 @@ object QuickPreviewUtil {
         lifeCycle: Lifecycle? = null,
     ): Flow<PreviewInfo?> {
         val detailFlow = when (clipBoardLink) {
-            is ClipBoardForumLink -> getForumPreviewInfoFlow(context, clipBoardLink, lifeCycle)
+            is ClipBoardForumLink -> getForumPreviewInfoFlow(context, clipBoardLink)
             is ClipBoardThreadLink -> getThreadPreviewInfoFlow(context, clipBoardLink, lifeCycle)
             else -> null
         }
