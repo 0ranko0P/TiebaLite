@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
@@ -28,7 +29,6 @@ import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.models.ForumHistoryExtra
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.FrsPageRepository
@@ -68,6 +68,7 @@ class ForumViewModel @Inject constructor() :
 
     private var forumName: String? = null
 
+    @ForumFabFunction
     var fab: String = ForumFabFunction.HIDE
 
     private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
@@ -273,6 +274,11 @@ class ForumViewModel @Inject constructor() :
 
     companion object {
         private const val TAG = "ForumViewModel"
+
+        private const val DATA_STORE_NAME = "forum_preferences"
+
+        private val dataStoreInstance by lazy { preferencesDataStore(name = DATA_STORE_NAME) }
+        private val Context.dataStore by dataStoreInstance
 
         /**
          * Sort preference per forum

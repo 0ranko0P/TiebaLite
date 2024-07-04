@@ -15,7 +15,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.SharedPreferencesMigration
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.preference.PreferenceDataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -45,6 +44,26 @@ private val dataStoreInstance by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) 
 
                     override suspend fun shouldMigrate(currentData: Preferences): Boolean {
                         return currentData[stringPreferencesKey("dark_theme")] == "dark"
+                    }
+                },
+                object : DataMigration<Preferences> {
+                    private var sortKeys: List<Preferences.Key<*>> = emptyList()
+
+                    override suspend fun cleanUp() {
+                        sortKeys = emptyList()
+                    }
+
+                    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+                        sortKeys = currentData.asMap().keys.filter {
+                            it.name.endsWith("_sort_type")
+                        }
+                        return sortKeys.isNotEmpty()
+                    }
+
+                    override suspend fun migrate(currentData: Preferences): Preferences {
+                        return currentData.toMutablePreferences().apply {
+                            sortKeys.forEach { key -> remove(key) }
+                        }.toPreferences()
                     }
                 }
             )
@@ -223,89 +242,4 @@ fun DataStore<Preferences>.getLong(key: String, defaultValue: Long): Long {
     }
 
     return resultValue
-}
-
-class DataStorePreference : PreferenceDataStore() {
-    override fun putString(key: String, value: String?) {
-        MainScope().launch(Dispatchers.IO) {
-            App.INSTANCE.dataStore.edit {
-                if (value == null) {
-                    it.remove(stringPreferencesKey(key))
-                } else {
-                    it[stringPreferencesKey(key)] = value
-                }
-            }
-        }
-    }
-
-    override fun putStringSet(key: String, values: MutableSet<String>?) {
-        MainScope().launch(Dispatchers.IO) {
-            App.INSTANCE.dataStore.edit {
-                if (values == null) {
-                    it.remove(stringSetPreferencesKey(key))
-                } else {
-                    it[stringSetPreferencesKey(key)] = values
-                }
-            }
-        }
-    }
-
-    override fun putInt(key: String, value: Int) {
-        MainScope().launch(Dispatchers.IO) {
-            App.INSTANCE.dataStore.edit {
-                it[intPreferencesKey(key)] = value
-            }
-        }
-    }
-
-    override fun putLong(key: String, value: Long) {
-        MainScope().launch(Dispatchers.IO) {
-            App.INSTANCE.dataStore.edit {
-                it[longPreferencesKey(key)] = value
-            }
-        }
-    }
-
-    override fun putFloat(key: String, value: Float) {
-        MainScope().launch(Dispatchers.IO) {
-            App.INSTANCE.dataStore.edit {
-                it[floatPreferencesKey(key)] = value
-            }
-        }
-    }
-
-    override fun putBoolean(key: String, value: Boolean) {
-        MainScope().launch(Dispatchers.IO) {
-            App.INSTANCE.dataStore.edit {
-                it[booleanPreferencesKey(key)] = value
-            }
-        }
-    }
-
-    override fun getString(key: String, defValue: String?): String? {
-        return App.INSTANCE.dataStore.getString(key) ?: defValue
-    }
-
-    override fun getStringSet(
-        key: String,
-        defValues: MutableSet<String>?
-    ): MutableSet<String>? {
-        return App.INSTANCE.dataStore.getStringSet(key, defValues)
-    }
-
-    override fun getInt(key: String, defValue: Int): Int {
-        return App.INSTANCE.dataStore.getInt(key, defValue)
-    }
-
-    override fun getLong(key: String, defValue: Long): Long {
-        return App.INSTANCE.dataStore.getLong(key, defValue)
-    }
-
-    override fun getFloat(key: String, defValue: Float): Float {
-        return App.INSTANCE.dataStore.getFloat(key, defValue)
-    }
-
-    override fun getBoolean(key: String, defValue: Boolean): Boolean {
-        return App.INSTANCE.dataStore.getBoolean(key, defValue)
-    }
 }
