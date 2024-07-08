@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.forum.threadlist
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -66,43 +65,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-
-private fun getFirstLoadIntent(
-    forumName: String,
-    sortType: Int,
-    isGood: Boolean = false,
-): ForumThreadListUiIntent {
-    return if (isGood) ForumThreadListUiIntent.Refresh(forumName, -1, 0)
-    else ForumThreadListUiIntent.FirstLoad(forumName, sortType, null)
-}
-
-private fun getRefreshIntent(
-    forumName: String,
-    isGood: Boolean = false,
-    sortType: Int,
-    goodClassifyId: Int? = if (isGood) 0 else null,
-): ForumThreadListUiIntent {
-    return if (isGood) ForumThreadListUiIntent.Refresh(forumName, -1, goodClassifyId)
-    else ForumThreadListUiIntent.Refresh(forumName, sortType, null)
-}
-
-private fun getLoadMoreIntent(
-    forumId: Long,
-    forumName: String,
-    page: Int,
-    threadListIds: List<Long>,
-    sortType: Int,
-    isGood: Boolean = false,
-): ForumThreadListUiIntent {
-    return if (isGood) ForumThreadListUiIntent.LoadMore(forumId, forumName, page, threadListIds, 0)
-    else ForumThreadListUiIntent.LoadMore(
-        forumId,
-        forumName,
-        page,
-        threadListIds,
-        sortType
-    )
-}
 
 private enum class ItemType {
     Top, PlainText, SingleMedia, MultiMedia, Video
@@ -265,6 +227,10 @@ fun GoodThreadListPage(
         viewModel.onFirstLoad(forumName, forumId)
         viewModel.initialized = true
     }
+    // Request from ForumPage
+    onGlobalEvent<ForumThreadListUiEvent.Refresh>(filter = { it.isGood }) {
+        viewModel.requestRefresh(goodClassifyId = 0)
+    }
 
     val goodClassifyId by viewModel.uiState.collectPartialAsState(
         prop1 = ForumThreadListUiState::goodClassifyId,
@@ -278,12 +244,12 @@ fun GoodThreadListPage(
         GoodClassifyTabs(
             goodClassifyHolders = goodClassifies,
             selectedItem = goodClassifyId,
-            onSelected = { classifyId ->
-                viewModel.send(getRefreshIntent(forumName, true, sortType(), classifyId))
-            }
+            onSelected = viewModel::requestRefresh
         )
 
-        ForumThreadListPage(modifier, forumId, forumName, true, sortType, viewModel)
+        ForumThreadListPage(modifier, forumId, true, sortType, viewModel) {
+            viewModel.requestRefresh(goodClassifyId = 0)
+        }
     }
 }
 
@@ -299,8 +265,14 @@ fun NormalThreadListPage(
         viewModel.onFirstLoad(forumName, forumId, sortType())
         viewModel.initialized = true
     }
+    // Request from ForumPage
+    onGlobalEvent<ForumThreadListUiEvent.Refresh>(filter = { !it.isGood }) {
+        viewModel.requestRefresh(it.sortType)
+    }
 
-    ForumThreadListPage(modifier, forumId, forumName, false, sortType, viewModel)
+    ForumThreadListPage(modifier, forumId, false, sortType, viewModel) {
+        viewModel.requestRefresh(sortType())
+    }
 }
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -308,10 +280,10 @@ fun NormalThreadListPage(
 private fun ForumThreadListPage(
     modifier: Modifier = Modifier,
     forumId: Long,
-    forumName: String,
     isGood: Boolean = false,
     sortType: () -> Int,
-    viewModel: ForumThreadListViewModel
+    viewModel: ForumThreadListViewModel,
+    onRefresh: () -> Unit,
 ) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
@@ -319,11 +291,6 @@ private fun ForumThreadListPage(
 
     val lazyListState = rememberLazyListState()
 
-    onGlobalEvent<ForumThreadListUiEvent.Refresh>(
-        filter = { it.isGood == isGood },
-    ) {
-        viewModel.send(getRefreshIntent(forumName, isGood, it.sortType))
-    }
     onGlobalEvent<ForumThreadListUiEvent.BackToTop>(
         filter = { it.isGood == isGood },
     ) {
@@ -379,26 +346,17 @@ private fun ForumThreadListPage(
     )
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
-        onRefresh = { viewModel.send(getRefreshIntent(forumName, isGood, sortType())) }
+        onRefresh = onRefresh
     )
     PullToRefreshLayout(
         modifier = modifier.fillMaxSize(),
-        onRefresh = { viewModel.requestRefresh(isGood, sortType()) },
+        onRefresh = onRefresh,
         refreshing = isRefreshing
     ) {
         LoadMoreLayout(
             isLoading = isLoadingMore,
             onLoadMore = {
-                viewModel.send(
-                    getLoadMoreIntent(
-                        forumId,
-                        forumName,
-                        currentPage,
-                        threadListIds,
-                        sortType(),
-                        isGood
-                    )
-                )
+                viewModel.onLoadMore(currentPage, threadListIds, sortType())
             },
             loadEnd = !hasMore,
             lazyListState = lazyListState,
@@ -425,15 +383,7 @@ private fun ForumThreadListPage(
                         )
                     )
                 },
-                onAgree = {
-                    viewModel.send(
-                        ForumThreadListUiIntent.Agree(
-                            it.threadId,
-                            it.firstPostId,
-                            it.agree?.hasAgree ?: 0
-                        )
-                    )
-                },
+                onAgree = viewModel::onAgree,
                 forumRuleTitle = forumRuleTitle,
                 onOpenForumRule = {
                     navigator.navigate(ForumRuleDetailPageDestination(forumId))

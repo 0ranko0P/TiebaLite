@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.forum.threadlist
 import androidx.compose.runtime.Stable
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.AgreeBean
+import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
@@ -17,7 +18,6 @@ import com.huanchengfly.tieba.post.arch.PartialChangeProducer
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.repository.FrsPageRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadItemData
@@ -27,7 +27,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
@@ -35,12 +34,18 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.min
 
 abstract class ForumThreadListViewModel :
     BaseViewModel<ForumThreadListUiIntent, ForumThreadListPartialChange, ForumThreadListUiState, ForumThreadListUiEvent>() {
+
+    var forumName: String = ""
+        protected set
+
+    var forumId: Long = -1
+        protected set
+
     override fun createInitialState(): ForumThreadListUiState = ForumThreadListUiState()
 
     override fun dispatchEvent(partialChange: ForumThreadListPartialChange): UiEvent? =
@@ -61,9 +66,12 @@ abstract class ForumThreadListViewModel :
             else -> null
         }
 
-    fun requestRefresh(isGood: Boolean, sortType: Int) = MainScope().launch {
-        emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
+    fun onAgree(thread: ThreadInfo) {
+        val hasAgree = thread.agree?.hasAgree ?: 0
+        send(ForumThreadListUiIntent.Agree(thread.threadId, thread.firstPostId, hasAgree))
     }
+
+    abstract fun onLoadMore(page: Int, threadListIds: List<Long>, sortType: Int)
 }
 
 enum class ForumThreadListType {
@@ -73,15 +81,45 @@ enum class ForumThreadListType {
 @Stable
 @HiltViewModel
 class LatestThreadListViewModel @Inject constructor() : ForumThreadListViewModel() {
+
     override fun createPartialChangeProducer(): PartialChangeProducer<ForumThreadListUiIntent, ForumThreadListPartialChange, ForumThreadListUiState> =
         ForumThreadListPartialChangeProducer(ForumThreadListType.Latest)
+
+    override fun onLoadMore(page: Int, threadListIds: List<Long>, sortType: Int) {
+        send(ForumThreadListUiIntent.LoadMore(forumId, forumName, page, threadListIds, sortType))
+    }
+
+    fun onFirstLoad(forumName: String, forumId: Long, sortType: Int) {
+        this.forumName = forumName
+        this.forumId = forumId
+        send(ForumThreadListUiIntent.FirstLoad(forumName, sortType, null))
+    }
+
+    fun requestRefresh(sortType: Int) {
+       send(ForumThreadListUiIntent.Refresh(forumName, sortType, null))
+    }
 }
 
 @Stable
 @HiltViewModel
 class GoodThreadListViewModel @Inject constructor() : ForumThreadListViewModel() {
+
     override fun createPartialChangeProducer(): PartialChangeProducer<ForumThreadListUiIntent, ForumThreadListPartialChange, ForumThreadListUiState> =
         ForumThreadListPartialChangeProducer(ForumThreadListType.Good)
+
+    override fun onLoadMore(page: Int, threadListIds: List<Long>, sortType: Int) {
+        send(ForumThreadListUiIntent.LoadMore(forumId, forumName, page, threadListIds, 0))
+    }
+
+    fun onFirstLoad(forumName: String, forumId: Long) {
+        this.forumName = forumName
+        this.forumId = forumId
+        send(ForumThreadListUiIntent.Refresh(forumName, -1, 0))
+    }
+
+    fun requestRefresh(goodClassifyId: Int) {
+       send(ForumThreadListUiIntent.Refresh(forumName, -1, goodClassifyId))
+    }
 }
 
 private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType) :
@@ -201,22 +239,12 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
             hasAgree,
             objType = 3
         ).map<AgreeBean, ForumThreadListPartialChange.Agree> {
-            ForumThreadListPartialChange.Agree.Success(
-                threadId,
-                hasAgree xor 1
-            )
+            ForumThreadListPartialChange.Agree.Success(threadId, hasAgree xor 1)
+        }.catch {
+            emit(ForumThreadListPartialChange.Agree.Failure(threadId, postId, hasAgree, it))
+        }.onStart {
+            emit(ForumThreadListPartialChange.Agree.Start(threadId, hasAgree xor 1))
         }
-            .catch {
-                emit(
-                    ForumThreadListPartialChange.Agree.Failure(
-                        threadId,
-                        postId,
-                        hasAgree,
-                        it
-                    )
-                )
-            }
-            .onStart { emit(ForumThreadListPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
 }
 
 sealed interface ForumThreadListUiIntent : UiIntent {
