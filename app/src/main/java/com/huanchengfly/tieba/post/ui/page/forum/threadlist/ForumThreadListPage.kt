@@ -183,17 +183,15 @@ private fun ThreadList(
                     .padding(vertical = 8.dp, horizontal = 16.dp),
             ) {
                 val (item) = holder
-                Column(
-                    modifier = Modifier.fillMaxWidth(itemFraction)
-                ) {
-                    if (item.isTop == 1) {
-                        val title = item.title.takeUnless { it.isBlank() } ?: item.abstractText
-                        TopThreadItem(
-                            title = title,
-                            onClick = { onItemClicked(item) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    } else {
+                if (item.isTop == 1) {
+                    val title = item.title.takeUnless { it.isBlank() } ?: item.abstractText
+                    TopThreadItem(
+                        title = title,
+                        onClick = { onItemClicked(item) },
+                        modifier = Modifier.fillMaxWidth(itemFraction),
+                    )
+                } else {
+                    Column(modifier = Modifier.fillMaxWidth(itemFraction)) {
                         if (index > 0) {
                             if (items[index - 1].thread.get { isTop } == 1) {
                                 Spacer(modifier = Modifier.height(8.dp))
