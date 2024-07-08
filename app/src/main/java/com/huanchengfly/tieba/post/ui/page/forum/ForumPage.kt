@@ -6,7 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -69,7 +69,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumDetailPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumSearchPostPageDestination
-import com.huanchengfly.tieba.post.ui.page.forum.detail.StatCardItem
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.GoodThreadListPage
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.NormalThreadListPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -79,7 +78,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
-import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -116,7 +114,8 @@ private fun ForumHeader(
             Avatar(
                 data = forum.avatar,
                 size = Sizes.Large,
-                contentDescription = forum.name
+                contentDescription = forum.name,
+                modifier = Modifier.clickable(onClick = onOpenForumInfo)
             )
             Column(
                 modifier = Modifier.weight(1f),
@@ -127,7 +126,7 @@ private fun ForumHeader(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
+                        indication = LocalIndication.current,
                         onClick = onOpenForumInfo
                     )
                 ) {
@@ -190,28 +189,6 @@ private fun ForumHeader(
                     Text(text = text, fontSize = 13.sp)
                 }
             }
-        }
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(color = ExtendedTheme.colors.chip)
-                .padding(top = 12.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            StatCardItem(
-                statNum = forum.member_num,
-                statText = stringResource(id = R.string.text_stat_follow)
-            )
-            HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
-            StatCardItem(
-                statNum = forum.thread_num,
-                statText = stringResource(id = R.string.text_stat_threads)
-            )
-            HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
-            StatCardItem(
-                statNum = forum.post_num,
-                statText = stringResource(id = R.string.title_stat_posts_num)
-            )
         }
     }
 }
