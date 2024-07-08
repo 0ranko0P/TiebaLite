@@ -34,6 +34,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshDefaults.Load
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PullToRefreshLayout(
+    modifier: Modifier = Modifier,
     refreshing: Boolean,
     onRefresh: () -> Unit,
     indicator: @Composable BoxScope.(isRefreshing: Boolean, willLoad: Boolean) -> Unit = { isRefreshing, willLoad ->
@@ -53,7 +54,7 @@ fun PullToRefreshLayout(
     refreshDistance: Dp = PullToRefreshDefaults.RefreshDistance,
     refreshingOffset: Dp = PullToRefreshDefaults.RefreshingOffset,
     threshold: Float = 0.75f,
-    content: @Composable () -> Unit,
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val density = LocalDensity.current
 
@@ -80,7 +81,7 @@ fun PullToRefreshLayout(
             swipeableState.offset.value + refreshDistancePx
         }
     }
-    Box {
+    Box(modifier = modifier) {
         Box(
             modifier = Modifier
                 .nestedScroll(swipeableState.LoadPreUpPostDownNestedScrollConnection)

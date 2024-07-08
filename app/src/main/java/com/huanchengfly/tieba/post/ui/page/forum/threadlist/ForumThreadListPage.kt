@@ -253,14 +253,65 @@ private fun ThreadList(
     }
 }
 
+@Composable
+fun GoodThreadListPage(
+    modifier: Modifier = Modifier,
+    forumId: Long,
+    forumName: String,
+    sortType: () -> Int,
+    viewModel: GoodThreadListViewModel = pageViewModel<GoodThreadListViewModel>()
+) {
+    LazyLoad(loaded = viewModel.initialized) {
+        viewModel.onFirstLoad(forumName, forumId)
+        viewModel.initialized = true
+    }
+
+    val goodClassifyId by viewModel.uiState.collectPartialAsState(
+        prop1 = ForumThreadListUiState::goodClassifyId,
+        initial = null
+    )
+    val goodClassifies by viewModel.uiState.collectPartialAsState(
+        prop1 = ForumThreadListUiState::goodClassifies,
+        initial = persistentListOf()
+    )
+    Column(modifier = modifier.fillMaxSize()) {
+        GoodClassifyTabs(
+            goodClassifyHolders = goodClassifies,
+            selectedItem = goodClassifyId,
+            onSelected = { classifyId ->
+                viewModel.send(getRefreshIntent(forumName, true, sortType(), classifyId))
+            }
+        )
+
+        ForumThreadListPage(modifier, forumId, forumName, true, sortType, viewModel)
+    }
+}
+
+@Composable
+fun NormalThreadListPage(
+    modifier: Modifier = Modifier,
+    forumId: Long,
+    forumName: String,
+    sortType: () -> Int,
+    viewModel: LatestThreadListViewModel = pageViewModel<LatestThreadListViewModel>()
+) {
+    LazyLoad(loaded = viewModel.initialized) {
+        viewModel.onFirstLoad(forumName, forumId, sortType())
+        viewModel.initialized = true
+    }
+
+    ForumThreadListPage(modifier, forumId, forumName, false, sortType, viewModel)
+}
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun ForumThreadListPage(
+private fun ForumThreadListPage(
+    modifier: Modifier = Modifier,
     forumId: Long,
     forumName: String,
     isGood: Boolean = false,
     sortType: () -> Int,
-    viewModel: ForumThreadListViewModel = if (isGood) pageViewModel<GoodThreadListViewModel>() else pageViewModel<LatestThreadListViewModel>()
+    viewModel: ForumThreadListViewModel
 ) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
@@ -268,10 +319,6 @@ fun ForumThreadListPage(
 
     val lazyListState = rememberLazyListState()
 
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(getFirstLoadIntent(forumName, sortType() ,isGood))
-        viewModel.initialized = true
-    }
     onGlobalEvent<ForumThreadListUiEvent.Refresh>(
         filter = { it.isGood == isGood },
     ) {
@@ -330,99 +377,76 @@ fun ForumThreadListPage(
         prop1 = ForumThreadListUiState::threadListIds,
         initial = persistentListOf()
     )
-    val goodClassifyId by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::goodClassifyId,
-        initial = null
-    )
-    val goodClassifies by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::goodClassifies,
-        initial = persistentListOf()
-    )
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
         onRefresh = { viewModel.send(getRefreshIntent(forumName, isGood, sortType())) }
     )
     PullToRefreshLayout(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         onRefresh = { viewModel.requestRefresh(isGood, sortType()) },
         refreshing = isRefreshing
     ) {
-        Column {
-            if (isGood) {
-                GoodClassifyTabs(
-                    goodClassifyHolders = goodClassifies,
-                    selectedItem = goodClassifyId,
-                    onSelected = { classifyId ->
-                        viewModel.send(
-                            getRefreshIntent(forumName, true, sortType(), classifyId)
-                        )
-                    }
+        LoadMoreLayout(
+            isLoading = isLoadingMore,
+            onLoadMore = {
+                viewModel.send(
+                    getLoadMoreIntent(
+                        forumId,
+                        forumName,
+                        currentPage,
+                        threadListIds,
+                        sortType(),
+                        isGood
+                    )
                 )
-            }
-
-            LoadMoreLayout(
-                isLoading = isLoadingMore,
-                onLoadMore = {
-                    viewModel.send(
-                        getLoadMoreIntent(
-                            forumId,
-                            forumName,
-                            currentPage,
-                            threadListIds,
-                            sortType(),
-                            isGood
+            },
+            loadEnd = !hasMore,
+            lazyListState = lazyListState,
+            isEmpty = threadList.isEmpty(),
+        ) {
+            ThreadList(
+                state = lazyListState,
+                items = threadList,
+                onItemClicked = {
+                    navigator.navigate(
+                        ThreadPageDestination(
+                            it.threadId,
+                            forumId = it.forumId,
+                            threadInfo = it
                         )
                     )
                 },
-                loadEnd = !hasMore,
-                lazyListState = lazyListState,
-                isEmpty = threadList.isEmpty(),
-                modifier = Modifier.weight(1f)
-            ) {
-                ThreadList(
-                    state = lazyListState,
-                    items = threadList,
-                    onItemClicked = {
-                        navigator.navigate(
-                            ThreadPageDestination(
-                                it.threadId,
-                                forumId = it.forumId,
-                                threadInfo = it
-                            )
+                onItemReplyClicked = {
+                    navigator.navigate(
+                        ThreadPageDestination(
+                            it.threadId,
+                            forumId = it.forumId,
+                            scrollToReply = true
                         )
-                    },
-                    onItemReplyClicked = {
-                        navigator.navigate(
-                            ThreadPageDestination(
-                                it.threadId,
-                                forumId = it.forumId,
-                                scrollToReply = true
-                            )
+                    )
+                },
+                onAgree = {
+                    viewModel.send(
+                        ForumThreadListUiIntent.Agree(
+                            it.threadId,
+                            it.firstPostId,
+                            it.agree?.hasAgree ?: 0
                         )
-                    },
-                    onAgree = {
-                        viewModel.send(
-                            ForumThreadListUiIntent.Agree(
-                                it.threadId,
-                                it.firstPostId,
-                                it.agree?.hasAgree ?: 0
-                            )
+                    )
+                },
+                forumRuleTitle = forumRuleTitle,
+                onOpenForumRule = {
+                    navigator.navigate(ForumRuleDetailPageDestination(forumId))
+                },
+                onOriginThreadClicked = {
+                    navigator.navigate(
+                        ThreadPageDestination(
+                            threadId = it.tid.toLong(),
+                            forumId = it.fid,
                         )
-                    },
-                    forumRuleTitle = forumRuleTitle,
-                    onOpenForumRule = {
-                        navigator.navigate(ForumRuleDetailPageDestination(forumId))
-                    },
-                    onOriginThreadClicked = {
-                        navigator.navigate(
-                            ThreadPageDestination(
-                                threadId = it.tid.toLong(),
-                                forumId = it.fid,
-                            )
-                        )
-                    }
-                ) { navigator.navigate(UserProfilePageDestination(it.id)) }
-            }
+                    )
+                }
+            ) { navigator.navigate(UserProfilePageDestination(it.id)) }
         }
 
         PullRefreshIndicator(

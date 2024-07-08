@@ -70,7 +70,8 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumDetailPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumSearchPostPageDestination
 import com.huanchengfly.tieba.post.ui.page.forum.detail.StatCardItem
-import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListPage
+import com.huanchengfly.tieba.post.ui.page.forum.threadlist.GoodThreadListPage
+import com.huanchengfly.tieba.post.ui.page.forum.threadlist.NormalThreadListPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -466,15 +467,23 @@ fun ForumPage(
             key = { it },
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
-        ) {
+        ) { page ->
             ProvideNavigator(navigator = navigator) {
-                ForumThreadListPage(
-                    Modifier.nestedScroll(connection),
-                    forumId = info.id,
-                    forumName = info.name,
-                    isGood = isGood,
-                    sortType = { viewModel.sortType }
-                )
+                if (page == TAB_FORUM_LATEST) {
+                    NormalThreadListPage(
+                        Modifier.nestedScroll(connection),
+                        forumId = info.id,
+                        forumName = info.name,
+                        sortType = { viewModel.sortType }
+                    )
+                } else if (page == TAB_FORUM_GOOD) {
+                    GoodThreadListPage(
+                        Modifier.nestedScroll(connection),
+                        forumId = info.id,
+                        forumName = info.name,
+                        sortType = { viewModel.sortType }
+                    )
+                }
             }
         }
     }
