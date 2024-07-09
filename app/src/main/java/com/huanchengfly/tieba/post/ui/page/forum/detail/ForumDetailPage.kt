@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.forum.detail
 
 import android.graphics.Typeface
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -31,16 +34,21 @@ import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
+import com.huanchengfly.tieba.post.api.models.protos.frsPage.Manager
 import com.huanchengfly.tieba.post.api.models.protos.plainText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.page.destinations.ForumDetailPageDestination
+import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -59,7 +67,8 @@ fun DestinationsNavigator.navigateForumDetailPage(forumInfo: ForumInfo) {
             slogan = forumInfo.slogan,
             memberCount = forumInfo.member_num,
             threadCount = forumInfo.thread_num,
-            postCount = forumInfo.post_num
+            postCount = forumInfo.post_num,
+            managers = ArrayList(forumInfo.managers) // TODO: Make it immutable
         )
     )
 }
@@ -81,6 +90,7 @@ fun ForumDetailPage(
     memberCount: Int,
     threadCount: Int,
     postCount: Int,
+    managers: ArrayList<Manager>,
     navigator: DestinationsNavigator,
 ) = MyScaffold(
     topBar = {
@@ -102,6 +112,20 @@ fun ForumDetailPage(
     ) {
         ForumDetailContent(avatar, name, memberCount, threadCount, postCount)
         IntroItem(forumId = forumId, slogan = slogan)
+
+        if (managers.isEmpty()) {
+            Chip(text = stringResource(id = R.string.title_forum_manager_none))
+            return@MyScaffold
+        }
+        Chip(text = stringResource(id = R.string.title_forum_manager))
+
+        LazyRow {
+            items(managers, key = { it.id }) {
+                ManagerItem(name = it.name, portrait = it.portrait) {
+                    navigator.navigate(UserProfilePageDestination(it.id))
+                }
+            }
+        }
     }
 }
 
@@ -172,6 +196,25 @@ private fun IntroItem(modifier: Modifier = Modifier, forumId: Long, slogan: Stri
     val intro by introFlow.collectAsState(initial = null) // ignore errors
 
     IntroItem(modifier, slogan, intro)
+}
+
+@Composable
+private fun ManagerItem(
+    modifier: Modifier = Modifier,
+    name: String,
+    portrait: String,
+    onClick: () -> Unit
+) = Column(
+    modifier = modifier.padding(vertical = 4.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+) {
+    Avatar(
+        data = StringUtil.getAvatarUrl(portrait),
+        size = Sizes.Medium,
+        contentDescription = name,
+        modifier = Modifier.clickable(onClick = onClick)
+    )
+    NegativeButton(Modifier, text = name, ExtendedTheme.colors.text, onClick)
 }
 
 @Composable
