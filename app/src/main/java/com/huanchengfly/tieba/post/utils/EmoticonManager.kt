@@ -1,11 +1,9 @@
 package com.huanchengfly.tieba.post.utils
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.runtime.Composable
@@ -22,8 +20,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.panpf.sketch.compose.AsyncImage
+import com.github.panpf.sketch.fetch.newAssetUri
 import com.github.panpf.sketch.fetch.newFileUri
-import com.github.panpf.sketch.fetch.newResourceUri
 import com.github.panpf.sketch.request.LoadRequest
 import com.github.panpf.sketch.request.LoadResult
 import com.github.panpf.sketch.request.execute
@@ -35,6 +33,7 @@ import com.huanchengfly.tieba.post.models.EmoticonCache
 import com.huanchengfly.tieba.post.pxToDp
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.toJson
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -58,73 +57,27 @@ data class Emoticon(
 )
 
 object EmoticonManager {
-    private val DEFAULT_EMOTICON_MAPPING: Map<String, String> = mapOf(
-        "呵呵" to "image_emoticon1",
-        "哈哈" to "image_emoticon2",
-        "吐舌" to "image_emoticon3",
-        "啊" to "image_emoticon4",
-        "酷" to "image_emoticon5",
-        "怒" to "image_emoticon6",
-        "开心" to "image_emoticon7",
-        "汗" to "image_emoticon8",
-        "泪" to "image_emoticon9",
-        "黑线" to "image_emoticon10",
-        "鄙视" to "image_emoticon11",
-        "不高兴" to "image_emoticon12",
-        "真棒" to "image_emoticon13",
-        "钱" to "image_emoticon14",
-        "疑问" to "image_emoticon15",
-        "阴险" to "image_emoticon16",
-        "吐" to "image_emoticon17",
-        "咦" to "image_emoticon18",
-        "委屈" to "image_emoticon19",
-        "花心" to "image_emoticon20",
-        "呼~" to "image_emoticon21",
-        "笑眼" to "image_emoticon22",
-        "冷" to "image_emoticon23",
-        "太开心" to "image_emoticon24",
-        "滑稽" to "image_emoticon25",
-        "勉强" to "image_emoticon26",
-        "狂汗" to "image_emoticon27",
-        "乖" to "image_emoticon28",
-        "睡觉" to "image_emoticon29",
-        "惊哭" to "image_emoticon30",
-        "生气" to "image_emoticon31",
-        "惊讶" to "image_emoticon32",
-        "喷" to "image_emoticon33",
-        "爱心" to "image_emoticon34",
-        "心碎" to "image_emoticon35",
-        "玫瑰" to "image_emoticon36",
-        "礼物" to "image_emoticon37",
-        "彩虹" to "image_emoticon38",
-        "星星月亮" to "image_emoticon39",
-        "太阳" to "image_emoticon40",
-        "钱币" to "image_emoticon41",
-        "灯泡" to "image_emoticon42",
-        "茶杯" to "image_emoticon43",
-        "蛋糕" to "image_emoticon44",
-        "音乐" to "image_emoticon45",
-        "haha" to "image_emoticon46",
-        "胜利" to "image_emoticon47",
-        "大拇指" to "image_emoticon48",
-        "弱" to "image_emoticon49",
-        "OK" to "image_emoticon50",
-        "生气" to "image_emoticon61",
-        "沙发" to "image_emoticon77",
-        "手纸" to "image_emoticon78",
-        "香蕉" to "image_emoticon79",
-        "便便" to "image_emoticon80",
-        "药丸" to "image_emoticon81",
-        "红领巾" to "image_emoticon82",
-        "蜡烛" to "image_emoticon83",
-        "三道杠" to "image_emoticon84",
-    )
+    private const val TAG = "EmoticonManager"
+
+    private const val EMOTICON_ASSET_NAME = "emoticon"
+    private val DEFAULT_EMOTICON_MAPPING: Map<String, String> by lazy {
+        val jsonStr = FileUtil.readAssetFile(App.INSTANCE, "emoticon.json")
+        val newMap: HashMap<String, String> = jsonStr!!.fromJson()
+        return@lazy newMap
+    }
+
+    /**
+     * Default emoticon download directory
+     * */
+    private val EMOTICON_CACHE_DIR: File by lazy {
+        getContext().run { File(externalCacheDir ?: cacheDir, EMOTICON_ASSET_NAME) }
+    }
 
     private lateinit var contextRef: WeakReference<Context>
     private val emoticonIds: MutableList<String> = mutableListOf()
     private val emoticonMapping: MutableMap<String, String> = mutableMapOf()
     private val drawableCache: MutableMap<String, Drawable> = mutableMapOf()
-    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
 
     fun getEmoticonInlineContent(
         sizePx: Float
@@ -150,7 +103,7 @@ object EmoticonManager {
         }
     }
 
-    fun init(context: Context) {
+    fun init(context: Context) = scope.launch(Dispatchers.Main) {
         contextRef = WeakReference(context)
         val emoticonCache = getEmoticonDataCache()
         if (emoticonCache.ids.isEmpty()) {
@@ -172,23 +125,14 @@ object EmoticonManager {
             emoticonMapping.putAll(emoticonCache.mapping)
         }
         updateCache()
-        coroutineScope.launch {
-            withContext(Dispatchers.IO) {
-                runCatching { fetchEmoticons(context) }
-            }
-        }
+        fetchEmoticons(context)
     }
 
-    private fun updateCache() {
+    private suspend fun updateCache() = withContext(Dispatchers.IO) {
         runCatching {
-            val emoticonDataCacheFile = File(getEmoticonCacheDir(), "emoticon_data_cache")
-            if (emoticonDataCacheFile.exists() || emoticonDataCacheFile.createNewFile()) {
-                FileUtil.writeFile(
-                    emoticonDataCacheFile,
-                    EmoticonCache(emoticonIds, emoticonMapping).toJson(),
-                    false
-                )
-            }
+            val emoticonDataCacheFile = File(EMOTICON_CACHE_DIR, "emoticon_data_cache")
+            val emoticonJson = EmoticonCache(emoticonIds, emoticonMapping).toJson()
+            FileUtil.writeFile(emoticonDataCacheFile, emoticonJson, false)
         }
     }
 
@@ -196,27 +140,14 @@ object EmoticonManager {
         return contextRef.get() ?: App.INSTANCE
     }
 
-    private fun getEmoticonDataCache(): EmoticonCache {
-        return runCatching {
-            File(getEmoticonCacheDir(), "emoticon_data_cache").takeIf { it.exists() }
+    private suspend fun getEmoticonDataCache(): EmoticonCache = withContext(Dispatchers.IO) {
+        runCatching {
+            File(EMOTICON_CACHE_DIR, "emoticon_data_cache").takeIf { it.exists() }
                 ?.fromJson<EmoticonCache>()
         }.getOrNull() ?: EmoticonCache()
     }
 
-    private fun getEmoticonCacheDir(): File {
-        return File(getContext().externalCacheDir ?: getContext().cacheDir, "emoticon").apply {
-            if (exists() && isFile) {
-                delete()
-                mkdirs()
-            } else if (!exists()) {
-                mkdirs()
-            }
-        }
-    }
-
-    private fun getEmoticonFile(id: String): File {
-        return File(getEmoticonCacheDir(), "$id.png")
-    }
+    private fun getEmoticonFile(id: String): File = File(EMOTICON_CACHE_DIR, "$id.png")
 
     fun getAllEmoticon(): List<Emoticon> {
         return emoticonIds.map { id ->
@@ -241,9 +172,10 @@ object EmoticonManager {
         }
     }
 
-    @SuppressLint("DiscouragedApi")
-    private fun getEmoticonResId(context: Context, id: String): Int {
-        return context.resources.getIdentifier(id, "drawable", context.packageName)
+    private fun getEmoticonAsset(context: Context, id: String): Drawable? {
+        context.assets.open("$EMOTICON_ASSET_NAME/$id.webp").use {
+            return Drawable.createFromStream(it, null)
+        }
     }
 
     fun getEmoticonDrawable(context: Context, id: String?): Drawable? {
@@ -253,25 +185,25 @@ object EmoticonManager {
         if (drawableCache.containsKey(id)) {
             return drawableCache[id]
         }
-        val resId = getEmoticonResId(context, id)
-        if (resId != 0) {
-            return AppCompatResources.getDrawable(context, resId).also { drawableCache[id] = it!! }
+
+        if (DEFAULT_EMOTICON_MAPPING.containsValue(id)) {
+            return getEmoticonAsset(context, id)
+                ?: throw NullPointerException("$id.webp not found in Asset!")
         }
-        val emoticonFile = getEmoticonFile(id)
-        if (!emoticonFile.exists()) {
-            return null
-        }
-        return BitmapDrawable(
-            getContext().resources,
-            emoticonFile.inputStream()
-        ).also { drawableCache[id] = it }
+
+        val drawable: BitmapDrawable? = runCatching {
+            val emoticonFile = getEmoticonFile(id)
+            if (emoticonFile.exists()) {
+                BitmapDrawable(getContext().resources, emoticonFile.inputStream())
+            } else null
+        }.getOrNull()
+        return drawable?.also { drawableCache[id] = it }
     }
 
-    fun getEmoticonUri(context: Context, id: String?): String {
+    private fun getEmoticonUri(id: String?): String {
         id ?: return ""
-        val resId = getEmoticonResId(context, id)
-        if (resId != 0) {
-            return newResourceUri(resId)
+        if (DEFAULT_EMOTICON_MAPPING.containsValue(id)) {
+            return newAssetUri("$EMOTICON_ASSET_NAME/$id.webp")
         }
         val emoticonFile = getEmoticonFile(id)
         if (!emoticonFile.exists()) {
@@ -288,20 +220,21 @@ object EmoticonManager {
     }
 
     @Composable
-    fun rememberEmoticonUri(id: String): String {
-        val context = LocalContext.current
-        return remember(id) { getEmoticonUri(context, id) }
-    }
+    fun rememberEmoticonUri(id: String): String = remember(id) { getEmoticonUri(id) }
 
     private suspend fun fetchEmoticons(context: Context) {
         emoticonIds.forEach {
-            val resId = getEmoticonResId(context, it)
+            if (DEFAULT_EMOTICON_MAPPING.containsValue(it)) return@forEach
+
             val emoticonFile = getEmoticonFile(it)
-            if (resId == 0 && !emoticonFile.exists()) {
-                val loadEmoticonResult = LoadRequest(
-                    context,
-                    "http://static.tieba.baidu.com/tb/editor/images/client/$it.png"
-                ).execute()
+            if (!emoticonFile.exists()) {
+                val loadEmoticonResult =
+                    withContext(Dispatchers.IO) {
+                        LoadRequest(
+                            context,
+                            "http://static.tieba.baidu.com/tb/editor/images/client/$it.png"
+                        ).execute()
+                    }
                 if (loadEmoticonResult is LoadResult.Success) {
                     ImageUtil.bitmapToFile(
                         loadEmoticonResult.bitmap,
@@ -325,7 +258,7 @@ object EmoticonManager {
             changed = true
         }
         if (changed) {
-            coroutineScope.launch {
+            scope.launch {
                 updateCache()
             }
         }

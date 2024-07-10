@@ -1,52 +1,36 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.app.DownloadManager
-import android.content.ContentResolver
-import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.text.TextUtils
 import android.webkit.URLUtil
+import androidx.annotation.WorkerThread
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
+import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.FileReader
 import java.io.IOException
 import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.PrintWriter
+import java.io.Reader
 import java.nio.charset.StandardCharsets
 import java.util.Arrays
+import javax.annotation.Nonnull
 
 object FileUtil {
     const val FILE_TYPE_DOWNLOAD = 0
     const val FILE_TYPE_VIDEO = 1
     const val FILE_TYPE_AUDIO = 2
     const val FILE_FOLDER = "TiebaLite"
-    fun deleteAllFiles(root: File) {
-        val files = root.listFiles()
-        if (files != null) for (f in files) {
-            if (f.isDirectory) { // 判断是否为文件夹
-                deleteAllFiles(f)
-                try {
-                    f.delete()
-                } catch (e: Exception) {
-                }
-            } else {
-                if (f.exists()) { // 判断是否存在
-                    deleteAllFiles(f)
-                    try {
-                        f.delete()
-                    } catch (e: Exception) {
-                    }
-                }
-            }
-        }
-    }
 
     private fun getDataColumn(
         context: Context,
@@ -101,8 +85,7 @@ object FileUtil {
         // 允许漫游时下载
         request.setAllowedOverRoaming(false)
         // 设置下载文件保存的路径和文件名
-        val directory: String
-        directory = when (fileType) {
+        val directory: String = when (fileType) {
             FILE_TYPE_VIDEO -> Environment.DIRECTORY_MOVIES
             FILE_TYPE_AUDIO -> Environment.DIRECTORY_PODCASTS
             FILE_TYPE_DOWNLOAD -> Environment.DIRECTORY_DOWNLOADS
@@ -138,16 +121,13 @@ object FileUtil {
     }
 
     @JvmStatic
-    fun readFile(file: File?): String? {
-        if (file == null || !file.exists() || !file.canRead()) {
-            return null
-        }
+    @WorkerThread
+    fun readAssetFile(context: Context, fileName: String): String? {
         try {
-            val `is`: InputStream = FileInputStream(file)
-            val length = `is`.available()
-            val buffer = ByteArray(length)
-            `is`.read(buffer)
-            return String(buffer, StandardCharsets.UTF_8)
+            val ins = context.assets.open(fileName)
+            BufferedReader(InputStreamReader(ins, StandardCharsets.UTF_8)).use { reader ->
+                return reader.readText()
+            }
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -155,14 +135,27 @@ object FileUtil {
     }
 
     @JvmStatic
-    fun writeFile(file: File?, content: String, append: Boolean): Boolean {
-        if (file == null || !file.exists() || !file.canWrite()) {
-            return false
-        }
+    @WorkerThread
+    fun readFile(file: File): String? {
         try {
-            FileOutputStream(file, append).use { fos ->
-                fos.write(content.toByteArray())
-                fos.flush()
+            file.bufferedReader(StandardCharsets.UTF_8).use { ins ->
+                return ins.readText()
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    @JvmStatic
+    @WorkerThread
+    fun writeFile(file: File, content: String, append: Boolean): Boolean {
+        try {
+            if (!file.exists()) {
+                file.parentFile?.mkdirs() ?: throw IOException("Parent file of $file not exits")
+            }
+            PrintWriter(FileOutputStream(file, append)).use { writer ->
+                writer.println(content)
                 return true
             }
         } catch (e: IOException) {
