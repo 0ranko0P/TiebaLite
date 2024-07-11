@@ -400,9 +400,6 @@ object ThreadPageFrom {
 sealed interface ThreadPageExtra
 
 @Serializable
-data object ThreadPageNoExtra : ThreadPageExtra
-
-@Serializable
 data class ThreadPageFromStoreExtra(
     val maxPid: Long,
     val maxFloor: Int,
@@ -860,38 +857,19 @@ fun ThreadPage(
         }
     }
 
-    var savedHistory by remember { mutableStateOf(false) }
     LaunchedEffect(threadId, threadTitle, author, lastVisibilityPostId) {
-        val saveHistory = {
-            thread {
-                runCatching {
-                    if (threadTitle.isNotBlank()) {
-                        HistoryUtil.saveHistory(
-                            History(
-                                title = threadTitle,
-                                data = threadId.toString(),
-                                type = HistoryUtil.TYPE_THREAD,
-                                extras = ThreadHistoryInfoBean(
-                                    isSeeLz = isSeeLz,
-                                    pid = lastVisibilityPostId.toString(),
-                                    forumName = forum?.get { name },
-                                    floor = lastVisibilityPost?.get { floor }?.toString()
-                                ).toJson(),
-                                avatar = StringUtil.getAvatarUrl(author?.get { portrait }),
-                                username = author?.get { nameShow }
-                            ),
-                            async = true
-                        )
-                        savedHistory = true
-                        Log.i("ThreadPage", "saveHistory $lastVisibilityPostId")
-                    }
-                }
-            }
-        }
+        if (lastVisibilityPostId == 0L || threadTitle.isBlank()) return@LaunchedEffect
 
-        if (!savedHistory || lastVisibilityPostId != 0L) {
-            saveHistory()
-        }
+        viewModel.onLastPostVisibilityChanged(
+            title = threadTitle,
+            data = threadId.toString(),
+            isSeeLz = isSeeLz,
+            pid = lastVisibilityPostId,
+            forumName = forum?.get { name },
+            floor = lastVisibilityPost?.get { floor },
+            avatar = StringUtil.getAvatarUrl(author?.get { portrait }),
+            username = author?.get { nameShow }
+        )
     }
 
     val pullRefreshState = rememberPullRefreshState(

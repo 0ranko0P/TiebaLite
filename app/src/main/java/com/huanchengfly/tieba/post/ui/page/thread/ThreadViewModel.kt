@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.thread
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.text.AnnotatedString
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
@@ -32,16 +33,22 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
+import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.removeAt
 import com.huanchengfly.tieba.post.repository.EmptyDataException
 import com.huanchengfly.tieba.post.repository.PbPageRepository
+import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
+import com.huanchengfly.tieba.post.utils.HistoryUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
@@ -50,6 +57,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 private fun ThreadInfo.getNextPagePostId(
@@ -70,6 +79,9 @@ private fun ThreadInfo.getNextPagePostId(
 @HiltViewModel
 class ThreadViewModel @Inject constructor() :
     BaseViewModel<ThreadUiIntent, ThreadPartialChange, ThreadUiState, ThreadUiEvent>() {
+
+    private var history: History? = null
+
     override fun createInitialState(): ThreadUiState = ThreadUiState()
 
     override fun createPartialChangeProducer(): PartialChangeProducer<ThreadUiIntent, ThreadPartialChange, ThreadUiState> =
@@ -104,6 +116,20 @@ class ThreadViewModel @Inject constructor() :
             )
 
             else -> null
+        }
+    }
+
+    fun onLastPostVisibilityChanged(title: String, data: String, avatar: String, username: String?, isSeeLz: Boolean, pid: Long, forumName: String?, floor: Int?) = viewModelScope.launch(Dispatchers.Main) {
+        history = withContext(Dispatchers.IO) {
+            val bean = ThreadHistoryInfoBean(isSeeLz, pid.toString(), forumName, floor.toString())
+            History(
+                title = title,
+                data = data,
+                type = HistoryUtil.TYPE_THREAD,
+                extras = bean.toJson(),
+                avatar = avatar,
+                username = username
+            )
         }
     }
 
@@ -439,20 +465,12 @@ class ThreadViewModel @Inject constructor() :
                     objType = 1
                 )
                 .map<AgreeBean, ThreadPartialChange.AgreePost> {
-                    ThreadPartialChange.AgreePost.Success(
-                        postId,
-                        agree
-                    )
+                    ThreadPartialChange.AgreePost.Success(postId, agree)
                 }
                 .onStart { emit(ThreadPartialChange.AgreePost.Start(postId, agree)) }
                 .catch {
                     emit(
-                        ThreadPartialChange.AgreePost.Failure(
-                            postId,
-                            !agree,
-                            it.getErrorCode(),
-                            it.getErrorMessage()
-                        )
+                        ThreadPartialChange.AgreePost.Failure(postId, !agree, it.getErrorCode(), it.getErrorMessage())
                     )
                 }
 
@@ -485,6 +503,13 @@ class ThreadViewModel @Inject constructor() :
                         )
                     )
                 }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        history?.let {
+            MainScope().launch(Dispatchers.IO) { HistoryUtil.saveHistory(it) }
+        }
     }
 }
 
