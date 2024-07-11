@@ -16,7 +16,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.text.TextUtils
 import android.util.Base64
 import android.webkit.URLUtil
 import android.widget.ImageView
@@ -44,6 +43,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.internal.closeQuietly
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -51,7 +51,6 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.nio.channels.FileChannel
 
 object ImageUtil {
     /**
@@ -111,57 +110,52 @@ object ImageUtil {
         return baos.use { it.toByteArray() }
     }
 
-    @JvmOverloads
     fun compressImage(
         bitmap: Bitmap,
         output: File,
         maxSizeKb: Int = 100,
         initialQuality: Int = 100
     ): File {
-        val baos = ByteArrayOutputStream()
-        var quality = initialQuality
-        bitmap.compress(CompressFormat.JPEG, quality, baos) //质量压缩方法，这里100表示不压缩，把压缩后的数据存放到baos中
-        while (baos.toByteArray().size / 1024 > maxSizeKb && quality > 0) {  //循环判断如果压缩后图片是否大于设置的最大值,大于继续压缩
-            baos.reset() //重置baos即清空baos
-            quality -= 5 //每次都减少5
-            bitmap.compress(CompressFormat.JPEG, quality, baos) //这里压缩options%，把压缩后的数据存放到baos中
-        }
+        var baos: ByteArrayOutputStream? = null
         try {
-            val fos = FileOutputStream(output)
-            try {
+            baos = ByteArrayOutputStream()
+            var quality = initialQuality
+            bitmap.compress(CompressFormat.JPEG, quality, baos) //质量压缩方法，这里100表示不压缩，把压缩后的数据存放到baos中
+            while (baos.toByteArray().size / 1024 > maxSizeKb && quality > 0) {  //循环判断如果压缩后图片是否大于设置的最大值,大于继续压缩
+                baos.reset() //重置baos即清空baos
+                quality -= 5 //每次都减少5
+                bitmap.compress(CompressFormat.JPEG, quality, baos) //这里压缩options%，把压缩后的数据存放到baos中
+            }
+            FileOutputStream(output).use { fos ->
                 fos.write(baos.toByteArray())
                 fos.flush()
-                fos.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
             }
         } catch (e: FileNotFoundException) {
             e.printStackTrace()
+        } finally {
+            baos?.closeQuietly()
         }
         return output
     }
 
-    @JvmOverloads
     fun bitmapToFile(
         bitmap: Bitmap,
         output: File,
+        quality: Int = 100,
         format: CompressFormat = CompressFormat.JPEG
-    ): File {
-        val baos = ByteArrayOutputStream()
-        bitmap.compress(format, 100, baos)
+    ): Boolean {
         try {
-            val fos = FileOutputStream(output)
-            try {
-                fos.write(baos.toByteArray())
-                fos.flush()
-                fos.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
+            requireNotNull(output.parentFile) { "Illegal file $output" }.let { parent ->
+                if (!parent.exists()) parent.mkdirs()
             }
-        } catch (e: FileNotFoundException) {
+
+            FileOutputStream(output).use { out ->
+                return bitmap.compress(format, quality, out)
+            }
+        } catch (e: Exception) {
             e.printStackTrace()
         }
-        return output
+        return false
     }
 
     fun drawableToBitmap(drawable: Drawable): Bitmap {
@@ -173,60 +167,6 @@ object ImageUtil {
         drawable.setBounds(0, 0, drawable.intrinsicWidth, drawable.intrinsicHeight)
         drawable.draw(canvas)
         return bitmap
-    }
-
-    fun copyFile(src: FileInputStream?, dest: FileOutputStream?): Boolean {
-        if (src == null || dest == null) {
-            return false
-        }
-        val srcChannel: FileChannel?
-        val dstChannel: FileChannel?
-        try {
-            srcChannel = src.channel
-            dstChannel = dest.channel
-            srcChannel.transferTo(0, srcChannel.size(), dstChannel)
-        } catch (e: IOException) {
-            e.printStackTrace()
-            return false
-        }
-        try {
-            srcChannel.close()
-            dstChannel.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        return true
-    }
-
-    fun copyFile(src: File?, dest: File?): Boolean {
-        if (src == null || dest == null) {
-            return false
-        }
-        if (dest.exists()) {
-            dest.delete()
-        }
-        try {
-            dest.createNewFile()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        val srcChannel: FileChannel?
-        val dstChannel: FileChannel?
-        try {
-            srcChannel = FileInputStream(src).channel
-            dstChannel = FileOutputStream(dest).channel
-            srcChannel.transferTo(0, srcChannel.size(), dstChannel)
-        } catch (e: IOException) {
-            e.printStackTrace()
-            return false
-        }
-        try {
-            srcChannel.close()
-            dstChannel.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        return true
     }
 
     private fun changeBrightness(imageView: ImageView, brightness: Int) {
@@ -426,21 +366,6 @@ object ImageUtil {
     fun getPicId(picUrl: String?): String {
         val fileName = URLUtil.guessFileName(picUrl, null, MimeType.JPEG.toString())
         return fileName.replace(".jpg", "")
-    }
-
-    @JvmStatic
-    fun getNonNullString(vararg strings: String?): String? {
-        for (url in strings) {
-            if (!TextUtils.isEmpty(url)) {
-                return url
-            }
-        }
-        return null
-    }
-
-    @JvmStatic
-    fun getRadiusPx(context: Context): Int {
-        return DisplayUtil.dp2px(context, getRadiusDp(context).toFloat())
     }
 
     private fun getRadiusDp(context: Context): Int {

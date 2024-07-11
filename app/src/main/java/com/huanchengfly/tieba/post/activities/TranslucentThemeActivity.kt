@@ -109,8 +109,12 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
             val result = LoadRequest(this@TranslucentThemeActivity, sourceUri.toString()).execute()
             if (result is LoadResult.Success) {
                 mProgress.visibility = View.GONE
-                val file =
-                    ImageUtil.bitmapToFile(result.bitmap, File(cacheDir, "origin_background.jpg"))
+                val file = File(cacheDir, "origin_background.jpg")
+                val bitmapRec = ImageUtil.bitmapToFile(result.bitmap, file)
+                if (bitmapRec.not()) {
+                    toastShort(R.string.title_api_error)
+                    return@launch
+                }
                 val sourceFileUri = Uri.fromFile(file)
                 val destUri = Uri.fromFile(File(filesDir, "cropped_background.jpg"))
                 val height = App.ScreenInfo.EXACT_SCREEN_HEIGHT.toFloat()
