@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import android.view.View
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -81,7 +80,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.widget.addTextChangedListener
 import com.github.panpf.sketch.compose.AsyncImage
-import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -111,6 +109,7 @@ import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
+import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -773,8 +772,7 @@ private fun EmoticonPanel(
     onEmoticonClick: (Emoticon) -> Unit,
 ) {
     val emoticons = remember {
-        EmoticonManager.getAllEmoticon()
-            .filter { it.name.isNotEmpty() }
+        EmoticonManager.getAllEmoticon().filter { it.name.isNotEmpty() }
     }
 
     Column(
@@ -787,22 +785,13 @@ private fun EmoticonPanel(
                 .padding(top = 16.dp)
         ) {
             items(emoticons) { emoticon ->
-                Image(
-                    painter = rememberDrawablePainter(
-                        drawable = EmoticonManager.getEmoticonDrawable(
-                            LocalContext.current,
-                            emoticon.id
-                        )
-                    ),
-                    contentDescription = stringResource(
-                        id = R.string.emoticon,
-                        emoticon.name
-                    ),
-                    contentScale = ContentScale.Fit,
+                EmoticonInlineImage(
+                    id = emoticon.id,
+                    description = emoticon.name,
                     modifier = Modifier
                         .size(48.dp)
                         .padding(8.dp)
-                        .clickable { onEmoticonClick(emoticon) },
+                        .clickable { onEmoticonClick(emoticon) }
                 )
             }
         }
