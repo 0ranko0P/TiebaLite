@@ -22,7 +22,6 @@ import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonDrawable
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
-import java.util.regex.Pattern
 import kotlin.math.roundToInt
 
 object StringUtil {
@@ -41,8 +40,7 @@ object StringUtil {
             } else {
                 SpannableString(source)
             }
-            val regexEmoticon = EmoticonUtil.getRegex(emoticonType)
-            val patternEmoticon = Pattern.compile(regexEmoticon)
+            val patternEmoticon = EmoticonUtil.getRegexPattern(emoticonType)
             val matcherEmoticon = patternEmoticon.matcher(spannableString)
             while (matcherEmoticon.find()) {
                 val key = matcherEmoticon.group()
