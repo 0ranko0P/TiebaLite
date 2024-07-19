@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
@@ -8,11 +9,12 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -27,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -43,6 +46,26 @@ class MenuScope(
         onDismiss?.invoke()
         menuState.expanded = false
     }
+
+    @Composable
+    fun TextMenuItem(modifier: Modifier = Modifier, @StringRes text: Int, onClick: () -> Unit) =
+        TextMenuItem(modifier, stringResource(id = text), onClick)
+
+    /**
+     * Simple Text [DropdownMenuItem], auto close the menu after onClick event triggered.
+     *
+     * @see [MenuScope.dismiss]
+     * */
+    @Composable
+    fun TextMenuItem(modifier: Modifier = Modifier, text: String, onClick: () -> Unit) =
+        DropdownMenuItem(
+            onClick = {
+                onClick()
+                dismiss()
+            },
+            modifier = modifier,
+            content = { Text(text = text) }
+        )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -108,7 +131,7 @@ fun ClickMenu(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LongClickMenu(
-    menuContent: @Composable (ColumnScope.() -> Unit),
+    menuContent: @Composable (MenuScope.() -> Unit),
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     menuState: MenuState = rememberMenuState(),
@@ -118,6 +141,7 @@ fun LongClickMenu(
     indication: Indication? = LocalIndication.current,
     content: @Composable () -> Unit,
 ) {
+    val menuScope = MenuScope(menuState)
     LaunchedEffect(Unit) {
         launch {
             interactionSource.interactions
@@ -157,7 +181,7 @@ fun LongClickMenu(
                 modifier = Modifier.background(color = ExtendedTheme.colors.menuBackground)
             ) {
                 ProvideContentColor(color = ExtendedTheme.colors.text) {
-                    menuContent()
+                    menuScope.menuContent()
                 }
             }
         }

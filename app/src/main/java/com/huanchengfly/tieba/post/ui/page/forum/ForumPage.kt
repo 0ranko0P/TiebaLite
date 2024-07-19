@@ -26,7 +26,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -465,20 +464,6 @@ fun ForumPage(
         }
     }
 }
-
-@Composable
-private fun MenuScope.TextMenuItem(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    text: String
-) = DropdownMenuItem(
-    onClick = {
-        onClick()
-        dismiss()
-    },
-    modifier = modifier,
-    content = { Text(text = text) }
-)
 
 @Composable
 fun ForumHeaderPlaceholder(forumName: String, modifier: Modifier = Modifier) {
