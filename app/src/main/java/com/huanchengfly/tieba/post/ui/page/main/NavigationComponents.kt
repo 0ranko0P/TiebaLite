@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -32,6 +31,7 @@ import androidx.compose.material.NavigationRail
 import androidx.compose.material.NavigationRailItem
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -63,20 +63,6 @@ import kotlinx.collections.immutable.ImmutableList
 
 enum class LayoutType {
     HEADER, CONTENT
-}
-
-@Composable
-fun PermanentNavigationDrawer(
-    drawerContent: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Row(modifier.fillMaxSize()) {
-        drawerContent()
-        Box(modifier = Modifier.weight(1f)) {
-            content()
-        }
-    }
 }
 
 private val ActiveIndicatorHeight = 56.dp
@@ -373,16 +359,19 @@ fun BottomNavigationDivider(
 @OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 fun BottomNavigation(
+    modifier: Modifier = Modifier,
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
     onReselected: (position: Int) -> Unit,
     navigationItems: ImmutableList<NavigationItem>,
     themeColors: ExtendedColors = ExtendedTheme.colors
 ) {
-    Column(modifier = Modifier.navigationBarsPadding()) {
+    Column(modifier = modifier.background(themeColors.bottomBar)) {
         BottomNavigationDivider(themeColors)
         BottomNavigation(
-            backgroundColor = themeColors.bottomBar,
+            modifier = Modifier.navigationBarsPadding(),
+            backgroundColor = Color.Transparent,
+            contentColor = contentColorFor(themeColors.bottomBar),
             elevation = 0.dp,
         ) {
             navigationItems.fastForEachIndexed { index, navigationItem ->
