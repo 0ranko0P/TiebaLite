@@ -283,10 +283,6 @@ class MainActivityV2 : BaseComposeActivity() {
             val jobScheduler = getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
             jobScheduler.schedule(builder.build())
         }
-        lifecycleScope.launch {
-            delay(2000L)
-            requestNotificationPermission()
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -294,8 +290,10 @@ class MainActivityV2 : BaseComposeActivity() {
         super.onCreate(savedInstanceState)
         window.decorView.setBackgroundColor(0)
         window.setBackgroundDrawable(ColorDrawable(0))
-        launch {
+        lifecycleScope.launch {
             ClientUtils.setActiveTimestamp(applicationContext)
+            delay(2000L)
+            requestNotificationPermission()
         }
         intent?.let { checkIntent(it) }
     }
