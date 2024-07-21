@@ -194,7 +194,7 @@ fun ThreadStorePage(
                                             threadId = info.threadId.toLong(),
                                             postId = info.markPid.toLong(),
                                             seeLz = context.appPreferences.collectThreadSeeLz,
-                                            sortType = if(context.appPreferences.collectThreadDescSort) ThreadSortType.SORT_TYPE_DESC else ThreadSortType.SORT_TYPE_DEFAULT,
+                                            sortType = if(context.appPreferences.collectThreadDescSort) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT,
                                             from = ThreadPageFrom.FROM_STORE,
                                             extra = ThreadPageFromStoreExtra(
                                                 maxPid = info.maxPid.toLong(),

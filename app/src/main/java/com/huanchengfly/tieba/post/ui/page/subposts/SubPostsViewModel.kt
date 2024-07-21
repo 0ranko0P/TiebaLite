@@ -6,7 +6,6 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.protos.Anti
-import com.huanchengfly.tieba.post.api.models.protos.Post
 import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.api.models.protos.SubPostList
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
@@ -26,6 +25,7 @@ import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
+import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
@@ -89,7 +89,7 @@ class SubPostsViewModel @Inject constructor() :
                         anti.wrapImmutable(),
                         forum.wrapImmutable(),
                         thread.wrapImmutable(),
-                        post.wrapImmutable(),
+                        PostData.from(post),
                         post.contentRenders,
                         subPosts,
                         page.current_page < page.total_page,
@@ -231,7 +231,7 @@ sealed interface SubPostsPartialChange : PartialChange<SubPostsUiState> {
             val anti: ImmutableHolder<Anti>,
             val forum: ImmutableHolder<SimpleForum>,
             val thread: ImmutableHolder<ThreadInfo>,
-            val post: ImmutableHolder<Post>,
+            val post: PostData,
             val postContentRenders: ImmutableList<PbContentRender>,
             val subPosts: ImmutableList<SubPostItemData>,
             val hasMore: Boolean,
@@ -294,7 +294,7 @@ sealed interface SubPostsPartialChange : PartialChange<SubPostsUiState> {
             when (this) {
                 is Start -> oldState.copy(
                     post = if (subPostId == null)
-                        oldState.post?.getImmutable { updateAgreeStatus(if (hasAgreed) 1 else 0) }
+                        oldState.post?.updateAgreeStatus(if (hasAgreed) 1 else 0)
                     else
                         oldState.post,
                     subPosts = if (subPostId != null)
@@ -305,7 +305,7 @@ sealed interface SubPostsPartialChange : PartialChange<SubPostsUiState> {
 
                 is Success -> oldState.copy(
                     post = if (subPostId == null)
-                        oldState.post?.getImmutable { updateAgreeStatus(if (hasAgreed) 1 else 0) }
+                        oldState.post?.updateAgreeStatus(if (hasAgreed) 1 else 0)
                     else
                         oldState.post,
                     subPosts = if (subPostId != null)
@@ -316,7 +316,7 @@ sealed interface SubPostsPartialChange : PartialChange<SubPostsUiState> {
 
                 is Failure -> oldState.copy(
                     post = if (subPostId == null)
-                        oldState.post?.getImmutable { updateAgreeStatus(if (hasAgreed) 1 else 0) }
+                        oldState.post?.updateAgreeStatus(if (hasAgreed) 1 else 0)
                     else
                         oldState.post,
                     subPosts = if (subPostId != null)
@@ -407,7 +407,7 @@ data class SubPostsUiState(
     val anti: ImmutableHolder<Anti>? = null,
     val forum: ImmutableHolder<SimpleForum>? = null,
     val thread: ImmutableHolder<ThreadInfo>? = null,
-    val post: ImmutableHolder<Post>? = null,
+    val post: PostData? = null,
     val postContentRenders: ImmutableList<PbContentRender> = persistentListOf(),
     val subPosts: ImmutableList<SubPostItemData> = persistentListOf(),
 ) : UiState

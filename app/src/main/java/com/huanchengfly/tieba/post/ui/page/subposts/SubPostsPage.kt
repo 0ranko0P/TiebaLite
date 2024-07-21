@@ -22,6 +22,7 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -39,9 +40,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.SubPostList
 import com.huanchengfly.tieba.post.api.models.protos.User
@@ -52,6 +53,7 @@ import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -60,7 +62,6 @@ import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyArgs
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyDialog
-import com.huanchengfly.tieba.post.ui.page.thread.PostAgreeBtn
 import com.huanchengfly.tieba.post.ui.page.thread.PostCard
 import com.huanchengfly.tieba.post.ui.page.thread.UserNameText
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -68,6 +69,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
@@ -80,9 +82,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
+import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.Destination
@@ -227,7 +230,7 @@ internal fun SubPostsContent(
         dialogState = confirmDeleteDialogState,
         onConfirm = {
             if (deleteSubPost == null) {
-                val isSelfPost = post?.get { author_id } == account?.uid?.toLongOrNull()
+                val isSelfPost = post?.author?.id == account?.uid?.toLongOrNull()
                 viewModel.send(
                     SubPostsUiIntent.DeletePost(
                         forumId = forumId,
@@ -255,15 +258,12 @@ internal fun SubPostsContent(
             }
         }
     ) {
-        Text(
-            text = stringResource(
-                id = R.string.message_confirm_delete,
-                if (deleteSubPost == null && post != null) stringResource(
-                    id = R.string.tip_post_floor,
-                    post!!.get { floor })
-                else stringResource(id = R.string.this_reply)
-            )
-        )
+        val deleteType = if (deleteSubPost == null && post != null) {
+            stringResource(id = R.string.tip_post_floor, post!!.floor) // floor
+        } else {
+            stringResource (id = R.string.this_reply)    // reply
+        }
+        Text(text = stringResource(id = R.string.message_confirm_delete, deleteType))
     }
 
     val replyDialogState = rememberDialogState()
@@ -302,11 +302,10 @@ internal fun SubPostsContent(
                 TitleCentredToolbar(
                     title = {
                         Text(text = post?.let {
-                            stringResource(
-                                id = R.string.title_sub_posts,
-                                it.get { floor })
+                            stringResource(id = R.string.title_sub_posts, it.floor)
                         } ?: stringResource(id = R.string.title_sub_posts_default),
-                            fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6)
+                            fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
+                        )
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigateUp) {
@@ -419,15 +418,15 @@ internal fun SubPostsContent(
                         post?.let {
                             Column {
                                 PostCard(
-                                    postHolder = it,
+                                    post = it,
                                     contentRenders = postContentRenders,
-                                    canDelete = { it.author_id == account?.uid?.toLongOrNull() },
-                                    showSubPosts = false,
+                                    canDelete = it.author.id == account?.uid?.toLongOrNull(),
+                                    isCollected = false,
                                     onUserClick = {
-                                        navigator.navigate(UserProfilePageDestination(it.id))
+                                        navigator.navigate(UserProfilePageDestination(it.author.id))
                                     },
                                     onAgree = {
-                                        val hasAgreed = it.get { agree?.hasAgree != 0 }
+                                        val hasAgreed = it.hasAgree != 0
                                         viewModel.send(
                                             SubPostsUiIntent.Agree(
                                                 forumId,
@@ -444,10 +443,9 @@ internal fun SubPostsContent(
                                                 forumName = forum?.get { name } ?: "",
                                                 threadId = threadId,
                                                 postId = postId,
-                                                replyUserId = it.author?.id ?: it.author_id,
-                                                replyUserName = it.author?.nameShow.takeIf { name -> !name.isNullOrEmpty() }
-                                                    ?: it.author?.name,
-                                                replyUserPortrait = it.author?.portrait,
+                                                replyUserId = it.author.id,
+                                                replyUserName = it.author.nameShow.takeIf { name -> name.isNotEmpty() }?: it.author.name,
+                                                replyUserPortrait = it.author.portrait
                                             )
                                         )
                                     },
@@ -487,7 +485,6 @@ internal fun SubPostsContent(
                         SubPostItem(
                             item = item,
                             canDelete = { it.author_id == account?.uid?.toLongOrNull() },
-                            threadAuthorId = thread?.get { author?.id },
                             onUserClick = {
                                 navigator.navigate(UserProfilePageDestination(it.id))
                             },
@@ -536,22 +533,9 @@ internal fun SubPostsContent(
     }
 }
 
-private fun getDescText(
-    time: Long?,
-    ipAddress: String?
-): String {
-    val texts = listOfNotNull(
-        time?.let { DateTimeUtils.getRelativeTimeString(App.INSTANCE, it) },
-        ipAddress?.let { App.INSTANCE.getString(R.string.text_ip_location, it) }
-    )
-    if (texts.isEmpty()) return ""
-    return texts.joinToString(" ")
-}
-
 @Composable
 private fun SubPostItem(
     item: SubPostItemData,
-    threadAuthorId: Long? = null,
     canDelete: (SubPostList) -> Boolean = { false },
     onUserClick: (User) -> Unit = {},
     onAgree: (SubPostList) -> Unit = {},
@@ -644,26 +628,19 @@ private fun SubPostItem(
                                         author.get { nameShow }
                                     ),
                                     userLevel = author.get { level_id },
-                                    isLz = author.get { id } == threadAuthorId,
                                     bawuType = author.get { bawuType },
                                 )
                             },
                             desc = {
-                                Text(
-                                    text = getDescText(
-                                        subPost.get { time }.toLong(),
-                                        author.get { ip_address })
-                                )
+                                Text(text = getRelativeTimeString(context, subPost.get { time }.toLong()))
                             },
                             onClick = {
                                 onUserClick(author.get())
                             }
                         ) {
-                            PostAgreeBtn(
-                                hasAgreed = hasAgreed,
-                                agreeNum = agreeNum,
-                                onClick = { onAgree(subPost.get()) }
-                            )
+                            PostAgreeBtn(agreed = hasAgreed, agreeNum = agreeNum) {
+                                onAgree(subPost.get())
+                            }
                         }
                     }
                 },
@@ -677,6 +654,32 @@ private fun SubPostItem(
                         contentRenders.fastForEach { it.Render() }
                     }
                 }
+            )
+        }
+    }
+}
+
+@Preview("PostAgreeBtn")
+@Composable
+private fun PostAgreeBtnPreview() {
+    TiebaLiteTheme {
+        Surface(Modifier.padding(12.dp)) {
+            PostAgreeBtn(agreed = true, agreeNum = 999) { /*** NO-OP ***/ }
+        }
+    }
+}
+
+@Composable
+fun PostAgreeBtn(modifier: Modifier = Modifier, agreed: Boolean, agreeNum: Long, onClick: () -> Unit) {
+    FavoriteButton(modifier, iconSize = 18.dp, favorite = agreed, onClick = onClick) { color ->
+        if (agreeNum > 0) {
+            Text(
+                text = agreeNum.getShortNumString(),
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .padding(horizontal = 4.dp),
+                color = color,
+                style = MaterialTheme.typography.caption
             )
         }
     }

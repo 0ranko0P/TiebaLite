@@ -11,14 +11,12 @@ import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PicContentRender
 import com.huanchengfly.tieba.post.ui.common.TextContentRender.Companion.appendText
 import com.huanchengfly.tieba.post.ui.common.VideoContentRender
 import com.huanchengfly.tieba.post.ui.common.VoiceContentRender
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import com.huanchengfly.tieba.post.ui.page.thread.SubPostItemData
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
@@ -384,14 +382,6 @@ val Post.subPostContents: ImmutableList<AnnotatedString>
     get() = sub_post_list?.sub_post_list?.map { it.getContentText(origin_thread_info?.author?.id) }
         ?.toImmutableList()
         ?: persistentListOf()
-
-val Post.subPosts: ImmutableList<SubPostItemData>
-    get() = sub_post_list?.sub_post_list?.map {
-        SubPostItemData(
-            it.wrapImmutable(),
-            it.getContentText(origin_thread_info?.author?.id)
-        )
-    }?.toImmutableList() ?: persistentListOf()
 
 @OptIn(ExperimentalTextApi::class)
 fun SubPostList.getContentText(threadAuthorId: Long? = null): AnnotatedString {

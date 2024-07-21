@@ -2,8 +2,8 @@ package com.huanchengfly.tieba.post.api.retrofit.exception
 
 import java.io.IOException
 
-abstract class TiebaException(message: String) : IOException(message) {
-    abstract val code: Int
+open class TiebaException(message: String) : IOException(message) {
+    open val code: Int = -1
 
     override fun toString(): String {
         return "TiebaException(code=$code, message=$message)"
