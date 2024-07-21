@@ -1,19 +1,14 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.protos.Anti
 import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
-import com.huanchengfly.tieba.post.api.models.protos.SubPostList
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.contentRenders
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
-import com.huanchengfly.tieba.post.api.models.protos.renders
-import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
@@ -26,7 +21,7 @@ import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.models.PostData
-import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
+import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -81,8 +76,8 @@ class SubPostsViewModel @Inject constructor() :
                     val anti = checkNotNull(response.data_?.anti)
                     val subPosts = response.data_?.subpost_list.orEmpty().map {
                         SubPostItemData(
-                            it.wrapImmutable(),
-                            it.content.renders.toImmutableList(),
+                            subPost = it,
+                            lzId = post.origin_thread_info?.author?.id?: 0L,
                         )
                     }.toImmutableList()
                     SubPostsPartialChange.Load.Success(
@@ -108,8 +103,8 @@ class SubPostsViewModel @Inject constructor() :
                     val page = checkNotNull(response.data_?.page)
                     val subPosts = response.data_?.subpost_list.orEmpty().map {
                         SubPostItemData(
-                            it.wrapImmutable(),
-                            it.content.renders.toImmutableList(),
+                            subPost = it,
+                            lzId = response.data_?.post?.origin_thread_info?.author?.id?: 0L,
                         )
                     }.toImmutableList()
                     SubPostsPartialChange.LoadMore.Success(
@@ -283,11 +278,7 @@ sealed interface SubPostsPartialChange : PartialChange<SubPostsUiState> {
             hasAgreed: Boolean,
         ): ImmutableList<SubPostItemData> =
             map {
-                if (it.id == subPostId) {
-                    it.updateAgreeStatus(if (hasAgreed) 1 else 0)
-                } else {
-                    it
-                }
+                if (it.id == subPostId) it.updateAgreeStatus(hasAgreed) else it
             }.toImmutableList()
 
         override fun reduce(oldState: SubPostsUiState): SubPostsUiState =
@@ -370,30 +361,6 @@ sealed interface SubPostsPartialChange : PartialChange<SubPostsUiState> {
         ) : DeletePost()
     }
 }
-
-@Immutable
-data class SubPostItemData(
-    val subPost: ImmutableHolder<SubPostList>,
-    val subPostContentRenders: ImmutableList<PbContentRender>,
-    val blocked: Boolean = subPost.get { shouldBlock() },
-) {
-    constructor(
-        subPost: SubPostList,
-    ) : this(
-        subPost.wrapImmutable(),
-        subPost.content.renders.toImmutableList(),
-        subPost.shouldBlock()
-    )
-
-    val id: Long
-        get() = subPost.get { id }
-
-    val author: ImmutableHolder<User>?
-        get() = subPost.get { author }?.wrapImmutable()
-}
-
-private fun SubPostItemData.updateAgreeStatus(hasAgreed: Int): SubPostItemData =
-    copy(subPost = subPost.getImmutable { updateAgreeStatus(hasAgreed) })
 
 data class SubPostsUiState(
     val isLoading: Boolean = false,

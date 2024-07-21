@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
@@ -40,21 +40,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.SubPostList
-import com.huanchengfly.tieba.post.api.models.protos.User
-import com.huanchengfly.tieba.post.api.models.protos.bawuType
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
+import com.huanchengfly.tieba.post.ui.models.SubPostItemData
+import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.CopyTextDialogPageDestination
@@ -79,6 +78,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
+import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -225,7 +225,7 @@ internal fun SubPostsContent(
     }
 
     val confirmDeleteDialogState = rememberDialogState()
-    var deleteSubPost by remember { mutableStateOf<ImmutableHolder<SubPostList>?>(null) }
+    var deleteSubPost by remember { mutableStateOf<SubPostItemData?>(null) }
     ConfirmDialog(
         dialogState = confirmDeleteDialogState,
         onConfirm = {
@@ -242,15 +242,14 @@ internal fun SubPostsContent(
                     )
                 )
             } else {
-                val isSelfSubPost =
-                    deleteSubPost!!.get { author_id } == account?.uid?.toLongOrNull()
+                val isSelfSubPost = deleteSubPost!!.authorId == account?.uid?.toLongOrNull()
                 viewModel.send(
                     SubPostsUiIntent.DeletePost(
                         forumId = forumId,
                         forumName = forum?.get { name }.orEmpty(),
                         threadId = threadId,
                         postId = postId,
-                        subPostId = deleteSubPost!!.get { id },
+                        subPostId = deleteSubPost!!.id,
                         deleteMyPost = isSelfSubPost,
                         tbs = anti?.get { tbs },
                     )
@@ -478,25 +477,21 @@ internal fun SubPostsContent(
                             )
                         }
                     }
-                    itemsIndexed(
-                        items = subPosts,
-                        key = { _, subPost -> subPost.id }
-                    ) { index, item ->
+                    items(items = subPosts, key = { subPost -> subPost.id }) { item ->
                         SubPostItem(
                             item = item,
-                            canDelete = { it.author_id == account?.uid?.toLongOrNull() },
+                            canDelete = item.authorId == account?.uid?.toLongOrNull(),
                             onUserClick = {
                                 navigator.navigate(UserProfilePageDestination(it.id))
                             },
                             onAgree = {
-                                val hasAgreed = it.agree?.hasAgree != 0
                                 viewModel.send(
                                     SubPostsUiIntent.Agree(
                                         forumId,
                                         threadId,
                                         postId,
                                         subPostId = it.id,
-                                        agree = !hasAgreed
+                                        agree = !it.hasAgree
                                     )
                                 )
                             },
@@ -508,10 +503,10 @@ internal fun SubPostsContent(
                                         threadId = threadId,
                                         postId = postId,
                                         subPostId = it.id,
-                                        replyUserId = it.author?.id ?: it.author_id,
-                                        replyUserName = it.author?.nameShow.takeIf { name -> !name.isNullOrEmpty() }
-                                            ?: it.author?.name,
-                                        replyUserPortrait = it.author?.portrait,
+                                        replyUserId = it.author.id,
+                                        replyUserName = it.author.nameShow.takeIf { name -> !name.isNullOrEmpty() }
+                                            ?: it.author.name,
+                                        replyUserPortrait = it.author.portrait,
                                     )
                                 )
                             },
@@ -519,10 +514,9 @@ internal fun SubPostsContent(
                                 navigator.navigate(
                                     CopyTextDialogPageDestination(it)
                                 )
-//                                TiebaUtil.copyText(context, it)
                             },
                             onMenuDeleteClick = {
-                                deleteSubPost = it.wrapImmutable()
+                                deleteSubPost = it
                                 confirmDeleteDialogState.show()
                             },
                         )
@@ -536,27 +530,19 @@ internal fun SubPostsContent(
 @Composable
 private fun SubPostItem(
     item: SubPostItemData,
-    canDelete: (SubPostList) -> Boolean = { false },
-    onUserClick: (User) -> Unit = {},
-    onAgree: (SubPostList) -> Unit = {},
-    onReplyClick: (SubPostList) -> Unit = {},
+    canDelete: Boolean,
+    onUserClick: (UserData) -> Unit = {},
+    onAgree: (SubPostItemData) -> Unit = {},
+    onReplyClick: (SubPostItemData) -> Unit = {},
     onMenuCopyClick: ((String) -> Unit)? = null,
-    onMenuDeleteClick: ((SubPostList) -> Unit)? = null,
+    onMenuDeleteClick: ((SubPostItemData) -> Unit)? = null,
 ) {
-    val (subPost, contentRenders, blocked) = item
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val coroutineScope = rememberCoroutineScope()
-    val author = remember(subPost) { subPost.get { author }?.wrapImmutable() }
-    val hasAgreed = remember(subPost) {
-        subPost.get { agree?.hasAgree == 1 }
-    }
-    val agreeNum = remember(subPost) {
-        subPost.get { agree?.diffAgreeNum ?: 0L }
-    }
     val menuState = rememberMenuState()
     BlockableContent(
-        blocked = blocked,
+        blocked = item.blocked,
         blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_sub_post)) }) },
         modifier = Modifier
             .fillMaxWidth()
@@ -569,7 +555,7 @@ private fun SubPostItem(
                 if (!context.appPreferences.hideReply) {
                     DropdownMenuItem(
                         onClick = {
-                            onReplyClick(subPost.get())
+                            onReplyClick(item)
                             menuState.expanded = false
                         }
                     ) {
@@ -579,7 +565,7 @@ private fun SubPostItem(
                 if (onMenuCopyClick != null) {
                     DropdownMenuItem(
                         onClick = {
-                            onMenuCopyClick(contentRenders.joinToString("\n") { it.toString() })
+                            onMenuCopyClick(item.plainText)
                             menuState.expanded = false
                         }
                     ) {
@@ -589,17 +575,17 @@ private fun SubPostItem(
                 DropdownMenuItem(
                     onClick = {
                         coroutineScope.launch {
-                            TiebaUtil.reportPost(context, navigator, subPost.get { id }.toString())
+                            TiebaUtil.reportPost(context, navigator, item.id.toString())
                         }
                         menuState.expanded = false
                     }
                 ) {
                     Text(text = stringResource(id = R.string.title_report))
                 }
-                if (canDelete(subPost.get()) && onMenuDeleteClick != null) {
+                if (canDelete && onMenuDeleteClick != null) {
                     DropdownMenuItem(
                         onClick = {
-                            onMenuDeleteClick(subPost.get())
+                            onMenuDeleteClick(item)
                             menuState.expanded = false
                         }
                     ) {
@@ -607,52 +593,55 @@ private fun SubPostItem(
                     }
                 }
             },
-            onClick = { onReplyClick(subPost.get()) }.takeUnless { context.appPreferences.hideReply }
+            onClick = { onReplyClick(item) }.takeUnless { context.appPreferences.hideReply }
         ) {
             Card(
                 header = {
-                    if (author != null) {
-                        UserHeader(
-                            avatar = {
-                                Avatar(
-                                    data = StringUtil.getAvatarUrl(author.get { portrait }),
-                                    size = Sizes.Small,
-                                    contentDescription = null
-                                )
-                            },
-                            name = {
-                                UserNameText(
-                                    userName = StringUtil.getUsernameAnnotatedString(
-                                        LocalContext.current,
-                                        author.get { name },
-                                        author.get { nameShow }
-                                    ),
-                                    userLevel = author.get { level_id },
-                                    bawuType = author.get { bawuType },
-                                )
-                            },
-                            desc = {
-                                Text(text = getRelativeTimeString(context, subPost.get { time }.toLong()))
-                            },
-                            onClick = {
-                                onUserClick(author.get())
-                            }
-                        ) {
-                            PostAgreeBtn(agreed = hasAgreed, agreeNum = agreeNum) {
-                                onAgree(subPost.get())
-                            }
+                    val author = item.author
+                    UserHeader(
+                        avatar = {
+                            Avatar(
+                                data = author.avatarUrl,
+                                size = Sizes.Small,
+                                contentDescription = author.name
+                            )
+                        },
+                        name = {
+                            UserNameText(
+                                userName = author.annotatedName,
+                                userLevel = author.levelId,
+                                bawuType = author.bawuType,
+                            )
+                        },
+                        desc = {
+                            Text(text = getRelativeTimeString(context, item.time))
+                        },
+                        onClick = { onUserClick(author) }
+                    ) {
+                        PostAgreeBtn(agreed = item.hasAgree, agreeNum = item.agreeNum) {
+                            onAgree(item)
                         }
                     }
                 },
                 content = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    PbContentText(
+                        text = item.content,
                         modifier = Modifier
-                            .padding(start = Sizes.Small + 8.dp)
-                            .fillMaxWidth()
-                    ) {
-                        contentRenders.fastForEach { it.Render() }
-                    }
+                            .padding(start = 44.dp)
+                            .fillMaxWidth(),
+                        fontSize = 13.sp,
+                        emoticonSize = 0.9f,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 4,
+                        lineSpacing = 0.4.sp,
+                        inlineContent = if (item.isLz) mapOf(
+                            "Lz" to buildChipInlineContent(
+                                stringResource(id = R.string.tip_lz),
+                                backgroundColor = ExtendedTheme.colors.textSecondary.copy(alpha = 0.1f),
+                                color = ExtendedTheme.colors.textSecondary
+                            ),
+                        ) else emptyMap()
+                    )
                 }
             )
         }
