@@ -1,11 +1,14 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -21,12 +24,10 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AlignVerticalTop
@@ -63,7 +64,6 @@ import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.loadMoreIndicator
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
@@ -81,11 +81,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
@@ -128,119 +127,120 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
         val latestPosts = state.latestPosts
         val forum = state.forum
 
-        val loadMorePreloadCount = if (state.hasMore) 1 else 0
-        LoadMoreLayout(
+        SwipeUpLazyLoadColumn(
+            modifier = Modifier.fillMaxWidth(),
+            state = lazyListState,
             isLoading = viewModel.isLoadingMore,
-            onLoadMore = {
-                if (state.hasMore) {
-                    viewModel.requestLoadMore()
-                } else if (viewModel.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC) {
+            onLoad = {
+                if (viewModel.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC) {
                     viewModel.requestLoadLatestPosts()
                 }
             },
-            loadEnd = !state.hasMore && state.sortType == ThreadSortType.BY_DESC,
-            indicator = { isLoading, loadMoreEnd, willLoad ->
-                ThreadLoadMoreIndicator(isLoading, loadMoreEnd, willLoad, state.hasMore)
+            onLazyLoad = {
+                if (viewModel.threadUiState.hasMore) viewModel.requestLoadMore()
             },
-            lazyListState = lazyListState,
-            isEmpty = viewModel.data.isEmpty(),
-            preloadCount = loadMorePreloadCount,
+            bottomIndicator = { onThreshold ->
+                LoadMoreIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    isLoading = viewModel.isLoadingMore,
+                    noMore = state.hasMore.not(),
+                    onThreshold = onThreshold
+                )
+            }
         ) {
-            MyLazyColumn(state = lazyListState, modifier = Modifier.fillMaxWidth()) {
-                item(key = "FirstPost") {
-                    if (firstPost == null) return@item
-                    Column {
-                        PostCard(
-                            post = firstPost,
-                            contentRenders = firstPost.contentRenders,
-                            canDelete = firstPost.author.id == state.user?.id,
-                            immersiveMode = viewModel.isImmersiveMode,
-                            isCollected = firstPost.id == viewModel.info?.collectMarkPid,
-                            onUserClick = {
-                                navigator.navigate(UserProfilePageDestination(firstPost.author.id))
-                            },
-                            onReplyClick = {
-                                navigator.navigate(
-                                    ReplyPageDestination(
-                                        forumId = viewModel.curForumId ?: 0,
-                                        forumName = forum?.get { name }.orEmpty(),
-                                        threadId = viewModel.threadId,
-                                    )
+            item(key = "FirstPost") {
+                if (firstPost == null) return@item
+                Column {
+                    PostCard(
+                        post = firstPost,
+                        contentRenders = firstPost.contentRenders,
+                        canDelete = firstPost.author.id == state.user?.id,
+                        immersiveMode = viewModel.isImmersiveMode,
+                        isCollected = firstPost.id == viewModel.info?.collectMarkPid,
+                        onUserClick = {
+                            navigator.navigate(UserProfilePageDestination(firstPost.author.id))
+                        },
+                        onReplyClick = {
+                            navigator.navigate(
+                                ReplyPageDestination(
+                                    forumId = viewModel.curForumId ?: 0,
+                                    forumName = forum?.get { name }.orEmpty(),
+                                    threadId = viewModel.threadId,
                                 )
-                            },
-                            onMenuCopyClick = {
-                                navigator.navigate(CopyTextDialogPageDestination(it))
-                            },
-                            onMenuFavoriteClick = {
-                                viewModel.requestAddFavorite(firstPost)
-                            },
-                            onMenuDeleteClick = viewModel::onDeleteThread
-                        )
-
-                        val info = viewModel.info?.originThreadInfo
-                        if (info != null && viewModel.info?.isShareThread == true) {
-                            OriginThreadCard(
-                                originThreadInfo = info.wrapImmutable(),
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(bottom = 16.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(ExtendedTheme.colors.floorCard)
-                                    .clickable {
-                                        navigator.navigate(
-                                            ThreadPageDestination(
-                                                threadId = info.tid.toLong(),
-                                                forumId = info.fid,
-                                            )
-                                        )
-                                    }
-                                    .padding(16.dp)
                             )
-                        }
+                        },
+                        onMenuCopyClick = {
+                            navigator.navigate(CopyTextDialogPageDestination(it))
+                        },
+                        onMenuFavoriteClick = {
+                            viewModel.requestAddFavorite(firstPost)
+                        },
+                        onMenuDeleteClick = viewModel::onDeleteThread
+                    )
 
-                        VerticalDivider(
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-                            thickness = 2.dp
+                    val info = viewModel.info?.originThreadInfo
+                    if (info != null && viewModel.info?.isShareThread == true) {
+                        OriginThreadCard(
+                            originThreadInfo = info.wrapImmutable(),
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 16.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(ExtendedTheme.colors.floorCard)
+                                .clickable {
+                                    navigator.navigate(
+                                        ThreadPageDestination(
+                                            threadId = info.tid.toLong(),
+                                            forumId = info.fid,
+                                        )
+                                    )
+                                }
+                                .padding(16.dp)
                         )
                     }
-                }
 
-                stickyHeader(key = "ThreadHeader") {
-                    StickyHeader(
-                        replyNum = viewModel.info!!.replyNum - 1,
-                        isSeeLz = viewModel.seeLz,
-                        onSeeLzChanged = { seeLz -> viewModel.requestLoadFirstPage(seeLz) }
+                    VerticalDivider(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                        thickness = 2.dp
                     )
                 }
+            }
 
-                if (state.sortType == ThreadSortType.BY_DESC && latestPosts.isNotEmpty()) {
-                    items(items = latestPosts, key = { post -> "LatestPost_${post.id}" }) { post ->
-                        PostCardItem(viewModel, post)
-                    }
-                    postTipItem(isDesc = true)    // DESC tip on bottom
+            stickyHeader(key = "ThreadHeader") {
+                StickyHeader(
+                    replyNum = viewModel.info!!.replyNum - 1,
+                    isSeeLz = viewModel.seeLz,
+                    onSeeLzChanged = { seeLz -> viewModel.requestLoadFirstPage(seeLz) }
+                )
+            }
+
+            if (state.sortType == ThreadSortType.BY_DESC && latestPosts.isNotEmpty()) {
+                items(items = latestPosts, key = { post -> "LatestPost_${post.id}" }) { post ->
+                    PostCardItem(viewModel, post)
                 }
+                postTipItem(isDesc = true)    // DESC tip on bottom
+            }
 
-                if (state.hasPrevious) {
-                    item(key = "LoadPreviousBtn") {
-                        LoadPreviousButton(onClick = viewModel::requestLoadPrevious)
-                    }
+            if (state.hasPrevious) {
+                item(key = "LoadPreviousBtn") {
+                    LoadPreviousButton(onClick = viewModel::requestLoadPrevious)
                 }
+            }
 
-                if (viewModel.data.isEmpty()) {
-                    item(key = "EmptyTip") {
-                        EmptyScreen(canReload, onReload = this@ThreadContent::reload)
-                    }
-                } else {
-                    items(viewModel.data, key = { "$ITEM_POST_KEY_PREFIX${it.id}" }) { item ->
-                        PostCardItem(viewModel, item)
-                    }
+            if (viewModel.data.isEmpty()) {
+                item(key = "EmptyTip") {
+                    EmptyScreen(canReload, onReload = this@ThreadContent::reload)
                 }
+            } else {
+                items(viewModel.data, key = { "$ITEM_POST_KEY_PREFIX${it.id}" }) { item ->
+                    PostCardItem(viewModel, item)
+                }
+            }
 
-                if (state.sortType != ThreadSortType.BY_DESC && latestPosts.isNotEmpty()) {
-                    postTipItem(isDesc = false)  // ASC Tip on top
-                    items(items = latestPosts, key = { post -> "LatestPost_${post.id}" }) { post ->
-                        PostCardItem(viewModel, post)
-                    }
+            if (state.sortType != ThreadSortType.BY_DESC && latestPosts.isNotEmpty()) {
+                postTipItem(isDesc = false)  // ASC Tip on top
+                items(items = latestPosts, key = { post -> "LatestPost_${post.id}" }) { post ->
+                    PostCardItem(viewModel, post)
                 }
             }
         }
@@ -679,66 +679,45 @@ private fun EmptyScreen(canReload: Boolean, onReload: () -> Unit) =
     )
 
 @Composable
-private fun ThreadLoadMoreIndicator(
+private fun BoxScope.LoadMoreIndicator(
+    modifier: Modifier = Modifier,
     isLoading: Boolean,
-    loadMoreEnd: Boolean,
-    willLoad: Boolean,
-    hasMore: Boolean,
+    noMore: Boolean,
+    onThreshold: Boolean
 ) {
-    Surface(
-        elevation = 8.dp,
-        shape = RoundedCornerShape(100),
-        color = ExtendedTheme.colors.loadMoreIndicator,
-        contentColor = ExtendedTheme.colors.text
+    VerticalDivider(modifier = Modifier.align(Alignment.TopStart))
+
+    Row(
+        modifier = modifier
+            .padding(horizontal = 16.dp, vertical = 20.dp)
+            .align(Alignment.Center),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        VerticalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
+
+        Text(
+            text = when {
+                isLoading -> stringResource(id = R.string.text_loading)
+                onThreshold -> stringResource(id = R.string.release_to_load)
+                noMore -> stringResource(id = R.string.tip_load_end)
+                else -> stringResource(id = R.string.pull_to_load)
+            },
             modifier = Modifier
-                .height(IntrinsicSize.Min)
-                .padding(10.dp)
-                .animateContentSize(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ProvideTextStyle(value = MaterialTheme.typography.body2.copy(fontSize = 13.sp)) {
-                when {
-                    isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 3.dp,
-                            color = ExtendedTheme.colors.primary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(id = R.string.text_loading),
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
+                .padding(horizontal = 4.dp)
+                .animateContentSize(animationSpec = TweenSpec()),
+            style = MaterialTheme.typography.body2.copy(fontSize = 16.sp)
+        )
 
-                    loadMoreEnd -> {
-                        Text(
-                            text = stringResource(id = R.string.no_more),
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
+        VerticalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
+    }
+}
 
-                    hasMore -> {
-                        Text(
-                            text = if (willLoad) stringResource(id = R.string.release_to_load) else stringResource(
-                                id = R.string.pull_to_load
-                            ),
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
-
-                    else -> {
-                        Text(
-                            text = if (willLoad) stringResource(id = R.string.release_to_load_latest_posts) else stringResource(
-                                id = R.string.pull_to_load_latest_posts
-                            ),
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
-                }
-            }
+@Preview("LoadMoreIndicator")
+@Composable
+private fun LoadMoreIndicatorPreview() {
+    TiebaLiteTheme {
+        Box {
+            LoadMoreIndicator(isLoading = false, noMore = true, onThreshold = false)
         }
     }
 }

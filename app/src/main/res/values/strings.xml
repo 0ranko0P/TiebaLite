@@ -347,6 +347,7 @@
     <string name="summary_settings_oksign">一键签到功能设定</string>
     <string name="summary_settings_more">其他杂项</string>
     <string name="tip_start">提示：</string>
+    <string name="tip_load_end">最后的斯大林格勒防线</string>
     <string name="title_dialog_modify_little_tail">修改小尾巴</string>
     <string name="no_more">没有更多了</string>
     <string name="desc_comment">评论</string>
@@ -513,7 +514,5 @@
     <string name="title_settings_status_bar_darker">状态栏遮罩</string>
     <string name="summary_settings_status_bar_darker">开启后非白色主题状态栏将略微变暗</string>
     <string name="desc_input_color">手动输入颜色</string>
-    <string name="release_to_load_latest_posts">松开加载最新回复</string>
-    <string name="pull_to_load_latest_posts">继续上拉加载最新回复</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
 </resources>
