@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
@@ -78,6 +80,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipContent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
+import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
@@ -175,6 +178,16 @@ data class ThreadPageFromStoreExtra(
     val maxFloor: Int,
 ) : ThreadPageExtra
 
+private fun LazyListState.lastVisiblePost(viewModel: ThreadViewModel): PostData? {
+    val lastPostItem = layoutInfo.visibleItemsInfo.lastOrNull { item ->
+        item.key is String && (item.key as String).startsWith(ITEM_POST_KEY_PREFIX)
+    }?: return viewModel.threadUiState.firstPost
+
+    return viewModel.data.firstOrNull() { post ->
+        (lastPostItem.key as String).endsWith(post.id.toString())
+    } ?: viewModel.threadUiState.firstPost
+}
+
 @OptIn(ExperimentalMaterialApi::class)
 @Destination(
     deepLinks = [
@@ -215,17 +228,6 @@ fun ThreadPage(
         initialValue = ModalBottomSheetValue.Hidden,
         skipHalfExpanded = true
     )
-    val lastVisibilityPost by remember {
-        derivedStateOf {
-            viewModel.data.firstOrNull { post ->
-                val lastPostItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull { info ->
-                    info.key is String && (info.key as String).startsWith(ITEM_POST_KEY_PREFIX)
-                }?: return@derivedStateOf post
-                (lastPostItem.key as String).endsWith(post.id.toString())
-            }?: viewModel.threadUiState.firstPost
-        }
-    }
-    val lastVisibilityPostId by remember { derivedStateOf { lastVisibilityPost?.id ?: 0L } }
 
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -234,13 +236,6 @@ fun ThreadPage(
     }
     val closeBottomSheet = {
         coroutineScope.launch { bottomSheetState.hide() }
-    }
-
-    MyBackHandler(
-        enabled = bottomSheetState.isVisible,
-        currentScreen = ThreadPageDestination
-    ) {
-        closeBottomSheet()
     }
 
     val uiEvent by viewModel.uiEvent
@@ -287,26 +282,15 @@ fun ThreadPage(
     ConfirmDialog(
         dialogState = updateCollectMarkDialogState,
         onConfirm = {
-            lastVisibilityPost?.let { post ->
+            lazyListState.lastVisiblePost(viewModel)?.let { post ->
                 if (post.id != 0L) viewModel.requestAddFavorite(post)
             }
             navigator.navigateUp()
         },
         onCancel = { navigator.navigateUp() }
     ) {
-        Text(stringResource(R.string.message_update_collect_mark, lastVisibilityPost!!.floor))
-    }
-
-    MyBackHandler(
-        enabled = viewModel.info?.collected == true && !bottomSheetState.isVisible,
-        currentScreen = ThreadPageDestination
-    ) {
-        val readFloorBeforeBack = lastVisibilityPost?.floor ?: 0
-        if (readFloorBeforeBack != 0) {
-            updateCollectMarkDialogState.show()
-        } else {
-            navigator.navigateUp()
-        }
+        val lastVisibleFloor = lazyListState.lastVisiblePost(viewModel)?.floor ?: 0
+        Text(stringResource(R.string.message_update_collect_mark, lastVisibleFloor))
     }
 
     val confirmDeleteState = rememberDialogState()
@@ -351,13 +335,21 @@ fun ThreadPage(
         }
     }
 
-    LaunchedEffect(threadId, lastVisibilityPostId) {
-        if (lastVisibilityPostId == 0L) return@LaunchedEffect
+    MyBackHandler(enabled = true, currentScreen = ThreadPageDestination) {
+        if (bottomSheetState.isVisible) { // Close bottom sheet now
+            closeBottomSheet(); return@MyBackHandler
+        }
 
-        viewModel.onLastPostVisibilityChanged(
-            pid = lastVisibilityPostId,
-            floor = lastVisibilityPost?.floor
-        )
+        val lastVisiblePost = lazyListState.lastVisiblePost(viewModel)?.apply {
+            if (id == 0L) return@apply
+            viewModel.onLastPostVisibilityChanged(pid = id, floor = floor)
+        }
+
+        if (viewModel.info?.collected == true && lastVisiblePost?.floor != 0) {
+            updateCollectMarkDialogState.show()
+        } else {
+            navigator.navigateUp()
+        }
     }
 
     StateScreen(
@@ -426,7 +418,7 @@ fun ThreadPage(
                             if (viewModel.info!!.collected) {
                                 viewModel.requestRemoveFavorite()
                             } else {
-                                lastVisibilityPost?.let { post ->
+                                lazyListState.lastVisiblePost(viewModel)?.let { post ->
                                     viewModel.requestAddFavorite(markedPost = post)
                                 }
                             }
