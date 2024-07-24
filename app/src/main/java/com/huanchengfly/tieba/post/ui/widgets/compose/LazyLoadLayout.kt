@@ -1,16 +1,22 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -29,10 +35,13 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource.Companion.Drag
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.huanchengfly.tieba.post.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -82,7 +91,8 @@ fun SwipeUpLazyLoadColumn(
                         IntOffset(x = 0, y = height + refreshState.position.roundToInt())
                     }
                     // hide when measure indicator's height
-                    .then(if (size == null) Modifier.alpha(0f) else Modifier)
+                    .then(if (size == null) Modifier.alpha(0f) else Modifier),
+                contentAlignment = Alignment.Center
             ) {
                 val onThreshold by remember { derivedStateOf { refreshState.progress >= 1.0f } }
                 bottomIndicator(onThreshold)
@@ -241,4 +251,38 @@ private fun rememberSwipeUpRefreshConnection(
     }
 
     return state
+}
+
+@Composable
+fun LoadMoreIndicator(
+    modifier: Modifier = Modifier,
+    isLoading: Boolean,
+    noMore: Boolean,
+    onThreshold: Boolean
+) = Box(modifier) {
+    VerticalDivider(modifier = Modifier.align(Alignment.TopStart))
+
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 20.dp)
+            .align(Alignment.Center),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        VerticalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
+
+        Text(
+            text = when {
+                isLoading -> stringResource(id = R.string.text_loading)
+                onThreshold -> stringResource(id = R.string.release_to_load)
+                noMore -> stringResource(id = R.string.tip_load_end)
+                else -> stringResource(id = R.string.pull_to_load)
+            },
+            modifier = Modifier
+                .padding(horizontal = 4.dp)
+                .animateContentSize(animationSpec = TweenSpec()),
+            style = MaterialTheme.typography.body2.copy(fontSize = 16.sp)
+        )
+
+        VerticalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
+    }
 }

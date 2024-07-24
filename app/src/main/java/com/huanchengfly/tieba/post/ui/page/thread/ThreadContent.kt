@@ -1,14 +1,10 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -81,6 +77,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -677,50 +674,6 @@ private fun EmptyScreen(canReload: Boolean, onReload: () -> Unit) =
         },
         scrollable = false
     )
-
-@Composable
-private fun BoxScope.LoadMoreIndicator(
-    modifier: Modifier = Modifier,
-    isLoading: Boolean,
-    noMore: Boolean,
-    onThreshold: Boolean
-) {
-    VerticalDivider(modifier = Modifier.align(Alignment.TopStart))
-
-    Row(
-        modifier = modifier
-            .padding(horizontal = 16.dp, vertical = 20.dp)
-            .align(Alignment.Center),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        VerticalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
-
-        Text(
-            text = when {
-                isLoading -> stringResource(id = R.string.text_loading)
-                onThreshold -> stringResource(id = R.string.release_to_load)
-                noMore -> stringResource(id = R.string.tip_load_end)
-                else -> stringResource(id = R.string.pull_to_load)
-            },
-            modifier = Modifier
-                .padding(horizontal = 4.dp)
-                .animateContentSize(animationSpec = TweenSpec()),
-            style = MaterialTheme.typography.body2.copy(fontSize = 16.sp)
-        )
-
-        VerticalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
-    }
-}
-
-@Preview("LoadMoreIndicator")
-@Composable
-private fun LoadMoreIndicatorPreview() {
-    TiebaLiteTheme {
-        Box {
-            LoadMoreIndicator(isLoading = false, noMore = true, onThreshold = false)
-        }
-    }
-}
 
 @Preview("LoadPreviousButton")
 @Composable
