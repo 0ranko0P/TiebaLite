@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -58,13 +57,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -159,9 +157,7 @@ fun UserPostPage(
                         title = { Text(text = stringResource(id = R.string.title_user_hide_post)) },
                         image = {
                             val composition by rememberLottieComposition(
-                                LottieCompositionSpec.RawRes(
-                                    R.raw.lottie_hide
-                                )
+                                LottieCompositionSpec.RawRes(R.raw.lottie_hide)
                             )
                             LottieAnimation(
                                 composition = composition,
@@ -179,9 +175,7 @@ fun UserPostPage(
                         title = { Text(text = stringResource(id = R.string.title_empty)) },
                         image = {
                             val composition by rememberLottieComposition(
-                                LottieCompositionSpec.RawRes(
-                                    R.raw.lottie_empty_box
-                                )
+                                LottieCompositionSpec.RawRes(R.raw.lottie_empty_box)
                             )
                             LottieAnimation(
                                 composition = composition,
@@ -193,7 +187,7 @@ fun UserPostPage(
                         },
                         actions = {
                             if (canReload) {
-                                Button(onClick = { reload() }) {
+                                Button(onClick = this@StateScreen::reload) {
                                     Text(text = stringResource(id = R.string.btn_refresh))
                                 }
                             }
@@ -204,80 +198,70 @@ fun UserPostPage(
             }
         },
     ) {
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = isRefreshing,
-            onRefresh = ::reload
-        )
+        val pullRefreshState = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = ::reload)
 
         val lazyListState = rememberLazyListState()
 
         val pullRefreshModifier =
             if (enablePullRefresh) Modifier.pullRefresh(pullRefreshState) else Modifier
 
-        Box(modifier = pullRefreshModifier) {
-            LoadMoreLayout(
-                isLoading = isLoadingMore,
-                onLoadMore = {
-                    viewModel.send(UserPostUiIntent.LoadMore(uid, isThread, currentPage))
-                },
-                loadEnd = !hasMore,
-                lazyListState = lazyListState
-            ) {
-                UserPostList(
-                    data = posts,
-                    fluid = fluid,
-                    lazyListState = lazyListState,
-                    onClickItem = { threadId, postId, isSubPost ->
-                        if (postId == null) {
-                            navigator.navigate(ThreadPageDestination(threadId))
-                        } else {
-                            if (isSubPost) {
-                                navigator.navigate(
-                                    SubPostsPageDestination(
-                                        threadId = threadId,
-                                        subPostId = postId,
-                                        loadFromSubPost = true
-                                    )
-                                )
-                            } else {
-                                navigator.navigate(
-                                    ThreadPageDestination(
-                                        threadId,
-                                        postId = postId,
-                                        scrollToReply = true
-                                    )
-                                )
-                            }
-                        }
-                    },
-                    onAgreeItem = {
-                        viewModel.send(
-                            UserPostUiIntent.Agree(
-                                it.thread_id,
-                                it.post_id,
-                                it.agree?.hasAgree ?: 0
-                            )
-                        )
-                    },
-                    onClickReply = {
-                        navigator.navigate(
-                            ThreadPageDestination(
-                                it.thread_id,
-                                it.forum_id,
-                                scrollToReply = true
-                            )
-                        )
-                    },
-                    onClickUser = {
-                        navigator.navigate(UserProfilePageDestination(it))
-                    },
-                    onClickForum = {
-                        navigator.navigate(ForumPageDestination(it))
-                    },
-                    onClickOriginThread = {
-                        navigator.navigate(ThreadPageDestination(it))
-                    },
+        val onPostClickListener : (Long, Long?, Boolean) -> Unit = { threadId, postId, isSubPost ->
+            if (postId == null) {
+                navigator.navigate(ThreadPageDestination(threadId))
+            } else if (isSubPost) {
+                navigator.navigate(
+                    SubPostsPageDestination(threadId, subPostId = postId, loadFromSubPost = true)
                 )
+            } else {
+                navigator.navigate(
+                    ThreadPageDestination(threadId, postId = postId, scrollToReply = true)
+                )
+            }
+        }
+
+        Container(modifier = pullRefreshModifier, fluid = fluid) {
+            SwipeUpLazyLoadColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = lazyListState,
+                isLoading = isLoadingMore,
+                onLazyLoad = {
+                    if (hasMore) viewModel.send(UserPostUiIntent.LoadMore(uid, isThread, currentPage))
+                },
+                onLoad = null,
+                bottomIndicator = {
+                    LoadMoreIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        isLoading = isLoadingMore,
+                        noMore = !hasMore,
+                        onThreshold = false
+                    )
+                }
+            ) {
+                items(items = posts, key = { it.data.item.run { "${thread_id}_$post_id" } }) { post ->
+                    UserPostItem(
+                        post = post,
+                        onClick = onPostClickListener,
+                        onAgree = {
+                            viewModel.send(
+                                UserPostUiIntent.Agree(it.thread_id, it.post_id, it.agree?.hasAgree ?: 0)
+                            )
+                        },
+                        onClickReply = {
+                            navigator.navigate(
+                                ThreadPageDestination(it.thread_id, it.forum_id, scrollToReply = true)
+                            )
+                        },
+                        onClickUser = {
+                            navigator.navigate(UserProfilePageDestination(it))
+                        },
+                        onClickForum = {
+                            navigator.navigate(ForumPageDestination(it))
+                        },
+                        onClickOriginThread = {
+                            navigator.navigate(ThreadPageDestination(it))
+                        },
+                    )
+                }
             }
 
             PullRefreshIndicator(
@@ -287,40 +271,6 @@ fun UserPostPage(
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.primary,
             )
-        }
-    }
-}
-
-@Composable
-private fun UserPostList(
-    data: ImmutableList<PostListItemData>,
-    fluid: Boolean = false,
-    lazyListState: LazyListState = rememberLazyListState(),
-    onClickItem: (threadId: Long, postId: Long?, isSubPost: Boolean) -> Unit = { _, _, _ -> },
-    onAgreeItem: (PostInfoList) -> Unit = {},
-    onClickReply: (PostInfoList) -> Unit = {},
-    onClickUser: (id: Long) -> Unit = {},
-    onClickForum: (name: String) -> Unit = {},
-    onClickOriginThread: (threadId: Long) -> Unit = {},
-) {
-    MyLazyColumn(state = lazyListState) {
-        items(
-            items = data,
-            key = {
-                "${it.data.get { thread_id }}_${it.data.get { post_id }}"
-            }
-        ) { itemData ->
-            Container(fluid = fluid) {
-                UserPostItem(
-                    post = itemData,
-                    onClick = onClickItem,
-                    onAgree = onAgreeItem,
-                    onClickReply = onClickReply,
-                    onClickUser = onClickUser,
-                    onClickForum = onClickForum,
-                    onClickOriginThread = onClickOriginThread,
-                )
-            }
         }
     }
 }
@@ -369,11 +319,7 @@ fun UserPostItem(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    onClick(
-                                        item.get { thread_id },
-                                        it.postId,
-                                        it.isSubPost
-                                    )
+                                    onClick(item.get { thread_id }, it.postId, it.isSubPost)
                                 }
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {

@@ -70,11 +70,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
@@ -186,10 +186,6 @@ internal fun SubPostsContent(
     )
     val forum by viewModel.uiState.collectPartialAsState(
         prop1 = SubPostsUiState::forum,
-        initial = null
-    )
-    val thread by viewModel.uiState.collectPartialAsState(
-        prop1 = SubPostsUiState::thread,
         initial = null
     )
     val post by viewModel.uiState.collectPartialAsState(
@@ -394,105 +390,45 @@ internal fun SubPostsContent(
                 }
             }
         ) { paddingValues ->
-            LoadMoreLayout(
-                modifier = Modifier.padding(paddingValues),
+            SwipeUpLazyLoadColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = paddingValues,
                 isLoading = isLoading,
-                onLoadMore = {
+                onLazyLoad = {
+                    if (!hasMore || post == null || subPosts.isEmpty()) return@SwipeUpLazyLoadColumn
                     viewModel.send(
-                        SubPostsUiIntent.LoadMore(
-                            forumId,
-                            threadId,
-                            postId,
-//                            subPostId,
-                            page = currentPage + 1,
-                        )
+                        SubPostsUiIntent.LoadMore(forumId, threadId, postId, page = currentPage + 1)
                     )
                 },
-                loadEnd = !hasMore,
-                lazyListState = lazyListState,
-                isEmpty = post == null && subPosts.isEmpty(),
+                onLoad = {
+                    viewModel.send(
+                        SubPostsUiIntent.LoadMore(forumId, threadId, postId, page = currentPage + 1)
+                    )
+                },
+                bottomIndicator = { onThreshold ->
+                    LoadMoreIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        isLoading = isLoading,
+                        noMore = !hasMore,
+                        onThreshold = onThreshold
+                    )
+                }
             ) {
-                MyLazyColumn(state = lazyListState) {
-                    item(key = "Post$postId") {
-                        post?.let {
-                            Column {
-                                PostCard(
-                                    post = it,
-                                    contentRenders = postContentRenders,
-                                    canDelete = it.author.id == account?.uid?.toLongOrNull(),
-                                    isCollected = false,
-                                    onUserClick = {
-                                        navigator.navigate(UserProfilePageDestination(it.author.id))
-                                    },
-                                    onAgree = {
-                                        val hasAgreed = it.hasAgree != 0
-                                        viewModel.send(
-                                            SubPostsUiIntent.Agree(
-                                                forumId,
-                                                threadId,
-                                                postId,
-                                                agree = !hasAgreed
-                                            )
-                                        )
-                                    },
-                                    onReplyClick = {
-                                        showReplyDialog(
-                                            ReplyArgs(
-                                                forumId = forumId,
-                                                forumName = forum?.get { name } ?: "",
-                                                threadId = threadId,
-                                                postId = postId,
-                                                replyUserId = it.author.id,
-                                                replyUserName = it.author.nameShow.takeIf { name -> name.isNotEmpty() }?: it.author.name,
-                                                replyUserPortrait = it.author.portrait
-                                            )
-                                        )
-                                    },
-                                    onMenuCopyClick = {
-                                        navigator.navigate(
-                                            CopyTextDialogPageDestination(it)
-                                        )
-                                    },
-                                ) {
-                                    deleteSubPost = null
-                                    confirmDeleteDialogState.show()
-                                }
-                                VerticalDivider(thickness = 2.dp)
-                            }
-                        }
-                    }
-                    stickyHeader(key = "SubPostsHeader") {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(ExtendedTheme.colors.background)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Text(
-                                text = stringResource(
-                                    id = R.string.title_sub_posts_header,
-                                    totalCount
-                                ),
-                                style = MaterialTheme.typography.subtitle1
-                            )
-                        }
-                    }
-                    items(items = subPosts, key = { subPost -> subPost.id }) { item ->
-                        SubPostItem(
-                            item = item,
-                            canDelete = item.authorId == account?.uid?.toLongOrNull(),
+                val postItem = post ?: return@SwipeUpLazyLoadColumn
+                item(key = "Post$postId") {
+                    Column {
+                        PostCard(
+                            post = postItem,
+                            contentRenders = postContentRenders,
+                            canDelete = postItem.author.id == account?.uid?.toLongOrNull(),
+                            isCollected = false,
                             onUserClick = {
-                                navigator.navigate(UserProfilePageDestination(it.id))
+                                navigator.navigate(UserProfilePageDestination(postItem.author.id))
                             },
                             onAgree = {
+                                val hasAgreed = postItem.hasAgree != 0
                                 viewModel.send(
-                                    SubPostsUiIntent.Agree(
-                                        forumId,
-                                        threadId,
-                                        postId,
-                                        subPostId = it.id,
-                                        agree = !it.hasAgree
-                                    )
+                                    SubPostsUiIntent.Agree(forumId, threadId, postId, agree = !hasAgreed)
                                 )
                             },
                             onReplyClick = {
@@ -502,25 +438,72 @@ internal fun SubPostsContent(
                                         forumName = forum?.get { name } ?: "",
                                         threadId = threadId,
                                         postId = postId,
-                                        subPostId = it.id,
                                         replyUserId = it.author.id,
-                                        replyUserName = it.author.nameShow.takeIf { name -> !name.isNullOrEmpty() }
-                                            ?: it.author.name,
-                                        replyUserPortrait = it.author.portrait,
+                                        replyUserName = it.author.nameShow.takeIf { name -> name.isNotEmpty() }?: it.author.name,
+                                        replyUserPortrait = it.author.portrait
                                     )
                                 )
                             },
                             onMenuCopyClick = {
-                                navigator.navigate(
-                                    CopyTextDialogPageDestination(it)
-                                )
+                                navigator.navigate(CopyTextDialogPageDestination(it))
                             },
-                            onMenuDeleteClick = {
-                                deleteSubPost = it
-                                confirmDeleteDialogState.show()
-                            },
+                        ) {
+                            deleteSubPost = null
+                            confirmDeleteDialogState.show()
+                        }
+                        VerticalDivider(thickness = 2.dp)
+                    }
+                } // End of post card
+
+                stickyHeader(key = "SubPostsHeader") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(ExtendedTheme.colors.background)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.title_sub_posts_header, totalCount),
+                            style = MaterialTheme.typography.subtitle1
                         )
                     }
+                }
+
+                items(items = subPosts, key = { subPost -> subPost.id }) { item ->
+                    SubPostItem(
+                        item = item,
+                        canDelete = item.authorId == account?.uid?.toLongOrNull(),
+                        onUserClick = {
+                            navigator.navigate(UserProfilePageDestination(it.id))
+                        },
+                        onAgree = {
+                            viewModel.send(
+                                SubPostsUiIntent.Agree(forumId, threadId, postId, subPostId = it.id, agree = !it.hasAgree)
+                            )
+                        },
+                        onReplyClick = {
+                            showReplyDialog(
+                                ReplyArgs(
+                                    forumId = forumId,
+                                    forumName = forum?.get { name } ?: "",
+                                    threadId = threadId,
+                                    postId = postId,
+                                    subPostId = it.id,
+                                    replyUserId = it.author.id,
+                                    replyUserName = it.author.nameShow.takeIf { name -> name.isNotEmpty() }
+                                        ?: it.author.name,
+                                    replyUserPortrait = it.author.portrait,
+                                )
+                            )
+                        },
+                        onMenuCopyClick = {
+                            navigator.navigate(CopyTextDialogPageDestination(it))
+                        },
+                        onMenuDeleteClick = {
+                            deleteSubPost = it
+                            confirmDeleteDialogState.show()
+                        }
+                    )
                 }
             }
         }

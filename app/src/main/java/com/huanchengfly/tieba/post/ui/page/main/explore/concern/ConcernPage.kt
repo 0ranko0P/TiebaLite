@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -31,8 +32,8 @@ import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestinati
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.persistentListOf
 
@@ -53,6 +54,10 @@ fun ConcernPage(
     val isLoadingMore by viewModel.uiState.collectPartialAsState(
         prop1 = ConcernUiState::isLoadingMore,
         initial = false
+    )
+    val hasMore by viewModel.uiState.collectPartialAsState(
+        prop1 = ConcernUiState::hasMore,
+        initial = true
     )
     val nextPageTag by viewModel.uiState.collectPartialAsState(
         prop1 = ConcernUiState::nextPageTag,
@@ -75,69 +80,62 @@ fun ConcernPage(
     val lazyListState = rememberLazyListState()
     viewModel.bindScrollToTopEvent(lazyListState = lazyListState)
 
-    Box(
-        modifier = Modifier.pullRefresh(pullRefreshState)
-    ) {
-        LoadMoreLayout(
+    Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
+        SwipeUpLazyLoadColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = lazyListState,
+            horizontalAlignment = Alignment.CenterHorizontally,
             isLoading = isLoadingMore,
-            onLoadMore = { viewModel.send(ConcernUiIntent.LoadMore(nextPageTag)) },
-            lazyListState = lazyListState,
+            onLazyLoad = {
+                if (hasMore) viewModel.send(ConcernUiIntent.LoadMore(nextPageTag))
+            },
+            onLoad = { viewModel.send(ConcernUiIntent.LoadMore(nextPageTag)) },
+            bottomIndicator = { onThreshold ->
+                LoadMoreIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    isLoading = isLoadingMore,
+                    noMore = !hasMore,
+                    onThreshold = onThreshold
+                )
+            }
         ) {
-            MyLazyColumn(
-                state = lazyListState,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                itemsIndexed(
-                    items = data,
-                    key = { _, item -> "${item.recommendType}_${item.threadList?.id}" },
-                    contentType = { _, item -> item.recommendType }
-                ) { index, item ->
-                    Container {
-                        if (item.recommendType == 1) {
-                            Column {
-                                FeedCard(
-                                    item = wrapImmutable(item.threadList!!),
-                                    onClick = {
-                                        navigator.navigate(
-                                            ThreadPageDestination(
-                                                it.threadId,
-                                                it.forumId,
-                                                threadInfo = it
-                                            )
-                                        )
-                                    },
-                                    onClickReply = {
-                                        navigator.navigate(
-                                            ThreadPageDestination(
-                                                it.threadId,
-                                                it.forumId,
-                                                scrollToReply = true
-                                            )
-                                        )
-                                    },
-                                    onAgree = {
-                                        viewModel.send(
-                                            ConcernUiIntent.Agree(
-                                                it.threadId,
-                                                it.firstPostId,
-                                                it.hasAgree
-                                            )
-                                        )
-                                    },
-                                    onClickForum = { navigator.navigate(ForumPageDestination(it.name)) },
-                                    onClickUser = { navigator.navigate(UserProfilePageDestination(it.id)) },
-                                )
-                                if (index < data.size - 1) {
-                                    VerticalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        thickness = 2.dp
+            itemsIndexed(
+                items = data,
+                key = { _, item -> "${item.recommendType}_${item.threadList?.id}" },
+                contentType = { _, item -> item.recommendType }
+            ) { index, item ->
+                Container {
+                    if (item.recommendType == 1) {
+                        Column {
+                            FeedCard(
+                                item = wrapImmutable(item.threadList!!),
+                                onClick = {
+                                    navigator.navigate(
+                                        ThreadPageDestination(it.threadId, it.forumId, threadInfo = it)
                                     )
-                                }
+                                },
+                                onClickReply = {
+                                    navigator.navigate(
+                                        ThreadPageDestination(it.threadId, it.forumId, scrollToReply = true)
+                                    )
+                                },
+                                onAgree = {
+                                    viewModel.send(
+                                        ConcernUiIntent.Agree(it.threadId, it.firstPostId, it.hasAgree)
+                                    )
+                                },
+                                onClickForum = { navigator.navigate(ForumPageDestination(it.name)) },
+                                onClickUser = { navigator.navigate(UserProfilePageDestination(it.id)) },
+                            )
+                            if (index < data.size - 1) {
+                                VerticalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    thickness = 2.dp
+                                )
                             }
-                        } else {
-                            Box {}
                         }
+                    } else {
+                        Box {}
                     }
                 }
             }

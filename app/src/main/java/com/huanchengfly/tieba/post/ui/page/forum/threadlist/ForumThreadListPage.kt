@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -34,12 +33,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
@@ -47,8 +42,6 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
-import com.huanchengfly.tieba.post.ui.models.ThreadItemData
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumRuleDetailPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
@@ -56,12 +49,13 @@ import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestinati
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
+import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshLayout
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -119,97 +113,6 @@ private fun TopThreadItem(
             modifier = Modifier.weight(1f),
             fontSize = 15.sp
         )
-    }
-}
-
-@Composable
-private fun ThreadList(
-    state: LazyListState,
-    items: ImmutableList<ThreadItemData>,
-    onItemClicked: (ThreadInfo) -> Unit,
-    onItemReplyClicked: (ThreadInfo) -> Unit,
-    onAgree: (ThreadInfo) -> Unit,
-    forumRuleTitle: String? = null,
-    onOpenForumRule: (() -> Unit)? = null,
-    onOriginThreadClicked: (OriginThreadInfo) -> Unit = {},
-    onUserClicked: (User) -> Unit = {},
-) {
-    val windowSizeClass = LocalWindowSizeClass.current
-    val itemFraction = when (windowSizeClass.widthSizeClass) {
-        WindowWidthSizeClass.Expanded -> 0.5f
-        else -> 1f
-    }
-    MyLazyColumn(
-        state = state,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = WindowInsets.navigationBars.asPaddingValues()
-    ) {
-        if (!forumRuleTitle.isNullOrEmpty()) {
-            item(key = "ForumRule") {
-                TopThreadItem(
-                    title = forumRuleTitle,
-                    onClick = {
-                        onOpenForumRule?.invoke()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    type = stringResource(id = R.string.desc_forum_rule)
-                )
-            }
-        }
-        itemsIndexed(
-            items = items,
-            key = { index, (holder) ->
-                val (item) = holder
-                "${index}_${item.id}"
-            },
-            contentType = { _, (holder) ->
-                val (item) = holder
-                if (item.isTop == 1) ItemType.Top
-                else {
-                    if (item.media.isNotEmpty())
-                        if (item.media.size == 1) ItemType.SingleMedia else ItemType.MultiMedia
-                    else if (item.videoInfo != null)
-                        ItemType.Video
-                    else ItemType.PlainText
-                }
-            }
-        ) { index, (holder, blocked) ->
-            BlockableContent(
-                blocked = blocked,
-                blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 16.dp),
-            ) {
-                val (item) = holder
-                if (item.isTop == 1) {
-                    val title = item.title.takeUnless { it.isBlank() } ?: item.abstractText
-                    TopThreadItem(
-                        title = title,
-                        onClick = { onItemClicked(item) },
-                        modifier = Modifier.fillMaxWidth(itemFraction),
-                    )
-                } else {
-                    Column(modifier = Modifier.fillMaxWidth(itemFraction)) {
-                        if (index > 0) {
-                            if (items[index - 1].thread.get { isTop } == 1) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                            VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                        }
-                        FeedCard(
-                            item = holder,
-                            onClick = onItemClicked,
-                            onClickReply = onItemReplyClicked,
-                            onAgree = onAgree,
-                            onClickOriginThread = onOriginThreadClicked,
-                            onClickUser = onUserClicked
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -346,55 +249,116 @@ private fun ForumThreadListPage(
         refreshing = isRefreshing,
         onRefresh = onRefresh
     )
+
     PullToRefreshLayout(
         modifier = modifier.fillMaxSize(),
         onRefresh = onRefresh,
         refreshing = isRefreshing
     ) {
-        LoadMoreLayout(
-            isLoading = isLoadingMore,
-            onLoadMore = {
-                viewModel.onLoadMore(currentPage, threadListIds, sortType())
-            },
-            loadEnd = !hasMore,
-            lazyListState = lazyListState,
-            isEmpty = threadList.isEmpty(),
-        ) {
-            ThreadList(
+        Container {
+            SwipeUpLazyLoadColumn(
+                modifier = Modifier.fillMaxSize(),
                 state = lazyListState,
-                items = threadList,
-                onItemClicked = {
-                    navigator.navigate(
-                        ThreadPageDestination(
-                            it.threadId,
-                            forumId = it.forumId,
-                            threadInfo = it
-                        )
-                    )
+                contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+                isLoading = isLoadingMore,
+                onLazyLoad = {
+                    if (hasMore) {
+                        viewModel.onLoadMore(currentPage, threadListIds, sortType())
+                    }
                 },
-                onItemReplyClicked = {
-                    navigator.navigate(
-                        ThreadPageDestination(
-                            it.threadId,
-                            forumId = it.forumId,
-                            scrollToReply = true
-                        )
-                    )
+                onLoad = {
+                    if (threadList.isNotEmpty()) {
+                        viewModel.onLoadMore(currentPage, threadListIds, sortType())
+                    }
                 },
-                onAgree = viewModel::onAgree,
-                forumRuleTitle = forumRuleTitle,
-                onOpenForumRule = {
-                    navigator.navigate(ForumRuleDetailPageDestination(forumId))
-                },
-                onOriginThreadClicked = {
-                    navigator.navigate(
-                        ThreadPageDestination(
-                            threadId = it.tid.toLong(),
-                            forumId = it.fid,
-                        )
+                bottomIndicator = { onThreshold ->
+                    LoadMoreIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        isLoading = isLoadingMore,
+                        noMore = !hasMore,
+                        onThreshold = onThreshold
                     )
                 }
-            ) { navigator.navigate(UserProfilePageDestination(it.id)) }
+            ) {
+                forumRuleTitle?.let { rule ->
+                    if (rule.isEmpty()) return@let
+                    item(key = "ForumRule") {
+                        TopThreadItem(
+                            title = rule,
+                            onClick = { navigator.navigate(ForumRuleDetailPageDestination(forumId)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            type = stringResource(id = R.string.desc_forum_rule)
+                        )
+                    }
+                }
+
+                itemsIndexed(
+                    items = threadList,
+                    key = { index, holder -> "${index}_${holder.thread.item.id}" },
+                    contentType = { _, holder ->
+                        val item = holder.thread.item
+                        when {
+                            item.isTop == 1 -> ItemType.Top
+                            item.media.isNotEmpty() && item.media.size == 1 -> ItemType.SingleMedia
+                            item.media.isNotEmpty() && item.media.size != 1 -> ItemType.MultiMedia
+                            item.videoInfo != null -> ItemType.Video
+                            else -> ItemType.PlainText
+                        }
+                    }
+                ) { index, (holder, blocked) ->
+                    BlockableContent(
+                        blocked = blocked,
+                        blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp, horizontal = 16.dp),
+                    ) {
+                        val (item) = holder
+                        if (item.isTop == 1) {
+                            val title = item.title.takeUnless { it.isBlank() } ?: item.abstractText
+                            TopThreadItem(
+                                title = title,
+                                onClick = {
+                                    navigator.navigate(
+                                        ThreadPageDestination(item.threadId, forumId = item.forumId, threadInfo = item)
+                                    )
+                                }
+                            )
+                        } else {
+                            Column {
+                                if (index > 0) {
+                                    if (threadList[index - 1].thread.get { isTop } == 1) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+                                    VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                }
+                                FeedCard(
+                                    item = holder,
+                                    onClick = {
+                                        navigator.navigate(
+                                            ThreadPageDestination(item.threadId, forumId = item.forumId, threadInfo = item)
+                                        )
+                                    },
+                                    onClickReply = {
+                                        navigator.navigate(
+                                            ThreadPageDestination(it.threadId, forumId = it.forumId, scrollToReply = true)
+                                        )
+                                    },
+                                    onAgree = viewModel::onAgree,
+                                    onClickOriginThread = {
+                                        navigator.navigate(
+                                            ThreadPageDestination(threadId = it.tid.toLong(), forumId = it.fid)
+                                        )
+                                    },
+                                    onClickUser = {
+                                        navigator.navigate(UserProfilePageDestination(it.id))
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         PullRefreshIndicator(

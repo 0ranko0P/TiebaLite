@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ButtonDefaults
@@ -59,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.models.SearchThreadBean
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
@@ -73,11 +75,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
-import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadList
+import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadItem
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarContainer
+import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -301,6 +305,20 @@ fun ForumSearchPostPage(
         )
     }
 
+    val threadClickListener : (SearchThreadBean.ThreadInfoBean) -> Unit = {
+        if (it.postInfo != null) {
+            navigator.navigate(
+                SubPostsPageDestination(threadId = it.tid.toLong(), subPostId = it.cid.toLong(), loadFromSubPost = true)
+            )
+        } else if (it.mainPost != null) {
+            navigator.navigate(
+                ThreadPageDestination(threadId = it.tid.toLong(), postId = it.pid.toLong(), scrollToReply = true)
+            )
+        } else {
+            navigator.navigate(ThreadPageDestination(threadId = it.tid.toLong()))
+        }
+    }
+
     MyScaffold(
         topBar = {
             TopAppBarContainer(
@@ -382,199 +400,170 @@ fun ForumSearchPostPage(
                             }
                         }
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .pullRefresh(pullRefreshState)
-                        ) {
-                            LoadMoreLayout(
+                        Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
+                            SwipeUpLazyLoadColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                state = lazyListState,
                                 isLoading = isLoadingMore,
-                                onLoadMore = {
-                                    viewModel.send(
-                                        ForumSearchPostUiIntent.LoadMore(
-                                            currentKeyword,
-                                            forumName,
-                                            forumId,
-                                            currentPage,
-                                            currentSortType,
-                                            currentFilterType
+                                onLazyLoad = {
+                                    if (hasMore) {
+                                        viewModel.send(
+                                            ForumSearchPostUiIntent.LoadMore(
+                                                currentKeyword,
+                                                forumName,
+                                                forumId,
+                                                currentPage,
+                                                currentSortType,
+                                                currentFilterType
+                                            )
                                         )
-                                    )
+                                    }
                                 },
-                                loadEnd = !hasMore,
-                                lazyListState = lazyListState,
+                                onLoad = null, // Refuse manual load more!
+                                bottomIndicator = { onThreshold ->
+                                    LoadMoreIndicator(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        isLoading = isLoadingMore,
+                                        noMore = !hasMore,
+                                        onThreshold = onThreshold
+                                    )
+                                }
                             ) {
-                                SearchThreadList(
-                                    data = data,
-                                    lazyListState = lazyListState,
-                                    onItemClick = {
-                                        if (it.postInfo != null) {
-                                            navigator.navigate(
-                                                SubPostsPageDestination(
-                                                    threadId = it.tid.toLong(),
-                                                    subPostId = it.cid.toLong(),
-                                                    loadFromSubPost = true
-                                                )
+                                stickyHeader(key = "Sort&Filter") {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .background(ExtendedTheme.colors.background)
+                                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                                onClick = {}
                                             )
-                                        } else if (it.mainPost != null) {
-                                            navigator.navigate(
-                                                ThreadPageDestination(
-                                                    threadId = it.tid.toLong(),
-                                                    postId = it.pid.toLong(),
-                                                    scrollToReply = true,
+                                    ) {
+                                        val menuState = rememberMenuState()
+
+                                        val rotate by animateFloatAsState(
+                                            targetValue = if (menuState.expanded) 180f else 0f,
+                                            label = "ArrowIndicatorRotate"
+                                        )
+
+                                        ClickMenu(
+                                            menuContent = {
+                                                ListSinglePicker(
+                                                    itemTitles = sortTypeMapping.values.toImmutableList(),
+                                                    itemValues = sortTypeMapping.keys.toImmutableList(),
+                                                    selectedPosition = sortTypeMapping.keys.indexOf(
+                                                        currentSortType
+                                                    ),
+                                                    onItemSelected = { _, _, newSortType, changed ->
+                                                        if (changed) {
+                                                            viewModel.send(
+                                                                ForumSearchPostUiIntent.Refresh(
+                                                                    currentKeyword,
+                                                                    forumName,
+                                                                    forumId,
+                                                                    newSortType,
+                                                                    currentFilterType
+                                                                )
+                                                            )
+                                                        }
+                                                        dismiss()
+                                                    }
                                                 )
-                                            )
-                                        } else {
-                                            navigator.navigate(
-                                                ThreadPageDestination(
-                                                    threadId = it.tid.toLong()
+                                            },
+                                            menuState = menuState,
+                                            indication = null
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = sortTypeMapping[currentSortType] ?: "",
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold
                                                 )
-                                            )
+                                                Icon(
+                                                    imageVector = Icons.Rounded.ArrowDropDown,
+                                                    contentDescription = null,
+                                                    modifier = Modifier
+                                                        .size(16.dp)
+                                                        .rotate(rotate)
+                                                )
+                                            }
                                         }
-                                    },
-                                    onItemUserClick = {
-                                        navigator.navigate(UserProfilePageDestination(it.userId.toLong()))
-                                    },
-                                    onItemForumClick = {
-                                        navigator.navigate(
-                                            ForumPageDestination(
-                                                it.forumName
-                                            )
-                                        )
-                                    },
-                                    onQuotePostClick = {
-                                        navigator.navigate(
-                                            ThreadPageDestination(
-                                                threadId = it.tid,
-                                                postId = it.pid,
-                                                scrollToReply = true
-                                            )
-                                        )
-                                    },
-                                    onMainPostClick = {
-                                        navigator.navigate(
-                                            ThreadPageDestination(
-                                                threadId = it.tid,
-                                                scrollToReply = true
-                                            )
-                                        )
-                                    },
-                                    hideForum = true,
-                                    searchKeyword = currentKeyword,
-                                ) {
-                                    stickyHeader(key = "Sort&Filter") {
+                                        Spacer(modifier = Modifier.weight(1f))
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier
-                                                .background(ExtendedTheme.colors.background)
-                                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                                .clickable(
-                                                    interactionSource = remember { MutableInteractionSource() },
-                                                    indication = null,
-                                                    onClick = {}
-                                                )
+                                            modifier = Modifier.height(IntrinsicSize.Min)
                                         ) {
-                                            val menuState = rememberMenuState()
-
-                                            val rotate by animateFloatAsState(
-                                                targetValue = if (menuState.expanded) 180f else 0f,
-                                                label = "ArrowIndicatorRotate"
-                                            )
-
-                                            ClickMenu(
-                                                menuContent = {
-                                                    ListSinglePicker(
-                                                        itemTitles = sortTypeMapping.values.toImmutableList(),
-                                                        itemValues = sortTypeMapping.keys.toImmutableList(),
-                                                        selectedPosition = sortTypeMapping.keys.indexOf(
-                                                            currentSortType
-                                                        ),
-                                                        onItemSelected = { _, _, newSortType, changed ->
-                                                            if (changed) {
-                                                                viewModel.send(
-                                                                    ForumSearchPostUiIntent.Refresh(
-                                                                        currentKeyword,
-                                                                        forumName,
-                                                                        forumId,
-                                                                        newSortType,
-                                                                        currentFilterType
-                                                                    )
-                                                                )
-                                                            }
-                                                            dismiss()
-                                                        }
-                                                    )
-                                                },
-                                                menuState = menuState,
-                                                indication = null
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-//                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                ) {
+                                            filterTypeMapping.keys.map<Int, @Composable () -> Unit> { type ->
+                                                {
                                                     Text(
-                                                        text = sortTypeMapping[currentSortType]
-                                                            ?: "",
+                                                        text = filterTypeMapping[type] ?: "",
                                                         fontSize = 13.sp,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                    Icon(
-                                                        imageVector = Icons.Rounded.ArrowDropDown,
-                                                        contentDescription = null,
-                                                        modifier = Modifier
-                                                            .size(16.dp)
-                                                            .rotate(rotate)
+                                                        fontWeight = if (type == currentFilterType) {
+                                                            FontWeight.Bold
+                                                        } else {
+                                                            FontWeight.Normal
+                                                        },
+                                                        modifier = Modifier.clickable(
+                                                            interactionSource = remember { MutableInteractionSource() },
+                                                            indication = null,
+                                                            role = Role.RadioButton,
+                                                            onClick = {
+                                                                if (type != currentFilterType) {
+                                                                    viewModel.send(
+                                                                        ForumSearchPostUiIntent.Refresh(
+                                                                            currentKeyword,
+                                                                            forumName,
+                                                                            forumId,
+                                                                            currentSortType,
+                                                                            type
+                                                                        )
+                                                                    )
+                                                                }
+                                                            }
+                                                        )
                                                     )
                                                 }
-                                            }
-                                            Spacer(modifier = Modifier.weight(1f))
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.height(IntrinsicSize.Min)
-                                            ) {
-                                                filterTypeMapping.keys.map<Int, @Composable () -> Unit> { type ->
-                                                    {
-                                                        Text(
-                                                            text = filterTypeMapping[type] ?: "",
-                                                            fontSize = 13.sp,
-                                                            fontWeight = if (type == currentFilterType) {
-                                                                FontWeight.Bold
-                                                            } else {
-                                                                FontWeight.Normal
-                                                            },
-                                                            modifier = Modifier.clickable(
-                                                                interactionSource = remember { MutableInteractionSource() },
-                                                                indication = null,
-                                                                role = Role.RadioButton,
-                                                                onClick = {
-                                                                    if (type != currentFilterType) {
-                                                                        viewModel.send(
-                                                                            ForumSearchPostUiIntent.Refresh(
-                                                                                currentKeyword,
-                                                                                forumName,
-                                                                                forumId,
-                                                                                currentSortType,
-                                                                                type
-                                                                            )
-                                                                        )
-                                                                    }
-                                                                }
-                                                            )
-                                                        )
-                                                    }
-                                                }.forEachIndexed { index, composable ->
-                                                    composable()
-                                                    if (index < filterTypeMapping.size - 1) {
-                                                        HorizontalDivider(
-                                                            modifier = Modifier.padding(
-                                                                horizontal = 8.dp
-                                                            )
-                                                        )
-                                                    }
+                                            }.forEachIndexed { index, composable ->
+                                                composable()
+                                                if (index < filterTypeMapping.size - 1) {
+                                                    HorizontalDivider(
+                                                        modifier = Modifier.padding(horizontal = 8.dp)
+                                                    )
                                                 }
                                             }
                                         }
                                     }
+                                }
+
+                                itemsIndexed(data) { index, item ->
+                                    if (index > 0) {
+                                        VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    }
+                                    SearchThreadItem(
+                                        item = item,
+                                        onClick = threadClickListener,
+                                        onUserClick = {
+                                            val uid = it.userId.toLong()
+                                            navigator.navigate(UserProfilePageDestination(uid))
+                                        },
+                                        onForumClick = {
+                                            navigator.navigate(ForumPageDestination(it.forumName))
+                                        },
+                                        onQuotePostClick = {
+                                            navigator.navigate(
+                                                ThreadPageDestination(threadId = it.tid, postId = it.pid, scrollToReply = true)
+                                            )
+                                        },
+                                        onMainPostClick = {
+                                            navigator.navigate(
+                                                ThreadPageDestination(threadId = it.tid, scrollToReply = true)
+                                            )
+                                        },
+                                        hideForum = true,
+                                        searchKeyword = currentKeyword
+                                    )
                                 }
                             }
 

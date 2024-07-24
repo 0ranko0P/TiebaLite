@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -30,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextStyle
@@ -57,11 +57,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -74,7 +74,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 private val UpdateTipTextStyle = TextStyle(fontWeight = FontWeight.Bold, fontSize = 10.sp)
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalTextApi::class)
+@OptIn(ExperimentalMaterialApi::class)
 @Destination(
     deepLinks = [
         DeepLink(uriPattern = "tblite://favorite")
@@ -119,10 +119,7 @@ fun ThreadStorePage(
     val scaffoldState = rememberScaffoldState()
     viewModel.onEvent<ThreadStoreUiEvent.Delete.Failure> {
         scaffoldState.snackbarHostState.showSnackbar(
-            context.getString(
-                R.string.delete_store_failure,
-                it.errorMsg
-            )
+            context.getString(R.string.delete_store_failure, it.errorMsg)
         )
     }
     viewModel.onEvent<ThreadStoreUiEvent.Delete.Success> {
@@ -156,10 +153,7 @@ fun ThreadStorePage(
                 viewModel.send(ThreadStoreUiIntent.Refresh)
             },
             errorScreen = {
-                error?.let {
-                    val (e) = it
-                    ErrorScreen(error = e)
-                }
+                error?.item?.let { ErrorScreen(error = it) }
             }
         ) {
             val pullRefreshState = rememberPullRefreshState(
@@ -170,48 +164,50 @@ fun ThreadStorePage(
             val lazyListState = rememberLazyListState()
 
             Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
-                LoadMoreLayout(
+                SwipeUpLazyLoadColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = lazyListState,
                     isLoading = isLoadingMore,
-                    onLoadMore = { viewModel.send(ThreadStoreUiIntent.LoadMore(currentPage + 1)) },
-                    loadEnd = !hasMore,
-                    lazyListState = lazyListState
+                    onLazyLoad = {
+                        if (hasMore) viewModel.send(ThreadStoreUiIntent.LoadMore(currentPage + 1))
+                    },
+                    onLoad = null,
+                    bottomIndicator = {
+                        LoadMoreIndicator(
+                            modifier = Modifier.fillMaxWidth(),
+                            isLoading = isLoadingMore,
+                            noMore = !hasMore,
+                            onThreshold = false
+                        )
+                    }
                 ) {
-                    MyLazyColumn(state = lazyListState) {
-                        items(
-                            items = data,
-                            key = { it.threadId }
-                        ) { info ->
-                            StoreItem(
-                                info = info,
-                                onUserClick = {
-                                    info.author.lzUid?.let {
-                                        navigator.navigate(UserProfilePageDestination(it.toLong()))
-                                    }
-                                },
-                                onClick = {
-                                    navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = info.threadId.toLong(),
-                                            postId = info.markPid.toLong(),
-                                            seeLz = context.appPreferences.collectThreadSeeLz,
-                                            sortType = if(context.appPreferences.collectThreadDescSort) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT,
-                                            from = ThreadPageFrom.FROM_STORE,
-                                            extra = ThreadPageFromStoreExtra(
-                                                maxPid = info.maxPid.toLong(),
-                                                maxFloor = info.postNo.toInt()
-                                            )
-                                        )
-                                    )
-                                },
-                                onDelete = {
-                                    viewModel.send(
-                                        ThreadStoreUiIntent.Delete(
-                                            info.threadId
-                                        )
-                                    )
+                    items(items = data, key = { it.threadId }) { info ->
+                        StoreItem(
+                            info = info,
+                            onUserClick = {
+                                info.author.lzUid?.let {
+                                    navigator.navigate(UserProfilePageDestination(it.toLong()))
                                 }
-                            )
-                        }
+                            },
+                            onClick = {
+                                navigator.navigate(
+                                    ThreadPageDestination(
+                                        threadId = info.threadId.toLong(),
+                                        postId = info.markPid.toLong(),
+                                        seeLz = context.appPreferences.collectThreadSeeLz,
+                                        sortType = if(context.appPreferences.collectThreadDescSort) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT,
+                                        from = ThreadPageFrom.FROM_STORE,
+                                        extra = ThreadPageFromStoreExtra(
+                                            maxPid = info.maxPid.toLong(),
+                                            maxFloor = info.postNo.toInt()
+                                        )
+                                    )
+                                )
+                            },
+                            onDelete = {
+                                viewModel.send(ThreadStoreUiIntent.Delete(info.threadId))
+                            }
+                        )
                     }
                 }
 
@@ -227,7 +223,6 @@ fun ThreadStorePage(
     }
 }
 
-@OptIn(ExperimentalTextApi::class)
 @Composable
 private fun StoreItem(
     info: ThreadStoreBean.ThreadStoreInfo,

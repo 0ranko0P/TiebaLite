@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,19 +45,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.User
-import com.huanchengfly.tieba.post.api.models.protos.personalized.DislikeReason
 import com.huanchengfly.tieba.post.arch.CommonUiEvent.ScrollToTop.bindScrollToTopEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.models.ThreadItemData
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
@@ -69,11 +63,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -175,66 +168,129 @@ fun PersonalizedPage(
         onReload = { viewModel.send(PersonalizedUiIntent.Refresh) },
         errorScreen = {
             error?.let {
-                ErrorScreen(
-                    error = it.get()
-                )
+                ErrorScreen(error = it.get())
             }
         }
     ) {
-        Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
-            LoadMoreLayout(
+        Container(modifier = Modifier.pullRefresh(pullRefreshState)) {
+            SwipeUpLazyLoadColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = lazyListState,
+                horizontalAlignment = Alignment.CenterHorizontally,
                 isLoading = isLoadingMore,
-                onLoadMore = { viewModel.send(PersonalizedUiIntent.LoadMore(currentPage + 1)) },
-                loadEnd = false,
-                lazyListState = lazyListState,
-                isEmpty = data.isEmpty()
+                onLazyLoad = {
+                    if (data.isNotEmpty()) {
+                        viewModel.send(PersonalizedUiIntent.LoadMore(currentPage + 1))
+                    }
+                },
+                onLoad = null, // Disable manual load
+                bottomIndicator = {
+                    LoadMoreIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        isLoading = isLoadingMore,
+                        noMore = false, // Infinite
+                        onThreshold = false
+                    )
+                }
             ) {
-                FeedList(
-                    state = lazyListState,
-                    dataProvider = { data },
-                    refreshPositionProvider = { refreshPosition },
-                    hiddenThreadIdsProvider = { hiddenThreadIds },
-                    onItemClick = {
-                        navigator.navigate(
-                            ThreadPageDestination(
-                                it.id,
-                                it.forumId,
-                                threadInfo = it
-                            )
-                        )
-                    },
-                    onItemReplyClick = {
-                        navigator.navigate(
-                            ThreadPageDestination(
-                                it.id,
-                                it.forumId,
-                                scrollToReply = true
-                            )
-                        )
-                    },
-                    onAgree = {
-                        viewModel.send(
-                            PersonalizedUiIntent.Agree(
-                                it.threadId,
-                                it.firstPostId,
-                                it.agree?.hasAgree ?: 0
-                            )
-                        )
-                    },
-                    onDislike = { item, clickTime, reasons ->
-                        viewModel.send(
-                            PersonalizedUiIntent.Dislike(
-                                item.forumInfo?.id ?: 0,
-                                item.threadId,
-                                reasons,
-                                clickTime
-                            )
-                        )
-                    },
-                    onRefresh = { viewModel.send(PersonalizedUiIntent.Refresh) },
-                    onOpenForum = { navigator.navigate(ForumPageDestination(it)) },
-                    onClickUser = { navigator.navigate(UserProfilePageDestination(it.id)) }
-                )
+                itemsIndexed(
+                    items = data,
+                    key = { _, it -> it.thread.item.id.toString() },
+                    contentType = { _, it ->
+                        when {
+                            it.thread.item.videoInfo != null -> "Video"
+                            it.thread.item.media.size == 1 -> "SingleMedia"
+                            it.thread.item.media.size > 1 -> "MultiMedia"
+                            else -> "PlainText"
+                        }
+                    }
+                ) { index, (item, blocked, personalized, hidden) ->
+                    val isHidden = remember(hiddenThreadIds, item, hidden) {
+                        hiddenThreadIds.contains(item.get().threadId) || hidden
+                    }
+
+                    val isRefreshPosition = remember(index, refreshPosition) {
+                        index + 1 == refreshPosition
+                    }
+
+                    val isNotLast = remember(index, data.size) { index < data.size - 1 }
+                    val showDivider = remember(isHidden, isRefreshPosition, isNotLast) {
+                        !isHidden && !isRefreshPosition && isNotLast
+                    }
+
+                    AnimatedVisibility(
+                        visible = !isHidden,
+                        enter = EnterTransition.None,
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column {
+                            BlockableContent(
+                                blocked = blocked,
+                                blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                            ) {
+                                Column {
+                                    FeedCard(
+                                        item = item,
+                                        onClick = {
+                                            navigator.navigate(
+                                                ThreadPageDestination(it.id, it.forumId, threadInfo = it)
+                                            )
+                                        },
+                                        onClickReply = {
+                                            navigator.navigate(
+                                                ThreadPageDestination(it.id, it.forumId, scrollToReply = true)
+                                            )
+                                        },
+                                        onAgree = {
+                                            viewModel.send(
+                                                PersonalizedUiIntent.Agree(
+                                                    it.threadId,
+                                                    it.firstPostId,
+                                                    it.agree?.hasAgree ?: 0
+                                                )
+                                            )
+                                        },
+                                        onClickForum = {
+                                            navigator.navigate(ForumPageDestination(it.name))
+                                        },
+                                        onClickUser = {
+                                            navigator.navigate(UserProfilePageDestination(it.id))
+                                        },
+                                        dislikeAction = {
+                                            if (personalized == null) return@FeedCard
+                                            Dislike(personalized = personalized) { clickTime, reasons ->
+                                                viewModel.send(
+                                                    PersonalizedUiIntent.Dislike(
+                                                        forumId = item.get().forumInfo?.id ?: 0,
+                                                        threadId = item.get().threadId,
+                                                        reasons = reasons,
+                                                        clickTime = clickTime
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    )
+
+                                    if (showDivider) {
+                                        VerticalDivider(
+                                            modifier = Modifier.padding(horizontal = 16.dp),
+                                            thickness = 2.dp
+                                        )
+                                    }
+                                }
+                            }
+                            if (isRefreshPosition) {
+                                RefreshTip {
+                                    viewModel.send(PersonalizedUiIntent.Refresh)
+                                }
+                            }
+                        }
+                    }
+                }
+
             }
 
             PullRefreshIndicator(
@@ -278,112 +334,7 @@ private fun BoxScope.RefreshTip(refreshCount: Int) {
 }
 
 @Composable
-private fun FeedList(
-    state: LazyListState,
-    dataProvider: () -> ImmutableList<ThreadItemData>,
-    refreshPositionProvider: () -> Int,
-    hiddenThreadIdsProvider: () -> ImmutableList<Long>,
-    onItemClick: (ThreadInfo) -> Unit,
-    onItemReplyClick: (ThreadInfo) -> Unit,
-    onAgree: (ThreadInfo) -> Unit,
-    onDislike: (ThreadInfo, Long, ImmutableList<ImmutableHolder<DislikeReason>>) -> Unit,
-    onRefresh: () -> Unit,
-    onOpenForum: (forumName: String) -> Unit = {},
-    onClickUser: (User) -> Unit = {},
-) {
-    val data = dataProvider()
-    val refreshPosition = refreshPositionProvider()
-    val hiddenThreadIds = hiddenThreadIdsProvider()
-
-    MyLazyColumn(
-        state = state,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        itemsIndexed(
-            items = data,
-            key = { _, (item) -> "${item.get { id }}" },
-            contentType = { _, (item) ->
-                when {
-                    item.get { videoInfo } != null -> "Video"
-                    item.get { media }.size == 1 -> "SingleMedia"
-                    item.get { media }.size > 1 -> "MultiMedia"
-                    else -> "PlainText"
-                }
-            }
-        ) { index, (item, blocked, personalized, hidden) ->
-            val isHidden =
-                remember(
-                    hiddenThreadIds,
-                    item,
-                    hidden
-                ) { hiddenThreadIds.contains(item.get { threadId }) || hidden }
-            val isRefreshPosition =
-                remember(index, refreshPosition) { index + 1 == refreshPosition }
-            val isNotLast = remember(index, data.size) { index < data.size - 1 }
-            val showDivider = remember(
-                isHidden,
-                isRefreshPosition,
-                isNotLast
-            ) { !isHidden && !isRefreshPosition && isNotLast }
-            Container {
-                AnimatedVisibility(
-                    visible = !isHidden,
-                    enter = EnterTransition.None,
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    Column {
-                        BlockableContent(
-                            blocked = blocked,
-                            blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp, horizontal = 16.dp)
-                        ) {
-                            Column {
-                                FeedCard(
-                                    item = item,
-                                    onClick = onItemClick,
-                                    onClickReply = onItemReplyClick,
-                                    onAgree = onAgree,
-                                    onClickForum = remember {
-                                        {
-                                            onOpenForum(it.name)
-                                        }
-                                    },
-                                    onClickUser = onClickUser,
-                                ) {
-                                    if (personalized != null) {
-                                        Dislike(
-                                            personalized = personalized,
-                                            onDislike = { clickTime, reasons ->
-                                                onDislike(item.get(), clickTime, reasons)
-                                            }
-                                        )
-                                    }
-                                }
-                                if (showDivider) {
-                                    VerticalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        thickness = 2.dp
-                                    )
-                                }
-                            }
-                        }
-                        if (isRefreshPosition) {
-                            RefreshTip(onRefresh)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RefreshTip(
-    onRefresh: () -> Unit
-) {
+private fun RefreshTip(onRefresh: () -> Unit) {
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,

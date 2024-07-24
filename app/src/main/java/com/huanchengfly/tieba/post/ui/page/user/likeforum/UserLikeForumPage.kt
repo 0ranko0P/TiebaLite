@@ -2,12 +2,11 @@ package com.huanchengfly.tieba.post.ui.page.user.likeforum
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
@@ -37,11 +36,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -116,25 +114,38 @@ fun UserLikeForumPage(
         val pullRefreshModifier =
             if (enablePullRefresh) Modifier.pullRefresh(pullRefreshState) else Modifier
 
-        Box(modifier = pullRefreshModifier) {
-            LoadMoreLayout(
+        Container(modifier = pullRefreshModifier, fluid = fluid) {
+            SwipeUpLazyLoadColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = lazyListState,
                 isLoading = isLoadingMore,
-                onLoadMore = {
+                onLazyLoad = {
+                    if (hasMore && !isEmpty) {
+                        viewModel.send(UserLikeForumUiIntent.LoadMore(uid, currentPage))
+                    }
+                },
+                onLoad = {
                     viewModel.send(UserLikeForumUiIntent.LoadMore(uid, currentPage))
                 },
-                loadEnd = !hasMore,
-                lazyListState = lazyListState
+                bottomIndicator = { onThreshold ->
+                    LoadMoreIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        isLoading = isLoadingMore,
+                        noMore = !hasMore,
+                        onThreshold = onThreshold
+                    )
+                }
             ) {
-                UserLikeForumList(
-                    data = forums,
-                    fluid = fluid,
-                    onClickForum = { forumBean ->
-                        forumBean.name?.let {
-                            navigator.navigate(ForumPageDestination(it))
-                        }
-                    },
-                    lazyListState = lazyListState
-                )
+                items(items = forums, key = { it.id }) { forumBean ->
+                    UserLikeForumItem(
+                        item = forumBean,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        forumBean.name?.let { navigator.navigate(ForumPageDestination(it)) }
+                    }
+                }
             }
 
             PullRefreshIndicator(
@@ -149,49 +160,20 @@ fun UserLikeForumPage(
 }
 
 @Composable
-private fun UserLikeForumList(
-    data: ImmutableList<UserLikeForumBean.ForumBean>,
-    onClickForum: (UserLikeForumBean.ForumBean) -> Unit,
-    fluid: Boolean = false,
-    lazyListState: LazyListState = rememberLazyListState(),
-) {
-    MyLazyColumn(state = lazyListState) {
-        items(
-            items = data,
-            key = { it.id }
-        ) {
-            Container(fluid = fluid) {
-                UserLikeForumItem(
-                    item = it,
-                    onClick = {
-                        onClickForum(it)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun UserLikeForumItem(
     item: UserLikeForumBean.ForumBean,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .then(modifier),
+        modifier = modifier.clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Avatar(
             data = item.avatar,
             size = Sizes.Medium,
-            contentDescription = null
+            contentDescription = item.name
         )
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp)

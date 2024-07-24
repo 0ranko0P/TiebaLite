@@ -2,6 +2,9 @@ package com.huanchengfly.tieba.post.ui.page.search.thread
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -14,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -26,9 +30,11 @@ import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestinati
 import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalShouldLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadList
+import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadItem
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentListOf
 
@@ -111,59 +117,57 @@ fun SearchThreadPage(
         isError = error != null,
         isLoading = isRefreshing,
         onReload = { viewModel.send(SearchThreadUiIntent.Refresh(keyword, sortType)) },
-        errorScreen = {
-            error?.let {
-                val (e) = it
-                ErrorScreen(error = e)
-            }
-        }
+        errorScreen = { error?.let { ErrorScreen(error = it.item) } }
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState)
+            modifier = Modifier.pullRefresh(pullRefreshState)
         ) {
-            LoadMoreLayout(
+            SwipeUpLazyLoadColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = lazyListState,
                 isLoading = isLoadingMore,
-                onLoadMore = {
-                    viewModel.send(
-                        SearchThreadUiIntent.LoadMore(keyword, currentPage, sortType)
-                    )
+                onLazyLoad = {
+                    if (hasMore) {
+                        viewModel.send(SearchThreadUiIntent.LoadMore(keyword, currentPage, sortType))
+                    }
                 },
-                loadEnd = !hasMore,
-                lazyListState = lazyListState,
+                onLoad = null, // Refuse manual load more
+                bottomIndicator = {
+                    LoadMoreIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        isLoading = isLoadingMore,
+                        noMore = !hasMore,
+                        onThreshold = false
+                    )
+                }
             ) {
-                SearchThreadList(
-                    data = data,
-                    lazyListState = lazyListState,
-                    onItemClick = {
-                        navigator.navigate(
-                            ThreadPageDestination(
-                                threadId = it.tid.toLong()
-                            )
-                        )
-                    },
-                    onItemUserClick = {
-                        navigator.navigate(UserProfilePageDestination(it.userId.toLong()))
-                    },
-                    onItemForumClick = {
-                        navigator.navigate(
-                            ForumPageDestination(
-                                it.forumName
-                            )
-                        )
-                    },
-                    searchKeyword = keyword,
-                )
-
-                PullRefreshIndicator(
-                    refreshing = isRefreshing,
-                    state = pullRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                    contentColor = ExtendedTheme.colors.primary,
-                )
+                itemsIndexed(data) { index, item ->
+                    if (index > 0) {
+                        VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    }
+                    SearchThreadItem(
+                        item = item,
+                        onClick = {
+                            navigator.navigate(ThreadPageDestination(threadId = it.tid.toLong()))
+                        },
+                        onUserClick = {
+                            navigator.navigate(UserProfilePageDestination(it.userId.toLong()))
+                        },
+                        onForumClick = {
+                            navigator.navigate(ForumPageDestination(it.forumName))
+                        },
+                        searchKeyword = keyword
+                    )
+                }
             }
+
+            PullRefreshIndicator(
+                refreshing = isRefreshing,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
+                contentColor = ExtendedTheme.colors.primary,
+            )
         }
     }
 }

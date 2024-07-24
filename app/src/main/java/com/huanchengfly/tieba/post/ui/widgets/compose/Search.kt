@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -146,43 +143,6 @@ fun MainPostCard(
             )
         }
         SearchMedia(medias = medias)
-    }
-}
-
-@Composable
-fun SearchThreadList(
-    data: ImmutableList<SearchThreadBean.ThreadInfoBean>,
-    lazyListState: LazyListState,
-    onItemClick: (SearchThreadBean.ThreadInfoBean) -> Unit,
-    onItemUserClick: (SearchThreadBean.UserInfoBean) -> Unit,
-    onItemForumClick: (SearchThreadBean.ForumInfo) -> Unit,
-    modifier: Modifier = Modifier,
-    onQuotePostClick: (SearchThreadBean.PostInfo) -> Unit = {},
-    onMainPostClick: (SearchThreadBean.MainPost) -> Unit = {},
-    hideForum: Boolean = false,
-    searchKeyword: String? = null,
-    header: LazyListScope.() -> Unit = {},
-) {
-    MyLazyColumn(
-        state = lazyListState,
-        modifier = modifier
-    ) {
-        header()
-        itemsIndexed(data) { index, item ->
-            if (index > 0) {
-                VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            }
-            SearchThreadItem(
-                item = item,
-                onClick = onItemClick,
-                onUserClick = onItemUserClick,
-                onForumClick = onItemForumClick,
-                onQuotePostClick = onQuotePostClick,
-                onMainPostClick = onMainPostClick,
-                hideForum = hideForum,
-                searchKeyword = searchKeyword
-            )
-        }
     }
 }
 

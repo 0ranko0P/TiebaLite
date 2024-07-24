@@ -125,7 +125,7 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
         val forum = state.forum
 
         SwipeUpLazyLoadColumn(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
             state = lazyListState,
             isLoading = viewModel.isLoadingMore,
             onLoad = {
