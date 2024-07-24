@@ -42,7 +42,7 @@ import kotlin.math.roundToInt
 /**
  * LazyColumn with swipe-up-to-refresh behaviour
  *
- * @param   onLoad Called when user performed a swipe up refresh
+ * @param   onLoad Called when user performed a swipe up refresh, set Null to disable this behaviour
  * @param   onLazyLoad Called when the colum scrolls on end
  *
  * @see SwipeUpRefreshScrollConnection
@@ -56,7 +56,7 @@ fun SwipeUpLazyLoadColumn(
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     isLoading: Boolean,
-    onLoad: () -> Unit,
+    onLoad: (() -> Unit)?,
     onLazyLoad: (() -> Unit)? = null,
     bottomIndicator: @Composable BoxScope.(onThreshold: Boolean) -> Unit,
     items: LazyListScope.() -> Unit
@@ -108,7 +108,7 @@ fun SwipeUpLazyLoadColumn(
 private class SwipeUpRefreshScrollConnection(
     private val scope: CoroutineScope,
     threshold: Float,
-    val onRefresh: () -> Unit
+    val onRefresh: (() -> Unit)?
 ) : NestedScrollConnection {
 
     private var _refreshing = false
@@ -161,9 +161,11 @@ private class SwipeUpRefreshScrollConnection(
     }
 
     private fun onRelease(velocity: Float): Float {
-        if (!_refreshing) {
+        if (onRefresh == null) {
+            animateIndicatorTo(0f)
+        } else if (!_refreshing) {
             if (adjustedDistancePulled < threshold) {
-                onRefresh()
+                onRefresh.invoke()
                 animateIndicatorTo(threshold)
             } else {
                 animateIndicatorTo(0f)
@@ -218,7 +220,7 @@ private class SwipeUpRefreshScrollConnection(
 @Composable
 private fun rememberSwipeUpRefreshConnection(
     refreshing: Boolean,
-    onRefresh: () -> Unit,
+    onRefresh: (() -> Unit)?,
     refreshThreshold: Dp = 80.dp
 ): SwipeUpRefreshScrollConnection {
     require(refreshThreshold > 0.dp) { "The refresh trigger must be greater than zero!" }
