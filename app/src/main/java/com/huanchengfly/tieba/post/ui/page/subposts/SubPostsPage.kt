@@ -62,7 +62,6 @@ import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestinati
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyArgs
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyDialog
 import com.huanchengfly.tieba.post.ui.page.thread.PostCard
-import com.huanchengfly.tieba.post.ui.page.thread.UserNameText
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
@@ -77,8 +76,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.UserNameText
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -591,8 +590,9 @@ private fun SubPostItem(
                         },
                         name = {
                             UserNameText(
-                                userName = author.annotatedName,
+                                userName = author.getDisplayName(context),
                                 userLevel = author.levelId,
+                                isLz = author.isLz,
                                 bawuType = author.bawuType,
                             )
                         },
@@ -616,14 +616,7 @@ private fun SubPostItem(
                         emoticonSize = 0.9f,
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 4,
-                        lineSpacing = 0.4.sp,
-                        inlineContent = if (item.isLz) mapOf(
-                            "Lz" to buildChipInlineContent(
-                                stringResource(id = R.string.tip_lz),
-                                backgroundColor = ExtendedTheme.colors.textSecondary.copy(alpha = 0.1f),
-                                color = ExtendedTheme.colors.textSecondary
-                            ),
-                        ) else emptyMap()
+                        lineSpacing = 0.4.sp
                     )
                 }
             )

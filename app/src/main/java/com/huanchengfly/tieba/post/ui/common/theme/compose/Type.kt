@@ -20,6 +20,11 @@ val Typography = Typography(
         fontSize = 16.sp,
         letterSpacing = 0.15.sp
     ),
+    subtitle2 = DefaultTextStyle.copy(
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.sp,
+        letterSpacing = 0.15.sp
+    ),
     button = DefaultTextStyle.copy(
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,

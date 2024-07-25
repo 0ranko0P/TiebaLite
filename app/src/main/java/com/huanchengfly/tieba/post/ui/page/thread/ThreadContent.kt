@@ -84,6 +84,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.UserNameText
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
@@ -251,30 +252,6 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
         )
     }
 }
-
-@Composable
-fun UserNameText(
-    userName: AnnotatedString,
-    userLevel: Int,
-    modifier: Modifier = Modifier,
-    bawuType: String? = null,
-) = Text(
-    text = userName,
-    inlineContent = mapOf(
-        "Level" to buildChipInlineContent(
-            "18",
-            color = Color(getIconColorByLevel("$userLevel")),
-            backgroundColor = Color(getIconColorByLevel("$userLevel")).copy(alpha = 0.25f)
-        ),
-        "Bawu" to buildChipInlineContent(
-            bawuType ?: "",
-            color = ExtendedTheme.colors.primary,
-            backgroundColor = ExtendedTheme.colors.primary.copy(alpha = 0.1f)
-        ),
-        "Lz" to buildChipInlineContent(stringResource(id = R.string.tip_lz)),
-    ),
-    modifier = modifier
-)
 
 @NonRestartableComposable
 @Composable
@@ -491,8 +468,9 @@ fun PostCard(
                         },
                         name = {
                             UserNameText(
-                                userName = author.annotatedName,
+                                userName = author.getDisplayName(context),
                                 userLevel = author.levelId,
+                                isLz = author.isLz,
                                 bawuType = author.bawuType,
                             )
                         },
