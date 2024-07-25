@@ -40,10 +40,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -86,12 +84,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserNameText
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.Util.getIconColorByLevel
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -609,24 +605,18 @@ private fun SubPostItem(
         shape = RoundedCornerShape(0),
         onClick = { onOpenSubPosts(subPost.id) }
     ) {
-        ProvideTextStyle(value = MaterialTheme.typography.body2.copy(color = ExtendedTheme.colors.text)) {
-            PbContentText(
-                text = subPost.content,
-                modifier = modifier,
-                fontSize = 13.sp,
-                emoticonSize = 0.9f,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 4,
-                lineSpacing = 0.4.sp,
-                inlineContent = if (subPost.isLz) mapOf(
-                    "Lz" to buildChipInlineContent(
-                        stringResource(id = R.string.tip_lz),
-                        backgroundColor = ExtendedTheme.colors.textSecondary.copy(alpha = 0.1f),
-                        color = ExtendedTheme.colors.textSecondary
-                    ),
-                ) else emptyMap()
-            )
-        }
+        PbContentText(
+            text = subPost.content,
+            modifier = modifier,
+            color = ExtendedTheme.colors.text,
+            fontSize = 13.sp,
+            emoticonSize = 0.9f,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 4,
+            lineSpacing = 0.4.sp,
+            inlineContent = if (subPost.isLz) ThreadViewModel.getCachedLzInlineContent() else emptyMap(),
+            style = MaterialTheme.typography.body2,
+        )
     }
 }
 

@@ -2,12 +2,17 @@ package com.huanchengfly.tieba.post.ui.page.thread
 
 import android.util.Log
 import androidx.annotation.StringRes
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.material.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -31,6 +36,7 @@ import com.huanchengfly.tieba.post.repository.EmptyDataException
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
@@ -38,6 +44,7 @@ import com.huanchengfly.tieba.post.ui.models.ThreadUiState
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsSheetPageDestination
+import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.utils.HistoryUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -45,6 +52,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.Direction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +66,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.lang.ref.WeakReference
 import javax.inject.Inject
 import kotlin.math.max
 
@@ -157,6 +166,9 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
             firstPost = if (info != null) PostData.fromThreadInfo(info) else null,
             sortType = sortType,
         )
+        if (info != null) {
+            this._info = ThreadInfoData(info)
+        }
         requestLoad(page = 0, postId)
         initialized = true
     }
@@ -172,7 +184,6 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
                 .collect { response ->
                     updateStateFrom(response)
                     curForumId = _threadUiState.forum?.item?.id ?: curForumId
-                    _threadUiState
                     sendUiEvent(ThreadUiEvent.LoadSuccess(response.data_!!.page!!.current_page))
                 }
         }
@@ -628,6 +639,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
         history?.let {
             MainScope().launch(Dispatchers.IO) { HistoryUtil.saveHistory(it) }
         }
+        LzInlineContentMap.clear()
     }
 
     private fun sendMsg(@StringRes int: Int, vararg formatArgs: Any) =
@@ -685,6 +697,30 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
     companion object {
 
         private const val TAG = "ThreadViewModel"
+
+        @Volatile
+        private var LzInlineContentMap: WeakReference<Map<String, InlineTextContent>?> = WeakReference(null)
+
+        @Composable
+        fun getCachedLzInlineContent(): Map<String, InlineTextContent> {
+            var map = LzInlineContentMap.get()
+            if (map == null) {
+                synchronized(this) {
+                    if (LzInlineContentMap.get() == null) {
+                        map = persistentMapOf(
+                            "Lz" to buildChipInlineContent(
+                                text = stringResource(id = R.string.tip_lz),
+                                textStyle = MaterialTheme.typography.subtitle2.copy(fontSize = 12.sp),
+                                backgroundColor = ExtendedTheme.colors.textSecondary.copy(alpha = 0.1f),
+                                color = ExtendedTheme.colors.textSecondary
+                            )
+                        )
+                        LzInlineContentMap = WeakReference(map)
+                    }
+                }
+            }
+            return map!!
+        }
 
         private fun ThreadUiState.updateAgreePost(postId: Long, hasAgree: Int): ThreadUiState {
             val list = data.map { post ->

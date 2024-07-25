@@ -375,8 +375,7 @@ fun buildChipInlineContent(
         ),
         children = {
             Box(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -392,6 +391,7 @@ fun buildChipInlineContent(
                     textAlign = TextAlign.Center,
                     color = color,
                     modifier = Modifier
+                        .padding(horizontal = 1.dp)
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(100))
                         .background(backgroundColor)
