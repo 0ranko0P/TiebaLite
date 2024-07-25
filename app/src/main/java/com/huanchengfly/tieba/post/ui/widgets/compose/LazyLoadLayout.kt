@@ -171,15 +171,15 @@ private class SwipeUpRefreshScrollConnection(
     }
 
     private fun onRelease(velocity: Float): Float {
-        if (onRefresh == null) {
-            animateIndicatorTo(0f)
-        } else if (!_refreshing) {
-            if (adjustedDistancePulled < threshold) {
+        if (adjustedDistancePulled < threshold) {
+            if (!_refreshing && onRefresh != null) {
                 onRefresh.invoke()
                 animateIndicatorTo(threshold)
             } else {
                 animateIndicatorTo(0f)
             }
+        } else {
+            animateIndicatorTo(0f)
         }
 
         val consumed = when {
