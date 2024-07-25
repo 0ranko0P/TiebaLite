@@ -14,21 +14,38 @@ import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
 data class SubPostItemData(
     val id: Long,
     val author: UserData,
+    val time: Long,
     val content: AnnotatedString,
     val plainText: String,
-    val blocked: Boolean,
+    val blocked: Boolean = shouldBlock(plainText) || shouldBlock(author.id, author.name),
     val isLz: Boolean,
     val authorId: Long,
+    val hasAgree: Boolean,
+    val agreeNum: Long,
+    val diffAgreeNum: Long,
 ) {
     constructor(subPost: SubPostList, lzId: Long): this(
         id = subPost.id,
         author = UserData(subPost.author!!, lzId == subPost.author_id),
+        time = subPost.time.toLong(),
         content = subPost.getContentText(lzId),
         plainText = subPost.content.plainText,
-        blocked = subPost.shouldBlock(),
         isLz = lzId == subPost.author_id,
-        authorId = subPost.author_id
+        authorId = subPost.author_id,
+        hasAgree = subPost.agree?.hasAgree == 1,
+        agreeNum = subPost.agree?.agreeNum ?: 0L,
+        diffAgreeNum = subPost.agree?.diffAgreeNum ?: 0L
     )
+
+    fun updateAgreeStatus(hasAgree: Boolean): SubPostItemData {
+        return if (hasAgree != this.hasAgree) {
+            if (hasAgree) {
+                copy(agreeNum = agreeNum + 1, diffAgreeNum = diffAgreeNum + 1, hasAgree = true)
+            } else {
+                copy(agreeNum = agreeNum - 1, diffAgreeNum = diffAgreeNum - 1, hasAgree = false)
+            }
+        } else this
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -37,6 +54,7 @@ data class SubPostItemData(
         other as SubPostItemData
 
         if (id != other.id) return false
+        if (time != other.time) return false
         if (blocked != other.blocked) return false
         if (isLz != other.isLz) return false
         if (authorId != other.authorId) return false
@@ -46,6 +64,7 @@ data class SubPostItemData(
 
     override fun hashCode(): Int {
         var result = id.hashCode()
+        result = 31 * result + time.hashCode()
         result = 31 * result + blocked.hashCode()
         result = 31 * result + isLz.hashCode()
         result = 31 * result + authorId.hashCode()
