@@ -610,7 +610,6 @@ private fun SubPostItem(
             modifier = modifier,
             color = ExtendedTheme.colors.text,
             fontSize = 13.sp,
-            emoticonSize = 0.9f,
             overflow = TextOverflow.Ellipsis,
             maxLines = 4,
             lineSpacing = 0.4.sp,

@@ -61,6 +61,7 @@ interface PbContentRender {
     }
 }
 
+@Suppress("unused")
 @Stable
 data class TextContentRender(
     val text: AnnotatedString
@@ -244,7 +245,6 @@ fun PbContentText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
-    emoticonSize: Float = 0.9f,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
 ) {
@@ -265,7 +265,6 @@ fun PbContentText(
         softWrap = softWrap,
         maxLines = maxLines,
         minLines = minLines,
-        emoticonSize = emoticonSize,
         inlineContent = emptyMap(),
         onTextLayout = onTextLayout,
         style = style
@@ -290,7 +289,6 @@ fun PbContentText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
-    emoticonSize: Float = 0.9f,
     inlineContent: Map<String, InlineTextContent> = emptyMap(),
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
@@ -343,7 +341,6 @@ fun PbContentText(
         softWrap = softWrap,
         maxLines = maxLines,
         minLines = minLines,
-        emoticonSize = emoticonSize,
         inlineContent = inlineContent,
         onTextLayout = {
             layoutResult.value = it

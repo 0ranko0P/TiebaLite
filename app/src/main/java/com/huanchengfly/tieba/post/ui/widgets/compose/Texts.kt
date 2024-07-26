@@ -61,6 +61,8 @@ import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.calcLineHeightPx
 import java.util.regex.Pattern
 
+const val EMOTICON_SIZE_SCALE = 0.9f
+
 @Composable
 fun EmoticonText(
     text: String,
@@ -125,7 +127,6 @@ fun EmoticonText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
-    emoticonSize: Float = 0.9f,
     inlineContent: Map<String, InlineTextContent> = emptyMap(),
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current
@@ -151,8 +152,11 @@ fun EmoticonText(
     val sizePx = calcLineHeightPx(mergedStyle)
     val spacingLineHeight =
         remember(sizePx) { (sizePx + lineSpacing.value.spToPxFloat()).pxToSpFloat().sp }
-    val emoticonInlineContent =
-        remember(sizePx) { EmoticonManager.getEmoticonInlineContent(sizePx * emoticonSize) }
+
+    val emoticonInlineContent = remember(sizePx) {
+        EmoticonManager.getEmoticonInlineContent(sizePx * EMOTICON_SIZE_SCALE)
+    }
+
     IconText(
         text.emoticonString,
         modifier,
@@ -420,7 +424,6 @@ fun HighlightText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
-    emoticonSize: Float = 0.9f,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
     highlightKeywords: List<String> = emptyList(),
@@ -444,7 +447,6 @@ fun HighlightText(
         softWrap = softWrap,
         maxLines = maxLines,
         minLines = minLines,
-        emoticonSize = emoticonSize,
         onTextLayout = onTextLayout,
         style = style,
         highlightKeywords = highlightKeywords,
@@ -471,7 +473,6 @@ fun HighlightText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
-    emoticonSize: Float = 0.9f,
     inlineContent: Map<String, InlineTextContent> = emptyMap(),
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
@@ -521,7 +522,6 @@ fun HighlightText(
         softWrap = softWrap,
         maxLines = maxLines,
         minLines = minLines,
-        emoticonSize = emoticonSize,
         inlineContent = inlineContent,
         onTextLayout = onTextLayout,
         style = style,

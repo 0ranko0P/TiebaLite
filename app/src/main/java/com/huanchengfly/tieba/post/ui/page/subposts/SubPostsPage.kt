@@ -541,7 +541,6 @@ private fun SubPostItem(
                         .padding(start = 44.dp)
                         .fillMaxWidth(),
                     fontSize = 13.sp,
-                    emoticonSize = 0.9f,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 4,
                     lineSpacing = 0.4.sp
