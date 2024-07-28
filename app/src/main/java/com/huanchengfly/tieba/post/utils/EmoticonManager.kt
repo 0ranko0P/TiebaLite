@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextStyle
@@ -38,16 +37,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.lang.ref.WeakReference
 
-@Composable
-fun calcLineHeightPx(style: TextStyle): Int {
-    val textMeasurer = rememberTextMeasurer()
-    val textLayoutResult = textMeasurer.measure(
-        AnnotatedString(stringResource(id = R.string.single_chinese_char)),
-        style
-    )
-    return textLayoutResult.size.height
-}
-
 data class Emoticon(
     val id: String,
     val name: String
@@ -76,6 +65,9 @@ object EmoticonManager {
     private val inlineTextCache by lazy {
         HashMap<Int, WeakReference<Map<String, InlineTextContent>>>()
     }
+
+    private val lineHeightCache by lazy { HashMap<TextStyle, Int>(4) }
+
     private val emoticonMapping: MutableMap<String, String> = mutableMapOf()
 
     private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
@@ -203,8 +195,25 @@ object EmoticonManager {
         }
     }
 
+    @Composable
+    fun calcLineHeightPx(style: TextStyle): Int {
+        val cachedSize = lineHeightCache[style]
+        return if (cachedSize != null) {
+            cachedSize
+        } else {
+            val textLayoutResult = rememberTextMeasurer().measure(
+                text = stringResource(id = R.string.single_chinese_char),
+                style = style
+            )
+            val height = textLayoutResult.size.height
+            lineHeightCache[style] = height
+            height
+        }
+    }
+
     fun clear() {
         inlineTextCache.clear()
+        lineHeightCache.clear()
         queue.cancel()
         contextRef.clear()
     }
