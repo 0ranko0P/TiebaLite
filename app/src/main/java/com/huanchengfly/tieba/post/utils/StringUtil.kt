@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
+import android.graphics.drawable.BitmapDrawable
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
@@ -20,21 +21,23 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonDrawable
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import kotlin.math.roundToInt
 
 object StringUtil {
-    @JvmStatic
-    fun getEmoticonContent(
+
+   suspend fun getEmoticonContent(
         tv: TextView,
         source: CharSequence?,
         emoticonType: Int = EmoticonUtil.EMOTICON_ALL_TYPE
-    ): SpannableString {
-        return try {
-            if (source == null) {
-                return SpannableString("")
-            }
+    ): SpannableString = withContext(Dispatchers.IO) {
+        if (source == null) {
+            return@withContext SpannableString("")
+        }
+        return@withContext try {
             val spannableString: SpannableString = if (source is SpannableString) {
                 source
             } else {
@@ -45,29 +48,22 @@ object StringUtil {
             while (matcherEmoticon.find()) {
                 val key = matcherEmoticon.group()
                 val start = matcherEmoticon.start()
+                val end = start + key.length
                 val group1 = matcherEmoticon.group(1) ?: ""
-                val emoticonDrawable = getEmoticonDrawable(tv.context, getEmoticonIdByName(group1))
-                if (emoticonDrawable != null) {
-                    val paint = tv.paint
-                    val size = (-paint.ascent() + paint.descent()).roundToInt()
-                    val span = EmoticonSpanV2(emoticonDrawable, size)
-                    spannableString.setSpan(
-                        span,
-                        start,
-                        start + key.length,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                }
+                val id = getEmoticonIdByName(group1)
+                val paint = tv.paint
+                val size = (-paint.ascent() + paint.descent()).roundToInt()
+
+                val bitmap = EmoticonManager.getEmoticonBitmap(id, size).await()
+                val emoticonDrawable = BitmapDrawable(App.INSTANCE.resources, bitmap)
+                val span = EmoticonSpanV2(emoticonDrawable, size)
+                spannableString.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                yield()
             }
             spannableString
         } catch (e: Exception) {
             e.printStackTrace()
-            val spannableString: SpannableString = if (source is SpannableString) {
-                source
-            } else {
-                SpannableString(source)
-            }
-            spannableString
+            if (source is SpannableString) source else SpannableString(source)
         }
     }
 

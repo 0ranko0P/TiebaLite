@@ -2,9 +2,6 @@ package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import android.util.Log
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.runtime.Composable
@@ -18,10 +15,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.panpf.sketch.compose.AsyncImage
-import com.github.panpf.sketch.datasource.DataFrom
-import com.github.panpf.sketch.fetch.newAssetUri
-import com.github.panpf.sketch.request.DisplayRequest
+import com.bumptech.glide.Glide
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.fromJson
@@ -31,8 +28,10 @@ import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.toJson
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,13 +77,12 @@ object EmoticonManager {
         HashMap<Int, WeakReference<Map<String, InlineTextContent>>>()
     }
     private val emoticonMapping: MutableMap<String, String> = mutableMapOf()
-    private val drawableCache: MutableMap<String, Drawable> by lazy { mutableMapOf() }
 
     private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
     private val queue = JobQueue()
     private var cacheUpdateJob: Job = Job()
 
-    fun getEmoticonInlineContent(sizePx: Float): Map<String, InlineTextContent> {
+    fun getEmoticonInlineContent(sizePx: Int): Map<String, InlineTextContent> {
         val size = sizePx.pxToSp()
         val cached = inlineTextCache[size]?.get()
         if (cached == null) {
@@ -100,31 +98,14 @@ object EmoticonManager {
         }
     }
 
+    @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
-    fun EmoticonInlineImage(
-        modifier: Modifier = Modifier,
-        id: String,
-        description: String = stringResource(R.string.emoticon, getEmoticonNameById(id) ?: "")
-    ) {
-        AsyncImage(
-            request = rememberEmoticonRequest(id = id),
-            contentDescription = description,
-            modifier = modifier,
-            onSuccess = {
-                if (it.result.dataFrom == DataFrom.NETWORK) {
-                    val drawable = it.result.drawable as BitmapDrawable
-                    saveEmoticons(drawable.bitmap, id)
-                }
-            },
-            onError = {
-                Log.i(TAG, "Failed load emoticon: $id", it.result.throwable)
-            }
-        )
-    }
-
-    @Composable
-    fun rememberEmoticonRequest(id: String): DisplayRequest {
-        return remember(id) { DisplayRequest(getContext(), getEmoticonUri(id)) }
+    fun EmoticonInlineImage(modifier: Modifier = Modifier, id: String, description: String = id) {
+        val uri = remember { getEmoticonUri(id) }
+        GlideImage(model = uri, contentDescription = description, modifier = modifier) {
+            // Disable disk cache for asset emoticon
+            if (uri.startsWith("file")) it.diskCacheStrategy(DiskCacheStrategy.NONE) else it
+        }
     }
 
     fun init(context: Context) = scope.launch(Dispatchers.Main) {
@@ -171,14 +152,9 @@ object EmoticonManager {
         }.getOrNull() ?: EmoticonCache()
     }
 
-    private fun getEmoticonFile(id: String): File = File(EMOTICON_CACHE_DIR, "$id.png")
-
     fun getAllEmoticon(): List<Emoticon> {
         return emoticonIds.map { id ->
-            Emoticon(
-                id = id,
-                name = getEmoticonNameById(id) ?: ""
-            )
+            Emoticon(id = id, name = getEmoticonNameById(id) ?: "")
         }
     }
 
@@ -190,61 +166,25 @@ object EmoticonManager {
         }
     }
 
-    private fun getEmoticonAsset(context: Context, id: String): Drawable? {
-        context.assets.open("$EMOTICON_ASSET_NAME/$id.webp").use {
-            return Drawable.createFromStream(it, null)
+    private fun getEmoticonUri(id: String): String {
+        return if (DEFAULT_EMOTICON_MAPPING.containsValue(id)) {
+            "file:///android_asset/$EMOTICON_ASSET_NAME/$id.webp"
+        } else {
+            "http://static.tieba.baidu.com/tb/editor/images/client/$id.png"
         }
     }
 
-    fun getEmoticonDrawable(context: Context, id: String?): Drawable? {
-        if (id == null) {
-            return null
+    fun getEmoticonBitmap(id: String?, size: Int): Deferred<Bitmap> = scope.async(Dispatchers.IO) {
+        var builder = Glide.with(getContext()).asBitmap()
+        val uri = if (id != null) getEmoticonUri(id) else null
+        // Disable disk cache for asset emoticon
+        if (uri?.startsWith("file") == true) {
+            builder = builder.diskCacheStrategy(DiskCacheStrategy.NONE)
         }
-        if (drawableCache.containsKey(id)) {
-            return drawableCache[id]
-        }
-
-        if (DEFAULT_EMOTICON_MAPPING.containsValue(id)) {
-            return getEmoticonAsset(context, id)
-                ?: throw NullPointerException("$id.webp not found in Asset!")
-        }
-
-        val drawable: BitmapDrawable? = runCatching {
-            val emoticonFile = getEmoticonFile(id)
-            if (emoticonFile.exists()) {
-                BitmapDrawable(getContext().resources, emoticonFile.inputStream())
-            } else null
-        }.getOrNull()
-        return drawable?.also { drawableCache[id] = it }
-    }
-
-    private fun getEmoticonUri(id: String?): String {
-        id ?: return ""
-        if (DEFAULT_EMOTICON_MAPPING.containsValue(id)) {
-            return newAssetUri("$EMOTICON_ASSET_NAME/$id.webp")
-        }
-        return "http://static.tieba.baidu.com/tb/editor/images/client/$id.png"
-    }
-
-    /**
-     * Save downloaded emoticon under [EMOTICON_CACHE_DIR] directory
-     * */
-    private fun saveEmoticons(bitmap: Bitmap, id: String) {
-        queue.submit(Dispatchers.IO) {
-            val emoticonFile = getEmoticonFile(id)
-            try {
-                if (emoticonFile.exists() && emoticonFile.length() > 0L) return@submit
-
-                val rec = ImageUtil.bitmapToFile(bitmap, emoticonFile,100, Bitmap.CompressFormat.PNG)
-                Log.d(TAG, "saveEmoticons: $rec, ID: $id, size: ${emoticonFile.length() / 1024}KiB")
-            } catch (e: Exception) {
-                Log.e(TAG, "saveEmoticons: save $id failed", e)
-                try {
-                    emoticonFile.delete()
-                } catch (_: Exception) {
-                }
-            }
-        }
+        return@async builder.load(uri)
+            .fallback(R.drawable.ic_chrome) // Null ID
+            .submit(size, size)
+            .get()
     }
 
     fun registerEmoticon(id: String, name: String) {

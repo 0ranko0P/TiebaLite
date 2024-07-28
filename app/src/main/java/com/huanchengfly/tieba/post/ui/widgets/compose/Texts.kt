@@ -60,6 +60,7 @@ import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.calcLineHeightPx
 import java.util.regex.Pattern
+import kotlin.math.roundToInt
 
 const val EMOTICON_SIZE_SCALE = 0.9f
 
@@ -154,7 +155,7 @@ fun EmoticonText(
         remember(sizePx) { (sizePx + lineSpacing.value.spToPxFloat()).pxToSpFloat().sp }
 
     val emoticonInlineContent = remember(sizePx) {
-        EmoticonManager.getEmoticonInlineContent(sizePx * EMOTICON_SIZE_SCALE)
+        EmoticonManager.getEmoticonInlineContent((sizePx * EMOTICON_SIZE_SCALE).roundToInt())
     }
 
     IconText(
