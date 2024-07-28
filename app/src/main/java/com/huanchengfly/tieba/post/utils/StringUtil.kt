@@ -4,11 +4,6 @@ import android.content.Context
 import android.graphics.drawable.BitmapDrawable
 import android.text.Spannable
 import android.text.SpannableString
-import android.text.SpannableStringBuilder
-import android.text.Spanned
-import android.text.TextUtils
-import android.text.style.ForegroundColorSpan
-import android.widget.TextView
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
@@ -25,12 +20,11 @@ import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
-import kotlin.math.roundToInt
 
 object StringUtil {
 
-   suspend fun getEmoticonContent(
-        tv: TextView,
+    suspend fun getEmoticonContent(
+        size: Int,
         source: CharSequence?,
         emoticonType: Int = EmoticonUtil.EMOTICON_ALL_TYPE
     ): SpannableString = withContext(Dispatchers.IO) {
@@ -51,8 +45,6 @@ object StringUtil {
                 val end = start + key.length
                 val group1 = matcherEmoticon.group(1) ?: ""
                 val id = getEmoticonIdByName(group1)
-                val paint = tv.paint
-                val size = (-paint.ascent() + paint.descent()).roundToInt()
 
                 val bitmap = EmoticonManager.getEmoticonBitmap(id, size).await()
                 val emoticonDrawable = BitmapDrawable(App.INSTANCE.resources, bitmap)
@@ -65,27 +57,6 @@ object StringUtil {
             e.printStackTrace()
             if (source is SpannableString) source else SpannableString(source)
         }
-    }
-
-    @JvmStatic
-    fun getUsernameString(context: Context, username: String, nickname: String?): CharSequence {
-        val showBoth = context.appPreferences.showBothUsernameAndNickname
-        if (TextUtils.isEmpty(nickname)) {
-            return if (TextUtils.isEmpty(username)) "" else username
-        } else if (showBoth && !TextUtils.isEmpty(username) && !TextUtils.equals(
-                username,
-                nickname
-            )
-        ) {
-            val builder = SpannableStringBuilder(nickname)
-            builder.append(
-                "($username)",
-                ForegroundColorSpan(ThemeUtils.getColorByAttr(context, R.attr.color_text_disabled)),
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-            return builder
-        }
-        return nickname ?: ""
     }
 
     @Stable

@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.util.Log
 import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,7 +56,6 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,7 +76,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.widget.addTextChangedListener
 import com.github.panpf.sketch.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -87,9 +84,7 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.models.database.Draft
 import com.huanchengfly.tieba.post.pxToDpFloat
-import com.huanchengfly.tieba.post.toMD5
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
@@ -111,7 +106,6 @@ import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
-import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.showKeyboard
@@ -120,18 +114,11 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.DestinationStyleBottomSheet
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.sample
-import kotlinx.coroutines.launch
-import org.litepal.LitePal
-import org.litepal.extension.deleteAllAsync
-import org.litepal.extension.findFirstAsync
 import java.util.UUID
-import kotlin.concurrent.thread
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 data class ReplyArgs(
     val forumId: Long,
@@ -178,10 +165,7 @@ fun ReplyDialog(
     }
 }
 
-@OptIn(
-    ExperimentalLayoutApi::class,
-    FlowPreview::class
-)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ReplyPageContent(
     viewModel: ReplyViewModel,
@@ -197,11 +181,9 @@ internal fun ReplyPageContent(
     tbs: String? = null,
     isDialog: Boolean = false,
 ) {
-    val hash = remember(forumId, threadId, postId, subPostId) {
-        "${threadId}_${postId}_${subPostId}".toMD5()
-    }
+    viewModel.initialize(threadId, postId, subPostId)
+
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val curTbs = remember(tbs) { tbs ?: AccountUtil.getAccountInfo { this.tbs }.orEmpty() }
 
     val isUploading by viewModel.uiState.collectPartialAsState(
@@ -213,10 +195,6 @@ internal fun ReplyPageContent(
         initial = false
     )
     val isReplying by remember { derivedStateOf { isUploading || isSending } }
-    val replySuccess by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::replySuccess,
-        initial = false
-    )
     val curKeyboardType by viewModel.uiState.collectPartialAsState(
         prop1 = ReplyUiState::replyPanelType,
         initial = NONE
@@ -231,57 +209,24 @@ internal fun ReplyPageContent(
     )
 
     val keyboardController = LocalSoftwareKeyboardController.current
-    var initialText by remember { mutableStateOf("") }
-    var waitEditTextToSet by remember { mutableStateOf(false) }
+    val text by viewModel.text
     var editTextView by remember { mutableStateOf<UndoableEditText?>(null) }
     fun getText(): String {
         return editTextView?.text?.toString().orEmpty()
     }
 
-    fun setText(text: String) {
-        if (editTextView != null) {
-            editTextView?.setText(StringUtil.getEmoticonContent(editTextView!!, text))
-            editTextView?.setSelection(text.length)
-        } else {
-            initialText = text
-            waitEditTextToSet = true
-        }
-    }
-
-    fun insertEmoticon(text: String) {
+    LaunchedEffect(key1 = text, key2 = editTextView) {
         editTextView?.apply {
             val start = selectionStart
-            this.text?.insert(start, text)
-            this.setText(StringUtil.getEmoticonContent(this, this.text))
-            setSelection(start + text.length)
+            removeTextChangedListener(viewModel) // Avoid onTextChanged loop
+            setText(text)
+            setSelection(start)
+            addTextChangedListener(viewModel)
         }
     }
 
-    val curTextFlow = remember { MutableStateFlow("") }
-    val curText by curTextFlow.collectAsState()
-    LaunchedEffect(Unit) {
-        curTextFlow
-            .sample(500)
-            .distinctUntilChanged()
-            .collect {
-                Log.i("ReplyPage", "collect: $it")
-                if (!replySuccess) {
-                    thread {
-                        Draft(hash, it).saveOrUpdate("hash = ?", hash)
-                    }
-                }
-            }
-    }
-    LaunchedEffect(Unit) {
-        LitePal.where("hash = ?", hash).findFirstAsync<Draft?>()
-            .listen {
-                if (it != null) {
-                    setText(it.content)
-                }
-            }
-    }
-    val textLength by remember { derivedStateOf { curText.length } }
-    val isTextEmpty by remember { derivedStateOf { curText.isEmpty() } }
+    val textLength by remember { derivedStateOf { text.length } }
+    val isTextEmpty by remember { derivedStateOf { text.isEmpty() } }
 
     viewModel.onEvent<ReplyUiEvent.ReplySuccess> {
         if (it.expInc.isEmpty()) {
@@ -289,7 +234,8 @@ internal fun ReplyPageContent(
         } else {
             context.toastShort(R.string.toast_reply_success, it.expInc)
         }
-        LitePal.deleteAllAsync<Draft>("hash = ?", hash).listen { onBack() }
+        viewModel.deleteDraft()
+        onBack()
     }
 
     var waitUploadSuccessToSend by remember { mutableStateOf(false) }
@@ -479,18 +425,11 @@ internal fun ReplyPageContent(
                                     switchToPanel(NONE)
                                 }
                             }
-                            addTextChangedListener(
-                                afterTextChanged = {
-                                    coroutineScope.launch {
-                                        curTextFlow.emit(it?.toString() ?: "")
-                                    }
-                                }
-                            )
-                            if (waitEditTextToSet) {
-                                waitEditTextToSet = false
-                                this.setText(StringUtil.getEmoticonContent(this, initialText))
-                                this.setSelection(initialText.length)
-                            }
+
+                            addTextChangedListener(viewModel)
+
+                            val emoticonSize = (-paint.ascent() + paint.descent()).roundToInt()
+                            viewModel.setEmoticonSize(emoticonSize)
                         }
                     },
                     modifier = Modifier
@@ -632,7 +571,12 @@ internal fun ReplyPageContent(
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp),
                             onEmoticonClick = { emoticon ->
-                                insertEmoticon("#(${emoticon.name})")
+                                editTextView?.let {
+                                    val start = it.selectionStart
+                                    val emoText = "#(${emoticon.name})"
+                                    it.text?.insert(start, emoText)
+                                    it.setSelection(start + emoText.length)
+                                }
                             }
                         )
                     }

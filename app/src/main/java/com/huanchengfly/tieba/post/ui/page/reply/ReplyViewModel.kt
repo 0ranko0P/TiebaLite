@@ -1,8 +1,14 @@
 package com.huanchengfly.tieba.post.ui.page.reply
 
 import android.net.Uri
+import android.text.Editable
+import android.text.SpannableString
+import android.text.TextWatcher
 import android.util.Log
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.UploadPictureResultBean
@@ -18,13 +24,19 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.components.ImageUploader
+import com.huanchengfly.tieba.post.models.database.Draft
 import com.huanchengfly.tieba.post.repository.AddPostRepository
+import com.huanchengfly.tieba.post.toMD5
 import com.huanchengfly.tieba.post.utils.FileUtil
+import com.huanchengfly.tieba.post.utils.StringUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
@@ -33,6 +45,11 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.litepal.LitePal
+import org.litepal.extension.deleteAllAsync
+import org.litepal.extension.findFirst
 import javax.inject.Inject
 
 enum class ReplyPanelType {
@@ -45,7 +62,39 @@ enum class ReplyPanelType {
 @Stable
 @HiltViewModel
 class ReplyViewModel @Inject constructor() :
-    BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>() {
+    BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>(), TextWatcher {
+
+    private val _text = mutableStateOf(SpannableString(""))
+    val text: State<SpannableString> get() = _text
+
+    /**
+     * Draft to save, will be cleared after a successful reply.
+     *
+     * @see onTextChanged
+     * @see deleteDraft
+     * */
+    private var userDraft: CharSequence? = null
+
+    private var hash: String? = null
+
+    private var emoticonJob: Job = Job()
+
+    private var emoticonSize = -1
+
+    fun initialize(threadId: Long, postId: Long? = null, subPostId: Long? = null) {
+        if (super.initialized) return
+        hash = "${threadId}_${postId}_${subPostId}".toMD5()
+        // Restore draft from DataBase
+        viewModelScope.launch(Dispatchers.Main.immediate) {
+            val draft = withContext(Dispatchers.IO) {
+                LitePal.where("hash = ?", hash).findFirst<Draft?>()
+            }?: return@launch
+
+            onTextChanged(draft.content, 0, 0, draft.content.length)
+        }
+        super.initialized = true
+    }
+
     override fun createInitialState() = ReplyUiState()
 
     override fun createPartialChangeProducer(): PartialChangeProducer<ReplyUiIntent, ReplyPartialChange, ReplyUiState> =
@@ -161,6 +210,49 @@ class ReplyViewModel @Inject constructor() :
 
         private fun ReplyUiIntent.ToggleIsOriginImage.producePartialChange() =
             flowOf(ReplyPartialChange.ToggleIsOriginImage(isOriginImage))
+    }
+
+    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+        emoticonJob.apply {
+            if (isActive) cancel()
+        }
+        emoticonJob = viewModelScope.launch(Dispatchers.Main.immediate) {
+            userDraft = s?.toString()?: ""
+            _text.value = StringUtil.getEmoticonContent(emoticonSize, userDraft)
+        }
+    }
+
+    fun setEmoticonSize(size: Int) {
+        emoticonSize = size
+    }
+
+    fun deleteDraft() {
+        userDraft = null
+        hash?.let {
+            LitePal.deleteAllAsync<Draft>("hash = ?", it)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        if (emoticonJob.isActive) emoticonJob.cancel()
+        if (!userDraft.isNullOrEmpty() && hash != null) {
+            MainScope().launch(Dispatchers.IO) {
+                val rec = Draft(hash, userDraft.toString()).saveOrUpdate("hash = ?", hash)
+                if (!rec) {
+                    Log.w(TAG, "onCleared: Save draft $userDraft failed, hash=$hash")
+                }
+            }
+        }
+    }
+
+
+    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { /*** NO-OP ***/ }
+
+    override fun afterTextChanged(s: Editable?) { /*** NO-OP ***/ }
+
+    companion object {
+        private const val TAG = "ReplyViewModel"
     }
 }
 
