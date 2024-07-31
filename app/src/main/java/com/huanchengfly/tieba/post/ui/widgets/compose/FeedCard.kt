@@ -111,41 +111,40 @@ private val ImmutableHolder<Media>.url: String
 
 @Composable
 private fun UserHeader(
-    userProvider: () -> ImmutableHolder<User>,
-    timeProvider: () -> Int,
+    user: User,
+    time: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
-) {
-    val context = LocalContext.current
-    val user = remember(userProvider) { userProvider() }
-    val time = remember(timeProvider) { timeProvider() }
-    UserHeader(
-        avatar = {
+) = UserHeader(
+    avatar = {
             Avatar(
-                data = user.get { StringUtil.getAvatarUrl(portrait) },
+                data = remember { StringUtil.getAvatarUrl(user.portrait) },
                 size = Sizes.Small,
-                contentDescription = null
+                contentDescription = user.name
             )
         },
         name = {
             Text(
                 text = StringUtil.getUserNameString(
                     context = LocalContext.current,
-                    username = user.get { name },
-                    nickname = user.get { nameShow },
+                    username = user.name,
+                    nickname = user.nameShow,
                 ),
                 color = ExtendedTheme.colors.text
             )
         },
         onClick = onClick,
         desc = {
-            Text(text = DateTimeUtils.getRelativeTimeString(context, time.toString()))
+            val context = LocalContext.current
+            Text(
+                text = remember { DateTimeUtils.getRelativeTimeString(context, time.toString()) }
+            )
         },
         content = content,
         modifier = modifier
     )
-}
+
 
 @Composable
 fun UserHeader(
@@ -752,15 +751,13 @@ fun FeedCard(
 ) {
     Card(
         header = {
-            val author = remember(item) { item.getNullableImmutable { author } }
-            author?.let {
-                UserHeader(
-                    userProvider = { it },
-                    timeProvider = { item.get { lastTimeInt } },
-                    onClick = {
-                        onClickUser(it.get())
-                    },
-                ) { dislikeAction() }
+            val author = item.item.author?: return@Card
+            UserHeader(
+                user = author,
+                time = item.get { lastTimeInt },
+                onClick = { onClickUser(author) },
+            ) {
+                dislikeAction()
             }
         },
         content = {
