@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.models
 
 import android.content.Context
 import com.huanchengfly.tieba.post.api.models.protos.User
+import com.huanchengfly.tieba.post.api.models.protos.bawuType
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 
@@ -27,7 +28,7 @@ data class UserData(
         user.portrait,
         user.ip_address,
         user.level_id,
-        user.bawu_type,
+        user.bawuType,
         isLz
     )
 

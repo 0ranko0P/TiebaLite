@@ -154,7 +154,7 @@ fun UserNameText(
 
         if (!bawuType.isNullOrBlank()) {
             TextChip(
-                text = userLevel.toString(),
+                text = bawuType,
                 fontSize = 9.sp,
                 color = ExtendedTheme.colors.primary,
                 backgroundColor = ExtendedTheme.colors.primary.copy(0.1f)

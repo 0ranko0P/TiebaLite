@@ -24,7 +24,6 @@ import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
 val List<Abstract>.abstractText: String
@@ -380,11 +379,6 @@ val User.bawuType: String?
     get() = if (is_bawu == 1) {
         if (bawu_type == "manager") "吧主" else "小吧主"
     } else null
-
-val Post.subPostContents: ImmutableList<AnnotatedString>
-    get() = sub_post_list?.sub_post_list?.map { it.getContentText(origin_thread_info?.author?.id) }
-        ?.toImmutableList()
-        ?: persistentListOf()
 
 @OptIn(ExperimentalTextApi::class)
 fun SubPostList.getContentText(threadAuthorId: Long? = null): AnnotatedString {
