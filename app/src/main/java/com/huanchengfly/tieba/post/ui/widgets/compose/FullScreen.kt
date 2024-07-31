@@ -21,13 +21,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.LocalView
+import androidx.core.graphics.ColorUtils
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import java.util.UUID
 
 @Composable
@@ -38,13 +41,8 @@ fun FullScreen(content: @Composable () -> Unit) {
     val id = rememberSaveable { UUID.randomUUID() }
 
     val fullScreenLayout = remember {
-        FullScreenLayout(
-            view,
-            id
-        ).apply {
-            setContent(parentComposition) {
-                currentContent()
-            }
+        FullScreenLayout(view, id).apply {
+            setContent(parentComposition, currentContent)
         }
     }
 
@@ -102,9 +100,17 @@ private class FullScreenLayout(
             format = PixelFormat.TRANSLUCENT
             flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Disable blur effect on power save mode
+            val powerSaving = App.INSTANCE.batterySaver.isPowerSaveMode
+            if (!powerSaving && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
                 blurBehindRadius = 64
+            } else {
+                dimAmount = 0f // Remove for older devices
+                val theme = ThemeUtil.themeState.value
+                var bg = App.ThemeDelegate.getColorByAttr(context, R.attr.colorBackground, theme)
+                bg = ColorUtils.setAlphaComponent(bg, 0xF5)
+                setBackgroundColor(bg)
             }
         }
 

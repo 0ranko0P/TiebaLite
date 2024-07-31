@@ -10,6 +10,7 @@ import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.os.Build
+import android.os.PowerManager
 import android.os.Process
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -26,6 +27,7 @@ import com.github.panpf.sketch.decode.HeifAnimatedDrawableDecoder
 import com.github.panpf.sketch.decode.WebpAnimatedDrawableDecoder
 import com.github.panpf.sketch.http.OkHttpStack
 import com.github.panpf.sketch.request.PauseLoadWhenScrollingDrawableDecodeInterceptor
+import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.OAIDGetter
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
@@ -48,6 +50,8 @@ import kotlin.concurrent.thread
 @HiltAndroidApp
 class App : Application(), SketchFactory {
     private val mActivityList: MutableList<Activity> = mutableListOf()
+
+    val batterySaver by unsafeLazy { getSystemService(Context.POWER_SERVICE) as PowerManager }
 
     @RequiresApi(api = 28)
     private fun setWebViewPath(context: Context) {
