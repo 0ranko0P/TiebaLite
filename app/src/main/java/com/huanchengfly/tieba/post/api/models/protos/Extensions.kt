@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PicContentRender
+import com.huanchengfly.tieba.post.ui.common.PureTextContentRender
 import com.huanchengfly.tieba.post.ui.common.TextContentRender.Companion.appendText
 import com.huanchengfly.tieba.post.ui.common.VideoContentRender
 import com.huanchengfly.tieba.post.ui.common.VoiceContentRender
@@ -216,8 +217,12 @@ val List<PbContent>.plainText: String
 @OptIn(ExperimentalTextApi::class)
 val List<PbContent>.renders: ImmutableList<PbContentRender>
     get() {
+        val pureText = find { it.type != 0 && it.type != 9 && it.type != 27 } == null
+        if (pureText) {
+            return map { PureTextContentRender(it.text) }.toImmutableList()
+        }
+        // 富文本 Render
         val renders = mutableListOf<PbContentRender>()
-
         forEach {
             when (it.type) {
                 0, 9, 27 -> {

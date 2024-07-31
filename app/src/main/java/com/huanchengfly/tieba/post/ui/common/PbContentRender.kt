@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +62,20 @@ interface PbContentRender {
     }
 }
 
+class PureTextContentRender(val text: String): PbContentRender {
+
+    @Composable
+    override fun Render() = Text(text = text, style = MaterialTheme.typography.body1)
+
+    override fun toAnnotationString(): AnnotatedString = AnnotatedString(text)
+
+    override fun toString(): String = text
+
+    override fun equals(other: Any?): Boolean = text == other
+
+    override fun hashCode(): Int = text.hashCode()
+}
+
 @Suppress("unused")
 @Stable
 data class TextContentRender(
@@ -76,7 +91,6 @@ data class TextContentRender(
     override fun Render() {
         PbContentText(
             text = text,
-            fontSize = 15.sp,
             style = MaterialTheme.typography.body1,
             lineSpacing = 0.8.sp
         )
