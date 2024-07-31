@@ -205,11 +205,9 @@ private val PbContent.picUrl: String
             true,
             originSrc,
             bigCdnSrc,
-            bigSrc,
             dynamic_,
             cdnSrc,
-            cdnSrcActive,
-            src
+            cdnSrcActive
         )
 
 val List<PbContent>.plainText: String
