@@ -59,23 +59,12 @@ object StringUtil {
         }
     }
 
-    @Stable
-    fun getUsernameAnnotatedString(
-        context: Context,
-        username: String,
-        nickname: String?,
-        color: Color = Color.Unspecified
-    ): AnnotatedString {
+    fun getUserNameString(context: Context, username: String, nickname: String?): String {
         val showBoth = App.isInitialized && context.appPreferences.showBothUsernameAndNickname
-        return buildAnnotatedString {
-            if (showBoth && !nickname.isNullOrBlank() && username != nickname && username.isNotBlank()) {
-                append(nickname)
-                withStyle(SpanStyle(color = color)) {
-                    append("(${username})")
-                }
-            } else {
-                append(nickname ?: username)
-            }
+        return if (showBoth && !nickname.isNullOrBlank() && username != nickname && username.isNotBlank()) {
+            "$nickname $username"
+        } else {
+            nickname ?: username
         }
     }
 
@@ -96,13 +85,7 @@ object StringUtil {
                     )
                 ) {
                     append("@")
-                    append(
-                        getUsernameAnnotatedString(
-                            context,
-                            username,
-                            nickname,
-                        )
-                    )
+                    append(getUserNameString(context, username, nickname))
                 }
             }
             append(": ")

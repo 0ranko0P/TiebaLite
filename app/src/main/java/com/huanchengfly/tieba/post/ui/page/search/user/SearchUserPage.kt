@@ -220,7 +220,7 @@ private fun SearchUserItem(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = StringUtil.getUsernameAnnotatedString(
+                text = StringUtil.getUserNameString(
                     LocalContext.current,
                     item.name.orEmpty(),
                     item.showNickname

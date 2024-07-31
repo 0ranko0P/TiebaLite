@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
@@ -158,17 +159,17 @@ fun SearchThreadUserHeader(
             Avatar(
                 data = StringUtil.getAvatarUrl(user.portrait),
                 size = Sizes.Small,
-                contentDescription = null
+                contentDescription = user.userName
             )
         },
         name = {
             Text(
-                text = StringUtil.getUsernameAnnotatedString(
+                text = StringUtil.getUserNameString(
                     LocalContext.current,
                     user.userName.orEmpty(),
-                    user.showNickname,
-                    color = LocalContentColor.current
-                )
+                    user.showNickname
+                ),
+                style = LocalTextStyle.current
             )
         },
         desc = {

@@ -394,11 +394,7 @@ fun SubPostList.getContentText(threadAuthorId: Long? = null): AnnotatedString {
                 )
             ) {
                 append(
-                    StringUtil.getUsernameAnnotatedString(
-                        context,
-                        author?.name ?: "",
-                        author?.nameShow
-                    )
+                    StringUtil.getUserNameString(context, author?.name ?: "", author?.nameShow)
                 )
             }
             if (author?.id == threadAuthorId) {

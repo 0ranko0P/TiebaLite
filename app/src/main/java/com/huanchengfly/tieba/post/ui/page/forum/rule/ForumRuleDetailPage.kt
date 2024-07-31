@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.LocalContentColor
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
@@ -121,12 +122,12 @@ fun ForumRuleDetailPage(
                             },
                             name = {
                                 Text(
-                                    text = StringUtil.getUsernameAnnotatedString(
+                                    text = StringUtil.getUserNameString(
                                         LocalContext.current,
                                         it.get { user_name },
                                         it.get { name_show },
-                                        LocalContentColor.current
-                                    )
+                                    ),
+                                    style = LocalTextStyle.current
                                 )
                             },
                             desc = (@Composable {

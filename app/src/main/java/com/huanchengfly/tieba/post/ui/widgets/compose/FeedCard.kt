@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
@@ -129,23 +130,17 @@ private fun UserHeader(
         },
         name = {
             Text(
-                text = StringUtil.getUsernameAnnotatedString(
+                text = StringUtil.getUserNameString(
                     context = LocalContext.current,
                     username = user.get { name },
                     nickname = user.get { nameShow },
-                    color = LocalContentColor.current
                 ),
                 color = ExtendedTheme.colors.text
             )
         },
         onClick = onClick,
         desc = {
-            Text(
-                text = DateTimeUtils.getRelativeTimeString(
-                    context,
-                    time.toString()
-                )
-            )
+            Text(text = DateTimeUtils.getRelativeTimeString(context, time.toString()))
         },
         content = content,
         modifier = modifier
@@ -177,13 +172,13 @@ fun UserHeader(
         },
         name = {
             Text(
-                text = StringUtil.getUsernameAnnotatedString(
+                text = StringUtil.getUserNameString(
                     context = LocalContext.current,
                     username = name,
                     nickname = nameShow,
-                    color = LocalContentColor.current
                 ),
-                color = ExtendedTheme.colors.text
+                color = ExtendedTheme.colors.text,
+                style = LocalTextStyle.current
             )
         },
         onClick = onClick,

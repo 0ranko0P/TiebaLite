@@ -14,7 +14,7 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.LocalContentColor
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -66,7 +66,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.StringUtil.getUsernameAnnotatedString
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
@@ -257,12 +256,12 @@ private fun StoreItem(
                 },
                 name = {
                     Text(
-                        text = getUsernameAnnotatedString(
+                        text = StringUtil.getUserNameString(
                             LocalContext.current,
                             info.author.name ?: "",
-                            info.author.nameShow,
-                            LocalContentColor.current
-                        )
+                            info.author.nameShow
+                        ),
+                        style = LocalTextStyle.current
                     )
                 },
                 onClick = onUserClick,

@@ -28,7 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Tab
@@ -102,8 +102,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.BlockManager
+import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -753,12 +753,12 @@ private fun ToolbarUserTitle(
         },
         name = {
             Text(
-                text = StringUtil.getUsernameAnnotatedString(
+                text = StringUtil.getUserNameString(
                     LocalContext.current,
                     user.get { name },
                     user.get { nameShow },
-                    LocalContentColor.current
-                )
+                ),
+                style = LocalTextStyle.current
             )
         },
         modifier = modifier
@@ -822,11 +822,10 @@ private fun UserProfileDetail(
             }
         }
         Text(
-            text = StringUtil.getUsernameAnnotatedString(
+            text = StringUtil.getUserNameString(
                 LocalContext.current,
                 user.get { name },
-                user.get { nameShow },
-                LocalContentColor.current
+                user.get { nameShow }
             ),
             style = MaterialTheme.typography.h6,
             maxLines = 1,
