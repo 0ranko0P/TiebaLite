@@ -5,9 +5,9 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CommonResponse
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.personalized.DislikeReason
 import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponse
+import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -71,19 +71,8 @@ class PersonalizedViewModel @Inject constructor() :
             PersonalizedRepository
                 .personalizedFlow(1, 1)
                 .map<PersonalizedResponse, PersonalizedPartialChange.Refresh> { response ->
-                    val data = response.toData()
-                        .filter {
-                            !App.INSTANCE.appPreferences.blockVideo || it.get { videoInfo } == null
-                        }
-                        .filter { it.get { ala_info } == null }
-                    val threadPersonalizedData = response.data_?.thread_personalized ?: emptyList()
                     PersonalizedPartialChange.Refresh.Success(
-                        data = data.map { thread ->
-                            val threadPersonalized =
-                                threadPersonalizedData.firstOrNull { it.tid == thread.get { id } }
-                                    ?.wrapImmutable()
-                            ThreadItemData(thread = thread, personalized = threadPersonalized)
-                        }.toImmutableList(),
+                        data = response.toData()
                     )
                 }
                 .onStart { emit(PersonalizedPartialChange.Refresh.Start) }
@@ -93,20 +82,9 @@ class PersonalizedViewModel @Inject constructor() :
             PersonalizedRepository
                 .personalizedFlow(2, page)
                 .map<PersonalizedResponse, PersonalizedPartialChange.LoadMore> { response ->
-                    val data = response.toData()
-                        .filter {
-                            !App.INSTANCE.appPreferences.blockVideo || it.get { videoInfo } == null
-                        }
-                        .filter { it.get { ala_info } == null }
-                    val threadPersonalizedData = response.data_?.thread_personalized ?: emptyList()
                     PersonalizedPartialChange.LoadMore.Success(
                         currentPage = page,
-                        data = data.map { thread ->
-                            val threadPersonalized =
-                                threadPersonalizedData.firstOrNull { it.tid == thread.get { id } }
-                                    ?.wrapImmutable()
-                            ThreadItemData(thread = thread, personalized = threadPersonalized)
-                        }.toImmutableList(),
+                        data = response.toData(),
                     )
                 }
                 .onStart { emit(PersonalizedPartialChange.LoadMore.Start) }
@@ -139,8 +117,21 @@ class PersonalizedViewModel @Inject constructor() :
                 .catch { emit(PersonalizedPartialChange.Agree.Failure(threadId, hasAgree, it)) }
                 .onStart { emit(PersonalizedPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
 
-        private fun PersonalizedResponse.toData(): ImmutableList<ImmutableHolder<ThreadInfo>> {
-            return (data_?.thread_list ?: emptyList()).wrapImmutable()
+        private fun PersonalizedResponse.toData(): ImmutableList<ThreadItemData> {
+            val threadPersonalizedData = data_?.thread_personalized
+            val threadList = data_?.thread_list ?: return persistentListOf()
+
+            return threadList
+                .filter { !App.INSTANCE.appPreferences.blockVideo || it.videoInfo == null }
+                .filter { it.ala_info == null }
+                .map { thread ->
+                    val personalized = threadPersonalizedData?.firstOrNull { it.tid == thread.id }
+                    ThreadItemData(
+                        thread = thread.wrapImmutable(),
+                        personalized = personalized?.wrapImmutable()
+                    )
+                }
+                .toImmutableList()
         }
     }
 }
@@ -171,41 +162,13 @@ sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> 
             hasAgree: Int,
         ): ImmutableList<ThreadItemData> {
             return map {
-                val (threadInfo) = it.thread
-                val newThreadInfo = if (threadInfo.threadId == threadId) {
-                    if (threadInfo.agree != null) {
-                        if (hasAgree != threadInfo.agree.hasAgree) {
-                            if (hasAgree == 1) {
-                                threadInfo.copy(
-                                    agreeNum = threadInfo.agreeNum + 1,
-                                    agree = threadInfo.agree.copy(
-                                        agreeNum = threadInfo.agree.agreeNum + 1,
-                                        diffAgreeNum = threadInfo.agree.diffAgreeNum + 1,
-                                        hasAgree = 1
-                                    )
-                                )
-                            } else {
-                                threadInfo.copy(
-                                    agreeNum = threadInfo.agreeNum - 1,
-                                    agree = threadInfo.agree.copy(
-                                        agreeNum = threadInfo.agree.agreeNum - 1,
-                                        diffAgreeNum = threadInfo.agree.diffAgreeNum - 1,
-                                        hasAgree = 0
-                                    )
-                                )
-                            }
-                        } else {
-                            threadInfo
-                        }
-                    } else {
-                        threadInfo.copy(
-                            agreeNum = if (hasAgree == 1) threadInfo.agreeNum + 1 else threadInfo.agreeNum - 1
-                        )
-                    }
+                val threadInfo = it.thread.item
+                if (threadInfo.threadId == threadId) {
+                    val newThreadInfo = threadInfo.updateAgreeStatus(hasAgree)
+                    it.copy(thread = newThreadInfo.wrapImmutable())
                 } else {
-                    threadInfo
+                    it
                 }
-                it.copy(thread = newThreadInfo.wrapImmutable())
             }.toImmutableList()
         }
 
