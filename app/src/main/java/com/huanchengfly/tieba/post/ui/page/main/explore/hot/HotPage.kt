@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -112,17 +113,16 @@ fun HotPage(
         onRefresh = { viewModel.send(HotUiIntent.Load) })
     Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
         MyLazyColumn(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
         ) {
             if (topicList.isNotEmpty()) {
                 item(key = "TopicHeader") {
                     Container {
                         Box(
-                            modifier = Modifier
-                                .padding(bottom = 8.dp)
-                                .padding(horizontal = 16.dp)
-                        ) { ChipHeader(text = stringResource(id = R.string.hot_topic_rank)) }
+                            modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)
+                        ) {
+                            ChipHeader(text = stringResource(id = R.string.hot_topic_rank))
+                        }
                     }
                 }
                 item(key = "TopicList") {
@@ -198,7 +198,7 @@ fun HotPage(
                                             .clickable {
                                                 navigator.navigate(HotTopicListPageDestination)
                                             }
-                                            .padding(vertical = 8.dp)
+                                            .padding(bottom = 8.dp)
                                     ) {
                                         Text(
                                             text = stringResource(id = R.string.tip_more_topic),
@@ -218,9 +218,7 @@ fun HotPage(
                 item(key = "TopicDivider") {
                     Container {
                         VerticalDivider(
-                            modifier = Modifier
-                                .padding(top = 16.dp, bottom = 8.dp)
-                                .padding(horizontal = 16.dp),
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 8.dp),
                             thickness = 2.dp
                         )
                     }
