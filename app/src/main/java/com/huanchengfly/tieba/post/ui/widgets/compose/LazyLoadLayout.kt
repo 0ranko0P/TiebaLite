@@ -109,7 +109,13 @@ fun SwipeUpLazyLoadColumn(
         }
 
         LazyColumn(
-            modifier = Modifier.offset { IntOffset(x = 0, y = refreshState.position.roundToInt()) },
+            modifier = Modifier.offset {
+                if (refreshState.position == 0f) {
+                    IntOffset.Zero
+                } else {
+                    IntOffset(x = 0, y = refreshState.position.roundToInt())
+                }
+            },
             state = state,
             contentPadding = contentPadding,
             verticalArrangement = verticalArrangement,
