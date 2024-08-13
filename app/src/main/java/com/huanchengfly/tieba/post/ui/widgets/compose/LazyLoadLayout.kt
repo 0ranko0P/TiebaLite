@@ -74,7 +74,11 @@ fun SwipeUpLazyLoadColumn(
 
     if (onLazyLoad != null) {
         val isAtBottom: Boolean by remember {
-            derivedStateOf { !state.canScrollForward && state.firstVisibleItemIndex != 0 }
+            derivedStateOf {
+                !state.canScrollForward && state.firstVisibleItemIndex != 0
+                        // Bug: empty visible items even FirstVisibleItem exists
+                        && state.layoutInfo.visibleItemsInfo.isNotEmpty()
+            }
         }
 
         LaunchedEffect(isAtBottom) {
