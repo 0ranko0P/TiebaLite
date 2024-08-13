@@ -141,15 +141,22 @@ fun GoodThreadListPage(
         prop1 = ForumThreadListUiState::goodClassifies,
         initial = persistentListOf()
     )
-    Column(modifier = modifier.fillMaxSize()) {
-        GoodClassifyTabs(
-            goodClassifyHolders = goodClassifies,
-            selectedItem = goodClassifyId,
-            onSelected = viewModel::requestRefresh
-        )
 
-        ForumThreadListPage(modifier, forumId, true, sortType, viewModel) {
+    if (goodClassifies.size <= 1) { // Unclassified
+        ForumThreadListPage(modifier.fillMaxSize(), forumId, true, sortType, viewModel) {
             viewModel.requestRefresh(goodClassifyId = 0)
+        }
+    } else {
+        Column(modifier = modifier.fillMaxSize()) {
+            GoodClassifyTabs(
+                goodClassifyHolders = goodClassifies,
+                selectedItem = goodClassifyId,
+                onSelected = viewModel::requestRefresh
+            )
+
+            ForumThreadListPage(modifier, forumId, true, sortType, viewModel) {
+                viewModel.requestRefresh(goodClassifyId = 0)
+            }
         }
     }
 }
@@ -315,9 +322,8 @@ private fun ForumThreadListPage(
                     ) {
                         val (item) = holder
                         if (item.isTop == 1) {
-                            val title = item.title.takeUnless { it.isBlank() } ?: item.abstractText
                             TopThreadItem(
-                                title = title,
+                                title = item.title,
                                 onClick = {
                                     navigator.navigate(
                                         ThreadPageDestination(item.threadId, forumId = item.forumId, threadInfo = item)
