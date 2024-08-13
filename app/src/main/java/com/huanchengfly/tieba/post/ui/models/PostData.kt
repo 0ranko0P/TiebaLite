@@ -32,7 +32,6 @@ data class PostData(
     val title: String,
     val isNTitle: Boolean,
     val time: Long,
-    val decoration: String,
     val hasAgree: Int,
     val agreeNum: Long,
     val diffAgreeNum: Long,
@@ -52,8 +51,22 @@ data class PostData(
         } else this
     }
 
-    fun getFormattedTime(context: Context): String =
-        if (time != 0L) getRelativeTimeString(context, time) + DESC_SEPARATOR else ""
+    /**
+     * Returns formatted string (e.g 一分钟前 · 第 2 楼 · 来自中国)
+     *
+     * @see getRelativeTimeString
+     * @see [User.ip_address]
+     * */
+    fun getDescText(context: Context): String {
+        val texts = listOfNotNull(
+            if (time != 0L) getRelativeTimeString(context, time) else null,
+
+            if (floor > 1) context.getString(R.string.tip_post_floor, floor) else null,
+
+            if (author.ip.isNotEmpty()) context.getString(R.string.text_ip_location, author.ip) else null
+        )
+        return if (texts.isEmpty()) "" else texts.joinToString(DESC_SEPARATOR)
+    }
 
     companion object {
         fun from(post: Post): PostData {
@@ -73,7 +86,6 @@ data class PostData(
                 title = post.title,
                 isNTitle = post.is_ntitle == 1,
                 time = post.time.toLong(),
-                decoration = getDescText(post.floor, author.ip),
                 hasAgree = post.agree?.hasAgree ?: 0,
                 agreeNum = post.agree?.agreeNum ?: 0L,
                 diffAgreeNum = post.agree?.diffAgreeNum ?: 0L,
@@ -94,7 +106,6 @@ data class PostData(
                 title = info.title,
                 isNTitle = info.isNoTitle == 1,
                 time = info.createTime.toLong(),
-                decoration = getDescText(floor = 1, ipAddress = lz.ip_address),
                 hasAgree = info.agree?.hasAgree?: 0,
                 agreeNum = info.agreeNum.toLong(),
                 diffAgreeNum = info.agree?.diffAgreeNum?: 0L,
@@ -107,21 +118,6 @@ data class PostData(
         }
 
         private const val DESC_SEPARATOR = " · "
-
-        /**
-         * Returns formatted string (e.g 第 2 楼 · 来自中国)
-         *
-         * @see getRelativeTimeString
-         * @see [User.ip_address]
-         * */
-        private fun getDescText(floor: Int, ipAddress: String): String {
-            val texts = listOfNotNull(
-                if (floor > 1) App.INSTANCE.getString(R.string.tip_post_floor, floor) else null,
-
-                if (ipAddress.isNotEmpty()) App.INSTANCE.getString(R.string.text_ip_location, ipAddress) else null
-            )
-            return if (texts.isEmpty()) "" else texts.joinToString(DESC_SEPARATOR)
-        }
 
         private fun getSubPosts(post: Post): ImmutableList<SubPostItemData> = post.run {
             sub_post_list?.sub_post_list?.map {

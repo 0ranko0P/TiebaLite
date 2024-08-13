@@ -471,12 +471,7 @@ fun PostCard(
                             )
                         },
                         desc = {
-                            Row {
-                                if (post.time > 0L) {
-                                    Text(text = post.getFormattedTime(context))
-                                }
-                                Text(text = post.decoration)
-                            }
+                            Text(text = remember { post.getDescText(context) })
                         },
                         onClick = onUserClick
                     ) {
