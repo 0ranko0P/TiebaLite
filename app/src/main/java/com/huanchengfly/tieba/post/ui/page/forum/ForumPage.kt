@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -120,22 +121,10 @@ private fun ForumHeader(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current,
-                        onClick = onOpenForumInfo
-                    )
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.title_forum, forum.name),
-                        style = MaterialTheme.typography.h6,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                ForumTitleText(
+                    modifier = Modifier.clickable(onClick = onOpenForumInfo),
+                    name = forum.name
+                )
                 AnimatedVisibility(visible = forum.is_like == 1) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         LinearProgressIndicator(
@@ -439,7 +428,9 @@ fun ForumPage(
 
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.nestedScroll(connection).fillMaxSize(),
+            modifier = Modifier
+                .nestedScroll(connection)
+                .fillMaxSize(),
             key = { it },
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
@@ -447,14 +438,12 @@ fun ForumPage(
             ProvideNavigator(navigator = navigator) {
                 if (page == TAB_FORUM_LATEST) {
                     NormalThreadListPage(
-                        Modifier.nestedScroll(connection),
                         forumId = info.id,
                         forumName = info.name,
                         sortType = { viewModel.sortType }
                     )
                 } else if (page == TAB_FORUM_GOOD) {
                     GoodThreadListPage(
-                        Modifier.nestedScroll(connection),
                         forumId = info.id,
                         forumName = info.name,
                         sortType = { viewModel.sortType }
@@ -464,6 +453,18 @@ fun ForumPage(
         }
     }
 }
+
+@Composable
+private fun ForumTitleText(modifier: Modifier = Modifier, name: String) =
+    Text(
+        text = stringResource(id = R.string.title_forum, name),
+        modifier = modifier,
+        color = ExtendedTheme.colors.onTopBar,
+        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.h6,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 
 @Composable
 fun ForumHeaderPlaceholder(forumName: String, modifier: Modifier = Modifier) {
@@ -478,17 +479,7 @@ fun ForumHeaderPlaceholder(forumName: String, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             AvatarPlaceholder(size = Sizes.Large)
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = stringResource(id = R.string.title_forum, forumName),
-                    style = MaterialTheme.typography.h6,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            ForumTitleText(name = forumName)
             if (LocalAccount.current != null) {
                 Box(
                     modifier = Modifier

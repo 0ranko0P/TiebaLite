@@ -97,8 +97,8 @@ fun ForumTab(
                     }
                 )
             },
-            selectedContentColor = ExtendedTheme.colors.primary,
-            unselectedContentColor = ExtendedTheme.colors.textSecondary
+            selectedContentColor = ExtendedTheme.colors.onTopBar,
+            unselectedContentColor = ExtendedTheme.colors.onTopBarSecondary
         )
         Tab(
             selected = currentPage == TAB_FORUM_GOOD,
@@ -107,8 +107,8 @@ fun ForumTab(
                     pagerState.animateScrollToPage(TAB_FORUM_GOOD)
                 }
             },
-            selectedContentColor = ExtendedTheme.colors.primary,
-            unselectedContentColor = ExtendedTheme.colors.textSecondary
+            selectedContentColor = ExtendedTheme.colors.onTopBar,
+            unselectedContentColor = ExtendedTheme.colors.onTopBarSecondary
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
