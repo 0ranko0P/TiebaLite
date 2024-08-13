@@ -468,6 +468,7 @@ fun ThreadPage(
 private fun TopBar(name: String?, avatar: String?, onBack: () -> Unit, onForumClick: () -> Unit) =
     TitleCentredToolbar(
         title = {
+            if (avatar == null || name == null) return@TitleCentredToolbar // Initializing
             Row(
                 modifier = Modifier
                     .padding(horizontal = 48.dp)
