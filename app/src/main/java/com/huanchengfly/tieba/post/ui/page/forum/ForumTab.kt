@@ -4,10 +4,10 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Tab
+import androidx.compose.material.TabRow
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.ScrollableTabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
@@ -51,7 +50,7 @@ fun ForumTab(
         letterSpacing = 2.sp
     )
 
-    ScrollableTabRow(
+    TabRow(
         selectedTabIndex = currentPage,
         indicator = { tabPositions ->
             PagerTabIndicator(
@@ -62,14 +61,13 @@ fun ForumTab(
         divider = {},
         backgroundColor = Color.Transparent,
         contentColor = ExtendedTheme.colors.primary,
-        edgePadding = 0.dp,
-        modifier = modifier.wrapContentWidth(align = Alignment.Start)
+        modifier = modifier
     ) {
         TabClickMenu(
             selected = currentPage == TAB_FORUM_LATEST,
             onClick = {
                 coroutineScope.launch {
-                    pagerState.animateScrollToPage(TAB_FORUM_GOOD)
+                    pagerState.animateScrollToPage(TAB_FORUM_LATEST)
                 }
             },
             text = {
