@@ -60,7 +60,7 @@ fun ForumTab(
         },
         divider = {},
         backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.primary,
+        contentColor = ExtendedTheme.colors.onTopBar,
         modifier = modifier
     ) {
         TabClickMenu(
