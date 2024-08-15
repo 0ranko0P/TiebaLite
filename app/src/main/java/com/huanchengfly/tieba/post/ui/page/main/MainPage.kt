@@ -36,6 +36,7 @@ import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePage
 import com.huanchengfly.tieba.post.ui.page.main.home.HomePage
@@ -174,7 +175,7 @@ fun MainPage(
                         viewModel.send(MainUiIntent.NewMessage.Clear)
                     },
                     content = {
-                        NotificationsPage()
+                        NotificationsPage(LocalNavigator.current, fromHome = true)
                     }
                 ),
                 NavigationItem(
