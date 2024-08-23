@@ -209,6 +209,7 @@ dependencies {
     implementation(androidx.core)
     implementation(androidx.core.splashscreen)
     implementation(androidx.datastore.preferences)
+    implementation(androidx.fragment.ktx)
     implementation(androidx.gridlayout)
     implementation(androidx.palette)
     implementation(androidx.window)
@@ -236,6 +237,9 @@ dependencies {
     implementation(google.gson)
     implementation(org.litepal.android.kotlin)
     implementation(com.jaredrummler.colorpicker)
+
+    implementation(subsampling.image)
+    implementation(iielse.imageviewer)
 
     implementation(github.matisse)
     implementation(xx.permissions)

@@ -166,6 +166,14 @@ libraries:
     ksp:
       alias: compose-destinations-ksp
       version-ref: compose-destinations-core
+  com.davemorrissey.labs:
+    subsampling-scale-image-view-androidx:
+      alias: subsampling-image
+      version: 3.10.0
+  com.github.iielse:
+    imageviewer:
+      alias: iielse-imageviewer
+      version: 2.1.23
   androidx.navigation:
     navigation-compose:
       alias: androidx-navigation-compose
@@ -252,6 +260,10 @@ libraries:
     activity-compose:
       alias: androidx-activity-compose
       version-ref: androidx-activity
+  androidx.fragment:
+    fragment-ktx:
+      alias: androidx-fragment-ktx
+      version: 1.8.2
   com.github.gzu-liyujiang:
     Android_CN_OAID:
       alias: github-oaid
