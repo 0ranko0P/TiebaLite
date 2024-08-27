@@ -174,4 +174,10 @@ object FileUtil {
             fileName + newExtension
         } else fileName.substring(0, index) + newExtension
     }
+
+    fun File.deleteQuietly() {
+        try {
+            this.delete()
+        } catch (_: Exception) {}
+    }
 }

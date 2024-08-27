@@ -17,33 +17,37 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Base64
+import android.util.Log
 import android.webkit.URLUtil
 import android.widget.ImageView
-import android.widget.Toast
 import androidx.annotation.IntDef
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.github.panpf.sketch.disposeDisplay
+import androidx.media3.common.MimeTypes
 import com.github.panpf.sketch.request.Depth
 import com.github.panpf.sketch.request.DisplayRequest
-import com.github.panpf.sketch.request.DownloadRequest
-import com.github.panpf.sketch.request.DownloadResult
 import com.github.panpf.sketch.request.enqueue
-import com.github.panpf.sketch.request.execute
 import com.github.panpf.sketch.transform.CircleCropTransformation
 import com.github.panpf.sketch.transform.RoundedCornersTransformation
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.glide.ProgressListener
 import com.huanchengfly.tieba.post.dpToPxFloat
+import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.ThemeUtil.isNightMode
 import com.zhihu.matisse.MimeType
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.ResponseBody
 import okhttp3.internal.closeQuietly
+import okio.buffer
+import okio.sink
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -77,6 +81,16 @@ object ImageUtil {
     const val LOAD_TYPE_NO_RADIUS = 2
     const val LOAD_TYPE_ALWAYS_ROUND = 3
     const val TAG = "ImageUtil"
+
+    private fun isGifFile(body: ResponseBody): Boolean {
+        val type = body.contentType()
+        return if (type == null) {
+            body.byteStream().use { isGifFile(it) }
+        } else {
+            type.toString() == MimeType.GIF.toString()
+        }
+    }
+
     private fun isGifFile(file: File?): Boolean {
         if (file == null) return false
         try {
@@ -180,63 +194,48 @@ object ImageUtil {
         imageView.colorFilter = ColorMatrixColorFilter(cMatrix)
     }
 
-    @SuppressLint("StaticFieldLeak")
-    fun download(context: Context, url: String?) {
-        download(context, url, false, null)
-    }
+    /**
+     * Download image and share it via [FileProvider]
+     *
+     * @see R.xml.file_paths_share_img
+     *
+     * @return Content URI of this image file
+     * */
+    suspend fun downloadForShare(context: Context, url: String?, onProgress: ProgressListener?): Result<Uri> {
+        if (url == null) return Result.failure(NullPointerException())
 
-    private fun downloadForShare(context: Context, url: String?, taskCallback: ShareTaskCallback) {
-        if (url == null) return
-        CoroutineScope(Dispatchers.IO).launch {
-            val downloadResult = DownloadRequest(context, url).execute()
-            if (downloadResult is DownloadResult.Success) {
-                val inputStream = downloadResult.data.data.newInputStream()
-                val pictureFolder = File(context.cacheDir, ".shareTemp")
-                if (pictureFolder.exists() || pictureFolder.mkdirs()) {
-                    val fileName = "share_" + System.currentTimeMillis()
-                    val destFile = File(pictureFolder, fileName)
-                    if (!destFile.exists()) {
-                        withContext(Dispatchers.IO) {
-                            destFile.createNewFile()
-                        }
-                    }
-                    inputStream.use { input ->
-                        if (destFile.canWrite()) {
-                            destFile.outputStream().use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-                    }
-                    val shareUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        FileProvider.getUriForFile(
-                            context,
-                            context.packageName + ".share.FileProvider",
-                            destFile
-                        )
-                    } else {
-                        Uri.fromFile(destFile)
-                    }
-                    withContext(Dispatchers.Main) {
-                        taskCallback.onGetUri(shareUri)
-                    }
-                }
+        // FileProvider: keep it sync with R.xml.file_paths_share_img
+        val pictureFolder = File(context.cacheDir, ".shareTemp")
+        val destFile = File(pictureFolder, "share_${url.hashCode()}")
+
+        try {
+            DownloadUtil.downloadCancelable(url, destFile, onProgress)
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                FileProvider.getUriForFile(
+                    context,
+                    context.packageName + ".share.FileProvider",
+                    destFile
+                )
+            } else {
+                Uri.fromFile(destFile)
             }
+            return Result.success(uri)
+        } catch (e: Exception) {
+            Log.w(TAG, "downloadForShare: ", e)
+            return Result.failure(e)
         }
     }
 
-    @SuppressLint("StaticFieldLeak")
-    fun download(
-        context: Context,
-        url: String?,
-        forShare: Boolean,
-        taskCallback: ShareTaskCallback?
-    ) {
-        if (forShare) {
-            if (taskCallback != null) downloadForShare(context, url, taskCallback)
-            return
-        }
+    /**
+     * Download image to external storage
+     * */
+    fun download(context: Context, url: String?, onProgress: ProgressListener? = null) {
+        if (url == null) return
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            downloadAboveQ(context, url)
+            MainScope().launch {
+                downloadCancelable(context.applicationContext, url, onProgress)
+            }
             return
         }
         askPermission(
@@ -250,104 +249,86 @@ object ImageUtil {
             ),
             R.string.toast_no_permission_save_photo
         ) {
-            downloadBelowQ(context, url)
-        }
-    }
-
-    private fun downloadAboveQ(context: Context, url: String?) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            return
-        }
-        CoroutineScope(Dispatchers.IO).launch {
-            val downloadResult = DownloadRequest(context, url).execute()
-            if (downloadResult is DownloadResult.Success) {
-                var mimeType = MimeType.JPEG.toString()
-                var fileName = URLUtil.guessFileName(url, null, mimeType)
-                downloadResult.data.data.newInputStream().use { inputStream ->
-                    if (isGifFile(inputStream)) {
-                        mimeType = MimeType.GIF.toString()
-                        fileName = FileUtil.changeFileExtension(fileName, ".gif")
-                    }
-                }
-                downloadResult.data.data.newInputStream().use { inputStream ->
-                    val relativePath =
-                        Environment.DIRECTORY_PICTURES + File.separator + FileUtil.FILE_FOLDER
-                    val values = ContentValues().apply {
-                        put(MediaStore.Images.Media.RELATIVE_PATH, relativePath)
-                        put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                        put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-                        put(MediaStore.Images.Media.DESCRIPTION, fileName)
-                    }
-                    val cr = context.contentResolver
-                    val uri: Uri = runCatching {
-                        cr.insert(
-                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            values
-                        )
-                    }.getOrNull() ?: return@launch
-                    try {
-                        cr.openFileDescriptor(uri, "w")?.use {
-                            FileOutputStream(it.fileDescriptor).use { outputStream ->
-                                inputStream.copyTo(outputStream)
-                            }
-                        }
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.toast_photo_saved, relativePath),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        cr.delete(uri, null, null)
-                    }
-                }
+            MainScope().launch {
+                downloadBelowQ(context.applicationContext, url, onProgress)
             }
         }
     }
 
-    private fun downloadBelowQ(context: Context, url: String?) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val downloadResult = DownloadRequest(context, url).execute()
-            if (downloadResult is DownloadResult.Success) {
-                var fileName = URLUtil.guessFileName(url, null, MimeType.JPEG.toString())
-                downloadResult.data.data.newInputStream().use { inputStream ->
-                    if (isGifFile(inputStream)) {
-                        fileName = FileUtil.changeFileExtension(fileName, ".gif")
-                    }
+    /**
+     * Download image to external storage, cancelable
+     * */
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private suspend fun downloadCancelable(context: Context, url: String, onProgress: ProgressListener?) {
+        val cr = context.contentResolver
+        var uri: Uri? = null
+        withContext(Dispatchers.IO) {
+            val responseBody: ResponseBody = DownloadUtil.downloadCancelable(url, onProgress)
+            try {
+                var mimeType = responseBody.contentType()?.toString() ?: MimeTypes.IMAGE_JPEG
+
+                var fileName = URLUtil.guessFileName(url, null, mimeType)
+                if (isGifFile(responseBody)) {
+                    mimeType = MimeType.GIF.toString()
+                    fileName = FileUtil.changeFileExtension(fileName, ".gif")
                 }
-                downloadResult.data.data.newInputStream().use { inputStream ->
-                    val pictureFolder =
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                    val appDir = File(pictureFolder, FileUtil.FILE_FOLDER)
-                    val dirExists =
-                        withContext(Dispatchers.IO) { appDir.exists() || appDir.mkdirs() }
-                    if (dirExists) {
-                        val destFile = File(appDir, fileName)
-                        if (!destFile.exists()) {
-                            withContext(Dispatchers.IO) {
-                                destFile.createNewFile()
-                            }
-                        }
-                        destFile.outputStream().use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                        context.sendBroadcast(
-                            Intent(
-                                Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,
-                                Uri.fromFile(File(destFile.path))
-                            )
-                        )
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.toast_photo_saved, destFile.path),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
+
+                val relativePath =
+                    Environment.DIRECTORY_PICTURES + File.separator + FileUtil.FILE_FOLDER
+                val values = ContentValues().apply {
+                    put(MediaStore.Images.Media.RELATIVE_PATH, relativePath)
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                    put(MediaStore.Images.Media.DESCRIPTION, fileName)
                 }
+
+                uri = cr.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)!!
+                cr.openOutputStream(uri!!)!!.sink().buffer().use { bufferedSink ->
+                    bufferedSink.writeAll(responseBody.source())
+                }
+                withContext(Dispatchers.Main) {
+                    context.toastShort(R.string.toast_photo_saved, relativePath)
+                }
+                return@withContext uri
+            } catch (e: Exception) {
+                uri?.let { cr.delete(it, null, null) }
+                throw e
+            } finally {
+                responseBody.closeQuietly()
+            }
+        }
+    }
+
+    private suspend fun downloadBelowQ(context: Context, url: String, onProgress: ProgressListener?) {
+        withContext(Dispatchers.IO) {
+            var destFile: File? = null
+            val responseBody: ResponseBody = DownloadUtil.downloadCancelable(url, onProgress)
+            try {
+                val mimeType = responseBody.contentType()?.toString() ?: MimeTypes.IMAGE_JPEG
+                val fileName = URLUtil.guessFileName(url, null, mimeType)
+                val pictureFolder =
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val appDir = File(pictureFolder, FileUtil.FILE_FOLDER)
+                destFile = if (isGifFile(responseBody)) {
+                    File(appDir, FileUtil.changeFileExtension(fileName, ".gif"))
+                } else {
+                    File(appDir, fileName)
+                }
+
+                destFile.sink().buffer().use { bufferedSink ->
+                    bufferedSink.writeAll(responseBody.source())
+                }
+                withContext(Dispatchers.Main) {
+                    context.sendBroadcast(
+                        Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(File(destFile.path)))
+                    )
+                    context.toastShort(R.string.toast_photo_saved, destFile.path)
+                }
+            } catch (e: Exception) {
+                destFile?.deleteQuietly() // Delete file if error occurred
+                throw e
+            } finally {
+                responseBody.closeQuietly()
             }
         }
     }
@@ -370,10 +351,6 @@ object ImageUtil {
 
     private fun getRadiusDp(context: Context): Int {
         return context.appPreferences.radius
-    }
-
-    fun clear(imageView: ImageView?) {
-        imageView?.disposeDisplay()
     }
 
     fun getPlaceHolder(context: Context, radius: Int): Drawable {
@@ -516,10 +493,6 @@ object ImageUtil {
         return result
     }
 
-    interface ShareTaskCallback {
-        fun onGetUri(uri: Uri)
-    }
-
     @IntDef(LOAD_TYPE_SMALL_PIC, LOAD_TYPE_AVATAR, LOAD_TYPE_NO_RADIUS, LOAD_TYPE_ALWAYS_ROUND)
     @Retention(AnnotationRetention.SOURCE)
     annotation class LoadType
@@ -527,17 +500,4 @@ object ImageUtil {
     @IntDef(SETTINGS_SMART_ORIGIN, SETTINGS_SMART_LOAD, SETTINGS_ALL_ORIGIN, SETTINGS_ALL_NO)
     annotation class ImageLoadSettings
 
-}
-
-fun ImageUtil.download(
-    context: Context,
-    url: String?,
-    forShare: Boolean,
-    taskCallback: (Uri) -> Unit
-) {
-    download(context, url, forShare, object : ImageUtil.ShareTaskCallback {
-        override fun onGetUri(uri: Uri) {
-            taskCallback(uri)
-        }
-    })
 }
