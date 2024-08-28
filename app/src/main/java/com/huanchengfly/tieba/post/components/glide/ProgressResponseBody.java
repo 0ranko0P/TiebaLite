@@ -30,9 +30,9 @@ public class ProgressResponseBody extends ResponseBody {
 
     private ProgressListener listener;
 
-    public ProgressResponseBody(String url, ResponseBody responseBody) {
+    public ProgressResponseBody(ResponseBody responseBody, ProgressListener listener) {
         this.responseBody = responseBody;
-        listener = ProgressInterceptor.LISTENER_MAP.get(url);
+        this.listener = listener;
     }
 
     @Nullable
@@ -46,6 +46,7 @@ public class ProgressResponseBody extends ResponseBody {
         return responseBody.contentLength();
     }
 
+    @NonNull
     @Override
     public BufferedSource source() {
         if (bufferedSource == null) {
