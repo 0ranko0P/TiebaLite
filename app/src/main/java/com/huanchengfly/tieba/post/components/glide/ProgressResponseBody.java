@@ -1,7 +1,5 @@
 package com.huanchengfly.tieba.post.components.glide;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -22,7 +20,6 @@ import okio.Source;
  */
 
 public class ProgressResponseBody extends ResponseBody {
-    private static final String TAG = "XGlide";
 
     private BufferedSource bufferedSource;
 
@@ -74,7 +71,6 @@ public class ProgressResponseBody extends ResponseBody {
                 totalBytesRead += bytesRead;
             }
             int progress = (int) (100f * totalBytesRead / fullLength);
-            Log.d(TAG, "download progress is " + progress);
             if (listener != null && progress != currentProgress) {
                 listener.onProgress(progress);
             }
