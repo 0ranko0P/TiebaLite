@@ -24,6 +24,7 @@ import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.components.glide.ProgressListener
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.ImageUtil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class FullScreenImageViewerDialogFragment : ImageViewerDialogFragment(), ProgressListener {
@@ -84,16 +85,18 @@ class FullScreenImageViewerDialogFragment : ImageViewerDialogFragment(), Progres
     }
 
     override fun onProgress(progress: Int) {
-        if (!indicator.isVisible) indicator.visibility = View.VISIBLE
+        lifecycleScope.launch(Dispatchers.Main) {
+            if (!indicator.isVisible) indicator.visibility = View.VISIBLE
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            indicator.setProgress(progress, true)
-        } else {
-            indicator.setProgressCompat(progress, true)
-        }
-        if (progress == 100) {
-            indicator.visibility = View.GONE
-            indicator.setProgress(0)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                indicator.setProgress(progress, false)
+            } else {
+                indicator.setProgressCompat(progress, false)
+            }
+            if (progress == 100) {
+                indicator.visibility = View.GONE
+                indicator.setProgress(0)
+            }
         }
     }
 
