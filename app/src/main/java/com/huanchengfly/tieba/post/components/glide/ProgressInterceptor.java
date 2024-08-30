@@ -32,14 +32,18 @@ public class ProgressInterceptor implements Interceptor {
         LISTENER_MAP.remove(url);
     }
 
-
+    @NonNull
     @Override
-    public Response intercept(@NonNull Interceptor.Chain chain) throws IOException {
+    public Response intercept(@NonNull Chain chain) throws IOException {
         Request request = chain.request();
         Response response = chain.proceed(request);
         String url = request.url().toString();
         ProgressListener listener = ProgressInterceptor.LISTENER_MAP.get(url);
-        ResponseBody body = response.body();
-        return response.newBuilder().body(new ProgressResponseBody(body, listener)).build();
+        if (listener == null) {
+            return response;
+        } else {
+            ResponseBody body = response.body();
+            return response.newBuilder().body(new ProgressResponseBody(body, listener)).build();
+        }
     }
 }
