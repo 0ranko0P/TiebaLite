@@ -3,11 +3,9 @@ package com.huanchengfly.tieba.post.ui.page.photoview
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.recyclerview.widget.RecyclerView
 import com.github.iielse.imageviewer.adapter.ItemType
 import com.github.iielse.imageviewer.core.DataProvider
 import com.github.iielse.imageviewer.core.Photo
-import com.github.iielse.imageviewer.core.ViewerCallback
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.PicPageBean
@@ -30,12 +28,9 @@ import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class PhotoViewViewModel : ViewModel(), DataProvider, ViewerCallback {
+class PhotoViewViewModel : ViewModel(), DataProvider {
     private val _state: MutableStateFlow<PhotoViewUiState> = MutableStateFlow(PhotoViewUiState())
     val state: StateFlow<PhotoViewUiState> get() = _state
-
-    private val _currentPos: MutableStateFlow<Int> = MutableStateFlow(0)
-    val currentPos: StateFlow<Int> get() = _currentPos
 
     private val handler = CoroutineExceptionHandler { _, e ->
         Log.e(TAG, "onError: ", e)
@@ -185,10 +180,6 @@ class PhotoViewViewModel : ViewModel(), DataProvider, ViewerCallback {
                     }
                 }
         }
-    }
-
-    override fun onPageSelected(position: Int, viewHolder: RecyclerView.ViewHolder) {
-        _currentPos.value = position
     }
 
     override fun onCleared() {

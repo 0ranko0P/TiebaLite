@@ -1,45 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.appbar.AppBarLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/appbar"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="horizontal"
-    android:paddingHorizontal="24dp"
-    android:paddingBottom="12dp">
+    android:layout_height="wrap_content"
+    android:layout_gravity="top"
+    android:background="@color/black_a70"
+    app:elevation="0dp"
+    android:fitsSystemWindows="true">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="?attr/actionBarSize"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/progress_indicator"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
         android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/tv_photo_index"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentBottom="true"
-        android:paddingBottom="2dp"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        tools:text="6/999" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_photo_share"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:layout_alignParentBottom="true"
-        android:layout_toStartOf="@id/iv_photo_download"
-        app:srcCompat="@drawable/ic_share" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_photo_download"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        app:srcCompat="@drawable/ic_download" />
-</RelativeLayout>
+</com.google.android.material.appbar.AppBarLayout>
