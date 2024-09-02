@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.components.viewer
 
+import android.view.View
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -11,12 +12,13 @@ import com.github.iielse.imageviewer.widgets.video.ExoVideoView2
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewItem
 
-class SimpleImageLoader : ImageLoader {
+class SimpleImageLoader(private val onClick: View.OnClickListener) : ImageLoader {
 
     private var initialAnimation = true
 
     override fun load(view: ImageView, data: Photo, viewHolder: RecyclerView.ViewHolder) {
         val it = (data as? PhotoViewItem?)?.originUrl ?: return
+        view.setOnClickListener(onClick)
         Glide.with(view).load(it)
             .placeholder(view.drawable)
             .error(R.drawable.ic_error)

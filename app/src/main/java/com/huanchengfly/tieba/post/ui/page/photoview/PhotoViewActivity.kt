@@ -7,12 +7,11 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ShareCompat
-import androidx.core.view.OnApplyWindowInsetsListener
-import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -41,8 +40,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class PhotoViewActivity : AppCompatActivity(), OnApplyWindowInsetsListener, ProgressListener,
-    OverlayCustomizer, ViewerCallback {
+class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomizer, ViewerCallback {
 
     private val viewModel: PhotoViewViewModel by viewModels()
 
@@ -63,8 +61,20 @@ class PhotoViewActivity : AppCompatActivity(), OnApplyWindowInsetsListener, Prog
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_photo_view)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        ViewCompat.setOnApplyWindowInsetsListener(window.decorView, this)
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Note: buggy ViewCompat#setOnApplyWindowInsetsListener on old Android devices
+            window.decorView.setOnApplyWindowInsetsListener { _, insets ->
+                isStatusBarVisible = insets.isVisible(WindowInsets.Type.statusBars())
+                return@setOnApplyWindowInsetsListener insets
+            }
+        } else {
+            window.decorView.setOnSystemUiVisibilityChangeListener { visibility ->
+                isStatusBarVisible = visibility.and(View.SYSTEM_UI_FLAG_FULLSCREEN) == 0
+            }
+        }
+
+        // Load photos now!
         val data: PhotoViewData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra(EXTRA_PHOTO_VIEW_DATA, PhotoViewData::class.java)!!
         } else {
@@ -94,7 +104,7 @@ class PhotoViewActivity : AppCompatActivity(), OnApplyWindowInsetsListener, Prog
 
             lifecycleScope.launch { // Wait Glide animation
                 delay(300L)
-                val indicator = findViewById<View>(android.R.id.progress)?: return@launch
+                val indicator = findViewById<View>(android.R.id.progress) ?: return@launch
                 (indicator.parent as ViewGroup).removeView(indicator)
             }
         }
@@ -182,11 +192,6 @@ class PhotoViewActivity : AppCompatActivity(), OnApplyWindowInsetsListener, Prog
         }
     }
 
-    override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
-        isStatusBarVisible = insets.isVisible(WindowInsetsCompat.Type.statusBars())
-        return insets
-    }
-
     @SuppressLint("DefaultLocale")
     override fun onPageSelected(position: Int, viewHolder: RecyclerView.ViewHolder) {
         currentPage = position
@@ -202,7 +207,7 @@ class PhotoViewActivity : AppCompatActivity(), OnApplyWindowInsetsListener, Prog
     companion object {
         const val EXTRA_PHOTO_VIEW_DATA = "photo_view_data"
 
-        class ImageViewerFragment: ImageViewerDialogFragment() {
+        class ImageViewerFragment : ImageViewerDialogFragment() {
 
             /**
              * Suppress exit animation in super
