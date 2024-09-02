@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.utils
 import com.huanchengfly.tieba.post.components.glide.ProgressInterceptor
 import com.huanchengfly.tieba.post.components.glide.ProgressListener
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
+import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CompletionHandler
 import kotlinx.coroutines.Dispatchers
@@ -60,11 +61,8 @@ object DownloadUtil {
             onProgress?.let { withContext(Dispatchers.Main) { it.onProgress(100) } }
             return
         }
-        // Check parent directory
-        val parent = dest.parentFile?: throw IOException("$dest has Invalid parent dir!")
-        if (!parent.exists() && !parent.mkdirs()) throw IOException("Create $parent failed!")
-
         withContext(Dispatchers.IO) {
+            dest.ensureParents()
             val body: ResponseBody = downloadCancelable(url, onProgress)
             try {
                 dest.sink().buffer().use { bufferedSink ->

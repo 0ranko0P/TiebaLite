@@ -14,17 +14,12 @@ import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import java.io.BufferedReader
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.io.FileReader
 import java.io.IOException
-import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.PrintWriter
-import java.io.Reader
 import java.nio.charset.StandardCharsets
 import java.util.Arrays
-import javax.annotation.Nonnull
 
 object FileUtil {
     const val FILE_TYPE_DOWNLOAD = 0
@@ -116,7 +111,6 @@ object FileUtil {
             )
         ) {
             downloadBySystemWithPermission(context, fileType, url, fileName)
-            null
         }
     }
 
@@ -151,9 +145,7 @@ object FileUtil {
     @WorkerThread
     fun writeFile(file: File, content: String, append: Boolean): Boolean {
         try {
-            if (!file.exists()) {
-                file.parentFile?.mkdirs() ?: throw IOException("Parent file of $file not exits")
-            }
+            file.ensureParents()
             PrintWriter(FileOutputStream(file, append)).use { writer ->
                 writer.println(content)
                 return true
@@ -173,6 +165,12 @@ object FileUtil {
         return if (index == -1) {
             fileName + newExtension
         } else fileName.substring(0, index) + newExtension
+    }
+
+    @Throws(IOException::class)
+    fun File.ensureParents() {
+        val parent = parentFile?: throw IOException("Invalid parent dir of $this")
+        if (!parent.exists() && !parent.mkdirs()) throw IOException("Create $parent failed!")
     }
 
     fun File.deleteQuietly() {

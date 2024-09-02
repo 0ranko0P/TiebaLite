@@ -36,6 +36,7 @@ import com.huanchengfly.tieba.post.components.glide.ProgressListener
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
+import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.ThemeUtil.isNightMode
@@ -159,10 +160,7 @@ object ImageUtil {
         format: CompressFormat = CompressFormat.JPEG
     ): Boolean {
         try {
-            requireNotNull(output.parentFile) { "Illegal file $output" }.let { parent ->
-                if (!parent.exists()) parent.mkdirs()
-            }
-
+            output.ensureParents()
             FileOutputStream(output).use { out ->
                 return bitmap.compress(format, quality, out)
             }
@@ -315,12 +313,13 @@ object ImageUtil {
                     File(appDir, fileName)
                 }
 
+                destFile.ensureParents()
                 destFile.sink().buffer().use { bufferedSink ->
                     bufferedSink.writeAll(responseBody.source())
                 }
                 withContext(Dispatchers.Main) {
                     context.sendBroadcast(
-                        Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(File(destFile.path)))
+                        Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(destFile))
                     )
                     context.toastShort(R.string.toast_photo_saved, destFile.path)
                 }
