@@ -38,12 +38,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
@@ -73,6 +74,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.OneTimeMeasurer
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
@@ -242,6 +244,8 @@ internal fun SubPostsContent(
         },
         isLoading = isRefreshing
     ) {
+        var bottomBarHeight: Dp by remember { mutableStateOf(Dp.Hairline) }
+
         MyScaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
@@ -253,25 +257,31 @@ internal fun SubPostsContent(
             },
             bottomBar = {
                 if (account == null || context.appPreferences.hideReply) return@MyScaffold
-                BottomBar(
-                    account = account,
-                    onReply = {
-                        val forumName = forum?.get { name } ?: return@BottomBar
-                        if (forumName.isNotEmpty()) {
-                            showReplyDialog(
-                                ReplyArgs(
-                                    forumId = forum.get { id },
-                                    forumName = forumName,
-                                    threadId = threadId,
-                                    postId = postId)
-                            )
+                OneTimeMeasurer { size: IntSize? ->
+                    BottomBar(
+                        account = account,
+                        onReply = {
+                            val forumName = forum?.get { name } ?: return@BottomBar
+                            if (forumName.isNotEmpty()) {
+                                showReplyDialog(
+                                    ReplyArgs(
+                                        forumId = forum.get { id },
+                                        forumName = forumName,
+                                        threadId = threadId,
+                                        postId = postId)
+                                )
+                            }
                         }
+                    )
+                    // Update BottomBar's height
+                    if (size != null && bottomBarHeight == Dp.Hairline) {
+                        with(LocalDensity.current) { bottomBarHeight = size.height.toDp() }
                     }
-                )
+                }
             }
         ) { paddingValues ->
             SwipeUpLazyLoadColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(bottom = bottomBarHeight),
                 contentPadding = paddingValues,
                 isLoading = isLoading,
                 onLazyLoad = {
@@ -425,7 +435,7 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
                 size = Sizes.Tiny,
                 contentDescription = account.name,
             )
-            Row(
+            Box(
                 modifier = Modifier
                     .padding(vertical = 8.dp)
                     .weight(1f)
@@ -540,10 +550,7 @@ private fun SubPostItem(
                     modifier = Modifier
                         .padding(start = 44.dp)
                         .fillMaxWidth(),
-                    fontSize = 13.sp,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 4,
-                    lineSpacing = 0.4.sp
+                    style = MaterialTheme.typography.body1
                 )
             }
         )
