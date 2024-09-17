@@ -117,13 +117,19 @@
         <item name="android:activityCloseExitAnimation">@anim/anim_fade_out</item>
     </style>
 
-    <style name="AppTheme.PhotoView" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:windowAnimationStyle">@style/Animation.Fade</item>
+    <style name="BaseTransparent" parent="Theme.MaterialComponents.NoActionBar">
         <item name="android:windowNoTitle">true</item>
-        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="AppTheme.Transparent" parent="BaseTransparent" />
+
+    <style name="AppTheme.Transparent.PhotoView">
+        <item name="android:windowAnimationStyle">@style/Animation.Fade</item>
+        <item name="android:windowBackground">@android:color/black</item>
     </style>
 
     <style name="Base" />
