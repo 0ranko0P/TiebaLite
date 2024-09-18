@@ -22,17 +22,14 @@ import androidx.annotation.ColorInt
 import androidx.annotation.Keep
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.gyf.immersionbar.ImmersionBar
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
-import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.interfaces.ExtraRefreshable
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.widgets.VoicePlayerView
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.HandleBackUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.huanchengfly.tieba.post.utils.calcStatusBarColorInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -48,8 +45,6 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
     private var oldTheme: String = ""
 
     private var isActivityRunning = true
-    private var customStatusColor = -1
-    private var statusBarTinted = false
 
     val appPreferences: AppPreferencesUtils by lazy { AppPreferencesUtils.getInstance(this) }
 
@@ -93,7 +88,6 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
         VoicePlayerView.Manager.release()
     }
 
-    open val isNeedImmersionBar: Boolean = true
     open val isNeedFixBg: Boolean = true
     open val isNeedSetTheme: Boolean = true
 
@@ -104,9 +98,6 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
         INSTANCE.addActivity(this)
         if (isNeedSetTheme) ThemeUtil.setTheme(this)
         oldTheme = ThemeUtil.getRawTheme()
-        if (isNeedImmersionBar) {
-            refreshStatusBarColor()
-        }
         if (getLayoutId() != -1) {
             setContentView(getLayoutId())
         }
@@ -209,56 +200,8 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
         return animator
     }
 
-    fun setCustomStatusColor(customStatusColor: Int) {
-        if (ThemeUtil.isTranslucentTheme()) {
-            return
-        }
-        this.customStatusColor = customStatusColor
-        refreshStatusBarColor()
-    }
-
-    open fun refreshStatusBarColor() {
-        if (ThemeUtil.isTranslucentTheme()) {
-            ImmersionBar.with(this)
-                .transparentBar()
-                .init()
-        } else {
-            ImmersionBar.with(this).apply {
-                if (customStatusColor != -1) {
-                    statusBarColorInt(customStatusColor)
-                    autoStatusBarDarkModeEnable(true)
-                } else {
-                    statusBarColorInt(
-                        calcStatusBarColorInt(
-                            this@BaseActivity,
-                            ThemeUtils.getColorByAttr(this@BaseActivity, R.attr.colorToolbar)
-                        )
-                    )
-                    statusBarDarkFont(ThemeUtil.isStatusBarFontDark())
-                }
-                fitsSystemWindowsInt(
-                    true,
-                    ThemeUtils.getColorByAttr(this@BaseActivity, R.attr.colorBackground)
-                )
-                navigationBarColorInt(
-                    ThemeUtils.getColorByAttr(
-                        this@BaseActivity,
-                        R.attr.colorNavBar
-                    )
-                )
-                navigationBarDarkIcon(ThemeUtil.isNavigationBarFontDark())
-            }.init()
-        }
-        if (!statusBarTinted) {
-            statusBarTinted = true
-        }
-    }
-
     @CallSuper
     override fun refreshGlobal(activity: Activity) {
-        if (isNeedImmersionBar) {
-            refreshStatusBarColor()
-        }
         oldTheme = ThemeUtil.getRawTheme()
     }
 

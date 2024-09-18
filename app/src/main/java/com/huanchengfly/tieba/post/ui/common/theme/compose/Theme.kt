@@ -15,14 +15,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.utils.ColorUtils
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import com.huanchengfly.tieba.post.utils.compose.darken
 
 @Stable
 data class ExtendedColors(
@@ -64,6 +65,9 @@ val LocalExtendedColors = staticCompositionLocalOf {
     )
 }
 
+private fun Color.darken(i: Float = 0.1F): Color {
+    return Color(ColorUtils.getDarkerColor(toArgb(), i))
+}
 
 @SuppressLint("ConflictingOnColor")
 fun getColorPalette(

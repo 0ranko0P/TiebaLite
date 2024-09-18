@@ -239,22 +239,6 @@ fun CustomSettingsPage(
             }
             prefsItem {
                 SwitchPref(
-                    key = "status_bar_darker",
-                    title = stringResource(id = R.string.title_settings_status_bar_darker),
-                    summary = stringResource(id = R.string.summary_settings_status_bar_darker),
-                    defaultChecked = true,
-                ) {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = ImageVector.vectorResource(id = R.drawable.ic_beaker),
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                }
-            }
-            prefsItem {
-                SwitchPref(
                     key = "custom_toolbar_primary_color",
                     title = stringResource(id = R.string.tip_toolbar_primary_color),
                     defaultChecked = false,

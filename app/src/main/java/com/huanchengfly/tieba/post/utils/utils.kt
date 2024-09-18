@@ -106,18 +106,6 @@ fun launchUrl(
     }
 }
 
-fun calcStatusBarColorInt(context: Context, @ColorInt originColor: Int): Int {
-    var darkerStatusBar = true
-    val isToolbarPrimaryColor =
-        context.dataStore.getBoolean(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR, false)
-    if (!ThemeUtil.isTranslucentTheme() && !ThemeUtil.isNightMode() && !isToolbarPrimaryColor) {
-        darkerStatusBar = false
-    } else if (!context.dataStore.getBoolean("status_bar_darker", true)) {
-        darkerStatusBar = false
-    }
-    return if (darkerStatusBar) ColorUtils.getDarkerColor(originColor) else originColor
-}
-
 val Context.powerManager: PowerManager
     get() = getSystemService(Context.POWER_SERVICE) as PowerManager
 

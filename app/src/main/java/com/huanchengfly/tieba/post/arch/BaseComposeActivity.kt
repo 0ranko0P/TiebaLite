@@ -1,8 +1,6 @@
 package com.huanchengfly.tieba.post.arch
 
-import android.content.Intent
 import android.os.Bundle
-import android.os.Parcelable
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.lazy.LazyListState
@@ -24,37 +22,7 @@ import com.huanchengfly.tieba.post.ui.common.windowsizeclass.calculateWindowSize
 import com.huanchengfly.tieba.post.utils.LocalAccountProvider
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 
-abstract class BaseComposeActivityWithParcelable<DATA : Parcelable> : BaseComposeActivityWithData<DATA>() {
-    abstract val dataExtraKey: String
-
-    override fun parseData(intent: Intent): DATA? {
-        return intent.extras?.getParcelable(dataExtraKey)
-    }
-}
-
-abstract class BaseComposeActivityWithData<DATA> : BaseComposeActivity() {
-    var data: DATA? = null
-
-    abstract fun parseData(intent: Intent): DATA?
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        data = parseData(intent)
-        super.onCreate(savedInstanceState)
-    }
-
-    @Composable
-    final override fun Content() {
-        data?.let { data ->
-            Content(data)
-        }
-    }
-
-    @Composable
-    abstract fun Content(data: DATA)
-}
-
 abstract class BaseComposeActivity : BaseActivity() {
-    override val isNeedImmersionBar: Boolean = false
     override val isNeedFixBg: Boolean = false
     override val isNeedSetTheme: Boolean = false
 

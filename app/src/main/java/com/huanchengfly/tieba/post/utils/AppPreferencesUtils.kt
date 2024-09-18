@@ -216,11 +216,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         key = "show_top_forum_in_normal_list"
     )
 
-    var statusBarDarker by DataStoreDelegates.boolean(
-        defaultValue = true,
-        key = "status_bar_darker"
-    )
-
     var theme by DataStoreDelegates.string(defaultValue = ThemeUtil.THEME_DEFAULT)
 
     var translucentBackgroundAlpha by DataStoreDelegates.int(
