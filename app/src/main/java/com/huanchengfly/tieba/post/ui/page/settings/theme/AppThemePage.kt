@@ -76,6 +76,7 @@ import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
+import com.huanchengfly.tieba.post.ui.common.theme.compose.rememberAnimatedGradientBrush
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
@@ -324,39 +325,23 @@ fun AppThemePage(
             ) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     item {
-                        val tonalPalette = remember { dynamicTonalPalette(context) }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
+                        val tonalPaletteBrush by rememberAnimatedGradientBrush()
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(
-                                    brush = Brush.sweepGradient(
-                                        colors = listOf(
-                                            tonalPalette.primary50,
-                                            tonalPalette.secondary50,
-                                            tonalPalette.tertiary50,
-                                            tonalPalette.primary50,
-                                        )
-                                    )
-                                )
+                                .background(tonalPaletteBrush, RoundedCornerShape(6.dp), 1.0f)
                                 .clickable {
                                     ThemeUtil.setUseDynamicTheme(true)
-                                }
-                                .padding(all = 16.dp)
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.padding(vertical = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (isDynamicTheme) {
-                                        Icons.Rounded.Check
-                                    } else {
-                                        Icons.Rounded.Colorize
-                                    },
+                                    imageVector = if (isDynamicTheme) Icons.Rounded.Check else Icons.Rounded.Colorize,
                                     contentDescription = null,
                                     tint = ExtendedTheme.colors.windowBackground
                                 )
