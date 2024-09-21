@@ -269,9 +269,9 @@ class App : Application(), SketchFactory {
                             Color.parseColor(customPrimaryColorStr)
                         } else getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT)
                     } else if (ThemeUtil.isTranslucentTheme(theme)) {
-                        val primaryColorStr = context.appPreferences.translucentPrimaryColor
-                        return if (primaryColorStr != null) {
-                            Color.parseColor(primaryColorStr)
+                        val primaryColor = context.appPreferences.translucentPrimaryColor
+                        return if (primaryColor != 0) {
+                            primaryColor
                         } else getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT)
                     }
                     return context.getColorCompat(

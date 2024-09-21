@@ -328,9 +328,12 @@ libraries:
       alias: androidx-datastore-preferences
       version: 1.0.0
   com.github.bumptech.glide:
+    compose:
+      alias: glide-compose
+      version: 1.0.0-beta01
     glide:
       alias: glide-core
-      version: 4.16.0
+      version: 5.0.0-rc01
     okhttp3-integration:
       alias: glide-okhttp3-integration
       version-ref: glide-core
@@ -372,6 +375,10 @@ libraries:
   com.github.yalantis:
     ucrop:
       version: 2.2.8
+  com.github.SmartToolFactory:
+    Compose-Colorful-Sliders:
+      alias: colorful.sliders
+      version: 1.2.2
   androidx.compose.runtime:
     runtime-tracing:
       alias: compose-runtime-tracing

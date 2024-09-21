@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.IntDef
 import androidx.annotation.StringDef
 import androidx.datastore.core.DataStore
+import androidx.datastore.dataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.io.File
 import java.lang.ref.WeakReference
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -43,6 +45,20 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
         const val KEY_FORUM_FAB_FUNCTION = "forumFabFunction"
         const val KEY_FORUM_SORT_DEFAULT = "default_sort_type"
+
+        const val KEY_TRANSLUCENT_PRIMARY_COLOR = "trans_primary_color"
+
+        /**
+         * Dark/Light color mode of Translucent Theme
+         *
+         * @see ThemeUtil.THEME_TRANSLUCENT_LIGHT
+         * @see ThemeUtil.TRANSLUCENT_THEME_DARK
+         * */
+        val KEY_TRANSLUCENT_THEME: Preferences.Key<Int>
+            get() = intPreferencesKey("translucent_background_theme")
+
+        val KEY_TRANSLUCENT_BACKGROUND_FILE: Preferences.Key<String>
+            get() = stringPreferencesKey("translucent_theme_background_path")
 
         /**
          * 帖子排序方式
@@ -225,14 +241,16 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var translucentBackgroundBlur by DataStoreDelegates.int(key = "translucent_background_blur")
 
-    var translucentBackgroundTheme by DataStoreDelegates.int(
-        defaultValue = TRANSLUCENT_THEME_LIGHT,
-        key = "translucent_background_theme"
-    )
+    /**
+     * File of cropped background for Translucent Theme
+     *
+     * @see ThemeUtil.isTranslucentTheme
+     * */
+    val translucentThemeBackgroundFile: Flow<File?> by lazy { preferencesDataStore.data.map {
+        it[KEY_TRANSLUCENT_BACKGROUND_FILE]?.let { file -> File(context.filesDir, file) }
+    } }
 
-    var translucentThemeBackgroundPath by DataStoreDelegates.string(key = "translucent_theme_background_path")
-
-    var translucentPrimaryColor by DataStoreDelegates.string(key = "translucent_primary_color")
+    var translucentPrimaryColor by DataStoreDelegates.int(key = KEY_TRANSLUCENT_PRIMARY_COLOR)
 
     var useCustomTabs by DataStoreDelegates.boolean(
         defaultValue = true,

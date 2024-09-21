@@ -53,7 +53,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
@@ -61,8 +60,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.plusAssign
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
-import com.github.panpf.sketch.compose.AsyncImage
-import com.github.panpf.sketch.fetch.newFileUri
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.accompanist.navigation.material.BottomSheetNavigator
 import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
 import com.google.accompanist.navigation.material.ModalBottomSheetLayout
@@ -468,6 +468,7 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
+    @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
     private fun TranslucentThemeBackground(
         modifier: Modifier = Modifier,
@@ -477,18 +478,20 @@ class MainActivityV2 : BaseComposeActivity() {
             color = ExtendedTheme.colors.background,
             modifier = modifier
         ) {
-            if (ThemeUtil.isTranslucentTheme(ExtendedTheme.colors.theme)) {
-                val backgroundPath by rememberPreferenceAsMutableState(
-                    key = stringPreferencesKey("translucent_theme_background_path"),
-                    defaultValue = ""
-                )
-                val backgroundUri by remember { derivedStateOf { newFileUri(backgroundPath) } }
-                AsyncImage(
-                    imageUri = backgroundUri,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+            val isTranslucentTheme by remember {
+                derivedStateOf { ThemeUtil.isTranslucentTheme(ThemeUtil.themeState.value) }
+            }
+            if (isTranslucentTheme) {
+                val background by appPreferences.translucentThemeBackgroundFile.collectAsState(null)
+                if (background != null) {
+                    GlideImage(
+                        model = background,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        requestBuilderTransform = { it.diskCacheStrategy(DiskCacheStrategy.NONE) }
+                    )
+                }
             }
             content()
         }

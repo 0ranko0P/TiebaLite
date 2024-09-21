@@ -226,6 +226,7 @@ dependencies {
     //Glide
     implementation(glide.core)
     ksp(glide.ksp)
+    implementation(glide.compose)
     implementation(glide.okhttp3.integration)
 
     implementation(google.material)
@@ -246,4 +247,5 @@ dependencies {
     implementation(com.geyifeng.immersionbar.immersionbar)
 
     implementation(com.github.yalantis.ucrop)
+    implementation(colorful.sliders)
 }

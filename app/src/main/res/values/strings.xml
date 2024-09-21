@@ -193,7 +193,6 @@
     <string name="title_translucent_theme_blur">模糊度</string>
     <string name="toast_save_pic_success">设置保存成功</string>
     <string name="title_select_color">强调色</string>
-    <string name="tip_translucent_theme"><![CDATA[<strong>注意：透明主题当前为实验性特性，可能会存在部分界面显示异常问题。</strong><br>开启后打开界面背景短暂变黑是由于正在加载背景图片，属于正常现象。]]></string>
     <string name="title_custom_color">自定义</string>
     <string name="toast_sign_failed">签到失败 %s</string>
     <string name="toast_like_failed">关注失败 %s</string>
@@ -511,6 +510,6 @@
     <string name="summary_do_not_use_photo_picker">将使用 App 内置的照片选择器</string>
     <string name="summary_use_photo_picker">将使用原生的照片选择器</string>
     <string name="desc_show">显示</string>
-    <string name="desc_input_color">手动输入颜色</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
+    <string name="brightness">亮度</string>
 </resources>

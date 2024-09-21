@@ -153,21 +153,14 @@ object ImageUtil {
         return output
     }
 
-    fun bitmapToFile(
-        bitmap: Bitmap,
-        output: File,
-        quality: Int = 100,
-        format: CompressFormat = CompressFormat.JPEG
-    ): Boolean {
-        try {
-            output.ensureParents()
-            FileOutputStream(output).use { out ->
-                return bitmap.compress(format, quality, out)
+    @Throws(FileNotFoundException::class, IOException::class)
+    fun Bitmap.toFile(output: File, quality: Int = 100, format: CompressFormat = CompressFormat.JPEG) {
+        output.ensureParents()
+        FileOutputStream(output).use { out ->
+            if (!this.compress(format, quality, out)) {
+                throw IOException("Unable to compress $output to $format.")
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
-        return false
     }
 
     fun drawableToBitmap(drawable: Drawable): Bitmap {
