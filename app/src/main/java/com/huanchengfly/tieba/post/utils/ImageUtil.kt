@@ -125,34 +125,6 @@ object ImageUtil {
         return baos.use { it.toByteArray() }
     }
 
-    fun compressImage(
-        bitmap: Bitmap,
-        output: File,
-        maxSizeKb: Int = 100,
-        initialQuality: Int = 100
-    ): File {
-        var baos: ByteArrayOutputStream? = null
-        try {
-            baos = ByteArrayOutputStream()
-            var quality = initialQuality
-            bitmap.compress(CompressFormat.JPEG, quality, baos) //质量压缩方法，这里100表示不压缩，把压缩后的数据存放到baos中
-            while (baos.toByteArray().size / 1024 > maxSizeKb && quality > 0) {  //循环判断如果压缩后图片是否大于设置的最大值,大于继续压缩
-                baos.reset() //重置baos即清空baos
-                quality -= 5 //每次都减少5
-                bitmap.compress(CompressFormat.JPEG, quality, baos) //这里压缩options%，把压缩后的数据存放到baos中
-            }
-            FileOutputStream(output).use { fos ->
-                fos.write(baos.toByteArray())
-                fos.flush()
-            }
-        } catch (e: FileNotFoundException) {
-            e.printStackTrace()
-        } finally {
-            baos?.closeQuietly()
-        }
-        return output
-    }
-
     @Throws(FileNotFoundException::class, IOException::class)
     fun Bitmap.toFile(output: File, quality: Int = 100, format: CompressFormat = CompressFormat.JPEG) {
         output.ensureParents()

@@ -183,8 +183,6 @@ dependencies {
     androidTestImplementation(compose.ui.test.junit4)
     debugRuntimeOnly(compose.ui.test.manifest)
 
-    implementation(androidx.constraintlayout.compose)
-
     implementation(github.oaid)
 
     implementation(org.jetbrains.annotations)
@@ -206,11 +204,10 @@ dependencies {
     implementation(androidx.annotation)
     implementation(androidx.browser)
     implementation(androidx.constraintlayout)
+    implementation(androidx.constraintlayout.compose)
     implementation(androidx.core)
     implementation(androidx.core.splashscreen)
     implementation(androidx.datastore.preferences)
-    implementation(androidx.fragment.ktx)
-    implementation(androidx.gridlayout)
     implementation(androidx.palette)
     implementation(androidx.window)
     implementation(androidx.startup.runtime)
@@ -237,15 +234,12 @@ dependencies {
 
     implementation(google.gson)
     implementation(org.litepal.android.kotlin)
-    implementation(com.jaredrummler.colorpicker)
 
     implementation(subsampling.image)
     implementation(iielse.imageviewer)
 
     implementation(github.matisse)
     implementation(xx.permissions)
-    implementation(com.geyifeng.immersionbar.immersionbar)
-
     implementation(com.github.yalantis.ucrop)
     implementation(colorful.sliders)
 }

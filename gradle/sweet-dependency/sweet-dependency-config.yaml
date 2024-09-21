@@ -260,10 +260,6 @@ libraries:
     activity-compose:
       alias: androidx-activity-compose
       version-ref: androidx-activity
-  androidx.fragment:
-    fragment-ktx:
-      alias: androidx-fragment-ktx
-      version: 1.8.2
   com.github.gzu-liyujiang:
     Android_CN_OAID:
       alias: github-oaid
@@ -303,10 +299,6 @@ libraries:
     core-splashscreen:
       alias: androidx-core-splashscreen
       version: 1.0.1
-  androidx.gridlayout:
-    gridlayout:
-      alias: androidx-gridlayout
-      version: 1.0.0
   androidx.browser:
     browser:
       alias: androidx-browser
@@ -358,9 +350,6 @@ libraries:
   org.litepal.android:
     kotlin:
       version: 3.0.0
-  com.jaredrummler:
-    colorpicker:
-      version: 1.1.0
   com.github.lwj1994:
     Matisse:
       alias: github.matisse
@@ -369,9 +358,6 @@ libraries:
     XXPermissions:
       alias: xx-permissions
       version: 18.6
-  com.geyifeng.immersionbar:
-    immersionbar:
-      version: 3.2.2
   com.github.yalantis:
     ucrop:
       version: 2.2.8

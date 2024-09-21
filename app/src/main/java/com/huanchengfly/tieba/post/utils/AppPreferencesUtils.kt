@@ -234,13 +234,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var theme by DataStoreDelegates.string(defaultValue = ThemeUtil.THEME_DEFAULT)
 
-    var translucentBackgroundAlpha by DataStoreDelegates.int(
-        defaultValue = 255,
-        key = "translucent_background_alpha"
-    )
-
-    var translucentBackgroundBlur by DataStoreDelegates.int(key = "translucent_background_blur")
-
     /**
      * File of cropped background for Translucent Theme
      *
