@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
 import androidx.compose.foundation.clickable
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +27,6 @@ import com.huanchengfly.tieba.post.ui.common.prefs.ifNotNullThen
  * @param leadingIcon Icon which is positioned at the start of the Pref
  * @param trailingContent Composable content which is positioned at the end of the Pref
  */
-@ExperimentalMaterialApi
 @Composable
 fun TextPref(
     title: String,

@@ -90,6 +90,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarContainer
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
+import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -108,7 +109,7 @@ data class SearchPageItem(
     val text: @Composable (selected: Boolean) -> Unit,
     val content: @Composable () -> Unit,
     val supportSort: Boolean = false,
-    val sortTypes: ImmutableMap<String, Int> = persistentMapOf(),
+    val sortTypes: Options<Int> = persistentMapOf(),
     val selectedSortType: () -> Int = { -1 },
     val onSelectedSortTypeChange: (Int) -> Unit = {},
 )
@@ -213,9 +214,9 @@ fun SearchPage(
                     },
                     supportSort = true,
                     sortTypes = persistentMapOf(
-                        context.getString(R.string.title_search_order_new) to SearchThreadSortType.SORT_TYPE_NEWEST,
-                        context.getString(R.string.title_search_order_old) to SearchThreadSortType.SORT_TYPE_OLDEST,
-                        context.getString(R.string.title_search_order_relevant) to SearchThreadSortType.SORT_TYPE_RELATIVE,
+                        SearchThreadSortType.SORT_TYPE_NEWEST to R.string.title_search_order_new,
+                        SearchThreadSortType.SORT_TYPE_OLDEST to R.string.title_search_order_old,
+                        SearchThreadSortType.SORT_TYPE_RELATIVE to R.string.title_search_order_relevant
                     ),
                     selectedSortType = { searchThreadSortType },
                     onSelectedSortTypeChange = { searchThreadSortType = it }
@@ -414,10 +415,9 @@ private fun ColumnScope.SearchTabRow(
                     },
                     menuContent = {
                         ListSinglePicker(
-                            itemTitles = item.sortTypes.keys.toImmutableList(),
-                            itemValues = item.sortTypes.values.toImmutableList(),
-                            selectedPosition = item.sortTypes.values.indexOf(item.selectedSortType()),
-                            onItemSelected = { _, _, value, changed ->
+                            items = item.sortTypes,
+                            selected = item.selectedSortType(),
+                            onItemSelected = { value, changed ->
                                 if (changed) item.onSelectedSortTypeChange(value)
                                 dismiss()
                             }

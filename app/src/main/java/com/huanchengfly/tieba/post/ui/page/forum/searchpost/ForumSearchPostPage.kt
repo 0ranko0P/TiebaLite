@@ -89,6 +89,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
@@ -293,15 +294,15 @@ fun ForumSearchPostPage(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val sortTypeMapping = remember {
-        mapOf(
-            ForumSearchPostSortType.NEWEST to context.getString(R.string.title_search_post_sort_by_time),
-            ForumSearchPostSortType.RELATIVE to context.getString(R.string.title_search_post_sort_by_relevant),
+        persistentMapOf(
+            ForumSearchPostSortType.NEWEST to R.string.title_search_post_sort_by_time,
+            ForumSearchPostSortType.RELATIVE to R.string.title_search_post_sort_by_relevant,
         )
     }
     val filterTypeMapping = remember {
-        mapOf(
-            ForumSearchPostFilterType.ALL to context.getString(R.string.title_search_filter_all),
-            ForumSearchPostFilterType.ONLY_THREAD to context.getString(R.string.title_search_filter_only_thread),
+        persistentMapOf(
+            ForumSearchPostFilterType.ALL to R.string.title_search_filter_all,
+            ForumSearchPostFilterType.ONLY_THREAD to R.string.title_search_filter_only_thread,
         )
     }
 
@@ -451,12 +452,9 @@ fun ForumSearchPostPage(
                                         ClickMenu(
                                             menuContent = {
                                                 ListSinglePicker(
-                                                    itemTitles = sortTypeMapping.values.toImmutableList(),
-                                                    itemValues = sortTypeMapping.keys.toImmutableList(),
-                                                    selectedPosition = sortTypeMapping.keys.indexOf(
-                                                        currentSortType
-                                                    ),
-                                                    onItemSelected = { _, _, newSortType, changed ->
+                                                    items = sortTypeMapping,
+                                                    selected = currentSortType,
+                                                    onItemSelected = { newSortType, changed ->
                                                         if (changed) {
                                                             viewModel.send(
                                                                 ForumSearchPostUiIntent.Refresh(
@@ -477,7 +475,7 @@ fun ForumSearchPostPage(
                                         ) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Text(
-                                                    text = sortTypeMapping[currentSortType] ?: "",
+                                                    text = stringResource(sortTypeMapping[currentSortType]!!),
                                                     fontSize = 13.sp,
                                                     fontWeight = FontWeight.Bold
                                                 )
@@ -498,7 +496,7 @@ fun ForumSearchPostPage(
                                             filterTypeMapping.keys.map<Int, @Composable () -> Unit> { type ->
                                                 {
                                                     Text(
-                                                        text = filterTypeMapping[type] ?: "",
+                                                        text = stringResource(filterTypeMapping[type]!!),
                                                         fontSize = 13.sp,
                                                         fontWeight = if (type == currentFilterType) {
                                                             FontWeight.Bold

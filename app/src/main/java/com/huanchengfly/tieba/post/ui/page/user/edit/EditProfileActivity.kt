@@ -88,7 +88,7 @@ import com.huanchengfly.tieba.post.utils.requestPermission
 import com.huanchengfly.tieba.post.utils.shouldUsePhotoPicker
 import com.yalantis.ucrop.UCrop
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
@@ -512,14 +512,13 @@ fun PageEditProfile(
                     }
                 ) {
                     ListSinglePicker(
-                        itemTitles = persistentListOf(
-                            stringResource(id = R.string.profile_sex_male),
-                            stringResource(id = R.string.profile_sex_female)
+                        items = persistentMapOf(
+                            1 to R.string.profile_sex_male,
+                            2 to R.string.profile_sex_female
                         ),
-                        itemValues = persistentListOf(1, 2),
-                        selectedPosition = if (sex == 1) 0 else if (sex == 2) 1 else -1,
-                        onItemSelected = { _, _, value, _ ->
-                            sex = value
+                        selected = sex,
+                        onItemSelected = { value, changed ->
+                            if (changed) sex = value
                             dismiss()
                         }
                     )

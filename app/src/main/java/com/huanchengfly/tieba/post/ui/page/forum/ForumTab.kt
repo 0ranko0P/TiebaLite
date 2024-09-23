@@ -27,7 +27,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
-import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.launch
 
 const val TAB_FORUM_LATEST = 0
@@ -78,16 +78,12 @@ fun ForumTab(
             },
             menuContent = {
                 ListSinglePicker(
-                    itemTitles = persistentListOf(
-                        stringResource(id = R.string.title_sort_by_reply),
-                        stringResource(id = R.string.title_sort_by_send)
+                    items = persistentMapOf(
+                        ForumSortType.BY_REPLY to R.string.title_sort_by_reply,
+                        ForumSortType.BY_SEND to R.string.title_sort_by_send
                     ),
-                    itemValues = persistentListOf(
-                        ForumSortType.BY_REPLY,
-                        ForumSortType.BY_SEND
-                    ),
-                    selectedPosition = sortType,
-                    onItemSelected = { _, _, value, changed ->
+                    selected = sortType,
+                    onItemSelected = { value, changed ->
                         if (changed) {
                             onSortTypeChanged(value, currentPage == TAB_FORUM_GOOD)
                         }
