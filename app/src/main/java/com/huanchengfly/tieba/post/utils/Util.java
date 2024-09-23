@@ -1,28 +1,15 @@
 package com.huanchengfly.tieba.post.utils;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 
 import androidx.annotation.AttrRes;
 import androidx.annotation.ColorInt;
 import androidx.annotation.ColorRes;
-import androidx.annotation.Dimension;
-import androidx.annotation.Px;
 
 import java.util.Calendar;
 
 public class Util {
-
-    public static int changeAlpha(int color, float fraction) {
-        int red = Color.red(color);
-        int green = Color.green(color);
-        int blue = Color.blue(color);
-        int alpha = (int) (Color.alpha(color) * fraction);
-        return Color.argb(alpha, red, green, blue);
-    }
 
     @ColorInt
     public static int getIconColorByLevel(String levelStr) {
@@ -66,13 +53,6 @@ public class Util {
         int color = typedArray.getColor(0, context.getResources().getColor(defaultColor));
         typedArray.recycle();
         return color;
-    }
-
-    public static boolean canLoadGlide(Context context) {
-        if (context instanceof Activity) {
-            return !((Activity) context).isDestroyed();
-        }
-        return context != null;
     }
 
     public static long getTimeInMillis(String timeStr) {

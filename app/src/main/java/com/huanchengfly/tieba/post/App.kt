@@ -19,14 +19,6 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.toArgb
 import com.github.gzuliyujiang.oaid.DeviceID
-import com.github.panpf.sketch.Sketch
-import com.github.panpf.sketch.SketchFactory
-import com.github.panpf.sketch.decode.GifAnimatedDrawableDecoder
-import com.github.panpf.sketch.decode.GifMovieDrawableDecoder
-import com.github.panpf.sketch.decode.HeifAnimatedDrawableDecoder
-import com.github.panpf.sketch.decode.WebpAnimatedDrawableDecoder
-import com.github.panpf.sketch.http.OkHttpStack
-import com.github.panpf.sketch.request.PauseLoadWhenScrollingDrawableDecodeInterceptor
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.OAIDGetter
@@ -46,9 +38,8 @@ import dagger.hilt.android.HiltAndroidApp
 import org.litepal.LitePal
 import kotlin.concurrent.thread
 
-
 @HiltAndroidApp
-class App : Application(), SketchFactory {
+class App : Application() {
     private val mActivityList: MutableList<Activity> = mutableListOf()
 
     val batterySaver by unsafeLazy { getSystemService(Context.POWER_SERVICE) as PowerManager }
@@ -733,25 +724,4 @@ class App : Application(), SketchFactory {
             return context.getColorCompat(colorId)
         }
     }
-
-    override fun createSketch(): Sketch = Sketch.Builder(this).apply {
-        httpStack(OkHttpStack.Builder().apply {
-            userAgent(System.getProperty("http.agent"))
-        }.build())
-        components {
-            addDrawableDecodeInterceptor(PauseLoadWhenScrollingDrawableDecodeInterceptor())
-            addDrawableDecoder(
-                when {
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> GifAnimatedDrawableDecoder.Factory()
-                    else -> GifMovieDrawableDecoder.Factory()
-                }
-            )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                addDrawableDecoder(WebpAnimatedDrawableDecoder.Factory())
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                addDrawableDecoder(HeifAnimatedDrawableDecoder.Factory())
-            }
-        }
-    }.build()
 }

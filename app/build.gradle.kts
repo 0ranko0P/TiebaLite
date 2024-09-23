@@ -154,14 +154,6 @@ dependencies {
     implementation(accompanist.systemuicontroller)
     implementation(accompanist.placeholder.material)
 
-    implementation(sketch.core)
-    implementation(sketch.compose)
-    implementation(sketch.ext.compose)
-    implementation(sketch.gif)
-    implementation(sketch.okhttp)
-
-    implementation(zoomimage.compose.sketch)
-
     implementation(compose.bom)
     androidTestImplementation(compose.bom)
 

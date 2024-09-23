@@ -37,7 +37,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.panpf.sketch.compose.AsyncImage
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.models.PhotoViewData
@@ -193,6 +194,7 @@ data class VideoContentRender(
     val width: Int,
     val height: Int
 ) : PbContentRender {
+    @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
     override fun Render() {
         val widthFraction =
@@ -221,8 +223,8 @@ data class VideoContentRender(
                     )
                 }
             } else {
-                AsyncImage(
-                    imageUri = picUrl,
+                GlideImage(
+                    model  = picUrl,
                     contentDescription = stringResource(id = R.string.desc_video),
                     modifier = picModifier
                         .clickable {

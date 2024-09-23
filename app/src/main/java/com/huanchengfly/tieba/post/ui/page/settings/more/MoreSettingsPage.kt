@@ -43,9 +43,7 @@ import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterialApi::class)
 @Destination
@@ -53,7 +51,6 @@ import kotlinx.coroutines.withContext
 fun MoreSettingsPage(
     navigator: DestinationsNavigator,
 ) {
-    val coroutineScope = rememberCoroutineScope()
     MyScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
@@ -72,12 +69,6 @@ fun MoreSettingsPage(
     ) { paddingValues ->
         val snackbarHostState = LocalSnackbarHostState.current
         val context = LocalContext.current
-        var cacheSize by remember { mutableStateOf("0.0B") }
-        LaunchedEffect(Unit) {
-            coroutineScope.launch(Dispatchers.IO) {
-                cacheSize = ImageCacheUtil.getCacheSize(context)
-            }
-        }
         PrefsScreen(
             dataStore = LocalContext.current.dataStore,
             dividerThickness = 0.dp,
@@ -146,6 +137,14 @@ fun MoreSettingsPage(
                 )
             }
             prefsItem {
+                val coroutineScope = rememberCoroutineScope()
+                var cacheSize: String? by remember { mutableStateOf(null) }
+                if (cacheSize == null) {
+                    LaunchedEffect(Unit) {
+                        coroutineScope.launch { cacheSize = ImageCacheUtil.getCacheSize(context) }
+                    }
+                }
+
                 TextPref(
                     leadingIcon = {
                         LeadingIcon {
@@ -160,14 +159,12 @@ fun MoreSettingsPage(
                     title = stringResource(id = R.string.title_clear_picture_cache),
                     onClick = {
                         cacheSize = "0.0B"
-                        coroutineScope.launch() {
+                        coroutineScope.launch {
                             snackbarHostState.showSnackbar(context.getString(R.string.toast_clear_picture_cache_success))
-                            withContext(Dispatchers.IO) {
-                                ImageCacheUtil.clearImageAllCache(context)
-                            }
+                            ImageCacheUtil.clearImageAllCache(context)
                         }
                     },
-                    summary = stringResource(id = R.string.tip_cache, cacheSize)
+                    summary = stringResource(id = R.string.tip_cache, cacheSize ?: "...")
                 )
             }
             prefsItem {

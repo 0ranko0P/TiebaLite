@@ -4,27 +4,23 @@ import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.annotation.ColorInt
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
-import com.github.panpf.sketch.request.LoadRequest
-import com.github.panpf.sketch.request.LoadResult
-import com.github.panpf.sketch.request.execute
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import java.io.IOException
 
 fun launchUrl(
     context: Context,
@@ -135,10 +131,14 @@ suspend fun requestPinShortcut(
     shortcutIntent: Intent
 ):Result<Unit> {
     if (ShortcutManagerCompat.isRequestPinShortcutSupported(context)) {
-        val imageResult = LoadRequest(context, iconImageUri).execute()
-        if (imageResult is LoadResult.Success) {
+        val imageResult = runCatching {
+            DownloadUtil.downloadCancelable(url = iconImageUri, onProgress = null).use {
+                BitmapFactory.decodeStream(it.byteStream())?: throw IOException("Decode $iconImageUri failed!")
+            }
+        }
+        if (imageResult.isSuccess) {
             val shortcutInfo = ShortcutInfoCompat.Builder(context, shortcutId)
-                .setIcon(IconCompat.createWithBitmap(imageResult.bitmap))
+                .setIcon(IconCompat.createWithBitmap(imageResult.getOrThrow()))
                 .setIntent(shortcutIntent)
                 .setShortLabel(label)
                 .build()
@@ -146,7 +146,7 @@ suspend fun requestPinShortcut(
                 return Result.success(Unit)
             }
         } else {
-            val cause = (imageResult as LoadResult.Error).throwable
+            val cause = imageResult.exceptionOrNull()
             val message = context.getString(R.string.load_shortcut_icon_fail)
             return Result.failure(UnsupportedOperationException(message, cause))
         }

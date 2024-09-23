@@ -76,7 +76,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.github.panpf.sketch.compose.AsyncImage
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -742,6 +743,7 @@ private fun EmoticonPanel(
     }
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun ImagePanel(
     selectedImages: ImmutableList<String>,
@@ -775,8 +777,8 @@ private fun ImagePanel(
 //            }
             itemsIndexed(selectedImages) { index, imageUri ->
                 Box {
-                    AsyncImage(
-                        imageUri = imageUri,
+                    GlideImage(
+                        model = imageUri,
                         contentDescription = stringResource(id = R.string.desc_image),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier

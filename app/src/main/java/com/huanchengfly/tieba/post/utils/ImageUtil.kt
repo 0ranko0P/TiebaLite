@@ -1,15 +1,10 @@
 package com.huanchengfly.tieba.post.utils
 
-import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
-import android.graphics.Canvas
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
@@ -19,17 +14,11 @@ import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
 import android.webkit.URLUtil
-import android.widget.ImageView
 import androidx.annotation.IntDef
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.media3.common.MimeTypes
-import com.github.panpf.sketch.request.Depth
-import com.github.panpf.sketch.request.DisplayRequest
-import com.github.panpf.sketch.request.enqueue
-import com.github.panpf.sketch.transform.CircleCropTransformation
-import com.github.panpf.sketch.transform.RoundedCornersTransformation
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.glide.ProgressListener
@@ -81,7 +70,15 @@ object ImageUtil {
     const val LOAD_TYPE_AVATAR = 1
     const val LOAD_TYPE_NO_RADIUS = 2
     const val LOAD_TYPE_ALWAYS_ROUND = 3
-    const val TAG = "ImageUtil"
+
+    /**
+     * Directory where the shared image will be saved, keep it sync with [R.xml.file_paths_share_img]
+     *
+     * @see downloadForShare
+     * */
+    const val FILE_PROVIDER_SHARE_DIR = ".shareTemp"
+
+    private const val TAG = "ImageUtil"
 
     private fun isGifFile(body: ResponseBody): Boolean {
         val type = body.contentType()
@@ -135,28 +132,6 @@ object ImageUtil {
         }
     }
 
-    fun drawableToBitmap(drawable: Drawable): Bitmap {
-        val bitmap = Bitmap.createBitmap(
-            drawable.intrinsicWidth, drawable.intrinsicHeight,
-            if (drawable.opacity != PixelFormat.OPAQUE) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565
-        )
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, drawable.intrinsicWidth, drawable.intrinsicHeight)
-        drawable.draw(canvas)
-        return bitmap
-    }
-
-    private fun changeBrightness(imageView: ImageView, brightness: Int) {
-        val cMatrix = ColorMatrix()
-        cMatrix.set(
-            floatArrayOf(
-                1f, 0f, 0f, 0f, brightness.toFloat(), 0f, 1f, 0f, 0f, brightness.toFloat(),  // 改变亮度
-                0f, 0f, 1f, 0f, brightness.toFloat(), 0f, 0f, 0f, 1f, 0f
-            )
-        )
-        imageView.colorFilter = ColorMatrixColorFilter(cMatrix)
-    }
-
     /**
      * Download image and share it via [FileProvider]
      *
@@ -167,8 +142,7 @@ object ImageUtil {
     suspend fun downloadForShare(context: Context, url: String?, onProgress: ProgressListener?): Result<Uri> {
         if (url == null) return Result.failure(NullPointerException())
 
-        // FileProvider: keep it sync with R.xml.file_paths_share_img
-        val pictureFolder = File(context.cacheDir, ".shareTemp")
+        val pictureFolder = File(context.cacheDir, FILE_PROVIDER_SHARE_DIR)
         val destFile = File(pictureFolder, "share_${url.hashCode()}")
 
         try {
@@ -297,24 +271,9 @@ object ImageUtil {
         }
     }
 
-    private fun checkGifFile(file: File) {
-        if (isGifFile(file)) {
-            val gifFile = File(file.parentFile, FileUtil.changeFileExtension(file.name, ".gif"))
-            if (gifFile.exists()) {
-                file.delete()
-            } else {
-                file.renameTo(gifFile)
-            }
-        }
-    }
-
     fun getPicId(picUrl: String?): String {
         val fileName = URLUtil.guessFileName(picUrl, null, MimeType.JPEG.toString())
         return fileName.replace(".jpg", "")
-    }
-
-    private fun getRadiusDp(context: Context): Int {
-        return context.appPreferences.radius
     }
 
     fun getPlaceHolder(context: Context, radius: Int): Drawable {
@@ -336,69 +295,6 @@ object ImageUtil {
         drawable.setColor(color)
         drawable.cornerRadius = radius.dpToPxFloat()
         return drawable
-    }
-
-    @SuppressLint("CheckResult")
-    fun load(
-        imageView: ImageView,
-        @LoadType type: Int,
-        url: String?,
-        skipNetworkCheck: Boolean,
-        noTransition: Boolean,
-    ) {
-        if (!Util.canLoadGlide(imageView.context)) {
-            return
-        }
-        if (isNightMode()) {
-            changeBrightness(imageView, -35)
-        } else {
-            imageView.clearColorFilter()
-        }
-        val radius = getRadiusDp(imageView.context).toFloat()
-        val requestBuilder =
-            if (skipNetworkCheck ||
-                type == LOAD_TYPE_AVATAR ||
-                imageLoadSettings == SETTINGS_ALL_ORIGIN ||
-                imageLoadSettings == SETTINGS_SMART_ORIGIN ||
-                (imageLoadSettings == SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected())
-            ) {
-                imageView.setTag(R.id.image_load_tag, true)
-                DisplayRequest.Builder(imageView.context, url)
-            } else {
-                imageView.setTag(R.id.image_load_tag, false)
-                DisplayRequest.Builder(imageView.context, url).depth(Depth.LOCAL)
-            }
-        when (type) {
-            LOAD_TYPE_SMALL_PIC -> requestBuilder
-                .placeholder(getPlaceHolder(imageView.context, radius))
-                .transformations(RoundedCornersTransformation(radius.dpToPxFloat()))
-
-            LOAD_TYPE_AVATAR -> requestBuilder
-                .placeholder(getPlaceHolder(imageView.context, 6f))
-                .transformations(RoundedCornersTransformation(6f.dpToPxFloat()))
-
-            LOAD_TYPE_NO_RADIUS -> requestBuilder
-                .placeholder(getPlaceHolder(imageView.context, 0f))
-
-            LOAD_TYPE_ALWAYS_ROUND -> requestBuilder
-                .placeholder(getPlaceHolder(imageView.context, 100f))
-                .transformations(CircleCropTransformation())
-        }
-        if (!noTransition) {
-            requestBuilder.crossfade()
-        }
-        requestBuilder.target(imageView).build().enqueue()
-    }
-
-    @JvmStatic
-    @JvmOverloads
-    fun load(
-        imageView: ImageView,
-        @LoadType type: Int,
-        url: String?,
-        skipNetworkCheck: Boolean = false
-    ) {
-        load(imageView, type, url, skipNetworkCheck, false)
     }
 
     /**

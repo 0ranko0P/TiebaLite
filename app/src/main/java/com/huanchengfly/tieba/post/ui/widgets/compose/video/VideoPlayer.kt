@@ -47,7 +47,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import com.github.panpf.sketch.compose.AsyncImage
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 
@@ -98,6 +99,7 @@ fun rememberVideoPlayerController(
     )
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun VideoPlayer(
     videoPlayerController: VideoPlayerController,
@@ -167,8 +169,8 @@ fun VideoPlayer(
                     contentAlignment = Alignment.Center
                 ) {
                     if (thumbnailUrl != null) {
-                        AsyncImage(
-                            imageUri = thumbnailUrl,
+                        GlideImage(
+                            model = thumbnailUrl,
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop

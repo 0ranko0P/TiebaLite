@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
@@ -18,16 +19,20 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.panpf.sketch.compose.AsyncImage
-import com.github.panpf.sketch.fetch.newResourceUri
-import com.github.panpf.sketch.request.DisplayRequest
+import com.bumptech.glide.integration.compose.CrossFade
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.placeholder
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
+import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.utils.GlideUtil
 import com.huanchengfly.tieba.post.utils.ImageUtil
 
 object Sizes {
@@ -109,14 +114,14 @@ fun Avatar(
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
 ) {
-    Avatar(
-        data = data,
-        contentDescription = contentDescription,
-        modifier = modifier.size(size),
-        shape = shape,
-    )
+    if (data != null) {
+        Avatar(data, contentDescription, modifier.size(size), shape)
+    } else {
+        Avatar(R.drawable.ic_error, size, null, modifier)
+    }
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun Avatar(
     data: String?,
@@ -124,40 +129,32 @@ fun Avatar(
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
 ) {
-    val context = LocalContext.current
-
-    AsyncImage(
-        request = DisplayRequest(LocalContext.current, data) {
-            placeholder(ImageUtil.getPlaceHolder(context, 0))
-            crossfade()
-        },
+    GlideImage(
+        model = data,
         contentDescription = contentDescription,
-        contentScale = ContentScale.Crop,
         modifier = modifier.clip(shape),
-    )
+        contentScale = ContentScale.Crop,
+        failure = placeholder(R.drawable.ic_error),
+        transition = CrossFade(TweenSpec())
+    ) {
+        it.addListener(GlideUtil.getDefaultErrorListener())
+    }
 }
 
 @Composable
 fun Avatar(
-    data: Int,
+    @DrawableRes data: Int,
     size: Dp,
     contentDescription: String?,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-
-    AsyncImage(
-        request = DisplayRequest(LocalContext.current, newResourceUri(data)) {
-            placeholder(ImageUtil.getPlaceHolder(context, 0))
-            crossfade()
-        },
-        contentDescription = contentDescription,
-        contentScale = ContentScale.Crop,
-        modifier = modifier
-            .size(size)
-            .clip(CircleShape),
-    )
-}
+    modifier: Modifier = Modifier
+) = Image(
+    painter = painterResource(id = data),
+    contentDescription = contentDescription,
+    modifier = modifier
+        .size(size)
+        .clip(CircleShape),
+    contentScale = ContentScale.Crop
+)
 
 @Composable
 fun Avatar(

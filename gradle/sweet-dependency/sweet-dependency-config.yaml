@@ -205,26 +205,6 @@ libraries:
     accompanist-placeholder-material:
       alias: accompanist-placeholder-material
       version-ref: accompanist
-  io.github.panpf.sketch3:
-    sketch:
-      alias: sketch-core
-      version-ref: sketch
-    sketch-compose:
-      alias: sketch-compose
-      version-ref: sketch
-    sketch-extensions-compose:
-      alias: sketch-ext-compose
-      version-ref: sketch
-    sketch-gif:
-      alias: sketch-gif
-      version-ref: sketch
-    sketch-okhttp:
-      alias: sketch-okhttp
-      version-ref: sketch
-  io.github.panpf.zoomimage:
-    zoomimage-compose-sketch:
-      alias: zoomimage-compose-sketch
-      version: 1.0.2
   androidx.compose.animation:
     animation:
       alias: compose-animation
