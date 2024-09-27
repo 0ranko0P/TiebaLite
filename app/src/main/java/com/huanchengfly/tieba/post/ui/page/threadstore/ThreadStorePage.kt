@@ -39,11 +39,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.ThreadStoreBean
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.collectPreferenceAsState
+import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -65,8 +68,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_COLLECTED_DESC
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_COLLECTED_SEE_LZ
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -162,6 +166,10 @@ fun ThreadStorePage(
 
             val lazyListState = rememberLazyListState()
 
+            val dataStore = context.dataStore
+            val seeLz by dataStore.collectPreferenceAsState(booleanPreferencesKey(KEY_COLLECTED_SEE_LZ), false)
+            val descSort by dataStore.collectPreferenceAsState(booleanPreferencesKey(KEY_COLLECTED_DESC), false)
+
             Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
                 SwipeUpLazyLoadColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -193,8 +201,8 @@ fun ThreadStorePage(
                                     ThreadPageDestination(
                                         threadId = info.threadId.toLong(),
                                         postId = info.markPid.toLong(),
-                                        seeLz = context.appPreferences.collectThreadSeeLz,
-                                        sortType = if(context.appPreferences.collectThreadDescSort) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT,
+                                        seeLz = seeLz,
+                                        sortType = if(descSort) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT,
                                         from = ThreadPageFrom.FROM_STORE,
                                         extra = ThreadPageFromStoreExtra(
                                             maxPid = info.maxPid.toLong(),

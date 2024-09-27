@@ -14,7 +14,6 @@ import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
 import android.webkit.URLUtil
-import androidx.annotation.IntDef
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -22,7 +21,9 @@ import androidx.media3.common.MimeTypes
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.glide.ProgressListener
+import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dpToPxFloat
+import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
@@ -66,10 +67,11 @@ object ImageUtil {
      * 始终无图
      */
     const val SETTINGS_ALL_NO = 3
-    const val LOAD_TYPE_SMALL_PIC = 0
-    const val LOAD_TYPE_AVATAR = 1
-    const val LOAD_TYPE_NO_RADIUS = 2
-    const val LOAD_TYPE_ALWAYS_ROUND = 3
+
+    const val KEY_IMAGE_LOAD_TYPE = "image_load_type"
+
+    val imageLoadSettings: Int
+        get() = INSTANCE.dataStore.getInt(KEY_IMAGE_LOAD_TYPE, SETTINGS_SMART_ORIGIN)
 
     /**
      * Directory where the shared image will be saved, keep it sync with [R.xml.file_paths_share_img]
@@ -324,10 +326,6 @@ object ImageUtil {
         else imageLoadSettings != SETTINGS_ALL_ORIGIN
     }
 
-    @get:ImageLoadSettings
-    private val imageLoadSettings: Int
-        get() = INSTANCE.appPreferences.imageLoadType!!.toInt()
-
     fun imageToBase64(inputStream: InputStream?): String? {
         if (inputStream == null) {
             return null
@@ -352,12 +350,4 @@ object ImageUtil {
         }
         return result
     }
-
-    @IntDef(LOAD_TYPE_SMALL_PIC, LOAD_TYPE_AVATAR, LOAD_TYPE_NO_RADIUS, LOAD_TYPE_ALWAYS_ROUND)
-    @Retention(AnnotationRetention.SOURCE)
-    annotation class LoadType
-
-    @IntDef(SETTINGS_SMART_ORIGIN, SETTINGS_SMART_LOAD, SETTINGS_ALL_ORIGIN, SETTINGS_ALL_NO)
-    annotation class ImageLoadSettings
-
 }

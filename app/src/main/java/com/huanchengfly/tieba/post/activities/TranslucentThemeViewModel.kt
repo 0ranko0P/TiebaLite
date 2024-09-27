@@ -10,7 +10,6 @@ import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -18,8 +17,10 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.util.fastDistinctBy
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
@@ -31,12 +32,11 @@ import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImagePr
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.getColor
 import com.huanchengfly.tieba.post.putColor
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_TRANSLUCENT_BACKGROUND_FILE
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_TRANSLUCENT_PRIMARY_COLOR
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_TRANSLUCENT_THEME
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.ImageUtil.toFile
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_TRANSLUCENT_BACKGROUND_FILE
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -54,6 +54,7 @@ class TranslucentThemeViewModel : ViewModel() {
     private val context = App.INSTANCE
     private val dataStore = context.dataStore
 
+    private val KEY_IS_DARK_COLOR_MODE by lazy { booleanPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_THEME_DARK_COLOR) }
     private val KEY_TRANSLUCENT_BLUR by lazy { floatPreferencesKey("trans_blur") }
     private val KEY_TRANSLUCENT_ALPHA by lazy { floatPreferencesKey("trans_alpha") }
 
@@ -69,12 +70,9 @@ class TranslucentThemeViewModel : ViewModel() {
         private set
 
     /**
-     * Light/Dark mode of translucent theme, default is Light
-     *
-     * @see [ThemeUtil.TRANSLUCENT_THEME_LIGHT]
-     * @see [ThemeUtil.TRANSLUCENT_THEME_DARK]
+     * Is Light/Dark translucent theme, default is false (Light Theme)
      * */
-    var themeMode: Int by mutableIntStateOf(ThemeUtil.TRANSLUCENT_THEME_LIGHT)
+    var isDarkTheme: Boolean by mutableStateOf(false)
         private set
 
     var alpha: Float by mutableFloatStateOf(1f)
@@ -115,7 +113,7 @@ class TranslucentThemeViewModel : ViewModel() {
             }
             // Restore saved configs
             val data = dataStore.data.first()
-            themeMode = data[KEY_TRANSLUCENT_THEME] ?: ThemeUtil.TRANSLUCENT_THEME_LIGHT
+            isDarkTheme = data[KEY_IS_DARK_COLOR_MODE] ?: false
             primaryColor = data.getColor(KEY_TRANSLUCENT_PRIMARY_COLOR) ?: DefaultColors[0]
             alpha = data[KEY_TRANSLUCENT_ALPHA] ?: 1f
             blurRadius = data[KEY_TRANSLUCENT_BLUR]?: 0f
@@ -155,11 +153,7 @@ class TranslucentThemeViewModel : ViewModel() {
     }
 
     fun onColorModeChanged() {
-        themeMode = if (themeMode == ThemeUtil.TRANSLUCENT_THEME_LIGHT) {
-            ThemeUtil.TRANSLUCENT_THEME_DARK
-        } else {
-            ThemeUtil.TRANSLUCENT_THEME_LIGHT
-        }
+        this.isDarkTheme = !this.isDarkTheme
         checkConfigChanges()
     }
 
@@ -184,7 +178,7 @@ class TranslucentThemeViewModel : ViewModel() {
         } else {
             viewModelScope.launch {
                 configChanged = dataStore.data.map {
-                    themeMode != it[KEY_TRANSLUCENT_THEME]
+                    isDarkTheme != it[KEY_IS_DARK_COLOR_MODE]
                             || primaryColor != it.getColor(KEY_TRANSLUCENT_PRIMARY_COLOR)
                             || alpha != it[KEY_TRANSLUCENT_ALPHA]
                             || blurRadius != it[KEY_TRANSLUCENT_BLUR]
@@ -247,13 +241,15 @@ class TranslucentThemeViewModel : ViewModel() {
 
                 var previousWallpaperFile: String? = null
                 dataStore.edit {
-                    previousWallpaperFile = it[KEY_TRANSLUCENT_BACKGROUND_FILE]
+                    val wallpaperKey = stringPreferencesKey(KEY_TRANSLUCENT_BACKGROUND_FILE)
+                    previousWallpaperFile = it[wallpaperKey]
+
                     it.putColor(KEY_TRANSLUCENT_PRIMARY_COLOR, primaryColor)
-                    it[KEY_TRANSLUCENT_THEME] = themeMode
+                    it[KEY_IS_DARK_COLOR_MODE] = isDarkTheme
                     it[KEY_TRANSLUCENT_ALPHA] = alpha
                     it[KEY_TRANSLUCENT_BLUR] = blurRadius
                     // Save the image file name
-                    it[KEY_TRANSLUCENT_BACKGROUND_FILE] = if (hasFilter) target.name else CROPPED_WALLPAPER_FILE
+                    it[wallpaperKey] = if (hasFilter) target.name else CROPPED_WALLPAPER_FILE
                 }
 
                 // Delete previous wallpaper now

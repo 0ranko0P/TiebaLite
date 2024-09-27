@@ -1,4 +1,4 @@
-package com.huanchengfly.tieba.post.ui.page.settings.block.blocklist
+package com.huanchengfly.tieba.post.ui.page.settings.blocklist
 
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.*

@@ -76,6 +76,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
@@ -86,6 +87,7 @@ import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.pxToDpFloat
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
@@ -103,11 +105,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
 import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_WARNING
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
-import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.showKeyboard
 import com.ramcosta.composedestinations.annotation.Destination
@@ -322,7 +324,7 @@ internal fun ReplyPageContent(
     }
     val imeAnimationEnd by remember { derivedStateOf { imeCurrentHeight == imeAnimationTargetHeight } }
     val imeVisibleHeightPx by produceState(
-        initialValue = remember { context.appPreferences.imeHeight },
+        initialValue = 800,
         imeAnimationTargetInset,
         density
     ) {
@@ -330,7 +332,6 @@ internal fun ReplyPageContent(
             .filter { it > 0 }
             .distinctUntilChanged()
             .collect {
-                context.appPreferences.imeHeight = it
                 value = it
             }
     }
@@ -651,6 +652,7 @@ internal fun ReplyPageContent(
         }
     }
 
+    val warning by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_WARNING), true)
     val warningDialogState = rememberDialogState()
     Dialog(
         dialogState = warningDialogState,
@@ -674,7 +676,7 @@ internal fun ReplyPageContent(
     }
 
     LaunchedEffect(Unit) {
-        if (context.appPreferences.postOrReplyWarning) {
+        if (warning) {
             warningDialogState.show()
         }
     }

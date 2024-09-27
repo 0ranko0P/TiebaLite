@@ -1,31 +1,20 @@
 package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
-import android.util.Log
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.unit.toSize
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.huanchengfly.tieba.post.getString
-import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
+import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.ui.widgets.compose.TimePickerDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 /**
  * Preference which shows a TextField in a Dialog
@@ -38,7 +27,6 @@ import kotlinx.coroutines.launch
  * @param dialogMessage Summary shown underneath [dialogTitle]. No summary if null.
  * @param defaultValue Default value that will be set in the TextField when the dialog is shown for the first time.
  * @param onValueSaved Will be called with new TextField value when the confirm button is clicked. It is NOT called every time the value changes. Use [onValueChange] for that.
- * @param onValueChange Will be called every time the TextField value is changed.
  * @param textColor Text colour of the [title] and [summary]
  * @param enabled If false, this Pref cannot be clicked.
  */
@@ -54,49 +42,15 @@ fun TimePickerPerf(
     dialogMessage: String? = null,
     defaultValue: String = "07:00",
     onValueSaved: (String) -> Unit = {},
-    onValueChange: (String) -> Unit = {},
     textColor: Color = MaterialTheme.colors.onBackground,
     leadingIcon: @Composable (() -> Unit)? = null,
     enabled: Boolean = true,
 ) {
     val dialogState = rememberDialogState()
-    val selectionKey = stringPreferencesKey(key)
-    val scope = rememberCoroutineScope()
 
-    val datastore = LocalPrefsDataStore.current
-    val prefs by remember { datastore.data }.collectAsState(initial = null)
-
-    //value should only change when save button is clicked
-    var value by remember { mutableStateOf(datastore.getString(key, defaultValue)) }
-    //value of the TextField which changes every time the text is modified
-    var timeVal by remember { mutableStateOf(value) }
-
-    var dialogSize by remember { mutableStateOf(Size.Zero) }
-
-
-    LaunchedEffect(datastore.data) {
-        datastore.data.collectLatest { pref ->
-            pref[selectionKey]?.also {
-                value = it
-            }
-        }
-    }
-
-    fun edit() = run {
-        scope.launch {
-            try {
-                datastore.edit { preferences ->
-                    preferences[selectionKey] = timeVal
-                }
-                onValueSaved(timeVal)
-            } catch (e: Exception) {
-                Log.e(
-                    "EditTextPref",
-                    "Could not write pref $key to database. ${e.printStackTrace()}"
-                )
-            }
-        }
-    }
+    // value should only change when save button is clicked
+    var value by rememberPreferenceAsMutableState(stringPreferencesKey(key), defaultValue)
+    var displayValue by remember { mutableStateOf(value)}
 
     TextPref(
         title = title,
@@ -105,35 +59,27 @@ fun TimePickerPerf(
         textColor = textColor,
         enabled = enabled,
         leadingIcon = leadingIcon,
-        onClick = { if (enabled) dialogState.show() },
+        onClick = dialogState::show
     )
 
     if (dialogState.show) {
-        //reset
-        LaunchedEffect(null) {
-            timeVal = value
-        }
-
         TimePickerDialog(
             title = {
                 if (dialogTitle != null) {
                     Text(text = dialogTitle)
                 }
             },
-            currentTime = timeVal,
+            currentTime = value,
             onConfirm = {
-                timeVal = it
-                onValueChange(it)
-                edit()
-            },
-            modifier = Modifier.onGloballyPositioned {
-                dialogSize = it.size.toSize()
+                value = it
+                displayValue = value
+                onValueSaved(it)
             },
             dialogState = dialogState,
-            onValueChange = {
-                timeVal = it.toString()
-                onValueChange(it.toString())
-            },
+            onValueChange = { displayValue = it },
+            onCancel = {
+                displayValue = value // reset
+            }
         ) {
             if (dialogMessage != null) {
                 Text(text = dialogMessage)

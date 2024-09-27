@@ -11,7 +11,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 
 @Composable
-@ExperimentalMaterialApi
 fun PrefsListItem(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,

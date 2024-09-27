@@ -1,4 +1,4 @@
-package com.huanchengfly.tieba.post.ui.page.settings.oksign
+package com.huanchengfly.tieba.post.ui.page.settings
 
 import android.os.Build
 import androidx.compose.foundation.background
@@ -35,15 +35,15 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TimePickerPerf
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
+import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
-import com.huanchengfly.tieba.post.utils.powerManager
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -52,20 +52,16 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Destination
 @Composable
-fun OKSignSettingsPage(
-    navigator: DestinationsNavigator,
-) {
+fun OKSignSettingsPage(navigator: DestinationsNavigator) {
     val coroutineScope = rememberCoroutineScope()
     MyScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
             TitleCentredToolbar(
                 title = stringResource(id = R.string.title_oksign),
-                navigationIcon = {
-                    BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
-                }
+                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) }
             )
-        },
+        }
     ) { paddingValues ->
         val context = LocalContext.current
         val dataStore = context.dataStore
@@ -88,11 +84,11 @@ fun OKSignSettingsPage(
                             )
                         }
                     },
-                    key = "oksign_slow_mode",
-                    title = stringResource(id = R.string.title_oksign_slow_mode),
+                    key = AppPreferencesUtils.KEY_OKSIGN_SLOW,
+                    title = R.string.title_oksign_slow_mode,
                     defaultChecked = true,
-                    summaryOn = stringResource(id = R.string.summary_oksign_slow_mode_on),
-                    summaryOff = stringResource(id = R.string.summary_oksign_slow_mode),
+                    summaryOn = R.string.summary_oksign_slow_mode_on,
+                    summaryOff = R.string.summary_oksign_slow_mode,
                 )
             }
             prefsItem {
@@ -106,10 +102,10 @@ fun OKSignSettingsPage(
                             )
                         }
                     },
-                    key = "oksign_use_official_oksign",
-                    title = stringResource(id = R.string.title_oksign_use_official_oksign),
+                    key = AppPreferencesUtils.KEY_OKSIGN_OFFICIAL,
+                    title = R.string.title_oksign_use_official_oksign,
                     defaultChecked = true,
-                    summary = stringResource(id = R.string.summary_oksign_use_official_oksign),
+                    summary = { R.string.summary_oksign_use_official_oksign },
                 )
             }
             prefsItem {
@@ -123,11 +119,11 @@ fun OKSignSettingsPage(
                             )
                         }
                     },
-                    key = "auto_sign",
-                    title = stringResource(id = R.string.title_auto_sign),
+                    key = AppPreferencesUtils.KEY_OKSIGN_AUTO,
+                    title = R.string.title_auto_sign,
                     defaultChecked = false,
-                    summaryOn = stringResource(id = R.string.summary_auto_sign_on),
-                    summaryOff = stringResource(id = R.string.summary_auto_sign),
+                    summaryOn = R.string.summary_auto_sign_on,
+                    summaryOff = R.string.summary_auto_sign,
                 )
             }
             prefsItem {
@@ -141,34 +137,35 @@ fun OKSignSettingsPage(
                             )
                         }
                     },
-                    key = "auto_sign_time",
+                    key = AppPreferencesUtils.KEY_OKSIGN_AUTO_TIME,
                     title = stringResource(id = R.string.title_auto_sign_time),
-                    defaultValue = "09:00",
+                    defaultValue = context.appPreferences.autoSignTime,
                     summary = { stringResource(id = R.string.summary_auto_sign_time, it) },
                     dialogTitle = stringResource(id = R.string.title_auto_sign_time),
                     enabled = depend(key = "auto_sign")
                 )
             }
-            prefsItem {
-                TextPref(
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.BatteryAlert,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    title = stringResource(id = R.string.title_ignore_battery_optimization),
-                    enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !context.isIgnoringBatteryOptimizations(),
-                    summary =
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) stringResource(id = R.string.summary_battery_optimization_old_android_version)
-                    else if (context.isIgnoringBatteryOptimizations()) stringResource(id = R.string.summary_battery_optimization_ignored)
-                    else stringResource(id = R.string.summary_ignore_battery_optimization),
-                    onClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            if (!context.powerManager.isIgnoringBatteryOptimizations(context.packageName)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                prefsItem {
+                    TextPref(
+                        leadingIcon = {
+                            LeadingIcon {
+                                AvatarIcon(
+                                    icon = Icons.Outlined.BatteryAlert,
+                                    size = Sizes.Small,
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        title = stringResource(id = R.string.title_ignore_battery_optimization),
+                        enabled = !context.isIgnoringBatteryOptimizations(),
+                        summary = if (context.isIgnoringBatteryOptimizations()) {
+                            stringResource(id = R.string.summary_battery_optimization_ignored)
+                        } else {
+                            stringResource(id = R.string.summary_ignore_battery_optimization)
+                        },
+                        onClick = {
+                            if (!context.isIgnoringBatteryOptimizations()) {
                                 context.requestIgnoreBatteryOptimizations()
                             } else {
                                 coroutineScope.launch {
@@ -176,8 +173,8 @@ fun OKSignSettingsPage(
                                 }
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
 
             prefsItem {

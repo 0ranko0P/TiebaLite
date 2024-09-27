@@ -7,7 +7,6 @@ import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
-import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.PowerManager
@@ -255,9 +254,9 @@ class App : Application() {
                             dynamicTonalPalette.primary40.toArgb()
                         }
                     } else if (ThemeUtil.THEME_CUSTOM == theme) {
-                        val customPrimaryColorStr = context.appPreferences.customPrimaryColor
-                        return if (customPrimaryColorStr != null) {
-                            Color.parseColor(customPrimaryColorStr)
+                        val customPrimaryColor = context.appPreferences.customPrimaryColor
+                        return if (customPrimaryColor != 0) {
+                            customPrimaryColor
                         } else getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT)
                     } else if (ThemeUtil.isTranslucentTheme(theme)) {
                         val primaryColor = context.appPreferences.translucentPrimaryColor

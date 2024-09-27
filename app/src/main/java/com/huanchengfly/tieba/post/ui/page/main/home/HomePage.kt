@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.main.home
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -65,6 +64,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -76,6 +76,8 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -99,19 +101,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_HOME_PAGE_SHOW_HISTORY
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_HOME_SINGLE_FORUM_LIST
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.persistentListOf
-
-private fun getGridCells(context: Context, listSingle: Boolean = context.appPreferences.listSingle): GridCells {
-    return if (listSingle) {
-        GridCells.Fixed(1)
-    } else {
-        GridCells.Adaptive(180.dp)
-    }
-}
 
 @Preview("SearchBoxPreview")
 @Composable
@@ -124,7 +119,7 @@ fun SearchBoxPreview() {
 }
 
 @Composable
-fun SearchBox(
+private fun SearchBox(
     modifier: Modifier = Modifier,
     backgroundColor: Color = ExtendedTheme.colors.topBarSurface,
     contentColor: Color = ExtendedTheme.colors.onTopBarSurface,
@@ -417,10 +412,14 @@ fun HomePage(
     )
     val isEmpty by remember { derivedStateOf { forums.isEmpty() } }
     val hasTopForum by remember { derivedStateOf { topForums.isNotEmpty() } }
-    val showHistoryForum by remember { derivedStateOf { context.appPreferences.homePageShowHistoryForum && historyForums.isNotEmpty() } }
-    var listSingle by remember { mutableStateOf(context.appPreferences.listSingle) }
+
+    var listSingle by rememberPreferenceAsMutableState(
+        key = booleanPreferencesKey(KEY_HOME_SINGLE_FORUM_LIST),
+        defaultValue = false
+    )
+    val gridCells = if (listSingle) GridCells.Fixed(1) else GridCells.Adaptive(180.dp)
+
     val isError by remember { derivedStateOf { error != null } }
-    val gridCells by remember { derivedStateOf { getGridCells(context, listSingle) } }
 
     onGlobalEvent<GlobalEvent.Refresh>(
         filter = { it.key == "home" }
@@ -465,11 +464,9 @@ fun HomePage(
                     }
                     ActionItem(
                         icon = Icons.Outlined.ViewAgenda,
-                        contentDescription = stringResource(id = R.string.title_switch_list_single)
-                    ) {
-                        context.appPreferences.listSingle = !listSingle
-                        listSingle = !listSingle
-                    }
+                        contentDescription = stringResource(id = R.string.title_switch_list_single),
+                        onClick = { listSingle = !listSingle }
+                    )
                 }
             )
         },
@@ -512,6 +509,10 @@ fun HomePage(
                         error?.let { ErrorScreen(error = it) }
                     }
                 ) {
+                    val showHistoryOnHome by rememberPreferenceAsState(booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY), true)
+                    val showHistoryForum by remember {
+                        derivedStateOf { showHistoryOnHome && historyForums.isNotEmpty() }
+                    }
                     MyLazyVerticalGrid(
                         columns = gridCells,
                         contentPadding = PaddingValues(bottom = 12.dp),

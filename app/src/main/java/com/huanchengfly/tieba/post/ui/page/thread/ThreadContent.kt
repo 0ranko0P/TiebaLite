@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AlignVerticalTop
@@ -154,7 +153,7 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
                         onUserClick = {
                             navigator.navigate(UserProfilePageDestination(firstPost.author.id))
                         },
-                        onReplyClick = {
+                        onReplyClick = { _: PostData ->
                             navigator.navigate(
                                 ReplyPageDestination(
                                     forumId = viewModel.curForumId ?: 0,
@@ -162,7 +161,7 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
                                     threadId = viewModel.threadId,
                                 )
                             )
-                        },
+                        }.takeUnless { viewModel.hideReply },
                         onMenuCopyClick = {
                             navigator.navigate(CopyTextDialogPageDestination(it))
                         },
@@ -305,7 +304,7 @@ fun PostCardItem(viewModel: ThreadViewModel, post: PostData) {
             navigator.navigate(UserProfilePageDestination(post.author.id))
         },
         onAgree = { viewModel.onAgreePost(post) },
-        onReplyClick = viewModel::onReplyPost,
+        onReplyClick = viewModel::onReplyPost.takeUnless { viewModel.hideReply },
         onSubPostReplyClick = { subPost -> viewModel.onReplySubPost(post, subPost) },
         onOpenSubPosts = { subPostId ->
             viewModel.onOpenSubPost(post, subPostId)
@@ -389,7 +388,7 @@ fun PostCard(
     isCollected: Boolean,
     onUserClick: () -> Unit = {},
     onAgree: () -> Unit = {},
-    onReplyClick: (PostData) -> Unit = {},
+    onReplyClick: ((PostData) -> Unit)?,
     onSubPostReplyClick: ((SubPostItemData) -> Unit)? = null,
     onOpenSubPosts: (subPostId: Long) -> Unit = {},
     onMenuCopyClick: (String) -> Unit,
@@ -407,7 +406,6 @@ fun PostCard(
     val hasAgreed = post.hasAgree == 1
     val agreeNum = post.diffAgreeNum
     val menuState = rememberMenuState()
-    val hideReply = remember { context.appPreferences.hideReply }
 
     BlockableContent(
         blocked = post.blocked,
@@ -424,9 +422,8 @@ fun PostCard(
         LongClickMenu(
             menuState = menuState,
             shape = MaterialTheme.shapes.medium,
-            onClick = { if (!hideReply) onReplyClick(post) },
             menuContent = {
-                if (!hideReply) {
+                if (onReplyClick != null) {
                     TextMenuItem(text = R.string.btn_reply) {
                         onReplyClick(post)
                     }
@@ -464,7 +461,7 @@ fun PostCard(
                         },
                         name = {
                             UserNameText(
-                                userName = author.getDisplayName(context),
+                                userName = remember(author.id) { author.getDisplayName(context) },
                                 userLevel = author.levelId,
                                 isLz = author.isLz,
                                 bawuType = author.bawuType,
@@ -541,7 +538,7 @@ fun PostCard(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 12.dp),
-                                    onReplyClick = { onSubPostReplyClick?.invoke(it) },
+                                    onReplyClick = onSubPostReplyClick,
                                     onOpenSubPosts = onOpenSubPosts,
                                     onMenuCopyClick = onMenuCopyClick
                                 )
@@ -583,9 +580,9 @@ private fun SubPostItem(
     LongClickMenu(
         menuState = menuState,
         menuContent = {
-            if (!context.appPreferences.hideReply) {
+            if (onReplyClick != null) {
                 TextMenuItem(text = R.string.title_reply) {
-                    onReplyClick?.invoke(subPost)
+                    onReplyClick(subPost)
                 }
             }
             TextMenuItem(text = R.string.menu_copy) {

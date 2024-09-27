@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -116,7 +118,6 @@ fun NavigationDrawerItem(
     }
 }
 
-@OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 fun NavigationDrawerContent(
     currentPosition: Int,
@@ -191,34 +192,13 @@ fun NavigationDrawerContent(
                                 onChangePosition(index)
                             }
                         },
-                        label = { Text(text = navigationItem.title(index == currentPosition)) },
+                        label = { Text(text = stringResource(navigationItem.title)) },
                         icon = {
-                            Box {
-                                Icon(
-                                    painter = rememberAnimatedVectorPainter(
-                                        animatedImageVector = navigationItem.icon(),
-                                        atEnd = index == currentPosition
-                                    ),
-                                    contentDescription = navigationItem.title(index == currentPosition),
-                                    modifier = Modifier.size(24.dp),
-                                )
-                                if (navigationItem.badge) {
-                                    Text(
-                                        textAlign = TextAlign.Center,
-                                        fontSize = 10.sp,
-                                        color = White,
-                                        text = navigationItem.badgeText ?: "",
-                                        modifier = Modifier
-                                            .size(14.dp)
-                                            .clip(CircleShape)
-                                            .align(Alignment.TopEnd)
-                                            .background(
-                                                color = MaterialTheme.colors.secondary,
-                                                shape = CircleShape
-                                            ),
-                                    )
-                                }
-                            }
+                            NavIcon(
+                                modifier = Modifier.size(24.dp),
+                                item = navigationItem,
+                                atEnd = index == currentPosition
+                            )
                         }
                     )
                 }
@@ -227,6 +207,7 @@ fun NavigationDrawerContent(
         navigationContentPosition = navigationContentPosition
     )
 }
+
 
 @Composable
 private fun PositionLayout(
@@ -274,7 +255,6 @@ private fun PositionLayout(
     )
 }
 
-@OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 fun NavigationRail(
     currentPosition: Int,
@@ -309,32 +289,11 @@ fun NavigationRail(
                         }
                     },
                     icon = {
-                        Box {
-                            Icon(
-                                painter = rememberAnimatedVectorPainter(
-                                    animatedImageVector = navigationItem.icon(),
-                                    atEnd = index == currentPosition
-                                ),
-                                contentDescription = navigationItem.title(index == currentPosition),
-                                modifier = Modifier.size(16.dp),
-                            )
-                            if (navigationItem.badge) {
-                                Text(
-                                    textAlign = TextAlign.Center,
-                                    fontSize = 10.sp,
-                                    color = White,
-                                    text = navigationItem.badgeText ?: "",
-                                    modifier = Modifier
-                                        .size(14.dp)
-                                        .clip(CircleShape)
-                                        .align(Alignment.TopEnd)
-                                        .background(
-                                            color = MaterialTheme.colors.secondary,
-                                            shape = CircleShape
-                                        ),
-                                )
-                            }
-                        }
+                        NavIcon(
+                            modifier = Modifier.size(16.dp),
+                            item = navigationItem,
+                            atEnd = index == currentPosition
+                        )
                     }
                 )
             }
@@ -356,7 +315,6 @@ fun BottomNavigationDivider(
     }
 }
 
-@OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 fun BottomNavigation(
     modifier: Modifier = Modifier,
@@ -386,32 +344,11 @@ fun BottomNavigation(
                         navigationItem.onClick?.invoke()
                     },
                     icon = {
-                        Box {
-                            Icon(
-                                painter = rememberAnimatedVectorPainter(
-                                    animatedImageVector = navigationItem.icon(),
-                                    atEnd = index == currentPosition
-                                ),
-                                contentDescription = navigationItem.title(index == currentPosition),
-                                modifier = Modifier.size(24.dp),
-                            )
-                            if (navigationItem.badge) {
-                                Text(
-                                    textAlign = TextAlign.Center,
-                                    fontSize = 10.sp,
-                                    color = White,
-                                    text = navigationItem.badgeText ?: "",
-                                    modifier = Modifier
-                                        .size(14.dp)
-                                        .clip(CircleShape)
-                                        .align(Alignment.TopEnd)
-                                        .background(
-                                            color = MaterialTheme.colors.secondary,
-                                            shape = CircleShape
-                                        ),
-                                )
-                            }
-                        }
+                        NavIcon(
+                            modifier = Modifier.size(24.dp),
+                            item = navigationItem,
+                            atEnd = index == currentPosition
+                        )
                     },
                     selectedContentColor = MaterialTheme.colors.secondary,
                     unselectedContentColor = themeColors.unselected,
@@ -422,13 +359,40 @@ fun BottomNavigation(
     }
 }
 
+@OptIn(ExperimentalAnimationGraphicsApi::class)
+@Composable
+private fun NavIcon(modifier: Modifier = Modifier, item: NavigationItem, atEnd: Boolean) {
+    Box(modifier = modifier) {
+        Icon(
+            painter = rememberAnimatedVectorPainter(
+                animatedImageVector = item.icon(),
+                atEnd = atEnd
+            ),
+            contentDescription = stringResource(item.title),
+            modifier = Modifier.fillMaxSize()
+        )
+        item.badgeText()?.let { badge ->
+            Text(
+                textAlign = TextAlign.Center,
+                fontSize = 10.sp,
+                color = White,
+                text = badge,
+                modifier = Modifier
+                    .size(14.dp)
+                    .align(Alignment.TopEnd)
+                    .background(color = MaterialTheme.colors.secondary)
+                    .clip(shape = CircleShape)
+            )
+        }
+    }
+}
+
 @Immutable
 data class NavigationItem @OptIn(ExperimentalAnimationGraphicsApi::class) constructor(
     val id: String,
     val icon: @Composable () -> AnimatedImageVector,
-    val title: @Composable (selected: Boolean) -> String,
-    val badge: Boolean = false,
-    val badgeText: String? = null,
+    @StringRes val title: Int,
+    val badgeText: () -> String? = { null },
     val onClick: (() -> Unit)? = null,
     val content: @Composable () -> Unit = {},
 )

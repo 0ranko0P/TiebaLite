@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
-import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,7 +52,6 @@ import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,6 +66,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -385,7 +384,7 @@ fun ThreadPage(
                                 threadId = threadId,
                             )
                         )
-                    },
+                    }.takeUnless { viewModel.hideReply },
                     onAgree = viewModel::onAgreeThreadClicked,
                     onClickMore = {
                         if (bottomSheetState.isVisible) {
@@ -505,7 +504,7 @@ private fun TopBar(name: String?, avatar: String?, onBack: () -> Unit, onForumCl
 @Composable
 private fun BottomBar(
     user: UserData?,
-    onClickReply: () -> Unit,
+    onClickReply: (() -> Unit)?,
     onAgree: () -> Unit,
     onClickMore: () -> Unit,
     modifier: Modifier = Modifier,
@@ -515,6 +514,7 @@ private fun BottomBar(
     Column(
         modifier = modifier.background(ExtendedTheme.colors.threadBottomBar)
     ) {
+        val context = LocalContext.current
         Row(
             modifier = Modifier
                 .height(IntrinsicSize.Min)
@@ -522,7 +522,7 @@ private fun BottomBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (user != null && !LocalContext.current.appPreferences.hideReply) {
+            if (user != null && onClickReply != null) { // User logged in && not HideReply
                 Avatar(
                     data = user.avatarUrl,
                     size = Sizes.Tiny,
@@ -578,14 +578,13 @@ private fun BottomBar(
             }
         }
 
+        val spacerMinHeight = remember {
+            if (context.appPreferences.liftUpBottomBar) 16.dp else Dp.Hairline
+        }
         Box(
-            modifier = Modifier
-                .requiredHeightIn(min = if (LocalContext.current.appPreferences.liftUpBottomBar) 16.dp else 0.dp)
+            modifier = Modifier.requiredHeightIn(min = spacerMinHeight)
         ) {
-            Spacer(
-                modifier = Modifier
-                    .windowInsetsBottomHeight(WindowInsets.navigationBars)
-            )
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
 }

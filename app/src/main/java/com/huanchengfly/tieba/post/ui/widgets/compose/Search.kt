@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -50,16 +49,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
+import com.huanchengfly.tieba.post.collectPreferenceAsState
+import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.buildAnnotatedStringWithUser
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -295,7 +297,10 @@ fun SearchMedia(
     }
     val hasPhoto = remember(picCount) { picCount > 0 }
     val isSinglePhoto = remember(picCount) { picCount == 1 }
-    val hideMedia = context.appPreferences.hideMedia
+    val hideMedia by context.dataStore.collectPreferenceAsState(
+        key = booleanPreferencesKey(KEY_POST_HIDE_MEDIA),
+        defaultValue = false
+    )
 
     val windowWidthSizeClass = BaseComposeActivity.LocalWindowSizeClass.current.widthSizeClass
     val singleMediaFraction = remember(windowWidthSizeClass) {

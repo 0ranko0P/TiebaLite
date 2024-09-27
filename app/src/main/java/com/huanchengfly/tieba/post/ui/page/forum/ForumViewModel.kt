@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
@@ -36,7 +35,6 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_FORUM_SORT_DEFAULT
 import com.huanchengfly.tieba.post.utils.HistoryUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -48,6 +46,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
@@ -69,18 +68,13 @@ class ForumViewModel @Inject constructor() :
     private var forumName: String? = null
 
     @ForumFabFunction
-    var fab: String = ForumFabFunction.HIDE
+    val fab: String = App.INSTANCE.appPreferences.forumFabFunction
 
     private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
 
+    @get:ForumSortType
     var sortType by mutableIntStateOf(ForumSortType.BY_REPLY)
         private set
-
-    init {
-        scope.launch {
-            fab = App.INSTANCE.appPreferences.getForumFabFunction().first()
-        }
-    }
 
     override fun createInitialState(): ForumUiState = ForumUiState()
 
@@ -214,13 +208,14 @@ class ForumViewModel @Inject constructor() :
     }
 
     private suspend fun saveSortType(forumName: String, @ForumSortType sortType: Int) {
-        App.INSTANCE.dataStore.edit {
+        val context = App.INSTANCE
+        // Default from app_preference
+        val default = context.appPreferences.defaultSortType
+        // Save to forum_preferences
+        context.dataStore.edit {
             val key = intPreferencesKey("${forumName}_sort_type")
-            val defaultKey = stringPreferencesKey(KEY_FORUM_SORT_DEFAULT)
-            val defaultSortType = it[defaultKey]?.toIntOrNull() ?: ForumSortType.BY_REPLY
-
-            if (sortType == defaultSortType) { // Keep dataStore clean
-                it.remove(key)
+            if (sortType == default) {
+                it.remove(key) // Keep dataStore clean
             } else {
                 it[key] = sortType
             }
@@ -295,10 +290,8 @@ class ForumViewModel @Inject constructor() :
          * */
         fun getSortType(context: Context, forumName: String): Flow<Int> {
             return context.dataStore.data.map {
-                val defaultKey = stringPreferencesKey(KEY_FORUM_SORT_DEFAULT)
-                it[intPreferencesKey("${forumName}_sort_type")]
-                    ?:it[defaultKey]?.toIntOrNull() ?: ForumSortType.BY_REPLY
-            }
+                it[intPreferencesKey("${forumName}_sort_type")] ?: App.INSTANCE.appPreferences.defaultSortType
+            }.distinctUntilChanged()
         }
     }
 }

@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
@@ -79,6 +80,8 @@ import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.collectPreferenceAsState
+import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -89,12 +92,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.video.DefaultVideoPlayerCo
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.OnFullScreenModeChangedListener
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberVideoPlayerController
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlin.math.max
@@ -436,7 +439,10 @@ private fun ThreadMedia(
     val hasPhoto = remember(mediaCount) { mediaCount > 0 }
     val isSinglePhoto = remember(mediaCount) { mediaCount == 1 }
 
-    val hideMedia = context.appPreferences.hideMedia
+    val hideMedia by context.dataStore.collectPreferenceAsState(
+        key = booleanPreferencesKey(KEY_POST_HIDE_MEDIA),
+        defaultValue = false
+    )
 
     val windowWidthSizeClass = LocalWindowSizeClass.current.widthSizeClass
     val singleMediaFraction = remember(windowWidthSizeClass) {

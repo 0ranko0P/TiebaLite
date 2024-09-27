@@ -29,6 +29,8 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.removeAt
@@ -45,6 +47,7 @@ import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsSheetPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_HIDE
 import com.huanchengfly.tieba.post.utils.HistoryUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -120,6 +123,11 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
     var initialized: Boolean = false
         private set
 
+    /**
+     * @see KEY_REPLY_HIDE
+     * */
+    var hideReply = false
+
     val isRefreshing: Boolean get() = _threadUiState.isRefreshing
     val isLoadingMore: Boolean get() = _threadUiState.isLoadingMore
     val isLoadingLatestReply: Boolean get() = _threadUiState.isLoadingLatestReply
@@ -170,6 +178,9 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
             this._info = ThreadInfoData(info)
         }
         requestLoad(page = 0, postId)
+        viewModelScope.launch {
+            hideReply = App.INSTANCE.dataStore.getBoolean(KEY_REPLY_HIDE, false)
+        }
         initialized = true
     }
 
@@ -674,6 +685,9 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
         val firstPost = response.data_.first_floor_post
         val notFirstPosts = postList.filterNot { it.floor == 1 }
         val user = if (response.data_.user?.is_login == 1) UserData(response.data_.user, response.data_.user.id == author.id) else null
+        if (user == null) {
+            hideReply = true
+        }
         _info = ThreadInfoData(thread)
         _threadUiState = _threadUiState.copy(
             isRefreshing = false,

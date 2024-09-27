@@ -1,11 +1,10 @@
-package com.huanchengfly.tieba.post.ui.page.settings.account
+package com.huanchengfly.tieba.post.ui.page.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -15,7 +14,7 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.SupervisedUserCircle
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,7 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.collectPreferenceAsState
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.DropDownPref
@@ -38,16 +39,15 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.EditTextPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
-import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.LocalAllAccounts
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_LITTLE_TAIL
 import com.huanchengfly.tieba.post.utils.LocalAccount
+import com.huanchengfly.tieba.post.utils.LocalAllAccounts
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.launchUrl
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -55,22 +55,13 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Destination
 @Composable
-fun AccountManagePage(
-    navigator: DestinationsNavigator,
-) {
+fun AccountManagePage(navigator: DestinationsNavigator) {
     Scaffold(
         backgroundColor = Color.Transparent,
         topBar = {
             TitleCentredToolbar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.title_account_manage),
-                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
-                    )
-                },
-                navigationIcon = {
-                    BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
-                }
+                title = stringResource(id = R.string.title_account_manage),
+                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) }
             )
         },
     ) { paddingValues ->
@@ -222,14 +213,15 @@ fun AccountManagePage(
                 )
             }
             prefsItem {
-                val littleTail = remember { context.appPreferences.littleTail }
+                val littleTail by context.dataStore.collectPreferenceAsState(
+                    key = stringPreferencesKey(KEY_LITTLE_TAIL),
+                    defaultValue = ""
+                )
+
                 EditTextPref(
                     key = "little_tail",
                     title = stringResource(id = R.string.title_my_tail),
-                    summary = if (littleTail.isNullOrEmpty())
-                        stringResource(id = R.string.tip_no_little_tail)
-                    else
-                        littleTail,
+                    summary = littleTail.ifEmpty { stringResource(id = R.string.tip_no_little_tail) },
                     leadingIcon = {
                         LeadingIcon {
                             AvatarIcon(

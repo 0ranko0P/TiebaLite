@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,9 +22,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.LocalDevicePosture
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.R
@@ -32,8 +30,6 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.rememberPreferenceAsState
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -47,12 +43,11 @@ import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
 @Composable
@@ -100,6 +95,7 @@ fun MainPage(
     navigator: DestinationsNavigator,
     viewModel: MainViewModel = pageViewModel<MainUiIntent, MainViewModel>(emptyList()),
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val windowSizeClass = LocalWindowSizeClass.current
     val windowHeightSizeClass by rememberUpdatedState(newValue = windowSizeClass.heightSizeClass)
     val windowWidthSizeClass by rememberUpdatedState(newValue = windowSizeClass.widthSizeClass)
@@ -117,80 +113,53 @@ fun MainPage(
         }
     }
 
-    val hideExplore by rememberPreferenceAsState(
-        key = booleanPreferencesKey("hideExplore"),
-        defaultValue = LocalContext.current.appPreferences.hideExplore
-    )
-    val pageCount by remember {
-        derivedStateOf {
-            if (hideExplore) 3 else 4
-        }
-    }
-    val pagerState = rememberPagerState { pageCount }
-    LaunchedEffect(hideExplore) {
-        if (pagerState.currentPage == 3 && hideExplore) {
-            pagerState.scrollToPage(2)
-        }
-    }
+    lateinit var pagerState: PagerState
 
-    val coroutineScope = rememberCoroutineScope()
-    val themeColors = ExtendedTheme.colors
-    val navigationItems by remember {
-        derivedStateOf {
-            listOfNotNull(
-                NavigationItem(
-                    id = "home",
-                    icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_inventory_2) },
-                    title = { stringResource(id = R.string.title_main) },
-                    content = {
-                        HomePage(
-                            canOpenExplore = !LocalContext.current.appPreferences.hideExplore
-                        ) {
-                            coroutineScope.launch {
-                                pagerState.scrollToPage(1)
-                            }
-                        }
+    val navigationItems = remember { persistentListOf(
+        NavigationItem(
+            id = "home",
+            icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_inventory_2) },
+            title = R.string.title_main,
+            content = {
+                HomePage(canOpenExplore = true) {
+                    coroutineScope.launch {
+                        pagerState.scrollToPage(1)
                     }
-                ),
-                if (hideExplore) null
-                else NavigationItem(
-                    id = "explore",
-                    icon = {
-                        AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_toy_fans)
-                    },
-                    title = { stringResource(id = R.string.title_explore) },
-                    content = {
-                        ExplorePage()
-                    }
-                ),
-                NavigationItem(
-                    id = "notification",
-                    icon = {
-                        AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)
-                    },
-                    title = { stringResource(id = R.string.title_notifications) },
-                    badge = messageCount > 0,
-                    badgeText = "$messageCount",
-                    onClick = {
-                        viewModel.send(MainUiIntent.NewMessage.Clear)
-                    },
-                    content = {
-                        NotificationsPage(LocalNavigator.current, fromHome = true)
-                    }
-                ),
-                NavigationItem(
-                    id = "user",
-                    icon = {
-                        AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_person)
-                    },
-                    title = { stringResource(id = R.string.title_user) },
-                    content = {
-                        UserPage()
-                    }
-                ),
-            ).toImmutableList()
-        }
+                }
+            }
+        ),
+        NavigationItem(
+            id = "explore",
+            icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_toy_fans) },
+            title = R.string.title_explore,
+            content = {
+                ExplorePage()
+            }
+        ),
+        NavigationItem(
+            id = "notification",
+            icon = {
+                AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)
+            },
+            title = R.string.title_notifications,
+            badgeText = {messageCount.takeIf { it > 0 }?.toString() },
+            onClick = {
+                viewModel.send(MainUiIntent.NewMessage.Clear)
+            },
+            content = {
+                NotificationsPage(LocalNavigator.current, fromHome = true)
+            }
+        ),
+        NavigationItem(
+            id = "user",
+            icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_person) },
+            title = R.string.title_user,
+            content = {
+                UserPage()
+            }
+        ))
     }
+    pagerState = rememberPagerState { navigationItems.size }
     val navigationType by remember {
         derivedStateOf {
             when (windowWidthSizeClass) {
@@ -264,8 +233,7 @@ fun MainPage(
                                 coroutineScope.launch { pagerState.scrollToPage(it) }
                             },
                             onReselected = onReselected,
-                            navigationItems = navigationItems,
-                            themeColors = themeColors,
+                            navigationItems = navigationItems
                         )
                     }
                 }

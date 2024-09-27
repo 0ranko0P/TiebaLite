@@ -7,8 +7,12 @@ import com.huanchengfly.tieba.post.api.models.MSignBean
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.models.SignDataBean
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_OKSIGN_OFFICIAL
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_OKSIGN_SLOW
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -21,7 +25,7 @@ import kotlin.properties.Delegates
 abstract class IOKSigner(
     context: Context
 ) {
-    private val contextWeakReference: WeakReference<Context> = WeakReference(context)
+    private val contextWeakReference = WeakReference(context.applicationContext)
 
     val context: Context
         get() = contextWeakReference.get()!!
@@ -34,7 +38,7 @@ abstract class IOKSigner(
     }
 
     fun getSignDelay(): Long {
-        return if (context.appPreferences.oksignSlowMode) {
+        return if (context.dataStore.getBoolean(KEY_OKSIGN_SLOW, true)) {
             ThreadLocalRandom.current().nextInt(3500, 8000).toLong()
         } else {
             2000
@@ -81,7 +85,8 @@ class SingleAccountSigner(
             .zip(
                 TiebaApi.getInstance().forumRecommendFlow()
             ) { getForumListBean, forumRecommendBean ->
-                val useMSign = context.appPreferences.oksignUseOfficialOksign
+                // 使用官方一键签到
+                val useMSign = context.dataStore.getBoolean(KEY_OKSIGN_OFFICIAL, true)
                 val mSignLevel = getForumListBean.level.toInt()
                 val mSignMax = getForumListBean.msignStepNum.toInt()
                 signData.addAll(

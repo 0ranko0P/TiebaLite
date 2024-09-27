@@ -45,9 +45,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
@@ -84,6 +86,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_HIDE
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -245,6 +248,7 @@ internal fun SubPostsContent(
         isLoading = isRefreshing
     ) {
         var bottomBarHeight: Dp by remember { mutableStateOf(Dp.Hairline) }
+        val hideReply by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_HIDE), false)
 
         MyScaffold(
             modifier = Modifier.fillMaxSize(),
@@ -256,7 +260,7 @@ internal fun SubPostsContent(
                 }
             },
             bottomBar = {
-                if (account == null || context.appPreferences.hideReply) return@MyScaffold
+                if (account == null || hideReply) return@MyScaffold
                 OneTimeMeasurer { size: IntSize? ->
                     BottomBar(
                         account = account,
@@ -314,7 +318,7 @@ internal fun SubPostsContent(
                                 val hasAgreed = postItem.hasAgree != 0
                                 viewModel.onAgreePost(!hasAgreed)
                             },
-                            onReplyClick = {
+                            onReplyClick = { it: PostData ->
                                 showReplyDialog(
                                     ReplyArgs(
                                         forumId = forumId,
@@ -322,11 +326,11 @@ internal fun SubPostsContent(
                                         threadId = threadId,
                                         postId = postId,
                                         replyUserId = it.author.id,
-                                        replyUserName = it.author.nameShow.takeIf { name -> name.isNotEmpty() }?: it.author.name,
+                                        replyUserName = it.author.getDisplayName(context),
                                         replyUserPortrait = it.author.portrait
                                     )
                                 )
-                            },
+                            }.takeUnless { hideReply },
                             onMenuCopyClick = {
                                 navigator.navigate(CopyTextDialogPageDestination(it))
                             },
@@ -359,7 +363,7 @@ internal fun SubPostsContent(
                         onAgree = {
                             viewModel.onAgreeSubPost(subPostId = it.id, !it.hasAgree)
                         },
-                        onReplyClick = {
+                        onReplyClick = { it: SubPostItemData ->
                             showReplyDialog(
                                 ReplyArgs(
                                     forumId = forumId,
@@ -368,12 +372,11 @@ internal fun SubPostsContent(
                                     postId = postId,
                                     subPostId = it.id,
                                     replyUserId = it.author.id,
-                                    replyUserName = it.author.nameShow.takeIf { name -> name.isNotEmpty() }
-                                        ?: it.author.name,
+                                    replyUserName = it.author.getDisplayName(context),
                                     replyUserPortrait = it.author.portrait,
                                 )
                             )
-                        },
+                        }.takeUnless { hideReply },
                         onMenuCopyClick = {
                             navigator.navigate(CopyTextDialogPageDestination(it))
                         },
@@ -423,6 +426,7 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
     Column(
         modifier = modifier.background(ExtendedTheme.colors.threadBottomBar)
     ) {
+        val context = LocalContext.current
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -452,9 +456,11 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
             }
         }
 
+        val spacerMinHeight = remember {
+            if (context.appPreferences.liftUpBottomBar) 16.dp else Dp.Hairline
+        }
         Box(
-            modifier = Modifier
-                .requiredHeightIn(min = if (LocalContext.current.appPreferences.liftUpBottomBar) 16.dp else 0.dp)
+            modifier = Modifier.requiredHeightIn(min = spacerMinHeight)
         ) {
             Spacer(
                 modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)
@@ -468,7 +474,7 @@ private fun SubPostItem(
     canDelete: Boolean,
     onUserClick: (UserData) -> Unit = {},
     onAgree: (SubPostItemData) -> Unit = {},
-    onReplyClick: (SubPostItemData) -> Unit = {},
+    onReplyClick: ((SubPostItemData) -> Unit)?,
     onMenuCopyClick: ((String) -> Unit)? = null,
     onMenuDeleteClick: ((SubPostItemData) -> Unit)? = null,
 ) = BlockableContent(
@@ -483,13 +489,12 @@ private fun SubPostItem(
     val navigator = LocalNavigator.current
     val coroutineScope = rememberCoroutineScope()
     val menuState = rememberMenuState()
-    val hideReply = context.appPreferences.hideReply
 
     LongClickMenu(
         menuState = menuState,
         indication = null,
         menuContent = {
-            if (!hideReply) {
+            if (onReplyClick != null) {
                 TextMenuItem(text = stringResource(id = R.string.btn_reply)) {
                     onReplyClick(item)
                 }
@@ -512,8 +517,7 @@ private fun SubPostItem(
                     onMenuDeleteClick(item)
                 }
             }
-        },
-        onClick = { onReplyClick(item) }.takeUnless { hideReply }
+        }
     ) {
         Card(
             header = {

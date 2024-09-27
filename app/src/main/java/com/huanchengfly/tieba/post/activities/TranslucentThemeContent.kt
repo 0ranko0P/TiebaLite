@@ -78,7 +78,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.ColorPickerDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.DisplayUtil
 import com.huanchengfly.tieba.post.utils.DisplayUtil.toDpSize
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 
 @Composable
 fun TranslucentThemeContent(
@@ -97,7 +96,7 @@ fun TranslucentThemeContent(
             accent = viewModel.primaryColor,
             onColorPicked = viewModel::onColorPicked,
             colorPalette = viewModel.colorPalette,
-            lightColor = viewModel.themeMode == ThemeUtil.TRANSLUCENT_THEME_LIGHT,
+            isDarkTheme = viewModel.isDarkTheme,
             onColorModeChanged = viewModel::onColorModeChanged,
             alpha = viewModel.alpha,
             onAlphaChanged = viewModel::onAlphaChanged,
@@ -125,7 +124,7 @@ private fun Content(
     accent: Color,
     onColorPicked: (Color) -> Unit = {},
     colorPalette: List<Color>,
-    lightColor: Boolean,
+    isDarkTheme: Boolean,
     onColorModeChanged: () -> Unit = {},
     alpha: Float,
     onAlphaChanged: (Float) -> Unit = {},
@@ -168,7 +167,7 @@ private fun Content(
                 modifier = Modifier.weight(0.5f),
                 text = R.string.dark_color,
                 colors = buttonColor,
-                selected = !lightColor,
+                selected = isDarkTheme,
                 onClick = onColorModeChanged
             )
 
@@ -178,7 +177,7 @@ private fun Content(
                 modifier = Modifier.weight(0.5f),
                 text = R.string.light_color,
                 colors = buttonColor,
-                selected = lightColor,
+                selected = !isDarkTheme,
                 onClick = onColorModeChanged
             )
         }
@@ -282,8 +281,7 @@ fun SideBySideWallpaper(
             Wallpaper(Modifier.fillMaxSize(), wallpaper, vm.alpha, trans, placeHolder, listener = null)
 
             val sizeInDp = size?.toDpSize(density) ?: return@OneTimeMeasurer
-            val isLightColor = vm.themeMode == ThemeUtil.TRANSLUCENT_THEME_LIGHT
-            WallpaperOverlay(screen = screen, targetSize = sizeInDp, isLightColor = isLightColor)
+            WallpaperOverlay(screen = screen, targetSize = sizeInDp, isDarkColor = vm.isDarkTheme)
         }
     }
 }
@@ -320,14 +318,14 @@ private fun Wallpaper(
 /**
  * Compose [AboutPage] as overlay and scale to the [targetSize]
  *
- * @param isLightColor Text color to simulate
+ * @param isDarkColor Dark/Light text to simulate
  * */
 @Composable
-private fun WallpaperOverlay(screen: DpSize, targetSize: DpSize, isLightColor: Boolean) {
+private fun WallpaperOverlay(screen: DpSize, targetSize: DpSize, isDarkColor: Boolean) {
     // Simulate color mode changes
     val colors = MaterialTheme.colors.copy(
         surface = Color.Transparent,
-        onSurface = if (isLightColor) Color.White else Color.Black
+        onSurface = if (isDarkColor) Color.Black else Color.White
     )
     // Scale font size up
     val typography = MaterialTheme.typography.run {  this.copy(
@@ -436,7 +434,7 @@ private fun ColorBox(modifier: Modifier = Modifier, color: Color, selected: Bool
 @Composable
 private fun ContentPreview() = TiebaLiteTheme {
     val palette = TranslucentThemeViewModel.DefaultColors.toList()
-    Content(accent = palette[1], colorPalette = palette, lightColor = true, alpha = 1.0f, blur = 0f)
+    Content(accent = palette[1], colorPalette = palette, isDarkTheme = false, alpha = 1.0f, blur = 0f)
 }
 
 @Preview("ColorPanel", showBackground = true, backgroundColor = 0xFFFFFFFF)

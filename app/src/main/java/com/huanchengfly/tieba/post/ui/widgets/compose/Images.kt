@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import android.content.Context
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
@@ -43,11 +42,9 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_DARKE
 import com.huanchengfly.tieba.post.utils.GlideUtil
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.NetworkUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 
-fun shouldLoadImage(context: Context, skipNetworkCheck: Boolean): Boolean {
-    val imageLoadSettings =
-        context.appPreferences.imageLoadType?.toIntOrNull() ?: ImageUtil.SETTINGS_SMART_ORIGIN
+fun shouldLoadImage(skipNetworkCheck: Boolean): Boolean {
+    val imageLoadSettings = ImageUtil.imageLoadSettings
     return skipNetworkCheck
             || imageLoadSettings == ImageUtil.SETTINGS_SMART_ORIGIN
             || imageLoadSettings == ImageUtil.SETTINGS_ALL_ORIGIN
@@ -137,7 +134,7 @@ fun NetworkImage(
             colorFilter = if (darkenImage && ExtendedTheme.colors.isNightMode) GlideUtil.DarkFilter else null,
             transition = CrossFade
         ) {
-            if (shouldLoadImage(context, skipNetworkCheck)) {
+            if (shouldLoadImage(skipNetworkCheck)) {
                 it
             } else {
                 it.onlyRetrieveFromCache(true)

@@ -4,11 +4,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.runtime.Composable
@@ -19,7 +16,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
@@ -56,7 +52,6 @@ internal fun LeadingIcon(
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NowAccountItem(
     account: Account?,
@@ -102,7 +97,6 @@ fun NowAccountItem(
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Destination
 @Composable
 fun SettingsPage(
@@ -113,17 +107,10 @@ fun SettingsPage(
             backgroundColor = Color.Transparent,
             topBar = {
                 TitleCentredToolbar(
-                    title = {
-                        Text(
-                            text = stringResource(id = R.string.title_settings),
-                            fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
-                        )
-                    },
-                    navigationIcon = {
-                        BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
-                    }
+                    title = stringResource(id = R.string.title_settings),
+                    navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) }
                 )
-            },
+            }
         ) {
             PrefsScreen(
                 dataStore = LocalContext.current.dataStore,

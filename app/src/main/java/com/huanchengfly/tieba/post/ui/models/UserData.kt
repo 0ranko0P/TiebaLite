@@ -4,7 +4,6 @@ import android.content.Context
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.bawuType
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 
 /**
  * Represents [User] in UI
@@ -32,14 +31,7 @@ data class UserData(
         isLz
     )
 
-    fun getDisplayName(context: Context): String {
-        val showBoth = context.appPreferences.showBothUsernameAndNickname
-        return if (showBoth && nameShow.isNotBlank() && nameShow != name && name.isNotBlank()) {
-            "$nameShow $name"
-        } else {
-            nameShow.ifBlank { name }
-        }
-    }
+    fun getDisplayName(context: Context): String = StringUtil.getUserNameString(context, name, nameShow)
 
     companion object {
 

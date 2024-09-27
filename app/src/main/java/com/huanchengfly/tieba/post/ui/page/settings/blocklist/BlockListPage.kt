@@ -1,4 +1,4 @@
-package com.huanchengfly.tieba.post.ui.page.settings.block.blocklist
+package com.huanchengfly.tieba.post.ui.page.settings.blocklist
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable

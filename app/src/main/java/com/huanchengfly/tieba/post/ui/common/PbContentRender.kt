@@ -50,7 +50,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayer
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
-import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.launchUrl
 
 @Stable
@@ -149,13 +148,12 @@ data class PicContentRender(
     override fun Render() {
         val widthFraction =
             if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.5f
-        val context = LocalContext.current
 
         NetworkImage(
             imageUri = picUrl,
             contentDescription = null,
             modifier = Modifier
-                .clip(RoundedCornerShape(context.appPreferences.radius.dp))
+                .clip(RoundedCornerShape(8.dp))
                 .fillMaxWidth(widthFraction)
                 .aspectRatio(width * 1f / height),
             photoViewData = photoViewData,
@@ -194,17 +192,17 @@ data class VideoContentRender(
     val width: Int,
     val height: Int
 ) : PbContentRender {
+
     @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
     override fun Render() {
         val widthFraction =
             if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.5f
-        val context = LocalContext.current
         val navigator = LocalNavigator.current
 
         if (picUrl.isNotBlank()) {
             val picModifier = Modifier
-                .clip(RoundedCornerShape(context.appPreferences.radius.dp))
+                .clip(RoundedCornerShape(8.dp))
                 .fillMaxWidth(widthFraction)
                 .aspectRatio(width * 1f / height)
 

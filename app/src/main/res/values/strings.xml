@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">贴吧 Lite</string>
+    <string name="icon_new">新图标</string>
+    <string name="icon_new_invert">新图标（反色）</string>
+    <string name="icon_old">旧图标</string>
     <string name="title_notifications">消息</string>
     <string name="title_explore">动态</string>
     <string name="title_user">我</string>
@@ -120,8 +123,6 @@
     <string name="name_multi_app">应用</string>
     <string name="settings_night_mode">夜间模式主题</string>
     <string name="settings_forum_single">吧列表单列显示</string>
-    <string name="title_hide_explore">隐藏首页「动态」入口</string>
-    <string name="settings_show_shortcut">在贴内显示快捷进吧入口</string>
     <string name="toast_clear_success">清除成功啦( •̀ ω •́ )✧</string>
     <string name="button_retry">重试</string>
     <string name="tip_copy_text">长按自由复制</string>
@@ -152,8 +153,6 @@
     <string name="button_submit_dislike">不感兴趣</string>
     <string name="title_dislike">不喜欢推荐用户的理由</string>
     <string name="tip_refresh">上次阅读到此处，点击刷新</string>
-    <string name="tip_show_shortcut_in_thread">开启后，将在贴子内显示快速进吧的入口</string>
-    <string name="tip_show_shortcut_in_thread_on">将在贴子内显示快速进吧的入口</string>
     <string name="button_finish">完成</string>
     <string name="tip_primary_color">主题色</string>
     <string name="title_custom_theme">设置自定义主题</string>
@@ -274,7 +273,6 @@
     <string name="title_post_or_reply_warning">发贴回贴风险提示</string>
     <string name="summary_ignore_battery_optimization">请忽略“电池优化”以允许应用启动自动签到</string>
     <string name="title_ignore_battery_optimization">忽略“电池优化”</string>
-    <string name="summary_battery_optimization_old_android_version">旧版 Android 无“电池优化”</string>
     <string name="summary_battery_optimization_ignored">“电池优化”已忽略</string>
     <string name="toast_ignore_battery_optimization_already">已忽略电池优化</string>
     <string name="button_redo">重做</string>
@@ -332,8 +330,6 @@
     <string name="summary_oksign_use_official_oksign">先使用官方一键签到减少需签到吧数量，以加快签到速度</string>
     <string name="title_stat_posts_num">回贴</string>
     <string name="toast_feature_unavailable">该功能尚未实现</string>
-    <string name="title_check_ci_update">接收自动构建版本更新</string>
-    <string name="tip_check_ci_update">仅供测试</string>
     <string name="desc_permission_post_notifications">用于发送消息通知、显示一键签到进度</string>
     <string name="desc_current_account">当前登录</string>
     <string name="source_code">开源代码</string>

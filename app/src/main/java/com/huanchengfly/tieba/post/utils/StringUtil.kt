@@ -60,7 +60,7 @@ object StringUtil {
     }
 
     fun getUserNameString(context: Context, username: String, nickname: String?): String {
-        val showBoth = App.isInitialized && context.appPreferences.showBothUsernameAndNickname
+        val showBoth = context.appPreferences.showBothUsernameAndNickname
         return if (showBoth && !nickname.isNullOrBlank() && username != nickname && username.isNotBlank()) {
             "$nickname $username"
         } else {
@@ -112,11 +112,6 @@ object StringUtil {
         return if (portrait.startsWith("http://") || portrait.startsWith("https://")) {
             portrait
         } else "http://tb.himg.baidu.com/sys/portraith/item/$portrait"
-    }
-
-    fun String.getShortNumString(): String {
-        val long = toLongOrNull() ?: return ""
-        return long.getShortNumString()
     }
 
     fun Int.getShortNumString(): String {

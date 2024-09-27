@@ -12,9 +12,10 @@ import com.huanchengfly.tieba.post.api.retrofit.body.buildMultipartBody
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.MD5Util
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -41,9 +42,14 @@ class ImageUploader(
         const val IMAGE_MAX_SIZE = 5242880
         const val ORIGIN_IMAGE_MAX_SIZE = 10485760
 
-        const val PIC_WATER_TYPE_NO = "0"
-        const val PIC_WATER_TYPE_USER_NAME = "1"
-        const val PIC_WATER_TYPE_FORUM_NAME = "2"
+
+        /**
+         * 图片上传水印, Default: [PIC_WATER_TYPE_FORUM_NAME]
+         * */
+        const val KEY_PIC_WATERMARK_TYPE = "pic_watermark_type"
+        const val PIC_WATER_TYPE_NO = 0
+        const val PIC_WATER_TYPE_USER_NAME = 1
+        const val PIC_WATER_TYPE_FORUM_NAME = 2
     }
 
     fun uploadImages(
@@ -119,7 +125,7 @@ class ImageUploader(
         val isMultipleChunkSize = fileLength % chunkSize == 0L
         val totalChunkNum = fileLength / chunkSize + if (isMultipleChunkSize) 0 else 1
         val picWatermarkType =
-            App.INSTANCE.appPreferences.picWatermarkType ?: PIC_WATER_TYPE_FORUM_NAME
+            App.INSTANCE.dataStore.getInt(KEY_PIC_WATERMARK_TYPE, PIC_WATER_TYPE_FORUM_NAME)
         val requestBodies = (0 until totalChunkNum).map { chunk ->
             val isFinish = chunk == totalChunkNum - 1
             val curChunkSize = if (isFinish) {
@@ -147,7 +153,7 @@ class ImageUploader(
                 addFormDataPart("height", "$height")
                 addFormDataPart("isFinish", isFinish.booleanToString())
                 addFormDataPart("is_bjh", "0")
-                addFormDataPart("pic_water_type", picWatermarkType)
+                addFormDataPart("pic_water_type", picWatermarkType.toString())
                 addFormDataPart("resourceId", "$fileMd5$chunkSize")
                 addFormDataPart("saveOrigin", isOriginImage.booleanToString())
                 addFormDataPart("size", "$fileLength")
