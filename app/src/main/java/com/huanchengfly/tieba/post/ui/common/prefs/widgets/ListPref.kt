@@ -2,13 +2,12 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
@@ -31,7 +30,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
  * @param defaultValue Value to use if this Pref does not exist in [DataStore].
  * @param onValueChange Callback to be invoked when user selected new option in [options]
  * @param useSelectedAsSummary If true, uses the current selected option description as [summary]
- * @param textColor Text colour of the [title], [summary] and [options]
  * @param enabled If false, this Pref cannot be clicked and the Dialog cannot be shown.
  * @param options All available options of this [key] and their description
  */
@@ -44,9 +42,8 @@ fun <T> ListPref(
     defaultValue: T,
     onValueChange: ((T) -> Unit)? = null,
     useSelectedAsSummary: Boolean = summary == null,
-    textColor: Color = MaterialTheme.colors.onBackground,
     enabled: Boolean = true,
-    leadingIcon: @Composable (() -> Unit)? = null,
+    leadingIcon: ImageVector? = null,
     options: Options<T>,
     optionsIconSupplier: ((T) -> @Composable () -> Unit)? = null
 ) {
@@ -56,13 +53,12 @@ fun <T> ListPref(
     val summaryRes: Int? = if (useSelectedAsSummary) options[prefs] else summary
 
     TextPref(
+        modifier = modifier,
         title = stringResource(title),
         summary = summaryRes?.let { stringResource(id = it) },
+        onClick = { dialogState.show() },
         leadingIcon = leadingIcon,
-        modifier = modifier,
-        textColor = textColor,
-        enabled = true,
-        onClick = { if (enabled) dialogState.show() },
+        enabled = enabled
     )
 
     Dialog(

@@ -1,12 +1,11 @@
 package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
 import androidx.annotation.StringRes
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
@@ -20,9 +19,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
  * @param modifier Modifier applied to the Text aspect of this Pref
  * @param summary Used to give some more information about what this Pref is for
  * @param defaultChecked If the switch should be checked by default. Only used if a value for this [key] doesn't already exist in the DataStore
- * @param onCheckedChange Will be called with the new state when the state changes
- * @param textColor Text colour of the [title] and [summary]
- * @param enabled If false, this Pref cannot be checked/unchecked
+ * @param onCheckedChange Callback to be invoked when [SwitchPref] is being clicked, Parse null to disable this pref.
  * @param leadingIcon Icon which is positioned at the start of the Pref
  */
 @Composable
@@ -33,18 +30,15 @@ fun SwitchPref(
     summary: (value: Boolean) -> Int? = { null },
     defaultChecked: Boolean = false,  // only used if it doesn't already exist in the datastore
     onCheckedChange: ((Boolean) -> Unit)? = null,
-    textColor: Color = MaterialTheme.colors.onBackground,
     enabled: Boolean = true,
-    leadingIcon: @Composable (() -> Unit)? = null
+    leadingIcon: ImageVector? = null
 ) {
     var checked by rememberPreferenceAsMutableState(booleanPreferencesKey(key), defaultChecked)
 
     TextPref(
         title = stringResource(title),
         modifier = modifier,
-        textColor = textColor,
         summary = summary(checked)?.let { stringResource(it) },
-        darkenOnDisable = true,
         leadingIcon = leadingIcon,
         enabled = enabled,
         onClick = {
@@ -67,11 +61,10 @@ fun SwitchPref(
     modifier: Modifier = Modifier,
     @StringRes summaryOn: Int? = null,
     @StringRes summaryOff: Int? = null,
-    defaultChecked: Boolean = false,  // only used if it doesn't already exist in the datastore
+    defaultChecked: Boolean = false,
     onCheckedChange: ((Boolean) -> Unit)? = null,
-    textColor: Color = MaterialTheme.colors.onBackground,
     enabled: Boolean = true,
-    leadingIcon: @Composable (() -> Unit)? = null
+    leadingIcon: ImageVector? = null
 ) = SwitchPref(
     key = key,
     title = title,
@@ -79,7 +72,6 @@ fun SwitchPref(
     summary = { switch -> if (switch) summaryOn else summaryOff },
     onCheckedChange = onCheckedChange,
     defaultChecked = defaultChecked,
-    textColor = textColor,
     enabled = enabled,
     leadingIcon = leadingIcon
 )

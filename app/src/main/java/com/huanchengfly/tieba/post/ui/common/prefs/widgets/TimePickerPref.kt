@@ -1,16 +1,13 @@
 package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.ui.widgets.compose.TimePickerDialog
@@ -27,11 +24,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
  * @param dialogMessage Summary shown underneath [dialogTitle]. No summary if null.
  * @param defaultValue Default value that will be set in the TextField when the dialog is shown for the first time.
  * @param onValueSaved Will be called with new TextField value when the confirm button is clicked. It is NOT called every time the value changes. Use [onValueChange] for that.
- * @param textColor Text colour of the [title] and [summary]
  * @param enabled If false, this Pref cannot be clicked.
  */
-@ExperimentalComposeUiApi
-@ExperimentalMaterialApi
 @Composable
 fun TimePickerPerf(
     key: String,
@@ -42,8 +36,7 @@ fun TimePickerPerf(
     dialogMessage: String? = null,
     defaultValue: String = "07:00",
     onValueSaved: (String) -> Unit = {},
-    textColor: Color = MaterialTheme.colors.onBackground,
-    leadingIcon: @Composable (() -> Unit)? = null,
+    leadingIcon: ImageVector? = null,
     enabled: Boolean = true,
 ) {
     val dialogState = rememberDialogState()
@@ -56,7 +49,6 @@ fun TimePickerPerf(
         title = title,
         modifier = modifier,
         summary = summary(value),
-        textColor = textColor,
         enabled = enabled,
         leadingIcon = leadingIcon,
         onClick = dialogState::show
