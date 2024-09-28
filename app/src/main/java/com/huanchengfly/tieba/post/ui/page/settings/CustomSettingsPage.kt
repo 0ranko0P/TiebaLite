@@ -33,7 +33,6 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.page.destinations.AppFontPageDestination
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -69,15 +68,7 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
         prefsItem {
             TextPref(
                 title = stringResource(id = R.string.title_custom_font_size),
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.FontDownload,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Outlined.FontDownload,
                 onClick = {
                     navigator.navigate(AppFontPageDestination)
                 }
@@ -88,15 +79,7 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 key = stringPreferencesKey(ThemeUtil.KEY_DARK_THEME),
                 title = R.string.settings_night_mode,
                 defaultValue = ThemeUtil.THEME_AMOLED_DARK,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.Brightness2,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Outlined.Brightness2,
                 options = persistentMapOf(
                     ThemeUtil.THEME_BLUE_DARK to R.string.theme_blue_dark,
                     ThemeUtil.THEME_GREY_DARK to R.string.theme_grey_dark,
@@ -110,15 +93,7 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 key = stringPreferencesKey(AppIconUtil.KEY_APP_ICON),
                 title = R.string.settings_app_icon,
                 defaultValue = LauncherIcons.NEW_ICON,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.Apps,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Outlined.Apps,
                 options = persistentMapOf(
                     LauncherIcons.NEW_ICON to R.string.icon_new,
                     LauncherIcons.NEW_ICON_INVERT to R.string.icon_new_invert,
@@ -155,16 +130,8 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                     title = R.string.title_settings_use_themed_icon,
                     defaultChecked = false,
                     enabled = isCurrentSupportThemedIcon,
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.ColorLens,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    onCheckedChange = { checked ->
+                    leadingIcon = Icons.Outlined.ColorLens,
+                    onCheckedChange = { checked: Boolean ->
                         if (checked) {
                             // Use mapped icon_name -> icon_name_themed when more themed icon added
                             AppIconUtil.setIcon(LauncherIcons.NEW_ICON_THEMED)
@@ -173,10 +140,8 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                         }
                     },
                     summary = {
-                        if (!isCurrentSupportThemedIcon) {
-                            R.string.tip_settings_use_themed_icon_summary_not_supported
-                        } else {
-                            null
+                        R.string.tip_settings_use_themed_icon_summary_not_supported.takeUnless {
+                            isCurrentSupportThemedIcon
                         }
                     }
                 )
@@ -187,30 +152,15 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 key = AppPreferencesUtils.KEY_FOLLOW_SYSTEM_NIGHT,
                 title = R.string.title_settings_follow_system_night,
                 defaultChecked = true,
-            ) {
-                LeadingIcon {
-                    AvatarIcon(
-                        icon = Icons.Outlined.BrightnessAuto,
-                        size = Sizes.Small,
-                        contentDescription = null,
-                    )
-                }
-            }
+                leadingIcon = Icons.Outlined.BrightnessAuto
+            )
         }
         prefsItem {
             SwitchPref(
                 key = ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR,
                 title = R.string.tip_toolbar_primary_color,
                 defaultChecked = false,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.FormatColorFill,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Outlined.FormatColorFill,
                 summary = { R.string.tip_toolbar_primary_color_summary },
             )
         }
@@ -219,30 +169,15 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 key = AppPreferencesUtils.KEY_HOME_SINGLE_FORUM_LIST,
                 title = R.string.settings_forum_single,
                 defaultChecked = false,
-            ) {
-                LeadingIcon {
-                    AvatarIcon(
-                        icon = Icons.Outlined.ViewAgenda,
-                        size = Sizes.Small,
-                        contentDescription = null,
-                    )
-                }
-            }
+                leadingIcon = Icons.Outlined.ViewAgenda
+            )
         }
         prefsItem {
             SwitchPref(
                 key = AppPreferencesUtils.KEY_LIFT_BOTTOM_BAR,
                 title = R.string.title_lift_up_bottom_bar,
                 defaultChecked = true,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.Upcoming,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Outlined.Upcoming,
                 summary = { R.string.summary_lift_up_bottom_bar }
             )
         }

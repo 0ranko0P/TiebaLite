@@ -15,13 +15,12 @@ import androidx.compose.material.icons.outlined.SpeakerNotesOff
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.WatchLater
+import androidx.compose.material.icons.rounded.UnfoldLess
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -31,10 +30,8 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
@@ -77,15 +74,7 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 ),
                 useSelectedAsSummary = true,
                 defaultValue = ImageUtil.SETTINGS_SMART_ORIGIN,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.PhotoSizeSelectActual,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Outlined.PhotoSizeSelectActual
             )
         }
         prefsItem {
@@ -99,15 +88,7 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 ),
                 useSelectedAsSummary = true,
                 defaultValue = ImageUploader.PIC_WATER_TYPE_FORUM_NAME,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.AutoMirrored.Outlined.BrandingWatermark,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.AutoMirrored.Outlined.BrandingWatermark
             )
         }
         prefsItem {
@@ -115,15 +96,8 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 key = AppPreferencesUtils.KEY_DARKEN_IMAGE_WHEN_NIGHT_MODE,
                 title = R.string.settings_image_darken_when_night_mode,
                 defaultChecked = true,
-            ) {
-                LeadingIcon {
-                    AvatarIcon(
-                        icon = Icons.Outlined.NightsStay,
-                        size = Sizes.Small,
-                        contentDescription = null,
-                    )
-                }
-            }
+                leadingIcon = Icons.Outlined.NightsStay
+            )
         }
         prefsItem {
             ListPref(
@@ -135,15 +109,7 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 ),
                 useSelectedAsSummary = true,
                 defaultValue = ForumSortType.BY_REPLY,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.CalendarViewDay,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Outlined.CalendarViewDay
             )
         }
         prefsItem {
@@ -151,16 +117,8 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 key = stringPreferencesKey(KEY_FORUM_FAB_FUNCTION),
                 title = R.string.settings_forum_fab_function,
                 defaultValue = ForumFabFunction.BACK_TO_TOP,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.AutoMirrored.Outlined.ExitToApp,
-                            size = Sizes.Small,
-                            contentDescription = stringResource(id = R.string.settings_forum_fab_function),
-                        )
-                    }
-                },
                 useSelectedAsSummary = true,
+                leadingIcon = Icons.AutoMirrored.Outlined.ExitToApp,
                 options = persistentMapOf(
                     ForumFabFunction.POST to R.string.btn_post,
                     ForumFabFunction.REFRESH to R.string.btn_refresh,
@@ -173,31 +131,16 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
             SwitchPref(
                 key = AppPreferencesUtils.KEY_POST_HIDE_MEDIA,
                 title = R.string.title_hide_media,
-                defaultChecked = false
-            ) {
-                LeadingIcon {
-                    AvatarIcon(
-                        icon = ImageVector.vectorResource(R.drawable.ic_outline_collapse_all),
-                        size = Sizes.Small,
-                        contentDescription = null,
-                    )
-                }
-            }
+                defaultChecked = false,
+                leadingIcon = Icons.Rounded.UnfoldLess
+            )
         }
         prefsItem {
             SwitchPref(
                 key = AppPreferencesUtils.KEY_COLLECTED_SEE_LZ,
                 title = R.string.settings_collect_thread_see_lz,
                 defaultChecked = true,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.StarOutline,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Outlined.StarOutline,
                 summaryOn = R.string.tip_collect_thread_see_lz_on,
                 summaryOff = R.string.tip_collect_thread_see_lz
             )
@@ -207,15 +150,7 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 key = AppPreferencesUtils.KEY_COLLECTED_DESC,
                 title = R.string.settings_collect_thread_desc_sort,
                 defaultChecked = false,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.AutoMirrored.Rounded.Sort,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.AutoMirrored.Rounded.Sort,
                 summaryOn = R.string.tip_collect_thread_desc_sort_on,
                 summaryOff = R.string.tip_collect_thread_desc_sort
             )
@@ -225,30 +160,15 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 key = AppPreferencesUtils.KEY_SHOW_NICKNAME,
                 title = R.string.title_show_both_username_and_nickname,
                 defaultChecked = false,
-            ) {
-                LeadingIcon {
-                    AvatarIcon(
-                        icon = Icons.Outlined.Verified,
-                        size = Sizes.Small,
-                        contentDescription = null,
-                    )
-                }
-            }
+                leadingIcon = Icons.Outlined.Verified
+            )
         }
         prefsItem {
             SwitchPref(
                 key = AppPreferencesUtils.KEY_HOME_PAGE_SHOW_HISTORY,
                 title = R.string.settings_home_page_show_history_forum,
                 defaultChecked = true,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.WatchLater,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Outlined.WatchLater
             )
         }
         prefsItem {
@@ -256,30 +176,16 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 key = AppPreferencesUtils.KEY_REPLY_WARNING,
                 title = R.string.title_post_or_reply_warning,
                 defaultChecked = true,
-            ) {
-                LeadingIcon {
-                    AvatarIcon(
-                        icon = Icons.Outlined.SecurityUpdateWarning,
-                        size = Sizes.Small,
-                        contentDescription = null,
-                    )
-                }
-            }
+                leadingIcon = Icons.Outlined.SecurityUpdateWarning
+            )
         }
         prefsItem {
             SwitchPref(
                 key = AppPreferencesUtils.KEY_REPLY_HIDE,
                 title = R.string.title_hide_reply,
                 defaultChecked = false,
-            ) {
-                LeadingIcon {
-                    AvatarIcon(
-                        icon = Icons.Outlined.SpeakerNotesOff,
-                        size = Sizes.Small,
-                        contentDescription = null,
-                    )
-                }
-            }
+                leadingIcon = Icons.Outlined.SpeakerNotesOff
+            )
         }
         // TODO: Rename confusing string res
         prefsItem {
@@ -293,16 +199,7 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                     R.string.summary_photo_picker_not_supported
                 },
                 defaultChecked = false,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.ImageSearch,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
-                enabled = isPhotoPickerAvailable()
+                leadingIcon = Icons.Outlined.ImageSearch
             )
         }
     }

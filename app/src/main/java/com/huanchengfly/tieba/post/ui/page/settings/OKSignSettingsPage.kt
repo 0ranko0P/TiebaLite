@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BatteryAlert
@@ -15,7 +14,6 @@ import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -35,11 +33,9 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TimePickerPerf
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -49,7 +45,6 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Destination
 @Composable
 fun OKSignSettingsPage(navigator: DestinationsNavigator) {
@@ -75,15 +70,7 @@ fun OKSignSettingsPage(navigator: DestinationsNavigator) {
         ) {
             prefsItem {
                 SwitchPref(
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.BrowseGallery,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
+                    leadingIcon = Icons.Outlined.BrowseGallery,
                     key = AppPreferencesUtils.KEY_OKSIGN_SLOW,
                     title = R.string.title_oksign_slow_mode,
                     defaultChecked = true,
@@ -93,15 +80,7 @@ fun OKSignSettingsPage(navigator: DestinationsNavigator) {
             }
             prefsItem {
                 SwitchPref(
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.Speed,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
+                    leadingIcon = Icons.Outlined.Speed,
                     key = AppPreferencesUtils.KEY_OKSIGN_OFFICIAL,
                     title = R.string.title_oksign_use_official_oksign,
                     defaultChecked = true,
@@ -110,53 +89,28 @@ fun OKSignSettingsPage(navigator: DestinationsNavigator) {
             }
             prefsItem {
                 SwitchPref(
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.OfflinePin,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
                     key = AppPreferencesUtils.KEY_OKSIGN_AUTO,
                     title = R.string.title_auto_sign,
                     defaultChecked = false,
                     summaryOn = R.string.summary_auto_sign_on,
                     summaryOff = R.string.summary_auto_sign,
+                    leadingIcon = Icons.Outlined.OfflinePin,
                 )
             }
             prefsItem {
                 TimePickerPerf(
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.WatchLater,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
                     key = AppPreferencesUtils.KEY_OKSIGN_AUTO_TIME,
                     title = stringResource(id = R.string.title_auto_sign_time),
                     defaultValue = context.appPreferences.autoSignTime,
                     summary = { stringResource(id = R.string.summary_auto_sign_time, it) },
                     dialogTitle = stringResource(id = R.string.title_auto_sign_time),
-                    enabled = depend(key = "auto_sign")
+                    leadingIcon = Icons.Outlined.WatchLater,
+                    enabled = depend(key = AppPreferencesUtils.KEY_OKSIGN_AUTO)
                 )
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 prefsItem {
                     TextPref(
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = Icons.Outlined.BatteryAlert,
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
                         title = stringResource(id = R.string.title_ignore_battery_optimization),
                         enabled = !context.isIgnoringBatteryOptimizations(),
                         summary = if (context.isIgnoringBatteryOptimizations()) {
@@ -172,7 +126,8 @@ fun OKSignSettingsPage(navigator: DestinationsNavigator) {
                                     snackbarHostState.showSnackbar(context.getString(R.string.toast_ignore_battery_optimization_already))
                                 }
                             }
-                        }
+                        },
+                        leadingIcon = Icons.Outlined.BatteryAlert
                     )
                 }
             }

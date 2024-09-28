@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.OfflineBolt
+import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Web
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,11 +29,9 @@ import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.page.destinations.AboutPageDestination
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
@@ -66,15 +64,7 @@ fun MoreSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
         prefsItem {
             SwitchPref(
                 key = AppPreferencesUtils.KEY_USE_WEB_VIEW,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
                 title = R.string.title_use_webview,
                 summaryOn = R.string.tip_use_webview_on,
                 summaryOff = R.string.tip_use_webview,
@@ -88,20 +78,13 @@ fun MoreSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
             )
             SwitchPref(
                 key = AppPreferencesUtils.KEY_WEB_VIEW_CUSTOM_TAB,
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Rounded.Web,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                leadingIcon = Icons.Rounded.Web,
                 enabled = !useWebView,
                 title = R.string.title_use_custom_tabs,
-                summaryOn = R.string.tip_use_custom_tab_on,
-                summaryOff = R.string.tip_use_custom_tab,
-                defaultChecked = true
+                summary = { checked ->
+                    if (checked) R.string.tip_use_custom_tab_on else R.string.tip_use_custom_tab
+                },
+                defaultChecked = true,
             )
         }
         prefsItem {
@@ -113,16 +96,6 @@ fun MoreSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
             }
 
             TextPref(
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.OfflineBolt,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
-                enabled = true,
                 title = stringResource(id = R.string.title_clear_picture_cache),
                 onClick = {
                     cacheSize = "0.0B"
@@ -131,21 +104,13 @@ fun MoreSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                         ImageCacheUtil.clearImageAllCache(context)
                     }
                 },
-                summary = stringResource(id = R.string.tip_cache, cacheSize ?: "...")
+                summary = stringResource(id = R.string.tip_cache, cacheSize ?: "..."),
+                leadingIcon = Icons.Rounded.DeleteForever
             )
         }
         prefsItem {
             TextPref(
-                leadingIcon = {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.Info,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                },
-                enabled = true,
+                leadingIcon = Icons.Outlined.Info,
                 title = stringResource(id = R.string.title_about),
                 onClick = {
                     navigator.navigate(AboutPageDestination)
