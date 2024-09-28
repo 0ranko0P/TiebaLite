@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -41,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
@@ -318,17 +317,13 @@ private fun BoxScope.RefreshTip(refreshCount: Int) {
     Box(
         modifier = Modifier
             .padding(top = 72.dp)
-            .clip(RoundedCornerShape(100))
-            .background(
-                color = ExtendedTheme.colors.primary,
-                shape = RoundedCornerShape(100)
-            )
+            .background(color = ExtendedTheme.colors.primary, shape = CircleShape)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .align(Alignment.TopCenter)
     ) {
         Text(
             text = stringResource(id = R.string.toast_feed_refresh, refreshCount),
-            color = ExtendedTheme.colors.onAccent
+            color = ExtendedTheme.colors.onPrimary
         )
     }
 }

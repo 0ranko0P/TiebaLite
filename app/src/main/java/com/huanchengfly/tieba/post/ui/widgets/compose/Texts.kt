@@ -236,7 +236,7 @@ fun IconText(
                             Icons.Rounded.Link,
                             contentDescription = stringResource(id = R.string.link),
                             modifier = Modifier.size(sizeDp),
-                            tint = ExtendedTheme.colors.accent,
+                            tint = ExtendedTheme.colors.primary,
                         )
                     }
                 ),
@@ -251,7 +251,7 @@ fun IconText(
                             Icons.Rounded.SlowMotionVideo,
                             contentDescription = stringResource(id = R.string.desc_video),
                             modifier = Modifier.size(sizeDp),
-                            tint = ExtendedTheme.colors.accent,
+                            tint = ExtendedTheme.colors.primary,
                         )
                     }
                 ),
@@ -266,7 +266,7 @@ fun IconText(
                             Icons.Rounded.AccountCircle,
                             contentDescription = stringResource(id = R.string.user),
                             modifier = Modifier.size(sizeDp),
-                            tint = ExtendedTheme.colors.accent,
+                            tint = ExtendedTheme.colors.primary,
                         )
                     }
                 ),

@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ButtonColors
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ButtonElevation
@@ -50,12 +50,9 @@ fun Button(
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     elevation: ButtonElevation? = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
-    shape: Shape = RoundedCornerShape(100),
+    shape: Shape = CircleShape,
     border: BorderStroke? = null,
-    colors: ButtonColors = ButtonDefaults.buttonColors(
-        backgroundColor = ExtendedTheme.colors.primary,
-        contentColor = ExtendedTheme.colors.onAccent
-    ),
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     content: @Composable RowScope.() -> Unit
 ) {
@@ -97,7 +94,7 @@ fun TextButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    shape: Shape = RoundedCornerShape(100),
+    shape: Shape = CircleShape,
     border: BorderStroke? = null,
     color: Color = ExtendedTheme.colors.text,
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
@@ -125,7 +122,7 @@ fun TextButton(
 fun NegativeButton(
     modifier: Modifier = Modifier,
     text: String,
-    color: Color = MaterialTheme.colors.onPrimary,
+    color: Color = MaterialTheme.colors.primary,
     onClick: () -> Unit
 ) = Button(
     onClick = onClick,
@@ -145,7 +142,7 @@ fun NegativeButton(
 fun PositiveButton(
     text: String,
     modifier: Modifier = Modifier,
-    enabled: Boolean,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) = Button(
     onClick = onClick,
@@ -171,7 +168,7 @@ fun FavoriteButton(
     favoriteCounter: @Composable RowScope.(contentColor: Color) -> Unit
 ) {
     val animatedColor by animateColorAsState(
-        targetValue = if (favorite) ExtendedTheme.colors.accent else ExtendedTheme.colors.textSecondary,
+        targetValue = if (favorite) ExtendedTheme.colors.primary else ExtendedTheme.colors.textSecondary,
         label = "FavoriteButtonColor"
     )
     val direction = LocalLayoutDirection.current

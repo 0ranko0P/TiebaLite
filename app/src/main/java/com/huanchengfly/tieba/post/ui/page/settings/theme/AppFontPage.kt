@@ -150,12 +150,10 @@ fun AppFontContent(modifier: Modifier = Modifier, onCancel: () -> Unit, onSave: 
         )
 
         Row(Modifier.padding(top = 18.dp)) {
-            NegativeButton(
-                text = stringResource(id = R.string.button_cancel),
-                color = ExtendedTheme.colors.accent,
-                onClick = onCancel
-            )
+            NegativeButton(text = stringResource(id = R.string.button_cancel), onClick = onCancel)
+
             Spacer(modifier = Modifier.weight(1.0f))
+
             PositiveButton(
                 text = stringResource(id = R.string.button_finish),
                 enabled = abs(fontScale - newFontScale) >= 0.01f,
@@ -178,7 +176,7 @@ private fun TextHintSlider(
         Text(
             text = stringResource(getSizeTextHint(progress.roundToInt())),
             modifier = Modifier.align(Alignment.CenterHorizontally),
-            color = ExtendedTheme.colors.accent,
+            color = ExtendedTheme.colors.primary,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
@@ -190,9 +188,7 @@ private fun TextHintSlider(
             Slider(
                 value = progress,
                 colors = SliderDefaults.colors(
-                    thumbColor = ExtendedTheme.colors.accent,
-                    activeTrackColor = ExtendedTheme.colors.accent,
-                    inactiveTrackColor = ExtendedTheme.colors.text.copy(alpha = 0.2f),
+                    inactiveTrackColor = Color.LightGray,
                 ),
                 steps = 6,
                 valueRange = 0f..10f,

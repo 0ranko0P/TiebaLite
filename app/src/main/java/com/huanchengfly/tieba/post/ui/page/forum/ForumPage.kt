@@ -6,9 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -160,7 +158,7 @@ private fun ForumHeader(
                     shape = RoundedCornerShape(100),
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = ExtendedTheme.colors.primary,
-                        contentColor = ExtendedTheme.colors.onAccent
+                        contentColor = ExtendedTheme.colors.onPrimary
                     ),
                     contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
                     enabled = !signed || !liked

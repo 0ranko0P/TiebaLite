@@ -92,7 +92,7 @@ fun Dislike(
                                 onDislike(clickTime, selectedReasons.toImmutableList())
                             }
                             .padding(vertical = 4.dp, horizontal = 8.dp),
-                        color = ExtendedTheme.colors.onAccent,
+                        color = ExtendedTheme.colors.onPrimary,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.subtitle2,
@@ -119,7 +119,7 @@ fun Dislike(
                             targetValue = if (selectedReasons.contains(it)) ExtendedTheme.colors.primary else ExtendedTheme.colors.chip
                         )
                         val contentColor by animateColorAsState(
-                            targetValue = if (selectedReasons.contains(it)) ExtendedTheme.colors.onAccent else ExtendedTheme.colors.onChip
+                            targetValue = if (selectedReasons.contains(it)) ExtendedTheme.colors.onPrimary else ExtendedTheme.colors.onChip
                         )
                         Text(
                             text = it.get { dislikeReason },

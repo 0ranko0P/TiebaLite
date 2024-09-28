@@ -271,7 +271,7 @@ object TextFieldDefaults {
         textColor: Color = ExtendedTheme.colors.text,
         disabledTextColor: Color = textColor.copy(alpha = ContentAlpha.disabled),
         backgroundColor: Color = Color.Transparent,
-        cursorColor: Color = ExtendedTheme.colors.accent,
+        cursorColor: Color = ExtendedTheme.colors.primary,
         placeholderColor: Color = ExtendedTheme.colors.textSecondary.copy(alpha = ContentAlpha.medium),
         disabledPlaceholderColor: Color = placeholderColor.copy(alpha = ContentAlpha.disabled),
     ): TextFieldColors =
@@ -289,7 +289,7 @@ object TextFieldDefaults {
         textColor: Color = ExtendedTheme.colors.text,
         disabledTextColor: Color = textColor.copy(alpha = ContentAlpha.disabled),
         backgroundColor: Color = Color.Transparent,
-        cursorColor: Color = ExtendedTheme.colors.accent,
+        cursorColor: Color = ExtendedTheme.colors.primary,
         placeholderColor: Color = ExtendedTheme.colors.text.copy(alpha = ContentAlpha.medium),
         disabledPlaceholderColor: Color = placeholderColor.copy(alpha = ContentAlpha.disabled),
         counterColor: Color = ExtendedTheme.colors.text.copy(alpha = ContentAlpha.medium),

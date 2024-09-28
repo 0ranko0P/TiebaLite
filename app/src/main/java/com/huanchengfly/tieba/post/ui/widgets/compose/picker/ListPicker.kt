@@ -36,8 +36,8 @@ typealias Options<Option> = ImmutableMap<Option, Int>
 private fun selectedButtonColor(selected: Boolean): ButtonColors {
     return if (selected) {
         ButtonDefaults.textButtonColors(
-            backgroundColor = ExtendedTheme.colors.accent.copy(0.1f),
-            contentColor = ExtendedTheme.colors.accent
+            backgroundColor = ExtendedTheme.colors.primary.copy(0.1f),
+            contentColor = ExtendedTheme.colors.primary
         )
     } else {
         ButtonDefaults.textButtonColors(

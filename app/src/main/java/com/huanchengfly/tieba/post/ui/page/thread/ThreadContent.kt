@@ -551,7 +551,7 @@ fun PostCard(
                             text = stringResource(R.string.open_all_sub_posts, post.subPostNumber),
                             style = MaterialTheme.typography.caption,
                             fontSize = 13.sp,
-                            color = ExtendedTheme.colors.accent,
+                            color = ExtendedTheme.colors.primary,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onOpenSubPosts(0) }

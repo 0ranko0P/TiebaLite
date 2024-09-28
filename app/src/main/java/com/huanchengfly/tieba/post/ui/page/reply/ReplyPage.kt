@@ -480,7 +480,7 @@ internal fun ReplyPageContent(
                         badge = {
                             if (selectedImageList.isNotEmpty()) {
                                 Badge(
-                                    backgroundColor = ExtendedTheme.colors.accent,
+                                    backgroundColor = ExtendedTheme.colors.primary,
                                     contentColor = ExtendedTheme.colors.background,
                                 ) {
                                     Text(

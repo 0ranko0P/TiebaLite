@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
@@ -418,8 +419,10 @@ private fun ThreadListTab(
     selected: Boolean,
     onSelected: () -> Unit
 ) {
-    val textColor by animateColorAsState(targetValue = if (selected) ExtendedTheme.colors.onAccent else ExtendedTheme.colors.onChip)
-    val backgroundColor by animateColorAsState(targetValue = if (selected) ExtendedTheme.colors.primary else ExtendedTheme.colors.chip)
+    val colors = ExtendedTheme.colors
+    val textColor by animateColorAsState(targetValue = if (selected) colors.onPrimary else colors.onChip)
+    val backgroundColor by animateColorAsState(targetValue = if (selected) colors.primary else colors.chip)
+
     Text(
         text = text,
         textAlign = TextAlign.Center,
@@ -427,7 +430,7 @@ private fun ThreadListTab(
         maxLines = 1,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(100))
+            .clip(CircleShape)
             .background(backgroundColor)
             .clickable(onClick = onSelected)
             .padding(vertical = 4.dp),
@@ -438,20 +441,16 @@ private fun ThreadListTab(
 
 
 @Composable
-private fun ChipHeader(
-    text: String,
-    invert: Boolean = false,
-    modifier: Modifier = Modifier
-) {
+private fun ChipHeader(modifier: Modifier = Modifier, text: String) {
     Text(
-        color = if (invert) MaterialTheme.colors.onSecondary else ExtendedTheme.colors.onChip,
+        color = ExtendedTheme.colors.onChip,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         text = text,
         modifier = Modifier
-            .clip(RoundedCornerShape(100))
+            .clip(CircleShape)
             .then(modifier)
-            .background(color = if (invert) MaterialTheme.colors.secondary else ExtendedTheme.colors.chip)
+            .background(color = ExtendedTheme.colors.chip)
             .padding(horizontal = 16.dp, vertical = 4.dp)
     )
 }
