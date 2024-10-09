@@ -401,7 +401,7 @@ fun ThreadPage(
             ModalBottomSheetLayout(
                 sheetState = bottomSheetState,
                 sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-                sheetBackgroundColor = ExtendedTheme.colors.windowBackground,
+                sheetBackgroundColor = ExtendedTheme.colors.threadBottomBar,
                 sheetContent = {
                     ThreadMenu(
                         isSeeLz = viewModel.seeLz,
@@ -535,14 +535,14 @@ private fun BottomBar(
                         .padding(vertical = 8.dp)
                         .weight(1f)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(ExtendedTheme.colors.bottomBarSurface)
+                        .background(ExtendedTheme.colors.floorCard)
                         .clickable(onClick = onClickReply)
                         .padding(8.dp),
                 ) {
                     Text(
                         text = stringResource(id = R.string.tip_reply_thread),
                         style = MaterialTheme.typography.caption,
-                        color = ExtendedTheme.colors.onBottomBarSurface,
+                        color = ExtendedTheme.colors.textSecondary,
                     )
                 }
             } else {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="theme_blue_dark">静谧蓝</string>
+    <string name="theme_grey_dark">深邃灰</string>
+    <string name="theme_amoled_dark">纯黑</string>
+    <string name="theme_blue">清新蓝</string>
+    <string name="theme_black">高级黑</string>
+    <string name="theme_pink">少女粉</string>
+    <string name="theme_red">新年红</string>
+    <string name="theme_purple">星空紫</string>
+</resources>

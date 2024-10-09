@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Checkbox
@@ -33,20 +33,16 @@ import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -57,13 +53,15 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
-import com.huanchengfly.tieba.post.rememberPreferenceAsState
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.theme.BuiltInThemes
+import com.huanchengfly.tieba.post.theme.Grey200
+import com.huanchengfly.tieba.post.theme.TiebaBlue
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
+import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -84,20 +82,15 @@ private val MediumRoundedShape by lazy { RoundedCornerShape(6.dp) }
 @Composable
 fun AppThemePage(navigator: DestinationsNavigator) {
     val context = LocalContext.current
-    val themeValues = stringArrayResource(id = R.array.theme_values)
-    val themeNames = stringArrayResource(id = R.array.themeNames)
-    val currentTheme by ThemeUtil.themeState
-    val isDynamicTheme by rememberPreferenceAsState(
-        key = booleanPreferencesKey(ThemeUtil.KEY_USE_DYNAMIC_THEME),
-        defaultValue = false
-    )
+    val currentTheme = LocalExtendedColors.current
+
     val customPrimaryColorDialogState = rememberDialogState()
 
     var customPrimaryColorInt by rememberPreferenceAsMutableState(
         key = intPreferencesKey(ThemeUtil.KEY_CUSTOM_PRIMARY_COLOR),
-        defaultValue = 0x4477E0 // TiebaBlue
+        defaultValue = TiebaBlue.toArgb()
     )
-    val customPrimaryColor by remember { derivedStateOf { Color(customPrimaryColorInt) } }
+    val customPrimaryColor = Color(customPrimaryColorInt)
 
     var customToolbarPrimaryColor by rememberPreferenceAsMutableState(
         key = booleanPreferencesKey(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR),
@@ -115,7 +108,6 @@ fun AppThemePage(navigator: DestinationsNavigator) {
         onColorChanged = { newColor ->
             customPrimaryColorInt = newColor.toArgb()
             customStatusBarFontDark = customStatusBarFontDark || !customToolbarPrimaryColor
-            ThemeUtil.setUseDynamicTheme(false)
             ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM)
         }
     ) {
@@ -159,8 +151,8 @@ fun AppThemePage(navigator: DestinationsNavigator) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
-                        selected = isDynamicTheme,
-                        onClick = { ThemeUtil.setUseDynamicTheme(true) }
+                        selected = currentTheme.theme == ThemeUtil.THEME_DYNAMIC,
+                        onClick = { ThemeUtil.switchTheme(ThemeUtil.THEME_DYNAMIC) }
                     )
                 }
             }
@@ -174,13 +166,13 @@ fun AppThemePage(navigator: DestinationsNavigator) {
                         modifier = Modifier
                             .weight(1f)
                             .background(color = customPrimaryColor, shape = MediumRoundedShape),
-                        selected = !isDynamicTheme && currentTheme == ThemeUtil.THEME_CUSTOM,
+                        selected = currentTheme.theme == ThemeUtil.THEME_CUSTOM,
                         onClick = customPrimaryColorDialogState::show
                     )
 
                     TranslucentThemeButton(
                         modifier = Modifier.weight(1f),
-                        selected = ThemeUtil.isTranslucentTheme(currentTheme),
+                        selected = currentTheme.theme == ThemeUtil.THEME_TRANSLUCENT_LIGHT || currentTheme.theme == ThemeUtil.THEME_TRANSLUCENT_DARK,
                         onClick = {
                             // Trim to 50% of cache size
                             Glide.get(context).trimMemory(TRIM_MEMORY_UI_HIDDEN)
@@ -190,139 +182,54 @@ fun AppThemePage(navigator: DestinationsNavigator) {
                 }
             }
 
-            itemsIndexed(items = themeValues, key = { _, item -> item }) { index, item ->
-                val name = themeNames[index]
-                val backgroundColor = remember {
-                    Color(
-                        App.ThemeDelegate.getColorByAttr(
-                            context,
-                            R.attr.colorBackground,
-                            item
-                        )
-                    )
-                }
-                val primaryColor = remember {
-                    Color(
-                        App.ThemeDelegate.getColorByAttr(
-                            context,
-                            R.attr.colorNewPrimary,
-                            item
-                        )
-                    )
-                }
-                val accentColor = remember {
-                    Color(
-                        App.ThemeDelegate.getColorByAttr(
-                            context,
-                            R.attr.colorAccent,
-                            item
-                        )
-                    )
-                }
-                val onAccentColor = remember {
-                    Color(
-                        App.ThemeDelegate.getColorByAttr(
-                            context,
-                            R.attr.colorOnAccent,
-                            item
-                        )
-                    )
-                }
-                val onBackgroundColor = remember {
-                    Color(
-                        App.ThemeDelegate.getColorByAttr(
-                            context,
-                            R.attr.colorText,
-                            item
-                        )
-                    )
-                }
-
-                if (ThemeUtil.isNightMode(item)) {
-                    ThemeItem(
-                        themeName = name,
-                        themeValue = item,
-                        primaryColor = backgroundColor,
-                        accentColor = backgroundColor,
-                        contentColor = onBackgroundColor,
-                        selected = !isDynamicTheme && currentTheme == item,
-                        onClick = {
-                            ThemeUtil.switchTheme(item)
-                            ThemeUtil.setUseDynamicTheme(false)
-                        }
-                    )
-                } else {
-                    ThemeItem(
-                        themeName = name,
-                        themeValue = item,
-                        primaryColor = primaryColor,
-                        accentColor = accentColor,
-                        contentColor = onAccentColor,
-                        selected = !isDynamicTheme && currentTheme == item,
-                        onClick = {
-                            ThemeUtil.switchTheme(item)
-                            ThemeUtil.setUseDynamicTheme(false)
-                        }
-                    )
-                }
+            items(items = BuiltInThemes, key = { item -> item.theme }) { item ->
+                ThemeItem(
+                    themeColor = item,
+                    name = stringResource(id = item.name),
+                    onClick = {
+                        ThemeUtil.switchTheme(item.theme)
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ThemeItem(
-    themeName: String,
-    themeValue: String,
-    primaryColor: Color,
-    accentColor: Color,
-    contentColor: Color,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
+private fun ThemeItem(themeColor: ExtendedColors, name: String, onClick: () -> Unit) {
+    val selected = LocalExtendedColors.current == themeColor
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .clickable(
-                onClickLabel = themeName,
-                onClick = onClick
-            )
+            .clickable(onClickLabel = name, onClick = onClick)
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        val isNightTheme = ThemeUtil.isNightMode(themeValue)
-        val background = if (primaryColor == accentColor) {
-            Modifier.background(color = primaryColor, shape = CircleShape)
-        } else {
-            Modifier.background(
-                brush = Brush.radialGradient(listOf(primaryColor, accentColor)),
-                shape = CircleShape
-            )
-        }
+        val background = if (themeColor.isNightMode) themeColor.windowBackground else themeColor.primary
         Box(
             modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape)
-                .then(background)
+                .background(color = background, shape = CircleShape)
                 .padding(9.dp),
         ) {
-            if (isNightTheme) {
+            if (themeColor.isNightMode) {
                 Icon(
                     imageVector = Icons.Rounded.NightsStay,
                     contentDescription = stringResource(id = R.string.desc_night_theme),
-                    tint = contentColor
+                    tint = themeColor.onPrimary
                 )
             }
         }
-        Text(text = themeName, modifier = Modifier.weight(1f))
+        Text(text = name, modifier = Modifier.weight(1f))
 
         AnimatedVisibility(selected) {
             Icon(
                 imageVector = Icons.Rounded.DoneOutline,
                 contentDescription = stringResource(id = R.string.desc_checked),
-                tint = if (isNightTheme) contentColor else primaryColor
+                tint = if (themeColor.isNightMode) themeColor.onPrimary else themeColor.primary
             )
         }
     }
@@ -420,11 +327,11 @@ private fun SelectableIconTheme(
     Icon(
         imageVector = if (selected) Icons.Rounded.Check else icon,
         contentDescription = null,
-        tint = ExtendedTheme.colors.windowBackground
+        tint = Grey200
     )
     Text(
         text = stringResource(id = title),
         fontWeight = FontWeight.Bold,
-        color = ExtendedTheme.colors.windowBackground
+        color = Grey200
     )
 }

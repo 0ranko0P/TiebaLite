@@ -272,7 +272,7 @@ fun ThreadContent(
         if (showTitle) {
             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                 if (isGood) {
-                    withStyle(style = SpanStyle(color = ExtendedTheme.colors.accent)) {
+                    withStyle(style = SpanStyle(color = ExtendedTheme.colors.primary)) {
                         append(stringResource(id = R.string.tip_good))
                     }
                     append(" ")

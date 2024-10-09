@@ -19,8 +19,10 @@ import com.huanchengfly.tieba.post.dataStoreScope
 import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.getString
 import com.huanchengfly.tieba.post.putBoolean
-import com.huanchengfly.tieba.post.putString
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -43,16 +45,13 @@ object ThemeUtil {
     const val KEY_CUSTOM_STATUS_BAR_FONT_DARK = "custom_status_bar_font_dark"
     const val KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR = "custom_toolbar_primary_color" // Bool: 顶栏跟随主题色
 
-    /**
-     * Bool: is Dark/Light Translucent Theme
-     * */
-    const val KEY_TRANSLUCENT_THEME_DARK_COLOR = "translucent_dark_color"
     const val KEY_TRANSLUCENT_BACKGROUND_FILE = "translucent_background_path"
     const val THEME_TRANSLUCENT = "translucent"
     const val THEME_TRANSLUCENT_LIGHT = "translucent_light"
     const val THEME_TRANSLUCENT_DARK = "translucent_dark"
 
     const val THEME_CUSTOM = "custom"
+    const val THEME_DYNAMIC = "dynamic"
     const val THEME_DEFAULT = "tieba"
     const val THEME_BLACK = "black"
     const val THEME_BLUE = "blue"
@@ -102,11 +101,14 @@ object ThemeUtil {
 
     fun isUsingDynamicTheme(): Boolean = dataStore.getBoolean(KEY_USE_DYNAMIC_THEME, false)
 
-    fun switchNightMode() {
-        if (isNightMode()) {
-            switchTheme(getOldTheme(), recordOldTheme = false)
+    fun switchNightMode(current: ExtendedColors) = MainScope().launch {
+        val data = dataStore.data.first()
+        val nightTheme = data[stringPreferencesKey(KEY_DARK_THEME)] ?: THEME_AMOLED_DARK
+        val theme = data[stringPreferencesKey(KEY_THEME)] ?: THEME_DEFAULT
+        if (current.isNightMode) {
+            switchTheme(theme)
         } else {
-            switchTheme(dataStore.getString(KEY_DARK_THEME, THEME_AMOLED_DARK))
+            switchTheme(nightTheme)
         }
     }
 
@@ -157,8 +159,7 @@ object ThemeUtil {
         return theme.endsWith("_dynamic")
     }
 
-    fun isStatusBarFontDark(): Boolean {
-        val theme = getRawTheme()
+    fun isStatusBarFontDark(theme: String = getRawTheme()): Boolean {
         val dataStore = INSTANCE.dataStore
         val isToolbarPrimaryColor: Boolean = INSTANCE.appPreferences.toolbarPrimaryColor
         return if (theme == THEME_CUSTOM) {
@@ -188,7 +189,7 @@ object ThemeUtil {
     ): String {
         var nowTheme = theme
         if (isTranslucentTheme(nowTheme)) {
-            val isDarkTranslucent = INSTANCE.appPreferences.getBoolean(KEY_TRANSLUCENT_THEME_DARK_COLOR, false)
+            val isDarkTranslucent = nowTheme == THEME_TRANSLUCENT_DARK
             nowTheme = if (isDarkTranslucent) {
                 THEME_TRANSLUCENT_DARK
             } else {
@@ -236,24 +237,5 @@ object ThemeUtil {
     }
 
     @JvmStatic
-    fun getRawTheme(): String {
-        val theme = themeState.value
-        return when (theme.lowercase(Locale.getDefault())) {
-            THEME_TRANSLUCENT,
-            THEME_TRANSLUCENT_LIGHT,
-            THEME_TRANSLUCENT_DARK,
-            THEME_CUSTOM,
-            THEME_DEFAULT,
-            THEME_BLACK,
-            THEME_PURPLE,
-            THEME_PINK,
-            THEME_RED,
-            THEME_BLUE_DARK,
-            THEME_GREY_DARK,
-            THEME_AMOLED_DARK,
-            -> theme.lowercase(Locale.getDefault())
-
-            else -> THEME_DEFAULT
-        }
-    }
+    fun getRawTheme() = themeState.value
 }

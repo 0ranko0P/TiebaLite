@@ -52,7 +52,7 @@ class AppPreferencesUtils private constructor(context: Context) {
         private const val KEY_LAST_REQUEST_UNIX = "userLikeLastRequestUnix"
 
 
-        //        BOOLEAN OPTIONS
+        /***        BOOLEAN OPTIONS             ***/
 
         const val KEY_DARKEN_IMAGE_WHEN_NIGHT_MODE = "ui_dark_img"
 
@@ -91,7 +91,7 @@ class AppPreferencesUtils private constructor(context: Context) {
         const val KEY_OKSIGN_SLOW = "sign_slow_mode"
         const val KEY_OKSIGN_OFFICIAL = "sign_using_official"
 
-        //        END OF BOOLEAN OPTIONS
+        /***        END OF BOOLEAN OPTIONS      ***/
 
         const val KEY_OKSIGN_LAST_TIME = "sign_day"
         const val KEY_OKSIGN_AUTO_TIME = "auto_sign_time"
@@ -144,7 +144,7 @@ class AppPreferencesUtils private constructor(context: Context) {
         get() = dataStore.getBoolean(KEY_POST_BLOCK_VIDEO, false)
 
     val customPrimaryColor: Int
-        get() = dataStore.getInt(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR, 0)
+        get() = dataStore.getInt(ThemeUtil.KEY_CUSTOM_PRIMARY_COLOR, 0)
 
     var toolbarPrimaryColor: Boolean
         get() = dataStore.getBoolean(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR, false)

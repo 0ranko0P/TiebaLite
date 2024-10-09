@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.material.ContentAlpha
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.LocalTextStyle
@@ -241,6 +242,7 @@ private fun StoreItem(
     val hasUpdate = remember(info) { info.count != "0" && info.postNo != "0" }
     val isDeleted = remember(info) { info.isDeleted == "1" }
     val textMeasurer = rememberTextMeasurer()
+    val textColor = ExtendedTheme.colors.text
     LongClickMenu(
         menuContent = {
             DropdownMenuItem(onClick = onDelete) {
@@ -298,7 +300,7 @@ private fun StoreItem(
             Text(
                 text = title,
                 fontSize = 15.sp,
-                color = if (isDeleted) ExtendedTheme.colors.textDisabled else ExtendedTheme.colors.text,
+                color = if (isDeleted) textColor.copy(ContentAlpha.disabled) else textColor,
                 inlineContent = mapOf(
                     "Update" to InlineTextContent(
                         placeholder = Placeholder(
@@ -331,7 +333,7 @@ private fun StoreItem(
                 Text(
                     text = stringResource(id = R.string.tip_thread_store_deleted),
                     fontSize = 12.sp,
-                    color = ExtendedTheme.colors.textDisabled
+                    color = textColor.copy(ContentAlpha.disabled)
                 )
             }
         }

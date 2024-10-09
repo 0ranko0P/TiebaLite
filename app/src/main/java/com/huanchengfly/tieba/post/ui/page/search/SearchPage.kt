@@ -55,7 +55,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -95,7 +94,6 @@ import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
@@ -127,7 +125,6 @@ fun SearchPage(
         listOf(SearchUiIntent.Init)
     ),
 ) {
-    val context = LocalContext.current
     val searchHistories by viewModel.uiState.collectPartialAsState(
         prop1 = SearchUiState::searchHistories,
         initial = persistentListOf()
@@ -546,7 +543,7 @@ private fun SearchHistoryList(
             ) {
                 Text(
                     text = stringResource(id = R.string.tip_empty),
-                    color = ExtendedTheme.colors.textDisabled,
+                    color = ExtendedTheme.colors.text.copy(ContentAlpha.disabled),
                     fontSize = 16.sp
                 )
             }
@@ -569,7 +566,7 @@ private fun SearchTopBar(
         placeholder = {
             Text(
                 text = stringResource(id = R.string.hint_search),
-                color = ExtendedTheme.colors.onTopBarSurface.copy(alpha = ContentAlpha.medium)
+                color = ExtendedTheme.colors.textSecondary
             )
         },
         prependIcon = {

@@ -444,14 +444,14 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
                     .padding(vertical = 8.dp)
                     .weight(1f)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(ExtendedTheme.colors.bottomBarSurface)
+                    .background(ExtendedTheme.colors.floorCard)
                     .clickable(onClick = onReply)
                     .padding(8.dp),
             ) {
                 Text(
                     text = stringResource(id = R.string.tip_reply_thread),
                     style = MaterialTheme.typography.caption,
-                    color = ExtendedTheme.colors.onBottomBarSurface,
+                    color = ExtendedTheme.colors.textSecondary,
                 )
             }
         }

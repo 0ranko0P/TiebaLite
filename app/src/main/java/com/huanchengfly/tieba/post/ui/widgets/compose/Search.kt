@@ -369,9 +369,9 @@ fun SearchBox(
     appendIcon: @Composable () -> Unit = {},
     focusRequester: FocusRequester = remember { FocusRequester() },
     shape: Shape = RectangleShape,
-    color: Color = ExtendedTheme.colors.topBarSurface,
-    contentColor: Color = ExtendedTheme.colors.onTopBarSurface,
-    elevation: Dp = 0.dp,
+    color: Color = ExtendedTheme.colors.floorCard,
+    contentColor: Color = ExtendedTheme.colors.onTopBar,
+    elevation: Dp = Dp.Hairline,
 ) {
     val isKeywordNotEmpty = remember(keyword) { keyword.isNotEmpty() }
     var isFocused by remember { mutableStateOf(false) }

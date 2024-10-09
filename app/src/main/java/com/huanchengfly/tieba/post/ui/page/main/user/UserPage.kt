@@ -237,12 +237,13 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
     val account = LocalAccount.current
 
     val switchToNightDialogState = rememberDialogState()
+    val theme = ExtendedTheme.colors
     ConfirmDialog(
         dialogState = switchToNightDialogState,
         onConfirm = {},
         onCancel = {
             context.appPreferences.followSystemNight = false
-            ThemeUtil.switchNightMode()
+            ThemeUtil.switchNightMode(theme)
         },
         confirmText = stringResource(id = R.string.btn_keep_following),
         cancelText = stringResource(id = R.string.btn_close_following)
@@ -329,12 +330,12 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Switch(
-                        checked = ThemeUtil.isNightMode(ThemeUtil.themeState.value),
+                        checked = theme.isNightMode,
                         onCheckedChange = {
                             if (context.appPreferences.followSystemNight) {
                                 switchToNightDialogState.show()
                             } else {
-                                ThemeUtil.switchNightMode()
+                                ThemeUtil.switchNightMode(current = theme)
                             }
                         }
                     )

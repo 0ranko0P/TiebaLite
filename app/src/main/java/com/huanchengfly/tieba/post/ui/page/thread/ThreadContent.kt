@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -510,7 +511,7 @@ fun PostCard(
                     if (subPosts.isEmpty() || post.subPostNumber <= 0 || immersiveMode) return@Card
 
                     val blockedStyle = MaterialTheme.typography.body2.copy(
-                        color = ExtendedTheme.colors.textDisabled,
+                        color = ExtendedTheme.colors.text.copy(ContentAlpha.disabled),
                         fontSize = 13.sp
                     )
                     Column(

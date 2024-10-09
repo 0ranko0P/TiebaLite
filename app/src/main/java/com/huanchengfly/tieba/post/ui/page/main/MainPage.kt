@@ -113,7 +113,7 @@ fun MainPage(
         }
     }
 
-    lateinit var pagerState: PagerState
+    val pagerState = rememberPagerState { 4 }
 
     val navigationItems = remember { persistentListOf(
         NavigationItem(
@@ -159,7 +159,6 @@ fun MainPage(
             }
         ))
     }
-    pagerState = rememberPagerState { navigationItems.size }
     val navigationType by remember {
         derivedStateOf {
             when (windowWidthSizeClass) {

@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -46,11 +47,10 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.theme.OrangeA700
+import com.huanchengfly.tieba.post.theme.RedA700
+import com.huanchengfly.tieba.post.theme.YellowA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.OrangeA700
-import com.huanchengfly.tieba.post.ui.common.theme.compose.RedA700
-import com.huanchengfly.tieba.post.ui.common.theme.compose.White
-import com.huanchengfly.tieba.post.ui.common.theme.compose.Yellow
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
@@ -147,7 +147,7 @@ fun HotPage(
                                         color = when (index) {
                                             0 -> RedA700
                                             1 -> OrangeA700
-                                            2 -> Yellow
+                                            2 -> YellowA700
                                             else -> MaterialTheme.colors.onBackground.copy(
                                                 ContentAlpha.medium
                                             )
@@ -170,7 +170,7 @@ fun HotPage(
                                         2 -> Text(
                                             text = stringResource(id = R.string.topic_tag_hot),
                                             fontSize = 10.sp,
-                                            color = White,
+                                            color = Color.White,
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(4.dp))
                                                 .background(RedA700)
@@ -180,7 +180,7 @@ fun HotPage(
                                         1 -> Text(
                                             text = stringResource(id = R.string.topic_tag_new),
                                             fontSize = 10.sp,
-                                            color = White,
+                                            color = Color.White,
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(4.dp))
                                                 .background(OrangeA700)
@@ -326,7 +326,7 @@ fun HotPage(
                                     val color = when (index) {
                                         0 -> RedA700
                                         1 -> OrangeA700
-                                        2 -> Yellow
+                                        2 -> YellowA700
                                         else -> MaterialTheme.colors.onBackground.copy(
                                             ContentAlpha.medium
                                         )

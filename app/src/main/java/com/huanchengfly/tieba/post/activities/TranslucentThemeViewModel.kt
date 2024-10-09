@@ -37,6 +37,8 @@ import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.ImageUtil.toFile
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_TRANSLUCENT_BACKGROUND_FILE
+import com.huanchengfly.tieba.post.utils.ThemeUtil.THEME_TRANSLUCENT_DARK
+import com.huanchengfly.tieba.post.utils.ThemeUtil.THEME_TRANSLUCENT_LIGHT
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -54,7 +56,7 @@ class TranslucentThemeViewModel : ViewModel() {
     private val context = App.INSTANCE
     private val dataStore = context.dataStore
 
-    private val KEY_IS_DARK_COLOR_MODE by lazy { booleanPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_THEME_DARK_COLOR) }
+    private val KEY_IS_DARK_COLOR_MODE by lazy { booleanPreferencesKey("trans_dark_color") }
     private val KEY_TRANSLUCENT_BLUR by lazy { floatPreferencesKey("trans_blur") }
     private val KEY_TRANSLUCENT_ALPHA by lazy { floatPreferencesKey("trans_alpha") }
 
@@ -267,7 +269,8 @@ class TranslucentThemeViewModel : ViewModel() {
 
             val cost = System.currentTimeMillis() - start
             withContext(Dispatchers.Main) {
-                ThemeUtil.switchTheme(ThemeUtil.THEME_TRANSLUCENT, false)
+                val theme = if (isDarkTheme) THEME_TRANSLUCENT_DARK else THEME_TRANSLUCENT_LIGHT
+                ThemeUtil.switchTheme(theme)
                 Log.i(TAG, "onSaveWallpaper: cost ${cost}ms, filter: $hasFilter, reused: ${!isWallpaperChanged}")
             }
             return@async Result.success(Unit)

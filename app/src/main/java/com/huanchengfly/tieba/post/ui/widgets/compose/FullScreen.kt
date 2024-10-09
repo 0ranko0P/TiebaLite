@@ -9,6 +9,7 @@ import android.view.View
 import android.view.WindowManager
 import androidx.activity.findViewTreeOnBackPressedDispatcherOwner
 import androidx.activity.setViewTreeOnBackPressedDispatcherOwner
+import androidx.annotation.ColorInt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.DisposableEffect
@@ -19,6 +20,7 @@ import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.LocalView
 import androidx.core.graphics.ColorUtils
@@ -29,19 +31,19 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import java.util.UUID
 
 @Composable
 fun FullScreen(content: @Composable () -> Unit) {
     val view = LocalView.current
+    val colors = LocalExtendedColors.current
     val parentComposition = rememberCompositionContext()
     val currentContent by rememberUpdatedState(content)
     val id = rememberSaveable { UUID.randomUUID() }
 
     val fullScreenLayout = remember {
-        FullScreenLayout(view, id).apply {
+        FullScreenLayout(view, colors.background.toArgb(), id).apply {
             setContent(parentComposition, currentContent)
         }
     }
@@ -55,6 +57,7 @@ fun FullScreen(content: @Composable () -> Unit) {
 @SuppressLint("ViewConstructor")
 private class FullScreenLayout(
     private val composeView: View,
+    @ColorInt private val backgroundColor: Int,
     uniqueId: UUID
 ) : AbstractComposeView(composeView.context) {
 
@@ -107,9 +110,7 @@ private class FullScreenLayout(
                 blurBehindRadius = 64
             } else {
                 dimAmount = 0f // Remove for older devices
-                val theme = ThemeUtil.themeState.value
-                var bg = App.ThemeDelegate.getColorByAttr(context, R.attr.colorBackground, theme)
-                bg = ColorUtils.setAlphaComponent(bg, 0xF5)
+                val bg = ColorUtils.setAlphaComponent(backgroundColor, 0xF5)
                 setBackgroundColor(bg)
             }
         }

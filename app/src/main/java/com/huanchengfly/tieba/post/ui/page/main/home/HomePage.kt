@@ -121,8 +121,8 @@ fun SearchBoxPreview() {
 @Composable
 private fun SearchBox(
     modifier: Modifier = Modifier,
-    backgroundColor: Color = ExtendedTheme.colors.topBarSurface,
-    contentColor: Color = ExtendedTheme.colors.onTopBarSurface,
+    backgroundColor: Color = ExtendedTheme.colors.floorCard,
+    contentColor: Color = ExtendedTheme.colors.text,
     onClick: () -> Unit,
 ) {
     Box(

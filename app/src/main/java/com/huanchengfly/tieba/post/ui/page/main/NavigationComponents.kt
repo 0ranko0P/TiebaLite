@@ -33,7 +33,6 @@ import androidx.compose.material.NavigationRail
 import androidx.compose.material.NavigationRailItem
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -55,7 +54,6 @@ import androidx.compose.ui.util.fastForEachIndexed
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.White
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -265,7 +263,7 @@ fun NavigationRail(
 ) {
     NavigationRail(
         backgroundColor = ExtendedTheme.colors.bottomBar,
-        contentColor = ExtendedTheme.colors.unselected,
+        contentColor = ExtendedTheme.colors.primary,
         modifier = Modifier
             .fillMaxHeight()
             .statusBarsPadding(),
@@ -329,7 +327,7 @@ fun BottomNavigation(
         BottomNavigation(
             modifier = Modifier.navigationBarsPadding(),
             backgroundColor = Color.Transparent,
-            contentColor = contentColorFor(themeColors.bottomBar),
+            contentColor = themeColors.primary,
             elevation = 0.dp,
         ) {
             navigationItems.fastForEachIndexed { index, navigationItem ->
@@ -350,8 +348,6 @@ fun BottomNavigation(
                             atEnd = index == currentPosition
                         )
                     },
-                    selectedContentColor = MaterialTheme.colors.secondary,
-                    unselectedContentColor = themeColors.unselected,
                     alwaysShowLabel = false
                 )
             }
@@ -375,7 +371,7 @@ private fun NavIcon(modifier: Modifier = Modifier, item: NavigationItem, atEnd: 
             Text(
                 textAlign = TextAlign.Center,
                 fontSize = 10.sp,
-                color = White,
+                color = Color.White,
                 text = badge,
                 modifier = Modifier
                     .size(14.dp)

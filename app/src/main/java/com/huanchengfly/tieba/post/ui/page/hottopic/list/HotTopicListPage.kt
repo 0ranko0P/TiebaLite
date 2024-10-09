@@ -40,12 +40,11 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.topicList.NewTopicList
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.theme.OrangeA700
+import com.huanchengfly.tieba.post.theme.RedA700
+import com.huanchengfly.tieba.post.theme.YellowA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.OrangeA700
-import com.huanchengfly.tieba.post.ui.common.theme.compose.RedA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Shapes
-import com.huanchengfly.tieba.post.ui.common.theme.compose.White
-import com.huanchengfly.tieba.post.ui.common.theme.compose.Yellow
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
@@ -98,7 +97,7 @@ private fun TopicImage(
                     when (index) {
                         0 -> RedA700
                         1 -> OrangeA700
-                        2 -> Yellow
+                        2 -> YellowA700
                         else -> MaterialTheme.colors.onBackground.copy(ContentAlpha.medium)
                     }
                 )
@@ -122,7 +121,7 @@ private fun TopicBody(
                 2 -> Text(
                     text = stringResource(id = R.string.topic_tag_hot),
                     fontSize = 10.sp,
-                    color = White,
+                    color = Color.White,
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .background(RedA700)
@@ -132,7 +131,7 @@ private fun TopicBody(
                 1 -> Text(
                     text = stringResource(id = R.string.topic_tag_new),
                     fontSize = 10.sp,
-                    color = White,
+                    color = Color.White,
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .background(OrangeA700)

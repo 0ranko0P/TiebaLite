@@ -28,6 +28,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Card
+import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
@@ -261,6 +262,7 @@ fun EditProfileCard(
     color: Color = ExtendedTheme.colors.background,
 ) {
     val context = LocalContext.current
+    val disabledText = ExtendedTheme.colors.text.copy(ContentAlpha.disabled)
     Card(elevation = 0.dp, backgroundColor = color) {
         Column(
             modifier = Modifier
@@ -322,7 +324,7 @@ fun EditProfileCard(
 
                 Text(
                     text = stringResource(id = R.string.title_username),
-                    color = ExtendedTheme.colors.textDisabled,
+                    color = disabledText,
                     modifier = Modifier.constrainAs(nameTitle) {
                         top.linkTo(parent.top)
                         bottom.linkTo(nameContent.bottom)
@@ -331,7 +333,7 @@ fun EditProfileCard(
                 )
                 Text(
                     text = name,
-                    color = ExtendedTheme.colors.textDisabled,
+                    color = disabledText,
                     modifier = Modifier
                         .constrainAs(nameContent) {
                             top.linkTo(nameTitle.top)
@@ -345,7 +347,7 @@ fun EditProfileCard(
 
                 Text(
                     text = stringResource(id = R.string.title_nickname),
-                    color = ExtendedTheme.colors.textDisabled,
+                    color = disabledText,
                     modifier = Modifier.constrainAs(nickNameTitle) {
                         top.linkTo(nameTitle.bottom, margin = 16.dp)
                         start.linkTo(parent.start)
@@ -373,7 +375,7 @@ fun EditProfileCard(
 
                 Text(
                     text = stringResource(id = R.string.profile_sex),
-                    color = ExtendedTheme.colors.textDisabled,
+                    color = disabledText,
                     modifier = Modifier.constrainAs(sexTitle) {
                         top.linkTo(nickNameTitle.bottom, margin = 16.dp)
                         start.linkTo(parent.start)
@@ -417,7 +419,7 @@ fun EditProfileCard(
 
                 Text(
                     text = stringResource(id = R.string.title_intro),
-                    color = ExtendedTheme.colors.textDisabled,
+                    color = disabledText,
                     modifier = Modifier.constrainAs(introTitle) {
                         top.linkTo(sexTitle.bottom, margin = 16.dp)
                         start.linkTo(parent.start)

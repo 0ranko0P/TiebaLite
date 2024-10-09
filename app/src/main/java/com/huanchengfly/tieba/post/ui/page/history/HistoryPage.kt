@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
@@ -121,7 +122,7 @@ fun HistoryPage(
                                 }
                             },
                             selectedContentColor = ExtendedTheme.colors.onTopBar,
-                            unselectedContentColor = ExtendedTheme.colors.onTopBarSecondary
+                            unselectedContentColor = ExtendedTheme.colors.onTopBar.copy(ContentAlpha.medium)
                         )
                         Tab(
                             text = {
@@ -137,7 +138,7 @@ fun HistoryPage(
                                 }
                             },
                             selectedContentColor = ExtendedTheme.colors.onTopBar,
-                            unselectedContentColor = ExtendedTheme.colors.onTopBarSecondary
+                            unselectedContentColor = ExtendedTheme.colors.onTopBar.copy(ContentAlpha.medium)
                         )
                     }
                 }

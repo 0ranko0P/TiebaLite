@@ -74,7 +74,6 @@ fun ColorPickerDialog(
                 NegativeButton(
                     modifier = Modifier.align(Alignment.CenterStart),
                     text = stringResource(id = R.string.button_cancel),
-                    color = MaterialTheme.colors.primary,
                     onClick = this@Dialog::dismiss
                 )
 
@@ -162,7 +161,7 @@ private fun ColorHexTextFiled(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val border = BorderStroke(0.5.dp, Color.Black)
+        val border = BorderStroke(0.5.dp, MaterialTheme.colors.onSurface)
 
         // Color box for initial color
         Box(

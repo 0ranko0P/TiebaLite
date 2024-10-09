@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -90,7 +89,6 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -195,7 +193,7 @@ private fun SearchHistoryList(
             ) {
                 Text(
                     text = stringResource(id = R.string.tip_empty),
-                    color = ExtendedTheme.colors.textDisabled,
+                    color = ExtendedTheme.colors.textSecondary,
                     fontSize = 16.sp
                 )
             }
@@ -349,11 +347,8 @@ fun ForumSearchPostPage(
                             },
                             placeholder = {
                                 Text(
-                                    text = stringResource(
-                                        id = R.string.hint_search_in_ba,
-                                        forumName
-                                    ),
-                                    color = ExtendedTheme.colors.onTopBarSurface.copy(alpha = ContentAlpha.medium)
+                                    text = stringResource(R.string.hint_search_in_ba, forumName),
+                                    color = ExtendedTheme.colors.textSecondary
                                 )
                             },
                             prependIcon = {

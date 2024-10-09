@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.material.ContentAlpha
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
@@ -92,7 +93,7 @@ fun ForumTab(
                 )
             },
             selectedContentColor = ExtendedTheme.colors.onTopBar,
-            unselectedContentColor = ExtendedTheme.colors.onTopBarSecondary
+            unselectedContentColor = ExtendedTheme.colors.onTopBar.copy(ContentAlpha.medium)
         )
         Tab(
             selected = currentPage == TAB_FORUM_GOOD,
@@ -102,7 +103,7 @@ fun ForumTab(
                 }
             },
             selectedContentColor = ExtendedTheme.colors.onTopBar,
-            unselectedContentColor = ExtendedTheme.colors.onTopBarSecondary
+            unselectedContentColor = ExtendedTheme.colors.onTopBar.copy(ContentAlpha.medium)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

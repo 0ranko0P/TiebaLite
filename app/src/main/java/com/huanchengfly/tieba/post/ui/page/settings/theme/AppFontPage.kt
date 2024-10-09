@@ -202,15 +202,14 @@ private fun TextHintSlider(
 private fun ChatBubbleText(
     modifier: Modifier = Modifier,
     text: String,
-    color: Color = ExtendedTheme.colors.onAccent,
-    background: Color = ExtendedTheme.colors.accent,
+    color: Color = ExtendedTheme.colors.onPrimary,
+    background: Color = ExtendedTheme.colors.primary,
     fontSize: TextUnit
 ) {
     Text(
         text = text,
         modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
-            .background(background)
+            .background(color = background, shape = MaterialTheme.shapes.medium)
             .padding(8.dp),
         color = color,
         fontSize = fontSize
