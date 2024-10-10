@@ -169,7 +169,7 @@
     <string name="title_settings_default_sort_type">吧默认排序方式</string>
     <string name="toast_load_failed">加载失败</string>
     <string name="button_undo">撤销</string>
-    <string name="title_settings_follow_system_night">跟随系统夜间模式</string>
+    <string name="title_settings_night_mode">夜间模式设置</string>
     <string name="title_image_load_type_smart_origin">智能省流量</string>
     <string name="title_image_load_type_smart_load">智能无图</string>
     <string name="title_image_load_type_all_origin">始终高质量</string>
@@ -244,9 +244,10 @@
     <string name="btn_post">发贴</string>
     <string name="btn_refresh">刷新</string>
     <string name="btn_back_to_top">回到顶部</string>
-    <string name="message_dialog_follow_system_night">您已开启跟随系统夜间模式，手动切换日夜模式需要关闭跟随系统，确定要取消跟随吗？</string>
-    <string name="btn_keep_following">保持跟随</string>
-    <string name="btn_close_following">取消跟随</string>
+    <string name="message_find_tip">您可能在找</string>
+    <string name="summary_night_mode_always">始终使用夜间主题</string>
+    <string name="summary_night_mode_disabled">始终使用日间主题</string>
+    <string name="summary_night_mode_system">跟随系统夜间模式</string>
     <string name="title_ui_settings">界面设置</string>
     <string name="dark_color">深色</string>
     <string name="light_color">浅色</string>

@@ -14,18 +14,15 @@ import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.ui.widgets.VoicePlayerView
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.HandleBackUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlin.coroutines.CoroutineContext
 
 abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
     override val coroutineContext: CoroutineContext = lifecycleScope.coroutineContext
 
-    private var oldTheme: String = ""
-
     private var isActivityRunning = true
 
-    val appPreferences: AppPreferencesUtils by lazy { AppPreferencesUtils.getInstance(this) }
+    val appPreferences: AppPreferencesUtils by lazy { AppPreferencesUtils.getInstance(INSTANCE) }
 
     override fun onPause() {
         super.onPause()
@@ -81,13 +78,6 @@ abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
     override fun onResume() {
         super.onResume()
         isActivityRunning = true
-        if (appPreferences.followSystemNight) {
-            if (App.isSystemNight && !ThemeUtil.isNightMode()) {
-                ThemeUtil.switchToNightMode(this, false)
-            } else if (!App.isSystemNight && ThemeUtil.isNightMode()) {
-                ThemeUtil.switchFromNightMode(this, false)
-            }
-        }
     }
 
     override fun onDestroy() {

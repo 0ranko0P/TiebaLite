@@ -111,7 +111,7 @@
 
         <activity
             android:name=".MainActivityV2"
-            android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboard|navigation|keyboardHidden"
+            android:configChanges="uiMode|screenSize|screenLayout|orientation|smallestScreenSize|keyboard|navigation|keyboardHidden"
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_new"

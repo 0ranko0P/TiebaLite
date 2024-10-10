@@ -78,8 +78,6 @@ class AppPreferencesUtils private constructor(context: Context) {
 
         const val KEY_LIFT_BOTTOM_BAR = "ui_lift_bottom"
 
-        const val KEY_FOLLOW_SYSTEM_NIGHT = "follow_system_night"
-
         // 隐藏回贴入口
         const val KEY_REPLY_HIDE = "ui_reply_hide"
         const val KEY_REPLY_WARNING = "ui_reply_warning"
@@ -143,9 +141,6 @@ class AppPreferencesUtils private constructor(context: Context) {
     val blockVideo: Boolean
         get() = dataStore.getBoolean(KEY_POST_BLOCK_VIDEO, false)
 
-    val customPrimaryColor: Int
-        get() = dataStore.getInt(ThemeUtil.KEY_CUSTOM_PRIMARY_COLOR, 0)
-
     var toolbarPrimaryColor: Boolean
         get() = dataStore.getBoolean(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR, false)
         set(value) = dataStore.putBoolean(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR, value)
@@ -153,9 +148,9 @@ class AppPreferencesUtils private constructor(context: Context) {
     val doNotUsePhotoPicker: Boolean
         get() = dataStore.getBoolean(KEY_NO_NEW_PHOTO_PICKER, false)
 
-    var followSystemNight: Boolean
-        get() = dataStore.getBoolean(KEY_FOLLOW_SYSTEM_NIGHT, true)
-        set(value) = dataStore.putBoolean(KEY_FOLLOW_SYSTEM_NIGHT, value)
+    var darkMode: Int
+        get() = dataStore.getInt(ThemeUtil.KEY_DARK_THEME_MODE, ThemeUtil.DARK_MODE_FOLLOW_SYSTEM)
+        set(value) = dataStore.putInt(ThemeUtil.KEY_DARK_THEME_MODE, value)
 
     val fontScale: Float
         get() = dataStore.getFloat(KEY_FONT_SCALE, 1.0f)
@@ -194,10 +189,6 @@ class AppPreferencesUtils private constructor(context: Context) {
             }
             .distinctUntilChanged()
     }
-
-    var translucentPrimaryColor: Int
-        get() = dataStore.getInt(KEY_TRANSLUCENT_PRIMARY_COLOR, 0)
-        set(value) = dataStore.putInt(KEY_TRANSLUCENT_PRIMARY_COLOR, value)
 
     val useCustomTabs: Boolean
         get() = dataStore.getBoolean(KEY_WEB_VIEW_CUSTOM_TAB, true)

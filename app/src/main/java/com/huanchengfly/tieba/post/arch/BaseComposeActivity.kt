@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.arch
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -8,6 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
@@ -24,12 +28,16 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil
 
 abstract class BaseComposeActivity : BaseActivity() {
 
+    private var _nightMode by mutableStateOf(
+        ThemeUtil.shouldUseNightMode(appPreferences.darkMode)
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
-            TiebaLiteTheme {
+            TiebaLiteTheme(darkTheme = _nightMode) {
                 val systemUiController = rememberSystemUiController()
                 SideEffect {
                     systemUiController.apply {
@@ -72,6 +80,13 @@ abstract class BaseComposeActivity : BaseActivity() {
     @Composable
     abstract fun Content()
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        // Update night theme if needed
+        setNightMode(ThemeUtil.shouldUseNightMode(appPreferences.darkMode))
+    }
+
     fun handleCommonEvent(event: CommonUiEvent) {
         when (event) {
             is CommonUiEvent.Toast -> {
@@ -80,6 +95,11 @@ abstract class BaseComposeActivity : BaseActivity() {
 
             else -> {}
         }
+    }
+
+    // Expose night mode setter for settings page
+    fun setNightMode(nightMode: Boolean) {
+        if (_nightMode xor nightMode) _nightMode = nightMode
     }
 
     companion object {

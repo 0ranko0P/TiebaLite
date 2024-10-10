@@ -7,13 +7,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Brightness2
-import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.ColorLens
+import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.FontDownload
 import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.material.icons.outlined.Upcoming
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -22,11 +23,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
@@ -44,6 +48,7 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Destination
@@ -76,10 +81,34 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
         }
         prefsItem {
             ListPref(
+                key = intPreferencesKey(ThemeUtil.KEY_DARK_THEME_MODE),
+                title = R.string.title_settings_night_mode,
+                defaultValue = ThemeUtil.DARK_MODE_FOLLOW_SYSTEM,
+                onValueChange = { value ->
+                    // Notify changes manually instead of observe DataStore in Activity
+                    val activity = context.findActivity()?: return@ListPref
+                    (activity as BaseComposeActivity).setNightMode(ThemeUtil.shouldUseNightMode(value))
+                },
+                leadingIcon = Icons.Outlined.DarkMode,
+                options = persistentMapOf(
+                    ThemeUtil.DARK_MODE_ALWAYS to R.string.summary_night_mode_always,
+                    ThemeUtil.DARK_MODE_DISABLED to R.string.summary_night_mode_disabled,
+                    ThemeUtil.DARK_MODE_FOLLOW_SYSTEM to R.string.summary_night_mode_system
+                )
+            )
+        }
+
+        prefsItem {
+            val enabled by context.dataStore.data
+                .map { it[intPreferencesKey(ThemeUtil.KEY_DARK_THEME_MODE)] != ThemeUtil.DARK_MODE_DISABLED }
+                .collectAsState(true)
+
+            ListPref(
                 key = stringPreferencesKey(ThemeUtil.KEY_DARK_THEME),
                 title = R.string.settings_night_mode,
                 defaultValue = ThemeUtil.THEME_AMOLED_DARK,
                 leadingIcon = Icons.Outlined.Brightness2,
+                enabled = enabled,
                 options = persistentMapOf(
                     ThemeUtil.THEME_BLUE_DARK to R.string.theme_blue_dark,
                     ThemeUtil.THEME_GREY_DARK to R.string.theme_grey_dark,
@@ -146,14 +175,6 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                     }
                 )
             }
-        }
-        prefsItem {
-            SwitchPref(
-                key = AppPreferencesUtils.KEY_FOLLOW_SYSTEM_NIGHT,
-                title = R.string.title_settings_follow_system_night,
-                defaultChecked = true,
-                leadingIcon = Icons.Outlined.BrightnessAuto
-            )
         }
         prefsItem {
             SwitchPref(

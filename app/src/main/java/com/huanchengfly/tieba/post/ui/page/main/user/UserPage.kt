@@ -23,6 +23,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarHostState
+import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
@@ -31,6 +34,8 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,30 +51,30 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.placeholder.placeholder
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.BaseComposeActivity
+import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.AboutPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.AppThemePageDestination
+import com.huanchengfly.tieba.post.ui.page.destinations.CustomSettingsPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.HistoryPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SettingsPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadStorePageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
+import kotlinx.coroutines.launch
 
 @Composable
 private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
@@ -235,27 +240,17 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
     val navigator = LocalNavigator.current
     val isLoading by viewModel.isLoading
     val account = LocalAccount.current
-
-    val switchToNightDialogState = rememberDialogState()
-    val theme = ExtendedTheme.colors
-    ConfirmDialog(
-        dialogState = switchToNightDialogState,
-        onConfirm = {},
-        onCancel = {
-            context.appPreferences.followSystemNight = false
-            ThemeUtil.switchNightMode(theme)
-        },
-        confirmText = stringResource(id = R.string.btn_keep_following),
-        cancelText = stringResource(id = R.string.btn_close_following)
-    ) {
-        Text(text = stringResource(id = R.string.message_dialog_follow_system_night))
-    }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         backgroundColor = Color.Transparent,
         modifier = Modifier
             .statusBarsPadding()
-            .fillMaxSize()
+            .fillMaxSize(),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        }
     ) { contentPaddings ->
         val pullRefreshState = rememberPullRefreshState(isLoading, viewModel::onRefresh)
         Box(
@@ -323,19 +318,24 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                         navigator.navigate(AppThemePageDestination)
                     }
                 ) {
-                    Text(
-                        text = stringResource(id = R.string.my_info_night),
-                        color = ExtendedTheme.colors.textSecondary,
-                        fontSize = 12.sp,
-                    )
+                    Text(text = stringResource(id = R.string.my_info_night), fontSize = 12.sp)
                     Spacer(modifier = Modifier.width(16.dp))
                     Switch(
-                        checked = theme.isNightMode,
-                        onCheckedChange = {
-                            if (context.appPreferences.followSystemNight) {
-                                switchToNightDialogState.show()
-                            } else {
-                                ThemeUtil.switchNightMode(current = theme)
+                        checked = ExtendedTheme.colors.isNightMode,
+                        onCheckedChange = { checked ->
+                            context.findActivity()?.let {
+                                // Override night mode temporary
+                                (it as BaseComposeActivity).setNightMode(checked)
+                                // Show night mode settings tip
+                                coroutineScope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        context.getString(R.string.message_find_tip),
+                                        actionLabel = context.getString(R.string.title_settings_night_mode)
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        navigator.navigate(CustomSettingsPageDestination)
+                                    }
+                                }
                             }
                         }
                     )

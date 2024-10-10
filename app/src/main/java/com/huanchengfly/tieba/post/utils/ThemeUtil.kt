@@ -1,35 +1,20 @@
 package com.huanchengfly.tieba.post.utils
 
-import android.app.Activity
-import android.os.Build
 import android.view.View
-import androidx.annotation.ColorInt
-import androidx.annotation.StyleRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
-import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.activities.BaseActivity
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dataStoreScope
 import com.huanchengfly.tieba.post.getBoolean
-import com.huanchengfly.tieba.post.getString
-import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.theme.DarkGreyColors
 import com.huanchengfly.tieba.post.theme.DefaultColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 object ThemeUtil {
     val themeState: MutableState<ExtendedColors> = mutableStateOf(DefaultColors)
@@ -38,7 +23,14 @@ object ThemeUtil {
 
     const val KEY_THEME = "theme"
     const val KEY_DARK_THEME = "dark_theme"
-    const val KEY_OLD_THEME = "old_theme"
+
+    /**
+     * Dark mode preferences, Default mode is [DARK_MODE_FOLLOW_SYSTEM]
+     *
+     * @see shouldUseNightMode
+     * @see App.isSystemNight
+     * */
+    const val KEY_DARK_THEME_MODE = "dark_mode"
 
     const val KEY_CUSTOM_PRIMARY_COLOR = "custom_primary_color" // Int: Custom ARGB 主题色
     const val KEY_CUSTOM_STATUS_BAR_FONT_DARK = "custom_status_bar_font_dark"
@@ -60,42 +52,16 @@ object ThemeUtil {
     const val THEME_GREY_DARK = "grey_dark"
     const val THEME_AMOLED_DARK = "amoled_dark"
 
-    val dataStore: DataStore<Preferences>
-        get() = INSTANCE.dataStore
+    const val DARK_MODE_FOLLOW_SYSTEM = 1
+    const val DARK_MODE_ALWAYS = 2
+    const val DARK_MODE_DISABLED = 4
 
-    private fun getOldTheme(): String {
-        val oldTheme =
-            dataStore.getString(KEY_OLD_THEME, THEME_DEFAULT).takeUnless { isNightMode(it) }
-
-        return oldTheme ?: THEME_DEFAULT
-    }
-
-    fun switchTheme(newTheme: String, recordOldTheme: Boolean = true) {
+    fun switchTheme(newTheme: String) {
         dataStoreScope.launch {
-            dataStore.edit {
+            INSTANCE.dataStore.edit {
                 it[stringPreferencesKey(KEY_THEME)] = newTheme
             }
         }
-    }
-
-    fun switchNightMode(current: ExtendedColors) = MainScope().launch {
-        val data = dataStore.data.first()
-        val nightTheme = data[stringPreferencesKey(KEY_DARK_THEME)] ?: THEME_AMOLED_DARK
-        val theme = data[stringPreferencesKey(KEY_THEME)] ?: THEME_DEFAULT
-        if (current.isNightMode) {
-            switchTheme(theme)
-        } else {
-            switchTheme(nightTheme)
-        }
-    }
-
-    fun switchToNightMode(context: Activity, recreate: Boolean) {
-        switchTheme(dataStore.getString(KEY_DARK_THEME, THEME_AMOLED_DARK))
-    }
-
-    @JvmOverloads
-    fun switchFromNightMode(context: Activity, recreate: Boolean = true) {
-        switchTheme(getOldTheme(), recordOldTheme = false)
     }
 
     @JvmStatic
@@ -104,6 +70,14 @@ object ThemeUtil {
     @JvmStatic
     fun isNightMode(theme: String): Boolean {
         return theme.endsWith("dark")
+    }
+
+    fun shouldUseNightMode(darkMode: Int? = DARK_MODE_FOLLOW_SYSTEM): Boolean {
+        return when(darkMode) {
+            DARK_MODE_ALWAYS -> true
+            DARK_MODE_DISABLED -> false
+            else -> App.isSystemNight // Follow system night mode
+        }
     }
 
     @JvmStatic
