@@ -11,12 +11,13 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -78,16 +79,12 @@ fun launchUrl(
             )
         } else {
             if (context.appPreferences.useCustomTabs) {
+                val theme by ThemeUtil.themeState
                 val intentBuilder = CustomTabsIntent.Builder()
                     .setShowTitle(true)
                     .setDefaultColorSchemeParams(
                         CustomTabColorSchemeParams.Builder()
-                            .setToolbarColor(
-                                ThemeUtils.getColorByAttr(
-                                    context,
-                                    R.attr.colorToolbar
-                                )
-                            )
+                            .setToolbarColor(theme.topBar.toArgb())
                             .build()
                     )
                 try {

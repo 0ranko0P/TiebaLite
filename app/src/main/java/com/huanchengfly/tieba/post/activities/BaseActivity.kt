@@ -1,46 +1,25 @@
 package com.huanchengfly.tieba.post.activities
 
-import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
-import android.app.Activity
 import android.app.Dialog
-import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.content.res.Resources
-import android.graphics.Color
 import android.os.Bundle
-import android.text.TextUtils
 import android.util.DisplayMetrics
 import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
-import android.view.animation.AccelerateDecelerateInterpolator
-import android.widget.ImageView
-import android.widget.TextView
-import androidx.annotation.CallSuper
-import androidx.annotation.ColorInt
-import androidx.annotation.Keep
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
-import com.huanchengfly.tieba.post.ui.common.theme.interfaces.ExtraRefreshable
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.widgets.VoicePlayerView
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.HandleBackUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
-abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineScope {
-    val job = Job()
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main + job
+abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
+    override val coroutineContext: CoroutineContext = lifecycleScope.coroutineContext
 
     private var oldTheme: String = ""
 
@@ -88,43 +67,15 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
         VoicePlayerView.Manager.release()
     }
 
-    open val isNeedFixBg: Boolean = true
-    open val isNeedSetTheme: Boolean = true
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (isNeedFixBg) fixBackground()
         getDeviceDensity()
         INSTANCE.addActivity(this)
-        if (isNeedSetTheme) ThemeUtil.setTheme(this)
-        oldTheme = ThemeUtil.getRawTheme()
-        if (getLayoutId() != -1) {
-            setContentView(getLayoutId())
-        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         getDeviceDensity()
-    }
-
-    private fun fixBackground() {
-        val decor = window.decorView as ViewGroup
-        val decorChild = decor.getChildAt(0) as ViewGroup
-        decorChild.setBackgroundColor(Color.BLACK)
-    }
-
-    fun refreshUIIfNeed() {
-        if (TextUtils.equals(oldTheme, ThemeUtil.getRawTheme()) &&
-            ThemeUtil.THEME_CUSTOM != ThemeUtil.getRawTheme() &&
-            !ThemeUtil.isTranslucentTheme()
-        ) {
-            return
-        }
-        if (recreateIfNeed()) {
-            return
-        }
-        ThemeUtils.refreshUI(this, this)
     }
 
     override fun onResume() {
@@ -137,13 +88,11 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
                 ThemeUtil.switchFromNightMode(this, false)
             }
         }
-        refreshUIIfNeed()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         INSTANCE.removeActivity(this)
-        job.cancel()
     }
 
     fun exitApplication() {
@@ -168,9 +117,6 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
         }
     }
 
-    open fun setTitle(newTitle: String?) {}
-    open fun setSubTitle(newTitle: String?) {}
-
     private fun getDeviceDensity() {
         val metrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(metrics)
@@ -182,73 +128,5 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
         App.ScreenInfo.DENSITY = metrics.density
         App.ScreenInfo.SCREEN_HEIGHT = (height / density).toInt()
         App.ScreenInfo.SCREEN_WIDTH = (width / density).toInt()
-    }
-
-    protected fun colorAnim(view: ImageView, vararg value: Int): ValueAnimator {
-        val animator: ValueAnimator =
-            ObjectAnimator.ofArgb(ImageViewAnimWrapper(view), "tint", *value)
-        animator.duration = 150
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        return animator
-    }
-
-    protected fun colorAnim(view: TextView, vararg value: Int): ValueAnimator {
-        val animator: ValueAnimator =
-            ObjectAnimator.ofArgb(TextViewAnimWrapper(view), "textColor", *value)
-        animator.duration = 150
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        return animator
-    }
-
-    @CallSuper
-    override fun refreshGlobal(activity: Activity) {
-        oldTheme = ThemeUtil.getRawTheme()
-    }
-
-    private fun recreateIfNeed(): Boolean {
-        if (ThemeUtil.isNightMode() && !ThemeUtil.isNightMode(oldTheme) ||
-            !ThemeUtil.isNightMode() && ThemeUtil.isNightMode(oldTheme)
-        ) {
-            recreate()
-            return true
-        }
-        if (oldTheme.contains(ThemeUtil.THEME_TRANSLUCENT) &&
-            !ThemeUtil.isTranslucentTheme() || ThemeUtil.isTranslucentTheme() &&
-            !oldTheme.contains(ThemeUtil.THEME_TRANSLUCENT)
-        ) {
-            recreate()
-            return true
-        }
-        return false
-    }
-
-    override fun refreshSpecificView(view: View) {}
-
-    @Keep
-    protected class TextViewAnimWrapper(private val mTarget: TextView) {
-        @get:ColorInt
-        var textColor: Int
-            get() = mTarget.currentTextColor
-            set(color) {
-                mTarget.setTextColor(color)
-            }
-    }
-
-    @Keep
-    protected class ImageViewAnimWrapper(private val mTarget: ImageView) {
-        var tint: Int
-            get() = if (mTarget.imageTintList != null) mTarget.imageTintList!!.defaultColor else 0x00000000
-            set(color) {
-                mTarget.imageTintList = ColorStateList.valueOf(color)
-            }
-    }
-
-    open fun getLayoutId(): Int = -1
-
-    fun launchIO(
-        start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend CoroutineScope.() -> Unit
-    ): Job {
-        return launch(Dispatchers.IO + job, start, block)
     }
 }

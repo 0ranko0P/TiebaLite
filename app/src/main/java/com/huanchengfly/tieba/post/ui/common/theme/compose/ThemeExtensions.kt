@@ -4,35 +4,35 @@ import androidx.compose.ui.graphics.Color
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 
 val ExtendedColors.pullRefreshIndicator: Color
-    get() = if (ThemeUtil.isTranslucentTheme(theme)) {
+    get() = if (ThemeUtil.isTranslucentTheme(this)) {
         windowBackground
     } else {
         indicator
     }
 
 val ExtendedColors.loadMoreIndicator: Color
-    get() = if (ThemeUtil.isTranslucentTheme(theme)) {
+    get() = if (ThemeUtil.isTranslucentTheme(this)) {
         windowBackground
     } else {
         indicator
     }
 
 val ExtendedColors.threadBottomBar: Color
-    get() = if (ThemeUtil.isTranslucentTheme(theme)) {
+    get() = if (ThemeUtil.isTranslucentTheme(this)) {
         windowBackground
     } else {
         bottomBar
     }
 
 val ExtendedColors.menuBackground: Color
-    get() = if (ThemeUtil.isTranslucentTheme(theme)) {
+    get() = if (ThemeUtil.isTranslucentTheme(this)) {
         windowBackground
     } else {
         card
     }
 
 val ExtendedColors.invertChipBackground: Color
-    get() = if (ThemeUtil.isNightMode(theme)) primary.copy(alpha = 0.3f) else primary
+    get() = if (this.isNightMode) primary.copy(alpha = 0.3f) else primary
 
 val ExtendedColors.invertChipContent: Color
-    get() = if (ThemeUtil.isNightMode(theme)) primary else onPrimary
+    get() = if (this.isNightMode) primary else onPrimary

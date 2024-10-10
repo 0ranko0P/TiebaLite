@@ -3,9 +3,12 @@ package com.huanchengfly.tieba.post.utils
 import android.app.Activity
 import android.os.Build
 import android.view.View
+import androidx.annotation.ColorInt
 import androidx.annotation.StyleRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -19,6 +22,8 @@ import com.huanchengfly.tieba.post.dataStoreScope
 import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.getString
 import com.huanchengfly.tieba.post.putBoolean
+import com.huanchengfly.tieba.post.theme.DarkGreyColors
+import com.huanchengfly.tieba.post.theme.DefaultColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import kotlinx.coroutines.MainScope
@@ -27,29 +32,22 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 object ThemeUtil {
-    val themeState: MutableState<String> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
-        mutableStateOf(
-            if (App.isInitialized) dataStore.getString(KEY_THEME, THEME_DEFAULT)
-            else THEME_DEFAULT
-        )
-    }
+    val themeState: MutableState<ExtendedColors> = mutableStateOf(DefaultColors)
 
     const val TAG = "ThemeUtil"
 
     const val KEY_THEME = "theme"
     const val KEY_DARK_THEME = "dark_theme"
     const val KEY_OLD_THEME = "old_theme"
-    const val KEY_USE_DYNAMIC_THEME = "useDynamicColorTheme"
 
     const val KEY_CUSTOM_PRIMARY_COLOR = "custom_primary_color" // Int: Custom ARGB 主题色
     const val KEY_CUSTOM_STATUS_BAR_FONT_DARK = "custom_status_bar_font_dark"
     const val KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR = "custom_toolbar_primary_color" // Bool: 顶栏跟随主题色
 
     const val KEY_TRANSLUCENT_BACKGROUND_FILE = "translucent_background_path"
-    const val THEME_TRANSLUCENT = "translucent"
+
     const val THEME_TRANSLUCENT_LIGHT = "translucent_light"
     const val THEME_TRANSLUCENT_DARK = "translucent_dark"
-
     const val THEME_CUSTOM = "custom"
     const val THEME_DYNAMIC = "dynamic"
     const val THEME_DEFAULT = "tieba"
@@ -65,14 +63,6 @@ object ThemeUtil {
     val dataStore: DataStore<Preferences>
         get() = INSTANCE.dataStore
 
-    private fun refreshUI(activity: Activity?) {
-        if (activity is BaseActivity) {
-            activity.refreshUIIfNeed()
-            return
-        }
-        ThemeUtils.refreshUI(activity)
-    }
-
     private fun getOldTheme(): String {
         val oldTheme =
             dataStore.getString(KEY_OLD_THEME, THEME_DEFAULT).takeUnless { isNightMode(it) }
@@ -83,23 +73,10 @@ object ThemeUtil {
     fun switchTheme(newTheme: String, recordOldTheme: Boolean = true) {
         dataStoreScope.launch {
             dataStore.edit {
-                if (recordOldTheme) {
-                    val oldTheme = getRawTheme()
-                    if (!isNightMode(oldTheme)) {
-                        it[stringPreferencesKey(KEY_OLD_THEME)] = oldTheme
-                    }
-                }
                 it[stringPreferencesKey(KEY_THEME)] = newTheme
             }
-            themeState.value = newTheme
         }
     }
-
-    fun setUseDynamicTheme(useDynamicTheme: Boolean) {
-        dataStore.putBoolean(KEY_USE_DYNAMIC_THEME, useDynamicTheme)
-    }
-
-    fun isUsingDynamicTheme(): Boolean = dataStore.getBoolean(KEY_USE_DYNAMIC_THEME, false)
 
     fun switchNightMode(current: ExtendedColors) = MainScope().launch {
         val data = dataStore.data.first()
@@ -114,60 +91,35 @@ object ThemeUtil {
 
     fun switchToNightMode(context: Activity, recreate: Boolean) {
         switchTheme(dataStore.getString(KEY_DARK_THEME, THEME_AMOLED_DARK))
-        if (recreate) {
-            refreshUI(context)
-        }
     }
 
     @JvmOverloads
     fun switchFromNightMode(context: Activity, recreate: Boolean = true) {
         switchTheme(getOldTheme(), recordOldTheme = false)
-        if (recreate) {
-            refreshUI(context)
-        }
     }
 
     @JvmStatic
-    fun isNightMode(): Boolean {
-        return isNightMode(getRawTheme())
-    }
+    fun isNightMode(): Boolean = getRawTheme().isNightMode
 
     @JvmStatic
     fun isNightMode(theme: String): Boolean {
-        return theme.lowercase(Locale.getDefault()).contains("dark") && !theme.contains(
-            THEME_TRANSLUCENT,
-            ignoreCase = true
-        )
-    }
-
-    fun isTranslucentTheme(): Boolean {
-        return isTranslucentTheme(getRawTheme())
+        return theme.endsWith("dark")
     }
 
     @JvmStatic
-    fun isTranslucentTheme(theme: String): Boolean {
-        return theme.equals(
-            THEME_TRANSLUCENT,
-            ignoreCase = true
-        ) || theme.contains(
-            THEME_TRANSLUCENT,
-            ignoreCase = true
-        )
+    fun isTranslucentTheme(theme: ExtendedColors = getRawTheme()): Boolean {
+        return theme.theme == THEME_TRANSLUCENT_LIGHT || theme.theme == THEME_TRANSLUCENT_DARK
     }
 
-    fun isDynamicTheme(theme: String): Boolean {
-        return theme.endsWith("_dynamic")
-    }
-
-    fun isStatusBarFontDark(theme: String = getRawTheme()): Boolean {
+    fun isStatusBarFontDark(theme: ExtendedColors = getRawTheme()): Boolean {
         val dataStore = INSTANCE.dataStore
         val isToolbarPrimaryColor: Boolean = INSTANCE.appPreferences.toolbarPrimaryColor
-        return if (theme == THEME_CUSTOM) {
+        return if (theme.theme == THEME_CUSTOM) {
             dataStore.getBoolean(KEY_CUSTOM_STATUS_BAR_FONT_DARK, false)
         } else if (isTranslucentTheme(theme)) {
-            theme.contains("dark", ignoreCase = true)
+            theme.isNightMode
         } else if (!isToolbarPrimaryColor) {
-            !isNightMode(theme)
+            !theme.isNightMode
         } else {
             false
         }
@@ -175,30 +127,6 @@ object ThemeUtil {
 
     fun isNavigationBarFontDark(): Boolean {
         return !isNightMode()
-    }
-
-    fun setTheme(context: Activity) {
-        val nowTheme = getCurrentTheme()
-        context.setTheme(getThemeByName(nowTheme))
-    }
-
-    @JvmOverloads
-    fun getCurrentTheme(
-        theme: String = getRawTheme(),
-        checkDynamic: Boolean = false,
-    ): String {
-        var nowTheme = theme
-        if (isTranslucentTheme(nowTheme)) {
-            val isDarkTranslucent = nowTheme == THEME_TRANSLUCENT_DARK
-            nowTheme = if (isDarkTranslucent) {
-                THEME_TRANSLUCENT_DARK
-            } else {
-                THEME_TRANSLUCENT_LIGHT
-            }
-        } else if (checkDynamic && isUsingDynamicTheme() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            nowTheme = "${nowTheme}_dynamic"
-        }
-        return nowTheme
     }
 
     @JvmStatic
@@ -210,30 +138,7 @@ object ThemeUtil {
             return
         }
         view.backgroundTintList = null
-        view.setBackgroundColor(
-            ThemeUtils.getColorById(
-                view.context,
-                R.color.theme_color_card_grey_dark
-            )
-        )
-    }
-
-    @StyleRes
-    private fun getThemeByName(themeName: String): Int {
-        return when (themeName.lowercase(Locale.getDefault())) {
-            THEME_TRANSLUCENT, THEME_TRANSLUCENT_LIGHT -> R.style.TiebaLite_Translucent_Light
-            THEME_TRANSLUCENT_DARK -> R.style.TiebaLite_Translucent_Dark
-            THEME_DEFAULT -> R.style.TiebaLite_Tieba
-            THEME_BLACK -> R.style.TiebaLite_Black
-            THEME_PURPLE -> R.style.TiebaLite_Purple
-            THEME_PINK -> R.style.TiebaLite_Pink
-            THEME_RED -> R.style.TiebaLite_Red
-            THEME_BLUE_DARK -> R.style.TiebaLite_Dark_Blue
-            THEME_GREY_DARK -> R.style.TiebaLite_Dark_Grey
-            THEME_AMOLED_DARK -> R.style.TiebaLite_Dark_Amoled
-            THEME_CUSTOM -> R.style.TiebaLite_Custom
-            else -> R.style.TiebaLite_Tieba
-        }
+        view.setBackgroundColor(DarkGreyColors.card.toArgb())
     }
 
     @JvmStatic

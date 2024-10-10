@@ -32,11 +32,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.theme.TiebaBlue
 import kotlinx.collections.immutable.persistentListOf
 
 // TiebaBlue + Purple
 val TiebaBackgorundColors by lazy {
-    persistentListOf(Color(0xFF4477E0), Color.White, Color(0xff64029e))
+    persistentListOf(TiebaBlue, Color.White, Color(0xFF64029E))
 }
 
 @Composable

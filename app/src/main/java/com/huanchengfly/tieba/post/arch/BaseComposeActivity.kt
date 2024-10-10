@@ -23,8 +23,6 @@ import com.huanchengfly.tieba.post.utils.LocalAccountProvider
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 
 abstract class BaseComposeActivity : BaseActivity() {
-    override val isNeedFixBg: Boolean = false
-    override val isNeedSetTheme: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

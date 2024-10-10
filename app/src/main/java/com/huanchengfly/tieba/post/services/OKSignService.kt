@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
@@ -17,10 +19,10 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.models.SignDataBean
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ProgressListener
 import com.huanchengfly.tieba.post.utils.SingleAccountSigner
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.extension.addFlag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,6 +93,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
 
     private fun buildNotification(title: String, text: String?): NotificationCompat.Builder {
         createNotificationChannel()
+        val theme by ThemeUtil.themeState
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setForegroundServiceBehavior(FOREGROUND_SERVICE_IMMEDIATE)
             .setContentText(text)
@@ -99,7 +102,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
             .setSmallIcon(R.drawable.ic_oksign)
             .setAutoCancel(true)
             .setStyle(NotificationCompat.BigTextStyle())
-            .setColor(ThemeUtils.getColorByAttr(this, R.attr.colorPrimary))
+            .setColor(theme.primary.toArgb())
     }
 
     private fun updateNotification(title: String, text: String, intent: Intent?) {

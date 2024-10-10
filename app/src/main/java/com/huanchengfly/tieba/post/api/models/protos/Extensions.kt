@@ -1,7 +1,7 @@
 package com.huanchengfly.tieba.post.api.models.protos
 
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.SpanStyle
@@ -17,12 +17,12 @@ import com.huanchengfly.tieba.post.ui.common.PureTextContentRender
 import com.huanchengfly.tieba.post.ui.common.TextContentRender.Companion.appendText
 import com.huanchengfly.tieba.post.ui.common.VideoContentRender
 import com.huanchengfly.tieba.post.ui.common.VoiceContentRender
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -222,6 +222,9 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
         }
         // 富文本 Render
         val renders = mutableListOf<PbContentRender>()
+        val currentTheme by ThemeUtil.themeState
+        val highLightStyle = SpanStyle(color = currentTheme.primary)
+
         forEach {
             when (it.type) {
                 0, 9, 27 -> {
@@ -232,16 +235,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                     val text = buildAnnotatedString {
                         appendInlineContent("link_icon", alternateText = "🔗")
                         withAnnotation(tag = "url", annotation = it.link) {
-                            withStyle(
-                                SpanStyle(
-                                    color = Color(
-                                        ThemeUtils.getColorByAttr(
-                                            App.INSTANCE,
-                                            R.attr.colorNewPrimary
-                                        )
-                                    )
-                                )
-                            ) {
+                            withStyle(highLightStyle) {
                                 append(it.text)
                             }
                         }
@@ -277,16 +271,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                 4 -> {
                     val text = buildAnnotatedString {
                         withAnnotation(tag = "user", annotation = "${it.uid}") {
-                            withStyle(
-                                SpanStyle(
-                                    color = Color(
-                                        ThemeUtils.getColorByAttr(
-                                            App.INSTANCE,
-                                            R.attr.colorNewPrimary
-                                        )
-                                    )
-                                )
-                            ) {
+                            withStyle(highLightStyle) {
                                 append(it.text)
                             }
                         }
@@ -311,16 +296,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                         val text = buildAnnotatedString {
                             appendInlineContent("video_icon", alternateText = "🎥")
                             withAnnotation(tag = "url", annotation = it.text) {
-                                withStyle(
-                                    SpanStyle(
-                                        color = Color(
-                                            ThemeUtils.getColorByAttr(
-                                                App.INSTANCE,
-                                                R.attr.colorNewPrimary
-                                            )
-                                        )
-                                    )
-                                ) {
+                                withStyle(highLightStyle) {
                                     append(App.INSTANCE.getString(R.string.tag_video))
                                     append(it.text)
                                 }
@@ -383,16 +359,12 @@ val User.bawuType: String?
 @OptIn(ExperimentalTextApi::class)
 fun SubPostList.getContentText(threadAuthorId: Long? = null): AnnotatedString {
     val context = App.INSTANCE
-    val accentColor = Color(ThemeUtils.getColorByAttr(context, R.attr.colorNewPrimary))
+    val currentTheme by ThemeUtil.themeState
+    val userNameStyle = SpanStyle(color = currentTheme.primary, fontWeight = FontWeight.Bold)
 
     val userNameString = buildAnnotatedString {
         withAnnotation("user", "${author?.id}") {
-            withStyle(
-                SpanStyle(
-                    color = accentColor,
-                    fontWeight = FontWeight.Bold
-                )
-            ) {
+            withStyle(userNameStyle) {
                 append(
                     StringUtil.getUserNameString(context, author?.name ?: "", author?.nameShow)
                 )

@@ -129,8 +129,6 @@
 -keep class com.huanchengfly.tieba.post.models.** { *; }
 -keep class com.huanchengfly.tieba.post.api.models.** { *; }
 
--keep public class com.huanchengfly.tieba.post.utils.TiebaLiteJavaScript { *; }
-
 -dontwarn com.yanzhenjie.permission.**
 
 -keep public class * implements com.bumptech.glide.module.GlideModule
@@ -188,7 +186,6 @@
 # Retrofit
 -dontwarn retrofit2.**
 -keep class retrofit2.** { *; }
--keep class com.alibaba.android.vlayout.ExposeLinearLayoutManagerEx { *; }
 -keep class androidx.recyclerview.widget.RecyclerView$LayoutManager { *; }
 -keep class androidx.recyclerview.widget.RecyclerView$LayoutParams { *; }
 -keep class androidx.recyclerview.widget.RecyclerView$ViewHolder { *; }

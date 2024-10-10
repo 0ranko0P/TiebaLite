@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +77,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.compose.launchActivityForResult
@@ -337,29 +339,15 @@ open class MyWebViewClient(
                     false
                 else {
                     if (context.appPreferences.useCustomTabs) {
+                        val theme = ThemeUtil.getRawTheme()
                         runCatching {
                             CustomTabsIntent.Builder()
                                 .setShowTitle(true)
                                 .setDefaultColorSchemeParams(
                                     CustomTabColorSchemeParams.Builder()
-                                        .setToolbarColor(
-                                            ThemeUtils.getColorByAttr(
-                                                context,
-                                                R.attr.colorToolbar
-                                            )
-                                        )
-                                        .setNavigationBarColor(
-                                            ThemeUtils.getColorByAttr(
-                                                context,
-                                                R.attr.colorNavBar
-                                            )
-                                        )
-                                        .setNavigationBarDividerColor(
-                                            ThemeUtils.getColorByAttr(
-                                                context,
-                                                R.attr.colorDivider
-                                            )
-                                        )
+                                        .setToolbarColor(theme.topBar.toArgb())
+                                        .setNavigationBarColor(theme.bottomBar.toArgb())
+                                        .setNavigationBarDividerColor(theme.divider.toArgb())
                                         .build()
                                 )
                                 .build()

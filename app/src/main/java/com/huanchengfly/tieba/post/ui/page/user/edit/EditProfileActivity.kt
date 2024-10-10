@@ -1,16 +1,14 @@
 package com.huanchengfly.tieba.post.ui.page.user.edit
 
-import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.ColorInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,6 +34,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -47,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -57,19 +57,20 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.lifecycleScope
-import com.bumptech.glide.Glide
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.activities.UCropActivity
+import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUCropResult
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.theme.TiebaBlue
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BaseTextField
@@ -80,9 +81,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.ColorUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
+import com.huanchengfly.tieba.post.utils.PickMediasResult
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.registerPickMediasLauncher
 import com.huanchengfly.tieba.post.utils.requestPermission
@@ -90,86 +91,40 @@ import com.huanchengfly.tieba.post.utils.shouldUsePhotoPicker
 import com.yalantis.ucrop.UCrop
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import java.io.File
 
 @AndroidEntryPoint
 class EditProfileActivity : BaseComposeActivity() {
-    private val uCropLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == Activity.RESULT_OK) {
-                viewModel.send(EditProfileIntent.UploadPortrait(File(cacheDir, "cropped_portrait")))
-            } else if (it.resultCode == UCrop.RESULT_ERROR) {
-                val cropError = UCrop.getError(it.data!!)
-                cropError!!.printStackTrace()
-            }
+    private var theme: ExtendedColors? = null
+
+    private val portraitFile: File by lazy { File(cacheDir, "cropped_portrait") }
+
+    private val uCropLauncher = registerUCropResult {
+        val result: Result<Uri> = it ?: return@registerUCropResult // Canceled
+        if (result.isSuccess) {
+            viewModel.send(EditProfileIntent.UploadPortrait(portraitFile))
+        } else {
+            val error = result.exceptionOrNull()?.message ?: getString(R.string.error_unknown)
+            toastShort(error)
         }
+    }
 
-    private val pickMediasLauncher =
-        registerPickMediasLauncher { (_, uris) ->
-            if (uris.isNotEmpty()) {
-                val sourceUri = uris[0]
-                Glide.with(this)
-                    .asFile()
-                    .load(sourceUri)
-                    .into(object : CustomTarget<File>() {
-                        override fun onLoadCleared(placeholder: Drawable?) {}
+    private val pickMediasLauncher = registerPickMediasLauncher { result: PickMediasResult ->
+        val sourceUri = result.uris.firstOrNull()?: return@registerPickMediasLauncher
+        lifecycleScope.launch {
+            delay(240L) // Wait exit animation of MediaPicker Activity
 
-                        override fun onResourceReady(
-                            resource: File,
-                            transition: Transition<in File>?
-                        ) {
-                            val sourceFileUri = Uri.fromFile(resource)
-                            val destUri = Uri.fromFile(File(cacheDir, "cropped_portrait"))
-                            val intent = UCrop.of(sourceFileUri, destUri)
-                                .withAspectRatio(1f, 1f)
-                                .withOptions(UCrop.Options().apply {
-                                    setShowCropFrame(true)
-                                    setShowCropGrid(true)
-                                    setStatusBarColor(
-                                        ColorUtils.getDarkerColor(
-                                            ThemeUtils.getColorByAttr(
-                                                this@EditProfileActivity,
-                                                R.attr.colorPrimary
-                                            )
-                                        )
-                                    )
-                                    setToolbarColor(
-                                        ThemeUtils.getColorByAttr(
-                                            this@EditProfileActivity,
-                                            R.attr.colorPrimary
-                                        )
-                                    )
-                                    setToolbarWidgetColor(
-                                        ThemeUtils.getColorByAttr(
-                                            this@EditProfileActivity,
-                                            R.attr.colorTextOnPrimary
-                                        )
-                                    )
-                                    setActiveControlsWidgetColor(
-                                        ThemeUtils.getColorByAttr(
-                                            this@EditProfileActivity,
-                                            R.attr.colorAccent
-                                        )
-                                    )
-                                    setLogoColor(
-                                        ThemeUtils.getColorByAttr(
-                                            this@EditProfileActivity,
-                                            R.attr.colorPrimary
-                                        )
-                                    )
-                                    setCompressionFormat(Bitmap.CompressFormat.JPEG)
-                                }
-                                )
-                                .getIntent(this@EditProfileActivity)
-                            uCropLauncher.launch(intent)
-                        }
-                    })
-            }
-            }
+            // Launch UCropActivity now
+            val primaryColor = (theme?.primary?: TiebaBlue).toArgb()
+            uCropLauncher.launch(buildUCropOptions(sourceUri, primaryColor))
+        }
+    }
 
     private val viewModel: EditProfileViewModel by viewModels()
 
@@ -193,6 +148,11 @@ class EditProfileActivity : BaseComposeActivity() {
     @Composable
     override fun Content() {
         PageEditProfile(viewModel, onBackPressed = { onBackPressed() })
+
+        val localTheme = LocalExtendedColors.current
+        SideEffect {
+            theme = localTheme
+        }
     }
 
     private fun handleEvent(event: EditProfileEvent) {
@@ -241,6 +201,26 @@ class EditProfileActivity : BaseComposeActivity() {
             is EditProfileEvent.UploadPortrait.Fail -> toastShort(event.error)
             is EditProfileEvent.UploadPortrait.Success -> toastShort(event.message)
         }
+    }
+
+    /**
+     * @return UCrop to launch [UCropActivity]
+     * */
+    private fun buildUCropOptions(sourceUri: Uri, @ColorInt primaryColor: Int): UCrop {
+        val destUri = Uri.fromFile(portraitFile)
+        return UCrop.of(sourceUri, destUri)
+            .withAspectRatio(1f, 1f)
+            .withOptions(UCrop.Options().apply {
+                setShowCropFrame(true)
+                setShowCropGrid(true)
+                setStatusBarColor(primaryColor)
+                setToolbarColor(primaryColor)
+                setToolbarWidgetColor(Color.White.toArgb())
+                setActiveControlsWidgetColor(primaryColor)
+                setLogoColor(primaryColor)
+                setCompressionFormat(Bitmap.CompressFormat.JPEG)
+            }
+            )
     }
 }
 

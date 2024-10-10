@@ -12,12 +12,14 @@ import android.content.Intent.ACTION_VIEW
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.MsgBean
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -127,6 +129,7 @@ class NotifyJobService : JobService() {
         channelName: String,
         intent: Intent
     ) {
+        val theme by ThemeUtil.themeState
         val notification = NotificationCompat.Builder(this, channel)
             .setSubText(channelName)
             .setContentText(getString(R.string.tip_touch_to_view))
@@ -143,7 +146,7 @@ class NotifyJobService : JobService() {
                     pendingIntentFlagImmutable()
                 )
             )
-            .setColor(ThemeUtils.getColorByAttr(this, R.attr.colorPrimary))
+            .setColor(theme.primary.toArgb())
             .build()
         notificationManager!!.notify(id, notification)
     }

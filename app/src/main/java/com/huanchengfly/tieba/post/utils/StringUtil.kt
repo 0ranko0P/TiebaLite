@@ -5,6 +5,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.text.Spannable
 import android.text.SpannableString
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
@@ -78,11 +79,10 @@ object StringUtil {
         context: Context = App.INSTANCE,
     ): AnnotatedString {
         return buildAnnotatedString {
+            val theme by ThemeUtil.themeState
             withAnnotation(tag = "user", annotation = userId) {
                 withStyle(
-                    SpanStyle(
-                        color = Color(ThemeUtils.getColorByAttr(context, R.attr.colorNewPrimary))
-                    )
+                    SpanStyle(color = theme.primary)
                 ) {
                     append("@")
                     append(getUserNameString(context, username, nickname))

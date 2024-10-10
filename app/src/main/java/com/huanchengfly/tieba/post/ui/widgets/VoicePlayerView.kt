@@ -20,6 +20,8 @@ import android.widget.TextView
 import androidx.annotation.IntDef
 import androidx.annotation.OptIn
 import androidx.appcompat.widget.PopupMenu
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -36,10 +38,10 @@ import com.airbnb.lottie.model.KeyPath
 import com.airbnb.lottie.value.LottieValueCallback
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ColorStateListUtils
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.utils.DisplayUtil
 import com.huanchengfly.tieba.post.utils.FileUtil
 import com.huanchengfly.tieba.post.utils.PopupUtil
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import java.io.IOException
 import java.util.Timer
 import java.util.TimerTask
@@ -107,12 +109,8 @@ class VoicePlayerView @JvmOverloads constructor(
     }
 
     private fun initView() {
-        backgroundTintList = ColorStateList.valueOf(
-            ThemeUtils.getColorByAttr(
-                context,
-                R.attr.colorAccent
-            )
-        )
+        val theme by ThemeUtil.themeState
+        backgroundTintList = ColorStateList.valueOf(theme.primary.toArgb())
         setBackgroundResource(R.drawable.bg_audio)
         setOnClickListener(this)
         setOnLongClickListener(this)
