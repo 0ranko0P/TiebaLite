@@ -1,19 +1,13 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.HideSource
 import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
@@ -38,11 +32,7 @@ fun BlockSettingsPage(navigator: DestinationsNavigator) {
         },
     ) { paddingValues ->
         PrefsScreen(
-            dataStore = LocalContext.current.dataStore,
-            dividerThickness = 0.dp,
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
+            contentPadding = paddingValues
         ) {
             prefsItem {
                 TextPref(

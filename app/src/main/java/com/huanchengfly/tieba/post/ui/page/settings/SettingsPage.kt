@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Scaffold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DashboardCustomize
@@ -13,11 +12,8 @@ import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
@@ -82,14 +78,8 @@ fun SettingsPage(
                     navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) }
                 )
             }
-        ) {
-            PrefsScreen(
-                dataStore = LocalContext.current.dataStore,
-                dividerThickness = 0.dp,
-                modifier = Modifier
-                    .padding(it)
-                    .fillMaxSize(),
-            ) {
+        ) { paddingValues ->
+            PrefsScreen(contentPadding = paddingValues) {
                 prefsItem {
                     NowAccountItem(account = LocalAccount.current)
                 }

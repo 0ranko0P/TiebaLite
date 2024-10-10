@@ -53,7 +53,7 @@ fun TextPref(
     enabled: Boolean = onClick != null,
     trailingContent: @Composable (RowScope.() -> Unit)? = null
 ) {
-    val alpha = if (onClick != null) 0.9f else ContentAlpha.disabled
+    val alpha = if (enabled) 0.9f else ContentAlpha.disabled
 
     CompositionLocalProvider(LocalContentAlpha provides alpha) {
         val textColor = LocalContentColor.current.copy(LocalContentAlpha.current)

@@ -1,7 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
@@ -17,16 +15,12 @@ import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material.icons.rounded.UnfoldLess
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.ImageUploader
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
@@ -56,11 +50,7 @@ fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
     },
 ) { paddingValues ->
     PrefsScreen(
-        dataStore = LocalContext.current.dataStore,
-        dividerThickness = 0.dp,
-        modifier = Modifier
-            .padding(paddingValues)
-            .fillMaxSize(),
+        contentPadding = paddingValues
     ) {
         prefsItem {
             ListPref(

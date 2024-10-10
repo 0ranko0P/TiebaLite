@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.settings
 
 import android.os.Build
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
@@ -26,7 +25,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.depend
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
@@ -59,14 +57,10 @@ fun OKSignSettingsPage(navigator: DestinationsNavigator) {
         }
     ) { paddingValues ->
         val context = LocalContext.current
-        val dataStore = context.dataStore
         val snackbarHostState = LocalSnackbarHostState.current
+
         PrefsScreen(
-            dataStore = dataStore,
-            dividerThickness = 0.dp,
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
+            contentPadding = paddingValues
         ) {
             prefsItem {
                 SwitchPref(

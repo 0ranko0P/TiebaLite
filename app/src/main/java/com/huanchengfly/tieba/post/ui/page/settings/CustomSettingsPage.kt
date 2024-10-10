@@ -1,8 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
 import android.os.Build
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apps
@@ -22,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -64,11 +61,7 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
 ) { paddingValues ->
     val context = LocalContext.current
     PrefsScreen(
-        dataStore = context.dataStore,
-        dividerThickness = 0.dp,
-        modifier = Modifier
-            .padding(paddingValues)
-            .fillMaxSize(),
+        contentPadding = paddingValues
     ) {
         prefsItem {
             TextPref(

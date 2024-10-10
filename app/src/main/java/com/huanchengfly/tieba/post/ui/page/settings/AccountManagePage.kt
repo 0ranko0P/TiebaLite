@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Scaffold
@@ -29,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.DropDownPref
@@ -65,13 +63,8 @@ fun AccountManagePage(navigator: DestinationsNavigator) {
         val account = LocalAccount.current
         val context = LocalContext.current
         val accountUtil = remember { AccountUtil.getInstance() }
-        PrefsScreen(
-            dataStore = LocalContext.current.dataStore,
-            dividerThickness = 0.dp,
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
-        ) {
+
+        PrefsScreen(contentPadding = paddingValues) {
             prefsItem {
                 val accounts = LocalAllAccounts.current
                 val accountsMap = remember(accounts) {

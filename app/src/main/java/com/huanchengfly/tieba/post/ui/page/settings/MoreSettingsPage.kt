@@ -1,7 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.DeleteForever
@@ -13,13 +11,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
@@ -55,11 +51,7 @@ fun MoreSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
     val context = LocalContext.current
 
     PrefsScreen(
-        dataStore = LocalContext.current.dataStore,
-        dividerThickness = 0.dp,
-        modifier = Modifier
-            .padding(paddingValues)
-            .fillMaxSize(),
+        contentPadding = paddingValues
     ) {
         prefsItem {
             SwitchPref(
