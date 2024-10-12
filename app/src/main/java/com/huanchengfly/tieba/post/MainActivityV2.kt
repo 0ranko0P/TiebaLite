@@ -14,8 +14,11 @@ import android.os.Build
 import android.os.Bundle
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
@@ -474,8 +477,14 @@ class MainActivityV2 : BaseComposeActivity() {
         modifier: Modifier = Modifier,
         content: @Composable () -> Unit,
     ) {
+        val backgroundColor by animateColorAsState(
+            targetValue = MaterialTheme.colors.background,
+            animationSpec = TweenSpec(durationMillis = AnimationConstants.DefaultDurationMillis),
+            label = "BackgroundColorAnimation"
+        )
         Surface(
-            color = ExtendedTheme.colors.background,
+            color = backgroundColor,
+            contentColor = MaterialTheme.colors.onBackground,
             modifier = modifier
         ) {
             val isTranslucentTheme by remember {

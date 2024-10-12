@@ -14,7 +14,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -182,19 +181,16 @@ fun TiebaLiteTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composa
     )
 
     // Initialize theme colors from DataStore now
-    var colors: ExtendedColors? by remember { mutableStateOf(null) }
+    var extendedColors: ExtendedColors by ThemeUtil.themeState
     if (theme == ThemeUtil.THEME_DYNAMIC && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        colors = rememberDynamicColor(darkTheme)
+        extendedColors = rememberDynamicColor(darkTheme)
     } else {
         LaunchedEffect(darkTheme) {
             savedThemeFlow(context, darkTheme).collect {
-                colors = it
+                extendedColors = it
             }
         }
     }
-
-    // TODO: Use splash screen
-    val extendedColors: ExtendedColors = colors ?: return // Wait theme colors initialized
 
     CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
         MaterialTheme(
