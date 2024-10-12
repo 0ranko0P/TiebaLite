@@ -78,7 +78,10 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.theme.DarkAmoledColors
+import com.huanchengfly.tieba.post.theme.DefaultColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
@@ -111,11 +114,15 @@ import kotlinx.collections.immutable.persistentListOf
 @Preview("SearchBoxPreview")
 @Composable
 fun SearchBoxPreview() {
-    SearchBox(
-        backgroundColor = Color(0xFFF8F8F8),
-        contentColor = Color(0xFFBFBFBF),
-        onClick =  {}
-    )
+    Column {
+        TiebaLiteTheme(DefaultColors) {
+            SearchBox(onClick =  {})
+        }
+
+        TiebaLiteTheme(DarkAmoledColors) {
+            SearchBox(onClick =  {})
+        }
+    }
 }
 
 @Composable

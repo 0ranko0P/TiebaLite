@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.Colors
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
@@ -34,8 +33,6 @@ import com.huanchengfly.tieba.post.theme.DarkBlueColors
 import com.huanchengfly.tieba.post.theme.DarkGreyColors
 import com.huanchengfly.tieba.post.theme.DarkSystemBar
 import com.huanchengfly.tieba.post.theme.DefaultColors
-import com.huanchengfly.tieba.post.theme.Grey200
-import com.huanchengfly.tieba.post.theme.Grey900
 import com.huanchengfly.tieba.post.theme.LightSystemBar
 import com.huanchengfly.tieba.post.theme.PinkColors
 import com.huanchengfly.tieba.post.theme.PurpleColors
@@ -175,8 +172,21 @@ private fun getDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors {
     )
 }
 
+// Theme provider for Compose Preview
 @Composable
-fun TiebaLiteTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+fun TiebaLiteTheme(colors: ExtendedColors = DefaultColors, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalExtendedColors provides colors) {
+        MaterialTheme(
+            colors = remember(colors) { getColorPalette(colors.isNightMode, colors) },
+            typography = Typography,
+            shapes = Shapes,
+            content = content
+        )
+    }
+}
+
+@Composable
+fun TiebaLiteTheme(darkTheme: Boolean, content: @Composable () -> Unit) {
     val context = LocalContext.current
     val key = if (darkTheme) KEY_DARK_THEME else KEY_THEME
     val theme by rememberPreferenceAsState(
@@ -196,14 +206,7 @@ fun TiebaLiteTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composa
         }
     }
 
-    CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
-        MaterialTheme(
-            colors = remember(extendedColors) { getColorPalette(extendedColors.isNightMode, extendedColors) },
-            typography = Typography,
-            shapes = Shapes,
-            content = content
-        )
-    }
+    TiebaLiteTheme(extendedColors, content = content)
 }
 
 private fun savedThemeFlow(context: Context, darkMode: Boolean): Flow<ExtendedColors> {
