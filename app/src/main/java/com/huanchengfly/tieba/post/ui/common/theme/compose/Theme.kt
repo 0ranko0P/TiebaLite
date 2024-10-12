@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.google.android.material.color.MaterialColors
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.getColor
@@ -32,6 +33,8 @@ import com.huanchengfly.tieba.post.theme.DarkAmoledColors
 import com.huanchengfly.tieba.post.theme.DarkBlueColors
 import com.huanchengfly.tieba.post.theme.DarkGreyColors
 import com.huanchengfly.tieba.post.theme.DefaultColors
+import com.huanchengfly.tieba.post.theme.Grey200
+import com.huanchengfly.tieba.post.theme.Grey900
 import com.huanchengfly.tieba.post.theme.PinkColors
 import com.huanchengfly.tieba.post.theme.PurpleColors
 import com.huanchengfly.tieba.post.theme.RedColors
@@ -41,10 +44,9 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_TRANS
 import com.huanchengfly.tieba.post.utils.ColorUtils
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_CUSTOM_PRIMARY_COLOR
-import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_CUSTOM_STATUS_BAR_FONT_DARK
-import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR
 import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_DARK_THEME
 import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_THEME
+import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_TINT_TOOLBAR
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
@@ -114,7 +116,7 @@ private fun getColorPalette(darkTheme: Boolean, extendedColors: ExtendedColors):
 @Composable
 private fun rememberDynamicColor(darkTheme: Boolean): ExtendedColors {
     val context = LocalContext.current
-    val tintToolbar by rememberPreferenceAsState(booleanPreferencesKey(KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR), false)
+    val tintToolbar by rememberPreferenceAsState(booleanPreferencesKey(KEY_TINT_TOOLBAR), false)
     return remember(darkTheme, tintToolbar) {
         val tonalPalette = dynamicTonalPalette(context)
         if (darkTheme) getDarkDynamicColor(tonalPalette) else getLightDynamicColor(tintToolbar, tonalPalette)
@@ -208,7 +210,8 @@ private fun savedThemeFlow(context: Context, darkMode: Boolean): Flow<ExtendedCo
         .distinctUntilChangedBy { it[stringPreferencesKey(key)] }
         .map {
             val theme: String? = it[stringPreferencesKey(key)]
-            when (theme) {
+            val tintToolbar = it[booleanPreferencesKey(KEY_TINT_TOOLBAR)] ?: false
+            val colors = when (theme) {
                 ThemeUtil.THEME_BLACK -> BlackColors
                 ThemeUtil.THEME_PINK -> PinkColors
                 ThemeUtil.THEME_RED -> RedColors
@@ -224,20 +227,22 @@ private fun savedThemeFlow(context: Context, darkMode: Boolean): Flow<ExtendedCo
                     primary = it.getColor(KEY_TRANSLUCENT_PRIMARY_COLOR)!!
                 )
 
-                ThemeUtil.THEME_CUSTOM -> {
-                    val primary = it.getColor(KEY_CUSTOM_PRIMARY_COLOR)!!
-                    val tintToolbar =
-                        it[booleanPreferencesKey(KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR)] ?: false
-                    val darkSysBar =
-                        it[booleanPreferencesKey(KEY_CUSTOM_STATUS_BAR_FONT_DARK)] ?: false
-                    CustomColors.copy(
-                        primary = primary,
-                        topBar = if (tintToolbar) primary else CustomColors.topBar,
-                        onTopBar = if (darkSysBar) Color.Black else CustomColors.onTopBar
-                    )
-                }
+                ThemeUtil.THEME_CUSTOM -> CustomColors.copy(
+                    primary = it.getColor(KEY_CUSTOM_PRIMARY_COLOR)!!
+                )
 
                 else -> if (darkMode) BlackColors else DefaultColors
+            }
+
+            // Ignore TintToolbar on translucent theme
+            if (!ThemeUtil.isTranslucentTheme(colors) && tintToolbar) {
+                val isLightToolbar = MaterialColors.isColorLight(colors.primary.toArgb())
+                colors.copy(
+                    topBar = colors.primary,
+                    onTopBar = if (isLightToolbar) Grey900 else Grey200
+                )
+            } else {
+                colors
             }
         }
 }

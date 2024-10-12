@@ -4,15 +4,17 @@ import android.content.Context
 import android.view.View
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.google.android.material.color.MaterialColors
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMode
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dataStoreScope
-import com.huanchengfly.tieba.post.getBoolean
+import com.huanchengfly.tieba.post.putColor
 import com.huanchengfly.tieba.post.theme.DarkAmoledColors
 import com.huanchengfly.tieba.post.theme.DarkGreyColors
 import com.huanchengfly.tieba.post.theme.DefaultColors
@@ -38,8 +40,9 @@ object ThemeUtil {
     const val KEY_DARK_THEME_MODE = "dark_mode"
 
     const val KEY_CUSTOM_PRIMARY_COLOR = "custom_primary_color" // Int: Custom ARGB 主题色
-    const val KEY_CUSTOM_STATUS_BAR_FONT_DARK = "custom_status_bar_font_dark"
-    const val KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR = "custom_toolbar_primary_color" // Bool: 顶栏跟随主题色
+
+    // Bool: 顶栏跟随主题色
+    const val KEY_TINT_TOOLBAR = "theme_tint_toolbar"
 
     const val KEY_TRANSLUCENT_BACKGROUND_FILE = "translucent_background_path"
 
@@ -76,6 +79,16 @@ object ThemeUtil {
         }
     }
 
+    fun switchCustomTheme(primaryColor: Color, activityContext: Context?) {
+        dataStoreScope.launch {
+            INSTANCE.dataStore.edit {
+                it.putColor(KEY_CUSTOM_PRIMARY_COLOR, primaryColor)
+                it[stringPreferencesKey(KEY_THEME)] = THEME_CUSTOM
+            }
+            activityContext?.setNightMode(false)
+        }
+    }
+
     @JvmStatic
     fun isNightMode(): Boolean = getRawTheme().isNightMode
 
@@ -92,23 +105,15 @@ object ThemeUtil {
         return theme.theme == THEME_TRANSLUCENT_LIGHT || theme.theme == THEME_TRANSLUCENT_DARK
     }
 
-    fun isStatusBarFontDark(theme: ExtendedColors = getRawTheme()): Boolean {
-        val dataStore = INSTANCE.dataStore
-        val isToolbarPrimaryColor: Boolean = INSTANCE.appPreferences.toolbarPrimaryColor
-        return if (theme.theme == THEME_CUSTOM) {
-            dataStore.getBoolean(KEY_CUSTOM_STATUS_BAR_FONT_DARK, false)
-        } else if (isTranslucentTheme(theme)) {
-            theme.isNightMode
-        } else if (!isToolbarPrimaryColor) {
+    fun isStatusBarFontDark(theme: ExtendedColors): Boolean {
+        return if (isTranslucentTheme(theme)) {
             !theme.isNightMode
         } else {
-            false
+            !MaterialColors.isColorLight(theme.onTopBar.toArgb())
         }
     }
 
-    fun isNavigationBarFontDark(): Boolean {
-        return !isNightMode()
-    }
+    fun isNavigationBarFontDark(theme: ExtendedColors): Boolean = !theme.isNightMode
 
     @JvmStatic
     fun setTranslucentDialogBackground(view: View?) {

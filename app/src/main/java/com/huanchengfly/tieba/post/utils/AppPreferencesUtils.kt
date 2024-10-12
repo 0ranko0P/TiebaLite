@@ -141,10 +141,6 @@ class AppPreferencesUtils private constructor(context: Context) {
     val blockVideo: Boolean
         get() = dataStore.getBoolean(KEY_POST_BLOCK_VIDEO, false)
 
-    var toolbarPrimaryColor: Boolean
-        get() = dataStore.getBoolean(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR, false)
-        set(value) = dataStore.putBoolean(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR, value)
-
     val doNotUsePhotoPicker: Boolean
         get() = dataStore.getBoolean(KEY_NO_NEW_PHOTO_PICKER, false)
 

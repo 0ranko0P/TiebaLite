@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,6 +56,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.theme.BuiltInThemes
 import com.huanchengfly.tieba.post.theme.Grey200
 import com.huanchengfly.tieba.post.theme.TiebaBlue
@@ -86,29 +86,22 @@ fun AppThemePage(navigator: DestinationsNavigator) {
 
     val customPrimaryColorDialogState = rememberDialogState()
 
-    var customPrimaryColorInt by rememberPreferenceAsMutableState(
+    val customPrimaryColorInt by rememberPreferenceAsState(
         key = intPreferencesKey(ThemeUtil.KEY_CUSTOM_PRIMARY_COLOR),
         defaultValue = TiebaBlue.toArgb()
     )
     val customPrimaryColor = Color(customPrimaryColorInt)
 
     var customToolbarPrimaryColor by rememberPreferenceAsMutableState(
-        key = booleanPreferencesKey(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR),
+        key = booleanPreferencesKey(ThemeUtil.KEY_TINT_TOOLBAR),
         defaultValue = false
     )
-    var customStatusBarFontDark by rememberPreferenceAsMutableState(
-        key = booleanPreferencesKey(ThemeUtil.KEY_CUSTOM_STATUS_BAR_FONT_DARK),
-        defaultValue = false
-    )
-
     ColorPickerDialog(
         state = customPrimaryColorDialogState,
         title = R.string.title_custom_theme,
         initial = customPrimaryColor,
         onColorChanged = { newColor ->
-            customPrimaryColorInt = newColor.toArgb()
-            customStatusBarFontDark = customStatusBarFontDark || !customToolbarPrimaryColor
-            ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM, context)
+            ThemeUtil.switchCustomTheme(newColor, context)
         }
     ) {
         CheckableButton(
@@ -119,17 +112,6 @@ fun AppThemePage(navigator: DestinationsNavigator) {
                 customToolbarPrimaryColor = it
             }
         )
-        if (customToolbarPrimaryColor) {
-            Spacer(Modifier.height(8.dp))
-            CheckableButton(
-                modifier = Modifier.padding(start = 10.dp),
-                checked = customStatusBarFontDark,
-                text = R.string.tip_status_bar_font,
-                onCheckedChange = {
-                    customStatusBarFontDark = it
-                }
-            )
-        }
     }
 
     MyScaffold(

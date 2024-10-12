@@ -169,7 +169,7 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
         }
         prefsItem {
             SwitchPref(
-                key = ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR,
+                key = ThemeUtil.KEY_TINT_TOOLBAR,
                 title = R.string.tip_toolbar_primary_color,
                 defaultChecked = false,
                 leadingIcon = Icons.Outlined.FormatColorFill,

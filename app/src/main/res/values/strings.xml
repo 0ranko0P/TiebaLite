@@ -157,7 +157,6 @@
     <string name="tip_primary_color">主题色</string>
     <string name="title_custom_theme">设置自定义主题</string>
     <string name="title_color_picker_primary">选择主题色</string>
-    <string name="tip_status_bar_font">顶栏暗色字体</string>
     <string name="tip_toolbar_primary_color">顶栏颜色跟随主题色</string>
     <string name="cpv_select">选择</string>
     <string name="cpv_custom">自定义</string>
