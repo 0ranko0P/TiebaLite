@@ -30,10 +30,8 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.darkColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Save
-import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,9 +49,12 @@ import com.bumptech.glide.request.target.Target
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUCropResult
+import com.huanchengfly.tieba.post.theme.DarkBlueColors
+import com.huanchengfly.tieba.post.theme.DefaultColors
+import com.huanchengfly.tieba.post.theme.Grey800
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.Shapes
-import com.huanchengfly.tieba.post.ui.common.theme.compose.Typography
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -128,6 +129,8 @@ class TranslucentThemeActivity : AppCompatActivity(), RequestListener<Drawable> 
 
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
+                            color = ExtendedTheme.colors.bottomBar,
+                            contentColor = ExtendedTheme.colors.text,
                             elevation = 8.dp
                         ) {
                             TranslucentThemeContent(
@@ -148,25 +151,20 @@ class TranslucentThemeActivity : AppCompatActivity(), RequestListener<Drawable> 
         }
     }
 
-    // Do not use App Theme
+    // Do not use App Theme from DataStore
     @Composable
     private fun ProvideTheme(dark: Boolean, content: @Composable () -> Unit) {
         val colors = if (dark) {
-            darkColors(
-                background = Color(0xFF0F0F0F),
-                secondary = Color(0xFF303134),
-                onSecondary = Color(0xEEEEEEEE),
-                surface = Color.Black
-            )
+            DarkBlueColors.copy(secondary = Color(0xFF303134))
         } else {
-            val dividerColor = Color(0xFFF7FBFE) // R.color.color_divider
-            lightColors(
+            val dividerColor = Color(0xFFF7FBFE)
+            DefaultColors.copy(
                 background = dividerColor,
                 secondary = dividerColor,
-                surface = Color.White,
+                onSecondary = Grey800
             )
         }
-        MaterialTheme(colors = colors, typography = Typography, shapes = Shapes, content = content)
+        TiebaLiteTheme(colors, content = content)
     }
 
     private fun onSaveWallpaperClicked() {
@@ -185,8 +183,6 @@ class TranslucentThemeActivity : AppCompatActivity(), RequestListener<Drawable> 
             title = {
                 Text(text = stringResource(id = R.string.title_theme_translucent))
             },
-            color = MaterialTheme.colors.surface,
-            contentColor = MaterialTheme.colors.onSurface,
             navigationIcon = {
                 BackNavigationIcon(onBackPressed = this@TranslucentThemeActivity::finish)
             },
