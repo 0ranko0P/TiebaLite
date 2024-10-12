@@ -262,12 +262,6 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    private fun initAutoSign() {
-        runCatching {
-            TiebaUtil.initAutoSign(this)
-        }
-    }
-
     override fun onStart() {
         super.onStart()
         runCatching {
@@ -299,11 +293,10 @@ class MainActivityV2 : BaseComposeActivity() {
             requestNotificationPermission()
         }
         intent?.let { checkIntent(it) }
-    }
 
-    override fun onCreateContent(systemUiController: SystemUiController) {
-        super.onCreateContent(systemUiController)
-        initAutoSign()
+        runCatching {
+            TiebaUtil.initAutoSign(this)
+        }
     }
 
     private fun openClipBoardLink(link: ClipBoardLink) {

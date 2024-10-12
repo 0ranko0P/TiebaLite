@@ -9,19 +9,17 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
-import com.google.accompanist.systemuicontroller.SystemUiController
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import androidx.core.view.WindowInsetsControllerCompat
 import com.huanchengfly.tieba.post.activities.BaseActivity
 import com.huanchengfly.tieba.post.findActivity
+import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.calculateWindowSizeClass
@@ -34,29 +32,20 @@ abstract class BaseComposeActivity : BaseActivity() {
         ThemeUtil.shouldUseNightMode(appPreferences.darkMode)
     )
 
+    private val windowInsetsController: WindowInsetsControllerCompat by lazy {
+        WindowCompat.getInsetsController(window, window.decorView)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
         setContent {
             TiebaLiteTheme(darkTheme = _nightMode) {
-                val systemUiController = rememberSystemUiController()
-                SideEffect {
-                    systemUiController.apply {
-                        setStatusBarColor(
-                            Color.Transparent,
-                            darkIcons = ThemeUtil.isStatusBarFontDark()
-                        )
-                        setNavigationBarColor(
-                            Color.Transparent,
-                            darkIcons = ThemeUtil.isNavigationBarFontDark(),
-                            navigationBarContrastEnforced = false
-                        )
-                    }
-                }
-
-                LaunchedEffect(key1 = "onCreateContent") {
-                    onCreateContent(systemUiController)
+                val colors = LocalExtendedColors.current
+                LaunchedEffect(colors) {
+                    windowInsetsController.isAppearanceLightStatusBars = ThemeUtil.isStatusBarFontDark(colors)
+                    windowInsetsController.isAppearanceLightNavigationBars = ThemeUtil.isNavigationBarFontDark(colors)
                 }
 
                 LocalAccountProvider {
@@ -69,15 +58,6 @@ abstract class BaseComposeActivity : BaseActivity() {
             }
         }
     }
-
-    /**
-     * 在创建内容前执行
-     *
-     * @param systemUiController SystemUiController
-     */
-    open fun onCreateContent(
-        systemUiController: SystemUiController
-    ) {}
 
     @Composable
     abstract fun Content()
