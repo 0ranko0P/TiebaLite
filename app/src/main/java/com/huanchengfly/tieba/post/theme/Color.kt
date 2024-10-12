@@ -19,6 +19,9 @@ val Grey700 = Color(0xFF616161)
 val Grey800 = Color(0xFF424242)
 val Grey900 = Color(0xFF212121)
 
+val DarkSystemBar = Color(0xFF666666)
+val LightSystemBar = Color.White
+
 val OrangeA700 = Color(0xFFFF6D00)
 
 val YellowA700 = Color(0xFFFFD600)

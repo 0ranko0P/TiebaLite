@@ -32,9 +32,11 @@ import com.huanchengfly.tieba.post.theme.CustomColors
 import com.huanchengfly.tieba.post.theme.DarkAmoledColors
 import com.huanchengfly.tieba.post.theme.DarkBlueColors
 import com.huanchengfly.tieba.post.theme.DarkGreyColors
+import com.huanchengfly.tieba.post.theme.DarkSystemBar
 import com.huanchengfly.tieba.post.theme.DefaultColors
 import com.huanchengfly.tieba.post.theme.Grey200
 import com.huanchengfly.tieba.post.theme.Grey900
+import com.huanchengfly.tieba.post.theme.LightSystemBar
 import com.huanchengfly.tieba.post.theme.PinkColors
 import com.huanchengfly.tieba.post.theme.PurpleColors
 import com.huanchengfly.tieba.post.theme.RedColors
@@ -239,7 +241,7 @@ private fun savedThemeFlow(context: Context, darkMode: Boolean): Flow<ExtendedCo
                 val isLightToolbar = MaterialColors.isColorLight(colors.primary.toArgb())
                 colors.copy(
                     topBar = colors.primary,
-                    onTopBar = if (isLightToolbar) Grey900 else Grey200
+                    onTopBar = if (isLightToolbar) DarkSystemBar else LightSystemBar
                 )
             } else {
                 colors

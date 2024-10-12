@@ -107,7 +107,7 @@ object ThemeUtil {
 
     fun isStatusBarFontDark(theme: ExtendedColors): Boolean {
         return if (isTranslucentTheme(theme)) {
-            !theme.isNightMode
+            theme.theme == THEME_TRANSLUCENT_DARK
         } else {
             !MaterialColors.isColorLight(theme.onTopBar.toArgb())
         }
