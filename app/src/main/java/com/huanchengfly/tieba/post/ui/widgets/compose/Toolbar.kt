@@ -37,6 +37,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -56,7 +57,9 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass.Companion.Compact
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
@@ -64,6 +67,7 @@ import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.LocalAllAccounts
 import com.huanchengfly.tieba.post.utils.StringUtil
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 
 val AppBarHeight: Dp = 56.dp
 
@@ -180,6 +184,17 @@ fun BackNavigationIcon(onBackPressed: () -> Unit) {
     }
 }
 
+@ReadOnlyComposable
+@Composable
+private fun defaultAppBarElevation(): Dp {
+    // No Elevation shadow on TranslucentTheme
+    return if (ThemeUtil.isTranslucentTheme(LocalExtendedColors.current)) {
+        Dp.Hairline
+    } else {
+        AppBarDefaults.TopAppBarElevation
+    }
+}
+
 @Composable
 fun TitleCentredToolbar(
     title: String,
@@ -201,7 +216,7 @@ fun TitleCentredToolbar(
     modifier: Modifier = Modifier,
     color: Color = ExtendedTheme.colors.topBar,
     contentColor: Color = ExtendedTheme.colors.onTopBar,
-    elevation: Dp = AppBarDefaults.TopAppBarElevation,
+    elevation: Dp = defaultAppBarElevation(),
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     content: (@Composable ColumnScope.() -> Unit)? = null,
@@ -301,7 +316,7 @@ fun TopAppBarContainer(
     modifier: Modifier = Modifier,
     color: Color = ExtendedTheme.colors.topBar,
     contentColor: Color = ExtendedTheme.colors.onTopBar,
-    elevation: Dp = AppBarDefaults.TopAppBarElevation,
+    elevation: Dp = defaultAppBarElevation(),
     content: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val coroutineScope = rememberCoroutineScope()
