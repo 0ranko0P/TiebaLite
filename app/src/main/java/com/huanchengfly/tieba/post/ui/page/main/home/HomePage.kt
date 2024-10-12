@@ -475,7 +475,11 @@ fun HomePage(
                         onClick = { listSingle = !listSingle }
                     )
                 }
-            )
+            ) {
+                SearchBox(modifier = Modifier.padding(bottom = 4.dp)) {
+                    navigator.navigate(SearchPageDestination)
+                }
+            }
         },
         modifier = Modifier.fillMaxSize(),
     ) { contentPaddings ->
@@ -488,178 +492,140 @@ fun HomePage(
                 .pullRefresh(pullRefreshState)
                 .padding(contentPaddings)
         ) {
-            Column {
-                SearchBox(modifier = Modifier.padding(bottom = 4.dp)) {
-                    navigator.navigate(SearchPageDestination)
+            StateScreen(
+                isEmpty = isEmpty,
+                isError = isError,
+                isLoading = isLoading,
+                modifier = Modifier.fillMaxSize(),
+                onReload = {
+                    viewModel.send(HomeUiIntent.Refresh)
+                },
+                emptyScreen = {
+                    EmptyScreen(
+                        loggedIn = account != null,
+                        canOpenExplore = canOpenExplore,
+                        onOpenExplore = onOpenExplore
+                    )
+                },
+                loadingScreen = {
+                    HomePageSkeletonScreen(listSingle = listSingle, gridCells = gridCells)
+                },
+                errorScreen = {
+                    error?.let { ErrorScreen(error = it) }
                 }
-                StateScreen(
-                    isEmpty = isEmpty,
-                    isError = isError,
-                    isLoading = isLoading,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    onReload = {
-                        viewModel.send(HomeUiIntent.Refresh)
-                    },
-                    emptyScreen = {
-                        EmptyScreen(
-                            loggedIn = account != null,
-                            canOpenExplore = canOpenExplore,
-                            onOpenExplore = onOpenExplore
-                        )
-                    },
-                    loadingScreen = {
-                        HomePageSkeletonScreen(listSingle = listSingle, gridCells = gridCells)
-                    },
-                    errorScreen = {
-                        error?.let { ErrorScreen(error = it) }
-                    }
+            ) {
+                val showHistoryOnHome by rememberPreferenceAsState(booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY), true)
+                val showHistoryForum by remember { derivedStateOf {
+                    showHistoryOnHome && historyForums.isNotEmpty()
+                } }
+
+                MyLazyVerticalGrid(
+                    columns = gridCells,
+                    contentPadding = PaddingValues(bottom = 12.dp),
+                    modifier = Modifier.fillMaxSize(),
                 ) {
-                    val showHistoryOnHome by rememberPreferenceAsState(booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY), true)
-                    val showHistoryForum by remember {
-                        derivedStateOf { showHistoryOnHome && historyForums.isNotEmpty() }
-                    }
-                    MyLazyVerticalGrid(
-                        columns = gridCells,
-                        contentPadding = PaddingValues(bottom = 12.dp),
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        if (showHistoryForum) {
-                            item(key = "HistoryForums", span = { GridItemSpan(maxLineSpan) }) {
-                                val rotate by animateFloatAsState(
-                                    targetValue = if (expandHistoryForum) 90f else 0f,
-                                    label = "rotate"
-                                )
-                                Column {
-                                    Row(
-                                        verticalAlignment = CenterVertically,
+                    if (showHistoryForum) {
+                        item(key = "HistoryForums", span = { GridItemSpan(maxLineSpan) }) {
+                            val rotate by animateFloatAsState(
+                                targetValue = if (expandHistoryForum) 90f else 0f,
+                                label = "rotate"
+                            )
+                            Column {
+                                Row(
+                                    verticalAlignment = CenterVertically,
+                                    modifier = Modifier
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            viewModel.send(
+                                                HomeUiIntent.ToggleHistory(
+                                                    expandHistoryForum
+                                                )
+                                            )
+                                        }
+                                        .padding(vertical = 8.dp)
+                                        .padding(end = 16.dp)
+                                ) {
+                                    Header(
+                                        text = stringResource(id = R.string.title_history_forum),
+                                        invert = false
+                                    )
+
+                                    Spacer(modifier = Modifier.weight(1f))
+
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                        contentDescription = stringResource(id = R.string.desc_show),
                                         modifier = Modifier
-                                            .clickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null
+                                            .size(24.dp)
+                                            .rotate(rotate)
+                                    )
+                                }
+                                AnimatedVisibility(visible = expandHistoryForum) {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(bottom = 8.dp),
+                                    ) {
+                                        item(key = "Spacer1") {
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                        }
+                                        items(
+                                            historyForums,
+                                            key = { it.data }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .padding(horizontal = 4.dp)
+                                                    .height(IntrinsicSize.Min)
+                                                    .clip(RoundedCornerShape(100))
+                                                    .background(color = ExtendedTheme.colors.chip)
+                                                    .clickable {
+                                                        navigator.navigate(
+                                                            ForumPageDestination(
+                                                                it.data
+                                                            )
+                                                        )
+                                                    }
+                                                    .padding(4.dp),
+                                                verticalAlignment = CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                                             ) {
-                                                viewModel.send(
-                                                    HomeUiIntent.ToggleHistory(
-                                                        expandHistoryForum
-                                                    )
+                                                Avatar(
+                                                    data = it.avatar,
+                                                    contentDescription = null,
+                                                    size = 24.dp,
+                                                    shape = CircleShape
+                                                )
+                                                Text(
+                                                    text = it.title,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(end = 4.dp)
                                                 )
                                             }
-                                            .padding(vertical = 8.dp)
-                                            .padding(end = 16.dp)
-                                    ) {
-                                        Header(
-                                            text = stringResource(id = R.string.title_history_forum),
-                                            invert = false
-                                        )
-
-                                        Spacer(modifier = Modifier.weight(1f))
-
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                                            contentDescription = stringResource(id = R.string.desc_show),
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .rotate(rotate)
-                                        )
-                                    }
-                                    AnimatedVisibility(visible = expandHistoryForum) {
-                                        LazyRow(
-                                            contentPadding = PaddingValues(bottom = 8.dp),
-                                        ) {
-                                            item(key = "Spacer1") {
-                                                Spacer(modifier = Modifier.width(12.dp))
-                                            }
-                                            items(
-                                                historyForums,
-                                                key = { it.data }
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier
-                                                        .padding(horizontal = 4.dp)
-                                                        .height(IntrinsicSize.Min)
-                                                        .clip(RoundedCornerShape(100))
-                                                        .background(color = ExtendedTheme.colors.chip)
-                                                        .clickable {
-                                                            navigator.navigate(
-                                                                ForumPageDestination(
-                                                                    it.data
-                                                                )
-                                                            )
-                                                        }
-                                                        .padding(4.dp),
-                                                    verticalAlignment = CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                ) {
-                                                    Avatar(
-                                                        data = it.avatar,
-                                                        contentDescription = null,
-                                                        size = 24.dp,
-                                                        shape = CircleShape
-                                                    )
-                                                    Text(
-                                                        text = it.title,
-                                                        fontSize = 12.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        modifier = Modifier.padding(end = 4.dp)
-                                                    )
-                                                }
-                                            }
-                                            item(key = "Spacer2") {
-                                                Spacer(modifier = Modifier.width(12.dp))
-                                            }
+                                        }
+                                        item(key = "Spacer2") {
+                                            Spacer(modifier = Modifier.width(12.dp))
                                         }
                                     }
                                 }
                             }
                         }
-                        if (hasTopForum) {
-                            item(key = "TopForumHeader", span = { GridItemSpan(maxLineSpan) }) {
-                                Column(
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                ) {
-                                    Header(
-                                        text = stringResource(id = R.string.title_top_forum),
-                                        invert = true
-                                    )
-                                }
-                            }
-                            items(
-                                items = topForums,
-                                key = { "Top${it.forumId}" }
-                            ) { item ->
-                                ForumItem(
-                                    item,
-                                    listSingle,
-                                    onClick = {
-                                        navigator.navigate(ForumPageDestination(it.forumName))
-                                    },
-                                    onUnfollow = {
-                                        unfollowForum = it
-                                        confirmUnfollowDialog.show()
-                                    },
-                                    onAddTopForum = {
-                                        viewModel.send(HomeUiIntent.TopForums.Add(it))
-                                    },
-                                    onDeleteTopForum = {
-                                        viewModel.send(HomeUiIntent.TopForums.Delete(it.forumId))
-                                    },
-                                    isTopForum = true
+                    }
+                    if (hasTopForum) {
+                        item(key = "TopForumHeader", span = { GridItemSpan(maxLineSpan) }) {
+                            Column(
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            ) {
+                                Header(
+                                    text = stringResource(id = R.string.title_top_forum),
+                                    invert = true
                                 )
                             }
                         }
-                        if (showHistoryForum || hasTopForum) {
-                            item(key = "ForumHeader", span = { GridItemSpan(maxLineSpan) }) {
-                                Column(
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                ) {
-                                    Header(text = stringResource(id = R.string.forum_list_title))
-                                }
-                            }
-                        }
                         items(
-                            items = forums,
-                            key = { it.forumId }
+                            items = topForums,
+                            key = { "Top${it.forumId}" }
                         ) { item ->
                             ForumItem(
                                 item,
@@ -676,9 +642,39 @@ fun HomePage(
                                 },
                                 onDeleteTopForum = {
                                     viewModel.send(HomeUiIntent.TopForums.Delete(it.forumId))
-                                }
+                                },
+                                isTopForum = true
                             )
                         }
+                    }
+                    if (showHistoryForum || hasTopForum) {
+                        item(key = "ForumHeader", span = { GridItemSpan(maxLineSpan) }) {
+                            Column(
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            ) {
+                                Header(text = stringResource(id = R.string.forum_list_title))
+                            }
+                        }
+                    }
+
+                    items(items = forums, key = { it.forumId }) { item ->
+                        ForumItem(
+                            item,
+                            listSingle,
+                            onClick = {
+                                navigator.navigate(ForumPageDestination(it.forumName))
+                            },
+                            onUnfollow = {
+                                unfollowForum = it
+                                confirmUnfollowDialog.show()
+                            },
+                            onAddTopForum = {
+                                viewModel.send(HomeUiIntent.TopForums.Add(it))
+                            },
+                            onDeleteTopForum = {
+                                viewModel.send(HomeUiIntent.TopForums.Delete(it.forumId))
+                            }
+                        )
                     }
                 }
             }
