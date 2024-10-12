@@ -25,9 +25,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity
+import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMode
 import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
@@ -79,8 +78,7 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 defaultValue = ThemeUtil.DARK_MODE_FOLLOW_SYSTEM,
                 onValueChange = { value ->
                     // Notify changes manually instead of observe DataStore in Activity
-                    val activity = context.findActivity()?: return@ListPref
-                    (activity as BaseComposeActivity).setNightMode(ThemeUtil.shouldUseNightMode(value))
+                    context.setNightMode(ThemeUtil.shouldUseNightMode(value))
                 },
                 leadingIcon = Icons.Outlined.DarkMode,
                 options = persistentMapOf(

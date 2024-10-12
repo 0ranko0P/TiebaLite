@@ -51,8 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.placeholder.placeholder
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity
-import com.huanchengfly.tieba.post.findActivity
+import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMode
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
@@ -323,18 +322,16 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     Switch(
                         checked = ExtendedTheme.colors.isNightMode,
                         onCheckedChange = { checked ->
-                            context.findActivity()?.let {
-                                // Override night mode temporary
-                                (it as BaseComposeActivity).setNightMode(checked)
-                                // Show night mode settings tip
-                                coroutineScope.launch {
-                                    val result = snackbarHostState.showSnackbar(
-                                        context.getString(R.string.message_find_tip),
-                                        actionLabel = context.getString(R.string.title_settings_night_mode)
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) {
-                                        navigator.navigate(CustomSettingsPageDestination)
-                                    }
+                            // Override night mode temporary
+                            context.setNightMode(checked)
+                            // Show night mode settings tip
+                            coroutineScope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    context.getString(R.string.message_find_tip),
+                                    actionLabel = context.getString(R.string.title_settings_night_mode)
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    navigator.navigate(CustomSettingsPageDestination)
                                 }
                             }
                         }

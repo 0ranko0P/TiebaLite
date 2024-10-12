@@ -108,7 +108,7 @@ fun AppThemePage(navigator: DestinationsNavigator) {
         onColorChanged = { newColor ->
             customPrimaryColorInt = newColor.toArgb()
             customStatusBarFontDark = customStatusBarFontDark || !customToolbarPrimaryColor
-            ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM)
+            ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM, context)
         }
     ) {
         CheckableButton(
@@ -152,7 +152,7 @@ fun AppThemePage(navigator: DestinationsNavigator) {
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         selected = currentTheme.theme == ThemeUtil.THEME_DYNAMIC,
-                        onClick = { ThemeUtil.switchTheme(ThemeUtil.THEME_DYNAMIC) }
+                        onClick = { ThemeUtil.switchTheme(ThemeUtil.THEME_DYNAMIC, context) }
                     )
                 }
             }
@@ -187,7 +187,7 @@ fun AppThemePage(navigator: DestinationsNavigator) {
                     themeColor = item,
                     name = stringResource(id = item.name),
                     onClick = {
-                        ThemeUtil.switchTheme(item.theme)
+                        ThemeUtil.switchTheme(item.theme, context)
                     }
                 )
             }

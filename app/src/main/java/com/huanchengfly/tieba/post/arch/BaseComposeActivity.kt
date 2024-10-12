@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.arch
 
+import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.widget.Toast
@@ -20,6 +21,7 @@ import androidx.core.view.WindowCompat
 import com.google.accompanist.systemuicontroller.SystemUiController
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.huanchengfly.tieba.post.activities.BaseActivity
+import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.calculateWindowSizeClass
@@ -97,20 +99,21 @@ abstract class BaseComposeActivity : BaseActivity() {
         }
     }
 
-    // Expose night mode setter for settings page
-    fun setNightMode(nightMode: Boolean) {
-        if (_nightMode xor nightMode) _nightMode = nightMode
-    }
-
     companion object {
         val LocalWindowSizeClass =
             staticCompositionLocalOf<WindowSizeClass> {
                 WindowSizeClass.calculateFromSize(DpSize(0.dp, 0.dp))
             }
+
+        // Expose night mode setter for settings page
+        fun Context.setNightMode(nightMode: Boolean) {
+            val activity = findActivity() ?: return
+            with(activity as BaseComposeActivity) {
+                if (_nightMode xor nightMode) _nightMode = nightMode
+            }
+        }
     }
 }
-
-
 
 sealed interface CommonUiEvent : UiEvent {
     object ScrollToTop : CommonUiEvent
