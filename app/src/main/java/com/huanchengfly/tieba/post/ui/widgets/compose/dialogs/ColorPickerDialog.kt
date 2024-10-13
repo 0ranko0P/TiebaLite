@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -70,16 +71,18 @@ fun ColorPickerDialog(
         dialogState = state,
         title = title?.let { { Text(text = stringResource(it)) } },
         buttons = {
-            Box(Modifier.fillMaxWidth()) {
+            Row (
+                Modifier.fillMaxWidth()
+            ) {
                 NegativeButton(
-                    modifier = Modifier.align(Alignment.CenterStart),
                     text = stringResource(id = R.string.button_cancel),
                     onClick = this@Dialog::dismiss
                 )
 
+                Spacer(Modifier.weight(1.0f))
+
                 PositiveButton(
                     text = stringResource(id = R.string.button_finish),
-                    modifier = Modifier.align(Alignment.CenterEnd),
                     onClick = {
                         onColorChanged(color.toColor()); dismiss()
                     }

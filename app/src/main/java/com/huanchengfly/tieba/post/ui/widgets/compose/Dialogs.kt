@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -42,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.constraintlayout.compose.Visibility
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -372,6 +370,7 @@ fun Dialog(
     modifier: Modifier = Modifier,
     dialogState: DialogState = rememberDialogState(),
     onDismiss: (() -> Unit)? = null,
+    direction: DirectionState = DirectionState.CENTER,
     cancelable: Boolean = true,
     cancelableOnTouchOutside: Boolean = true,
     title: @Composable (DialogScope.() -> Unit)? = null,
@@ -383,81 +382,59 @@ fun Dialog(
         modifier = modifier,
         dialogState = dialogState,
         onDismiss = onDismiss,
-        direction = if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
-            DirectionState.BOTTOM
-        } else {
-            DirectionState.CENTER
-        },
+        direction = direction,
         cancelable = cancelable,
         cancelableOnTouchOutside = cancelableOnTouchOutside,
     ) {
         ConstraintLayout(
             modifier = modifier
-                .wrapContentHeight()
-                .animateContentSize()
                 .fillMaxWidth(
-                    fraction = if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
-                        1f
-                    } else {
-                        0.6f
-                    }
+                    fraction = if (windowWidthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.6f
                 )
                 .padding(16.dp)
                 .background(
                     color = ExtendedTheme.colors.windowBackground,
                     shape = RoundedCornerShape(24.dp)
                 )
-                .padding(vertical = 24.dp),
+                .padding(vertical = 12.dp),
         ) {
-            val (titleRef, contentRef, buttonsRef) = createRefs()
-            Column(
+            val (titleRef, buttonsRef) = createRefs()
+            // Apply content padding separately
+            val paddingModifier = Modifier.padding(horizontal = 12.dp)
+
+            Column (
                 modifier = Modifier
                     .constrainAs(titleRef) {
                         top.linkTo(parent.top)
                         start.linkTo(parent.start)
                         end.linkTo(parent.end)
+                        bottom.linkTo(buttonsRef.top)
                         width = Dimension.fillToConstraints
-                        visibility = if (title == null) {
-                            Visibility.Gone
-                        } else {
-                            Visibility.Visible
-                        }
                     }
+                    .animateContentSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (title != null) {
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 24.dp)
-                            .align(Alignment.CenterHorizontally)
-                    ) {
-                        ProvideTextStyle(value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)) {
+                    ProvideTextStyle(MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)) {
+                        Box(modifier = paddingModifier.align(Alignment.CenterHorizontally)) {
                             title()
                         }
                     }
                 }
-            }
-            Column(
-                modifier = Modifier
-                    .constrainAs(contentRef) {
-                        top.linkTo(titleRef.bottom, margin = 16.dp, goneMargin = 0.dp)
-                        bottom.linkTo(buttonsRef.top, margin = 16.dp, goneMargin = 0.dp)
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                        height = Dimension.preferredWrapContent
-                    }
-            ) {
+
                 content()
             }
+
             Column(
-                modifier = Modifier
+                modifier = paddingModifier
+                    .padding(top = 8.dp)
                     .constrainAs(buttonsRef) {
                         start.linkTo(parent.start)
                         end.linkTo(parent.end)
                         bottom.linkTo(parent.bottom)
+                        top.linkTo(titleRef.bottom)
                         width = Dimension.fillToConstraints
                     }
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 buttons()
             }
