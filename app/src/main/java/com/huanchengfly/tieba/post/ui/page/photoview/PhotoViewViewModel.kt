@@ -21,12 +21,15 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.retryWhen
+import kotlinx.coroutines.flow.timeout
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.seconds
 
 class PhotoViewViewModel : ViewModel(), DataProvider {
     private val _state: MutableStateFlow<PhotoViewUiState> = MutableStateFlow(PhotoViewUiState())
@@ -189,6 +192,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
     companion object {
         private const val TAG = "PhotoViewViewModel"
 
+        @OptIn(FlowPreview::class)
         private fun LoadPicPageData.toPageFlow(picId: String, picIndex: Int, prev: Boolean): Flow<PicPageBean> {
             return TiebaApi.getInstance().picPageFlow(
                 forumId = forumId.toString(),
@@ -199,7 +203,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
                 picIndex = picIndex.toString(),
                 objType = objType,
                 prev = prev
-            )
+            ).timeout(4.seconds)
         }
     }
 }
