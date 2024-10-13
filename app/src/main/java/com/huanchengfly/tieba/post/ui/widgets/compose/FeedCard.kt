@@ -104,12 +104,10 @@ import kotlin.math.max
 import kotlin.math.min
 
 private val ImmutableHolder<Media>.url: String
-    get() = ImageUtil.getUrl(
-        true,
-        get { srcPic },     // Best quality in [Media]
-        get { bigPic },
-        get { dynamicPic },
-        get { originPic }   // Worst quality in [Media]
+    get() = ImageUtil.getThumbnail(
+        // item.srcPic, // Best  quality in [Media]
+        item.bigPic,
+        item.originPic  // Worst quality in [Media]
     )
 
 @Composable

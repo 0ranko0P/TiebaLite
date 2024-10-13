@@ -200,15 +200,11 @@ fun PostInfoList.updateAgreeStatus(
 }
 
 private val PbContent.picUrl: String
-    get() =
-        ImageUtil.getUrl(
-            true,
-            originSrc,
-            bigCdnSrc,
-            dynamic_,
-            cdnSrc,
-            cdnSrcActive
-        )
+    get() = ImageUtil.getThumbnail(
+        // originSrc, // Best  quality in [PbContent]
+        bigCdnSrc,
+        cdnSrc        // Worst quality in [PbContent]
+    )
 
 val List<PbContent>.plainText: String
     get() = renders.joinToString("\n") { it.toString() }

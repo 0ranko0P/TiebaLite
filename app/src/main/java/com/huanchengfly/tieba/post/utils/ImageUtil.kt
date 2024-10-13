@@ -300,23 +300,15 @@ object ImageUtil {
     }
 
     /**
-     * 获取要加载的图片 Url
+     * 根据流量设置返回要加载的缩略图 Url
      *
-     * @param isSmallPic   加载的是否为缩略图
-     * @param originUrl    原图 Url
-     * @param smallPicUrls 缩略图 Url，按照画质从好到差排序
-     * @return 要加载的图片 Url
+     * @param originUrl   原图 Url
+     * @param smallPicUrl 最差图片
+     *
+     * @see imageLoadSettings
      */
-    @JvmStatic
-    fun getUrl(isSmallPic: Boolean, originUrl: String, vararg smallPicUrls: String?): String {
-        val urls = mutableListOf(*smallPicUrls)
-        if (isSmallPic) {
-            if (needReverse()) {
-                urls.reverse()
-            }
-            return urls.firstOrNull { !it.isNullOrEmpty() } ?: originUrl
-        }
-        return originUrl
+    fun getThumbnail(originUrl: String, smallPicUrl: String): String {
+        return if (needReverse()) smallPicUrl else originUrl
     }
 
     private fun needReverse(): Boolean {
