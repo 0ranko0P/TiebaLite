@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -95,32 +94,25 @@ fun NetworkImage(
     enablePreview: Boolean = false,
 ) {
     val context = LocalContext.current
-
-    // Launch PhotoViewActivity on clicked, ignore image load settings
-    val onClick: () -> Unit = {
-        photoViewData?.let { photos ->
-            context.goToActivity<PhotoViewActivity> { putExtra(EXTRA_PHOTO_VIEW_DATA, photos) }
-        }
-    }
-
     var isLongPressing by remember { mutableStateOf(false) }
-    val longPressModifier = if (enablePreview) {
-        Modifier.pointerInput(Unit) {
-            detectTapGestures(
-                onLongPress = { isLongPressing = true },
-                onPress = {
-                    tryAwaitRelease()
-                    isLongPressing = false
-                },
-                onTap = { onClick.invoke() }
-            )
-        }
-    } else Modifier
 
     Box(
-        modifier = longPressModifier
-            .clickable(onClick = onClick)
-            .then(modifier)
+        modifier = modifier
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = { isLongPressing = true },
+                    onPress = {
+                        tryAwaitRelease()
+                        isLongPressing = false
+                    },
+                    onTap = {
+                        // Launch PhotoViewActivity now, ignore image load settings
+                        photoViewData?.let { photos ->
+                            context.goToActivity<PhotoViewActivity> { putExtra(EXTRA_PHOTO_VIEW_DATA, photos) }
+                        }
+                    }
+                )
+            }
     ) {
         val darkenImage by rememberPreferenceAsState(
             key = booleanPreferencesKey(KEY_DARKEN_IMAGE_WHEN_NIGHT_MODE),
