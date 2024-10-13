@@ -8,9 +8,11 @@ import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.plainText
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.models.database.Block.Companion.getKeywords
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.litepal.LitePal
 import org.litepal.extension.delete
-import org.litepal.extension.findAllAsync
+import org.litepal.extension.findAll
 
 object BlockManager {
     private val blockList: MutableList<Block> = mutableListOf()
@@ -42,10 +44,9 @@ object BlockManager {
         blockList.removeAll { it.id == id }
     }
 
-    fun init() {
-        LitePal.findAllAsync<Block>().listen { blocks ->
-            blockList.addAll(blocks)
-        }
+    suspend fun init() = withContext(Dispatchers.IO) {
+        val blocks = LitePal.findAll<Block>()
+        blockList.addAll(blocks)
     }
 
     fun shouldBlock(content: String): Boolean {

@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
 
 data class Emoticon(
     val id: String,
@@ -68,10 +69,9 @@ object EmoticonManager {
 
     private val lineHeightCache by lazy { HashMap<TextStyle, Int>(4) }
 
-    private val emoticonMapping: MutableMap<String, String> = mutableMapOf()
+    private val emoticonMapping: MutableMap<String, String> = ConcurrentHashMap()
 
     private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
-    private val queue = JobQueue()
     private var cacheUpdateJob: Job = Job()
 
     fun getEmoticonInlineContent(sizePx: Int): Map<String, InlineTextContent> {
@@ -100,7 +100,7 @@ object EmoticonManager {
         }
     }
 
-    fun init(context: Context) = scope.launch(Dispatchers.Main) {
+    suspend fun init(context: Context) {
         contextRef = WeakReference(context)
         val emoticonCache = getEmoticonDataCache()
         if (emoticonCache.ids.isEmpty()) {
@@ -214,7 +214,6 @@ object EmoticonManager {
     fun clear() {
         inlineTextCache.clear()
         lineHeightCache.clear()
-        queue.cancel()
         contextRef.clear()
     }
 }
