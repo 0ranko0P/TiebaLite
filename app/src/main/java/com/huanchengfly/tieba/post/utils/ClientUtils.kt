@@ -60,6 +60,9 @@ object ClientUtils {
             .syncFlow(clientId)
             .catch { it.printStackTrace() }
             .collect {
+                if (clientId == it.client.clientId && sampleId == it.wlConfig.sampleId) {
+                    return@collect
+                }
                 clientId = it.client.clientId
                 sampleId = it.wlConfig.sampleId
                 save(context, it.client.clientId, it.wlConfig.sampleId)
