@@ -255,7 +255,6 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                         PicContentRender(
                             picUrl = it.picUrl,
                             originUrl = it.originSrc,
-                            showOriginBtn = it.showOriginalBtn == 1,
                             originSize = it.originSize,
                             picId = ImageUtil.getPicId(it.originSrc),
                             width = width,
@@ -313,7 +312,6 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                         PicContentRender(
                             picUrl = it.src,
                             originUrl = it.src,
-                            showOriginBtn = it.showOriginalBtn == 1,
                             originSize = it.originSize,
                             picId = ImageUtil.getPicId(it.src),
                             width = width,
@@ -339,7 +337,6 @@ val Post.contentRenders: ImmutableList<PbContentRender>
                         it.picId,
                         it.picUrl,
                         it.originUrl,
-                        it.showOriginBtn,
                         it.originSize
                     )
                 )

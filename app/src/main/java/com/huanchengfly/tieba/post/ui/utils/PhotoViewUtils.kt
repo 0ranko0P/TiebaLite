@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.utils
 
 import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.Post
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
@@ -15,7 +14,6 @@ fun getPhotoViewData(
     picId: String,
     picUrl: String,
     originUrl: String,
-    showOriginBtn: Boolean,
     originSize: Int,
     seeLz: Boolean = false
 ): PhotoViewData? {
@@ -38,24 +36,10 @@ fun getPhotoViewData(
                 picIndex = 1,
                 url = picUrl,
                 originUrl = originUrl,
-                showOriginBtn = showOriginBtn,
                 originSize = originSize,
                 postId = post.id
             )
         )
-    )
-}
-
-fun getPhotoViewData(
-    threadInfo: ThreadInfo,
-    index: Int
-): PhotoViewData {
-    return getPhotoViewData(
-        medias = threadInfo.media,
-        forumId = threadInfo.forumId,
-        forumName = threadInfo.forumName,
-        threadId = threadInfo.threadId,
-        index = index
     )
 }
 
@@ -85,7 +69,6 @@ fun getPhotoViewData(
                 picIndex = mediaIndex + 1,
                 url = mediaItem.bigPic,
                 originUrl = mediaItem.originPic,
-                showOriginBtn = mediaItem.showOriginalBtn == 1,
                 originSize = mediaItem.originSize,
                 postId = mediaItem.postId
             )

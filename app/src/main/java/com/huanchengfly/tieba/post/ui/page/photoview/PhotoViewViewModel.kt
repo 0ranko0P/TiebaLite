@@ -49,7 +49,6 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
                 PhotoViewItem(
                     picId = it.img.original.id,
                     originUrl = it.img.original.originalSrc,
-                    url = if (it.showOriginalBtn) it.img.original.bigCdnSrc else null,
                     overallIndex = it.overAllIndex.toInt(),
                     postId = it.postId?.toLongOrNull()
                 )
@@ -216,7 +215,6 @@ data class PhotoViewUiState(
 data class PhotoViewItem(
     val picId: String,
     val originUrl: String,
-    val url: String?,
     val overallIndex: Int,
     val postId: Long? = null,
 ): Photo {
@@ -224,7 +222,6 @@ data class PhotoViewItem(
     constructor(item: PicItem, overallIndex: Int): this(
         picId = item.picId,
         originUrl = item.originUrl,
-        url = if (item.showOriginBtn) item.url else null,
         overallIndex = overallIndex,
         postId = item.postId
     )

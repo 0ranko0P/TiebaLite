@@ -137,7 +137,6 @@ data class TextContentRender(
 data class PicContentRender(
     val picUrl: String,
     val originUrl: String,
-    val showOriginBtn: Boolean,
     val originSize: Int,
     val width: Int,
     val height: Int,
