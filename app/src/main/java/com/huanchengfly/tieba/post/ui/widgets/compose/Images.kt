@@ -31,6 +31,7 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
@@ -40,14 +41,13 @@ import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_DARKEN_IMAGE_WHEN_NIGHT_MODE
 import com.huanchengfly.tieba.post.utils.GlideUtil
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import com.huanchengfly.tieba.post.utils.NetworkUtil
 
 fun shouldLoadImage(skipNetworkCheck: Boolean): Boolean {
     val imageLoadSettings = ImageUtil.imageLoadSettings
     return skipNetworkCheck
             || imageLoadSettings == ImageUtil.SETTINGS_SMART_ORIGIN
             || imageLoadSettings == ImageUtil.SETTINGS_ALL_ORIGIN
-            || (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected())
+            || (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkObserver.isNetworkUnMetered)
 }
 
 @OptIn(ExperimentalGlideComposeApi::class)

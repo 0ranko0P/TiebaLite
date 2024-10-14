@@ -20,6 +20,7 @@ import androidx.core.content.FileProvider
 import androidx.media3.common.MimeTypes
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.components.glide.ProgressListener
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dpToPxFloat
@@ -308,12 +309,12 @@ object ImageUtil {
      * @see imageLoadSettings
      */
     fun getThumbnail(originUrl: String, smallPicUrl: String): String {
-        return if (needReverse()) smallPicUrl else originUrl
+        return if (loadWorst()) smallPicUrl else originUrl
     }
 
-    private fun needReverse(): Boolean {
+    private fun loadWorst(): Boolean {
         return if (imageLoadSettings == SETTINGS_SMART_ORIGIN &&
-            NetworkUtil.isWifiConnected()
+            NetworkObserver.isNetworkUnMetered
         ) false
         else imageLoadSettings != SETTINGS_ALL_ORIGIN
     }

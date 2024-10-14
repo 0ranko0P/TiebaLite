@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
+import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.ui.widgets.VoicePlayerView
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import kotlinx.coroutines.CoroutineScope
@@ -64,6 +65,7 @@ abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        NetworkObserver.observeOnLifecycle(this)
         getDeviceDensity()
         INSTANCE.addActivity(this)
     }
