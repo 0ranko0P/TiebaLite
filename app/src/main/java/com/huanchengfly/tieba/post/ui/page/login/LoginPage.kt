@@ -38,8 +38,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebChromeClient
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebViewClient
 import com.huanchengfly.tieba.post.ui.page.webview.isInternalHost
@@ -57,8 +59,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AccountUtil.Companion.parseCookie
 import com.huanchengfly.tieba.post.utils.ClientUtils
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -73,11 +73,8 @@ const val LOGIN_URL =
     "https://wappass.baidu.com/passport?login&u=https%3A%2F%2Ftieba.baidu.com%2Findex%2Ftbwise%2Fmine"
 
 @SuppressLint("SetJavaScriptEnabled")
-@Destination
 @Composable
-fun LoginPage(
-    navigator: DestinationsNavigator,
-) {
+fun LoginPage(navigator: NavController = LocalNavController.current) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val webViewState = rememberSaveableWebViewState()
@@ -158,7 +155,7 @@ fun LoginPage(
                         }
                     }
                 },
-                navigationIcon = { BackNavigationIcon(onBackPressed = { navigator.navigateUp() }) },
+                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) },
                 actions = {
                     val menuState = rememberMenuState()
                     ClickMenu(
@@ -226,8 +223,8 @@ fun LoginPage(
     }
 }
 
-class LoginWebViewClient(
-    nativeNavigator: DestinationsNavigator? = null,
+private class LoginWebViewClient(
+    nativeNavigator: NavController? = null,
     val coroutineScope: CoroutineScope,
     val snackbarHostState: SnackbarHostState,
 ) : MyWebViewClient(nativeNavigator) {

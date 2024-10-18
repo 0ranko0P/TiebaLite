@@ -31,15 +31,15 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.Manager
 import com.huanchengfly.tieba.post.api.models.protos.plainText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumDetailPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Companion.ForumDetailParams
+import com.huanchengfly.tieba.post.ui.page.Destination.ForumDetail
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
@@ -50,27 +50,25 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
 
 /**
  * Navigate to [ForumDetailPage]
  * */
-fun DestinationsNavigator.navigateForumDetailPage(forumInfo: ForumInfo) {
-    this.navigate(
-        ForumDetailPageDestination(
-            forumId = forumInfo.id,
-            avatar = forumInfo.avatar,
-            name = forumInfo.name,
-            slogan = forumInfo.slogan,
-            memberCount = forumInfo.member_num,
-            threadCount = forumInfo.thread_num,
-            postCount = forumInfo.post_num,
-            managers = ArrayList(forumInfo.managers) // TODO: Make it immutable
-        )
+fun NavController.navigateForumDetailPage(forumInfo: ForumInfo/* Big Parcelable */) {
+    val params = ForumDetailParams(
+        forumId = forumInfo.id,
+        avatar = forumInfo.avatar,
+        name = forumInfo.name,
+        slogan = forumInfo.slogan,
+        memberCount = forumInfo.member_num,
+        threadCount = forumInfo.thread_num,
+        postCount = forumInfo.post_num,
+        managers = forumInfo.managers.map { ManagerData(it.id, it.name, it.portrait) }
     )
+    this.navigate(ForumDetail(params))
 }
 
 private fun getForumIntro(forumId: Long): Flow<String> = TiebaApi.getInstance()
@@ -80,7 +78,13 @@ private fun getForumIntro(forumId: Long): Flow<String> = TiebaApi.getInstance()
             ?: throw NullPointerException("Data is null: ${it.error?.error_msg}, forumId: $forumId")
     }
 
-@Destination
+@Serializable
+data class ManagerData(
+    val id: Long,
+    val name: String,
+    val portrait: String
+)
+
 @Composable
 fun ForumDetailPage(
     forumId: Long,
@@ -90,17 +94,14 @@ fun ForumDetailPage(
     memberCount: Int,
     threadCount: Int,
     postCount: Int,
-    managers: ArrayList<Manager>,
-    navigator: DestinationsNavigator,
+    managers: List<ManagerData>,
+    onBack: () -> Unit,
+    onManagerClicked: (ManagerData) -> Unit,
 ) = MyScaffold(
     topBar = {
         TitleCentredToolbar(
-            title = {
-                Text(text = stringResource(id = R.string.title_forum_info))
-            },
-            navigationIcon = {
-                BackNavigationIcon { navigator.navigateUp() }
-            }
+            title = stringResource(id = R.string.title_forum_info),
+            navigationIcon = { BackNavigationIcon(onBack) }
         )
     }
 ) {
@@ -122,7 +123,7 @@ fun ForumDetailPage(
         LazyRow {
             items(managers, key = { it.id }) {
                 ManagerItem(name = it.name, portrait = it.portrait) {
-                    navigator.navigate(UserProfilePageDestination(it.id))
+                    onManagerClicked(it)
                 }
             }
         }

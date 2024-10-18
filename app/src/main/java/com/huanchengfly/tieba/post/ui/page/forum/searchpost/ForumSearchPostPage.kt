@@ -36,7 +36,6 @@ import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -50,7 +49,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -58,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -65,11 +64,11 @@ import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.page.Destination.Forum
+import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
+import com.huanchengfly.tieba.post.ui.page.Destination.Thread
+import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -84,8 +83,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -202,17 +199,15 @@ private fun SearchHistoryList(
 }
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
-@Destination
 @Composable
 fun ForumSearchPostPage(
     forumName: String,
     forumId: Long,
-    navigator: DestinationsNavigator,
+    navigator: NavController,
     viewModel: ForumSearchPostViewModel = pageViewModel<ForumSearchPostUiIntent, ForumSearchPostViewModel>(
         listOf(ForumSearchPostUiIntent.Init)
     ),
 ) {
-    val context = LocalContext.current
     val currentKeyword by viewModel.uiState.collectPartialAsState(
         prop1 = ForumSearchPostUiState::keyword,
         initial = ""
@@ -307,14 +302,14 @@ fun ForumSearchPostPage(
     val threadClickListener : (SearchThreadBean.ThreadInfoBean) -> Unit = {
         if (it.postInfo != null) {
             navigator.navigate(
-                SubPostsPageDestination(threadId = it.tid.toLong(), subPostId = it.cid.toLong(), loadFromSubPost = true)
+                SubPosts(threadId = it.tid.toLong(), subPostId = it.cid.toLong())
             )
         } else if (it.mainPost != null) {
             navigator.navigate(
-                ThreadPageDestination(threadId = it.tid.toLong(), postId = it.pid.toLong(), scrollToReply = true)
+                Thread(threadId = it.tid.toLong(), postId = it.pid.toLong(), scrollToReply = true)
             )
         } else {
-            navigator.navigate(ThreadPageDestination(threadId = it.tid.toLong()))
+            navigator.navigate(Thread(threadId = it.tid.toLong()))
         }
     }
 
@@ -355,12 +350,7 @@ fun ForumSearchPostPage(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(100))
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = rememberRipple(bounded = false, 24.dp),
-                                            role = Role.Button,
-                                            onClick = { navigator.navigateUp() }
-                                        ),
+                                        .clickable(onClick = navigator::navigateUp),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
@@ -539,19 +529,19 @@ fun ForumSearchPostPage(
                                         onClick = threadClickListener,
                                         onUserClick = {
                                             val uid = it.userId.toLong()
-                                            navigator.navigate(UserProfilePageDestination(uid))
+                                            navigator.navigate(UserProfile(uid))
                                         },
                                         onForumClick = {
-                                            navigator.navigate(ForumPageDestination(it.forumName))
+                                            navigator.navigate(Forum(it.forumName))
                                         },
                                         onQuotePostClick = {
                                             navigator.navigate(
-                                                ThreadPageDestination(threadId = it.tid, postId = it.pid, scrollToReply = true)
+                                                Thread(threadId = it.tid, postId = it.pid, scrollToReply = true)
                                             )
                                         },
                                         onMainPostClick = {
                                             navigator.navigate(
-                                                ThreadPageDestination(threadId = it.tid, scrollToReply = true)
+                                                Thread(threadId = it.tid, scrollToReply = true)
                                             )
                                         },
                                         hideForum = true,

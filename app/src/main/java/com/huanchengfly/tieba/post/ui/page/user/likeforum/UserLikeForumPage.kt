@@ -30,8 +30,8 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Forum
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -50,7 +50,7 @@ fun UserLikeForumPage(
     enablePullRefresh: Boolean = false,
     viewModel: UserLikeForumViewModel = pageViewModel(),
 ) {
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
 
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(UserLikeForumUiIntent.Refresh(uid))
@@ -143,7 +143,7 @@ fun UserLikeForumPage(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        forumBean.name?.let { navigator.navigate(ForumPageDestination(it)) }
+                        forumBean.name?.let { navigator.navigate(Forum(forumName = it)) }
                     }
                 }
             }

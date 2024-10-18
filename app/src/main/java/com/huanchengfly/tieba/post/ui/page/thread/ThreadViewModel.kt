@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
+import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
@@ -44,15 +46,15 @@ import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
 import com.huanchengfly.tieba.post.ui.models.ThreadUiState
 import com.huanchengfly.tieba.post.ui.models.UserData
-import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsSheetPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
+import com.huanchengfly.tieba.post.ui.page.Destination.Reply
+import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_HIDE
 import com.huanchengfly.tieba.post.utils.HistoryUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.spec.Direction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -72,18 +74,20 @@ import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 import kotlin.math.max
+import kotlin.reflect.typeOf
 
 @Stable
 @HiltViewModel
 class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : ViewModel() {
 
-    // TODO: Use safe arguments
-    val threadId = savedStateHandle.get<Long>("threadId")?: throw IllegalArgumentException()
-    val postId = savedStateHandle.get<Long>("postId")?: throw IllegalArgumentException()
-
-    private var _seeLz: Boolean by mutableStateOf(
-        savedStateHandle.get<Boolean>("seeLz")?: throw IllegalArgumentException()
+    val params = savedStateHandle.toRoute<Destination.Thread>(
+        typeMap = mapOf(typeOf<ThreadStoreExtra?>() to navTypeOf<ThreadStoreExtra?>(isNullableAllowed = true))
     )
+
+    val threadId: Long = params.threadId
+    val postId: Long = params.postId
+
+    private var _seeLz: Boolean by mutableStateOf(params.seeLz)
     /**
      * 只看楼主模式
      * */
@@ -590,7 +594,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
         text = "https://tieba.baidu.com/p/$threadId?see_lz=${seeLz.booleanToString()}"
     )
 
-    fun onReportThread(navigator: DestinationsNavigator) = viewModelScope.launch {
+    fun onReportThread(navigator: NavController) = viewModelScope.launch {
         TiebaUtil.reportPost(App.INSTANCE, navigator, firstPostId.toString())
     }
 
@@ -600,7 +604,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
 
     fun onReplyPost(post: PostData) = sendUiEvent(
         ThreadUiEvent.ToReplyDestination(
-            ReplyPageDestination(
+            Reply(
                 forumId = curForumId ?: 0,
                 forumName = threadUiState.forum?.get { name } ?: "",
                 threadId = threadId,
@@ -614,7 +618,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
 
     fun onReplySubPost(post: PostData, subPost: SubPostItemData) = sendUiEvent(
         ThreadUiEvent.ToReplyDestination(
-            ReplyPageDestination(
+            Reply(
                 forumId = curForumId ?: 0,
                 forumName = threadUiState.forum?.get { name } ?: "",
                 threadId = threadId,
@@ -631,9 +635,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
     fun onOpenSubPost(post: PostData, subPostId: Long) {
         val forumId = curForumId?: return
         sendUiEvent(
-            ThreadUiEvent.ToSubPostsDestination(
-                SubPostsSheetPageDestination(threadId, forumId, post.id, subPostId, false)
-            )
+            ThreadUiEvent.ToSubPostsDestination(SubPosts(threadId, forumId, post.id, subPostId))
         )
     }
 
@@ -771,9 +773,9 @@ sealed interface ThreadUiEvent : UiEvent {
 
     data class LoadSuccess(val page: Int) : ThreadUiEvent
 
-    data class ToReplyDestination(val direction: Direction): ThreadUiEvent
+    data class ToReplyDestination(val direction: Reply): ThreadUiEvent
 
-    data class ToSubPostsDestination(val direction: Direction): ThreadUiEvent
+    data class ToSubPostsDestination(val direction: SubPosts): ThreadUiEvent
 }
 
 object ThreadSortType {

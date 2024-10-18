@@ -33,7 +33,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -42,10 +41,10 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumRuleDetailPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.ForumRuleDetail
+import com.huanchengfly.tieba.post.ui.page.Destination.Thread
+import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
@@ -194,7 +193,7 @@ private fun ForumThreadListPage(
     onRefresh: () -> Unit,
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val snackbarHostState = LocalSnackbarHostState.current
 
     val lazyListState = rememberLazyListState()
@@ -292,7 +291,7 @@ private fun ForumThreadListPage(
                     item(key = "ForumRule") {
                         TopThreadItem(
                             title = rule,
-                            onClick = { navigator.navigate(ForumRuleDetailPageDestination(forumId)) },
+                            onClick = { navigator.navigate(ForumRuleDetail(forumId)) },
                             modifier = Modifier.fillMaxWidth(),
                             type = stringResource(id = R.string.desc_forum_rule)
                         )
@@ -326,7 +325,7 @@ private fun ForumThreadListPage(
                                 title = item.title,
                                 onClick = {
                                     navigator.navigate(
-                                        ThreadPageDestination(item.threadId, forumId = item.forumId, threadInfo = item)
+                                        Thread(item.threadId, forumId = item.forumId)
                                     )
                                 }
                             )
@@ -342,22 +341,22 @@ private fun ForumThreadListPage(
                                     item = holder,
                                     onClick = {
                                         navigator.navigate(
-                                            ThreadPageDestination(item.threadId, forumId = item.forumId, threadInfo = item)
+                                            Thread(item.threadId, forumId = item.forumId)
                                         )
                                     },
                                     onClickReply = {
                                         navigator.navigate(
-                                            ThreadPageDestination(it.threadId, forumId = it.forumId, scrollToReply = true)
+                                            Thread(it.threadId, forumId = it.forumId, scrollToReply = true)
                                         )
                                     },
                                     onAgree = viewModel::onAgree,
                                     onClickOriginThread = {
                                         navigator.navigate(
-                                            ThreadPageDestination(threadId = it.tid.toLong(), forumId = it.fid)
+                                            Thread(threadId = it.tid.toLong(), forumId = it.fid)
                                         )
                                     },
                                     onClickUser = {
-                                        navigator.navigate(UserProfilePageDestination(it.id))
+                                        navigator.navigate(UserProfile(it.id))
                                     }
                                 )
                             }

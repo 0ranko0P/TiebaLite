@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
+import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -31,9 +33,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.utils.launchUrl
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -85,15 +84,16 @@ fun AboutPage(
     }
 }
 
-@Destination
 @Composable
-fun AboutPage(navigator: DestinationsNavigator) {
+fun AboutPage(onBack: () -> Unit) {
     val context = LocalContext.current
 
     AboutPage(
-        onBackClicked = navigator::navigateUp,
+        onBackClicked = onBack,
         onHomePageClicked = {
-            launchUrl(context, navigator, "https://github.com/HuanCheng65/TiebaLite")
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/HuanCheng65/TiebaLite"))
+            )
         }
     )
 }

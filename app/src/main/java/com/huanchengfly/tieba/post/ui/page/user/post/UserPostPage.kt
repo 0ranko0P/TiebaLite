@@ -45,11 +45,11 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Forum
+import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
+import com.huanchengfly.tieba.post.ui.page.Destination.Thread
+import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -74,7 +74,7 @@ fun UserPostPage(
     enablePullRefresh: Boolean = false,
     viewModel: UserPostViewModel = pageViewModel(key = if (isThread) "user_thread_$uid" else "user_post_$uid"),
 ) {
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
 
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(UserPostUiIntent.Refresh(uid, isThread))
@@ -207,15 +207,11 @@ fun UserPostPage(
 
         val onPostClickListener : (Long, Long?, Boolean) -> Unit = { threadId, postId, isSubPost ->
             if (postId == null) {
-                navigator.navigate(ThreadPageDestination(threadId))
+                navigator.navigate(Thread(threadId))
             } else if (isSubPost) {
-                navigator.navigate(
-                    SubPostsPageDestination(threadId, subPostId = postId, loadFromSubPost = true)
-                )
+                navigator.navigate(SubPosts(threadId, subPostId = postId))
             } else {
-                navigator.navigate(
-                    ThreadPageDestination(threadId, postId = postId, scrollToReply = true)
-                )
+                navigator.navigate(Thread(threadId, postId = postId, scrollToReply = true))
             }
         }
 
@@ -248,17 +244,17 @@ fun UserPostPage(
                         },
                         onClickReply = {
                             navigator.navigate(
-                                ThreadPageDestination(it.thread_id, it.forum_id, scrollToReply = true)
+                                Thread(it.thread_id, forumId = it.forum_id, scrollToReply = true)
                             )
                         },
                         onClickUser = {
-                            navigator.navigate(UserProfilePageDestination(it))
+                            navigator.navigate(UserProfile(it))
                         },
                         onClickForum = {
-                            navigator.navigate(ForumPageDestination(it))
+                            navigator.navigate(Forum(it))
                         },
                         onClickOriginThread = {
-                            navigator.navigate(ThreadPageDestination(it))
+                            navigator.navigate(Thread(it))
                         },
                     )
                 }

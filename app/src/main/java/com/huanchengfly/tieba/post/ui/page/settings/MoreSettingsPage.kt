@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.collectPreferenceAsState
@@ -24,20 +25,17 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.page.destinations.AboutPageDestination
+import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@Destination
 @Composable
-fun MoreSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
+fun MoreSettingsPage(navigator: NavController) = MyScaffold(
     backgroundColor = Color.Transparent,
     topBar = {
         TitleCentredToolbar(
@@ -105,7 +103,7 @@ fun MoreSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 leadingIcon = Icons.Outlined.Info,
                 title = stringResource(id = R.string.title_about),
                 onClick = {
-                    navigator.navigate(AboutPageDestination)
+                    navigator.navigate(About)
                 },
                 summary = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME)
             )

@@ -83,10 +83,8 @@ import com.huanchengfly.tieba.post.theme.DefaultColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
@@ -392,7 +390,7 @@ fun HomePage(
 ) {
     val account = LocalAccount.current
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val isLoading by viewModel.uiState.collectPartialAsState(
         prop1 = HomeUiState::isLoading,
         initial = true
@@ -477,7 +475,7 @@ fun HomePage(
                 }
             ) {
                 SearchBox(modifier = Modifier.padding(bottom = 4.dp)) {
-                    navigator.navigate(SearchPageDestination)
+                    navigator.navigate(Destination.Search)
                 }
             }
         },
@@ -580,11 +578,7 @@ fun HomePage(
                                                     .clip(RoundedCornerShape(100))
                                                     .background(color = ExtendedTheme.colors.chip)
                                                     .clickable {
-                                                        navigator.navigate(
-                                                            ForumPageDestination(
-                                                                it.data
-                                                            )
-                                                        )
+                                                        navigator.navigate(Destination.Forum(forumName = it.data))
                                                     }
                                                     .padding(4.dp),
                                                 verticalAlignment = CenterVertically,
@@ -631,7 +625,7 @@ fun HomePage(
                                 item,
                                 listSingle,
                                 onClick = {
-                                    navigator.navigate(ForumPageDestination(it.forumName))
+                                    navigator.navigate(Destination.Forum(it.forumName))
                                 },
                                 onUnfollow = {
                                     unfollowForum = it
@@ -662,7 +656,7 @@ fun HomePage(
                             item,
                             listSingle,
                             onClick = {
-                                navigator.navigate(ForumPageDestination(it.forumName))
+                                navigator.navigate(Destination.Forum(it.forumName))
                             },
                             onUnfollow = {
                                 unfollowForum = it
@@ -752,7 +746,7 @@ fun EmptyScreen(
     canOpenExplore: Boolean,
     onOpenExplore: () -> Unit
 ) {
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     TipScreen(
         title = {
             if (!loggedIn) {
@@ -784,11 +778,8 @@ fun EmptyScreen(
         actions = {
             if (!loggedIn) {
                 Button(
-                    onClick = {
-                        navigator.navigate(LoginPageDestination)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    onClick = { navigator.navigate(Destination.Login) },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = stringResource(id = R.string.button_login))
                 }

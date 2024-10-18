@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -34,7 +33,6 @@ import kotlinx.coroutines.launch
 const val TAB_FORUM_LATEST = 0
 const val TAB_FORUM_GOOD = 1
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ForumTab(
     modifier: Modifier = Modifier,

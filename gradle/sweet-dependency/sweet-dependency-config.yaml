@@ -177,7 +177,7 @@ libraries:
   androidx.navigation:
     navigation-compose:
       alias: androidx-navigation-compose
-      version: 2.7.7
+      version: 2.8.2
   com.google.dagger:
     hilt-android:
       alias: hilt-android
@@ -188,10 +188,10 @@ libraries:
   androidx.hilt:
     hilt-navigation-compose:
       alias: androidx-hilt-navigation-compose
-      version: 1.1.0
+      version: 1.2.0
     hilt-compiler:
       alias: androidx-hilt-compiler
-      version: 1.1.0
+      version: 1.2.0
   com.google.accompanist:
     accompanist-drawablepainter:
       alias: accompanist-drawablepainter
@@ -222,6 +222,9 @@ libraries:
     material-icons-extended:
       alias: compose-material-icons-extended
       version: <no-spec>
+    material-navigation:
+      alias: compose-material-navigation
+      version: 1.7.0-beta01
   com.google.android.material:
     material:
       alias: google-material

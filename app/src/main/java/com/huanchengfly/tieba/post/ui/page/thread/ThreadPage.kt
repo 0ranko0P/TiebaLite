@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -81,10 +82,9 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipContent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.UserData
+import com.huanchengfly.tieba.post.ui.page.Destination.Forum
+import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
@@ -102,9 +102,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.appPreferences
-import com.ramcosta.composedestinations.annotation.DeepLink
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -169,13 +166,10 @@ object ThreadPageFrom {
 }
 
 @Serializable
-sealed interface ThreadPageExtra
-
-@Serializable
-data class ThreadPageFromStoreExtra(
+data class ThreadStoreExtra(
     val maxPid: Long,
     val maxFloor: Int,
-) : ThreadPageExtra
+)
 
 private fun LazyListState.lastVisiblePost(viewModel: ThreadViewModel): PostData? {
     val lastPostItem = layoutInfo.visibleItemsInfo.lastOrNull { item ->
@@ -187,24 +181,18 @@ private fun LazyListState.lastVisiblePost(viewModel: ThreadViewModel): PostData?
     } ?: viewModel.threadUiState.firstPost
 }
 
-@OptIn(ExperimentalMaterialApi::class)
-@Destination(
-    deepLinks = [
-        DeepLink(uriPattern = "tblite://thread/{threadId}"),
-    ]
-)
 @Composable
 fun ThreadPage(
     threadId: Long,
-    navigator: DestinationsNavigator,
     forumId: Long? = null,
     postId: Long = 0,
     seeLz: Boolean = false,
     sortType: Int = 0,
     from: String = "",
-    extra: ThreadPageExtra? = null,
+    extra: ThreadStoreExtra? = null,
     threadInfo: ThreadInfo? = null,
     scrollToReply: Boolean = false,
+    navigator: NavController,
     viewModel: ThreadViewModel = hiltViewModel(),
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -322,7 +310,7 @@ fun ThreadPage(
     )
 
     LaunchedEffect(Unit) {
-        if (from == ThreadPageFrom.FROM_STORE && extra is ThreadPageFromStoreExtra && extra.maxPid != postId) {
+        if (from == ThreadPageFrom.FROM_STORE && extra != null && extra.maxPid != postId) {
             val result = scaffoldState.snackbarHostState.showSnackbar(
                 context.getString(R.string.message_store_thread_update, extra.maxFloor),
                 context.getString(R.string.button_load_new),
@@ -334,7 +322,7 @@ fun ThreadPage(
         }
     }
 
-    MyBackHandler(enabled = true, currentScreen = ThreadPageDestination) {
+    MyBackHandler(enabled = true) {
         if (bottomSheetState.isVisible) { // Close bottom sheet now
             closeBottomSheet(); return@MyBackHandler
         }
@@ -367,10 +355,8 @@ fun ThreadPage(
                 TopBar(
                     name = forum?.item?.name,
                     avatar = forum?.item?.avatar,
-                    onBack = { navigator.navigateUp() },
-                    onForumClick = {
-                        forum?.item?.name?.let { navigator.navigate(ForumPageDestination(it)) }
-                    }
+                    onBack = navigator::navigateUp,
+                    onForumClick = { forum?.item?.name?.let { navigator.navigate(Forum(it)) } }
                 )
             },
             bottomBar = {
@@ -378,7 +364,7 @@ fun ThreadPage(
                     user = user,
                     onClickReply = {
                         navigator.navigate(
-                            ReplyPageDestination(
+                            Reply(
                                 forumId = viewModel.curForumId ?: 0,
                                 forumName = forum?.get { name }.orEmpty(),
                                 threadId = threadId,

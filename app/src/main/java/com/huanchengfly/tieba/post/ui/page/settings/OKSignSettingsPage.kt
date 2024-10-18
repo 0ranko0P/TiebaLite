@@ -39,20 +39,17 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@Destination
 @Composable
-fun OKSignSettingsPage(navigator: DestinationsNavigator) {
+fun OKSignSettingsPage(onBack: () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
     MyScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
             TitleCentredToolbar(
                 title = stringResource(id = R.string.title_oksign),
-                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) }
+                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) }
             )
         }
     ) { paddingValues ->

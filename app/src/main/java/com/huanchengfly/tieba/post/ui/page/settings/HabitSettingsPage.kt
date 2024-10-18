@@ -34,18 +34,15 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_FORUM
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_FORUM_SORT_DEFAULT
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.isPhotoPickerAvailable
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.persistentMapOf
 
-@Destination
 @Composable
-fun HabitSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
+fun HabitSettingsPage(onBack: () -> Unit) = MyScaffold(
     backgroundColor = Color.Transparent,
     topBar = {
         TitleCentredToolbar(
             title = stringResource(id = R.string.title_settings_read_habit),
-            navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) }
+            navigationIcon = { BackNavigationIcon(onBackPressed = onBack) }
         )
     },
 ) { paddingValues ->

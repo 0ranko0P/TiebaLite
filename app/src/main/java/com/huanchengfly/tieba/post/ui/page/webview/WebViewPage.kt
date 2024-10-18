@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import androidx.core.location.LocationManagerCompat
 import androidx.core.net.toUri
+import androidx.navigation.NavController
 import com.hjq.permissions.Permission
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
@@ -59,9 +60,7 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.dialogs.PermissionDialog
 import com.huanchengfly.tieba.post.models.PermissionBean
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebChromeClient
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebViewClient
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -81,8 +80,6 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.compose.launchActivityForResult
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.filter
@@ -92,12 +89,8 @@ import java.lang.ref.WeakReference
 import java.util.UUID
 
 @SuppressLint("SetJavaScriptEnabled")
-@Destination
 @Composable
-fun WebViewPage(
-    initialUrl: String,
-    navigator: DestinationsNavigator,
-) {
+fun WebViewPage(initialUrl: String, navigator: NavController) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val webViewState = rememberSaveableWebViewState()
@@ -285,7 +278,7 @@ fun isInternalHost(host: String): Boolean {
 }
 
 open class MyWebViewClient(
-    protected val nativeNavigator: DestinationsNavigator? = null,
+    protected val nativeNavigator: NavController? = null,
 ) : AccompanistWebViewClient() {
     val context: Context
         get() = state.webView?.context ?: App.INSTANCE
@@ -314,21 +307,19 @@ open class MyWebViewClient(
                     val threadId = newUri.getQueryParameter("kz")?.toLongOrNull()
                     if (threadId != null) {
                         nativeNavigator?.navigate(
-                            ThreadPageDestination(threadId)
+                            Destination.Thread(threadId)
                         )
                         true
                     } else if (forumName != null) {
                         nativeNavigator?.navigate(
-                            ForumPageDestination(forumName)
+                            Destination.Forum(forumName)
                         )
                         true
                     } else false
                 } else if (path.startsWith("/p/")) {
                     val threadId = path.substring(3).toLongOrNull()
                     if (threadId != null) {
-                        nativeNavigator?.navigate(
-                            ThreadPageDestination(threadId)
-                        )
+                        nativeNavigator?.navigate(Destination.Thread(threadId))
                         true
                     } else false
                 } else false

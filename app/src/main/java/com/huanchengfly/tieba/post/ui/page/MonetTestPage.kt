@@ -16,11 +16,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TonalPalette
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.collections.immutable.toImmutableList
 import kotlin.reflect.full.declaredMemberProperties
 
-@Destination
 @Composable
 fun MonetTestPage() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {

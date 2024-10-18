@@ -13,36 +13,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.Destination.Login
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.AccountManagePageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.BlockSettingsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.CustomSettingsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.HabitSettingsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.MoreSettingsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.OKSignSettingsPageDestination
+import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AccountManage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+
+object Settings
 
 @Composable
 private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     if (account != null) {
         TextPref(
             modifier = modifier,
             title = stringResource(id = R.string.title_account_manage),
             summary = stringResource(id = R.string.summary_now_account, account.nameShow ?: account.name),
-            onClick = {navigator.navigate(AccountManagePageDestination) },
+            onClick = {navigator.navigate(AccountManage) },
             leadingIcon = {
                 Avatar(
                     data = StringUtil.getAvatarUrl(account.portrait),
@@ -57,18 +53,15 @@ private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
             title = stringResource(id = R.string.title_account_manage),
             summary = stringResource(id = R.string.summary_not_logged_in),
             onClick = {
-                navigator.navigate(LoginPageDestination)
+                navigator.navigate(Login)
             },
             leadingIcon = Icons.Rounded.AccountCircle
         )
     }
 }
 
-@Destination
 @Composable
-fun SettingsPage(
-    navigator: DestinationsNavigator,
-) {
+fun SettingsPage(navigator: NavController) {
     ProvideNavigator(navigator = navigator) {
         Scaffold(
             backgroundColor = Color.Transparent,
@@ -88,7 +81,7 @@ fun SettingsPage(
                         title = stringResource(id = R.string.title_block_settings),
                         summary = stringResource(id = R.string.summary_block_settings),
                         onClick = {
-                            navigator.navigate(BlockSettingsPageDestination)
+                            navigator.navigate(SettingsDestination.BlockSettings)
                         },
                         leadingIcon = Icons.Rounded.DoNotDisturbOff
                     )
@@ -98,7 +91,7 @@ fun SettingsPage(
                         title = stringResource(id = R.string.title_settings_custom),
                         summary = stringResource(id = R.string.summary_settings_custom),
                         onClick = {
-                            navigator.navigate(CustomSettingsPageDestination)
+                            navigator.navigate(SettingsDestination.Custom)
                         },
                         leadingIcon = Icons.Outlined.FormatPaint
                     )
@@ -108,7 +101,7 @@ fun SettingsPage(
                         title = stringResource(id = R.string.title_settings_read_habit),
                         summary = stringResource(id = R.string.summary_settings_habit),
                         onClick = {
-                            navigator.navigate(HabitSettingsPageDestination)
+                            navigator.navigate(SettingsDestination.Habit)
                         },
                         leadingIcon = Icons.Outlined.DashboardCustomize
                     )
@@ -118,7 +111,7 @@ fun SettingsPage(
                         title = stringResource(id = R.string.title_oksign),
                         summary = stringResource(id = R.string.summary_settings_oksign),
                         onClick = {
-                            navigator.navigate(OKSignSettingsPageDestination)
+                            navigator.navigate(SettingsDestination.OKSign)
                         },
                         leadingIcon = Icons.Rounded.Checklist
                     )
@@ -128,7 +121,7 @@ fun SettingsPage(
                         title = stringResource(id = R.string.title_settings_more),
                         summary = stringResource(id = R.string.summary_settings_more),
                         onClick = {
-                            navigator.navigate(MoreSettingsPageDestination)
+                            navigator.navigate(SettingsDestination.More)
                         },
                         leadingIcon =  Icons.Rounded.MoreHoriz
                     )

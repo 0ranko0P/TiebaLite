@@ -41,6 +41,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.ThreadStoreBean
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -52,11 +53,11 @@ import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Thread
+import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFrom
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFromStoreExtra
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadStoreExtra
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -72,21 +73,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_COLLECTED_DESC
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_COLLECTED_SEE_LZ
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.ramcosta.composedestinations.annotation.DeepLink
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 private val UpdateTipTextStyle = TextStyle(fontWeight = FontWeight.Bold, fontSize = 10.sp)
 
 @OptIn(ExperimentalMaterialApi::class)
-@Destination(
-    deepLinks = [
-        DeepLink(uriPattern = "tblite://favorite")
-    ]
-)
 @Composable
 fun ThreadStorePage(
-    navigator: DestinationsNavigator,
+    navigator: NavController,
     viewModel: ThreadStoreViewModel = pageViewModel()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -194,18 +187,18 @@ fun ThreadStorePage(
                             info = info,
                             onUserClick = {
                                 info.author.lzUid?.let {
-                                    navigator.navigate(UserProfilePageDestination(it.toLong()))
+                                    navigator.navigate(UserProfile(it.toLong()))
                                 }
                             },
                             onClick = {
                                 navigator.navigate(
-                                    ThreadPageDestination(
+                                    Thread(
                                         threadId = info.threadId.toLong(),
                                         postId = info.markPid.toLong(),
                                         seeLz = seeLz,
                                         sortType = if(descSort) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT,
                                         from = ThreadPageFrom.FROM_STORE,
-                                        extra = ThreadPageFromStoreExtra(
+                                        extra = ThreadStoreExtra(
                                             maxPid = info.maxPid.toLong(),
                                             maxFloor = info.postNo.toInt()
                                         )

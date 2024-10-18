@@ -29,9 +29,9 @@ import com.huanchengfly.tieba.post.fromJson
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Forum
+import com.huanchengfly.tieba.post.ui.page.Destination.Thread
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFrom
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
@@ -81,7 +81,7 @@ fun HistoryListPage(
     )
 
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val snackbarHostState = LocalSnackbarHostState.current
 
     viewModel.onEvent<HistoryListUiEvent.Delete.Failure> {
@@ -93,12 +93,12 @@ fun HistoryListPage(
 
     val historyClickListener: (History) -> Unit = {
         when (it.type) {
-            HistoryUtil.TYPE_FORUM -> navigator.navigate(ForumPageDestination(it.data))
+            HistoryUtil.TYPE_FORUM -> navigator.navigate(Forum(it.data))
 
             HistoryUtil.TYPE_THREAD -> {
                 val extra = it.extras?.fromJson<ThreadHistoryInfoBean>()
                 navigator.navigate(
-                    ThreadPageDestination(
+                    Thread(
                         it.data.toLong(),
                         postId = extra?.pid?.toLongOrNull() ?: 0L,
                         seeLz = extra?.isSeeLz ?: false,

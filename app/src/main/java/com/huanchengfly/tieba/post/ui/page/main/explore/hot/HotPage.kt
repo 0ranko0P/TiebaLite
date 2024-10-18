@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.hasAgree
@@ -52,11 +53,8 @@ import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.theme.YellowA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.HotTopicListPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.Destination.HotTopicList
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
@@ -67,12 +65,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.itemsIndexed
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.ramcosta.composedestinations.annotation.Destination
 
 @OptIn(ExperimentalMaterialApi::class)
-@Destination
 @Composable
 fun HotPage(
+    navigator: NavController,
     viewModel: HotViewModel = pageViewModel()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -84,7 +81,6 @@ fun HotPage(
     ) {
         viewModel.send(HotUiIntent.Load)
     }
-    val navigator = LocalNavigator.current
     val isLoading by viewModel.uiState.collectPartialAsState(
         prop1 = HotUiState::isRefreshing,
         initial = false
@@ -196,9 +192,7 @@ fun HotPage(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable {
-                                                navigator.navigate(HotTopicListPageDestination)
-                                            }
+                                            .clickable { navigator.navigate(HotTopicList) }
                                             .padding(bottom = 8.dp)
                                     ) {
                                         Text(
@@ -292,20 +286,10 @@ fun HotPage(
                             FeedCard(
                                 item = item,
                                 onClick = {
-                                    navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = it.id,
-                                            threadInfo = it
-                                        )
-                                    )
+                                    navigator.navigate(Destination.Thread(threadId = it.id))
                                 },
                                 onClickReply = {
-                                    navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = it.id,
-                                            scrollToReply = true
-                                        )
-                                    )
+                                    navigator.navigate(Destination.Thread(threadId = it.id, scrollToReply = true))
                                 },
                                 onAgree = {
                                     viewModel.send(
@@ -316,8 +300,8 @@ fun HotPage(
                                         )
                                     )
                                 },
-                                onClickForum = { navigator.navigate(ForumPageDestination(it.name)) },
-                                onClickUser = { navigator.navigate(UserProfilePageDestination(it.id)) },
+                                onClickForum = { navigator.navigate(Destination.Forum(it.name)) },
+                                onClickUser = { navigator.navigate(Destination.UserProfile(it.id)) },
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.End,

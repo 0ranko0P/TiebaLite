@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.google.accompanist.insets.ui.Scaffold
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.topicList.NewTopicList
@@ -52,8 +53,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Composable
 private fun TopicImage(
@@ -154,13 +153,12 @@ private fun TopicBody(
 }
 
 @OptIn(ExperimentalMaterialApi::class)
-@Destination
 @Composable
 fun HotTopicListPage(
     viewModel: HotTopicListViewModel = pageViewModel<HotTopicListUiIntent, HotTopicListViewModel>(
         listOf(HotTopicListUiIntent.Load)
     ),
-    navigator: DestinationsNavigator,
+    navigator: NavController
 ) {
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = HotTopicListUiState::isRefreshing,
@@ -181,7 +179,7 @@ fun HotTopicListPage(
                     )
                 },
                 navigationIcon = {
-                    BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
+                    BackNavigationIcon(onBackPressed = navigator::navigateUp)
                 }
             )
         },

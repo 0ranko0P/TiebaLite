@@ -137,17 +137,13 @@ dependencies {
     implementation(androidx.media3.exoplayer)
     implementation(androidx.media3.ui)
 
-    implementation(compose.destinations.core)
-    ksp(compose.destinations.ksp)
-
-    implementation(androidx.navigation.compose)
-
     api(wire.runtime)
 
     implementation(hilt.android)
     kapt(hilt.compiler)
     implementation(androidx.hilt.navigation.compose)
     kapt(androidx.hilt.compiler)
+    implementation(androidx.navigation.compose)
 
     implementation(accompanist.drawablepainter)
     implementation(accompanist.insets.ui)
@@ -161,6 +157,7 @@ dependencies {
     implementation(compose.animation)
     implementation(compose.animation.graphics)
     implementation(compose.material)
+    implementation(compose.material.navigation)
     implementation(compose.material.icons.core)
     // Optional - Add full set of material icons
     implementation(compose.material.icons.extended)

@@ -61,11 +61,11 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.CopyTextDialogPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Reply
+import com.huanchengfly.tieba.post.ui.page.Destination.CopyText
+import com.huanchengfly.tieba.post.ui.page.Destination.Thread
+import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.subposts.PostAgreeBtn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
@@ -99,7 +99,7 @@ const val ITEM_POST_KEY_PREFIX = "Post_"
 @Composable
 fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: LazyListState) {
 
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
 
     val enablePullRefresh by remember {
         derivedStateOf {
@@ -152,11 +152,11 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
                         immersiveMode = viewModel.isImmersiveMode,
                         isCollected = firstPost.id == viewModel.info?.collectMarkPid,
                         onUserClick = {
-                            navigator.navigate(UserProfilePageDestination(firstPost.author.id))
+                            navigator.navigate(UserProfile(uid = firstPost.author.id))
                         },
                         onReplyClick = { _: PostData ->
                             navigator.navigate(
-                                ReplyPageDestination(
+                                Reply(
                                     forumId = viewModel.curForumId ?: 0,
                                     forumName = forum?.get { name }.orEmpty(),
                                     threadId = viewModel.threadId,
@@ -164,7 +164,7 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
                             )
                         }.takeUnless { viewModel.hideReply },
                         onMenuCopyClick = {
-                            navigator.navigate(CopyTextDialogPageDestination(it))
+                            navigator.navigate(CopyText(it))
                         },
                         onMenuFavoriteClick = {
                             viewModel.requestAddFavorite(firstPost)
@@ -182,12 +182,7 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(ExtendedTheme.colors.floorCard)
                                 .clickable {
-                                    navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = info.tid.toLong(),
-                                            forumId = info.fid,
-                                        )
-                                    )
+                                    navigator.navigate(Thread(threadId = info.tid.toLong(), forumId = info.fid))
                                 }
                                 .padding(16.dp)
                         )
@@ -293,7 +288,7 @@ private fun LazyListScope.postTipItem(isDesc: Boolean) = this.item("LatestPostsT
 
 @Composable
 fun PostCardItem(viewModel: ThreadViewModel, post: PostData) {
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     PostCard(
         post = post,
         contentRenders = post.contentRenders,
@@ -302,7 +297,7 @@ fun PostCardItem(viewModel: ThreadViewModel, post: PostData) {
         immersiveMode = viewModel.isImmersiveMode,
         isCollected = post.id == viewModel.info?.collectMarkPid,
         onUserClick = {
-            navigator.navigate(UserProfilePageDestination(post.author.id))
+            navigator.navigate(UserProfile(post.author.id))
         },
         onAgree = { viewModel.onAgreePost(post) },
         onReplyClick = viewModel::onReplyPost.takeUnless { viewModel.hideReply },
@@ -311,7 +306,7 @@ fun PostCardItem(viewModel: ThreadViewModel, post: PostData) {
             viewModel.onOpenSubPost(post, subPostId)
         },
         onMenuCopyClick = {
-            navigator.navigate(CopyTextDialogPageDestination(it))
+            navigator.navigate(CopyText(it))
         },
         onMenuFavoriteClick = {
             val isPostCollected = post.id == viewModel.info?.collectMarkPid
@@ -397,7 +392,7 @@ fun PostCard(
     onMenuDeleteClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val coroutineScope = rememberCoroutineScope()
     val hasPadding = post.floor > 1 && !immersiveMode
 
@@ -574,7 +569,7 @@ private fun SubPostItem(
     onMenuCopyClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val coroutineScope = rememberCoroutineScope()
     val menuState = rememberMenuState()
 

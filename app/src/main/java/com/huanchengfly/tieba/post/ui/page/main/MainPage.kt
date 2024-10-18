@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,6 +21,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavHostController
 import com.huanchengfly.tieba.post.LocalDevicePosture
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.R
@@ -32,7 +32,6 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePage
 import com.huanchengfly.tieba.post.ui.page.main.home.HomePage
@@ -43,9 +42,6 @@ import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
@@ -88,11 +84,9 @@ private fun NavigationWrapper(
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationGraphicsApi::class)
-@RootNavGraph(start = true)
-@Destination
 @Composable
 fun MainPage(
-    navigator: DestinationsNavigator,
+    navHostController: NavHostController,
     viewModel: MainViewModel = pageViewModel<MainUiIntent, MainViewModel>(emptyList()),
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -147,7 +141,7 @@ fun MainPage(
                 viewModel.send(MainUiIntent.NewMessage.Clear)
             },
             content = {
-                NotificationsPage(LocalNavigator.current, fromHome = true)
+                NotificationsPage(fromHome = true)
             }
         ),
         NavigationItem(
@@ -212,7 +206,7 @@ fun MainPage(
             GlobalEvent.Refresh(navigationItems[it].id)
         )
     }
-    ProvideNavigator(navigator = navigator) {
+    ProvideNavigator(navigator = navHostController) {
         NavigationWrapper(
             currentPosition = pagerState.currentPage,
             onChangePosition = { coroutineScope.launch { pagerState.scrollToPage(it) } },

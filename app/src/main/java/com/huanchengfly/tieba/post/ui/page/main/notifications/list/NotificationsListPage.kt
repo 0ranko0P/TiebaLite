@@ -30,10 +30,8 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
@@ -61,7 +59,7 @@ fun NotificationsListPage(
         viewModel.send(NotificationsListUiIntent.Refresh)
         viewModel.initialized = true
     }
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = NotificationsListUiState::isRefreshing,
         initial = false
@@ -126,20 +124,15 @@ fun NotificationsListPage(
                     Column(
                         modifier = Modifier
                             .clickable {
+                                val threadId: Long = info.threadId!!.toLong()
+                                val postId: Long = info.postId!!.toLong()
                                 if (info.isFloor == "1") {
                                     navigator.navigate(
-                                        SubPostsPageDestination(
-                                            threadId = info.threadId!!.toLong(),
-                                            subPostId = info.postId!!.toLong(),
-                                            loadFromSubPost = true
-                                        )
+                                        Destination.SubPosts(threadId, subPostId = postId)
                                     )
                                 } else {
                                     navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = info.threadId!!.toLong(),
-                                            postId = info.postId!!.toLong()
-                                        )
+                                        Destination.Thread(threadId, postId = postId)
                                     )
                                 }
                             }
@@ -160,7 +153,7 @@ fun NotificationsListPage(
                                     Text(text = nameShow)
                                 },
                                 onClick = {
-                                    navigator.navigate(UserProfilePageDestination(info.replyer.id!!.toLong()))
+                                    navigator.navigate(Destination.UserProfile(info.replyer.id!!.toLong()))
                                 },
                                 desc = {
                                     Text(
@@ -193,18 +186,16 @@ fun NotificationsListPage(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(6.dp))
                                 .clickable {
+                                    val threadId = info.threadId!!.toLong()
                                     if ("1" == info.isFloor && info.quotePid != null) {
                                         navigator.navigate(
-                                            SubPostsPageDestination(
-                                                threadId = info.threadId!!.toLong(),
-                                                postId = info.quotePid.toLong(),
-                                                loadFromSubPost = true,
+                                            Destination.SubPosts(
+                                                threadId = threadId,
+                                                postId = info.quotePid.toLong()
                                             )
                                         )
                                     } else {
-                                        navigator.navigate(
-                                            ThreadPageDestination(threadId = info.threadId!!.toLong())
-                                        )
+                                        navigator.navigate(Destination.Thread(threadId = threadId))
                                     }
                                 }
                                 .background(ExtendedTheme.colors.chip, RoundedCornerShape(6.dp))

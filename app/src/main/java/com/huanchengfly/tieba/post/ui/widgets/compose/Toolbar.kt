@@ -57,12 +57,11 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass.Companion.Compact
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.LocalAllAccounts
@@ -82,7 +81,7 @@ fun AccountNavIcon(
     spacer: Boolean = true,
     size: Dp = Sizes.Small
 ) {
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val currentAccount = LocalAccount.current
     if (spacer) Spacer(modifier = Modifier.width(12.dp))
     if (currentAccount == null) {
@@ -137,7 +136,7 @@ fun AccountNavIcon(
                 )
                 DropdownMenuItem(
                     onClick = {
-                        navigator.navigate(LoginPageDestination)
+                        navigator.navigate(Destination.Login)
                     }
                 ) {
                     Icon(

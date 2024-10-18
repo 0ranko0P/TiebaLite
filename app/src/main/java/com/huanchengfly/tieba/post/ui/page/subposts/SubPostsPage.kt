@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
@@ -57,13 +59,12 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.UserData
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.CopyTextDialogPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
-import com.huanchengfly.tieba.post.ui.page.reply.ReplyArgs
-import com.huanchengfly.tieba.post.ui.page.reply.ReplyDialog
+import com.huanchengfly.tieba.post.ui.page.Destination.CopyText
+import com.huanchengfly.tieba.post.ui.page.Destination.Reply
+import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
+import com.huanchengfly.tieba.post.ui.page.Destination.Thread
+import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.thread.PostCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
@@ -93,60 +94,19 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.spec.DestinationStyleBottomSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@Destination
-@Composable
-fun SubPostsPage(
-    navigator: DestinationsNavigator,
-    threadId: Long,
-    forumId: Long = 0L,
-    postId: Long = 0L,
-    subPostId: Long = 0L,
-    loadFromSubPost: Boolean = false,
-    viewModel: SubPostsViewModel = hiltViewModel()
-) {
-    ProvideNavigator(navigator) {
-        SubPostsContent(
-            viewModel = viewModel,
-            forumId = forumId,
-            threadId = threadId,
-            postId = postId,
-            subPostId = subPostId,
-            loadFromSubPost = loadFromSubPost,
-            onNavigateUp = { navigator.navigateUp() }
-        )
-    }
-}
-
-@Destination(
-    style = DestinationStyleBottomSheet::class
-)
 @Composable
 fun SubPostsSheetPage(
-    navigator: DestinationsNavigator,
-    threadId: Long,
-    forumId: Long = 0L,
-    postId: Long = 0L,
-    subPostId: Long = 0L,
-    loadFromSubPost: Boolean = false,
+    params: SubPosts,
+    navigator: NavController,
     viewModel: SubPostsViewModel = hiltViewModel()
 ) {
-    ProvideNavigator(navigator) {
-        SubPostsContent(
-            viewModel = viewModel,
-            forumId = forumId,
-            threadId = threadId,
-            postId = postId,
-            subPostId = subPostId,
-            loadFromSubPost = loadFromSubPost,
-            isSheet = true,
-            onNavigateUp = { navigator.navigateUp() }
-        )
+    CompositionLocalProvider(LocalNavController provides navigator) {
+        with(params) {
+            SubPostsContent(viewModel, forumId, threadId, postId, subPostId, true, navigator::navigateUp)
+        }
     }
 }
 
@@ -158,16 +118,15 @@ internal fun SubPostsContent(
     threadId: Long,
     postId: Long,
     subPostId: Long = 0L,
-    loadFromSubPost: Boolean = false,
     isSheet: Boolean = false,
     onNavigateUp: () -> Unit = {},
 ) {
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val account = LocalAccount.current
     val context = LocalContext.current
 
     LazyLoad(key = viewModel, loaded = viewModel.initialized) {
-        viewModel.initialize(loadFromSubPost)
+        viewModel.initialize()
     }
 
     val isRefreshing = viewModel.refreshing
@@ -213,12 +172,6 @@ internal fun SubPostsContent(
         Text(text = stringResource(id = R.string.message_confirm_delete, deleteType))
     }
 
-    val replyDialogState = rememberDialogState()
-    var currentReplyArgs by remember { mutableStateOf<ReplyArgs?>(null) }
-    if (currentReplyArgs != null) {
-        ReplyDialog(args = currentReplyArgs!!, state = replyDialogState)
-    }
-
 //    onGlobalEvent<GlobalEvent.ReplySuccess>(
 //        filter = { it.threadId == threadId && it.postId == postId }
 //    ) { event ->
@@ -231,11 +184,6 @@ internal fun SubPostsContent(
 //            )
 //        )
 //    }
-
-    fun showReplyDialog(args: ReplyArgs) {
-        currentReplyArgs = args
-        replyDialogState.show()
-    }
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
@@ -253,9 +201,9 @@ internal fun SubPostsContent(
         MyScaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
-                TitleBar(isSheet = isSheet, post = state.post, onNavigateUp = onNavigateUp) {
+                TitleBar(isSheet = isSheet, post = state.post, onBack = onNavigateUp) {
                     navigator.navigate(
-                        ThreadPageDestination(forumId = forumId, threadId = threadId, postId = postId)
+                        Thread(forumId = forumId, threadId = threadId, postId = postId)
                     )
                 }
             },
@@ -267,8 +215,8 @@ internal fun SubPostsContent(
                         onReply = {
                             val forumName = forum?.get { name } ?: return@BottomBar
                             if (forumName.isNotEmpty()) {
-                                showReplyDialog(
-                                    ReplyArgs(
+                                navigator.navigate(
+                                    Reply(
                                         forumId = forum.get { id },
                                         forumName = forumName,
                                         threadId = threadId,
@@ -312,15 +260,15 @@ internal fun SubPostsContent(
                             canDelete = postItem.author.id == account?.uid?.toLongOrNull(),
                             isCollected = false,
                             onUserClick = {
-                                navigator.navigate(UserProfilePageDestination(postItem.author.id))
+                                navigator.navigate(UserProfile(postItem.author.id))
                             },
                             onAgree = {
                                 val hasAgreed = postItem.hasAgree != 0
                                 viewModel.onAgreePost(!hasAgreed)
                             },
                             onReplyClick = { it: PostData ->
-                                showReplyDialog(
-                                    ReplyArgs(
+                                navigator.navigate(
+                                    Reply(
                                         forumId = forumId,
                                         forumName = forum?.get { name } ?: "",
                                         threadId = threadId,
@@ -332,7 +280,7 @@ internal fun SubPostsContent(
                                 )
                             }.takeUnless { hideReply },
                             onMenuCopyClick = {
-                                navigator.navigate(CopyTextDialogPageDestination(it))
+                                navigator.navigate(CopyText(it))
                             },
                         ) {
                             deleteSubPost = null
@@ -358,14 +306,14 @@ internal fun SubPostsContent(
                         item = item,
                         canDelete = item.authorId == account?.uid?.toLongOrNull(),
                         onUserClick = {
-                            navigator.navigate(UserProfilePageDestination(it.id))
+                            navigator.navigate(UserProfile(it.id))
                         },
                         onAgree = {
                             viewModel.onAgreeSubPost(subPostId = it.id, !it.hasAgree)
                         },
                         onReplyClick = { it: SubPostItemData ->
-                            showReplyDialog(
-                                ReplyArgs(
+                            navigator.navigate(
+                                Reply(
                                     forumId = forumId,
                                     forumName = forum?.get { name } ?: "",
                                     threadId = threadId,
@@ -378,7 +326,7 @@ internal fun SubPostsContent(
                             )
                         }.takeUnless { hideReply },
                         onMenuCopyClick = {
-                            navigator.navigate(CopyTextDialogPageDestination(it))
+                            navigator.navigate(CopyText(it))
                         },
                         onMenuDeleteClick = {
                             deleteSubPost = it
@@ -392,7 +340,7 @@ internal fun SubPostsContent(
 }
 
 @Composable
-private fun TitleBar(isSheet: Boolean, post: PostData?, onNavigateUp: () -> Unit, onAction: () -> Unit) =
+private fun TitleBar(isSheet: Boolean, post: PostData?, onBack: () -> Unit, onAction: () -> Unit) =
     TitleCentredToolbar(
         title = {
             Text(text = post?.let {
@@ -402,7 +350,7 @@ private fun TitleBar(isSheet: Boolean, post: PostData?, onNavigateUp: () -> Unit
             )
         },
         navigationIcon = {
-            IconButton(onClick = onNavigateUp) {
+            IconButton(onClick = onBack) {
                 Icon(
                     imageVector = if (isSheet) Icons.Rounded.Close else Icons.AutoMirrored.Rounded.ArrowBack,
                     contentDescription = stringResource(id = R.string.btn_close)
@@ -486,7 +434,7 @@ private fun SubPostItem(
     )
 {
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val coroutineScope = rememberCoroutineScope()
     val menuState = rememberMenuState()
 

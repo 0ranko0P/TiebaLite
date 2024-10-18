@@ -90,7 +90,7 @@ import com.huanchengfly.tieba.post.pxToDpFloat
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.EMOJI
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.IMAGE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.NONE
@@ -112,9 +112,6 @@ import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.showKeyboard
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.spec.DestinationStyleBottomSheet
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -123,21 +120,9 @@ import java.util.UUID
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-data class ReplyArgs(
-    val forumId: Long,
-    val forumName: String,
-    val threadId: Long,
-    val postId: Long? = null,
-    val subPostId: Long? = null,
-    val replyUserId: Long? = null,
-    val replyUserName: String? = null,
-    val replyUserPortrait: String? = null,
-    val tbs: String? = null,
-)
-
 @Composable
 fun ReplyDialog(
-    args: ReplyArgs,
+    args: Reply,
     state: DialogState = rememberDialogState(),
 ) {
     BaseDialog(
@@ -297,10 +282,7 @@ internal fun ReplyPageContent(
         }
     }
 
-    MyBackHandler(
-        enabled = curKeyboardType != NONE,
-        currentScreen = ReplyPageDestination.takeUnless { isDialog }
-    ) {
+    MyBackHandler(enabled = curKeyboardType != NONE) {
         switchToPanel(NONE)
     }
 
@@ -683,33 +665,24 @@ internal fun ReplyPageContent(
 }
 
 // TODO: 将软键盘状态相关逻辑抽离出来
-@Destination(style = DestinationStyleBottomSheet::class)
 @Composable
 fun ReplyPage(
-    navigator: DestinationsNavigator,
-    forumId: Long,
-    forumName: String,
-    threadId: Long,
-    postId: Long? = null,
-    subPostId: Long? = null,
-    replyUserId: Long? = null,
-    replyUserName: String? = null,
-    replyUserPortrait: String? = null,
-    tbs: String? = null,
+    params: Reply,
+    onBack: () -> Unit,
     viewModel: ReplyViewModel = pageViewModel(),
 ) {
     ReplyPageContent(
         viewModel = viewModel,
-        onBack = { navigator.navigateUp() },
-        forumId = forumId,
-        forumName = forumName,
-        threadId = threadId,
-        postId = postId,
-        subPostId = subPostId,
-        replyUserId = replyUserId,
-        replyUserName = replyUserName,
-        replyUserPortrait = replyUserPortrait,
-        tbs = tbs
+        onBack = onBack,
+        forumId = params.forumId,
+        forumName = params.forumName,
+        threadId = params.threadId,
+        postId = params.postId,
+        subPostId = params.subPostId,
+        replyUserId = params.replyUserId,
+        replyUserName = params.replyUserName,
+        replyUserPortrait = params.replyUserPortrait,
+        tbs = params.tbs
     )
 }
 

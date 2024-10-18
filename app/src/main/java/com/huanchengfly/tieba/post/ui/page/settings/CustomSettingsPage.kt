@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.navigation.NavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
@@ -32,7 +33,7 @@ import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.page.destinations.AppFontPageDestination
+import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AppFont
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -41,15 +42,12 @@ import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalGlideComposeApi::class)
-@Destination
 @Composable
-fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
+fun CustomSettingsPage(navigator: NavController) = MyScaffold(
     backgroundColor = Color.Transparent,
     topBar = {
         TitleCentredToolbar(
@@ -67,7 +65,7 @@ fun CustomSettingsPage(navigator: DestinationsNavigator) = MyScaffold(
                 title = stringResource(id = R.string.title_custom_font_size),
                 leadingIcon = Icons.Outlined.FontDownload,
                 onClick = {
-                    navigator.navigate(AppFontPageDestination)
+                    navigator.navigate(AppFont)
                 }
             )
         }

@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
@@ -29,6 +30,7 @@ import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.UserData
+import com.huanchengfly.tieba.post.ui.page.Destination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -41,13 +43,12 @@ import javax.inject.Inject
 @Stable
 @HiltViewModel
 class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : ViewModel() {
+    val params = savedStateHandle.toRoute<Destination.SubPosts>()
 
-    // TODO: Unsafe arguments
-    val threadId = savedStateHandle.get<Long>("threadId")?: throw IllegalArgumentException()
-    val forumId = savedStateHandle.get<Long>("forumId")?: throw IllegalArgumentException()
-    val postId = savedStateHandle.get<Long>("postId")?: throw IllegalArgumentException()
-    val subPostId = savedStateHandle.get<Long>("subPostId")?: throw IllegalArgumentException()
-    private val loadFromSubPost = savedStateHandle.get<Boolean>("loadFromSubPost")?: throw IllegalArgumentException()
+    val threadId = params.threadId
+    val forumId = params.forumId
+    val postId = params.postId
+    val subPostId = params.subPostId
 
     private val _state = mutableStateOf(SubPostsUiState())
     val state: State<SubPostsUiState> get() = _state
@@ -82,10 +83,9 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
     fun requestLoad(pageNum: Int = 1) {
         if (refreshing) return
         _state.value = _state.value.copy(isRefreshing = true)
-        val subPostID = subPostId.takeIf { loadFromSubPost } ?: 0L
 
         viewModelScope.launch(handler) {
-            TiebaApi.getInstance().pbFloorFlow(threadId, postId, forumId, pageNum, subPostID)
+            TiebaApi.getInstance().pbFloorFlow(threadId, postId, forumId, pageNum, 0L)
                 .collect { response ->
                     val post = checkNotNull(response.data_?.post)
                     val page = checkNotNull(response.data_?.page)

@@ -39,7 +39,7 @@
         android:shortcutShortLabel="@string/shortcut_my_message">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="tblite://notifications/0"
+            android:data="tblite://notifications"
             android:targetPackage="com.huanchengfly.tieba.post" />
     </shortcut>
 </shortcuts>

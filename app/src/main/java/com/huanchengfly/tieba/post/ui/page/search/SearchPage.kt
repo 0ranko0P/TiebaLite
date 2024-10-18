@@ -5,7 +5,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,7 +38,6 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,13 +54,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
@@ -73,7 +71,6 @@ import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumPage
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadPage
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadSortType
@@ -90,9 +87,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarContainer
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
-import com.ramcosta.composedestinations.annotation.DeepLink
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -113,14 +107,9 @@ data class SearchPageItem(
 )
 
 @OptIn(ExperimentalFoundationApi::class, FlowPreview::class)
-@Destination(
-    deepLinks = [
-        DeepLink(uriPattern = "tblite://search")
-    ]
-)
 @Composable
 fun SearchPage(
-    navigator: DestinationsNavigator,
+    navigator: NavController,
     viewModel: SearchViewModel = pageViewModel<SearchUiIntent, SearchViewModel>(
         listOf(SearchUiIntent.Init)
     ),
@@ -163,10 +152,7 @@ fun SearchPage(
         }
     }
 
-    MyBackHandler(
-        enabled = !isKeywordEmpty,
-        currentScreen = SearchPageDestination
-    ) {
+    MyBackHandler(enabled = !isKeywordEmpty,) {
         viewModel.send(SearchUiIntent.SubmitKeyword(""))
     }
 
@@ -371,7 +357,6 @@ private fun SearchSuggestionListPreview() {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ColumnScope.SearchTabRow(
     pagerState: PagerState,
@@ -573,12 +558,7 @@ private fun SearchTopBar(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(100))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = rememberRipple(bounded = false, 24.dp),
-                        role = Role.Button,
-                        onClick = onBack
-                    ),
+                    .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(

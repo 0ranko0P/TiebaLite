@@ -27,6 +27,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
@@ -34,7 +35,7 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.DropDownPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.EditTextPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Login
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AccountUtil
@@ -43,14 +44,10 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.LocalAllAccounts
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.launchUrl
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.toImmutableMap
 
-
-@Destination
 @Composable
-fun AccountManagePage(navigator: DestinationsNavigator) {
+fun AccountManagePage(navigator: NavController) {
     Scaffold(
         backgroundColor = Color.Transparent,
         topBar = {
@@ -95,7 +92,7 @@ fun AccountManagePage(navigator: DestinationsNavigator) {
             prefsItem {
                 TextPref(
                     title = stringResource(id = R.string.title_new_account),
-                    onClick = { navigator.navigate(LoginPageDestination) },
+                    onClick = { navigator.navigate(Login) },
                     leadingIcon = Icons.Outlined.AddCircleOutline,
                 )
             }

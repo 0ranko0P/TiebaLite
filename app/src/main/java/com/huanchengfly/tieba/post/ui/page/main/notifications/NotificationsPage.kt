@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.main.notifications
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.rememberPagerState
@@ -17,10 +16,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.page.Destination.Search
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
@@ -30,22 +31,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
-import com.ramcosta.composedestinations.annotation.DeepLink
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
-@Destination(
-    deepLinks = [
-        DeepLink(uriPattern = "tblite://notifications/{initialTab}")
-    ]
-)
 @Composable
 fun NotificationsPage(
-    navigator: DestinationsNavigator,
-    initialTab: Int = 0,
-    fromHome: Boolean = false
+    fromHome: Boolean = false,
+    navigator: NavController = LocalNavController.current
 ) {
     val pages = listOf<Pair<Int, (@Composable () -> Unit)>>(
         R.string.title_reply_me to @Composable {
@@ -55,7 +46,7 @@ fun NotificationsPage(
             NotificationsListPage(type = NotificationsType.AtMe)
         }
     )
-    val pagerState = rememberPagerState(initialPage = initialTab, pageCount = { pages.size })
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { pages.size })
     val coroutineScope = rememberCoroutineScope()
     Scaffold(
         backgroundColor = Color.Transparent,
@@ -103,7 +94,7 @@ fun NotificationsPage(
 }
 
 @Composable
-private fun NotificationsToolBar(navigator: DestinationsNavigator, fromHome: Boolean) {
+private fun NotificationsToolBar(navigator: NavController, fromHome: Boolean) {
     if (fromHome) {
         Toolbar(
             title = stringResource(id = R.string.title_notifications),
@@ -112,7 +103,7 @@ private fun NotificationsToolBar(navigator: DestinationsNavigator, fromHome: Boo
                 ActionItem(
                     icon = Icons.Rounded.Search,
                     contentDescription = stringResource(id = R.string.title_search),
-                    onClick = { navigator.navigate(SearchPageDestination) }
+                    onClick = { navigator.navigate(Search) }
                 )
             }
         )

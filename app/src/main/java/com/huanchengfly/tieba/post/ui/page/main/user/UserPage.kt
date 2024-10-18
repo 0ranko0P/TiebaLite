@@ -55,15 +55,9 @@ import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMo
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.AboutPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.AppThemePageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.CustomSettingsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.HistoryPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.SettingsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadStorePageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
@@ -236,7 +230,7 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
 @Composable
 fun UserPage(viewModel: UserViewModel = viewModel()) {
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     val isLoading by viewModel.isLoading
     val account = LocalAccount.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -264,7 +258,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     InfoCard(
                         modifier = Modifier
                             .clickable {
-                                navigator.navigate(UserProfilePageDestination(account.uid.toLong()))
+                                navigator.navigate(Destination.UserProfile(account.uid.toLong()))
                             }
                             .padding(horizontal = 16.dp, vertical = 16.dp),
                         userName = account.nameShow ?: account.name,
@@ -299,7 +293,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                         icon = ImageVector.vectorResource(id = R.drawable.ic_favorite),
                         text = stringResource(id = R.string.title_my_collect),
                         onClick = {
-                            navigator.navigate(ThreadStorePageDestination)
+                            navigator.navigate(Destination.ThreadStore)
                         }
                     )
                 }
@@ -307,14 +301,14 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     icon = ImageVector.vectorResource(id = R.drawable.ic_outline_watch_later_24),
                     text = stringResource(id = R.string.title_history),
                     onClick = {
-                        navigator.navigate(HistoryPageDestination)
+                        navigator.navigate(Destination.History)
                     }
                 )
                 ListMenuItem(
                     icon = ImageVector.vectorResource(id = R.drawable.ic_brush_24),
                     text = stringResource(id = R.string.title_theme),
                     onClick = {
-                        navigator.navigate(AppThemePageDestination)
+                        navigator.navigate(Destination.AppTheme)
                     }
                 ) {
                     Text(text = stringResource(id = R.string.my_info_night), fontSize = 12.sp)
@@ -331,7 +325,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                                     actionLabel = context.getString(R.string.title_settings_night_mode)
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
-                                    navigator.navigate(CustomSettingsPageDestination)
+                                    navigator.navigate(SettingsDestination.Custom)
                                 }
                             }
                         }
@@ -343,7 +337,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                         text = stringResource(id = R.string.my_info_service_center),
                         onClick = {
                             navigator.navigate(
-                                WebViewPageDestination(
+                                Destination.WebView(
                                     initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
                                 )
                             )
@@ -356,12 +350,12 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                 ListMenuItem(
                     icon = ImageVector.vectorResource(id = R.drawable.ic_settings_24),
                     text = stringResource(id = R.string.my_info_settings),
-                    onClick = { navigator.navigate(SettingsPageDestination) },
+                    onClick = { navigator.navigate(SettingsDestination.Settings) },
                 )
                 ListMenuItem(
                     icon = ImageVector.vectorResource(id = R.drawable.ic_info_black_24),
                     text = stringResource(id = R.string.my_info_about),
-                    onClick = { navigator.navigate(AboutPageDestination) },
+                    onClick = { navigator.navigate(SettingsDestination.About) },
                 )
             }
 

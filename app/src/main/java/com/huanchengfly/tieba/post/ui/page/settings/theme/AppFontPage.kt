@@ -22,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -45,8 +44,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -68,9 +65,8 @@ private fun getSizeTextHint(sliderPosition: Int): Int {
     return sizeTexts.map { it.key }[0]
 }
 
-@Destination
 @Composable
-fun AppFontPage(navigator: DestinationsNavigator) {
+fun AppFontPage(onBack: () -> Unit) {
     Scaffold(
         backgroundColor = Color.Transparent,
         topBar = {
@@ -82,7 +78,7 @@ fun AppFontPage(navigator: DestinationsNavigator) {
                     )
                 },
                 navigationIcon = {
-                    BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
+                    BackNavigationIcon(onBackPressed = onBack)
                 }
             )
         },
@@ -90,7 +86,7 @@ fun AppFontPage(navigator: DestinationsNavigator) {
             val context = LocalContext.current
             AppFontContent(
                 modifier = Modifier.padding(paddingValues),
-                onCancel = { navigator.navigateUp() },
+                onCancel = onBack,
                 onSave = {
                     context.toastShort(R.string.toast_after_change_will_restart)
                     (context.applicationContext as App).removeAllActivity()

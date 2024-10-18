@@ -33,8 +33,8 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Forum
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
@@ -52,7 +52,7 @@ fun SearchForumPage(
     keyword: String,
     viewModel: SearchForumViewModel = pageViewModel(),
 ) {
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(SearchForumUiIntent.Refresh(keyword))
         viewModel.initialized = true
@@ -145,7 +145,7 @@ fun SearchForumPage(
                         SearchForumItem(
                             item = exactMatchForum!!,
                             onClick = {
-                                navigator.navigate(ForumPageDestination(exactMatchForum!!.forumName.orEmpty()))
+                                navigator.navigate(Forum(exactMatchForum!!.forumName.orEmpty()))
                             }
                         )
                     }
@@ -168,7 +168,8 @@ fun SearchForumPage(
                         SearchForumItem(
                             item = it,
                             onClick = {
-                                navigator.navigate(ForumPageDestination(it.forumName.orEmpty()))
+                                val forumName = it.forumName ?: return@SearchForumItem
+                                navigator.navigate(Forum(forumName))
                             }
                         )
                     }

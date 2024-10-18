@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.LocalContentColor
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
@@ -19,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.getOrNull
@@ -34,16 +34,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.persistentListOf
 
-
-@Destination
 @Composable
 fun ForumRuleDetailPage(
     forumId: Long,
-    navigator: DestinationsNavigator,
+    navigator: NavController,
     viewModel: ForumRuleDetailViewModel = pageViewModel(),
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -94,11 +90,9 @@ fun ForumRuleDetailPage(
             MyScaffold(
                 topBar = {
                     TitleCentredToolbar(
-                        title = { Text(text = stringResource(id = R.string.title_forum_rule)) },
+                        title = stringResource(id = R.string.title_forum_rule),
                         navigationIcon = {
-                            BackNavigationIcon {
-                                navigator.navigateUp()
-                            }
+                            BackNavigationIcon(navigator::navigateUp)
                         }
                     )
                 }

@@ -132,7 +132,7 @@
                 <data android:scheme="tblite" />
             </intent-filter>
 
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <data
                     android:host="unidispatch"
                     android:scheme="com.baidu.tieba" />

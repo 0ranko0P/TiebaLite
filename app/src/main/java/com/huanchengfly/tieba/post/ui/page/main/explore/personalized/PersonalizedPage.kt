@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent.ScrollToTop.bindScrollToTopEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -52,10 +53,9 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.Forum
+import com.huanchengfly.tieba.post.ui.page.Destination.Thread
+import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -73,13 +73,13 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PersonalizedPage(
+    navigator: NavController,
     viewModel: PersonalizedViewModel = pageViewModel()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(PersonalizedUiIntent.Refresh)
         viewModel.initialized = true
     }
-    val navigator = LocalNavigator.current
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = PersonalizedUiState::isRefreshing,
         initial = false
@@ -234,14 +234,10 @@ fun PersonalizedPage(
                                     FeedCard(
                                         item = item,
                                         onClick = {
-                                            navigator.navigate(
-                                                ThreadPageDestination(it.id, it.forumId, threadInfo = it)
-                                            )
+                                            navigator.navigate(Thread(it.id, it.forumId))
                                         },
                                         onClickReply = {
-                                            navigator.navigate(
-                                                ThreadPageDestination(it.id, it.forumId, scrollToReply = true)
-                                            )
+                                            navigator.navigate(Thread(it.id, it.forumId, scrollToReply = true))
                                         },
                                         onAgree = {
                                             viewModel.send(
@@ -253,10 +249,10 @@ fun PersonalizedPage(
                                             )
                                         },
                                         onClickForum = {
-                                            navigator.navigate(ForumPageDestination(it.name))
+                                            navigator.navigate(Forum(it.name))
                                         },
                                         onClickUser = {
-                                            navigator.navigate(UserProfilePageDestination(it.id))
+                                            navigator.navigate(UserProfile(it.id))
                                         },
                                         dislikeAction = {
                                             if (personalized == null) return@FeedCard

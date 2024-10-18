@@ -12,15 +12,9 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.AnimationConstants
-import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,47 +23,37 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.Surface
-import androidx.compose.material.SwipeableDefaults
 import androidx.compose.material.Text
-import androidx.compose.material.rememberModalBottomSheetState
+import androidx.compose.material.navigation.rememberBottomSheetNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavHostController
+import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.plusAssign
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.google.accompanist.navigation.material.BottomSheetNavigator
-import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
-import com.google.accompanist.navigation.material.ModalBottomSheetLayout
-import com.google.accompanist.systemuicontroller.SystemUiController
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
@@ -80,9 +64,8 @@ import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.NavGraphs
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.RootNavGraph
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
 import com.huanchengfly.tieba.post.ui.utils.isSeparating
@@ -108,14 +91,6 @@ import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.registerPickMediasLauncher
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.requestPermission
-import com.ramcosta.composedestinations.DestinationsNavHost
-import com.ramcosta.composedestinations.animations.defaults.RootNavGraphDefaultAnimations
-import com.ramcosta.composedestinations.animations.rememberAnimatedNavHostEngine
-import com.ramcosta.composedestinations.navigation.navigate
-import com.ramcosta.composedestinations.spec.DestinationSpec
-import com.ramcosta.composedestinations.spec.Direction
-import com.ramcosta.composedestinations.utils.currentDestinationAsState
-import com.ramcosta.composedestinations.utils.currentDestinationFlow
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -125,35 +100,19 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 
 val LocalNotificationCountFlow =
     staticCompositionLocalOf<Flow<Int>> { throw IllegalStateException("not allowed here!") }
 val LocalDevicePosture =
     staticCompositionLocalOf<State<DevicePosture>> { throw IllegalStateException("not allowed here!") }
-val LocalNavController =
-    staticCompositionLocalOf<NavHostController> { throw IllegalStateException("not allowed here!") }
-val LocalDestination = compositionLocalOf<DestinationSpec<*>?> { null }
-
-@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterialNavigationApi::class)
-@Composable
-fun rememberBottomSheetNavigator(
-    animationSpec: AnimationSpec<Float> = SwipeableDefaults.AnimationSpec,
-    skipHalfExpanded: Boolean = false
-): BottomSheetNavigator {
-    val sheetState = rememberModalBottomSheetState(
-        ModalBottomSheetValue.Hidden,
-        animationSpec = animationSpec,
-        skipHalfExpanded = skipHalfExpanded
-    )
-    return remember(sheetState) { BottomSheetNavigator(sheetState) }
-}
 
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
+
     private val newMessageReceiver: BroadcastReceiver = NewMessageReceiver()
+
+    private var pendingIntent: Intent? by mutableStateOf(null)
 
     private val notificationCountFlow: MutableSharedFlow<Int> =
         MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -195,61 +154,30 @@ class MainActivityV2 : BaseComposeActivity() {
             )
     }
 
-    private var direction: Direction? = null
-    private var waitingNavCollectorToNavigate = AtomicBoolean(false)
-    private var myNavController: NavHostController? = null
-        set(value) {
-            field = value
-            if (value != null && waitingNavCollectorToNavigate.get() && direction != null) {
-                launch {
-                    value.currentDestinationFlow
-                        .take(1)
-                        .collect {
-                            if (waitingNavCollectorToNavigate.get() && direction != null) {
-                                value.navigate(direction!!)
-                                waitingNavCollectorToNavigate.set(false)
-                                direction = null
-                            }
-                        }
-                }
-            }
-        }
-
-    private fun navigate(direction: Direction) {
-        if (myNavController == null) {
-            waitingNavCollectorToNavigate.set(true)
-            this.direction = direction
-        } else {
-            myNavController?.navigate(direction)
-        }
-    }
-
-    private fun checkIntent(intent: Intent): Boolean {
-        return if (intent.data?.scheme == "com.baidu.tieba" && intent.data?.host == "unidispatch") {
-            val uri = intent.data!!
+    // Convert to tblite Deep Links
+    private fun handelDeepLinks(intent: Intent): Boolean {
+        val uri = intent.data ?: return false
+        if (uri.scheme == "com.baidu.tieba" && uri.host == "unidispatch") {
             when (uri.path.orEmpty().lowercase()) {
                 "/frs" -> {
                     val forumName = uri.getQueryParameter("kw") ?: return true
-                    navigate(ForumPageDestination(forumName))
+                    pendingIntent = intent.apply { data = Uri.parse("tblite://forum/$forumName") }
                 }
 
                 "/pb" -> {
                     val threadId = uri.getQueryParameter("tid")?.toLongOrNull() ?: return true
-                    navigate(ThreadPageDestination(threadId))
+                    pendingIntent = intent.apply { data = Uri.parse("tblite://thread/$threadId") }
                 }
             }
-            true
+            return true
         } else {
-            false
+            return false
         }
     }
 
     override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        intent?.let {
-            if (!checkIntent(it)) {
-                myNavController?.handleDeepLink(it)
-            }
+        if (!handelDeepLinks(intent)) {
+            super.onNewIntent(intent)
         }
     }
 
@@ -292,21 +220,22 @@ class MainActivityV2 : BaseComposeActivity() {
             delay(2000L)
             requestNotificationPermission()
         }
-        intent?.let { checkIntent(it) }
+        intent?.let { handelDeepLinks(it) }
 
         runCatching {
             TiebaUtil.initAutoSign(this)
         }
     }
 
-    private fun openClipBoardLink(link: ClipBoardLink) {
+    private fun openClipBoardLink(navController: NavController, link: ClipBoardLink) {
         when (link) {
             is ClipBoardThreadLink -> {
-                myNavController?.navigate(Uri.parse("tblite://thread/${link.threadId}"))
+                val threadId = link.threadId.toLongOrNull()?: return
+                navController.navigate(Destination.Thread(threadId = threadId))
             }
 
             is ClipBoardForumLink -> {
-                myNavController?.navigate(Uri.parse("tblite://forum/${link.forumName}"))
+                navController.navigate(Destination.Forum(forumName = link.forumName))
             }
 
             else -> {
@@ -316,7 +245,7 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     @Composable
-    private fun ClipBoardDetectDialog() {
+    private fun ClipBoardDetectDialog(navController: NavController) {
         val previewInfo by ClipBoardLinkDetector.previewInfoStateFlow.collectAsState()
 
         val dialogState = rememberDialogState()
@@ -335,7 +264,7 @@ class MainActivityV2 : BaseComposeActivity() {
             buttons = {
                 DialogPositiveButton(text = stringResource(id = R.string.button_open)) {
                     previewInfo?.let {
-                        openClipBoardLink(it.clipBoardLink)
+                        openClipBoardLink(navController, it.clipBoardLink)
                     }
                 }
                 DialogNegativeButton(text = stringResource(id = R.string.btn_close))
@@ -386,11 +315,13 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    @OptIn(ExperimentalMaterialNavigationApi::class)
     @Composable
     override fun Content() {
         val okSignAlertDialogState = rememberDialogState()
-        ClipBoardDetectDialog()
+        val bottomSheetNavigator = rememberBottomSheetNavigator()
+        val navController = rememberNavController(bottomSheetNavigator)
+
+        ClipBoardDetectDialog(navController)
         AlertDialog(
             dialogState = okSignAlertDialogState,
             title = { Text(text = stringResource(id = R.string.title_dialog_oksign_battery_optimization)) },
@@ -433,33 +364,14 @@ class MainActivityV2 : BaseComposeActivity() {
         }
         TiebaLiteLocalProvider {
             TranslucentThemeBackground {
-                val navController = rememberNavController()
-                val engine = TiebaNavHostDefaults.rememberNavHostEngine()
-                val navigator = TiebaNavHostDefaults.rememberBottomSheetNavigator()
-                val currentDestination by navController.currentDestinationAsState()
+                RootNavGraph(bottomSheetNavigator, navController, Destination.Main)
+            }
+        }
 
-                navController.navigatorProvider += navigator
-                CompositionLocalProvider(
-                    LocalNavController provides navController,
-                    LocalDestination provides currentDestination,
-                ) {
-                    ModalBottomSheetLayout(
-                        bottomSheetNavigator = navigator,
-                        sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-                        sheetBackgroundColor = ExtendedTheme.colors.windowBackground,
-                        scrimColor = Color.Black.copy(alpha = 0.32f),
-                    ) {
-                        DestinationsNavHost(
-                            navController = navController,
-                            navGraph = NavGraphs.root,
-                            engine = engine,
-                        )
-                    }
-                }
-
-                SideEffect {
-                    myNavController = navController
-                }
+        pendingIntent?.let {
+            LaunchedEffect(it) {
+                navController.handleDeepLink(it)
+                pendingIntent = null
             }
         }
     }
@@ -523,54 +435,4 @@ class MainActivityV2 : BaseComposeActivity() {
             }
         }
     }
-}
-
-private object TiebaNavHostDefaults {
-    private val AnimationSpec = spring(
-        stiffness = Spring.StiffnessMediumLow,
-        visibilityThreshold = IntOffset.VisibilityThreshold
-    )
-
-    @Composable
-    @OptIn(ExperimentalMaterialNavigationApi::class, ExperimentalAnimationApi::class)
-    fun rememberNavHostEngine() = rememberAnimatedNavHostEngine(
-        navHostContentAlignment = Alignment.TopStart,
-        rootDefaultAnimations = RootNavGraphDefaultAnimations(
-            enterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Start,
-                    animationSpec = AnimationSpec,
-                    initialOffset = { it }
-                )
-            },
-            exitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.End,
-                    animationSpec = AnimationSpec,
-                    targetOffset = { -it }
-                )
-            },
-            popEnterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Start,
-                    animationSpec = AnimationSpec,
-                    initialOffset = { -it }
-                )
-            },
-            popExitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.End,
-                    animationSpec = AnimationSpec,
-                    targetOffset = { it }
-                )
-            },
-        ),
-    )
-
-    @OptIn(ExperimentalMaterialNavigationApi::class)
-    @Composable
-    fun rememberBottomSheetNavigator(): BottomSheetNavigator = rememberBottomSheetNavigator(
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        skipHalfExpanded = true
-    )
 }

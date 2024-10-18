@@ -7,21 +7,19 @@ import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.page.destinations.BlockListPageDestination
+import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.BlockList
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@Destination
 @Composable
-fun BlockSettingsPage(navigator: DestinationsNavigator) {
+fun BlockSettingsPage(navigator: NavController) {
     MyScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
@@ -39,7 +37,7 @@ fun BlockSettingsPage(navigator: DestinationsNavigator) {
                     title = stringResource(id = R.string.title_block_list),
                     leadingIcon = Icons.Outlined.Block,
                     onClick = {
-                        navigator.navigate(BlockListPageDestination)
+                        navigator.navigate(BlockList)
                     }
                 )
             }

@@ -34,8 +34,8 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
@@ -55,7 +55,7 @@ fun SearchUserPage(
     keyword: String,
     viewModel: SearchUserViewModel = pageViewModel(),
 ) {
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(SearchUserUiIntent.Refresh(keyword))
         viewModel.initialized = true
@@ -148,10 +148,8 @@ fun SearchUserPage(
                             SearchUserItem(
                                 item = it,
                                 onClick = {
-                                    val id = it.id?.toLongOrNull()
-                                    if (id != null) {
-                                        navigator.navigate(UserProfilePageDestination(id))
-                                    }
+                                    val uid = it.id?.toLongOrNull() ?: return@SearchUserItem
+                                    navigator.navigate(UserProfile(uid))
                                 }
                             )
                         }
@@ -175,10 +173,8 @@ fun SearchUserPage(
                         SearchUserItem(
                             item = it,
                             onClick = {
-                                val id = it.id?.toLongOrNull()
-                                if (id != null) {
-                                    navigator.navigate(UserProfilePageDestination(id))
-                                }
+                                val uid = it.id?.toLongOrNull() ?: return@SearchUserItem
+                                navigator.navigate(UserProfile(uid))
                             }
                         )
                     }

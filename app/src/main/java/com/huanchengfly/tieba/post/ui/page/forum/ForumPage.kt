@@ -5,7 +5,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
@@ -64,8 +64,8 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.page.Destination.ForumSearchPost
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumSearchPostPageDestination
 import com.huanchengfly.tieba.post.ui.page.forum.detail.navigateForumDetailPage
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.GoodThreadListPage
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.NormalThreadListPage
@@ -86,9 +86,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import com.ramcosta.composedestinations.annotation.DeepLink
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlin.math.max
 import kotlin.math.min
 
@@ -225,17 +222,11 @@ private fun ForumToolbar(
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-@Destination(
-    deepLinks = [
-        DeepLink(uriPattern = "tblite://forum/{forumName}")
-    ]
-)
 @Composable
 fun ForumPage(
     forumName: String,
+    navigator: NavController,
     viewModel: ForumViewModel = pageViewModel(),
-    navigator: DestinationsNavigator
 ) {
     val context = LocalContext.current
     LazyLoad(loaded = viewModel.initialized) {
@@ -355,9 +346,8 @@ fun ForumPage(
                 },
                 onBackAction = navigator::navigateUp,
                 onSearchAction = {
-                    forumInfo?.get { id }?.let {
-                        navigator.navigate(ForumSearchPostPageDestination(forumName, it))
-                    }
+                    val forumId = forumInfo?.get { id } ?: return@ForumToolbar
+                    navigator.navigate(ForumSearchPost(forumName, forumId))
                 },
                 isLoading = isLoading
             ) {

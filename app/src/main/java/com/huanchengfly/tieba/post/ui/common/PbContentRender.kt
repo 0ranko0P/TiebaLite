@@ -43,9 +43,8 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayer
@@ -197,7 +196,7 @@ data class VideoContentRender(
     override fun Render() {
         val widthFraction =
             if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.5f
-        val navigator = LocalNavigator.current
+        val navigator = LocalNavController.current
 
         if (picUrl.isNotBlank()) {
             val picModifier = Modifier
@@ -223,12 +222,9 @@ data class VideoContentRender(
                 GlideImage(
                     model  = picUrl,
                     contentDescription = stringResource(id = R.string.desc_video),
-                    modifier = picModifier
-                        .clickable {
-                            navigator.navigate(
-                                WebViewPageDestination(webUrl)
-                            )
-                        },
+                    modifier = picModifier.clickable {
+                        navigator.navigate(Destination.WebView(webUrl))
+                    },
                     contentScale = ContentScale.Crop
                 )
             }
@@ -307,7 +303,7 @@ fun PbContentText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
+    val navigator = LocalNavController.current
 
     val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
     EmoticonText(
@@ -333,7 +329,7 @@ fun PbContentText(
 
                             "user" -> {
                                 val uid = annotation.item.toLong()
-                                navigator.navigate(UserProfilePageDestination(uid))
+                                navigator.navigate(Destination.UserProfile(uid))
                             }
                         }
                     }

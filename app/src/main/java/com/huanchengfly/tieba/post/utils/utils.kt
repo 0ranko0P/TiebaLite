@@ -16,16 +16,15 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.huanchengfly.tieba.post.ui.page.Destination
 import java.io.IOException
 
 fun launchUrl(
     context: Context,
-    navigator: DestinationsNavigator,
+    navigator: NavController,
     url: String,
 ) {
     val uri = Uri.parse(url)
@@ -63,9 +62,7 @@ fun launchUrl(
         if (host == "tieba.baidu.com" && path.startsWith("/p/")) {
             val threadId = path.substring(3).toLongOrNull()
             if (threadId != null) {
-                navigator.navigate(
-                    ThreadPageDestination(threadId)
-                )
+                navigator.navigate(Destination.Thread(threadId))
             }
             return
         }
@@ -74,9 +71,7 @@ fun launchUrl(
                 "ufosdk.baidu.com"
             ) || host.contains("m.help.baidu.com")
         if (isTiebaLink || context.appPreferences.useWebView) {
-            navigator.navigate(
-                WebViewPageDestination(url)
-            )
+            navigator.navigate(Destination.WebView(url))
         } else {
             if (context.appPreferences.useCustomTabs) {
                 val theme by ThemeUtil.themeState
