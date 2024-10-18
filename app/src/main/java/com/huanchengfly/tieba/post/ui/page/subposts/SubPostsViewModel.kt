@@ -71,12 +71,7 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
     private val _uiEvent: MutableState<UiEvent?> = mutableStateOf(null)
     val uiEvent: State<UiEvent?> = _uiEvent
 
-    var initialized = false
-        private set
-
-    @Suppress("UNUSED_PARAMETER")
-    fun initialize(loadFromSubPost: Boolean = false) {
-        initialized = true
+    init {
         requestLoad()
     }
 

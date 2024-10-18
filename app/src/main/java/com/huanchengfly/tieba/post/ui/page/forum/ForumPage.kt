@@ -76,7 +76,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -229,11 +228,6 @@ fun ForumPage(
     viewModel: ForumViewModel = pageViewModel(),
 ) {
     val context = LocalContext.current
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.requestLoadForm(context, forumName)
-        viewModel.initialized = true
-    }
-
     val scaffoldState = rememberScaffoldState()
     val snackbarHostState = scaffoldState.snackbarHostState
     viewModel.onEvent<ForumUiEvent.SignIn.Success> {

@@ -10,6 +10,8 @@ import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.SavedStateHandle
+import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
@@ -32,6 +34,7 @@ import com.huanchengfly.tieba.post.models.ForumHistoryExtra
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.FrsPageRepository
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
@@ -62,10 +65,12 @@ import javax.inject.Inject
 
 @Stable
 @HiltViewModel
-class ForumViewModel @Inject constructor() :
+class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
     BaseViewModel<ForumUiIntent, ForumPartialChange, ForumUiState, ForumUiEvent>() {
 
-    private var forumName: String? = null
+    val param = savedStateHandle.toRoute<Destination.Forum>()
+
+    private var forumName: String = param.forumName
 
     @ForumFabFunction
     val fab: String = App.INSTANCE.appPreferences.forumFabFunction
@@ -75,6 +80,10 @@ class ForumViewModel @Inject constructor() :
     @get:ForumSortType
     var sortType by mutableIntStateOf(ForumSortType.BY_REPLY)
         private set
+
+    init {
+        requestLoadForm(App.INSTANCE)
+    }
 
     override fun createInitialState(): ForumUiState = ForumUiState()
 
@@ -193,8 +202,7 @@ class ForumViewModel @Inject constructor() :
         )
     }
 
-    fun requestLoadForm(context: Context, forumName: String) = scope.launch {
-        this@ForumViewModel.forumName = forumName
+    fun requestLoadForm(context: Context) = scope.launch {
         sortType = withContext(Dispatchers.IO) {
             getSortType(context, forumName).first()
         }

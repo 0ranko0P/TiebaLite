@@ -122,7 +122,7 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             typeMap = threadTypeMap
         ) { backStackEntry ->
             with(backStackEntry.toRoute<Destination.Thread>()) {
-                ThreadPage(threadId, forumId, postId, seeLz, sortType, from, extra, null, scrollToReply, navController)
+                ThreadPage(threadId, postId, from, extra, scrollToReply, navController)
             }
         }
 

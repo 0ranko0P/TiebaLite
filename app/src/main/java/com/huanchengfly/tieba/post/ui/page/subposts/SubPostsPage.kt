@@ -125,10 +125,6 @@ internal fun SubPostsContent(
     val account = LocalAccount.current
     val context = LocalContext.current
 
-    LazyLoad(key = viewModel, loaded = viewModel.initialized) {
-        viewModel.initialize()
-    }
-
     val isRefreshing = viewModel.refreshing
 
     val isLoading = viewModel.loading

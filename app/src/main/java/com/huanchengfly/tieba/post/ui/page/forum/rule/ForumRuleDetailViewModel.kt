@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page.forum.rule
 
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.SavedStateHandle
+import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.BawuRoleInfoPub
 import com.huanchengfly.tieba.post.api.models.protos.ForumRule
@@ -15,6 +17,7 @@ import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
+import com.huanchengfly.tieba.post.ui.page.Destination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -30,8 +33,17 @@ import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 
 @HiltViewModel
-class ForumRuleDetailViewModel @Inject constructor() :
+class ForumRuleDetailViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
     BaseViewModel<ForumRuleDetailUiIntent, ForumRuleDetailPartialChange, ForumRuleDetailUiState, UiEvent>() {
+
+    val forumId: Long
+
+    init {
+        val param = savedStateHandle.toRoute<Destination.ForumRuleDetail>()
+        forumId = param.forumId
+        this.send(ForumRuleDetailUiIntent.Load(forumId))
+    }
+
     override fun createInitialState(): ForumRuleDetailUiState = ForumRuleDetailUiState()
 
     override fun createPartialChangeProducer(): PartialChangeProducer<ForumRuleDetailUiIntent, ForumRuleDetailPartialChange, ForumRuleDetailUiState> =

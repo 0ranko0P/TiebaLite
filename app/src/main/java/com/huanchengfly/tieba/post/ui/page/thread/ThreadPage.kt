@@ -184,20 +184,13 @@ private fun LazyListState.lastVisiblePost(viewModel: ThreadViewModel): PostData?
 @Composable
 fun ThreadPage(
     threadId: Long,
-    forumId: Long? = null,
     postId: Long = 0,
-    seeLz: Boolean = false,
-    sortType: Int = 0,
     from: String = "",
     extra: ThreadStoreExtra? = null,
-    threadInfo: ThreadInfo? = null,
     scrollToReply: Boolean = false,
     navigator: NavController,
     viewModel: ThreadViewModel = hiltViewModel(),
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.initialize(forumId, threadInfo, seeLz, sortType, from)
-    }
 
     val scaffoldState = rememberScaffoldState()
     val state = viewModel.threadUiState

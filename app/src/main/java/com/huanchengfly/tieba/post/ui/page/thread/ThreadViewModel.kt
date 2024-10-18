@@ -93,7 +93,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
      * */
     val seeLz: Boolean get() = _seeLz
 
-    private var from: String = ""
+    private var from: String = params.from
 
     private var history: History? = null
 
@@ -124,9 +124,6 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
     var isImmersiveMode by mutableStateOf(false)
         private set
 
-    var initialized: Boolean = false
-        private set
-
     /**
      * @see KEY_REPLY_HIDE
      * */
@@ -153,10 +150,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
 
     val error: Throwable? get() = _threadUiState.error?.item
 
-    /**
-     * Forum ID, available after [initialize]
-     * */
-    var curForumId: Long? = null
+    var curForumId: Long? = params.forumId
 
     val firstPostId: Long
         get() = _info?.firstPostId.takeIf { it != 0L } ?: threadUiState.firstPost?.id ?: 0L
@@ -169,23 +163,12 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
     private val _uiEvent: MutableState<UiEvent?> = mutableStateOf(null)
     val uiEvent: State<UiEvent?> = _uiEvent
 
-    fun initialize(forumId: Long?, info: ThreadInfo?, seeLz: Boolean, sortType: Int, from: String) {
-        this.from = from
-        this.curForumId = forumId?: info?.forumId
-        Log.i(TAG, "onInit: threadId=$threadId, forumId=$forumId, postId=$postId, seeLz=$seeLz sortType=$sortType")
-        _threadUiState = _threadUiState.copy(
-            lz = if (info?.author != null) UserData(info.author, true) else null,
-            firstPost = if (info != null) PostData.fromThreadInfo(info) else null,
-            sortType = sortType,
-        )
-        if (info != null) {
-            this._info = ThreadInfoData(info)
-        }
+    init {
+        _threadUiState = _threadUiState.copy(sortType = params.sortType)
         requestLoad(page = 0, postId)
         viewModelScope.launch {
             hideReply = App.INSTANCE.dataStore.getBoolean(KEY_REPLY_HIDE, false)
         }
-        initialized = true
     }
 
     fun requestLoad(page: Int = 1, postId: Long) {

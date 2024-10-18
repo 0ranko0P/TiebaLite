@@ -2,14 +2,11 @@ package com.huanchengfly.tieba.post.ui.models
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.Post
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.contentRenders
 import com.huanchengfly.tieba.post.api.models.protos.plainText
-import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
@@ -94,26 +91,6 @@ data class PostData(
                 contentRenders = post.contentRenders,
                 getSubPosts(post),
                 post.sub_post_number
-            )
-        }
-
-        fun fromThreadInfo(info: ThreadInfo): PostData? {
-            val lz: User = info.author?: return null
-            return PostData(
-                id = info.firstPostId,
-                author = UserData(lz, true),
-                floor = 1,
-                title = info.title,
-                isNTitle = info.isNoTitle == 1,
-                time = info.createTime.toLong(),
-                hasAgree = info.agree?.hasAgree?: 0,
-                agreeNum = info.agreeNum.toLong(),
-                diffAgreeNum = info.agree?.diffAgreeNum?: 0L,
-                blocked = false, // force false
-                plainText = info.firstPostContent.plainText,
-                contentRenders = info.firstPostContent.renders,
-                subPosts = persistentListOf(),
-                subPostNumber = 0
             )
         }
 

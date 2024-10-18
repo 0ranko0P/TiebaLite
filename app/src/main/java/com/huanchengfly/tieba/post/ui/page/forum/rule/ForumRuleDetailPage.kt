@@ -27,7 +27,6 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
@@ -42,11 +41,6 @@ fun ForumRuleDetailPage(
     navigator: NavController,
     viewModel: ForumRuleDetailViewModel = pageViewModel(),
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(ForumRuleDetailUiIntent.Load(forumId))
-        viewModel.initialized = true
-    }
-
     val isLoading by viewModel.uiState.collectPartialAsState(
         prop1 = ForumRuleDetailUiState::isLoading,
         initial = true
