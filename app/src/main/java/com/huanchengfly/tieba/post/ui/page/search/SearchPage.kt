@@ -106,7 +106,7 @@ data class SearchPageItem(
     val onSelectedSortTypeChange: (Int) -> Unit = {},
 )
 
-@OptIn(ExperimentalFoundationApi::class, FlowPreview::class)
+@OptIn(FlowPreview::class)
 @Composable
 fun SearchPage(
     navigator: NavController,
@@ -299,7 +299,6 @@ fun SearchPage(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SearchSuggestionList(
     suggestions: ImmutableList<String>,
@@ -313,7 +312,7 @@ private fun SearchSuggestionList(
             key = { it }
         ) {
             Container(
-                modifier = Modifier.animateItemPlacement()
+                modifier = Modifier.animateItem()
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

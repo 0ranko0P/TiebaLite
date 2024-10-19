@@ -150,8 +150,8 @@ dependencies {
     implementation(accompanist.systemuicontroller)
     implementation(accompanist.placeholder.material)
 
-    implementation(compose.bom)
-    androidTestImplementation(compose.bom)
+    implementation(platform(compose.bom))
+    androidTestImplementation(platform(compose.bom))
 
     runtimeOnly(compose.runtime.tracing)
     implementation(compose.animation)

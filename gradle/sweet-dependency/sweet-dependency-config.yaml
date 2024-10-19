@@ -89,11 +89,11 @@ libraries:
   androidx.compose:
     compose-bom:
       alias: compose-bom
-      version: 2024.01.00
+      version: 2024.09.03
   androidx.compose.ui:
     ui-test-junit4:
       alias: compose-ui-test-junit4
-      version: 1.6.8
+      version: <no-spec>
     ui-tooling:
       alias: compose-ui-tooling
       version: <no-spec>

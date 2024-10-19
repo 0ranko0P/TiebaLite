@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
@@ -53,7 +52,6 @@ data class ExplorePageItem(
     val content: @Composable () -> Unit,
 )
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ColumnScope.ExplorePageTab(
     pagerState: PagerState,
@@ -107,7 +105,6 @@ private fun TabText(
     Text(text = text, style = style)
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExplorePage() {
     val account = LocalAccount.current

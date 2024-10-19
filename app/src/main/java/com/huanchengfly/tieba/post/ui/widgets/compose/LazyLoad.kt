@@ -1,8 +1,7 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.snapping.SnapFlingBehavior
+import androidx.compose.foundation.gestures.TargetedFlingBehavior
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
@@ -71,17 +70,16 @@ fun ProvideShouldLoad(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LazyLoadHorizontalPager(
     state: PagerState,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     pageSize: PageSize = PageSize.Fill,
-    beyondBoundsPageCount: Int = 0,
+    beyondViewportPageCount: Int = PagerDefaults.BeyondViewportPageCount,
     pageSpacing: Dp = 0.dp,
     verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
-    flingBehavior: SnapFlingBehavior = PagerDefaults.flingBehavior(state = state),
+    flingBehavior: TargetedFlingBehavior = PagerDefaults.flingBehavior(state = state),
     userScrollEnabled: Boolean = true,
     reverseLayout: Boolean = false,
     key: ((index: Int) -> Any)? = null,
@@ -96,7 +94,7 @@ fun LazyLoadHorizontalPager(
         modifier = modifier,
         contentPadding = contentPadding,
         pageSize = pageSize,
-        beyondBoundsPageCount = beyondBoundsPageCount,
+        beyondViewportPageCount = beyondViewportPageCount,
         pageSpacing = pageSpacing,
         verticalAlignment = verticalAlignment,
         flingBehavior = flingBehavior,

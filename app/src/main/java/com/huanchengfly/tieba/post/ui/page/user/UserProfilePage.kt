@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.user
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -308,7 +307,6 @@ private fun UserProfileToolbar(
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserProfileContentNormal(
     user: ImmutableHolder<User>,
@@ -340,6 +338,7 @@ private fun UserProfileContentNormal(
     }
 
     MyScaffold(
+        modifier = modifier,
         topBar = {
             UserProfileToolbar(
                 user = user,
@@ -533,7 +532,6 @@ private fun UserProfileContentNormal(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserProfileContentExpanded(
     user: ImmutableHolder<User>,
@@ -548,6 +546,7 @@ private fun UserProfileContentExpanded(
     val context = LocalContext.current
 
     MyScaffold(
+        modifier = modifier,
         topBar = {
             UserProfileToolbar(
                 user = user,
@@ -682,7 +681,6 @@ data class UserProfilePageData(
     val content: @Composable (ImmutableHolder<User>, Boolean) -> Unit,
 )
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserProfileTabRow(
     user: ImmutableHolder<User>,

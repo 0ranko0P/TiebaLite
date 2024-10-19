@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +40,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -420,11 +417,7 @@ fun SearchBox(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(100))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = rememberRipple(bounded = false, 24.dp),
-                                role = Role.Button
-                            ) { onKeywordChange("") },
+                            .clickable { onKeywordChange("") },
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -438,11 +431,7 @@ fun SearchBox(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = rememberRipple(bounded = false, 24.dp),
-                            role = Role.Button
-                        ) { onKeywordSubmit(keyword) },
+                        .clickable { onKeywordSubmit(keyword) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
