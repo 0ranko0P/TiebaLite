@@ -749,7 +749,7 @@ fun FeedCard(
     modifier: Modifier = Modifier,
     onClickReply: (ThreadInfo) -> Unit = {},
     onClickUser: (User) -> Unit = {},
-    onClickForum: (SimpleForum) -> Unit = {},
+    onClickForum: ((SimpleForum) -> Unit)? = null, // Parse Null to Hide ForumInfo
     onClickOriginThread: (OriginThreadInfo) -> Unit = {},
     dislikeAction: @Composable () -> Unit = {},
 ) {
@@ -792,7 +792,9 @@ fun FeedCard(
                     )
                 }
 
-            ThreadForumInfo(item = item, onClick = onClickForum)
+            if (onClickForum != null) {
+                ThreadForumInfo(item = item, onClick = onClickForum)
+            }
         },
         action = {
             Row(modifier = Modifier.fillMaxWidth()) {
