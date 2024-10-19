@@ -1,10 +1,9 @@
-import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
 
 plugins {
     autowire(libs.plugins.com.android.application)
     autowire(libs.plugins.kotlin.android)
-    autowire(libs.plugins.kotlin.kapt)
+    autowire(libs.plugins.kotlin.compose.compiler)
     autowire(libs.plugins.kotlin.serialization)
     autowire(libs.plugins.kotlin.parcelize)
     autowire(libs.plugins.hilt.android)
@@ -76,27 +75,12 @@ android {
             multiDexEnabled = true
         }
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
     compileOptions {
         targetCompatibility = JavaVersion.VERSION_11
         sourceCompatibility = JavaVersion.VERSION_11
     }
     kotlinOptions {
         jvmTarget = "11"
-        freeCompilerArgs += listOf(
-            "-P",
-            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" + project.buildDir.absolutePath + "/compose_metrics"
-        )
-        freeCompilerArgs += listOf(
-            "-P",
-            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" + project.buildDir.absolutePath + "/compose_metrics"
-        )
-        freeCompilerArgs += listOf(
-            "-P", "plugin:androidx.compose.compiler.plugins.kotlin:stabilityConfigurationPath=" +
-                    project.rootDir.absolutePath + "/compose_stability_configuration.txt"
-        )
     }
     packaging {
         resources {
@@ -105,25 +89,21 @@ android {
         }
     }
     namespace = "com.huanchengfly.tieba.post"
-    applicationVariants.configureEach {
-        val variant = this
-        outputs.configureEach {
-            val fileName =
-                "${variant.buildType.name}-${android.defaultConfig.versionName}(${android.defaultConfig.versionCode}).apk"
+}
 
-            (this as BaseVariantOutputImpl).outputFileName = fileName
-        }
-        kotlin.sourceSets {
-            getByName(variant.name) {
-                kotlin.srcDir("build/generated/ksp/${variant.name}/kotlin")
-            }
-        }
-    }
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("compose_stability_configuration.txt")
 }
 
 dependencies {
     //Local Files
 //    implementation fileTree(include: ["*.jar"], dir: "libs")
+
+    val composeBom = platform(compose.bom)
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
 
     implementation(net.swiftzer.semver.semver)
     implementation(godaddy.color.picker)
@@ -140,9 +120,9 @@ dependencies {
     api(wire.runtime)
 
     implementation(hilt.android)
-    kapt(hilt.compiler)
+    ksp(hilt.compiler)
     implementation(androidx.hilt.navigation.compose)
-    kapt(androidx.hilt.compiler)
+    ksp(androidx.hilt.compiler)
     implementation(androidx.navigation.compose)
 
     implementation(accompanist.drawablepainter)
@@ -150,10 +130,6 @@ dependencies {
     implementation(accompanist.systemuicontroller)
     implementation(accompanist.placeholder.material)
 
-    implementation(platform(compose.bom))
-    androidTestImplementation(platform(compose.bom))
-
-    runtimeOnly(compose.runtime.tracing)
     implementation(compose.animation)
     implementation(compose.animation.graphics)
     implementation(compose.material)
@@ -204,10 +180,7 @@ dependencies {
     //Test
     testImplementation(junit.junit)
     androidTestImplementation(androidx.test.core)
-    androidTestImplementation(androidx.test.ext.junit)
-    androidTestImplementation(androidx.test.rules)
     androidTestImplementation(androidx.test.espresso.core)
-    androidTestRuntimeOnly(androidx.test.runner)
 
     //Glide
     implementation(glide.core)

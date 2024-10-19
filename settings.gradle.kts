@@ -1,10 +1,16 @@
 pluginManagement {
     repositories {
-        gradlePluginPortal()
-        google()
         mavenCentral()
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
         maven("https://jitpack.io")
         maven("https://maven.aliyun.com/repository/public")
+        gradlePluginPortal()
     }
 }
 plugins {

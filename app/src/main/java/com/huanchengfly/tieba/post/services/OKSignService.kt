@@ -42,6 +42,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         NotificationManagerCompat.from(this)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.i(TAG, "onStartCommand")
         if (intent?.action == ACTION_START_SIGN) {
@@ -56,6 +57,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onHandleIntent(intent: Intent?) {
         Log.i(TAG, "onHandleWork")
         if (intent?.action == ACTION_START_SIGN) {
@@ -161,6 +163,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         ).show()
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onDestroy() {
         super.onDestroy()
         coroutineContext.cancel()

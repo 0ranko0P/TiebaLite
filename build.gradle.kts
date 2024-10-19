@@ -2,7 +2,7 @@
 plugins {
     autowire(libs.plugins.com.android.application) apply false
     autowire(libs.plugins.kotlin.android) apply false
-    autowire(libs.plugins.kotlin.kapt) apply false
+    autowire(libs.plugins.kotlin.compose.compiler) apply false
     autowire(libs.plugins.kotlin.ksp) apply false
     autowire(libs.plugins.kotlin.serialization) apply false
     autowire(libs.plugins.kotlin.parcelize) apply false
@@ -10,8 +10,4 @@ plugins {
     autowire(libs.plugins.com.squareup.wire) apply false
 
     autowire(libs.plugins.com.autonomousapps.dependency.analysis)
-}
-
-tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
 }
