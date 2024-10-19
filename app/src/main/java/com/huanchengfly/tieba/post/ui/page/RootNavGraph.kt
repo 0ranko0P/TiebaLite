@@ -39,8 +39,8 @@ import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.page.settings.settingsNestedGraphBuilder
 import com.huanchengfly.tieba.post.ui.page.settings.theme.AppThemePage
 import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsSheetPage
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPage
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadStoreExtra
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStorePage
 import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
@@ -116,13 +116,13 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             ForumSearchPostPage(params.forumName, params.forumId, navController)
         }
 
-        val threadTypeMap = mapOf(typeOf<ThreadStoreExtra?>() to navTypeOf<ThreadStoreExtra?>(isNullableAllowed = true))
+        val threadTypeMap = mapOf(typeOf<ThreadFrom?>() to navTypeOf<ThreadFrom?>(isNullableAllowed = true))
         composable<Destination.Thread>(
             deepLinks = listOf(navDeepLink<Destination.Thread>(basePath = "tblite://thread", typeMap = threadTypeMap)),
             typeMap = threadTypeMap
         ) { backStackEntry ->
             with(backStackEntry.toRoute<Destination.Thread>()) {
-                ThreadPage(threadId, postId, from, extra, scrollToReply, navController)
+                ThreadPage(threadId, postId, from, scrollToReply, navController)
             }
         }
 

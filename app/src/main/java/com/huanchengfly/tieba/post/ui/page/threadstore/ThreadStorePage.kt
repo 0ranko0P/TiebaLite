@@ -55,9 +55,8 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFrom
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadStoreExtra
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -197,8 +196,7 @@ fun ThreadStorePage(
                                         postId = info.markPid.toLong(),
                                         seeLz = seeLz,
                                         sortType = if(descSort) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT,
-                                        from = ThreadPageFrom.FROM_STORE,
-                                        extra = ThreadStoreExtra(
+                                        from = ThreadFrom.Store(
                                             maxPid = info.maxPid.toLong(),
                                             maxFloor = info.postNo.toInt()
                                         )

@@ -4,7 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.navigation.NavType
 import com.huanchengfly.tieba.post.ui.page.forum.detail.ManagerData
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadStoreExtra
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -51,8 +51,7 @@ sealed interface Destination {
         val postId: Long = 0,
         val seeLz: Boolean = false,
         val sortType: Int = 0,
-        val from: String = "",
-        val extra: ThreadStoreExtra? = null,
+        val from: ThreadFrom? = null,
         val scrollToReply: Boolean = false,
     ): Destination
 

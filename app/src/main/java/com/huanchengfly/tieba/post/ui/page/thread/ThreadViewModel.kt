@@ -81,7 +81,7 @@ import kotlin.reflect.typeOf
 class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     val params = savedStateHandle.toRoute<Destination.Thread>(
-        typeMap = mapOf(typeOf<ThreadStoreExtra?>() to navTypeOf<ThreadStoreExtra?>(isNullableAllowed = true))
+        typeMap = mapOf(typeOf<ThreadFrom?>() to navTypeOf<ThreadFrom?>(isNullableAllowed = true))
     )
 
     val threadId: Long = params.threadId
@@ -93,7 +93,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
      * */
     val seeLz: Boolean get() = _seeLz
 
-    private var from: String = params.from
+    private var from: String = params.from?.tag ?: ""
 
     private var history: History? = null
 
@@ -176,7 +176,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
         _threadUiState = _threadUiState.copy(isRefreshing = true, error = null)
         viewModelScope.launch(handler) {
             val sortType = _threadUiState.sortType
-            val fromType = from.takeIf { it == ThreadPageFrom.FROM_STORE }.orEmpty()
+            val fromType = from.takeIf { it == FROM_STORE }.orEmpty()
             PbPageRepository
                 .pbPage(threadId, page, postId, curForumId, seeLz, sortType, from = fromType)
                 .collect { response ->

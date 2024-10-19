@@ -5,7 +5,7 @@ import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFrom
+import com.huanchengfly.tieba.post.ui.page.thread.FROM_STORE
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -41,7 +41,7 @@ object PbPageRepository {
                 back = back,
                 forumId = forumId,
                 stType = from.takeIf { ST_TYPES.contains(it) }.orEmpty(),
-                mark = if (from == ThreadPageFrom.FROM_STORE) 1 else 0,
+                mark = if (from == FROM_STORE) 1 else 0,
                 lastPostId = lastPostId
             )
             .map { response ->

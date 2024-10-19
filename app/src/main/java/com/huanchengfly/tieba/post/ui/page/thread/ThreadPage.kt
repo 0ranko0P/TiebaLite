@@ -72,7 +72,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
@@ -90,7 +89,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -103,7 +101,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -156,21 +153,6 @@ private fun ToggleButton(
     }
 }
 
-object ThreadPageFrom {
-    const val FROM_FORUM = "forum"
-
-    // 收藏
-    const val FROM_STORE = "store_thread"
-    const val FROM_PERSONALIZED = "personalized"
-    const val FROM_HISTORY = "history"
-}
-
-@Serializable
-data class ThreadStoreExtra(
-    val maxPid: Long,
-    val maxFloor: Int,
-)
-
 private fun LazyListState.lastVisiblePost(viewModel: ThreadViewModel): PostData? {
     val lastPostItem = layoutInfo.visibleItemsInfo.lastOrNull { item ->
         item.key is String && (item.key as String).startsWith(ITEM_POST_KEY_PREFIX)
@@ -185,8 +167,7 @@ private fun LazyListState.lastVisiblePost(viewModel: ThreadViewModel): PostData?
 fun ThreadPage(
     threadId: Long,
     postId: Long = 0,
-    from: String = "",
-    extra: ThreadStoreExtra? = null,
+    extra: ThreadFrom? = null,
     scrollToReply: Boolean = false,
     navigator: NavController,
     viewModel: ThreadViewModel = hiltViewModel(),
@@ -303,7 +284,7 @@ fun ThreadPage(
     )
 
     LaunchedEffect(Unit) {
-        if (from == ThreadPageFrom.FROM_STORE && extra != null && extra.maxPid != postId) {
+        if (extra is ThreadFrom.Store && extra.maxPid != postId) {
             val result = scaffoldState.snackbarHostState.showSnackbar(
                 context.getString(R.string.message_store_thread_update, extra.maxFloor),
                 context.getString(R.string.button_load_new),

@@ -32,7 +32,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFrom
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
@@ -102,7 +102,7 @@ fun HistoryListPage(
                         it.data.toLong(),
                         postId = extra?.pid?.toLongOrNull() ?: 0L,
                         seeLz = extra?.isSeeLz ?: false,
-                        from = ThreadPageFrom.FROM_HISTORY
+                        from = ThreadFrom.History
                     )
                 )
             }
