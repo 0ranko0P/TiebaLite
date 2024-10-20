@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.ContentAlpha
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
@@ -22,6 +25,7 @@ import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,12 +53,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.TimePicker
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun DialogScope.DialogPositiveButton(
+    modifier: Modifier = Modifier,
     text: String,
+    enabled: Boolean = true,
     onClick: () -> Unit = {}
 ) {
     TextButton(
@@ -62,12 +66,14 @@ fun DialogScope.DialogPositiveButton(
             onClick()
             dismiss()
         },
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(100),
-        colors = ButtonDefaults.textButtonColors(
+        modifier = modifier.fillMaxWidth(),
+        enabled = enabled,
+        shape = CircleShape,
+        colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
-            contentColor = MaterialTheme.colors.onSecondary
+            contentColor = MaterialTheme.colors.onSecondary,
+            disabledBackgroundColor = MaterialTheme.colors.secondary.copy(ContentAlpha.disabled),
+            disabledContentColor = MaterialTheme.colors.onSecondary.copy(ContentAlpha.disabled)
         ),
     ) {
         Text(
@@ -80,6 +86,7 @@ fun DialogScope.DialogPositiveButton(
 
 @Composable
 fun DialogScope.DialogNegativeButton(
+    modifier: Modifier = Modifier,
     text: String,
     onClick: (() -> Unit)? = null
 ) {
@@ -88,8 +95,8 @@ fun DialogScope.DialogNegativeButton(
             dismiss()
             onClick?.invoke()
         },
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(100),
+        modifier = modifier.fillMaxWidth(),
+        shape = CircleShape,
         colors = ButtonDefaults.textButtonColors(
             backgroundColor = ExtendedTheme.colors.text.copy(
                 alpha = 0.1f
@@ -248,6 +255,7 @@ fun PromptDialog(
     dialogState: DialogState = rememberDialogState(),
     initialValue: String = "",
     onValueChange: (newVal: String, oldVal: String) -> Boolean = { _, _ -> true },
+    isError: ((String) -> Boolean)? = null,
     onCancel: (() -> Unit)? = null,
     confirmText: String = stringResource(id = R.string.button_sure_default),
     cancelText: String = stringResource(id = R.string.button_cancel),
@@ -255,18 +263,25 @@ fun PromptDialog(
     content: @Composable (DialogScope.() -> Unit) = {},
 ) {
     var textVal by remember { mutableStateOf(initialValue) }
+    val isErrorState by remember { derivedStateOf { isError?.invoke(textVal) == true } }
+
     // 每次显示时重置输入框内容
     LaunchedEffect(dialogState.show) {
         textVal = initialValue
     }
+
     Dialog(
         modifier = modifier,
         dialogState = dialogState,
         onDismiss = onCancel,
         title = title,
         buttons = {
-            DialogPositiveButton(text = confirmText, onClick = { onConfirm.invoke(textVal) })
-            DialogNegativeButton(text = cancelText, onClick = onCancel)
+            val padding = Modifier.padding(horizontal = 12.dp)
+            DialogPositiveButton(modifier = padding, text = confirmText, enabled = !isErrorState) {
+                onConfirm(textVal)
+            }
+            Spacer(Modifier.fillMaxWidth().height(10.dp))
+            DialogNegativeButton(modifier = padding, text = cancelText, onClick = onCancel)
         },
     ) {
         val focusRequester = remember { FocusRequester() }
@@ -288,6 +303,7 @@ fun PromptDialog(
                 onValueChange = {
                     if (onValueChange.invoke(it, textVal)) textVal = it
                 },
+                isError = isErrorState,
                 maxLines = 1,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
@@ -304,10 +320,6 @@ fun PromptDialog(
             )
             LaunchedEffect(focusRequester) {
                 focusRequester.requestFocus()
-                launch {
-                    delay(300)
-                    softwareKeyboardController?.show()
-                }
             }
         }
     }
