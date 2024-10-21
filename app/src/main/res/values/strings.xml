@@ -352,7 +352,7 @@
     <string name="title_personalized">推荐</string>
     <string name="block_type_keywords">关键词</string>
     <string name="block_type_user">用户</string>
-    <string name="tip_add_block">可用空格分隔多个关键词，含有全部关键词的内容将会被屏蔽</string>
+    <string name="tip_add_block">含有全部关键词的内容将会被屏蔽</string>
     <string name="desc_download_pic">下载图片</string>
     <string name="hot_topic_rank">话题榜</string>
     <string name="topic_tag_hot">热</string>

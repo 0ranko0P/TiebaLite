@@ -17,7 +17,7 @@ data class SubPostItemData(
     val time: Long,
     val content: AnnotatedString,
     val plainText: String,
-    val blocked: Boolean = shouldBlock(plainText) || shouldBlock(author.id, author.name),
+    val blocked: Boolean = shouldBlock(author.id, plainText),
     val isLz: Boolean,
     val authorId: Long,
     val hasAgree: Boolean,

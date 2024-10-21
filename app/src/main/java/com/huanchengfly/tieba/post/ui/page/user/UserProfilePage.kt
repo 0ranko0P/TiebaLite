@@ -264,7 +264,7 @@ private fun UserProfileToolbar(
                                         category = Block.CATEGORY_BLACK_LIST,
                                         type = Block.TYPE_USER,
                                         username = it.get { name },
-                                        uid = it.get { id }.toString()
+                                        uid = it.get { id }
                                     )
                                 ) {
                                     if (it) context.toastShort(R.string.toast_add_success)
@@ -280,7 +280,7 @@ private fun UserProfileToolbar(
                                         category = Block.CATEGORY_WHITE_LIST,
                                         type = Block.TYPE_USER,
                                         username = it.get { name },
-                                        uid = it.get { id }.toString()
+                                        uid = it.get { id }
                                     )
                                 ) {
                                     if (it) context.toastShort(R.string.toast_add_success)

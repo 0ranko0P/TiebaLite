@@ -1,57 +1,45 @@
 package com.huanchengfly.tieba.post.ui.page.settings.blocklist
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.FabPosition
+import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.google.accompanist.placeholder.material.placeholder
-import com.google.gson.reflect.TypeToken
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.main.BottomNavigationDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -60,31 +48,31 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.GsonUtil
+import com.huanchengfly.tieba.post.utils.BlockManager
 import kotlinx.coroutines.launch
 
 @Composable
 fun BlockListPage(
-    viewModel: BlockListViewModel = pageViewModel<BlockListUiIntent, BlockListViewModel>(
-        listOf(BlockListUiIntent.Load)
-    ),
+    viewModel: BlockListViewModel = viewModel(),
     onBack: () -> Unit,
 ) {
-    var addBlockCategory by remember { mutableStateOf(Block.CATEGORY_BLACK_LIST) }
+    val pagerState = rememberPagerState { 2 }
+    val coroutineScope = rememberCoroutineScope()
+    val category by remember { derivedStateOf {
+        if (pagerState.currentPage == 0) Block.CATEGORY_BLACK_LIST else Block.CATEGORY_WHITE_LIST
+    } }
+
     val dialogState = rememberDialogState()
+
     PromptDialog(
         onConfirm = {
-            viewModel.send(
-                BlockListUiIntent.Add(
-                    category = addBlockCategory,
-                    keywords = it.split(" ")
-                )
-            )
+            viewModel.addKeyword(category, it)
         },
         dialogState = dialogState,
+        isError = BlockManager::hasKeyword,
         title = {
             Text(
-                text = if (addBlockCategory == Block.CATEGORY_WHITE_LIST) stringResource(id = R.string.title_add_white)
+                text = if (category == Block.CATEGORY_WHITE_LIST) stringResource(id = R.string.title_add_white)
                 else stringResource(id = R.string.title_add_black)
             )
         }
@@ -92,21 +80,9 @@ fun BlockListPage(
         Text(text = stringResource(id = R.string.tip_add_block))
     }
 
-    val context = LocalContext.current
-    val pagerState = rememberPagerState { 2 }
-    val coroutineScope = rememberCoroutineScope()
-    val blackList by viewModel.uiState.collectPartialAsState(
-        prop1 = BlockListUiState::blackList,
-        initial = emptyList()
-    )
-    val whiteList by viewModel.uiState.collectPartialAsState(
-        prop1 = BlockListUiState::whiteList,
-        initial = emptyList()
-    )
-    val isLoading by viewModel.uiState.collectPartialAsState(
-        prop1 = BlockListUiState::isLoading,
-        initial = false
-    )
+    val blackList by viewModel.blackList.collectAsState(null)
+    val whiteList by viewModel.whiteList.collectAsState(null)
+
     MyScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
@@ -150,73 +126,21 @@ fun BlockListPage(
                 }
             )
         },
-        bottomBar = {
-            Column {
-                BottomNavigationDivider()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable {
-                                addBlockCategory = Block.CATEGORY_BLACK_LIST
-                                dialogState.show()
-                            }
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Block,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = stringResource(id = R.string.title_add_black),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable {
-                                addBlockCategory = Block.CATEGORY_WHITE_LIST
-                                dialogState.show()
-                            }
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = stringResource(id = R.string.title_add_white),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = dialogState::show
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(
+                        id = if (category == Block.CATEGORY_BLACK_LIST) R.string.title_add_black else R.string.title_add_white
+                    )
+                )
             }
-        }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
-        val snackbarHostState = LocalSnackbarHostState.current
-        viewModel.onEvent<BlockListUiEvent.Success> {
-            snackbarHostState.showSnackbar(
-                when (it) {
-                    is BlockListUiEvent.Success.Add -> context.getString(R.string.toast_add_success)
-                    is BlockListUiEvent.Success.Delete -> context.getString(R.string.toast_delete_success)
-                }
-            )
-        }
+
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -230,56 +154,27 @@ fun BlockListPage(
                 }
             }
             StateScreen(
-                isEmpty = items.isEmpty(),
+                isEmpty = items?.isEmpty() ?: true,
                 isError = false,
-                isLoading = isLoading,
-                loadingScreen = {
-                    MyLazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(4) {
-                            BlockItemPlaceholder()
-                        }
-                    }
-                },
+                isLoading = items == null,
                 modifier = Modifier.fillMaxSize()
             ) {
                 MyLazyColumn(Modifier.fillMaxSize()) {
-                    items(items, key = { it.id }) {
-                        LongClickMenu(menuContent = {
-                            DropdownMenuItem(onClick = {
-                                viewModel.send(
-                                    BlockListUiIntent.Delete(
-                                        it.id
-                                    )
+                    items(items!!, key = { it.id }) {
+                        LongClickMenu(
+                            menuContent = {
+                                DropdownMenuItem(
+                                    onClick = { viewModel.remove(it) },
+                                    content = { Text(text = stringResource(R.string.title_delete)) }
                                 )
-                            }) {
-                                Text(text = stringResource(id = R.string.title_delete))
                             }
-                        }) {
+                        ) {
                             BlockItem(item = it)
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BlockItemPlaceholder() {
-    Row(
-        modifier = Modifier.padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.Block,
-            contentDescription = null,
-            modifier = Modifier.placeholder(visible = true)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = stringResource(id = R.string.title_block_settings),
-            modifier = Modifier.placeholder(visible = true)
-        )
     }
 }
 
@@ -316,17 +211,7 @@ private fun BlockItem(
                     style = MaterialTheme.typography.caption
                 )
             } else {
-                val keywordsList: List<String> = runCatching {
-                    GsonUtil.getGson()
-                        .fromJson<List<String>>(
-                            item.keywords ?: "[]",
-                            object : TypeToken<List<String>>() {}.type
-                        )
-                }.getOrDefault(emptyList())
-                Text(
-                    text = keywordsList.joinToString(" "),
-                    style = MaterialTheme.typography.subtitle1
-                )
+                Text(text = item.keyword!!, style = MaterialTheme.typography.subtitle1)
             }
         }
     }

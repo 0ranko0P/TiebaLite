@@ -86,7 +86,7 @@ data class PostData(
                 hasAgree = post.agree?.hasAgree ?: 0,
                 agreeNum = post.agree?.agreeNum ?: 0L,
                 diffAgreeNum = post.agree?.diffAgreeNum ?: 0L,
-                blocked = shouldBlock(plainText) || shouldBlock(post.author_id, author.name),
+                blocked = shouldBlock(post.author_id, plainText),
                 plainText = plainText,
                 contentRenders = post.contentRenders,
                 getSubPosts(post),

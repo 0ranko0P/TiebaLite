@@ -1,31 +1,30 @@
 package com.huanchengfly.tieba.post.utils
 
+import androidx.annotation.VisibleForTesting
+import androidx.core.util.Predicate
 import com.huanchengfly.tieba.post.api.models.MessageListBean
-import com.huanchengfly.tieba.post.api.models.protos.Post
-import com.huanchengfly.tieba.post.api.models.protos.SubPostList
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
-import com.huanchengfly.tieba.post.api.models.protos.plainText
 import com.huanchengfly.tieba.post.models.database.Block
-import com.huanchengfly.tieba.post.models.database.Block.Companion.getKeywords
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import org.litepal.LitePal
 import org.litepal.extension.delete
 import org.litepal.extension.findAll
 
 object BlockManager {
-    private val blockList: MutableList<Block> = mutableListOf()
+    private val _blockList = MutableStateFlow<ImmutableList<Block>>(persistentListOf())
+    val blockList: StateFlow<ImmutableList<Block>>
+        get() = _blockList
 
-    val blackList: List<Block>
-        get() = blockList.filter { it.category == Block.CATEGORY_BLACK_LIST }
-
-    val whiteList: List<Block>
-        get() = blockList.filter { it.category == Block.CATEGORY_WHITE_LIST }
-
-    fun addBlock(block: Block) {
-        block.save()
-        blockList.add(block)
+    suspend fun init() = withContext(Dispatchers.IO) {
+        val blocks = LitePal.findAll<Block>()
+        _blockList.value = blocks.toPersistentList()
     }
 
     fun addBlockAsync(
@@ -35,52 +34,66 @@ object BlockManager {
         block.saveAsync()
             .listen {
                 callback?.invoke(it)
-                blockList.add(block)
+                val list = blockList.value.toMutableList()
+                list.add(block)
+                _blockList.value = list.toPersistentList()
             }
     }
 
     fun removeBlock(id: Long) {
         LitePal.delete<Block>(id)
-        blockList.removeAll { it.id == id }
+        val list = blockList.value.toMutableList()
+        list.removeAll { it.id == id }
+        _blockList.value = list.toPersistentList()
     }
 
-    suspend fun init() = withContext(Dispatchers.IO) {
-        val blocks = LitePal.findAll<Block>()
-        blockList.addAll(blocks)
+    fun hasKeyword(keyword: String): Boolean {
+        return blockList.value.find { it.type == Block.TYPE_KEYWORD && it.keyword == keyword } != null
     }
 
-    fun shouldBlock(content: String): Boolean {
-        return blackList.any { block ->
-            block.type == Block.TYPE_KEYWORD
-                    && block.getKeywords().all { content.contains(it) }
-        } && whiteList.none { block ->
-            block.type == Block.TYPE_KEYWORD
-                    && block.getKeywords().all { content.contains(it) }
+    fun hasUser(userId: Long): Boolean {
+        return blockList.value.find { it.type == Block.TYPE_USER && it.uid == userId } != null
+    }
+
+    // Returns a predicate that can test multiple keywords at one time
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun keyword(vararg keywords: String): Predicate<Block> = Predicate { block ->
+        block.type == Block.TYPE_KEYWORD && keywords.any { it.contains(block.keyword!!) }
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun user(userId: Long): Predicate<Block> = Predicate<Block> { block ->
+        block.type == Block.TYPE_USER && block.uid == userId
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun shouldBlock(blocks: List<Block>, predicate: Predicate<Block>): Boolean {
+        var isBlocked = false
+        for (block in blocks) {
+            if (predicate.test(block)) {
+                // Whitelist has highest priority
+                if (block.category == Block.CATEGORY_WHITE_LIST) return false
+
+                isBlocked = true
+            }
         }
+        return isBlocked
     }
 
-    fun shouldBlock(userId: Long = 0L, userName: String? = null): Boolean {
-        return blackList.any { block ->
-            block.type == Block.TYPE_USER
-                    && (block.uid == userId.toString() || block.username == userName)
-        } && whiteList.none { block ->
-            block.type == Block.TYPE_USER
-                    && (block.uid == userId.toString() || block.username == userName)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun shouldBlock(blocks: List<Block>, userId: Long, vararg content: String): Boolean {
+        val predicate = if (content.isEmpty()) {
+            user(userId = userId)
+        } else {
+            keyword(*content).or(user(userId = userId))
         }
+        return shouldBlock(blocks = blocks, predicate = predicate)
     }
 
-    fun ThreadInfo.shouldBlock(): Boolean =
-        shouldBlock(title) || shouldBlock(abstractText) || shouldBlock(authorId, author?.name)
+    fun shouldBlock(userId: Long, vararg content: String): Boolean = shouldBlock(blockList.value, userId, *content)
 
-    fun Post.shouldBlock(): Boolean =
-        shouldBlock(content.plainText) || shouldBlock(author_id, author?.name)
-
-    fun SubPostList.shouldBlock(): Boolean =
-        shouldBlock(content.plainText) || shouldBlock(author_id, author?.name)
+    fun ThreadInfo.shouldBlock(): Boolean = shouldBlock(userId = authorId, title, abstractText)
 
     fun MessageListBean.MessageInfoBean.shouldBlock(): Boolean =
-        shouldBlock(content.orEmpty()) || shouldBlock(
-            this.replyer?.id?.toLongOrNull() ?: -1,
-            this.replyer?.name.orEmpty()
-        )
+        shouldBlock(userId = replyer?.id?.toLongOrNull() ?: -1, content.orEmpty())
 }
