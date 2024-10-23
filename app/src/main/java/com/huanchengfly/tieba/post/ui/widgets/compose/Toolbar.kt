@@ -200,10 +200,12 @@ fun TitleCentredToolbar(
     modifier: Modifier = Modifier,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
+    elevation: Dp = defaultAppBarElevation(),
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) = TitleCentredToolbar(
     title = { Text(text = title) },
     modifier = modifier,
+    elevation = elevation,
     navigationIcon = navigationIcon,
     actions = actions,
     content = content
@@ -256,6 +258,7 @@ fun Toolbar(
     title: String,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
+    elevation: Dp = defaultAppBarElevation(),
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     Toolbar(
@@ -264,6 +267,7 @@ fun Toolbar(
         },
         navigationIcon = navigationIcon,
         actions = actions,
+        elevation = elevation,
         content = content
     )
 }
@@ -275,6 +279,7 @@ fun Toolbar(
     actions: @Composable RowScope.() -> Unit = {},
     backgroundColor: Color = ExtendedTheme.colors.topBar,
     contentColor: Color = ExtendedTheme.colors.onTopBar,
+    elevation: Dp = defaultAppBarElevation(),
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     TopAppBarContainer(
@@ -304,6 +309,7 @@ fun Toolbar(
         },
         color = backgroundColor,
         contentColor = contentColor,
+        elevation = elevation,
         content = content
     )
 }
