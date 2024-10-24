@@ -44,6 +44,8 @@
     <string name="title_white_list">白名单</string>
     <string name="title_add_black">添加黑名单</string>
     <string name="title_add_white">添加白名单</string>
+    <string name="title_remove_black">从黑名单移除</string>
+    <string name="title_remove_white">从白名单移除</string>
     <string name="title_main">首页</string>
     <string name="title_jump_page">跳页</string>
     <string name="tip_jump_page">当前 %1$d/%2$d 页</string>
@@ -75,7 +77,6 @@
     <string name="title_theme">主题选择</string>
     <string name="title_unfollow">取消关注</string>
     <string name="tip_no_intro">这个人很懒，什么都没有写</string>
-    <string name="toast_add_success">添加成功</string>
     <string name="toast_unlike_success">取消关注成功</string>
     <string name="toast_unlike_failed">取消关注失败 %1$s</string>
     <string name="content_top">置顶</string>
@@ -229,6 +230,7 @@
     <string name="title_collected">已收藏</string>
     <string name="text_stat_follow">关注</string>
     <string name="text_stat_fans">粉丝</string>
+    <string name="text_stat_tbage">吧龄</string>
     <string name="title_custom_font_size">字体大小</string>
     <string name="text_singing_progress">%1$s吧 ✓</string>
     <string name="text_singing_progress_fail">%1$s吧 × %2$s</string>
@@ -483,14 +485,12 @@
     <string name="release_to_refresh">松手刷新</string>
     <string name="text_stat_agrees">获赞</string>
     <string name="text_profile_ip_location">IP 属地：%s</string>
-    <string name="text_profile_tb_age">吧龄 %s 年</string>
+    <string name="text_profile_tb_age">%s 年</string>
     <string name="text_profile_user_id">ID: %s</string>
-    <string name="title_profile_threads_tab">贴子 %s</string>
-    <string name="title_profile_posts_tab">回复 %s</string>
-    <string name="title_profile_concern_forums_tab">关注吧 %s</string>
+    <string name="title_profile_threads">贴子 %s</string>
+    <string name="title_profile_posts">回复 %s</string>
+    <string name="title_profile_forums">关注吧 %s</string>
     <string name="title_user_hide_post">该用户已隐藏动态</string>
-    <string name="menu_add_user_to_black_list">添加到黑名单</string>
-    <string name="menu_add_user_to_white_list">添加到白名单</string>
     <string name="btn_block">屏蔽选项</string>
     <string name="text_god_verify">%s领域大神</string>
     <string name="text_login_failed">登录失败 %s</string>

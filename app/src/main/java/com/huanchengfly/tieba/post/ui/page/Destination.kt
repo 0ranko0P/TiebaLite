@@ -81,7 +81,7 @@ sealed interface Destination {
         val replyUserPortrait: String? = null,
         val tbs: String? = null,
         val isDialog: Boolean = false,
-    )
+    ): Destination
 
     @Serializable
     data class UserProfile(val uid: Long): Destination

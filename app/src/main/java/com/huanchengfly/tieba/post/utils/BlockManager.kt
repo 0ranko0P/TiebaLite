@@ -1,6 +1,9 @@
 package com.huanchengfly.tieba.post.utils
 
+import android.database.sqlite.SQLiteException
 import androidx.annotation.VisibleForTesting
+import androidx.compose.ui.util.fastFirstOrNull
+import androidx.compose.ui.util.fastForEach
 import androidx.core.util.Predicate
 import com.huanchengfly.tieba.post.api.models.MessageListBean
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
@@ -16,6 +19,7 @@ import kotlinx.coroutines.withContext
 import org.litepal.LitePal
 import org.litepal.extension.delete
 import org.litepal.extension.findAll
+import org.litepal.extension.findFirst
 
 object BlockManager {
     private val _blockList = MutableStateFlow<ImmutableList<Block>>(persistentListOf())
@@ -47,12 +51,37 @@ object BlockManager {
         _blockList.value = list.toPersistentList()
     }
 
+    suspend fun saveOrUpdateBlock(block: Block): Block = withContext(Dispatchers.IO) {
+        if (block.id > 0L) {
+            if (block.update(block.id) <= 0) throw SQLiteException("Update with invalid id: ${block.id}")
+        } else {
+            if (!block.saveOrUpdate("type = ? and uid = ? and keyword = ?", block.type.toString(), block.uid.toString(), block.keyword?: "NULL")) {
+                throw SQLiteException("Error while save or update the Block data")
+            }
+        }
+        // Maintain the block list manually...
+        val newList = ArrayList(blockList.value)
+        val index = blockList.value.indexOfFirst { it.type == block.type && it.uid == block.uid && it.keyword == block.keyword }
+        if (index == -1) {
+            newList.add(block)
+        } else {
+            newList[index] = block
+        }
+        _blockList.value = newList.toPersistentList()
+        return@withContext block
+    }
+
     fun hasKeyword(keyword: String): Boolean {
         return blockList.value.find { it.type == Block.TYPE_KEYWORD && it.keyword == keyword } != null
     }
 
-    fun hasUser(userId: Long): Boolean {
-        return blockList.value.find { it.type == Block.TYPE_USER && it.uid == userId } != null
+    suspend fun findUserById(userId: Long): Block? = withContext(Dispatchers.IO) {
+        var rec = blockList.value.fastFirstOrNull { it.type == Block.TYPE_USER && it.uid == userId }
+        if (rec == null) {
+            rec = LitePal.where("type = ? and uid = ?", Block.TYPE_USER.toString(), userId.toString())
+                .findFirst<Block>()
+        }
+        return@withContext rec
     }
 
     // Returns a predicate that can test multiple keywords at one time
@@ -69,7 +98,7 @@ object BlockManager {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun shouldBlock(blocks: List<Block>, predicate: Predicate<Block>): Boolean {
         var isBlocked = false
-        for (block in blocks) {
+        blocks.fastForEach { block ->
             if (predicate.test(block)) {
                 // Whitelist has highest priority
                 if (block.category == Block.CATEGORY_WHITE_LIST) return false
