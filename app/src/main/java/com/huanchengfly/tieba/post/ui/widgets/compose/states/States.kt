@@ -76,10 +76,10 @@ val DefaultErrorScreen: @Composable StateScreenScope.() -> Unit = {
 
 @Composable
 fun StateScreen(
-    isEmpty: Boolean,
+    modifier: Modifier = Modifier,
+    isEmpty: Boolean = false,
     isError: Boolean,
     isLoading: Boolean,
-    modifier: Modifier = Modifier,
     onReload: (() -> Unit)? = null,
     clickToReload: Boolean = false,
     emptyScreen: @Composable StateScreenScope.() -> Unit = DefaultEmptyScreen,
@@ -97,16 +97,14 @@ fun StateScreen(
                 then clickableModifier,
         contentAlignment = Alignment.Center
     ) {
-        if (!isEmpty) {
-            stateScreenScope.content()
+        if (isError) {
+            stateScreenScope.errorScreen()
+        } else if (isLoading) {
+            stateScreenScope.loadingScreen()
+        } else if (isEmpty) {
+            stateScreenScope.emptyScreen()
         } else {
-            if (isLoading) {
-                stateScreenScope.loadingScreen()
-            } else if (isError) {
-                stateScreenScope.errorScreen()
-            } else {
-                stateScreenScope.emptyScreen()
-            }
+            stateScreenScope.content()
         }
     }
 }
