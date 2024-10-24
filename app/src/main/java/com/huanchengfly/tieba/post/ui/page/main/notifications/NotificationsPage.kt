@@ -1,6 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.notifications
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.Scaffold
@@ -51,9 +51,7 @@ fun NotificationsPage(
     Scaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            Column {
-                NotificationsToolBar(navigator = navigator, fromHome = fromHome)
-
+            NotificationsToolBar(navigator = navigator, fromHome = fromHome) {
                 TabRow(
                     selectedTabIndex = pagerState.currentPage,
                     indicator = { tabPositions ->
@@ -61,7 +59,7 @@ fun NotificationsPage(
                     },
                     divider = {},
                     backgroundColor = ExtendedTheme.colors.topBar,
-                    contentColor = ExtendedTheme.colors.onTopBar,
+                    contentColor = ExtendedTheme.colors.primary,
                 ) {
                     pages.fastForEachIndexed { index, pair ->
                         Tab(
@@ -71,7 +69,8 @@ fun NotificationsPage(
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(index)
                                 }
-                            }
+                            },
+                            unselectedContentColor = ExtendedTheme.colors.textSecondary
                         )
                     }
                 }
@@ -94,7 +93,11 @@ fun NotificationsPage(
 }
 
 @Composable
-private fun NotificationsToolBar(navigator: NavController, fromHome: Boolean) {
+private fun NotificationsToolBar(
+    navigator: NavController,
+    fromHome: Boolean,
+    content: (@Composable ColumnScope.() -> Unit)?
+) {
     if (fromHome) {
         Toolbar(
             title = stringResource(id = R.string.title_notifications),
@@ -105,7 +108,8 @@ private fun NotificationsToolBar(navigator: NavController, fromHome: Boolean) {
                     contentDescription = stringResource(id = R.string.title_search),
                     onClick = { navigator.navigate(Search) }
                 )
-            }
+            },
+            content = content
         )
     } else {
         TitleCentredToolbar(
@@ -114,7 +118,8 @@ private fun NotificationsToolBar(navigator: NavController, fromHome: Boolean) {
             },
             navigationIcon = {
                 BackNavigationIcon(onBackPressed = navigator::navigateUp)
-            }
+            },
+            content = content
         )
     }
 }

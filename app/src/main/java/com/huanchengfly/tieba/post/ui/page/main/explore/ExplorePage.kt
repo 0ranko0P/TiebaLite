@@ -69,7 +69,7 @@ private fun ColumnScope.ExplorePageTab(
         },
         divider = {},
         backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.onTopBar,
+        contentColor = ExtendedTheme.colors.primary,
         modifier = Modifier
             .align(Alignment.CenterHorizontally)
             .width(76.dp * pages.size),
@@ -87,6 +87,7 @@ private fun ColumnScope.ExplorePageTab(
                         }
                     }
                 },
+                unselectedContentColor = ExtendedTheme.colors.textSecondary
             )
         }
     }

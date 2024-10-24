@@ -22,8 +22,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
@@ -36,11 +39,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.HistoryUtil
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
 @Composable
 fun HistoryPage(navigator: NavController) {
-    val pagerState = rememberPagerState { 2 }
+    val tabs = persistentListOf(R.string.title_history_thread, R.string.title_history_forum)
+    val pagerState = rememberPagerState { tabs.size }
     val coroutineScope = rememberCoroutineScope()
     val scaffoldState = rememberScaffoldState()
 
@@ -57,6 +62,7 @@ fun HistoryPage(navigator: NavController) {
                         fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
                     )
                 },
+                elevation = Dp.Hairline,
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = navigator::navigateUp)
                 },
@@ -85,50 +91,27 @@ fun HistoryPage(navigator: NavController) {
                     TabRow(
                         selectedTabIndex = pagerState.currentPage,
                         indicator = { tabPositions ->
-                            PagerTabIndicator(
-                                pagerState = pagerState,
-                                tabPositions = tabPositions
-                            )
+                            PagerTabIndicator(pagerState = pagerState, tabPositions = tabPositions)
                         },
                         divider = {},
                         backgroundColor = Color.Transparent,
-                        contentColor = ExtendedTheme.colors.onTopBar,
+                        contentColor = ExtendedTheme.colors.primary,
                         modifier = Modifier
                             .width(100.dp * 2)
                             .align(Alignment.CenterHorizontally)
                     ) {
-                        Tab(
-                            text = {
-                                Text(
-                                    text = stringResource(id = R.string.title_history_thread),
-                                    fontSize = 13.sp
-                                )
-                            },
-                            selected = pagerState.currentPage == 0,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(0)
-                                }
-                            },
-                            selectedContentColor = ExtendedTheme.colors.onTopBar,
-                            unselectedContentColor = ExtendedTheme.colors.onTopBar.copy(ContentAlpha.medium)
-                        )
-                        Tab(
-                            text = {
-                                Text(
-                                    text = stringResource(id = R.string.title_history_forum),
-                                    fontSize = 13.sp
-                                )
-                            },
-                            selected = pagerState.currentPage == 1,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(1)
-                                }
-                            },
-                            selectedContentColor = ExtendedTheme.colors.onTopBar,
-                            unselectedContentColor = ExtendedTheme.colors.onTopBar.copy(ContentAlpha.medium)
-                        )
+                        tabs.fastForEachIndexed { i, stringRes ->
+                            Tab(
+                                text = {
+                                    Text(text = stringResource(id = stringRes))
+                                },
+                                selected = pagerState.currentPage == i,
+                                onClick = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(i) }
+                                },
+                                unselectedContentColor = ExtendedTheme.colors.textSecondary
+                            )
+                        }
                     }
                 }
             )

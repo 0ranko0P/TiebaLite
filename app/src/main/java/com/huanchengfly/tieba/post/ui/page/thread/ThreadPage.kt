@@ -158,7 +158,7 @@ private fun LazyListState.lastVisiblePost(viewModel: ThreadViewModel): PostData?
         item.key is String && (item.key as String).startsWith(ITEM_POST_KEY_PREFIX)
     }?: return viewModel.threadUiState.firstPost
 
-    return viewModel.data.firstOrNull() { post ->
+    return viewModel.data.firstOrNull { post ->
         (lastPostItem.key as String).endsWith(post.id.toString())
     } ?: viewModel.threadUiState.firstPost
 }
@@ -439,7 +439,7 @@ private fun TopBar(name: String?, avatar: String?, onBack: () -> Unit, onForumCl
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Avatar(
-                    data = avatar.orEmpty(),
+                    data = avatar,
                     contentDescription = name,
                     modifier = Modifier
                         .fillMaxHeight()
@@ -447,7 +447,7 @@ private fun TopBar(name: String?, avatar: String?, onBack: () -> Unit, onForumCl
                 )
 
                 Text(
-                    text = stringResource(id = R.string.title_forum, name.orEmpty()),
+                    text = stringResource(id = R.string.title_forum, name),
                     fontSize = 14.sp,
                     color = ExtendedTheme.colors.text,
                     modifier = Modifier.padding(horizontal = 8.dp),
@@ -456,6 +456,7 @@ private fun TopBar(name: String?, avatar: String?, onBack: () -> Unit, onForumCl
                 )
             }
         },
+        elevation = Dp.Hairline,
         navigationIcon = {
             BackNavigationIcon(onBack)
         }
