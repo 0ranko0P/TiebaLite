@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
@@ -90,7 +91,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -296,9 +296,9 @@ fun ThreadPage(
         }
     }
 
-    MyBackHandler(enabled = true) {
+    BackHandler(enabled = true) {
         if (bottomSheetState.isVisible) { // Close bottom sheet now
-            closeBottomSheet(); return@MyBackHandler
+            closeBottomSheet(); return@BackHandler
         }
 
         val lastVisiblePost = lazyListState.lastVisiblePost(viewModel)?.apply {

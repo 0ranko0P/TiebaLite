@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.search
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -79,7 +80,6 @@ import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
@@ -152,7 +152,7 @@ fun SearchPage(
         }
     }
 
-    MyBackHandler(enabled = !isKeywordEmpty,) {
+    BackHandler(enabled = !isKeywordEmpty) {
         viewModel.send(SearchUiIntent.SubmitKeyword(""))
     }
 
