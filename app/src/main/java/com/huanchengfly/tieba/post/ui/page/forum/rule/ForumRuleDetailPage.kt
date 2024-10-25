@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.forum.rule
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,71 +10,42 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.getOrNull
-import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.forum.rule.ForumRuleDetailViewModel.Companion.ForumRuleDetailUiState
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun ForumRuleDetailPage(
     forumId: Long,
     navigator: NavController,
-    viewModel: ForumRuleDetailViewModel = pageViewModel(),
+    viewModel: ForumRuleDetailViewModel = hiltViewModel(),
 ) {
-    val isLoading by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumRuleDetailUiState::isLoading,
-        initial = true
-    )
-    val error by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumRuleDetailUiState::error,
-        initial = null
-    )
-    val title by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumRuleDetailUiState::title,
-        initial = ""
-    )
-    val publishTime by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumRuleDetailUiState::publishTime,
-        initial = ""
-    )
-    val preface by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumRuleDetailUiState::preface,
-        initial = ""
-    )
-    val data by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumRuleDetailUiState::data,
-        initial = persistentListOf()
-    )
-    val author by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumRuleDetailUiState::author,
-        initial = null
-    )
+    val uiState = viewModel.uiState
 
     ProvideNavigator(navigator = navigator) {
         StateScreen(
             modifier = Modifier.fillMaxSize(),
-            isEmpty = data.isEmpty(),
-            isError = error != null,
-            isLoading = isLoading,
-            onReload = {
-                viewModel.send(ForumRuleDetailUiIntent.Load(forumId))
-            },
-            errorScreen = { ErrorScreen(error = error.getOrNull()) }
+            isError = uiState is ForumRuleDetailUiState.Error,
+            isLoading = uiState == ForumRuleDetailUiState.Loading,
+            onReload = viewModel::reload,
+            errorScreen = {
+                ErrorScreen(error = (uiState as ForumRuleDetailUiState.Error).throwable)
+            }
         ) {
+            if (uiState !is ForumRuleDetailUiState.Success) return@StateScreen
             MyScaffold(
                 topBar = {
                     TitleCentredToolbar(
@@ -86,19 +56,26 @@ fun ForumRuleDetailPage(
                     )
                 }
             ) {
+                val publishTime = uiState.publishTime
+                val preface = uiState.preface
+                val data = uiState.data
+
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .fillMaxSize()
+                        .padding(16.dp)
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(text = title, style = MaterialTheme.typography.h5)
-                    author?.let {
+                    Text(text = uiState.title, style = MaterialTheme.typography.h5)
+                    uiState.author?.let {
                         UserHeader(
-                            portrait = it.get { portrait },
                             name = it.get { user_name },
                             nameShow = it.get { name_show },
+                            portrait = it.get { portrait },
+                            onClick = {
+                                navigator.navigate(Destination.UserProfile(uid = it.get { user_id }))
+                            },
                             desc = publishTime.takeIf { time -> time.isNotEmpty() }
                         )
                     }

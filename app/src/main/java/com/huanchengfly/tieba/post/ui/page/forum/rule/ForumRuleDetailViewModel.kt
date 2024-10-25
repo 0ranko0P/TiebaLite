@@ -1,142 +1,95 @@
 package com.huanchengfly.tieba.post.ui.page.forum.rule
 
+import android.util.Log
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.BawuRoleInfoPub
 import com.huanchengfly.tieba.post.api.models.protos.ForumRule
-import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.renders
-import com.huanchengfly.tieba.post.arch.BaseViewModel
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.page.Destination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ForumRuleDetailViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
-    BaseViewModel<ForumRuleDetailUiIntent, ForumRuleDetailPartialChange, ForumRuleDetailUiState, UiEvent>() {
+class ForumRuleDetailViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : ViewModel() {
 
-    val forumId: Long
+    val forumId: Long = savedStateHandle.toRoute<Destination.ForumRuleDetail>().forumId
+
+    var uiState by mutableStateOf<ForumRuleDetailUiState?>(null)
+        private set
 
     init {
-        val param = savedStateHandle.toRoute<Destination.ForumRuleDetail>()
-        forumId = param.forumId
-        this.send(ForumRuleDetailUiIntent.Load(forumId))
+        reload()
     }
 
-    override fun createInitialState(): ForumRuleDetailUiState = ForumRuleDetailUiState()
+    fun reload() {
+        if (uiState == ForumRuleDetailUiState.Loading) return
+        uiState = ForumRuleDetailUiState.Loading
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<ForumRuleDetailUiIntent, ForumRuleDetailPartialChange, ForumRuleDetailUiState> =
-        ForumRuleDetailPartialChangeProducer
-
-    private object ForumRuleDetailPartialChangeProducer :
-        PartialChangeProducer<ForumRuleDetailUiIntent, ForumRuleDetailPartialChange, ForumRuleDetailUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<ForumRuleDetailUiIntent>): Flow<ForumRuleDetailPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<ForumRuleDetailUiIntent.Load>()
-                    .flatMapConcat { it.producePartialChange() }
-            )
-
-        private fun ForumRuleDetailUiIntent.Load.producePartialChange(): Flow<ForumRuleDetailPartialChange.Load> =
+        viewModelScope.launch {
             TiebaApi.getInstance()
                 .forumRuleDetailFlow(forumId)
-                .map<ForumRuleDetailResponse, ForumRuleDetailPartialChange.Load> { response ->
-                    checkNotNull(response.data_)
-                    checkNotNull(response.data_.bazhu)
-                    ForumRuleDetailPartialChange.Load.Success(
-                        title = response.data_.title,
-                        publishTime = response.data_.publish_time,
-                        preface = response.data_.preface,
-                        data = response.data_.rules.map { it.toData() }.toImmutableList(),
-                        author = response.data_.bazhu
-                    )
+                .catch {
+                    uiState = ForumRuleDetailUiState.Error(it)
+                    Log.w(TAG, "onReload: ", it)
                 }
-                .onStart { emit(ForumRuleDetailPartialChange.Load.Start) }
-                .catch { emit(ForumRuleDetailPartialChange.Load.Failure(it)) }
+                .collect { response ->
+                    uiState = if (response.data_ != null) {
+                        ForumRuleDetailUiState.Success(
+                            title = response.data_.title,
+                            publishTime = response.data_.publish_time,
+                            preface = response.data_.preface,
+                            data = response.data_.rules.map { ForumRuleItemData(it) }.toImmutableList(),
+                            author = response.data_.bazhu?.wrapImmutable()
+                        )
+                    } else {
+                        ForumRuleDetailUiState.Error(
+                            TiebaException(response.error?.error_msg ?: "Null response")
+                        )
+                    }
+                }
+        }
+    }
+
+    companion object {
+        private const val TAG = "ForumRuleDetailViewMode"
+
+        sealed interface ForumRuleDetailUiState: UiState {
+            data object Loading: ForumRuleDetailUiState
+
+            data class Error(val throwable: Throwable): ForumRuleDetailUiState
+
+            data class Success(
+                val title: String,
+                val publishTime: String,
+                val preface: String,
+                val data: ImmutableList<ForumRuleItemData>,
+                val author: ImmutableHolder<BawuRoleInfoPub>?
+            ): ForumRuleDetailUiState
+        }
     }
 }
-
-sealed interface ForumRuleDetailUiIntent : UiIntent {
-    data class Load(val forumId: Long) : ForumRuleDetailUiIntent
-}
-
-sealed interface ForumRuleDetailPartialChange : PartialChange<ForumRuleDetailUiState> {
-    sealed class Load : ForumRuleDetailPartialChange {
-        override fun reduce(oldState: ForumRuleDetailUiState): ForumRuleDetailUiState =
-            when (this) {
-                Start -> oldState.copy(
-                    isLoading = true,
-                )
-
-                is Success -> oldState.copy(
-                    isLoading = false,
-                    error = null,
-                    title = title,
-                    publishTime = publishTime,
-                    preface = preface,
-                    data = data,
-                    author = author.wrapImmutable()
-                )
-
-                is Failure -> oldState.copy(
-                    isLoading = false,
-                    error = error.wrapImmutable()
-                )
-            }
-
-        data object Start : Load()
-
-        data class Success(
-            val title: String,
-            val publishTime: String,
-            val preface: String,
-            val data: ImmutableList<ForumRuleItemData>,
-            val author: BawuRoleInfoPub,
-        ) : Load()
-
-        data class Failure(val error: Throwable) : Load()
-    }
-}
-
-data class ForumRuleDetailUiState(
-    val isLoading: Boolean = true,
-    val error: ImmutableHolder<Throwable>? = null,
-
-    val title: String = "",
-    val publishTime: String = "",
-    val preface: String = "",
-    val data: ImmutableList<ForumRuleItemData> = persistentListOf(),
-    val author: ImmutableHolder<BawuRoleInfoPub>? = null,
-) : UiState
 
 @Immutable
 data class ForumRuleItemData(
     val title: String,
     val contentRenders: ImmutableList<PbContentRender>,
-)
-
-private fun ForumRule.toData(): ForumRuleItemData = ForumRuleItemData(
-    title,
-    content.renders
-)
+) {
+    constructor(forumRule: ForumRule) : this(forumRule.title, forumRule.content.renders)
+}
