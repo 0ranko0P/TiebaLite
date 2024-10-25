@@ -183,7 +183,7 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
                 followNum = user.concern_num.getShortNumString(),
                 fans = user.fans_num,
                 agreeNum = user.total_agree_num.getShortNumString(),
-                bazuDesc = user.bazhu_grade?.desc,
+                bazuDesc = user.bazhu_grade?.desc?.takeUnless { it.isEmpty() },
                 newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name
             )
     }
