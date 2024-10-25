@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -176,25 +177,38 @@ private fun ForumHeader(
 }
 
 @Composable
+private fun ForumTitle(modifier: Modifier = Modifier, title: String?, avatar: String?) =
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (avatar == null) {
+            AvatarPlaceholder(size = Sizes.Small)
+        } else {
+            Avatar(data = avatar, size = Sizes.Small, contentDescription = title)
+        }
+
+        Text(text = stringResource(R.string.title_forum, title ?: ""))
+    }
+
+@Composable
 private fun ForumToolbar(
     title: @Composable () -> Unit,
     menuContent: @Composable (MenuScope.() -> Unit)? = null,
     onBackAction: () -> Unit,
     onSearchAction: () -> Unit,
-    isLoading: Boolean,
     content: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     Toolbar(
         title = title,
         navigationIcon = { BackNavigationIcon(onBackPressed = onBackAction) },
         actions = {
-            if (!isLoading) {
-                IconButton(onClick = onSearchAction) {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = stringResource(id = R.string.btn_search_in_forum)
-                    )
-                }
+            IconButton(onClick = onSearchAction) {
+                Icon(
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = stringResource(id = R.string.btn_search_in_forum)
+                )
             }
             if (menuContent == null) return@Toolbar
 
@@ -217,6 +231,7 @@ private fun ForumToolbar(
                 }
             }
         },
+        elevation = Dp.Hairline,
         content = content
     )
 }
@@ -276,6 +291,8 @@ fun ForumPage(
     val tbs by viewModel.uiState.collectPartialAsState(prop1 = ForumUiState::tbs, initial = null)
 
     val account = LocalAccount.current
+    val loggedIn = account != null
+
     val pagerState = rememberPagerState { 2 }
 
     val isGood by remember { derivedStateOf { pagerState.currentPage == TAB_FORUM_GOOD } }
@@ -288,12 +305,12 @@ fun ForumPage(
         forumInfo?.item?.let { viewModel.saveHistory(it) }
     }
 
-    if (account != null && forumInfo != null) {
+    if (loggedIn && forumInfo != null) {
         ConfirmDialog(
             dialogState = unlikeDialogState,
             onConfirm = {
                 viewModel.send(
-                    ForumUiIntent.Unlike(forumInfo!!.get { id }, forumName, tbs ?: account.tbs)
+                    ForumUiIntent.Unlike(forumInfo!!.get { id }, forumName, tbs!!)
                 )
             },
             title = {
@@ -303,7 +320,8 @@ fun ForumPage(
     }
 
     val connection = rememberCollapseConnection(coroutineScope)
-    val collapsed by remember { derivedStateOf { connection.ratio == 0.0f } }
+    // Toolbar only collapsible if logged in
+    val collapsed by remember { derivedStateOf { loggedIn && connection.ratio == 0.0f } }
 
     MyScaffold(
         scaffoldState = scaffoldState,
@@ -317,51 +335,53 @@ fun ForumPage(
                         enter =  fadeIn() + expandVertically(expandFrom = Alignment.Top),
                         exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
                     ) {
-                        Text(text = stringResource(R.string.title_forum, forumName))
+                        ForumTitle(
+                            modifier = Modifier.clickable {
+                                forumInfo?.item?.let { navigator.navigateForumDetailPage(it) }
+                            },
+                            title = forumInfo?.get { name },
+                            avatar = forumInfo?.get { avatar }
+                        )
                     }
                 },
                 menuContent = {
-                    TextMenuItem(
-                        onClick = { viewModel.shareForum(context) },
-                        text = stringResource(R.string.title_share)
-                    )
-                    TextMenuItem(
-                        onClick = {
-                            forumInfo?.item?.let {
-                                viewModel.sendToDesktop(context = context, forum = it)
-                            }
-                        },
-                        text = stringResource(R.string.title_send_to_desktop)
-                    )
-                    TextMenuItem(
-                        onClick = { unlikeDialogState.show() },
-                        text = stringResource(R.string.title_unfollow)
-                    )
+                    TextMenuItem(text = stringResource(R.string.title_share)) {
+                        viewModel.shareForum(context)
+                    }
+
+                    TextMenuItem(text = stringResource(R.string.title_send_to_desktop)) {
+                        forumInfo?.item?.let { viewModel.sendToDesktop(context, forum = it) }
+                    }
+
+                    if (tbs != null) {
+                        TextMenuItem(text = stringResource(R.string.title_unfollow)) {
+                            unlikeDialogState.show()
+                        }
+                    }
                 },
                 onBackAction = navigator::navigateUp,
                 onSearchAction = {
                     val forumId = forumInfo?.get { id } ?: return@ForumToolbar
                     navigator.navigate(ForumSearchPost(forumName, forumId))
-                },
-                isLoading = isLoading
-            ) {
-                val holder: ImmutableHolder<ForumInfo>? = forumInfo
-                if (holder == null) {
-                    ForumHeaderPlaceholder(forumName)
-                    return@ForumToolbar
                 }
-
+            ) {
                 this@ForumToolbar.AnimatedVisibility(visible = collapsed) {
+                    val holder: ImmutableHolder<ForumInfo>? = forumInfo
+                    if (holder == null) {
+                        ForumHeaderPlaceholder(forumName)
+                        return@AnimatedVisibility
+                    }
+
                     ForumHeader(
                         forumInfoImmutableHolder = holder,
                         onOpenForumInfo = {
                             navigator.navigateForumDetailPage(holder.get())
                         },
                         onFollow = {
-                            viewModel.onFollow(holder.get(), tbs ?: account!!.tbs)
+                            viewModel.onFollow(holder.get(), tbs!!)
                         },
                         onSignIn = {
-                            viewModel.onSignIn(holder.get(), tbs ?: account!!.tbs)
+                            viewModel.onSignIn(holder.get(), tbs!!)
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
