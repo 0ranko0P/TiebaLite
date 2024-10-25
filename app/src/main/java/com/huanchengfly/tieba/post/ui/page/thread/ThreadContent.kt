@@ -61,13 +61,12 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
-import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.Destination.CopyText
+import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.subposts.PostAgreeBtn
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
@@ -81,12 +80,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.UserNameText
+import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
-import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
@@ -446,26 +443,9 @@ fun PostCard(
             Card(
                 header = {
                     if (immersiveMode) return@Card
-
-                    UserHeader(
-                        avatar = {
-                            Avatar(
-                                data = StringUtil.getAvatarUrl(author.portrait),
-                                size = Sizes.Small,
-                                contentDescription = author.nameShow
-                            )
-                        },
-                        name = {
-                            UserNameText(
-                                userName = remember(author.id) { author.getDisplayName(context) },
-                                userLevel = author.levelId,
-                                isLz = author.isLz,
-                                bawuType = author.bawuType,
-                            )
-                        },
-                        desc = {
-                            Text(text = remember { post.getDescText(context) })
-                        },
+                    UserDataHeader(
+                        author = author,
+                        desc = remember { post.getDescText(context) },
                         onClick = onUserClick
                     ) {
                         if (post.floor > 1) {

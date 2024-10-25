@@ -5,6 +5,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -18,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
@@ -33,7 +33,6 @@ import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.utils.GlideUtil
-import com.huanchengfly.tieba.post.utils.ImageUtil
 
 object Sizes {
     val Tiny = 24.dp
@@ -90,21 +89,12 @@ fun AvatarIcon(
 }
 
 @Composable
-fun AvatarPlaceholder(
-    size: Dp,
-    modifier: Modifier = Modifier,
-) {
-    Avatar(
-        data = ImageUtil.getPlaceHolder(LocalContext.current, 0),
-        size = size,
-        contentDescription = null,
-        modifier = modifier.placeholder(
-            visible = true,
-            highlight = PlaceholderHighlight.fade(),
-            shape = CircleShape
-        )
-    )
-}
+fun AvatarPlaceholder(size: Dp, modifier: Modifier = Modifier)
+= Box(
+    modifier = modifier
+        .size(size)
+        .placeholder(visible = true, highlight = PlaceholderHighlight.fade(), shape = CircleShape)
+)
 
 @Composable
 fun Avatar(
@@ -114,10 +104,10 @@ fun Avatar(
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
 ) {
-    if (data != null) {
+    if (!data.isNullOrEmpty()) {
         Avatar(data, contentDescription, modifier.size(size), shape)
     } else {
-        Avatar(R.drawable.ic_error, size, null, modifier)
+        Avatar(R.drawable.ic_account, size, null, modifier)
     }
 }
 

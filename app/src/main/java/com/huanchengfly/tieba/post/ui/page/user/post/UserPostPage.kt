@@ -298,13 +298,13 @@ fun UserPostItem(
         Card(
             header = {
                 UserHeader(
-                    nameProvider = { item.get { user_name } },
-                    nameShowProvider = { item.get { name_show } },
-                    portraitProvider = { item.get { user_portrait } },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    name = item.get { user_name },
+                    nameShow = item.get { name_show },
+                    portrait = item.get { user_portrait },
                     onClick = {
                         onClickUser(item.get { user_id })
                     },
-                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             },
             content = {

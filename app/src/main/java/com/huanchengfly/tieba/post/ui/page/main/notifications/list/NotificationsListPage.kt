@@ -32,18 +32,15 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.collections.immutable.persistentListOf
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -140,29 +137,17 @@ fun NotificationsListPage(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (info.replyer != null) {
-                            val nameShow = info.replyer.nameShow ?: info.replyer.name ?: ""
                             UserHeader(
-                                avatar = {
-                                    Avatar(
-                                        data = StringUtil.getAvatarUrl(info.replyer.portrait),
-                                        size = Sizes.Small,
-                                        contentDescription = nameShow
-                                    )
-                                },
-                                name = {
-                                    Text(text = nameShow)
-                                },
+                                name = info.replyer.name ?: "",
+                                nameShow = info.replyer.nameShow,
+                                portrait = info.replyer.portrait,
                                 onClick = {
                                     navigator.navigate(Destination.UserProfile(info.replyer.id!!.toLong()))
                                 },
-                                desc = {
-                                    Text(
-                                        text = DateTimeUtils.getRelativeTimeString(
-                                            LocalContext.current,
-                                            info.time!!
-                                        )
-                                    )
-                                }
+                                desc = DateTimeUtils.getRelativeTimeString(
+                                    LocalContext.current,
+                                    info.time!!
+                                )
                             )
                         }
                         EmoticonText(text = info.content ?: "")

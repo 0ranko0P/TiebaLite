@@ -73,7 +73,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -81,8 +80,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.OneTimeMeasurer
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.UserNameText
+import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
@@ -466,25 +464,9 @@ private fun SubPostItem(
         Card(
             header = {
                 val author = item.author
-                UserHeader(
-                    avatar = {
-                        Avatar(
-                            data = author.avatarUrl,
-                            size = Sizes.Small,
-                            contentDescription = author.name
-                        )
-                    },
-                    name = {
-                        UserNameText(
-                            userName = author.getDisplayName(context),
-                            userLevel = author.levelId,
-                            isLz = author.isLz,
-                            bawuType = author.bawuType,
-                        )
-                    },
-                    desc = {
-                        Text(text = getRelativeTimeString(context, item.time))
-                    },
+                UserDataHeader(
+                    author = author,
+                    desc = remember { getRelativeTimeString(context, item.time) },
                     onClick = { onUserClick(author) }
                 ) {
                     PostAgreeBtn(agreed = item.hasAgree, agreeNum = item.agreeNum) {

@@ -2,9 +2,9 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -20,15 +20,14 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,67 +38,54 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.models.UserData
+import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.Util.getIconColorByLevel
 
 @Composable
 fun UserHeaderPlaceholder(
-    avatarSize: Dp
-) {
-    UserHeader(
-        avatar = {
-            AvatarPlaceholder(avatarSize)
-        },
-        name = {
-            Text(
-                text = "Username",
-                modifier = Modifier.placeholder(
-                    visible = true,
-                    highlight = PlaceholderHighlight.fade(),
-                )
-            )
-        },
-        desc = {
-            Text(
-                text = "Desc",
-                modifier = Modifier.placeholder(
-                    visible = true,
-                    highlight = PlaceholderHighlight.fade(),
-                )
-            )
-        }
-    )
-}
+    modifier: Modifier = Modifier,
+    avatarSize: Dp = Sizes.Small
+) = UserHeader(
+    modifier = modifier,
+    avatar = {
+        AvatarPlaceholder(avatarSize)
+    },
+    name = {
+        Text(
+            text = "Username",
+            modifier = Modifier.placeholder(visible = true, highlight = PlaceholderHighlight.fade())
+        )
+    },
+    desc = {
+        Text(
+            text = "Desc",
+            modifier = Modifier.placeholder(visible = true, highlight = PlaceholderHighlight.fade())
+        )
+    }
+)
 
 @Composable
 fun UserHeader(
-    avatar: @Composable () -> Unit,
-    name: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
+    avatar: @Composable BoxScope.() -> Unit,
+    name: @Composable () -> Unit,
     desc: @Composable (() -> Unit)? = null,
-    content: @Composable (RowScope.() -> Unit)? = null,
+    content: (@Composable RowScope.() -> Unit)? = null
 ) {
-    val clickableModifier = if (onClick != null) {
-        Modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = onClick,
-        )
-    } else Modifier
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
-        Box(
-            modifier = clickableModifier,
-        ) {
-            avatar()
-        }
+        Box(contentAlignment = Alignment.Center, content = avatar)
+
         Spacer(modifier = Modifier.width(8.dp))
+
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -107,13 +93,12 @@ fun UserHeader(
             ProvideTextStyle(value = MaterialTheme.typography.subtitle2) {
                 name()
             }
+
             if (desc != null) {
                 ProvideTextStyle(
-                    value = MaterialTheme.typography.caption.merge(
-                        TextStyle(
-                            color = ExtendedTheme.colors.textSecondary,
-                            fontSize = 11.sp
-                        )
+                    value = MaterialTheme.typography.caption.copy(
+                        color = ExtendedTheme.colors.textSecondary,
+                        fontSize = 11.sp
                     )
                 ) {
                     desc()
@@ -123,6 +108,78 @@ fun UserHeader(
         content?.invoke(this)
     }
 }
+
+@Composable
+fun UserHeader(
+    modifier: Modifier = Modifier,
+    name: String,
+    nameShow: String?,
+    portrait: String?,
+    onClick: (() -> Unit)? = null,
+    desc: String? = null,
+    content: (@Composable RowScope.() -> Unit)? = null
+) = UserHeader(
+    modifier = modifier,
+    name = remember { StringUtil.getUserNameString(App.INSTANCE, name, nameShow) },
+    avatar = remember { StringUtil.getAvatarUrl(portrait) },
+    onClick = onClick,
+    desc = desc,
+    content = content
+)
+
+@Composable
+fun UserHeader(
+    modifier: Modifier = Modifier,
+    name: String,
+    avatar: String?,
+    onClick: (() -> Unit)? = null,
+    desc: String? = null,
+    content: (@Composable RowScope.() -> Unit)? = null
+) = UserHeader(
+    modifier = modifier,
+    avatar = {
+        Avatar(
+            data = avatar,
+            size = Sizes.Small,
+            modifier = onClick?.let { Modifier.clickable(onClick = it) } ?: Modifier,
+            contentDescription = name
+        )
+    },
+    name = {
+        Text(text = name)
+    },
+    desc = desc?.let { { Text(text = desc) } },
+    content = content
+)
+
+@Composable
+fun UserDataHeader(
+    modifier: Modifier = Modifier,
+    author: UserData,
+    desc: String,
+    onClick: (() -> Unit)? = null,
+    content: @Composable (RowScope.() -> Unit)? = null,
+) = UserHeader(
+    modifier = modifier,
+    avatar = {
+        Avatar(
+            data = author.avatarUrl,
+            size = Sizes.Small,
+            modifier = onClick?.let { Modifier.clickable(onClick = it) } ?: Modifier,
+            contentDescription = author.name
+        )
+    },
+    name = {
+        UserNameText(
+            userName = StringUtil.getUserNameString(LocalContext.current, author.name, author.nameShow),
+            userLevel = author.levelId,
+            isLz = author.isLz,
+            bawuType = author.bawuType,
+        )
+    },
+    desc = { Text(text = desc) },
+    content = content
+)
 
 @Composable
 fun UserNameText(
@@ -184,6 +241,15 @@ private fun TextChip(
     textAlign = TextAlign.Center,
     style = style
 )
+
+@Preview("UserDataHeader")
+@Composable
+fun UserDataHeaderPreview() = TiebaLiteTheme {
+    UserDataHeader(
+        author = UserData.Empty.copy(name = "我是谁", levelId = 99, bawuType = "小吧主"),
+        desc = "一分钟前 · 第 10 楼 · 来自中国)"
+    )
+}
 
 @Preview("UserNameText")
 @Composable

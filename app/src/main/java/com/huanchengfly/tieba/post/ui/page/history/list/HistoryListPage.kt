@@ -33,13 +33,11 @@ import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
@@ -196,19 +194,8 @@ private fun HistoryItem(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             UserHeader(
-                avatar = {
-                    Avatar(
-                        data = info.avatar,
-                        size = Sizes.Small,
-                        contentDescription = null
-                    )
-                },
-                name = {
-                    Text(
-                        text = (if (info.type == HistoryUtil.TYPE_THREAD) info.username else info.title)
-                            ?: ""
-                    )
-                },
+                avatar = info.avatar,
+                name = (if (info.type == HistoryUtil.TYPE_THREAD) info.username else info.title) ?: "",
             ) {
                 Text(
                     text = DateTimeUtils.getRelativeTimeString(

@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
@@ -24,15 +22,12 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.collections.immutable.persistentListOf
 
 @Composable
@@ -101,26 +96,10 @@ fun ForumRuleDetailPage(
                     Text(text = title, style = MaterialTheme.typography.h5)
                     author?.let {
                         UserHeader(
-                            avatar = {
-                                Avatar(
-                                    data = StringUtil.getAvatarUrl(it.get { portrait }),
-                                    size = Sizes.Small,
-                                    contentDescription = null
-                                )
-                            },
-                            name = {
-                                Text(
-                                    text = StringUtil.getUserNameString(
-                                        LocalContext.current,
-                                        it.get { user_name },
-                                        it.get { name_show },
-                                    ),
-                                    style = LocalTextStyle.current
-                                )
-                            },
-                            desc = (@Composable {
-                                Text(text = publishTime)
-                            }).takeIf { publishTime.isNotEmpty() }
+                            portrait = it.get { portrait },
+                            name = it.get { user_name },
+                            nameShow = it.get { name_show },
+                            desc = publishTime.takeIf { time -> time.isNotEmpty() }
                         )
                     }
                     Column(

@@ -15,7 +15,6 @@ import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -57,21 +56,18 @@ import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_COLLECTED_DESC
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_COLLECTED_SEE_LZ
-import com.huanchengfly.tieba.post.utils.StringUtil
 
 private val UpdateTipTextStyle = TextStyle(fontWeight = FontWeight.Bold, fontSize = 10.sp)
 
@@ -248,23 +244,9 @@ private fun StoreItem(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             UserHeader(
-                avatar = {
-                    Avatar(
-                        data = StringUtil.getAvatarUrl(info.author.userPortrait),
-                        size = Sizes.Small,
-                        contentDescription = null
-                    )
-                },
-                name = {
-                    Text(
-                        text = StringUtil.getUserNameString(
-                            LocalContext.current,
-                            info.author.name ?: "",
-                            info.author.nameShow
-                        ),
-                        style = LocalTextStyle.current
-                    )
-                },
+                portrait = info.author.userPortrait,
+                name = info.author.name ?: "",
+                nameShow = info.author.nameShow,
                 onClick = onUserClick,
             )
             val title = remember(info, hasUpdate) {

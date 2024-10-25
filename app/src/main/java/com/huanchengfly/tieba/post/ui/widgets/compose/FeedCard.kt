@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
-import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
@@ -67,6 +66,7 @@ import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
@@ -96,7 +96,6 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -109,92 +108,6 @@ private val ImmutableHolder<Media>.url: String
         item.bigPic,
         item.originPic  // Worst quality in [Media]
     )
-
-@Composable
-private fun UserHeader(
-    user: User,
-    time: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable RowScope.() -> Unit,
-) = UserHeader(
-    avatar = {
-            Avatar(
-                data = remember { StringUtil.getAvatarUrl(user.portrait) },
-                size = Sizes.Small,
-                contentDescription = user.name
-            )
-        },
-        name = {
-            Text(
-                text = StringUtil.getUserNameString(
-                    context = LocalContext.current,
-                    username = user.name,
-                    nickname = user.nameShow,
-                ),
-                color = ExtendedTheme.colors.text
-            )
-        },
-        onClick = onClick,
-        desc = {
-            val context = LocalContext.current
-            Text(
-                text = remember { DateTimeUtils.getRelativeTimeString(context, time.toString()) }
-            )
-        },
-        content = content,
-        modifier = modifier
-    )
-
-
-@Composable
-fun UserHeader(
-    nameProvider: () -> String,
-    nameShowProvider: () -> String,
-    portraitProvider: () -> String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    timeProvider: (() -> Int)? = null,
-    content: @Composable RowScope.() -> Unit = {},
-) {
-    val context = LocalContext.current
-    val name = remember(nameProvider) { nameProvider() }
-    val nameShow = remember(nameShowProvider) { nameShowProvider() }
-    val portrait = remember(portraitProvider) { portraitProvider() }
-    val time = remember(timeProvider) { timeProvider?.invoke() }
-    UserHeader(
-        avatar = {
-            Avatar(
-                data = StringUtil.getAvatarUrl(portrait),
-                size = Sizes.Small,
-                contentDescription = null
-            )
-        },
-        name = {
-            Text(
-                text = StringUtil.getUserNameString(
-                    context = LocalContext.current,
-                    username = name,
-                    nickname = nameShow,
-                ),
-                color = ExtendedTheme.colors.text,
-                style = LocalTextStyle.current
-            )
-        },
-        onClick = onClick,
-        desc = (@Composable {
-            Text(
-                text = DateTimeUtils.getRelativeTimeString(
-                    context,
-                    time.toString()
-                )
-            )
-        }).takeIf { time != null },
-        content = content,
-        modifier = modifier
-    )
-}
-
 
 @Composable
 fun Card(
@@ -751,18 +664,21 @@ fun FeedCard(
     onClickUser: (User) -> Unit = {},
     onClickForum: ((SimpleForum) -> Unit)? = null, // Parse Null to Hide ForumInfo
     onClickOriginThread: (OriginThreadInfo) -> Unit = {},
-    dislikeAction: @Composable () -> Unit = {},
+    dislikeAction: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Card(
         header = {
             val author = item.item.author?: return@Card
             UserHeader(
-                user = author,
-                time = item.get { lastTimeInt },
+                name = author.name,
+                nameShow = author.nameShow,
+                portrait = author.portrait,
                 onClick = { onClickUser(author) },
-            ) {
-                dislikeAction()
-            }
+                desc = remember {
+                    DateTimeUtils.getRelativeTimeString(App.INSTANCE, item.get { lastTimeInt }.toString())
+                },
+                content = dislikeAction
+            )
         },
         content = {
             ThreadContent(
@@ -837,10 +753,12 @@ fun FeedCard(
     Card(
         header = {
             UserHeader(
-                nameProvider = { item.get { user_name } },
-                nameShowProvider = { item.get { name_show } },
-                portraitProvider = { item.get { user_portrait } },
-                timeProvider = { item.get { create_time } },
+                name = item.get { user_name },
+                nameShow = item.get { name_show },
+                portrait = item.get { user_portrait },
+                desc = remember {
+                    DateTimeUtils.getRelativeTimeString(App.INSTANCE, item.get { create_time }.toString())
+                },
                 onClick = {
                     onClickUser(item.get { user_id })
                 },

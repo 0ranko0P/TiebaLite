@@ -15,10 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
-import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
@@ -57,7 +55,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.buildAnnotatedStringWithUser
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -147,41 +144,6 @@ fun MainPostCard(
 }
 
 @Composable
-fun SearchThreadUserHeader(
-    user: SearchThreadBean.UserInfoBean,
-    time: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    UserHeader(
-        avatar = {
-            Avatar(
-                data = StringUtil.getAvatarUrl(user.portrait),
-                size = Sizes.Small,
-                contentDescription = user.userName
-            )
-        },
-        name = {
-            Text(
-                text = StringUtil.getUserNameString(
-                    LocalContext.current,
-                    user.userName.orEmpty(),
-                    user.showNickname
-                ),
-                style = LocalTextStyle.current
-            )
-        },
-        desc = {
-            Text(
-                text = DateTimeUtils.getRelativeTimeString(LocalContext.current, time)
-            )
-        },
-        onClick = onClick,
-        modifier = modifier
-    )
-}
-
-@Composable
 fun SearchThreadItem(
     item: SearchThreadBean.ThreadInfoBean,
     onClick: (SearchThreadBean.ThreadInfoBean) -> Unit,
@@ -193,12 +155,16 @@ fun SearchThreadItem(
     hideForum: Boolean = false,
     searchKeyword: String? = null,
 ) {
+    val context = LocalContext.current
     Card(
         modifier = modifier,
         header = {
-            SearchThreadUserHeader(
-                user = item.user,
-                time = item.time,
+            UserHeader(
+                modifier = modifier,
+                name = item.user.userName.orEmpty(),
+                nameShow = item.user.showNickname,
+                portrait = item.user.portrait,
+                desc = remember { DateTimeUtils.getRelativeTimeString(context, item.time) },
                 onClick = { onUserClick(item.user) }
             )
         },
