@@ -6,7 +6,13 @@ import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -15,11 +21,15 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.packInts
+import androidx.compose.ui.util.unpackInt1
+import androidx.compose.ui.util.unpackInt2
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * Collapsible [NestedScrollConnection] with an animated collapse ratio.
@@ -36,6 +46,25 @@ open class CollapseScrollConnection(
 
     companion object {
         private val COLLAPSE_THRESHOLD = 12.dp
+
+        fun saver(
+            density: Density,
+            scope: CoroutineScope,
+            orientation: Orientation,
+        ): Saver<CollapseScrollConnection, *> = Saver(
+            save = {
+                packInts(val1 = it.state.ordinal, val2 = it.ratio.roundToInt())
+            },
+            restore = { saved: Long ->
+                val state = CollapseState.entries[unpackInt1(value = saved)]
+                val ratio = unpackInt2(value = saved).toFloat()
+
+                CollapseScrollConnection(density, scope, orientation).apply {
+                    this.state = state
+                    this.ratio = ratio
+                }
+            }
+        )
     }
 
     private val threshold = with(density) { COLLAPSE_THRESHOLD.toPx() }
@@ -92,7 +121,12 @@ fun rememberCollapseConnection(
     orientation: Orientation = Orientation.Vertical
 ): CollapseScrollConnection {
     val density = LocalDensity.current
-    return remember { CollapseScrollConnection(density, scope, orientation) }
+    return rememberSaveable(
+        orientation,
+        saver = CollapseScrollConnection.saver(density, scope, orientation)
+    ) {
+        CollapseScrollConnection(density, scope, orientation)
+    }
 }
 
 @Composable
