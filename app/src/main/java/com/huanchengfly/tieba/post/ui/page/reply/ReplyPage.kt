@@ -6,6 +6,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.view.View
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -62,7 +66,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -81,11 +84,8 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.onEvent
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.pxToDpFloat
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
@@ -95,6 +95,7 @@ import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.EMOJI
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.IMAGE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.NONE
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyViewModel.Companion.MAX_SELECTABLE_IMAGE
 import com.huanchengfly.tieba.post.ui.utils.imeNestedScroll
 import com.huanchengfly.tieba.post.ui.widgets.compose.BaseDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
@@ -109,14 +110,12 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
-import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.showKeyboard
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
-import java.util.UUID
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -170,6 +169,10 @@ internal fun ReplyPageContent(
     isDialog: Boolean = false,
 ) {
     viewModel.initialize(threadId, postId, subPostId)
+    val pickMediasLauncher = rememberLauncherForActivityResult(PickMultipleVisualMedia(MAX_SELECTABLE_IMAGE)) { uris ->
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        viewModel.send(ReplyUiIntent.AddImage(uris.map { it.toString() }))
+    }
 
     val context = LocalContext.current
     val curTbs = remember(tbs) { tbs ?: AccountUtil.getAccountInfo { this.tbs }.orEmpty() }
@@ -568,8 +571,8 @@ internal fun ReplyPageContent(
                     IMAGE -> {
                         ImagePanel(
                             selectedImages = selectedImageList,
-                            onNewImageSelected = { uris ->
-                                viewModel.send(ReplyUiIntent.AddImage(uris.map { it.toString() }))
+                            onAddImageClicked = {
+                                pickMediasLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
                             },
                             onRemoveImage = {
                                 viewModel.send(ReplyUiIntent.RemoveImage(it))
@@ -722,21 +725,12 @@ private fun EmoticonPanel(
 @Composable
 private fun ImagePanel(
     selectedImages: ImmutableList<String>,
-    onNewImageSelected: (List<Uri>) -> Unit,
+    onAddImageClicked: () -> Unit,
     onRemoveImage: (Int) -> Unit,
     isOriginImage: Boolean,
     onIsOriginImageChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val id = remember { UUID.randomUUID().toString() }
-    val coroutineScope = rememberCoroutineScope()
-    onGlobalEvent<GlobalEvent.SelectedImages>(
-        coroutineScope,
-        filter = { it.id == id }
-    ) {
-        onNewImageSelected(it.images)
-    }
-
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.Center
@@ -771,22 +765,14 @@ private fun ImagePanel(
                     }
                 }
             }
-            if (selectedImages.size < 9) {
+            if (selectedImages.size < MAX_SELECTABLE_IMAGE) {
                 item {
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .aspectRatio(1f)
                             .background(ExtendedTheme.colors.chip)
-                            .clickable {
-                                coroutineScope.emitGlobalEvent(
-                                    GlobalEvent.StartSelectImages(
-                                        id,
-                                        9 - selectedImages.size,
-                                        PickMediasRequest.ImageOnly
-                                    )
-                                )
-                            },
+                            .clickable(onClick = onAddImageClicked),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(

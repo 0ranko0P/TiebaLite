@@ -7,6 +7,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.activity.viewModels
 import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
@@ -60,13 +62,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.DisplayUtil
-import com.huanchengfly.tieba.post.utils.PermissionUtils
-import com.huanchengfly.tieba.post.utils.PickMediasRequest
-import com.huanchengfly.tieba.post.utils.PickMediasResult
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.huanchengfly.tieba.post.utils.registerPickMediasLauncher
-import com.huanchengfly.tieba.post.utils.requestPermission
-import com.huanchengfly.tieba.post.utils.shouldUsePhotoPicker
 import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -78,13 +74,13 @@ class TranslucentThemeActivity : AppCompatActivity(), RequestListener<Drawable> 
 
     private var placeHolder: Drawable? = null
 
-    private val mediaPickerActivityLauncher = registerPickMediasLauncher { result: PickMediasResult ->
-        val sourceUri = result.uris.firstOrNull()?: return@registerPickMediasLauncher
+    private val mediaPickerActivityLauncher = registerForActivityResult(PickVisualMedia()) { uri ->
+        if (uri == null) return@registerForActivityResult
         lifecycleScope.launch {
             delay(240L) // Wait exit animation of MediaPicker Activity
 
             // Launch UCropActivity now
-            val uCrop = buildUCropOptions(sourceUri, vm.primaryColor.toArgb())
+            val uCrop = buildUCropOptions(uri, vm.primaryColor.toArgb())
             ucropActivityResultLauncher.launch(uCrop)
         }
     }
@@ -138,7 +134,11 @@ class TranslucentThemeActivity : AppCompatActivity(), RequestListener<Drawable> 
                                     .padding(16.dp)
                                     .windowInsetsPadding(WindowInsets.navigationBars),
                                 viewModel = vm,
-                                onSelectWallpaper = this@TranslucentThemeActivity::launchImagePicker
+                                onSelectWallpaper = {
+                                    mediaPickerActivityLauncher.launch(
+                                        PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                                    )
+                                }
                             )
                         }
                     }
@@ -215,12 +215,6 @@ class TranslucentThemeActivity : AppCompatActivity(), RequestListener<Drawable> 
         }
     }
 
-    private fun launchImagePicker() = askPermission {
-        mediaPickerActivityLauncher.launch(
-            PickMediasRequest(mediaType = PickMediasRequest.ImageOnly)
-        )
-    }
-
     override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
         if (resource is BitmapDrawable) {
             if (isFirstResource) {
@@ -265,29 +259,6 @@ class TranslucentThemeActivity : AppCompatActivity(), RequestListener<Drawable> 
                 }
                 setCompressionQuality(99)
             })
-    }
-
-    private fun askPermission(granted: () -> Unit) {
-        if (shouldUsePhotoPicker()) {
-            granted()
-        } else {
-            requestPermission {
-                unchecked = true
-                permissions = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                    listOf(
-                        PermissionUtils.READ_EXTERNAL_STORAGE,
-                        PermissionUtils.WRITE_EXTERNAL_STORAGE
-                    )
-                } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                    listOf(PermissionUtils.READ_EXTERNAL_STORAGE)
-                } else {
-                    listOf(PermissionUtils.READ_MEDIA_IMAGES)
-                }
-                description = getString(R.string.tip_permission_storage)
-                onGranted = granted
-                onDenied = { toastShort(R.string.toast_no_permission_insert_photo) }
-            }
-        }
     }
 
     override fun onDestroy() {

@@ -3,10 +3,11 @@ package com.huanchengfly.tieba.post.ui.page.user.edit
 import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.activity.viewModels
 import androidx.annotation.ColorInt
 import androidx.compose.foundation.background
@@ -81,13 +82,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.PermissionUtils
-import com.huanchengfly.tieba.post.utils.PickMediasRequest
-import com.huanchengfly.tieba.post.utils.PickMediasResult
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.registerPickMediasLauncher
-import com.huanchengfly.tieba.post.utils.requestPermission
-import com.huanchengfly.tieba.post.utils.shouldUsePhotoPicker
 import com.yalantis.ucrop.UCrop
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.collections.immutable.persistentMapOf
@@ -115,14 +110,14 @@ class EditProfileActivity : BaseComposeActivity() {
         }
     }
 
-    private val pickMediasLauncher = registerPickMediasLauncher { result: PickMediasResult ->
-        val sourceUri = result.uris.firstOrNull()?: return@registerPickMediasLauncher
+    private val pickMediasLauncher = registerForActivityResult(PickVisualMedia()) { uri ->
+        if (uri == null) return@registerForActivityResult
         lifecycleScope.launch {
             delay(240L) // Wait exit animation of MediaPicker Activity
 
             // Launch UCropActivity now
             val primaryColor = (theme?.primary?: TiebaBlue).toArgb()
-            uCropLauncher.launch(buildUCropOptions(sourceUri, primaryColor))
+            uCropLauncher.launch(buildUCropOptions(uri, primaryColor))
         }
     }
 
@@ -171,31 +166,7 @@ class EditProfileActivity : BaseComposeActivity() {
             }
 
             EditProfileEvent.UploadPortrait.Pick -> {
-                if (shouldUsePhotoPicker()) {
-                    pickMediasLauncher.launch(PickMediasRequest(mediaType = PickMediasRequest.ImageOnly))
-                } else {
-                    requestPermission {
-                        permissions = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                            listOf(
-                                PermissionUtils.READ_EXTERNAL_STORAGE,
-                                PermissionUtils.WRITE_EXTERNAL_STORAGE
-                            )
-                        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                            listOf(
-                                PermissionUtils.READ_EXTERNAL_STORAGE
-                            )
-                        } else {
-                            listOf(PermissionUtils.READ_MEDIA_IMAGES)
-                        }
-                        description = context.getString(R.string.tip_permission_storage)
-                        onGranted = {
-                            pickMediasLauncher.launch(PickMediasRequest(mediaType = PickMediasRequest.ImageOnly))
-                        }
-                        onDenied = {
-                            toastShort(R.string.toast_no_permission_upload_portrait)
-                        }
-                    }
-                }
+                pickMediasLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
             }
 
             is EditProfileEvent.UploadPortrait.Fail -> toastShort(event.error)

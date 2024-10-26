@@ -98,10 +98,8 @@
     <string name="tip_cache">当前共有缓存 %1$s</string>
     <string name="tip_no_little_tail">你还没有设置小尾巴</string>
     <string name="toast_no_permission_insert_photo">未授予「存储空间」权限，无法插入图片</string>
-    <string name="tip_permission_storage">用于保存、上传图片，更换头像。</string>
     <string name="tip_no_permission">权限未授予，部分功能可能无法使用</string>
     <string name="toast_no_permission_save_photo">未授予「存储空间」权限，无法保存图片</string>
-    <string name="toast_no_permission_upload_portrait">未授予「存储空间」权限，无法上传头像</string>
     <string name="text_ip_location">来自%s</string>
     <string name="tip_post_floor">第 %d 楼</string>
     <string name="my_info_service_center">服务中心</string>
@@ -501,10 +499,6 @@
     <string name="button_sure">确定(%1$d)</string>
     <string name="button_sure_default">确定</string>
     <string name="button_back">返回</string>
-    <string name="title_do_not_use_photo_picker">不使用原生照片选择器</string>
-    <string name="summary_photo_picker_not_supported">当前 Android 版本不支持照片选择器</string>
-    <string name="summary_do_not_use_photo_picker">将使用 App 内置的照片选择器</string>
-    <string name="summary_use_photo_picker">将使用原生的照片选择器</string>
     <string name="desc_show">显示</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
     <string name="brightness">亮度</string>

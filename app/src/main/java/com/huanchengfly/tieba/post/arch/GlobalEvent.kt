@@ -1,12 +1,10 @@
 package com.huanchengfly.tieba.post.arch
 
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberCoroutineScope
-import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
@@ -23,17 +21,6 @@ sealed interface GlobalEvent : UiEvent {
     data object ScrollToTop : GlobalEvent
 
     data class Refresh(val key: String) : GlobalEvent
-
-    data class StartSelectImages(
-        val id: String,
-        val maxCount: Int,
-        val mediaType: PickMediasRequest.MediaType
-    ) : GlobalEvent
-
-    data class SelectedImages(
-        val id: String,
-        val images: List<Uri>,
-    ) : GlobalEvent
 
     data class ReplySuccess(
         val threadId: Long,

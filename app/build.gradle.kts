@@ -200,7 +200,6 @@ dependencies {
     implementation(subsampling.image)
     implementation(iielse.imageviewer)
 
-    implementation(github.matisse)
     implementation(xx.permissions)
     implementation(com.github.yalantis.ucrop)
     implementation(colorful.sliders)

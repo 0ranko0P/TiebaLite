@@ -56,9 +56,6 @@ class AppPreferencesUtils private constructor(context: Context) {
 
         const val KEY_DARKEN_IMAGE_WHEN_NIGHT_MODE = "ui_dark_img"
 
-        // 不使用 Android T 新版照片选择器
-        const val KEY_NO_NEW_PHOTO_PICKER = "doNotUsePhotoPicker"
-
         const val KEY_IGNORE_BATTERY_OPTIMIZATION = "ui_ignore_battery"
 
         // 收藏贴自动开启只看楼主
@@ -140,9 +137,6 @@ class AppPreferencesUtils private constructor(context: Context) {
 
     val blockVideo: Boolean
         get() = dataStore.getBoolean(KEY_POST_BLOCK_VIDEO, false)
-
-    val doNotUsePhotoPicker: Boolean
-        get() = dataStore.getBoolean(KEY_NO_NEW_PHOTO_PICKER, false)
 
     var darkMode: Int
         get() = dataStore.getInt(ThemeUtil.KEY_DARK_THEME_MODE, ThemeUtil.DARK_MODE_FOLLOW_SYSTEM)

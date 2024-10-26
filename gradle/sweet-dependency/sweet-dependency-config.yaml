@@ -328,10 +328,6 @@ libraries:
   org.litepal.android:
     kotlin:
       version: 3.0.0
-  com.github.lwj1994:
-    Matisse:
-      alias: github.matisse
-      version: 0.5.3-20220115
   com.github.getActivity:
     XXPermissions:
       alias: xx-permissions

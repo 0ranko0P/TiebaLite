@@ -253,6 +253,8 @@ class ReplyViewModel @Inject constructor() :
 
     companion object {
         private const val TAG = "ReplyViewModel"
+
+        const val MAX_SELECTABLE_IMAGE = 9
     }
 }
 
@@ -334,8 +336,15 @@ sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
     }
 
     data class AddImage(val imageUris: List<String>) : ReplyPartialChange {
-        override fun reduce(oldState: ReplyUiState): ReplyUiState =
-            oldState.copy(selectedImageList = (oldState.selectedImageList + imageUris).toImmutableList())
+        override fun reduce(oldState: ReplyUiState): ReplyUiState {
+            // On device that don't support limited photo picker
+            // Double check image uris size
+            var images = oldState.selectedImageList + imageUris
+            if (images.size > ReplyViewModel.MAX_SELECTABLE_IMAGE) {
+               images = images.subList(0, ReplyViewModel.MAX_SELECTABLE_IMAGE)
+            }
+            return oldState.copy(selectedImageList = images.toImmutableList())
+        }
     }
 
     data class RemoveImage(val imageIndex: Int) : ReplyPartialChange {

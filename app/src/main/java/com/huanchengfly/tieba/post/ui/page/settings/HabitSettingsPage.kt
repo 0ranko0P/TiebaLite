@@ -5,7 +5,6 @@ import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.outlined.CalendarViewDay
-import androidx.compose.material.icons.outlined.ImageSearch
 import androidx.compose.material.icons.outlined.NightsStay
 import androidx.compose.material.icons.outlined.PhotoSizeSelectActual
 import androidx.compose.material.icons.outlined.SecurityUpdateWarning
@@ -33,7 +32,6 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSort
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_FORUM_FAB_FUNCTION
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_FORUM_SORT_DEFAULT
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import com.huanchengfly.tieba.post.utils.isPhotoPickerAvailable
 import kotlinx.collections.immutable.persistentMapOf
 
 @Composable
@@ -172,21 +170,6 @@ fun HabitSettingsPage(onBack: () -> Unit) = MyScaffold(
                 title = R.string.title_hide_reply,
                 defaultChecked = false,
                 leadingIcon = Icons.Outlined.SpeakerNotesOff
-            )
-        }
-        // TODO: Rename confusing string res
-        prefsItem {
-            SwitchPref(
-                key = AppPreferencesUtils.KEY_NO_NEW_PHOTO_PICKER,
-                title = R.string.title_do_not_use_photo_picker,
-                summaryOn = R.string.summary_do_not_use_photo_picker,
-                summaryOff = if (isPhotoPickerAvailable()) {
-                    R.string.summary_use_photo_picker
-                } else {
-                    R.string.summary_photo_picker_not_supported
-                },
-                defaultChecked = false,
-                leadingIcon = Icons.Outlined.ImageSearch
             )
         }
     }

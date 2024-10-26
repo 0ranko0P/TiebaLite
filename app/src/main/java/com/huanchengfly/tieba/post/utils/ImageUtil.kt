@@ -31,7 +31,6 @@ import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.ThemeUtil.isNightMode
-import com.zhihu.matisse.MimeType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -83,12 +82,14 @@ object ImageUtil {
 
     private const val TAG = "ImageUtil"
 
+    private const val MIME_TYPE_GIF = "image/gif"
+
     private fun isGifFile(body: ResponseBody): Boolean {
         val type = body.contentType()
         return if (type == null) {
             body.byteStream().use { isGifFile(it) }
         } else {
-            type.toString() == MimeType.GIF.toString()
+            type.toString() == MIME_TYPE_GIF
         }
     }
 
@@ -185,7 +186,7 @@ object ImageUtil {
                     PermissionUtils.READ_EXTERNAL_STORAGE,
                     PermissionUtils.WRITE_EXTERNAL_STORAGE
                 ),
-                context.getString(R.string.tip_permission_storage)
+                context.getString(R.string.tip_permission_storage_download)
             ),
             R.string.toast_no_permission_save_photo
         ) {
@@ -209,7 +210,7 @@ object ImageUtil {
 
                 var fileName = URLUtil.guessFileName(url, null, mimeType)
                 if (isGifFile(responseBody)) {
-                    mimeType = MimeType.GIF.toString()
+                    mimeType = MIME_TYPE_GIF
                     fileName = FileUtil.changeFileExtension(fileName, ".gif")
                 }
 
@@ -275,7 +276,7 @@ object ImageUtil {
     }
 
     fun getPicId(picUrl: String?): String {
-        val fileName = URLUtil.guessFileName(picUrl, null, MimeType.JPEG.toString())
+        val fileName = URLUtil.guessFileName(picUrl, null, MimeTypes.IMAGE_JPEG)
         return fileName.replace(".jpg", "")
     }
 
