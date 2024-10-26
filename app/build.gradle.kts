@@ -1,14 +1,14 @@
 import java.util.Properties
 
 plugins {
-    autowire(libs.plugins.com.android.application)
-    autowire(libs.plugins.kotlin.android)
-    autowire(libs.plugins.kotlin.compose.compiler)
-    autowire(libs.plugins.kotlin.serialization)
-    autowire(libs.plugins.kotlin.parcelize)
-    autowire(libs.plugins.hilt.android)
-    autowire(libs.plugins.kotlin.ksp)
-    autowire(libs.plugins.com.squareup.wire)
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.wire)
 }
 
 wire {
@@ -101,106 +101,99 @@ dependencies {
     //Local Files
 //    implementation fileTree(include: ["*.jar"], dir: "libs")
 
-    val composeBom = platform(compose.bom)
+    val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    implementation(net.swiftzer.semver.semver)
-    implementation(godaddy.color.picker)
+    implementation(libs.jetbrains.annotations)
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.collections.immutable)
+    // Required by Navigation Type-Safe
+    implementation(libs.kotlinx.serialization.json)
 
-    implementation(airbnb.lottie)
-    implementation(airbnb.lottie.compose)
+    implementation(libs.lottie)
+    implementation(libs.lottie.compose)
 
-    implementation(kotlinx.serialization.json)
-    implementation(kotlinx.collections.immutable)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 
-    implementation(androidx.media3.exoplayer)
-    implementation(androidx.media3.ui)
+    api(libs.wire.runtime)
 
-    api(wire.runtime)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    ksp(libs.androidx.hilt.compiler)
+    implementation(libs.androidx.navigation.compose)
 
-    implementation(hilt.android)
-    ksp(hilt.compiler)
-    implementation(androidx.hilt.navigation.compose)
-    ksp(androidx.hilt.compiler)
-    implementation(androidx.navigation.compose)
+    implementation(libs.accompanist.drawablepainter)
+    implementation(libs.accompanist.systemuicontroller)
+    implementation(libs.accompanist.placeholder.material)
 
-    implementation(accompanist.drawablepainter)
-    implementation(accompanist.insets.ui)
-    implementation(accompanist.systemuicontroller)
-    implementation(accompanist.placeholder.material)
-
-    implementation(compose.animation)
-    implementation(compose.animation.graphics)
-    implementation(compose.material)
-    implementation(compose.material.navigation)
-    implementation(compose.material.icons.core)
+    implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.compose.animation.graphics)
+    implementation(libs.androidx.compose.material)
+    implementation(libs.androidx.compose.material.navigation)
+    implementation(libs.androidx.compose.material.iconsCore)
     // Optional - Add full set of material icons
-    implementation(compose.material.icons.extended)
-    implementation(compose.ui.util)
+    implementation(libs.androidx.compose.material.iconsExtended)
+    implementation(libs.androidx.compose.ui.util)
 //    implementation "androidx.compose.material3:material3"
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-    // Android Studio Preview support
-    implementation(compose.ui.tooling.preview)
-    debugImplementation(compose.ui.tooling)
-
-    // UI Tests
-    androidTestImplementation(compose.ui.test.junit4)
-    debugRuntimeOnly(compose.ui.test.manifest)
-
-    implementation(github.oaid)
-
-    implementation(org.jetbrains.annotations)
-
-    implementation(kotlin.stdlib)
-    implementation(kotlin.reflect)
-
-    implementation(kotlinx.coroutines.core)
-    implementation(kotlinx.coroutines.android)
-
-    implementation(androidx.lifecycle.runtime)
-    implementation(androidx.lifecycle.viewmodel)
-    implementation(androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewModel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.savedstate)
 
     //AndroidX
-    implementation(androidx.activity)
-    implementation(androidx.activity.compose)
-    implementation(androidx.appcompat)
-    implementation(androidx.annotation)
-    implementation(androidx.browser)
-    implementation(androidx.constraintlayout)
-    implementation(androidx.constraintlayout.compose)
-    implementation(androidx.core)
-    implementation(androidx.core.splashscreen)
-    implementation(androidx.datastore.preferences)
-    implementation(androidx.palette)
-    implementation(androidx.window)
-    implementation(androidx.startup.runtime)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.browser)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.constraintlayout.compose)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.palette)
+    implementation(libs.androidx.window)
+    implementation(libs.androidx.startup.runtime)
 
-    //Test
-    testImplementation(junit.junit)
-    androidTestImplementation(androidx.test.core)
-    androidTestImplementation(androidx.test.espresso.core)
+    implementation(libs.google.material)
+    implementation(libs.google.gson)
+
+    implementation(libs.database.litepal)
 
     //Glide
-    implementation(glide.core)
-    ksp(glide.ksp)
-    implementation(glide.compose)
-    implementation(glide.okhttp3.integration)
+    implementation(libs.glide)
+    ksp(libs.glide.ksp)
+    implementation(libs.glide.compose)
+    implementation(libs.glide.okhttp3.integration)
 
-    implementation(google.material)
+    // Image Viewer
+    implementation(libs.iielse.imageviewer)
+    implementation(libs.subsampling.image)
 
-    implementation(okhttp3.core)
-    implementation(retrofit2.core)
-    implementation(retrofit2.converter.wire)
+    implementation(libs.squareup.okhttp3)
+    implementation(libs.squareup.retrofit2)
+    implementation(libs.squareup.retrofit2.wire)
 
-    implementation(google.gson)
-    implementation(org.litepal.android.kotlin)
+    implementation(libs.colorful.sliders)
+    implementation(libs.liyujiang.oadi)
 
-    implementation(subsampling.image)
-    implementation(iielse.imageviewer)
+    implementation(libs.godaddy.colorpicker)
+    implementation(libs.swiftzer.semver)
+    implementation(libs.xx.permissions)
+    implementation(libs.yalantis.ucrop)
 
-    implementation(xx.permissions)
-    implementation(com.github.yalantis.ucrop)
-    implementation(colorful.sliders)
+    //Test
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+
+    // UI Tests
+    androidTestImplementation(libs.androidx.compose.ui.test)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }

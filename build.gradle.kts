@@ -1,13 +1,11 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    autowire(libs.plugins.com.android.application) apply false
-    autowire(libs.plugins.kotlin.android) apply false
-    autowire(libs.plugins.kotlin.compose.compiler) apply false
-    autowire(libs.plugins.kotlin.ksp) apply false
-    autowire(libs.plugins.kotlin.serialization) apply false
-    autowire(libs.plugins.kotlin.parcelize) apply false
-    autowire(libs.plugins.hilt.android) apply false
-    autowire(libs.plugins.com.squareup.wire) apply false
-
-    autowire(libs.plugins.com.autonomousapps.dependency.analysis)
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.kotlin.parcelize) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.hilt) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.wire) apply false
 }
