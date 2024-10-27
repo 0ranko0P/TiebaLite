@@ -1,14 +1,10 @@
 package com.huanchengfly.tieba.post.ui.page
 
-import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.material.navigation.BottomSheetNavigator
 import androidx.compose.material.navigation.ModalBottomSheetLayout
 import androidx.compose.runtime.Composable
@@ -58,10 +54,24 @@ fun RootNavGraph(
             graph = remember(startDestination) {
                 buildRootNavGraph(navController, startDestination)
             },
-            enterTransition = { DefaultScaleIn },
-            exitTransition = { DefaultScaleOut },
-            popEnterTransition = { DefaultScaleIn },
-            popExitTransition = { DefaultScaleOut },
+            enterTransition = {
+                scaleIn(
+                    animationSpec = tween(delayMillis = 35),
+                    initialScale = 1.1F
+                ) + fadeIn(
+                    animationSpec = tween(delayMillis = 35)
+                )
+            },
+            exitTransition = { DefaultFadeOut },
+            popEnterTransition = {
+                scaleIn(
+                    animationSpec = tween(delayMillis = 35),
+                    initialScale = 0.9F
+                ) + fadeIn(
+                    animationSpec = tween(delayMillis = 35)
+                )
+            },
+            popExitTransition = { DefaultFadeOut },
         )
     }
 }
@@ -180,20 +190,6 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
     }
 }
 
-val DefaultScaleIn: EnterTransition by lazy {
-    scaleIn(
-        animationSpec = spring(),
-        initialScale = 1.1F
-    ) + fadeIn(
-        animationSpec = tween(delayMillis = 35),
-    )
-}
-
-val DefaultScaleOut: ExitTransition by lazy {
-    scaleOut(
-        animationSpec = tween(delayMillis = 35),
-        targetScale = 0.9F
-    ) + fadeOut(
-        animationSpec = tween(durationMillis = 100, easing = LinearOutSlowInEasing)
-    )
+val DefaultFadeOut: ExitTransition by lazy {
+    fadeOut(animationSpec = tween(100))
 }
