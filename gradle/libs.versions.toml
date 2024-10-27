@@ -21,7 +21,6 @@ retrofit2 = "2.11.0"
 
 [libraries]
 accompanist-drawablepainter = { module = "com.google.accompanist:accompanist-drawablepainter", version.ref = "accompanist" }
-accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-systemuicontroller", version.ref = "accompanist" }
 accompanist-placeholder-material = { module = "com.google.accompanist:accompanist-placeholder-material", version.ref = "accompanist" }
 
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }

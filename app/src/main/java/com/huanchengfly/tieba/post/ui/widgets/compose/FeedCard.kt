@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.content.pm.ActivityInfo
-import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -61,11 +60,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.Media
@@ -883,24 +883,22 @@ fun VideoPlayer(
     videoUrl: String,
     thumbnailUrl: String,
     modifier: Modifier = Modifier,
-    title: String = "",
 ) {
     val context = LocalContext.current
-    val systemUiController = rememberSystemUiController()
     val videoPlayerController = rememberVideoPlayerController(
         source = VideoPlayerSource.Network(videoUrl),
         thumbnailUrl = thumbnailUrl,
         fullScreenModeChangedListener = object : OnFullScreenModeChangedListener {
             override fun onFullScreenModeChanged(isFullScreen: Boolean) {
-                Log.i("VideoPlayer", "onFullScreenModeChanged $isFullScreen")
-                systemUiController.isStatusBarVisible = !isFullScreen
-                systemUiController.isNavigationBarVisible = !isFullScreen
-                if (isFullScreen) {
-                    context.findActivity()?.requestedOrientation =
-                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                } else {
-                    context.findActivity()?.requestedOrientation =
-                        ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                context.findActivity()?.run {
+                    val insetsCtl = WindowCompat.getInsetsController(window, window.decorView)
+                    if (isFullScreen) {
+                        insetsCtl.hide(WindowInsetsCompat.Type.systemBars())
+                        this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    } else {
+                        insetsCtl.show(WindowInsetsCompat.Type.systemBars())
+                        this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    }
                 }
             }
         }

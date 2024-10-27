@@ -135,7 +135,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.accompanist.drawablepainter)
-    implementation(libs.accompanist.systemuicontroller)
     implementation(libs.accompanist.placeholder.material)
 
     implementation(libs.androidx.compose.animation)
