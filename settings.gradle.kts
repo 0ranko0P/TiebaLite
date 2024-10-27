@@ -8,8 +8,6 @@ pluginManagement {
                 includeGroupByRegex("androidx.*")
             }
         }
-        maven("https://jitpack.io")
-        maven("https://maven.aliyun.com/repository/public")
         gradlePluginPortal()
     }
 }
@@ -18,6 +16,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven("https://jitpack.io")
+        maven("https://maven.aliyun.com/repository/public") {
+            content {
+                includeGroup("org.litepal.android")
+            }
+        }
     }
 }
 
