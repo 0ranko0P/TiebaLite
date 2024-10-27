@@ -80,6 +80,12 @@ fun AboutPage(
             style = MaterialTheme.typography.caption,
             color = MaterialTheme.colors.onSurface
         )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = BuildConfig.BUILD_GIT,
+            style = MaterialTheme.typography.caption,
+            color = MaterialTheme.colors.onSurface
+        )
         Spacer(modifier = Modifier.height(48.dp))
     }
 }

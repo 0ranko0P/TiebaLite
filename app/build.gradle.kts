@@ -1,3 +1,4 @@
+import java.io.ByteArrayOutputStream
 import java.util.Properties
 
 plugins {
@@ -58,11 +59,16 @@ android {
         }
     }
     buildTypes {
+        val gitVersionProvider = providers.of(GitVersionValueSource::class) {}
+        val gitVersion = gitVersionProvider.get()
+
         all {
             signingConfig =
                 if (signingConfigs.any { it.name == "config" })
                     signingConfigs.getByName("config")
                 else signingConfigs.getByName("debug")
+
+            buildConfigField("String", "BUILD_GIT", "\"${gitVersion}\"")
         }
         release {
             isMinifyEnabled = true
@@ -197,4 +203,25 @@ dependencies {
     // UI Tests
     androidTestImplementation(libs.androidx.compose.ui.test)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+}
+
+abstract class GitVersionValueSource : ValueSource<String, ValueSourceParameters.None> {
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    override fun obtain(): String = ByteArrayOutputStream().use { output ->
+        execOperations.exec {
+            commandLine("git", "branch", "--show-current")
+            standardOutput = output
+        }
+        val branch = output.toString().trim()
+        output.reset()
+
+        execOperations.exec {
+            commandLine("git", "rev-parse", "HEAD")
+            standardOutput = output
+        }
+        val shortHash = output.toString().trim().substring(0..7)
+        return@use "$branch#$shortHash"
+    }
 }
