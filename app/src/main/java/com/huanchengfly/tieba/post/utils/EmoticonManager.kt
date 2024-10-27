@@ -103,6 +103,7 @@ object EmoticonManager {
     suspend fun init(context: Context) {
         contextRef = WeakReference(context)
         val emoticonCache = getEmoticonDataCache()
+        val firstInit = emoticonCache.mapping.isEmpty()
         if (emoticonCache.ids.isEmpty()) {
             for (i in 1..50) {
                 emoticonIds.add("image_emoticon$i")
@@ -121,7 +122,10 @@ object EmoticonManager {
         } else {
             emoticonMapping.putAll(emoticonCache.mapping)
         }
-        updateCache()
+
+        if (firstInit) {
+            updateCache()
+        }
     }
 
     private fun updateCache() {
