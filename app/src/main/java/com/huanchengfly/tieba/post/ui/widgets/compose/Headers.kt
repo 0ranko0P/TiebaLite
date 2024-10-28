@@ -58,13 +58,13 @@ fun UserHeaderPlaceholder(
     name = {
         Text(
             text = "Username",
-            modifier = Modifier.placeholder(visible = true, highlight = PlaceholderHighlight.fade())
+            modifier = Modifier.placeholder(highlight = PlaceholderHighlight.fade())
         )
     },
     desc = {
         Text(
             text = "Desc",
-            modifier = Modifier.placeholder(visible = true, highlight = PlaceholderHighlight.fade())
+            modifier = Modifier.placeholder(highlight = PlaceholderHighlight.fade())
         )
     }
 )

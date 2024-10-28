@@ -231,11 +231,7 @@ fun FeedCardPlaceholder() {
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .placeholder(
-                        visible = true,
-                        highlight = PlaceholderHighlight.fade(),
-                    )
+                modifier = Modifier.placeholder(highlight = PlaceholderHighlight.fade())
             )
 
             Text(
@@ -246,10 +242,7 @@ fun FeedCardPlaceholder() {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .placeholder(
-                        visible = true,
-                        highlight = PlaceholderHighlight.fade(),
-                    )
+                    .placeholder(highlight = PlaceholderHighlight.fade())
             )
         },
         action = {

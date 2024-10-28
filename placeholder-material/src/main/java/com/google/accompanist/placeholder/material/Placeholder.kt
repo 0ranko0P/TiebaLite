@@ -109,7 +109,7 @@ public fun PlaceholderDefaults.shimmerHighlightColor(
  * on/off screen. The boolean parameter defined for the transition is [visible].
  */
 public fun Modifier.placeholder(
-    visible: Boolean,
+    visible: Boolean = true,
     color: Color = Color.Unspecified,
     shape: Shape? = null,
     highlight: PlaceholderHighlight? = null,

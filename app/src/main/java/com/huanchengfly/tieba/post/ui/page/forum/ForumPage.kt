@@ -486,10 +486,7 @@ fun ForumHeaderPlaceholder(forumName: String, modifier: Modifier = Modifier) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100))
-                        .placeholder(
-                            visible = true,
-                            highlight = PlaceholderHighlight.fade(),
-                        )
+                        .placeholder(highlight = PlaceholderHighlight.fade())
                         .padding(horizontal = 18.dp, vertical = 6.dp)
                 ) {
                     Text(text = stringResource(id = R.string.button_sign_in), fontSize = 13.sp)

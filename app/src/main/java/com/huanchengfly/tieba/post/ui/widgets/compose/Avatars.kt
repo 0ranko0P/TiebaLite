@@ -93,7 +93,7 @@ fun AvatarPlaceholder(size: Dp, modifier: Modifier = Modifier)
 = Box(
     modifier = modifier
         .size(size)
-        .placeholder(visible = true, highlight = PlaceholderHighlight.fade(), shape = CircleShape)
+        .placeholder(highlight = PlaceholderHighlight.fade(), shape = CircleShape)
 )
 
 @Composable
