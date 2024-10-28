@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@file:Suppress("DEPRECATION")
 package com.google.accompanist.placeholder
 
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -53,13 +52,6 @@ import androidx.compose.ui.unit.LayoutDirection
 /**
  * Contains default values used by [Modifier.placeholder] and [PlaceholderHighlight].
  */
-@Deprecated(
-    """
-accompanist/placeholder is deprecated and the API is no longer maintained. 
-We recommend forking the implementation and customising it to your needs. 
-For more information please visit https://google.github.io/accompanist/placeholder
-"""
-)
 public object PlaceholderDefaults {
     /**
      * The default [InfiniteRepeatableSpec] to use for [fade].
@@ -110,13 +102,6 @@ public object PlaceholderDefaults {
  * @param contentFadeTransitionSpec The transition spec to use when fading the content
  * on/off screen. The boolean parameter defined for the transition is [visible].
  */
-@Deprecated(
-    """
-accompanist/placeholder is deprecated and the API is no longer maintained. 
-We recommend forking the implementation and customising it to your needs. 
-For more information please visit https://google.github.io/accompanist/placeholder
-"""
-)
 public fun Modifier.placeholder(
     visible: Boolean,
     color: Color,
