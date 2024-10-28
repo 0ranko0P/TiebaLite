@@ -27,3 +27,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "TiebaLite"
 include(":app")
+include(":placeholder")
+include(":placeholder-material")
