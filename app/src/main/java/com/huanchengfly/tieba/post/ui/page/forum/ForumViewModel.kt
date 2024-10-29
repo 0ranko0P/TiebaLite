@@ -7,9 +7,10 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.App
@@ -212,22 +213,7 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
     fun onSortTypeChanged(@ForumSortType sortType: Int, isGood: Boolean) = scope.launch {
         this@ForumViewModel.sortType = sortType
         emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
-        saveSortType(forumName!!, sortType)
-    }
-
-    private suspend fun saveSortType(forumName: String, @ForumSortType sortType: Int) {
-        val context = App.INSTANCE
-        // Default from app_preference
-        val default = context.appPreferences.defaultSortType
-        // Save to forum_preferences
-        context.dataStore.edit {
-            val key = intPreferencesKey("${forumName}_sort_type")
-            if (sortType == default) {
-                it.remove(key) // Keep dataStore clean
-            } else {
-                it[key] = sortType
-            }
-        }
+        saveSortType(forumName, sortType)
     }
 
     fun onFabClicked(context: Context, isGood: Boolean) {
@@ -286,10 +272,16 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
     companion object {
         private const val TAG = "ForumViewModel"
 
-        private const val DATA_STORE_NAME = "forum_preferences"
+        /**
+         * PreferenceDataStore where [sortTypeKey] saved
+         * */
+        private val DataStore by lazy {
+            PreferenceDataStoreFactory.create {
+                App.INSTANCE.preferencesDataStoreFile(name = "forum_preferences")
+            }
+        }
 
-        private val dataStoreInstance by lazy { preferencesDataStore(name = DATA_STORE_NAME) }
-        private val Context.dataStore by dataStoreInstance
+        private fun sortTypeKey(forumName: String) = intPreferencesKey("${forumName}_sort_type")
 
         /**
          * Sort preference per forum
@@ -297,9 +289,24 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
          * @see [ForumSortType]
          * */
         fun getSortType(context: Context, forumName: String): Flow<Int> {
-            return context.dataStore.data.map {
-                it[intPreferencesKey("${forumName}_sort_type")] ?: App.INSTANCE.appPreferences.defaultSortType
-            }.distinctUntilChanged()
+            return DataStore.data
+                .map { it[sortTypeKey(forumName)] ?: context.appPreferences.defaultSortType }
+                .distinctUntilChanged()
+        }
+
+        private suspend fun saveSortType(forumName: String, @ForumSortType sortType: Int) {
+            val context = App.INSTANCE
+            // Default from app_preference
+            val default = context.appPreferences.defaultSortType
+            // Save to forum_preferences
+            DataStore.edit {
+                val key = sortTypeKey(forumName)
+                if (sortType == default) {
+                    it.remove(key) // Keep dataStore clean
+                } else {
+                    it[key] = sortType
+                }
+            }
         }
     }
 }
