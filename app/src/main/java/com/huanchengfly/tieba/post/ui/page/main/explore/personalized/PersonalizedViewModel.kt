@@ -239,12 +239,13 @@ sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> 
     sealed class Refresh private constructor() : PersonalizedPartialChange {
         override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
             when (this) {
-                Start -> oldState.copy(isRefreshing = true)
+                Start -> oldState.copy(isRefreshing = true, error = null)
                 is Success -> {
                     val oldSize = oldState.data.size
                     val newData = (data + oldState.data).distinctById()
                     oldState.copy(
                         isRefreshing = false,
+                        error = null,
                         currentPage = 1,
                         data = newData,
                         refreshPosition = if (oldState.data.isEmpty()) 0 else (newData.size - oldSize),
@@ -271,9 +272,10 @@ sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> 
     sealed class LoadMore private constructor() : PersonalizedPartialChange {
         override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
             when (this) {
-                Start -> oldState.copy(isLoadingMore = true)
+                Start -> oldState.copy(isLoadingMore = true, error = null)
                 is Success -> oldState.copy(
                     isLoadingMore = false,
+                    error = null,
                     currentPage = currentPage,
                     data = (oldState.data + data).distinctById(),
                 )
