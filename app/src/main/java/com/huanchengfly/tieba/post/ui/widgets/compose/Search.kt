@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +39,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -337,7 +341,15 @@ fun SearchBox(
     elevation: Dp = Dp.Hairline,
 ) {
     val isKeywordNotEmpty = remember(keyword) { keyword.isNotEmpty() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val focusManager = LocalFocusManager.current
     var isFocused by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { // Focus & show keyboard at launch
+        focusRequester.requestFocus()
+    }
+
     Surface(
         modifier = modifier,
         shape = shape,
@@ -362,7 +374,8 @@ fun SearchBox(
                 ),
                 keyboardActions = KeyboardActions(
                     onSearch = {
-                        onKeywordSubmit(keyword)
+                        focusManager.clearFocus()
+                        if (isKeywordNotEmpty) onKeywordSubmit(keyword)
                     }
                 ),
                 placeholder = placeholder,
@@ -371,7 +384,8 @@ fun SearchBox(
                     .weight(1f)
                     .focusRequester(focusRequester)
                     .onFocusEvent {
-                        isFocused = it.isFocused
+                        isFocused = it.hasFocus
+                        if (!isFocused) keyboardController?.hide()
                     }
             )
             appendIcon()
@@ -407,5 +421,9 @@ fun SearchBox(
                 }
             }
         }
+    }
+
+    BackHandler(enabled = isFocused) {
+        focusManager.clearFocus(force = true)
     }
 }

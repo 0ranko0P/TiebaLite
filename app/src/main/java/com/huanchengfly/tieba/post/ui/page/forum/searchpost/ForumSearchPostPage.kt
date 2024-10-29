@@ -47,9 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -283,8 +281,6 @@ fun ForumSearchPostPage(
         onRefresh = ::refresh
     )
     val lazyListState = rememberLazyListState()
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
 
     val sortTypeMapping = remember {
         persistentMapOf(
@@ -328,8 +324,6 @@ fun ForumSearchPostPage(
                             onKeywordChange = { inputKeyword = it },
                             modifier = Modifier.fillMaxSize(),
                             onKeywordSubmit = {
-                                focusRequester.freeFocus()
-                                keyboardController?.hide()
                                 viewModel.send(
                                     ForumSearchPostUiIntent.Refresh(
                                         it,
@@ -359,7 +353,6 @@ fun ForumSearchPostPage(
                                     )
                                 }
                             },
-                            focusRequester = focusRequester,
                             shape = RoundedCornerShape(6.dp)
                         )
                     }
