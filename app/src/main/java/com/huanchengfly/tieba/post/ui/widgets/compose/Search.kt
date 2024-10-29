@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -332,8 +334,8 @@ fun SearchBox(
     modifier: Modifier = Modifier,
     onKeywordSubmit: (String) -> Unit = {},
     placeholder: @Composable () -> Unit = {},
-    prependIcon: @Composable () -> Unit = {},
-    appendIcon: @Composable () -> Unit = {},
+    prependIcon: @Composable RowScope.() -> Unit = {},
+    appendIcon: (@Composable RowScope.() -> Unit)? = null,
     focusRequester: FocusRequester = remember { FocusRequester() },
     shape: Shape = RectangleShape,
     color: Color = ExtendedTheme.colors.floorCard,
@@ -362,7 +364,7 @@ fun SearchBox(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            prependIcon()
+            prependIcon.invoke(this)
             BaseTextField(
                 value = keyword,
                 onValueChange = {
@@ -388,37 +390,30 @@ fun SearchBox(
                         if (!isFocused) keyboardController?.hide()
                     }
             )
-            appendIcon()
+
+            appendIcon?.invoke(this)
+
             AnimatedVisibility(visible = isKeywordNotEmpty && isFocused) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(100))
-                            .clickable { onKeywordChange("") },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Clear,
-                            contentDescription = stringResource(id = R.string.button_clear)
-                        )
-                    }
-                }
-            }
-            AnimatedVisibility(visible = isKeywordNotEmpty) {
-                Box(
+                Icon(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(100))
+                        .clip(CircleShape)
+                        .clickable { onKeywordChange("") },
+                    imageVector = Icons.Rounded.Clear,
+                    contentDescription = stringResource(id = R.string.button_clear)
+                )
+            }
+
+            AnimatedVisibility(
+                visible = isKeywordNotEmpty,
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Icon(
+                    modifier = Modifier
+                        .clip(CircleShape)
                         .clickable { onKeywordSubmit(keyword) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = stringResource(id = R.string.button_search)
-                    )
-                }
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = stringResource(id = R.string.button_search)
+                )
             }
         }
     }

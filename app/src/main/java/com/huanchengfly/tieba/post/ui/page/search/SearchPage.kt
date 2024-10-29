@@ -554,17 +554,13 @@ private fun SearchTopBar(
             )
         },
         prependIcon = {
-            Box(
+            Icon(
                 modifier = Modifier
                     .clip(RoundedCornerShape(100))
                     .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = stringResource(id = R.string.button_back)
-                )
-            }
+                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                contentDescription = stringResource(id = R.string.button_back)
+            )
         },
         shape = RoundedCornerShape(6.dp)
     )

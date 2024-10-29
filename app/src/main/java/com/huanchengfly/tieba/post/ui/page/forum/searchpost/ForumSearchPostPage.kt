@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ExperimentalMaterialApi
@@ -315,7 +316,6 @@ fun ForumSearchPostPage(
                 topBar = {
                     Box(
                         modifier = Modifier
-                            .height(64.dp)
                             .background(ExtendedTheme.colors.topBar)
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
@@ -341,17 +341,13 @@ fun ForumSearchPostPage(
                                 )
                             },
                             prependIcon = {
-                                Box(
+                                Icon(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(100))
+                                        .clip(CircleShape)
                                         .clickable(onClick = navigator::navigateUp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                                        contentDescription = stringResource(id = R.string.button_back)
-                                    )
-                                }
+                                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                    contentDescription = stringResource(id = R.string.button_back)
+                                )
                             },
                             shape = RoundedCornerShape(6.dp)
                         )
