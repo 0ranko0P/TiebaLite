@@ -5,21 +5,27 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.navigation.NavHostController
 import com.huanchengfly.tieba.post.LocalDevicePosture
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
@@ -40,7 +46,6 @@ import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
@@ -53,7 +58,7 @@ private fun NavigationWrapper(
     navigationItems: ImmutableList<NavigationItem>,
     navigationType: MainNavigationType,
     navigationContentPosition: MainNavigationContentPosition,
-    content: @Composable () -> Unit,
+    content: @Composable BoxScope.() -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(visible = navigationType == MainNavigationType.PERMANENT_NAVIGATION_DRAWER) {
@@ -74,11 +79,12 @@ private fun NavigationWrapper(
                 navigationContentPosition = navigationContentPosition
             )
         }
-        Column(modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
-            content()
-        }
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+            content = content
+        )
     }
 }
 
@@ -214,32 +220,36 @@ fun MainPage(
             navigationType = navigationType,
             navigationContentPosition = navigationContentPosition
         ) {
-            MyScaffold(
-                backgroundColor = Color.Transparent,
-                modifier = Modifier.fillMaxSize(),
-                bottomBar = {
-                    AnimatedVisibility(visible = navigationType == MainNavigationType.BOTTOM_NAVIGATION) {
-                        BottomNavigation(
-                            currentPosition = pagerState.currentPage,
-                            onChangePosition = {
-                                coroutineScope.launch { pagerState.scrollToPage(it) }
-                            },
-                            onReselected = onReselected,
-                            navigationItems = navigationItems
-                        )
-                    }
-                }
-            ) { paddingValues ->
-                LazyLoadHorizontalPager(
-                    contentPadding = paddingValues,
-                    state = pagerState,
-                    key = { navigationItems[it].id },
-                    modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.Top,
-                    userScrollEnabled = false
-                ) {
-                    navigationItems[it].content()
-                }
+            val density = LocalDensity.current
+            var bottomHeight by remember { mutableStateOf(Dp.Hairline) }
+
+            LazyLoadHorizontalPager(
+                state = pagerState,
+                key = { navigationItems[it].id },
+                modifier = Modifier.padding(bottom = bottomHeight),
+                verticalAlignment = Alignment.Top,
+                userScrollEnabled = false
+            ) {
+                navigationItems[it].content()
+            }
+
+            AnimatedVisibility(
+                visible = navigationType == MainNavigationType.BOTTOM_NAVIGATION,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                BottomNavigation(
+                    modifier = Modifier.onGloballyPositioned {
+                        if (bottomHeight == Dp.Hairline) {
+                            bottomHeight = with(density) { it.size.height.toDp() }
+                        }
+                    },
+                    currentPosition = pagerState.currentPage,
+                    onChangePosition = {
+                        coroutineScope.launch { pagerState.scrollToPage(it) }
+                    },
+                    onReselected = onReselected,
+                    navigationItems = navigationItems
+                )
             }
         }
     }
