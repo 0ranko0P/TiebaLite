@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.forum.detail
 
 import android.graphics.Typeface
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -185,8 +186,10 @@ private fun IntroItem(modifier: Modifier = Modifier, slogan: String, intro: Stri
     Chip(text = stringResource(id = R.string.title_forum_intro))
     Column(Modifier.padding(horizontal = 16.dp)) {
         Text(text = slogan, style = MaterialTheme.typography.body1)
-        if (!intro.isNullOrEmpty()) {
-            Text(text = intro, style = MaterialTheme.typography.body1)
+        AnimatedVisibility(!intro.isNullOrEmpty()) {
+            intro?.let {
+                Text(text = it, style = MaterialTheme.typography.body1)
+            }
         }
     }
 }
