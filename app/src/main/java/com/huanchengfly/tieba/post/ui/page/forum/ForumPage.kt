@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -298,6 +299,7 @@ fun ForumPage(
     val loggedIn = account != null
 
     val pagerState = rememberPagerState { 2 }
+    val listState = rememberLazyListState()
 
     val isGood by remember { derivedStateOf { pagerState.currentPage == TAB_FORUM_GOOD } }
 
@@ -405,9 +407,11 @@ fun ForumPage(
         floatingActionButton = {
             if (disableFab || forumInfo == null) return@MyScaffold
 
-            val isScrolling by scrollStateConnection!!.isScrolling
+            val isFabVisible by remember { derivedStateOf {
+                !scrollStateConnection!!.isScrolling.value && listState.firstVisibleItemIndex > 0
+            } }
             ForumFab(
-                visible = !isScrolling,
+                visible = isFabVisible,
                 fab = viewModel.fab,
                 onClick = {
                     viewModel.onFabClicked(context, isGood)
@@ -440,13 +444,15 @@ fun ForumPage(
                     NormalThreadListPage(
                         forumId = info.id,
                         forumName = info.name,
-                        sortType = { viewModel.sortType }
+                        sortType = { viewModel.sortType },
+                        listState = listState
                     )
                 } else if (page == TAB_FORUM_GOOD) {
                     GoodThreadListPage(
                         forumId = info.id,
                         forumName = info.name,
-                        sortType = { viewModel.sortType }
+                        sortType = { viewModel.sortType },
+                        listState = listState
                     )
                 }
             }

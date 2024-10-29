@@ -12,10 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
@@ -121,6 +121,7 @@ fun GoodThreadListPage(
     forumId: Long,
     forumName: String,
     sortType: () -> Int,
+    listState: LazyListState,
     viewModel: GoodThreadListViewModel = pageViewModel<GoodThreadListViewModel>()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -142,7 +143,7 @@ fun GoodThreadListPage(
     )
 
     if (goodClassifies.size <= 1) { // Unclassified
-        ForumThreadListPage(modifier.fillMaxSize(), forumId, true, sortType, viewModel) {
+        ForumThreadListPage(modifier.fillMaxSize(), forumId, true, sortType, listState, viewModel) {
             viewModel.requestRefresh(goodClassifyId = 0)
         }
     } else {
@@ -153,7 +154,7 @@ fun GoodThreadListPage(
                 onSelected = viewModel::requestRefresh
             )
 
-            ForumThreadListPage(modifier, forumId, true, sortType, viewModel) {
+            ForumThreadListPage(modifier, forumId, true, sortType, listState, viewModel) {
                 viewModel.requestRefresh(goodClassifyId = 0)
             }
         }
@@ -166,6 +167,7 @@ fun NormalThreadListPage(
     forumId: Long,
     forumName: String,
     sortType: () -> Int,
+    listState: LazyListState,
     viewModel: LatestThreadListViewModel = pageViewModel<LatestThreadListViewModel>()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -177,7 +179,7 @@ fun NormalThreadListPage(
         viewModel.requestRefresh(it.sortType)
     }
 
-    ForumThreadListPage(modifier, forumId, false, sortType, viewModel) {
+    ForumThreadListPage(modifier, forumId, false, sortType, listState, viewModel) {
         viewModel.requestRefresh(sortType())
     }
 }
@@ -189,6 +191,7 @@ private fun ForumThreadListPage(
     forumId: Long,
     isGood: Boolean = false,
     sortType: () -> Int,
+    listState: LazyListState,
     viewModel: ForumThreadListViewModel,
     onRefresh: () -> Unit,
 ) {
@@ -196,12 +199,10 @@ private fun ForumThreadListPage(
     val navigator = LocalNavController.current
     val snackbarHostState = LocalSnackbarHostState.current
 
-    val lazyListState = rememberLazyListState()
-
     onGlobalEvent<ForumThreadListUiEvent.BackToTop>(
         filter = { it.isGood == isGood },
     ) {
-        lazyListState.animateScrollToItem(0)
+        listState.animateScrollToItem(0)
     }
     viewModel.onEvent<ForumThreadListUiEvent.AgreeFail> {
         val snackbarResult = snackbarHostState.showSnackbar(
@@ -264,7 +265,7 @@ private fun ForumThreadListPage(
         Container {
             SwipeUpLazyLoadColumn(
                 modifier = Modifier.fillMaxSize(),
-                state = lazyListState,
+                state = listState,
                 contentPadding = WindowInsets.navigationBars.asPaddingValues(),
                 isLoading = isLoadingMore,
                 onLazyLoad = {
