@@ -479,6 +479,7 @@ fun HomePage(
                 }
             }
         },
+        bottomBar = {},
         modifier = Modifier.fillMaxSize(),
     ) { contentPaddings ->
         val pullRefreshState = rememberPullRefreshState(

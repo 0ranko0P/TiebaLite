@@ -158,6 +158,7 @@ fun ExplorePage() {
                 ExplorePageTab(pagerState = pagerState, pages = pages)
             }
         },
+        bottomBar = {},
         modifier = Modifier.fillMaxSize(),
     ) { paddingValues ->
         LazyLoadHorizontalPager(

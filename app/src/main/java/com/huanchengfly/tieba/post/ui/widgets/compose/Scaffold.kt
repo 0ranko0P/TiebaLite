@@ -72,7 +72,7 @@ fun MyScaffold(
     modifier: Modifier = Modifier,
     scaffoldState: ScaffoldState = rememberScaffoldState(),
     topBar: @Composable () -> Unit = {},
-    bottomBar: @Composable () -> Unit = {},
+    bottomBar: @Composable () -> Unit = NavigationBarPlaceHolder,
     snackbarHost: @Composable (SnackbarHostState) -> Unit = { SwipeToDismissSnackbarHost(it) },
     floatingActionButton: @Composable () -> Unit = {},
     floatingActionButtonPosition: FabPosition = FabPosition.End,

@@ -76,6 +76,7 @@ fun NotificationsPage(
                 }
             }
         },
+        bottomBar = {},
         modifier = Modifier.fillMaxSize(),
     ) { paddingValues ->
         LazyLoadHorizontalPager(
