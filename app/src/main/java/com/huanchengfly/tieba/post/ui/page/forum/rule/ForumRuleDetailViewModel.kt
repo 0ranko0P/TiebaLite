@@ -22,7 +22,7 @@ import com.huanchengfly.tieba.post.ui.page.Destination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,6 +30,11 @@ import javax.inject.Inject
 class ForumRuleDetailViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     val forumId: Long = savedStateHandle.toRoute<Destination.ForumRuleDetail>().forumId
+
+    private val handler = CoroutineExceptionHandler { _, e ->
+        Log.e(TAG, "onError: ", e)
+        uiState = ForumRuleDetailUiState.Error(e)
+    }
 
     var uiState by mutableStateOf<ForumRuleDetailUiState?>(null)
         private set
@@ -42,13 +47,9 @@ class ForumRuleDetailViewModel @Inject constructor(savedStateHandle: SavedStateH
         if (uiState == ForumRuleDetailUiState.Loading) return
         uiState = ForumRuleDetailUiState.Loading
 
-        viewModelScope.launch {
+        viewModelScope.launch(handler) {
             TiebaApi.getInstance()
                 .forumRuleDetailFlow(forumId)
-                .catch {
-                    uiState = ForumRuleDetailUiState.Error(it)
-                    Log.w(TAG, "onReload: ", it)
-                }
                 .collect { response ->
                     uiState = if (response.data_ != null) {
                         ForumRuleDetailUiState.Success(
