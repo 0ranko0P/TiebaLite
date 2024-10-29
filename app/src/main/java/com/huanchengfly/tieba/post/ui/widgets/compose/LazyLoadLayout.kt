@@ -28,7 +28,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -41,12 +40,36 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastRoundToInt
 import com.huanchengfly.tieba.post.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToInt
+
+/**
+ * Offset the indicator of [SwipeUpLazyLoadColumn] based on given [height] and [pos]
+ *
+ * @param bottomPadding bottom content padding of [SwipeUpLazyLoadColumn] in px
+ * @param height indicator's height in px
+ * @param pos provider of [SwipeUpRefreshScrollConnection.position]
+ * */
+private fun Modifier.indicatorOffset(bottomPadding: Int, height: Int, pos: () -> Int): Modifier {
+    return if (bottomPadding <= 0) {
+        this then Modifier.offset { IntOffset(x = 0, y = height + pos()) }
+    } else {
+        this then Modifier.offset {
+            val isVisible = pos() <= -4 // Use 4px instead of 0px for list overscroll effect
+            if (isVisible) {
+                // Visible, now append extra bottom padding
+                IntOffset(x = 0, y = height - bottomPadding + pos())
+            } else {
+                IntOffset(x = 0, y = height + pos())
+            }
+        }
+    }
+}
 
 /**
  * LazyColumn with swipe-up-to-refresh behaviour
@@ -70,6 +93,7 @@ fun SwipeUpLazyLoadColumn(
     bottomIndicator: @Composable BoxScope.(onThreshold: Boolean) -> Unit,
     items: LazyListScope.() -> Unit
 ) {
+    val density = LocalDensity.current
     val refreshState = rememberSwipeUpRefreshConnection(isLoading, onLoad)
 
     if (onLazyLoad != null) {
@@ -87,15 +111,29 @@ fun SwipeUpLazyLoadColumn(
     }
 
     Box(modifier = modifier.nestedScroll(refreshState)) {
-        OneTimeMeasurer(modifier = Modifier.align(Alignment.BottomCenter)) { size ->
+        LazyColumn(
+            modifier = Modifier.offset {
+                IntOffset(x = 0, y = refreshState.position.fastRoundToInt())
+            },
+            state = state,
+            contentPadding = contentPadding,
+            verticalArrangement = verticalArrangement,
+            horizontalAlignment = horizontalAlignment,
+            content = items
+        )
+
+        OneTimeMeasurer(
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) { size ->
+            val bottomPadding = remember(contentPadding) {
+                with(density) { contentPadding.calculateBottomPadding().roundToPx() }
+            }
+
             Box(
                 modifier = Modifier
-                    .offset { // offset with LazyColumn together
-                        val height = size?.height ?: return@offset IntOffset.Zero
-                        IntOffset(x = 0, y = height + refreshState.position.roundToInt())
-                    }
-                    // hide when measure indicator's height
-                    .then(if (size == null) Modifier.alpha(0f) else Modifier),
+                    .indicatorOffset(bottomPadding = bottomPadding, height = size?.height ?: 1000) {
+                        refreshState.position.roundToInt()
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 val onThreshold by remember { derivedStateOf { refreshState.progress >= 1.0f } }
@@ -107,21 +145,6 @@ fun SwipeUpLazyLoadColumn(
                 refreshState.setThreshold(size.height.toFloat())
             }
         }
-
-        LazyColumn(
-            modifier = Modifier.offset {
-                if (refreshState.position == 0f) {
-                    IntOffset.Zero
-                } else {
-                    IntOffset(x = 0, y = refreshState.position.roundToInt())
-                }
-            },
-            state = state,
-            contentPadding = contentPadding,
-            verticalArrangement = verticalArrangement,
-            horizontalAlignment = horizontalAlignment,
-            content = items
-        )
     }
 }
 
