@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
@@ -24,8 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
@@ -116,7 +113,7 @@ fun HistoryPage(navigator: NavController) {
                 }
             )
         }
-    ) {
+    ) { contentPadding ->
         ProvideNavigator(navigator = navigator) {
             HorizontalPager(
                 state = pagerState,
@@ -126,9 +123,9 @@ fun HistoryPage(navigator: NavController) {
                 userScrollEnabled = true,
             ) {
                 if (it == 0) {
-                    HistoryListPage(type = HistoryUtil.TYPE_THREAD)
+                    HistoryListPage(type = HistoryUtil.TYPE_THREAD, contentPadding = contentPadding)
                 } else {
-                    HistoryListPage(type = HistoryUtil.TYPE_FORUM)
+                    HistoryListPage(type = HistoryUtil.TYPE_FORUM, contentPadding = contentPadding)
                 }
             }
         }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
@@ -48,6 +50,7 @@ import com.huanchengfly.tieba.post.utils.HistoryUtil
 @Composable
 fun HistoryListPage(
     type: Int,
+    contentPadding: PaddingValues = PaddingValues(Dp.Hairline),
     viewModel: HistoryListViewModel = if (type == HistoryUtil.TYPE_THREAD) pageViewModel<ThreadHistoryListViewModel>() else pageViewModel<ForumHistoryListViewModel>()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -109,6 +112,7 @@ fun HistoryListPage(
 
     SwipeUpLazyLoadColumn(
         modifier = Modifier.fillMaxSize(),
+        contentPadding = contentPadding,
         isLoading = isLoadingMore,
         onLazyLoad = {
             if (todayHistoryData.isEmpty() && beforeHistoryData.isEmpty()) return@SwipeUpLazyLoadColumn
