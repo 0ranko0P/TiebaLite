@@ -1,9 +1,12 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -84,6 +87,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapseConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import kotlin.math.max
@@ -319,6 +323,10 @@ fun ForumPage(
         )
     }
 
+    // Listen scroll state changes to show/hide Fab
+    val disableFab = viewModel.fab == ForumFabFunction.HIDE
+    val scrollStateConnection = if (!disableFab) rememberScrollStateConnection() else null
+
     val connection = rememberCollapseConnection(coroutineScope)
     // Toolbar only collapsible if logged in
     val collapsed by remember { derivedStateOf { loggedIn && connection.ratio == 0.0f } }
@@ -395,27 +403,16 @@ fun ForumPage(
             }
         },
         floatingActionButton = {
-            val fabFunction = viewModel.fab
-            if (fabFunction == ForumFabFunction.HIDE || forumInfo == null) return@MyScaffold
+            if (disableFab || forumInfo == null) return@MyScaffold
 
-            FloatingActionButton(
+            val isScrolling by scrollStateConnection!!.isScrolling
+            ForumFab(
+                visible = !isScrolling,
+                fab = viewModel.fab,
                 onClick = {
                     viewModel.onFabClicked(context, isGood)
-                },
-                backgroundColor = ExtendedTheme.colors.windowBackground,
-                contentColor = ExtendedTheme.colors.primary,
-                modifier = Modifier.navigationBarsPadding()
-            ) {
-                Icon(
-                    imageVector = when (fabFunction) {
-                        ForumFabFunction.REFRESH-> Icons.Rounded.Refresh
-                        ForumFabFunction.BACK_TO_TOP -> Icons.Rounded.VerticalAlignTop
-                        ForumFabFunction.POST -> Icons.Rounded.Add
-                        else -> throw IllegalStateException()
-                    },
-                    contentDescription = fabFunction
-                )
-            }
+                }
+            )
         }
     ) { contentPadding ->
         val info: ForumInfo? = forumInfo?.get()
@@ -432,6 +429,7 @@ fun ForumPage(
             state = pagerState,
             modifier = Modifier
                 .nestedScroll(connection)
+                .then(scrollStateConnection?.run { Modifier.nestedScroll(this) } ?: Modifier)
                 .fillMaxSize(),
             key = { it },
             verticalAlignment = Alignment.Top,
@@ -467,6 +465,32 @@ private fun ForumTitleText(modifier: Modifier = Modifier, name: String) =
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
+
+@Composable
+private fun ForumFab(@ForumFabFunction fab: String, visible: Boolean, onClick: () -> Unit) {
+    AnimatedVisibility(
+        visible = visible,
+        enter =  fadeIn() + scaleIn(animationSpec = tween()),
+        exit = scaleOut(animationSpec = tween()) + fadeOut()
+    ) {
+        FloatingActionButton(
+            onClick = onClick,
+            backgroundColor = ExtendedTheme.colors.windowBackground,
+            contentColor = ExtendedTheme.colors.primary,
+            modifier = Modifier.navigationBarsPadding()
+        ) {
+            Icon(
+                imageVector = when (fab) {
+                    ForumFabFunction.REFRESH-> Icons.Rounded.Refresh
+                    ForumFabFunction.BACK_TO_TOP -> Icons.Rounded.VerticalAlignTop
+                    ForumFabFunction.POST -> Icons.Rounded.Add
+                    else -> throw IllegalStateException()
+                },
+                contentDescription = fab
+            )
+        }
+    }
+}
 
 @Composable
 fun ForumHeaderPlaceholder(forumName: String, modifier: Modifier = Modifier) {
