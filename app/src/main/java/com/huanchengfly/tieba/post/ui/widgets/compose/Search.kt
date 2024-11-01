@@ -156,11 +156,10 @@ fun SearchThreadItem(
     item: SearchThreadBean.ThreadInfoBean,
     onClick: (SearchThreadBean.ThreadInfoBean) -> Unit,
     onUserClick: (SearchThreadBean.UserInfoBean) -> Unit,
-    onForumClick: (SearchThreadBean.ForumInfo, transitionKey: String) -> Unit,
+    onForumClick: ((SearchThreadBean.ForumInfo, transitionKey: String) -> Unit)?, // Null to hide Forum
     modifier: Modifier = Modifier,
     onQuotePostClick: (SearchThreadBean.PostInfo) -> Unit = {},
     onMainPostClick: (SearchThreadBean.MainPost) -> Unit = {},
-    hideForum: Boolean = false,
     searchKeyword: String? = null,
 ) {
     val context = LocalContext.current
@@ -218,7 +217,7 @@ fun SearchThreadItem(
             } else {
                 SearchMedia(medias = item.media.toImmutableList())
             }
-            if (!hideForum && item.forumName.isNotEmpty()) {
+            if (onForumClick != null && item.forumName.isNotEmpty()) {
                 ForumInfoChip(
                     forumName = item.forumName,
                     avatarUrl = item.forumInfo.avatar,

@@ -63,7 +63,6 @@ import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
@@ -520,9 +519,7 @@ fun ForumSearchPostPage(
                                             val uid = it.userId.toLong()
                                             navigator.navigate(UserProfile(uid))
                                         },
-                                        onForumClick = {
-                                            navigator.navigate(Forum(it.forumName))
-                                        },
+                                        onForumClick = null, // Hide forum info
                                         onQuotePostClick = {
                                             navigator.navigate(
                                                 Thread(threadId = it.tid, postId = it.pid, scrollToReply = true)
@@ -533,7 +530,6 @@ fun ForumSearchPostPage(
                                                 Thread(threadId = it.tid, scrollToReply = true)
                                             )
                                         },
-                                        hideForum = true,
                                         searchKeyword = currentKeyword
                                     )
                                 }
