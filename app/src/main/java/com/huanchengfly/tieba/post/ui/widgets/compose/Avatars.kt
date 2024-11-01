@@ -69,7 +69,7 @@ fun AvatarIcon(
     @DrawableRes
     resId: Int,
     size: Dp,
-    contentDescription: String?,
+    contentDescription: String? = null,
     modifier: Modifier = Modifier,
     iconSize: Dp = 24.dp,
     color: Color = LocalContentColor.current.copy(alpha = LocalContentAlpha.current),
@@ -100,7 +100,7 @@ fun AvatarPlaceholder(size: Dp, modifier: Modifier = Modifier)
 fun Avatar(
     data: String?,
     size: Dp,
-    contentDescription: String?,
+    contentDescription: String? = null,
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
 ) {
@@ -115,7 +115,7 @@ fun Avatar(
 @Composable
 fun Avatar(
     data: String?,
-    contentDescription: String?,
+    contentDescription: String? = null,
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
 ) {
@@ -135,7 +135,7 @@ fun Avatar(
 fun Avatar(
     @DrawableRes data: Int,
     size: Dp,
-    contentDescription: String?,
+    contentDescription: String? = null,
     modifier: Modifier = Modifier
 ) = Image(
     painter = painterResource(id = data),
