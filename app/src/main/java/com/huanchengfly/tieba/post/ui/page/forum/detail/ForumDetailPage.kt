@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,6 +31,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
@@ -52,6 +52,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
@@ -74,9 +75,9 @@ fun NavController.navigateForumDetailPage(forumInfo: ForumInfo/* Big Parcelable 
 
 private fun getForumIntro(forumId: Long): Flow<String> = TiebaApi.getInstance()
     .getForumDetailFlow(forumId)
+    .catch { it.printStackTrace() } // ignore errors
     .map {
-        return@map it.data_?.forum_info?.content?.plainText
-            ?: throw NullPointerException("Data is null: ${it.error?.error_msg}, forumId: $forumId")
+        return@map it.data_?.forum_info?.content?.plainText ?: ""
     }
 
 @Serializable
@@ -197,7 +198,7 @@ private fun IntroItem(modifier: Modifier = Modifier, slogan: String, intro: Stri
 @Composable
 private fun IntroItem(modifier: Modifier = Modifier, forumId: Long, slogan: String) {
     val introFlow = remember(forumId) { getForumIntro(forumId) }
-    val intro by introFlow.collectAsState(initial = null) // ignore errors
+    val intro by introFlow.collectAsStateWithLifecycle(initialValue = null)
 
     IntroItem(modifier, slogan, intro)
 }
