@@ -32,8 +32,14 @@ sealed interface Destination {
     @Serializable
     data object Search: Destination
 
+    /**
+     * @param forumName 吧名
+     * @param avatar 吧头像Url
+     * @param transitionKey 过渡动画额外标识键. 此键将与吧名组合为唯一标识键, 确保推荐页, 搜索页中多个贴子来
+     * 自同一个贴吧时过渡动画的唯一性.
+     * */
     @Serializable
-    data class Forum(val forumName: String): Destination
+    data class Forum(val forumName: String, val avatar: String? = null, val transitionKey: String? = null): Destination
 
     @Serializable
     data class ForumDetail(val params: ForumDetailParams): Destination

@@ -300,7 +300,12 @@ fun HotPage(
                                         )
                                     )
                                 },
-                                onClickForum = { navigator.navigate(Destination.Forum(it.name)) },
+                                onClickForum = {
+                                    val extraKey = item.item.threadId.toString()
+                                    navigator.navigate(
+                                        route = Destination.Forum(it.name, it.avatar, extraKey)
+                                    )
+                                },
                                 onClickUser = { navigator.navigate(Destination.UserProfile(it.id)) },
                             ) {
                                 Column(

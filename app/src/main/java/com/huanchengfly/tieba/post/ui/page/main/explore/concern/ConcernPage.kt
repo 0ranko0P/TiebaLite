@@ -120,7 +120,10 @@ fun ConcernPage(
                                         ConcernUiIntent.Agree(it.threadId, it.firstPostId, it.hasAgree)
                                     )
                                 },
-                                onClickForum = { navigator.navigate(Forum(it.name)) },
+                                onClickForum = {
+                                    val extraKey = item.threadList.threadId.toString()
+                                    navigator.navigate(route = Forum(it.name, it.avatar, extraKey))
+                                },
                                 onClickUser = { navigator.navigate(UserProfile(it.id)) },
                             )
                             if (index < data.size - 1) {

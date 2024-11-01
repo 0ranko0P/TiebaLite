@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.content.pm.ActivityInfo
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.material.icons.rounded.SwapCalls
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
@@ -84,6 +86,7 @@ import com.huanchengfly.tieba.post.collectPreferenceAsState
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
@@ -257,16 +260,34 @@ fun FeedCardPlaceholder() {
     )
 }
 
+/**
+ * 贴吧头像过渡动画唯一标识键
+ *
+ * @param forumName 吧名
+ * @param extraKey 额外标识键. 确保推荐页, 搜索页中多个贴子来自同一个吧时过渡动画的唯一性
+ * */
+data class ForumAvatarSharedBoundsKey(val forumName: String, val extraKey: String?)
+
+/**
+ * 贴吧吧名过渡动画唯一标识键
+ *
+ * @param forumName 吧吧名
+ * @param extraKey 额外标识键. 确保推荐页, 搜索页中多个贴子来自同一个吧时过渡动画的唯一性
+ * */
+data class ForumTitleSharedBoundsKey(val forumName: String, val extraKey: String?)
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ForumInfoChip(
-    imageUriProvider: () -> String?,
-    nameProvider: () -> String,
-    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    forumName: String,
+    avatarUrl: String? = null,
+    transitionKey: Any? = null,
+    onClick: () -> Unit
 ) {
-    val imageUri = imageUriProvider()
-    val name = nameProvider()
+    val extraKey = transitionKey?.toString()
     Row(
-        modifier = Modifier
+        modifier = modifier
             .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(4.dp))
             .background(color = ExtendedTheme.colors.chip)
@@ -275,18 +296,20 @@ fun ForumInfoChip(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        imageUri?.let {
+        avatarUrl?.let {
             Avatar(
-                data = imageUri,
-                contentDescription = null,
+                data = avatarUrl,
                 modifier = Modifier
                     .fillMaxHeight()
-                    .aspectRatio(1f),
+                    .aspectRatio(1f)
+                    .localSharedBounds(key = ForumAvatarSharedBoundsKey(forumName, extraKey)),
                 shape = RoundedCornerShape(4.dp)
             )
         }
         Text(
-            text = stringResource(id = R.string.title_forum_name, name),
+            text = stringResource(id = R.string.title_forum_name, forumName),
+            modifier = Modifier
+                .localSharedBounds(key = ForumTitleSharedBoundsKey(forumName, extraKey)),
             style = MaterialTheme.typography.body2,
             color = ExtendedTheme.colors.onChip,
             fontSize = 12.sp,
@@ -532,34 +555,20 @@ fun OriginThreadCard(
     }
 }
 
+@NonRestartableComposable
 @Composable
 private fun ThreadForumInfo(
     item: ImmutableHolder<ThreadInfo>,
     onClick: (SimpleForum) -> Unit,
 ) {
-    val hasForumInfo = remember(item) { item.isNotNull { forumInfo } }
-    if (hasForumInfo) {
-        val forumInfo = remember(item) { item.getImmutable { forumInfo!! } }
-        ThreadForumInfo(
-            forumName = forumInfo.get { name },
-            forumAvatar = forumInfo.get { avatar },
-            onClick = { onClick(forumInfo.get()) }
-        )
-    }
-}
-
-@Composable
-private fun ThreadForumInfo(
-    forumName: String,
-    forumAvatar: String?,
-    onClick: () -> Unit,
-) {
-    val hasForum = remember(forumName) { forumName.isNotBlank() }
-    if (hasForum) {
+    item.get { forumInfo }?.let { forumInfo ->
         ForumInfoChip(
-            imageUriProvider = { forumAvatar },
-            nameProvider = { forumName },
-            onClick = onClick
+            forumName = forumInfo.name,
+            avatarUrl = forumInfo.avatar,
+            transitionKey = item.get { threadId.toString() },
+            onClick = {
+                onClick(forumInfo)
+            }
         )
     }
 }
@@ -787,9 +796,8 @@ fun FeedCard(
                     )
                 }
 
-            ThreadForumInfo(
+            ForumInfoChip(
                 forumName = item.get { forum_name },
-                forumAvatar = null,
                 onClick = { onClickForum(item.get { forum_name }) }
             )
         },

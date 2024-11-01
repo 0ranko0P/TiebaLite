@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.search.forum
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +32,7 @@ import com.huanchengfly.tieba.post.api.models.SearchForumBean
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
@@ -39,6 +41,8 @@ import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalShouldLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
@@ -78,9 +82,6 @@ fun SearchForumPage(
         initial = persistentListOf()
     )
 
-    val showExactMatchResult by remember {
-        derivedStateOf { exactMatchForum != null }
-    }
     val showFuzzyMatchResult by remember {
         derivedStateOf { fuzzyMatchForumList.isNotEmpty() }
     }
@@ -91,7 +92,7 @@ fun SearchForumPage(
     )
 
     val isEmpty by remember {
-        derivedStateOf { !showExactMatchResult && !showFuzzyMatchResult }
+        derivedStateOf { exactMatchForum == null && !showFuzzyMatchResult }
     }
 
     onGlobalEvent<SearchUiEvent.KeywordChanged> {
@@ -127,7 +128,7 @@ fun SearchForumPage(
                 .pullRefresh(pullRefreshState)
         ) {
             MyLazyColumn(modifier = Modifier.fillMaxSize()) {
-                if (showExactMatchResult) {
+                exactMatchForum?.let {
                     stickyHeader(key = "ExactMatchHeader") {
                         Column(
                             modifier = Modifier
@@ -143,9 +144,10 @@ fun SearchForumPage(
                     }
                     item(key = "ExactMatch") {
                         SearchForumItem(
-                            item = exactMatchForum!!,
+                            item = it,
                             onClick = {
-                                navigator.navigate(Forum(exactMatchForum!!.forumName.orEmpty()))
+                                val forumName = it.forumName ?: return@SearchForumItem
+                                navigator.navigate(route = Forum(forumName, it.avatar))
                             }
                         )
                     }
@@ -169,7 +171,7 @@ fun SearchForumPage(
                             item = it,
                             onClick = {
                                 val forumName = it.forumName ?: return@SearchForumItem
-                                navigator.navigate(Forum(forumName))
+                                navigator.navigate(route = Forum(forumName, it.avatar))
                             }
                         )
                     }
@@ -188,11 +190,13 @@ fun SearchForumPage(
 
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun SearchForumItem(
     item: SearchForumBean.ForumInfoBean,
     onClick: () -> Unit,
 ) {
+    val forumName = item.forumName ?: item.forumNameShow.orEmpty()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -204,7 +208,10 @@ private fun SearchForumItem(
         Avatar(
             data = item.avatar,
             size = Sizes.Medium,
-            contentDescription = item.forumNameShow
+            contentDescription = forumName,
+            modifier = Modifier.localSharedBounds(
+                key = ForumAvatarSharedBoundsKey(forumName = forumName, extraKey = null)
+            )
         )
         Column(
             modifier = Modifier
@@ -212,7 +219,10 @@ private fun SearchForumItem(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = stringResource(id = R.string.title_forum, item.forumNameShow.orEmpty()),
+                text = stringResource(id = R.string.title_forum, forumName),
+                modifier = Modifier.localSharedBounds(
+                    key = ForumTitleSharedBoundsKey(forumName = forumName, extraKey = null)
+                ),
                 style = MaterialTheme.typography.subtitle1
             )
             if (!item.intro.isNullOrEmpty()) {

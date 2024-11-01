@@ -114,7 +114,9 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             deepLinks = listOf(navDeepLink<Destination.Forum>(basePath = "tblite://forum"))
         ) { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.Forum>()
-            ForumPage(params.forumName, navController)
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                ForumPage(params.forumName, params.avatar, params.transitionKey, navController)
+            }
         }
 
         composable<Destination.ForumDetail>(

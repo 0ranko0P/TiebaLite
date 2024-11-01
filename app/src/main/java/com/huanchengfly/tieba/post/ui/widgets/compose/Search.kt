@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -149,12 +150,13 @@ fun MainPostCard(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SearchThreadItem(
     item: SearchThreadBean.ThreadInfoBean,
     onClick: (SearchThreadBean.ThreadInfoBean) -> Unit,
     onUserClick: (SearchThreadBean.UserInfoBean) -> Unit,
-    onForumClick: (SearchThreadBean.ForumInfo) -> Unit,
+    onForumClick: (SearchThreadBean.ForumInfo, transitionKey: String) -> Unit,
     modifier: Modifier = Modifier,
     onQuotePostClick: (SearchThreadBean.PostInfo) -> Unit = {},
     onMainPostClick: (SearchThreadBean.MainPost) -> Unit = {},
@@ -218,10 +220,11 @@ fun SearchThreadItem(
             }
             if (!hideForum && item.forumName.isNotEmpty()) {
                 ForumInfoChip(
-                    imageUriProvider = { item.forumInfo.avatar },
-                    nameProvider = { item.forumName }
+                    forumName = item.forumName,
+                    avatarUrl = item.forumInfo.avatar,
+                    transitionKey = item.pid
                 ) {
-                    onForumClick(item.forumInfo)
+                    onForumClick(item.forumInfo, item.pid)
                 }
             }
         },

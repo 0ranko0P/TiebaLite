@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -68,6 +69,7 @@ import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumSearchPost
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -81,6 +83,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -94,9 +98,11 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import kotlin.math.max
 import kotlin.math.min
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ForumHeader(
     forumInfoImmutableHolder: ImmutableHolder<ForumInfo>,
+    transitionKey: String?,
     onOpenForumInfo: () -> Unit,
     onFollow: () -> Unit,
     onSignIn: () -> Unit,
@@ -115,14 +121,18 @@ private fun ForumHeader(
                 data = forum.avatar,
                 size = Sizes.Large,
                 contentDescription = forum.name,
-                modifier = Modifier.clickable(onClick = onOpenForumInfo)
+                modifier = Modifier
+                    .localSharedBounds(key = ForumAvatarSharedBoundsKey(forum.name, transitionKey))
+                    .clickable(onClick = onOpenForumInfo)
             )
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 ForumTitleText(
-                    modifier = Modifier.clickable(onClick = onOpenForumInfo),
+                    modifier = Modifier
+                        .localSharedBounds(key = ForumTitleSharedBoundsKey(forum.name, transitionKey))
+                        .clickable(onClick = onOpenForumInfo),
                     name = forum.name
                 )
                 AnimatedVisibility(visible = forum.is_like == 1) {
@@ -133,7 +143,7 @@ private fun ForumHeader(
                                 min(1F, forum.cur_score * 1.0F / (max(1.0F, forum.levelup_score * 1.0F)))
                             ),
                             modifier = Modifier
-                                .clip(RoundedCornerShape(100))
+                                .clip(CircleShape)
                                 .height(8.dp),
                             color = ExtendedTheme.colors.primary,
                             backgroundColor = ExtendedTheme.colors.primary.copy(alpha = 0.25f)
@@ -184,7 +194,9 @@ private fun ForumHeader(
 @Composable
 private fun ForumTitle(modifier: Modifier = Modifier, title: String?, avatar: String?) =
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxSize()
+            .clip(MaterialTheme.shapes.small),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -244,6 +256,8 @@ private fun ForumToolbar(
 @Composable
 fun ForumPage(
     forumName: String,
+    avatarUrl: String?,
+    transitionKey: String?,
     navigator: NavController,
     viewModel: ForumViewModel = pageViewModel(),
 ) {
@@ -378,12 +392,13 @@ fun ForumPage(
                 this@ForumToolbar.AnimatedVisibility(visible = collapsed) {
                     val holder: ImmutableHolder<ForumInfo>? = forumInfo
                     if (holder == null) {
-                        ForumHeaderPlaceholder(forumName)
+                        ForumHeaderPlaceholder(forumName, avatarUrl, transitionKey)
                         return@AnimatedVisibility
                     }
 
                     ForumHeader(
                         forumInfoImmutableHolder = holder,
+                        transitionKey = transitionKey,
                         onOpenForumInfo = {
                             navigator.navigateForumDetailPage(holder.get())
                         },
@@ -498,24 +513,43 @@ private fun ForumFab(@ForumFabFunction fab: String, visible: Boolean, onClick: (
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun ForumHeaderPlaceholder(forumName: String, modifier: Modifier = Modifier) {
+fun ForumHeaderPlaceholder(
+    forumName: String,
+    avatarUrl: String?,
+    transitionKey: String?,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        val avatarModifier = Modifier.localSharedBounds(
+            key = ForumAvatarSharedBoundsKey(forumName = forumName, extraKey = transitionKey)
+        )
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AvatarPlaceholder(size = Sizes.Large)
-            ForumTitleText(name = forumName)
+            if (avatarUrl != null) {
+                Avatar(data = avatarUrl, size = Sizes.Large, modifier = avatarModifier)
+            } else {
+                AvatarPlaceholder(size = Sizes.Large, modifier = avatarModifier)
+            }
+
+            ForumTitleText(
+                modifier = Modifier.localSharedBounds(ForumTitleSharedBoundsKey(forumName, transitionKey)),
+                name = forumName
+            )
+
             if (LocalAccount.current != null) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(100))
+                        .clip(CircleShape)
                         .placeholder(highlight = PlaceholderHighlight.fade())
                         .padding(horizontal = 18.dp, vertical = 6.dp)
                 ) {

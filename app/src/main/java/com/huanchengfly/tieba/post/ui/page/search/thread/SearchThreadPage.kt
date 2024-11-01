@@ -153,8 +153,8 @@ fun SearchThreadPage(
                         onUserClick = {
                             navigator.navigate(UserProfile(it.userId.toLong()))
                         },
-                        onForumClick = {
-                            navigator.navigate(Forum(it.forumName))
+                        onForumClick = { forum, transitionKey ->
+                            navigator.navigate(Forum(forum.forumName, forum.avatar, transitionKey))
                         },
                         searchKeyword = keyword
                     )

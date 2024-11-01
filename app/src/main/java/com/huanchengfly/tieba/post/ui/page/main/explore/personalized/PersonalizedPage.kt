@@ -249,7 +249,8 @@ fun PersonalizedPage(
                                             )
                                         },
                                         onClickForum = {
-                                            navigator.navigate(Forum(it.name))
+                                            val extraKey = item.item.threadId.toString()
+                                            navigator.navigate(Forum(it.name, it.avatar, extraKey))
                                         },
                                         onClickUser = {
                                             navigator.navigate(UserProfile(it.id))
