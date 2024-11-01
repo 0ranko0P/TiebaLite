@@ -1,6 +1,6 @@
 [versions]
 accompanist = "0.36.0"
-androidGradlePlugin = "8.5.0"
+agp = "8.7.0"
 hilt = "2.52"
 kotlin = "2.0.21"
 coroutines = "1.9.0"
@@ -95,8 +95,8 @@ wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire"
 junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
-android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
-android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
