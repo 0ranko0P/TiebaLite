@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page
 
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -8,6 +10,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.material.navigation.BottomSheetNavigator
 import androidx.compose.material.navigation.ModalBottomSheetLayout
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
@@ -17,6 +20,8 @@ import androidx.navigation.createGraph
 import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
+import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.ForumDetailParams
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
 import com.huanchengfly.tieba.post.ui.page.dialogs.CopyTextDialogPage
@@ -42,44 +47,51 @@ import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import kotlin.reflect.typeOf
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun RootNavGraph(
     bottomSheetNavigator: BottomSheetNavigator,
     navController: NavHostController,
     startDestination: Destination = Destination.Main
 ) {
-    ModalBottomSheetLayout(bottomSheetNavigator) {
-        NavHost(
-            navController = navController,
-            graph = remember(startDestination) {
-                buildRootNavGraph(navController, startDestination)
-            },
-            enterTransition = {
-                scaleIn(
-                    animationSpec = tween(delayMillis = 35),
-                    initialScale = 1.1F
-                ) + fadeIn(
-                    animationSpec = tween(delayMillis = 35)
+    SharedTransitionLayout {
+        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+            ModalBottomSheetLayout(bottomSheetNavigator) {
+                NavHost(
+                    navController = navController,
+                    graph = remember(startDestination) {
+                        buildRootNavGraph(navController, startDestination)
+                    },
+                    enterTransition = {
+                        scaleIn(
+                            animationSpec = tween(delayMillis = 35),
+                            initialScale = 1.1F
+                        ) + fadeIn(
+                            animationSpec = tween(delayMillis = 35)
+                        )
+                    },
+                    exitTransition = { DefaultFadeOut },
+                    popEnterTransition = {
+                        scaleIn(
+                            animationSpec = tween(delayMillis = 35),
+                            initialScale = 0.9F
+                        ) + fadeIn(
+                            animationSpec = tween(delayMillis = 35)
+                        )
+                    },
+                    popExitTransition = { DefaultFadeOut },
                 )
-            },
-            exitTransition = { DefaultFadeOut },
-            popEnterTransition = {
-                scaleIn(
-                    animationSpec = tween(delayMillis = 35),
-                    initialScale = 0.9F
-                ) + fadeIn(
-                    animationSpec = tween(delayMillis = 35)
-                )
-            },
-            popExitTransition = { DefaultFadeOut },
-        )
+            }
+        }
     }
 }
 
 private fun buildRootNavGraph(navController: NavHostController, startDestination: Destination): NavGraph {
     return navController.createGraph(startDestination) {
         composable<Destination.Main> {
-            MainPage(navController)
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                MainPage(navController)
+            }
         }
 
         composable<Destination.AppTheme> {
@@ -159,7 +171,9 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
         composable<Destination.Search>(
             deepLinks = listOf(navDeepLink<Destination.Search>(basePath = "tblite://search"))
         ) {
-            SearchPage(navController)
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                SearchPage(navController)
+            }
         }
 
         composable<Destination.UserProfile> { backStackEntry ->

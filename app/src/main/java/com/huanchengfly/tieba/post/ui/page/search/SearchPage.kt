@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.search
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -69,6 +70,7 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.SearchHistory
+import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -95,6 +97,8 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
+object SearchToolbarSharedBoundsKey
+
 @Immutable
 data class SearchPageItem(
     val id: String,
@@ -106,7 +110,7 @@ data class SearchPageItem(
     val onSelectedSortTypeChange: (Int) -> Unit = {},
 )
 
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun SearchPage(
     navigator: NavController,
@@ -221,6 +225,7 @@ fun SearchPage(
     MyScaffold(
         topBar = {
             TopAppBarContainer(
+                modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
                 topBar = {
                     Box(
                         modifier = Modifier

@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.main.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
+import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
@@ -80,11 +82,13 @@ import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.theme.DarkAmoledColors
 import com.huanchengfly.tieba.post.theme.DefaultColors
+import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.search.SearchToolbarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
@@ -127,7 +131,7 @@ fun SearchBoxPreview() {
 private fun SearchBox(
     modifier: Modifier = Modifier,
     backgroundColor: Color = ExtendedTheme.colors.floorCard,
-    contentColor: Color = ExtendedTheme.colors.text,
+    contentColor: Color = LocalContentColor.current,
     onClick: () -> Unit,
 ) {
     Box(
@@ -381,7 +385,7 @@ private fun ForumItem(
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomePage(
     viewModel: HomeViewModel = pageViewModel<HomeUiIntent, HomeViewModel>(listOf(HomeUiIntent.Refresh)),
@@ -458,6 +462,7 @@ fun HomePage(
         backgroundColor = Color.Transparent,
         topBar = {
             Toolbar(
+                modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
                 title = stringResource(id = R.string.title_main),
                 navigationIcon = accountNavIconIfCompact(),
                 actions = {
