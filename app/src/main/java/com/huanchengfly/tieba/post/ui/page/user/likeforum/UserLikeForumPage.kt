@@ -96,6 +96,7 @@ fun UserLikeForumPage(
     }
 
     StateScreen(
+        modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
         isError = isError,
         isLoading = isRefreshing,
