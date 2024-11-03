@@ -30,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -347,15 +348,12 @@ fun SearchBox(
     contentColor: Color = ExtendedTheme.colors.onTopBar,
     elevation: Dp = Dp.Hairline,
 ) {
+    var launchFocused by rememberSaveable { mutableStateOf(false) }
     val isKeywordNotEmpty = remember(keyword) { keyword.isNotEmpty() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val focusManager = LocalFocusManager.current
     var isFocused by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) { // Focus & show keyboard at launch
-        focusRequester.requestFocus()
-    }
 
     Surface(
         modifier = modifier,
@@ -421,6 +419,13 @@ fun SearchBox(
                     contentDescription = stringResource(id = R.string.button_search)
                 )
             }
+        }
+    }
+
+    if (!launchFocused) { // Focus & Show keyboard at fist launch
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+            launchFocused = true
         }
     }
 
