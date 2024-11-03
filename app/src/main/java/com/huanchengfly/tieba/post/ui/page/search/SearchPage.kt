@@ -55,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -120,6 +121,8 @@ fun SearchPage(
         listOf(SearchUiIntent.Init)
     ),
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val searchHistories by viewModel.uiState.collectPartialAsState(
         prop1 = SearchUiState::searchHistories,
         initial = persistentListOf()
@@ -172,6 +175,15 @@ fun SearchPage(
     viewModel.onEvent<SearchUiEvent.KeywordChanged> {
         inputKeyword = it.keyword
         if (it.keyword.isNotBlank()) emitGlobalEventSuspend(it)
+    }
+
+    // Callback for HistoryList, SearchBox and SuggestionList
+    val onKeywordSubmit: (String) -> Unit = {
+        if (inputKeyword != it) {
+            inputKeyword = it
+        }
+        viewModel.send(SearchUiIntent.SubmitKeyword(it))
+        keyboardController?.hide()
     }
 
     val pages by remember {
@@ -238,9 +250,7 @@ fun SearchPage(
                         SearchTopBar(
                             keyword = inputKeyword,
                             onKeywordChange = { inputKeyword = it },
-                            onKeywordSubmit = {
-                                viewModel.send(SearchUiIntent.SubmitKeyword(it))
-                            },
+                            onKeywordSubmit = onKeywordSubmit,
                             onBack = {
                                 if (isKeywordEmpty) {
                                     navigator.navigateUp()
@@ -273,13 +283,7 @@ fun SearchPage(
                 }
             } else {
                 if (showSuggestions) {
-                    SearchSuggestionList(
-                        suggestions = suggestions,
-                        onItemClick = {
-                            inputKeyword = it
-                            viewModel.send(SearchUiIntent.SubmitKeyword(it))
-                        }
-                    )
+                    SearchSuggestionList(suggestions = suggestions, onItemClick = onKeywordSubmit)
                 } else {
                     Column(
                         modifier = Modifier
@@ -289,10 +293,7 @@ fun SearchPage(
                         Container {
                             SearchHistoryList(
                                 searchHistories = searchHistories,
-                                onSearchHistoryClick = {
-                                    inputKeyword = it.content
-                                    viewModel.send(SearchUiIntent.SubmitKeyword(it.content))
-                                },
+                                onSearchHistoryClick = onKeywordSubmit,
                                 expanded = expanded,
                                 onToggleExpand = { expanded = !expanded },
                                 onDelete = { viewModel.send(SearchUiIntent.DeleteSearchHistory(it.id)) },
@@ -435,7 +436,7 @@ private fun ColumnScope.SearchTabRow(
 @Composable
 private fun SearchHistoryList(
     searchHistories: ImmutableList<SearchHistory>,
-    onSearchHistoryClick: (SearchHistory) -> Unit,
+    onSearchHistoryClick: (String) -> Unit,
     expanded: Boolean = false,
     onToggleExpand: () -> Unit = {},
     onDelete: (SearchHistory) -> Unit = {},
@@ -485,7 +486,7 @@ private fun SearchHistoryList(
                         .padding(bottom = 8.dp)
                         .clip(RoundedCornerShape(100))
                         .combinedClickable(
-                            onClick = { onSearchHistoryClick(searchHistory) },
+                            onClick = { onSearchHistoryClick(searchHistory.content) },
                             onLongClick = { onDelete(searchHistory) }
                         )
                         .background(ExtendedTheme.colors.chip)
