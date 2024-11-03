@@ -302,9 +302,6 @@ fun UserPostItem(
                     name = item.get { user_name },
                     nameShow = item.get { name_show },
                     portrait = item.get { user_portrait },
-                    onClick = {
-                        onClickUser(item.get { user_id })
-                    },
                 )
             },
             content = {
