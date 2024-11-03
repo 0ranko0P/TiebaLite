@@ -78,7 +78,6 @@ import com.huanchengfly.tieba.post.ui.page.forum.detail.navigateForumDetailPage
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.GoodThreadListPage
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.NormalThreadListPage
 import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
-import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -209,7 +208,7 @@ private fun ForumTitle(modifier: Modifier = Modifier, title: String?, avatar: St
             Avatar(data = avatar, size = Sizes.Small, contentDescription = title)
         }
 
-        Text(text = stringResource(R.string.title_forum, title ?: ""))
+        Text(text = stringResource(R.string.title_forum, title ?: ""), maxLines = 1)
     }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
