@@ -165,8 +165,8 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
             UserProfile(
                 uid = user.id,
                 portrait = user.portrait,
-                name = user.nameShow,
-                userName = user.name.takeUnless { it == user.nameShow || it.length <= 1 },
+                name = user.nameShow.trim(),
+                userName = user.name.takeUnless { it == user.nameShow || it.length <= 1 }?.trim(),
                 tiebaUid = user.tieba_uid,
                 intro = user.intro.takeUnless { it.isEmpty() },
                 sex = when (user.sex) {
