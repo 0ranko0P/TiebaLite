@@ -193,7 +193,6 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
     fun saveHistory(forum: ForumInfo) = scope.launch(Dispatchers.IO) {
         HistoryUtil.saveHistory(
             History(
-                title = App.INSTANCE.getString(R.string.title_forum, forum.name),
                 timestamp = System.currentTimeMillis(),
                 avatar = forum.avatar,
                 type = HistoryUtil.TYPE_FORUM,
