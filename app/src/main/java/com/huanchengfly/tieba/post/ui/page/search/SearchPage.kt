@@ -99,6 +99,8 @@ import kotlinx.coroutines.launch
 
 object SearchToolbarSharedBoundsKey
 
+object SearchIconSharedElementKey
+
 @Immutable
 data class SearchPageItem(
     val id: String,

@@ -70,12 +70,15 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
+import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumSearchPost
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.forum.detail.navigateForumDetailPage
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.GoodThreadListPage
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.NormalThreadListPage
+import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -209,6 +212,7 @@ private fun ForumTitle(modifier: Modifier = Modifier, title: String?, avatar: St
         Text(text = stringResource(R.string.title_forum, title ?: ""))
     }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ForumToolbar(
     title: @Composable () -> Unit,
@@ -224,7 +228,8 @@ private fun ForumToolbar(
             IconButton(onClick = onSearchAction) {
                 Icon(
                     imageVector = Icons.Rounded.Search,
-                    contentDescription = stringResource(id = R.string.btn_search_in_forum)
+                    contentDescription = stringResource(id = R.string.btn_search_in_forum),
+                    modifier = Modifier.localSharedElements(SearchIconSharedElementKey)
                 )
             }
             if (menuContent == null) return@Toolbar

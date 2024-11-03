@@ -58,8 +58,10 @@ import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.collectPreferenceAsState
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.PbContentText
+import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil.buildAnnotatedStringWithUser
@@ -329,6 +331,7 @@ fun SearchMedia(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SearchBox(
     keyword: String,
@@ -411,6 +414,7 @@ fun SearchBox(
             ) {
                 Icon(
                     modifier = Modifier
+                        .localSharedElements(SearchIconSharedElementKey)
                         .clip(CircleShape)
                         .clickable { onKeywordSubmit(keyword) },
                     imageVector = Icons.Rounded.Search,
