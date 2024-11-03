@@ -101,7 +101,9 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
         composable<Destination.History>(
             deepLinks = listOf(navDeepLink<Destination.History>(basePath = "tblite://history"))
         ) {
-            HistoryPage(navController)
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                HistoryPage(navController)
+            }
         }
 
         composable<Destination.Notification>(

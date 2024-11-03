@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.history.list
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -30,16 +32,21 @@ import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.fromJson
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
 import com.huanchengfly.tieba.post.models.database.History
+import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
+import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
@@ -94,7 +101,9 @@ fun HistoryListPage(
 
     val historyClickListener: (History) -> Unit = {
         when (it.type) {
-            HistoryUtil.TYPE_FORUM -> navigator.navigate(Forum(it.data))
+            HistoryUtil.TYPE_FORUM -> {
+                navigator.navigate(route = Forum(forumName = it.data, avatar = it.avatar))
+            }
 
             HistoryUtil.TYPE_THREAD -> {
                 val extra = it.extras?.fromJson<ThreadHistoryInfoBean>()
@@ -102,7 +111,7 @@ fun HistoryListPage(
                     Thread(
                         it.data.toLong(),
                         postId = extra?.pid?.toLongOrNull() ?: 0L,
-                        seeLz = extra?.isSeeLz ?: false,
+                        seeLz = extra?.isSeeLz == true,
                         from = ThreadFrom.History
                     )
                 )
@@ -172,6 +181,49 @@ private fun TimeHintHeaderItem(@StringRes timeHint: Int, invertColor: Boolean = 
         Chip(text = stringResource(id = timeHint), invertColor = invertColor)
     }
 
+@NonRestartableComposable
+@Composable
+private fun ThreadItem(
+    modifier: Modifier = Modifier,
+    avatar: String,
+    name: String,
+    time: String,
+    title: String
+) = Column(
+    modifier = modifier,
+    verticalArrangement = Arrangement.spacedBy(8.dp)
+) {
+    UserHeader(avatar = avatar, name = name) {
+        Text(text = time, fontSize = 15.sp, color = ExtendedTheme.colors.text)
+    }
+    Text(text = title, fontSize = 15.sp)
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@NonRestartableComposable
+@Composable
+private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: String, time: String) {
+    UserHeader(
+        modifier = modifier,
+        avatar = {
+            Avatar(
+                data = avatar,
+                size = Sizes.Small,
+                modifier = Modifier.localSharedBounds(key = ForumAvatarSharedBoundsKey(forum, null)),
+                contentDescription = forum
+            )
+        },
+        name = {
+            Text(
+                text = stringResource(R.string.title_forum, forum),
+                modifier = Modifier.localSharedBounds(key = ForumTitleSharedBoundsKey(forum, null))
+            )
+        },
+    ) {
+        Text(text = time, fontSize = 15.sp)
+    }
+}
+
 @Composable
 private fun HistoryItem(
     info: History,
@@ -179,6 +231,7 @@ private fun HistoryItem(
     onClick: (History) -> Unit = {},
     onDelete: (History) -> Unit = {},
 ) {
+    val context = LocalContext.current
     val menuState = rememberMenuState()
     LongClickMenu(
         menuContent = {
@@ -189,34 +242,21 @@ private fun HistoryItem(
                 Text(text = stringResource(id = R.string.title_delete))
             }
         },
+        modifier = modifier.padding(16.dp),
         menuState = menuState,
         onClick = { onClick(info) }
     ) {
-        Column(
-            modifier = modifier
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            UserHeader(
-                avatar = info.avatar,
-                name = (if (info.type == HistoryUtil.TYPE_THREAD) info.username else info.title) ?: "",
-            ) {
-                Text(
-                    text = DateTimeUtils.getRelativeTimeString(
-                        LocalContext.current,
-                        info.timestamp
-                    ),
-                    fontSize = 15.sp,
-                    color = ExtendedTheme.colors.text,
-                )
-            }
-            if (info.type == HistoryUtil.TYPE_THREAD) {
-                Text(
-                    text = info.title,
-                    fontSize = 15.sp,
-                    color = ExtendedTheme.colors.text,
-                )
-            }
+        val timestamp = remember { DateTimeUtils.getRelativeTimeString(context, info.timestamp) }
+
+        if (info.type == HistoryUtil.TYPE_THREAD) {
+            ThreadItem(
+                avatar = info.avatar!!,
+                name = info.username.orEmpty(),
+                time = timestamp,
+                title = info.title
+            )
+        } else {
+            ForumItem(avatar = info.avatar!!, forum = info.data, time = timestamp)
         }
     }
 }
