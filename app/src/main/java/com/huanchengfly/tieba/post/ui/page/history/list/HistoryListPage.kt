@@ -190,7 +190,7 @@ private fun ThreadItem(
     time: String,
     title: String
 ) = Column(
-    modifier = modifier,
+    modifier = modifier.padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp)
 ) {
     UserHeader(avatar = avatar, name = name) {
@@ -204,7 +204,7 @@ private fun ThreadItem(
 @Composable
 private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: String, time: String) {
     UserHeader(
-        modifier = modifier,
+        modifier = modifier.padding(16.dp),
         avatar = {
             Avatar(
                 data = avatar,
@@ -242,7 +242,7 @@ private fun HistoryItem(
                 Text(text = stringResource(id = R.string.title_delete))
             }
         },
-        modifier = modifier.padding(16.dp),
+        modifier = modifier,
         menuState = menuState,
         onClick = { onClick(info) }
     ) {
