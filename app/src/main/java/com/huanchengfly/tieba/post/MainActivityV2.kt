@@ -53,6 +53,7 @@ import androidx.window.layout.WindowInfoTracker
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
@@ -175,6 +176,7 @@ class MainActivityV2 : BaseComposeActivity() {
     override fun onStart() {
         super.onStart()
         runCatching {
+            AccountUtil.getInstance().currentAccount.value ?: throw TiebaNotLoggedInException()
             val intentFilter = IntentFilter().apply {
                 addAction(NotifyJobService.ACTION_NEW_MESSAGE)
             }
