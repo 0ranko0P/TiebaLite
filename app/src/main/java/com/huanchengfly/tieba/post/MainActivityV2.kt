@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.drawable.ColorDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.compose.animation.animateColorAsState
@@ -110,7 +109,7 @@ class MainActivityV2 : BaseComposeActivity() {
 
     private val newMessageReceiver: BroadcastReceiver = NewMessageReceiver()
 
-    private var pendingIntent: Intent? by mutableStateOf(null)
+    private var pendingRoute: Destination? by mutableStateOf(null)
 
     private val notificationCountFlow: MutableSharedFlow<Int> =
         MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -147,29 +146,19 @@ class MainActivityV2 : BaseComposeActivity() {
             )
     }
 
-    // Convert to tblite Deep Links
-    private fun handelDeepLinks(intent: Intent): Boolean {
-        val uri = intent.data ?: return false
-        if (uri.scheme == "com.baidu.tieba" && uri.host == "unidispatch") {
-            when (uri.path.orEmpty().lowercase()) {
-                "/frs" -> {
-                    val forumName = uri.getQueryParameter("kw") ?: return true
-                    pendingIntent = intent.apply { data = Uri.parse("tblite://forum/$forumName") }
-                }
-
-                "/pb" -> {
-                    val threadId = uri.getQueryParameter("tid")?.toLongOrNull() ?: return true
-                    pendingIntent = intent.apply { data = Uri.parse("tblite://thread/$threadId") }
-                }
-            }
-            return true
-        } else {
-            return false
+    // Convert Deep Link intent to destination route if it's valid
+    private fun handelDeepLinks(intent: Intent): Destination? {
+        val uri = intent.data ?: return null
+        return ClipBoardLinkDetector.parseDeepLink(uri)?.let { clipBoardLink ->
+            linkToRoute(link = clipBoardLink, icon = null)
         }
     }
 
     override fun onNewIntent(intent: Intent) {
-        if (!handelDeepLinks(intent)) {
+        val route: Destination? = handelDeepLinks(intent)
+        if (route != null) {
+            pendingRoute = route
+        } else {
             super.onNewIntent(intent)
         }
     }
@@ -220,20 +209,14 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    private fun openClipBoardLink(navController: NavController, link: ClipBoardLink) {
-        when (link) {
-            is ClipBoardThreadLink -> {
-                val threadId = link.threadId.toLongOrNull()?: return
-                navController.navigate(Destination.Thread(threadId = threadId))
-            }
+    // Convert ClipBoardLink to Navigation Route
+    private fun linkToRoute(link: ClipBoardLink, icon: QuickPreviewUtil.Icon?): Destination? {
+        return when (link) {
+            is ClipBoardThreadLink -> Destination.Thread(threadId = link.threadId)
 
-            is ClipBoardForumLink -> {
-                navController.navigate(Destination.Forum(forumName = link.forumName))
-            }
+            is ClipBoardForumLink -> Destination.Forum(forumName = link.forumName, avatar = icon?.url)
 
-            else -> {
-//                launchUrl(this, link.url)
-            }
+            else -> null
         }
     }
 
@@ -257,7 +240,8 @@ class MainActivityV2 : BaseComposeActivity() {
             buttons = {
                 DialogPositiveButton(text = stringResource(id = R.string.button_open)) {
                     previewInfo?.let {
-                        openClipBoardLink(navController, it.clipBoardLink)
+                        val route = linkToRoute(it.clipBoardLink, it.icon) ?: return@let
+                        navController.navigate(route = route)
                     }
                 }
                 DialogNegativeButton(text = stringResource(id = R.string.btn_close))
@@ -357,10 +341,10 @@ class MainActivityV2 : BaseComposeActivity() {
             }
         }
 
-        pendingIntent?.let {
+        pendingRoute?.let {
             LaunchedEffect(it) {
-                navController.handleDeepLink(it)
-                pendingIntent = null
+                navController.navigate(route = it)
+                pendingRoute = null
             }
         }
     }

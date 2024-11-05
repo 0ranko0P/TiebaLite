@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.intellij.lang.annotations.RegExp
+import java.net.URLDecoder
 import java.util.regex.Pattern
 
 open class ClipBoardLink(
@@ -28,7 +29,7 @@ class ClipBoardForumLink(
 
 class ClipBoardThreadLink(
     url: String,
-    val threadId: String,
+    val threadId: Long,
 ) : ClipBoardLink(url)
 
 object ClipBoardLinkDetector : Application.ActivityLifecycleCallbacks {
@@ -74,23 +75,36 @@ object ClipBoardLinkDetector : Application.ActivityLifecycleCallbacks {
 
     private fun parseLink(url: String): ClipBoardLink? {
         val uri = Uri.parse(url)
-        if (!isTiebaDomain(uri.host)) {
-            return null
-        }
-        val path = uri.path
-        return when {
-            path.isNullOrEmpty() -> null
-            path.startsWith("/p/") -> ClipBoardThreadLink(url, path.substring(3))
-            path.equals("/f", ignoreCase = true) || path.equals("/mo/q/m", ignoreCase = true) -> {
-                val kw = uri.getQueryParameter("kw")
-                val word = uri.getQueryParameter("word")
-                val kz = uri.getQueryParameter("kz")
-                kw?.let { ClipBoardForumLink(url, it) }
-                    ?: (word?.let { ClipBoardForumLink(url, it) }
-                        ?: kz?.let { ClipBoardThreadLink(url, it) })
-            }
+        if (!isTiebaDomain(uri.host)) return null
 
-            else -> ClipBoardLink(url)
+        QuickPreviewUtil.getForumName(uri)?.let {
+            return ClipBoardForumLink(url, forumName = it)
+        }
+
+        QuickPreviewUtil.getThreadId(uri)?.let {
+            return ClipBoardThreadLink(url, threadId = it)
+        }
+
+        return null
+    }
+
+    fun parseDeepLink(uri: Uri): ClipBoardLink? {
+        return if (uri.scheme == "com.baidu.tieba" && uri.host == "unidispatch") {
+            when (uri.path.orEmpty().lowercase()) {
+                "/frs" -> {
+                    val forumName = uri.getQueryParameter("kw") ?: return null
+                    return ClipBoardForumLink("https://tieba.baidu.com/f?kw=$forumName", forumName)
+                }
+
+                "/pb" -> {
+                    val threadId = uri.getQueryParameter("tid") ?: return null
+                    return ClipBoardForumLink("https://tieba.baidu.com/p/$threadId", threadId)
+                }
+
+                else -> null
+            }
+        } else {
+            parseLink(URLDecoder.decode(uri.toString(), Charsets.UTF_8.name()))
         }
     }
 

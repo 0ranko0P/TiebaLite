@@ -144,6 +144,17 @@
                 <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
 
+            <intent-filter>
+                <data android:host="tieba.baidu.com"/>
+                <data android:scheme="http"/>
+                <data android:scheme="https"/>
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+            </intent-filter>
+
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcut_new" />
