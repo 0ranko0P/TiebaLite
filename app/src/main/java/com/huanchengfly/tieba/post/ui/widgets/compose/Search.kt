@@ -166,6 +166,10 @@ fun SearchThreadItem(
     searchKeyword: String? = null,
 ) {
     val context = LocalContext.current
+    val contentText = remember {
+        buildThreadContent(title = item.title.takeIf { item.mainPost == null } ?: "", item.content)
+    }
+
     Card(
         modifier = modifier,
         header = {
@@ -180,10 +184,7 @@ fun SearchThreadItem(
         },
         content = {
             ThreadContent(
-                title = item.title,
-                abstractText = item.content,
-                showTitle = item.mainPost == null && item.title.isNotBlank(),
-                showAbstract = item.content.isNotBlank(),
+                content = contentText,
                 maxLines = 2,
                 highlightKeywords = (searchKeyword?.split(" ") ?: emptyList()).toImmutableList(),
             )

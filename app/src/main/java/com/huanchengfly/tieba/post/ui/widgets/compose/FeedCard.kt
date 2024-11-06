@@ -52,6 +52,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -100,6 +101,7 @@ import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlin.math.max
@@ -170,44 +172,14 @@ fun Badge(
     }
 }
 
+@NonRestartableComposable
 @Composable
 fun ThreadContent(
     modifier: Modifier = Modifier,
-    title: String = "",
-    abstractText: String = "",
-    tabName: String = "",
-    showTitle: Boolean = true,
-    showAbstract: Boolean = true,
-    isGood: Boolean = false,
+    content: AnnotatedString,
     maxLines: Int = 5,
     highlightKeywords: ImmutableList<String> = persistentListOf(),
 ) {
-    val content = buildAnnotatedString {
-        if (showTitle) {
-            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                if (isGood) {
-                    withStyle(style = SpanStyle(color = ExtendedTheme.colors.primary)) {
-                        append(stringResource(id = R.string.tip_good))
-                    }
-                    append(" ")
-                }
-
-                if (tabName.isNotBlank()) {
-                    append(tabName)
-                    append(" | ")
-                }
-
-                append(title)
-            }
-        }
-        if (showTitle && showAbstract) {
-            append('\n')
-        }
-        if (showAbstract) {
-            append(abstractText.emoticonString)
-        }
-    }
-
     HighlightText(
         text = content,
         modifier = Modifier
@@ -220,6 +192,41 @@ fun ThreadContent(
         style = MaterialTheme.typography.body1,
         highlightKeywords = highlightKeywords
     )
+}
+
+fun buildThreadContent(
+    title: String,
+    abstractText: String,
+    tabName: String = "",
+    isGood: Boolean = false
+): AnnotatedString = buildAnnotatedString {
+    val theme by ThemeUtil.themeState
+    val showTitle = title.isNotBlank()
+    val showAbstract = abstractText.isNotBlank()
+
+    if (showTitle) {
+        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+            if (isGood) {
+                withStyle(style = SpanStyle(color = theme.primary)) {
+                    append(App.INSTANCE.getString(R.string.tip_good))
+                }
+                append(" ")
+            }
+
+            if (tabName.isNotBlank()) {
+                append(tabName)
+                append(" | ")
+            }
+
+            append(title)
+        }
+    }
+    if (showTitle && showAbstract) {
+        append('\n')
+    }
+    if (showAbstract) {
+        append(abstractText.emoticonString)
+    }
 }
 
 @Composable
@@ -684,12 +691,9 @@ fun FeedCard(
         },
         content = {
             ThreadContent(
-                title = item.get { title },
-                abstractText = item.get { abstractText },
-                tabName = item.get { tabName },
-                showTitle = item.get { isNoTitle != 1 && title.isNotBlank() },
-                showAbstract = item.get { abstractText.isNotBlank() },
-                isGood = item.get { isGood == 1 },
+                content = remember { with(item.get()) {
+                    buildThreadContent(title, abstractText, tabName, isGood = this.isGood == 1)
+                } }
             )
 
             ThreadMedia(
@@ -768,10 +772,9 @@ fun FeedCard(
         },
         content = {
             ThreadContent(
-                title = item.get { title },
-                abstractText = item.get { abstractText },
-                showTitle = item.get { is_ntitle != 1 && title.isNotBlank() },
-                showAbstract = item.get { abstractText.isNotBlank() },
+                content = remember { with(item.item) {
+                    buildThreadContent(title = title, abstractText = abstractText)
+                } }
             )
 
             ThreadMedia(
