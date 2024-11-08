@@ -1,65 +1,59 @@
 package com.huanchengfly.tieba.post.components
 
-import android.app.Activity
-import android.app.Application
+import android.content.ClipboardManager
+import android.content.Context
 import android.net.Uri
-import android.os.Bundle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.MainActivityV2
-import com.huanchengfly.tieba.post.activities.BaseActivity
-import com.huanchengfly.tieba.post.arch.collectIn
+import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
+import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
-import com.huanchengfly.tieba.post.utils.getClipBoardText
-import com.huanchengfly.tieba.post.utils.getClipBoardTimestamp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.launch
 import org.intellij.lang.annotations.RegExp
 import java.net.URLDecoder
 import java.util.regex.Pattern
 
-open class ClipBoardLink(
-    val url: String,
-)
+sealed class ClipBoardLink(val url: String) {
 
-class ClipBoardForumLink(
-    url: String,
-    val forumName: String,
-) : ClipBoardLink(url)
+    class Forum(url: String, val forumName: String) : ClipBoardLink(url)
 
-class ClipBoardThreadLink(
-    url: String,
-    val threadId: Long,
-) : ClipBoardLink(url)
+    class Thread(url: String, val threadId: Long) : ClipBoardLink(url)
+}
 
-object ClipBoardLinkDetector : Application.ActivityLifecycleCallbacks {
+/**
+ * 检测剪贴板中的贴吧链接.
+ *
+ * 由于Android Q 引入的隐私限制, 仅当界面拥有焦点时读取剪贴板.
+ *
+ * @see checkClipBoard
+ * @see [android.app.Activity.onWindowFocusChanged]
+ * */
+object ClipBoardLinkDetector {
+
+    private val pattern by lazy {
+        Pattern.compile(
+            @RegExp
+            "((http|https)://)(([a-zA-Z0-9._-]+\\.[a-zA-Z]{2,6})|([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}))(:[0-9]{1,4})*(/[a-zA-Z0-9&%_./-~-]*)?"
+        )
+    }
+
+    val clipBoardManager by lazy {
+        App.INSTANCE.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    }
+
     private val mutablePreviewInfoStateFlow = MutableStateFlow<QuickPreviewUtil.PreviewInfo?>(null)
     val previewInfoStateFlow
         get() = mutablePreviewInfoStateFlow.asStateFlow()
 
-    private var clipBoardHash: String? = null
-    private var lastTimestamp: Long = 0L
-    private fun updateClipBoardHashCode() {
-        clipBoardHash = getClipBoardHash()
-    }
+    private val previewTaskRunner = ControlledRunner<Unit>()
 
-    private fun getClipBoardHash(): String {
-        return "$clipBoardTimestamp"
-    }
-
-    private val clipBoard: String?
-        get() {
-            val timestamp = System.currentTimeMillis()
-            return if (timestamp - lastTimestamp >= 10 * 1000L) {
-                lastTimestamp = timestamp
-                App.INSTANCE.getClipBoardText()
-            } else {
-                null
-            }
-        }
-
-    private val clipBoardTimestamp: Long
-        get() = App.INSTANCE.getClipBoardTimestamp()
+    private var lastClipBoardHash: Int = -1
 
     private fun isTiebaDomain(host: String?): Boolean {
         return host != null && (host.equals("wapp.baidu.com", ignoreCase = true) ||
@@ -67,22 +61,16 @@ object ClipBoardLinkDetector : Application.ActivityLifecycleCallbacks {
                 host.equals("tiebac.baidu.com", ignoreCase = true))
     }
 
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-
-    override fun onActivityStarted(activity: Activity) {
-        activity.window.decorView.post { checkClipBoard(activity) }
-    }
-
     private fun parseLink(url: String): ClipBoardLink? {
         val uri = Uri.parse(url)
         if (!isTiebaDomain(uri.host)) return null
 
         QuickPreviewUtil.getForumName(uri)?.let {
-            return ClipBoardForumLink(url, forumName = it)
+            return ClipBoardLink.Forum(url, forumName = it)
         }
 
         QuickPreviewUtil.getThreadId(uri)?.let {
-            return ClipBoardThreadLink(url, threadId = it)
+            return ClipBoardLink.Thread(url, threadId = it)
         }
 
         return null
@@ -93,12 +81,12 @@ object ClipBoardLinkDetector : Application.ActivityLifecycleCallbacks {
             when (uri.path.orEmpty().lowercase()) {
                 "/frs" -> {
                     val forumName = uri.getQueryParameter("kw") ?: return null
-                    return ClipBoardForumLink("https://tieba.baidu.com/f?kw=$forumName", forumName)
+                    return ClipBoardLink.Forum("https://tieba.baidu.com/f?kw=$forumName", forumName)
                 }
 
                 "/pb" -> {
                     val threadId = uri.getQueryParameter("tid") ?: return null
-                    return ClipBoardForumLink("https://tieba.baidu.com/p/$threadId", threadId)
+                    return ClipBoardLink.Forum("https://tieba.baidu.com/p/$threadId", threadId)
                 }
 
                 else -> null
@@ -108,47 +96,37 @@ object ClipBoardLinkDetector : Application.ActivityLifecycleCallbacks {
         }
     }
 
-    override fun onActivityResumed(activity: Activity) {}
+    fun checkClipBoard(owner: LifecycleOwner, context: Context) {
+        val clipBoardText = getClipBoardText()
+        if (clipBoardText == null || lastClipBoardHash == clipBoardText.hashCode()) return
 
-    private fun checkClipBoard(activity: Activity) {
-        if (activity !is BaseActivity) return
-        if (clipBoardHash == getClipBoardHash()) {
-            mutablePreviewInfoStateFlow.value = null
-            return
-        }
-        updateClipBoardHashCode()
-        val clipBoardText = clipBoard
-        if (clipBoardText != null) {
-            @RegExp val regex =
-                "((http|https)://)(([a-zA-Z0-9._-]+\\.[a-zA-Z]{2,6})|([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}))(:[0-9]{1,4})*(/[a-zA-Z0-9&%_./-~-]*)?"
-            val pattern = Pattern.compile(regex)
-            val matcher = pattern.matcher(clipBoardText)
-            if (matcher.find()) {
-                val url = matcher.group()
-                val link = parseLink(url)
-                if (link != null) {
-                    if (activity is MainActivityV2) {
-                        activity.launch {
-                            QuickPreviewUtil.getPreviewInfoFlow(
-                                activity,
-                                link,
-                                activity.lifecycle
-                            ).collectIn(activity) {
-                                mutablePreviewInfoStateFlow.value = it
-                            }
+        owner.lifecycleScope.launch(Dispatchers.IO) {
+            previewTaskRunner.cancelPreviousThenRun {
+                val matcher = pattern.matcher(clipBoardText)
+                if (matcher.find()) {
+                    val link = parseLink(url = matcher.group()) ?: return@cancelPreviousThenRun
+                    lastClipBoardHash = clipBoardText.hashCode()
+                    QuickPreviewUtil.getPreviewInfoFlow(context, link)
+                        .catch { it.printStackTrace() }
+                        .retry(retries = 2) { err -> err !is NoConnectivityException }
+                        .collect {
+                            mutablePreviewInfoStateFlow.value = it
                         }
-                    }
+                } else {
+                    clear()
                 }
-            } else {
-                mutablePreviewInfoStateFlow.value = null
             }
-        } else {
-            mutablePreviewInfoStateFlow.value = null
         }
     }
 
-    override fun onActivityPaused(activity: Activity) {}
-    override fun onActivityStopped(activity: Activity) {}
-    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
-    override fun onActivityDestroyed(activity: Activity) {}
+    fun getClipBoardText(): String? {
+        val data = clipBoardManager.primaryClip ?: return null
+        val item = data.getItemAt(0)
+        return item?.text?.toString()
+    }
+
+    fun clear() {
+        previewTaskRunner.cancelCurrent()
+        mutablePreviewInfoStateFlow.value = null
+    }
 }

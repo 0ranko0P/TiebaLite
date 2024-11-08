@@ -4,17 +4,12 @@ import android.content.Context
 import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.flowWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.components.ClipBoardForumLink
 import com.huanchengfly.tieba.post.components.ClipBoardLink
-import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.repository.FrsPageRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.ui.page.forum.ForumViewModel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -49,15 +44,13 @@ object QuickPreviewUtil {
 
     private fun getThreadPreviewInfoFlow(
         context: Context,
-        link: ClipBoardThreadLink,
-        lifeCycle: Lifecycle? = null,
+        link: ClipBoardLink.Thread,
     ): Flow<PreviewInfo> =
         PbPageRepository
             .pbPage(link.threadId)
             .map {
                 PreviewInfo(
                     clipBoardLink = link,
-                    url = link.url,
                     title = it.data_?.thread?.title,
                     subtitle = context.getString(
                         R.string.subtitle_quick_preview_thread,
@@ -67,16 +60,10 @@ object QuickPreviewUtil {
                     icon = Icon(StringUtil.getAvatarUrl(it.data_?.thread?.author?.portrait))
                 )
             }
-            .catch { it.printStackTrace() }
-            .apply {
-                if (lifeCycle != null) {
-                    flowWithLifecycle(lifeCycle)
-                }
-            }
 
     private fun getForumPreviewInfoFlow(
         context: Context,
-        link: ClipBoardForumLink
+        link: ClipBoardLink.Forum
     ): Flow<PreviewInfo> =
         ForumViewModel.getSortType(context, link.forumName)
             .map { sortType ->
@@ -84,40 +71,32 @@ object QuickPreviewUtil {
                 val data = requireNotNull(response.data_)
                 PreviewInfo(
                     clipBoardLink = link,
-                    url = link.url,
                     title = context.getString(R.string.title_forum, link.forumName),
                     subtitle = data.forum?.slogan,
-                    icon = Icon(data.forum?.avatar)
+                    icon = data.forum?.avatar?.let { Icon(it) }
                 )
             }
 
-    fun getPreviewInfoFlow(
-        context: Context,
-        clipBoardLink: ClipBoardLink,
-        lifeCycle: Lifecycle? = null,
-    ): Flow<PreviewInfo?> {
+    fun getPreviewInfoFlow(context: Context, clipBoardLink: ClipBoardLink): Flow<PreviewInfo?> {
         val detailFlow = when (clipBoardLink) {
-            is ClipBoardForumLink -> getForumPreviewInfoFlow(context, clipBoardLink)
-            is ClipBoardThreadLink -> getThreadPreviewInfoFlow(context, clipBoardLink, lifeCycle)
-            else -> null
+            is ClipBoardLink.Forum -> getForumPreviewInfoFlow(context, clipBoardLink)
+            is ClipBoardLink.Thread -> getThreadPreviewInfoFlow(context, clipBoardLink)
+            else -> throw RuntimeException("Not implement")
         }
         val flow = flowOf(
             PreviewInfo(
                 clipBoardLink = clipBoardLink,
-                url = clipBoardLink.url,
                 title = clipBoardLink.url,
                 subtitle = context.getString(R.string.subtitle_link),
                 icon = Icon(R.drawable.ic_link)
             )
         )
-        return listOfNotNull(flow, detailFlow).merge()
-            .apply { if (lifeCycle != null) flowWithLifecycle(lifeCycle) }
+        return merge(flow, detailFlow)
     }
 
     @Immutable
     data class PreviewInfo(
         val clipBoardLink: ClipBoardLink,
-        val url: String? = null,
         val title: String? = null,
         val subtitle: String? = null,
         val icon: Icon? = null,

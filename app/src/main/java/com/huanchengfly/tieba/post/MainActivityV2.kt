@@ -37,7 +37,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -58,10 +57,8 @@ import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.components.ClipBoardForumLink
 import com.huanchengfly.tieba.post.components.ClipBoardLink
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
-import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -211,12 +208,19 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        // Due to the privacy changes in Android 10, check Clipboard only when focused
+        if (hasFocus) {
+            ClipBoardLinkDetector.checkClipBoard(owner = this, context = this)
+        }
+    }
+
     // Convert ClipBoardLink to Navigation Route
     private fun linkToRoute(link: ClipBoardLink, icon: QuickPreviewUtil.Icon?): Destination? {
         return when (link) {
-            is ClipBoardThreadLink -> Destination.Thread(threadId = link.threadId)
+            is ClipBoardLink.Thread -> Destination.Thread(threadId = link.threadId)
 
-            is ClipBoardForumLink -> Destination.Forum(forumName = link.forumName, avatar = icon?.url)
+            is ClipBoardLink.Forum -> Destination.Forum(forumName = link.forumName, avatar = icon?.url)
 
             else -> null
         }
@@ -236,9 +240,11 @@ class MainActivityV2 : BaseComposeActivity() {
 
         Dialog(
             dialogState = dialogState,
+            onDismiss = { ClipBoardLinkDetector.clear() },
             title = {
                 Text(text = stringResource(id = R.string.title_dialog_clip_board_tieba_url))
             },
+            cancelableOnTouchOutside = false,
             buttons = {
                 DialogPositiveButton(text = stringResource(id = R.string.button_open)) {
                     previewInfo?.let {
@@ -258,23 +264,14 @@ class MainActivityV2 : BaseComposeActivity() {
                     shape = RoundedCornerShape(6.dp)
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.padding(16.dp)
                     ) {
                         it.icon?.let { icon ->
                             if (icon.type == QuickPreviewUtil.Icon.TYPE_DRAWABLE_RES) {
-                                AvatarIcon(
-                                    resId = icon.res,
-                                    size = Sizes.Medium,
-                                    contentDescription = null
-                                )
+                                AvatarIcon(resId = icon.res, size = Sizes.Medium)
                             } else {
-                                Avatar(
-                                    data = icon.url,
-                                    size = Sizes.Medium,
-                                    contentDescription = null
-                                )
+                                Avatar(data = icon.url, size = Sizes.Medium)
                             }
                         }
                         Column(
