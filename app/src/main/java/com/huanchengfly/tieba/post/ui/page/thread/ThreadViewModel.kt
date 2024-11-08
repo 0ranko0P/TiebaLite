@@ -31,6 +31,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
@@ -572,10 +573,11 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
         TiebaUtil.shareText(App.INSTANCE, "https://tieba.baidu.com/p/$threadId", title)
     }
 
-    fun onCopyThreadLink() = TiebaUtil.copyText(
-        context = App.INSTANCE,
-        text = "https://tieba.baidu.com/p/$threadId?see_lz=${seeLz.booleanToString()}"
-    )
+    fun onCopyThreadLink() {
+        val link = "https://tieba.baidu.com/p/$threadId?see_lz=${seeLz.booleanToString()}"
+        TiebaUtil.copyText(context = App.INSTANCE, text = link)
+        ClipBoardLinkDetector.onCopyTiebaLink(link)
+    }
 
     fun onReportThread(navigator: NavController) = viewModelScope.launch {
         TiebaUtil.reportPost(App.INSTANCE, navigator, firstPostId.toString())

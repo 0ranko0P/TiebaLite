@@ -119,6 +119,11 @@ object ClipBoardLinkDetector {
         }
     }
 
+    fun onCopyTiebaLink(link: String) {
+        clear()
+        lastClipBoardHash = link.hashCode()
+    }
+
     fun getClipBoardText(): String? {
         val data = clipBoardManager.primaryClip ?: return null
         val item = data.getItemAt(0)
