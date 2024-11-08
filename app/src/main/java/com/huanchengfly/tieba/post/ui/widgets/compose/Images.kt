@@ -35,6 +35,7 @@ import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion.EXTRA_PHOTO_VIEW_DATA
@@ -108,6 +109,10 @@ fun NetworkImage(
                     onTap = {
                         // Launch PhotoViewActivity now, ignore image load settings
                         photoViewData?.let { photos ->
+                            // bug from caller
+                            if (photos.data != null && photos.data.forumName.isEmpty()) {
+                                context.toastShort(R.string.title_unknown_error); return@let
+                            }
                             context.goToActivity<PhotoViewActivity> { putExtra(EXTRA_PHOTO_VIEW_DATA, photos) }
                         }
                     }
