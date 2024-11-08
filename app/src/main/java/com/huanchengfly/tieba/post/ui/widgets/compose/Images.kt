@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -89,10 +88,10 @@ fun NetworkImage(
     imageUri: String,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    photoViewData: PhotoViewData? = null,
     contentScale: ContentScale = ContentScale.Fit,
     skipNetworkCheck: Boolean = false,
     enablePreview: Boolean = false,
+    photoViewDataProvider: (() -> PhotoViewData?)? = null,
 ) {
     val context = LocalContext.current
     var isLongPressing by remember { mutableStateOf(false) }
@@ -108,12 +107,14 @@ fun NetworkImage(
                     },
                     onTap = {
                         // Launch PhotoViewActivity now, ignore image load settings
-                        photoViewData?.let { photos ->
-                            // bug from caller
-                            if (photos.data != null && photos.data.forumName.isEmpty()) {
-                                context.toastShort(R.string.title_unknown_error); return@let
+                        val photos = photoViewDataProvider?.invoke() ?: return@detectTapGestures
+                        // bug from caller
+                        if (photos.data != null && photos.data.forumName.isEmpty()) {
+                            context.toastShort(R.string.title_unknown_error)
+                        } else {
+                            context.goToActivity<PhotoViewActivity> {
+                                putExtra(EXTRA_PHOTO_VIEW_DATA, photos)
                             }
-                            context.goToActivity<PhotoViewActivity> { putExtra(EXTRA_PHOTO_VIEW_DATA, photos) }
                         }
                     }
                 )
@@ -150,32 +151,8 @@ fun NetworkImage(
             PreviewImage(
                 modifier = Modifier.alpha(previewAlpha),
                 imageUri = imageUri,
-                originImageUri = photoViewData?.data?.originUrl
+                originImageUri = photoViewDataProvider?.invoke()?.data?.originUrl
             )
         }
     }
-}
-
-@Composable
-fun NetworkImage(
-    imageUriProvider: () -> String,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    photoViewDataProvider: (() -> PhotoViewData)? = null,
-    contentScale: ContentScale = ContentScale.Fit,
-    skipNetworkCheck: Boolean = false,
-    enablePreview: Boolean = false,
-) {
-    val imageUri by rememberUpdatedState(newValue = imageUriProvider())
-    val photoViewData by rememberUpdatedState(newValue = photoViewDataProvider?.invoke())
-
-    NetworkImage(
-        imageUri = imageUri,
-        contentDescription = contentDescription,
-        modifier = modifier,
-        photoViewData = photoViewData,
-        contentScale = contentScale,
-        skipNetworkCheck = skipNetworkCheck,
-        enablePreview = enablePreview
-    )
 }

@@ -154,8 +154,8 @@ data class PicContentRender(
                 .clip(RoundedCornerShape(8.dp))
                 .fillMaxWidth(widthFraction)
                 .aspectRatio(width * 1f / height),
-            photoViewData = photoViewData,
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            photoViewDataProvider = { photoViewData },
         )
     }
 

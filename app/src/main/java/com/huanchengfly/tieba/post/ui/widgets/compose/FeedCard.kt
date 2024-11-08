@@ -439,17 +439,6 @@ private fun ThreadMedia(
                     if (isSinglePhoto) 2f else 3f
                 }
                 if (hideMedia) {
-                    val photoViewData = remember(
-                        medias, forumId, forumName, threadId
-                    ) {
-                        getPhotoViewData(
-                            medias = medias.map { it.get() },
-                            forumId = forumId,
-                            forumName = forumName,
-                            threadId = threadId,
-                            index = 0
-                        )
-                    }
                     MediaPlaceholder(
                         icon = {
                             Icon(
@@ -465,7 +454,13 @@ private fun ThreadMedia(
                             context.goToActivity<PhotoViewActivity> {
                                 putExtra(
                                     PhotoViewActivity.EXTRA_PHOTO_VIEW_DATA,
-                                    photoViewData
+                                    getPhotoViewData(
+                                        medias = medias.map { it.get() },
+                                        forumId = forumId,
+                                        forumName = forumName,
+                                        threadId = threadId,
+                                        index = 0
+                                    )
                                 )
                             }
                         }
@@ -483,26 +478,23 @@ private fun ThreadMedia(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             showMedias.fastForEachIndexed { index, media ->
-                                val photoViewData = remember(
-                                    index, medias, forumId, forumName, threadId
-                                ) {
-                                    getPhotoViewData(
-                                        medias = medias.map { it.get() },
-                                        forumId = forumId,
-                                        forumName = forumName,
-                                        threadId = threadId,
-                                        index = index
-                                    )
-                                }
                                 NetworkImage(
                                     imageUri = remember(media) { media.url },
                                     contentDescription = null,
                                     modifier = Modifier
                                         .fillMaxHeight()
                                         .weight(1f),
-                                    photoViewData = photoViewData,
                                     contentScale = ContentScale.Crop,
-                                    enablePreview = true
+                                    enablePreview = true,
+                                    photoViewDataProvider = {
+                                        getPhotoViewData(
+                                            medias = medias.map { it.get() },
+                                            forumId = forumId,
+                                            forumName = forumName,
+                                            threadId = threadId,
+                                            index = index
+                                        )
+                                    },
                                 )
                             }
                         }
