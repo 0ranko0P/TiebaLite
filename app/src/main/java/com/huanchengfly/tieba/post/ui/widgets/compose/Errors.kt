@@ -218,7 +218,7 @@ private fun toKnownErrorType(context: Context, err: Throwable?): ErrorType? {
 
         is TiebaNotLoggedInException -> ErrorType(
             title = R.string.title_not_logged_in,
-            message = context.getString(R.string.message_unknown_error),
+            message = context.getString(R.string.message_not_logged_in),
             lottieResId = R.raw.lottie_astronaut
         )
 
