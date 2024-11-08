@@ -121,11 +121,6 @@
 # OkHttp platform used only on JVM and when Conscrypt dependency is available.
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
 
--keep class cn.jzvd.*{*;}
-
--keep class com.gyf.immersionbar.* {*;}
--dontwarn com.gyf.immersionbar.**
-
 -keep class com.huanchengfly.tieba.post.models.** { *; }
 -keep class com.huanchengfly.tieba.post.api.models.** { *; }
 
@@ -150,13 +145,6 @@
 -keep class * implements com.google.gson.JsonDeserializer {
     *;
 }
-
-# Matisse
--dontwarn com.squareup.picasso.**
--dontwarn com.zhihu.matisse.**
--keep class com.zhihu.matisse.**{*;}
-
--keep class com.lijiankun24.** { *; }
 
 # uCrop
 -dontwarn com.yalantis.ucrop**
@@ -223,34 +211,10 @@
 # @Serializable and @Polymorphic are used at runtime for polymorphic serialization.
 -keepattributes RuntimeVisibleAnnotations,AnnotationDefault
 
-# Serializer for classes with named companion objects are retrieved using `getDeclaredClasses`.
-# If you have any, uncomment and replace classes with those containing named companion objects.
-#-keepattributes InnerClasses # Needed for `getDeclaredClasses`.
-#-if @kotlinx.serialization.Serializable class
-#com.example.myapplication.HasNamedCompanion, # <-- List serializable classes with named companions.
-#com.example.myapplication.HasNamedCompanion2
-#{
-#    static **$* *;
-#}
-#-keepnames class <1>$$serializer { # -keepnames suffices; class is kept when serializer() is kept.
-#    static <1>$$serializer INSTANCE;
-#}
-
--dontwarn org.bouncycastle.jsse.BCSSLParameters
--dontwarn org.bouncycastle.jsse.BCSSLSocket
--dontwarn org.bouncycastle.jsse.provider.BouncyCastleJsseProvider
--dontwarn org.conscrypt.Conscrypt$Version
--dontwarn org.conscrypt.Conscrypt
--dontwarn org.conscrypt.ConscryptHostnameVerifier
--dontwarn org.openjsse.javax.net.ssl.SSLParameters
--dontwarn org.openjsse.javax.net.ssl.SSLSocket
--dontwarn org.openjsse.net.ssl.OpenJSSE
-
 # Compose Runtime Tracing
 -assumenosideeffects public class androidx.compose.runtime.ComposerKt {
    boolean isTraceInProgress();
    void traceEventStart(int,int,int,java.lang.String);
-   void traceEventStart(int,java.lang.String);
    void traceEventEnd();
 }
 
@@ -264,6 +228,8 @@
 -keep,allowobfuscation,allowshrinking class com.huanchengfly.tieba.post.api.retrofit.ApiResult
 -keep,allowobfuscation,allowshrinking class * extends com.huanchengfly.tieba.post.api.retrofit.ApiResult
 
+-keep public class * extends com.huanchengfly.tieba.post.ui.page.Destination
+
 -keep,allowobfuscation,allowshrinking interface retrofit2.Call
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
  -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
@@ -271,9 +237,6 @@
 # Retain generic signatures of TypeToken and its subclasses with R8 version 3.0 and higher.
 -keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
 -keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
-
--keep,allowobfuscation,allowshrinking class com.billy.android.preloader.** { *; }
--keep,allowobfuscation,allowshrinking class com.huanchengfly.tieba.post.utils.preload.** { *; }
 
 -if interface * { @retrofit2.http.* <methods>; }
 -keep,allowobfuscation interface <1>
