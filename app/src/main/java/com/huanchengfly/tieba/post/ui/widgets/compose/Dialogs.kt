@@ -16,7 +16,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
@@ -446,7 +445,8 @@ fun Dialog(
                         bottom.linkTo(parent.bottom)
                         top.linkTo(titleRef.bottom)
                         width = Dimension.fillToConstraints
-                    }
+                    },
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 buttons()
             }
