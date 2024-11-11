@@ -148,14 +148,13 @@ private fun Content(
             disabledBackgroundColor = accentColorAnim
         )
 
-        // Wallpaper picker button
-        Box(
-            modifier = maxWidth
-                .height(40.dp)
-                .background(MaterialTheme.colors.secondary, RoundedCornerShape(10.dp))
-                .clickable(onClick = onSelectWallpaper)
+        TextButton(
+            onClick = onSelectWallpaper,
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            colors = buttonColor
         ) {
-            Text(stringResource(R.string.title_select_pic), Modifier.align(Alignment.Center))
+            Text(stringResource(R.string.title_select_pic), color = LocalContentColor.current, fontWeight = FontWeight.Bold)
         }
         Spacer(maxWidth.height(12.dp))
 
@@ -400,7 +399,8 @@ private fun ColorPanel(list: List<Color>, selected: Color, onSelect: (Color) -> 
         }
         items(list, key = { item: Color -> item.value.toString() }) {
             ColorBox(
-                modifier = Modifier.clickable { onSelect(it) },
+                modifier = Modifier
+                    .clickable(interactionSource = null, indication = null) { onSelect(it) },
                 color = it,
                 selected = it.value == selected.value
             )
