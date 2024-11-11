@@ -108,10 +108,7 @@ class TranslucentThemeActivity : AppCompatActivity(), RequestListener<Drawable> 
                     topBar = actionBar
                 ) { paddingValues ->
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
-                            .verticalScroll(rememberScrollState()),
+                        modifier = Modifier.padding(paddingValues)
                     ) {
                         SideBySideWallpaper(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
@@ -121,7 +118,10 @@ class TranslucentThemeActivity : AppCompatActivity(), RequestListener<Drawable> 
                         )
 
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1.0f)
+                                .verticalScroll(rememberScrollState()),
                             color = ExtendedTheme.colors.bottomBar,
                             contentColor = ExtendedTheme.colors.text,
                             elevation = 8.dp
