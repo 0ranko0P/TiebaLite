@@ -14,6 +14,8 @@ import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material.icons.rounded.UnfoldLess
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -48,19 +50,7 @@ fun HabitSettingsPage(onBack: () -> Unit) = MyScaffold(
         contentPadding = paddingValues
     ) {
         prefsItem {
-            ListPref(
-                key = intPreferencesKey(ImageUtil.KEY_IMAGE_LOAD_TYPE),
-                title = R.string.title_settings_image_load_type,
-                options = persistentMapOf(
-                    ImageUtil.SETTINGS_SMART_ORIGIN to R.string.title_image_load_type_smart_origin,
-                    ImageUtil.SETTINGS_SMART_LOAD to R.string.title_image_load_type_smart_load,
-                    ImageUtil.SETTINGS_ALL_ORIGIN to R.string.title_image_load_type_all_origin,
-                    ImageUtil.SETTINGS_ALL_NO to R.string.title_image_load_type_all_no
-                ),
-                useSelectedAsSummary = true,
-                defaultValue = ImageUtil.SETTINGS_SMART_ORIGIN,
-                leadingIcon = Icons.Outlined.PhotoSizeSelectActual
-            )
+            ImageLoadPreference()
         }
         prefsItem {
             ListPref(
@@ -121,14 +111,7 @@ fun HabitSettingsPage(onBack: () -> Unit) = MyScaffold(
             )
         }
         prefsItem {
-            SwitchPref(
-                key = AppPreferencesUtils.KEY_COLLECTED_SEE_LZ,
-                title = R.string.settings_collect_thread_see_lz,
-                defaultChecked = true,
-                leadingIcon = Icons.Outlined.StarOutline,
-                summaryOn = R.string.tip_collect_thread_see_lz_on,
-                summaryOff = R.string.tip_collect_thread_see_lz
-            )
+            CollectSeeLzPreference()
         }
         prefsItem {
             SwitchPref(
@@ -165,12 +148,69 @@ fun HabitSettingsPage(onBack: () -> Unit) = MyScaffold(
             )
         }
         prefsItem {
-            SwitchPref(
-                key = AppPreferencesUtils.KEY_REPLY_HIDE,
-                title = R.string.title_hide_reply,
-                defaultChecked = false,
-                leadingIcon = Icons.Outlined.SpeakerNotesOff
-            )
+            HideReplyPreference()
         }
     }
+}
+
+@NonRestartableComposable
+@Composable
+fun ImageLoadPreference(modifier: Modifier = Modifier) {
+    ListPref(
+        key = intPreferencesKey(ImageUtil.KEY_IMAGE_LOAD_TYPE),
+        title = R.string.title_settings_image_load_type,
+        modifier = modifier,
+        options = persistentMapOf(
+            ImageUtil.SETTINGS_SMART_ORIGIN to R.string.title_image_load_type_smart_origin,
+            ImageUtil.SETTINGS_SMART_LOAD to R.string.title_image_load_type_smart_load,
+            ImageUtil.SETTINGS_ALL_ORIGIN to R.string.title_image_load_type_all_origin,
+            ImageUtil.SETTINGS_ALL_NO to R.string.title_image_load_type_all_no
+        ),
+        useSelectedAsSummary = true,
+        defaultValue = ImageUtil.SETTINGS_SMART_ORIGIN,
+        leadingIcon = Icons.Outlined.PhotoSizeSelectActual
+    )
+}
+
+@NonRestartableComposable
+@Composable
+fun DefaultSortPreference(modifier: Modifier = Modifier) {
+    ListPref(
+        key = intPreferencesKey(KEY_FORUM_SORT_DEFAULT),
+        title = R.string.title_settings_default_sort_type,
+        modifier = modifier,
+        options = persistentMapOf(
+            ForumSortType.BY_REPLY to R.string.title_sort_by_reply,
+            ForumSortType.BY_SEND to R.string.title_sort_by_send,
+        ),
+        useSelectedAsSummary = true,
+        defaultValue = ForumSortType.BY_REPLY,
+        leadingIcon = Icons.Outlined.CalendarViewDay
+    )
+}
+
+@NonRestartableComposable
+@Composable
+fun CollectSeeLzPreference(modifier: Modifier = Modifier) {
+    SwitchPref(
+        key = AppPreferencesUtils.KEY_COLLECTED_SEE_LZ,
+        title = R.string.settings_collect_thread_see_lz,
+        modifier = modifier,
+        defaultChecked = true,
+        leadingIcon = Icons.Outlined.StarOutline,
+        summaryOn = R.string.tip_collect_thread_see_lz_on,
+        summaryOff = R.string.tip_collect_thread_see_lz
+    )
+}
+
+@NonRestartableComposable
+@Composable
+fun HideReplyPreference(modifier: Modifier = Modifier) {
+    SwitchPref(
+        key = AppPreferencesUtils.KEY_REPLY_HIDE,
+        title = R.string.title_hide_reply,
+        modifier = modifier,
+        defaultChecked = false,
+        leadingIcon = Icons.Outlined.SpeakerNotesOff
+    )
 }

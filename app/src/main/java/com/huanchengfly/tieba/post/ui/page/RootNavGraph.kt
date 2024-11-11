@@ -12,6 +12,7 @@ import androidx.compose.material.navigation.ModalBottomSheetLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -45,6 +46,7 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadPage
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStorePage
 import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
+import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
 import kotlin.reflect.typeOf
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -169,7 +171,15 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
         }
 
         composable<Destination.Login> {
-            LoginPage(navController)
+            LoginPage(navController) {
+                if (navController.isLastOrEmptyRoute()) {
+                    navController.navigate(Destination.Main) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                } else {
+                    navController.navigateUp()
+                }
+            }
         }
 
         composable<Destination.Search>(
@@ -205,9 +215,15 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             val params = backStackEntry.toRoute<Destination.Reply>()
             ReplyPage(params, navController::navigateUp)
         }
+
+        composable<Destination.Welcome> {
+            WelcomeScreen(navController)
+        }
     }
 }
 
 val DefaultFadeOut: ExitTransition by lazy {
     fadeOut(animationSpec = tween(100))
 }
+
+private fun NavController.isLastOrEmptyRoute(): Boolean = visibleEntries.value.size <= 1

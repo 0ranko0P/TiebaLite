@@ -96,6 +96,9 @@ sealed interface Destination {
     data class WebView(val initialUrl: String): Destination
 
     @Serializable
+    object Welcome: Destination
+
+    @Serializable
     data object Settings: Destination
 
     companion object {

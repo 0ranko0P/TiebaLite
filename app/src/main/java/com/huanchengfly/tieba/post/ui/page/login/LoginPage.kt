@@ -41,7 +41,6 @@ import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebChromeClient
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebViewClient
 import com.huanchengfly.tieba.post.ui.page.webview.isInternalHost
@@ -74,7 +73,7 @@ const val LOGIN_URL =
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun LoginPage(navigator: NavController = LocalNavController.current) {
+fun LoginPage(navigator: NavController, onBack: () -> Unit) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val webViewState = rememberSaveableWebViewState()
@@ -155,7 +154,7 @@ fun LoginPage(navigator: NavController = LocalNavController.current) {
                         }
                     }
                 },
-                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) },
+                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
                 actions = {
                     val menuState = rememberMenuState()
                     ClickMenu(
@@ -207,7 +206,8 @@ fun LoginPage(navigator: NavController = LocalNavController.current) {
                     LoginWebViewClient(
                         navigator,
                         coroutineScope,
-                        snackbarHostState
+                        snackbarHostState,
+                        onBack
                     )
                 },
                 chromeClient = remember { MyWebChromeClient(context, coroutineScope) }
@@ -227,6 +227,7 @@ private class LoginWebViewClient(
     nativeNavigator: NavController? = null,
     val coroutineScope: CoroutineScope,
     val snackbarHostState: SnackbarHostState,
+    val onLoggedIn: () -> Unit
 ) : MyWebViewClient(nativeNavigator) {
     private var isLoadingAccount = false
 
@@ -285,7 +286,7 @@ private class LoginWebViewClient(
                                 duration = SnackbarDuration.Short
                             )
                             delay(1500L)
-                            nativeNavigator?.navigateUp()
+                            onLoggedIn()
                         } else {
                             snackbarHostState.currentSnackbarData?.dismiss()
                             snackbarHostState.showSnackbar(

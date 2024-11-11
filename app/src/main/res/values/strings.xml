@@ -152,6 +152,8 @@
     <string name="button_submit_dislike">不感兴趣</string>
     <string name="title_dislike">不喜欢推荐用户的理由</string>
     <string name="tip_refresh">上次阅读到此处，点击刷新</string>
+    <string name="button_next">继续</string>
+    <string name="button_previous">上一步</string>
     <string name="button_finish">完成</string>
     <string name="tip_primary_color">主题色</string>
     <string name="title_custom_theme">设置自定义主题</string>
@@ -180,6 +182,7 @@
 
     <string name="title_share_pic">分享图片</string>
     <string name="tip_permission_storage_download">用于下载文件</string>
+    <string name="tip_permission_phone">获取您的 IMEI 以用于请求百度 API</string>
     <string name="title_show_both_username_and_nickname">同时显示用户名和昵称</string>
     <string name="title_dialog_clip_board_tieba_url">是否要打开剪贴板中的链接</string>
     <string name="subtitle_quick_preview_thread">来自%1$s吧，共 %2$s 条回复</string>
@@ -243,6 +246,8 @@
     <string name="btn_post">发贴</string>
     <string name="btn_refresh">刷新</string>
     <string name="btn_back_to_top">回到顶部</string>
+    <string name="title_disclaimer">免责声明</string>
+    <string name="message_disclaimer">本软件仅供交流学习使用，严禁用于商业用途，请于下载后 24 小时内删除。</string>
     <string name="message_find_tip">您可能在找</string>
     <string name="summary_night_mode_always">始终使用夜间主题</string>
     <string name="summary_night_mode_disabled">始终使用日间主题</string>
@@ -387,7 +392,8 @@
     <string name="user">用户</string>
     <string name="title_empty">这里什么都没有</string>
     <string name="home_empty_login">请登录之后查看你的关注。\n或者你也可以先去逛逛发现？</string>
-    <string name="button_login">去登录</string>
+    <string name="button_login">登录</string>
+    <string name="button_no_login">以游客身份浏览</string>
     <string name="button_go_to_explore">随便看看</string>
     <string name="title_empty_login">你还未登录</string>
     <string name="no_internet_connectivity">无互联网连接</string>
@@ -502,4 +508,14 @@
     <string name="desc_show">显示</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
     <string name="brightness">亮度</string>
+    <string name="welcome_intro">欢迎使用贴吧 Lite</string>
+    <string name="welcome_intro_subtitle">极简的贴吧第三方客户端</string>
+    <string name="welcome_permission">权限申请</string>
+    <string name="welcome_permission_done">所有权限已授予</string>
+    <string name="welcome_permission_subtitle">我们需要申请一些权限</string>
+    <string name="welcome_habit">使用习惯设置</string>
+    <string name="welcome_habit_subtitle">在这里配置你的习惯</string>
+    <string name="welcome_custom_subtitle">个性化你的贴吧 Lite</string>
+    <string name="welcome_completed">一切就绪！</string>
+    <string name="welcome_completed_subtitle">接下来，登录您的百度账号，然后开始使用吧</string>
 </resources>

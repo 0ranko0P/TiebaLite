@@ -86,6 +86,8 @@ class AppPreferencesUtils private constructor(context: Context) {
         const val KEY_OKSIGN_SLOW = "sign_slow_mode"
         const val KEY_OKSIGN_OFFICIAL = "sign_using_official"
 
+        const val KEY_SETUP_FINISHED = "ui_setup"
+
         /***        END OF BOOLEAN OPTIONS      ***/
 
         const val KEY_OKSIGN_LAST_TIME = "sign_day"
@@ -185,6 +187,9 @@ class AppPreferencesUtils private constructor(context: Context) {
 
     val useWebView: Boolean
         get() = dataStore.getBoolean(KEY_USE_WEB_VIEW, true)
+
+    val setupFinished: Boolean
+        get() = dataStore.getBoolean(KEY_SETUP_FINISHED, false)
 }
 
 val Context.appPreferences: AppPreferencesUtils

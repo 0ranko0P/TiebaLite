@@ -296,6 +296,7 @@ class MainActivityV2 : BaseComposeActivity() {
         val okSignAlertDialogState = rememberDialogState()
         val bottomSheetNavigator = rememberBottomSheetNavigator()
         val navController = rememberNavController(bottomSheetNavigator)
+        val entryRoute = if (appPreferences.setupFinished) Destination.Main else Destination.Welcome
 
         ClipBoardDetectDialog(navController)
         AlertDialog(
@@ -336,7 +337,7 @@ class MainActivityV2 : BaseComposeActivity() {
         }
         TiebaLiteLocalProvider {
             TranslucentThemeBackground {
-                RootNavGraph(bottomSheetNavigator, navController, Destination.Main)
+                RootNavGraph(bottomSheetNavigator, navController, entryRoute)
             }
         }
 
