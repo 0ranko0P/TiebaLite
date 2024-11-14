@@ -15,7 +15,6 @@ import androidx.core.app.ShareCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MimeTypes
@@ -62,6 +61,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
         setContentView(R.layout.activity_photo_view)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
+        @Suppress("DEPRECATION")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Note: buggy ViewCompat#setOnApplyWindowInsetsListener on old Android devices
             window.decorView.setOnApplyWindowInsetsListener { _, insets ->
@@ -75,6 +75,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
         }
 
         // Load photos now!
+        @Suppress("DEPRECATION")
         val data: PhotoViewData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra(EXTRA_PHOTO_VIEW_DATA, PhotoViewData::class.java)!!
         } else {
@@ -144,7 +145,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
     /**
      * Hide or show system bar on image clicked
      * */
-    @Suppress("UNUSED_PARAMETER")
+    @Suppress("unused")
     private fun onImageClicked(v: View) {
         if (isStatusBarVisible) {
             appbar.animate().alpha(0f).withEndAction {
@@ -178,16 +179,13 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
 
     override fun onProgress(progress: Int) {
         lifecycleScope.launch(Dispatchers.Main) {
-            if (!indicator.isVisible) indicator.visibility = View.VISIBLE
+            // Hide when progress is 100
+            val visibility = if (progress == 100) View.GONE else View.VISIBLE
+            val finalProgress = if (progress == 100) 0 else progress
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                indicator.setProgress(progress, false)
-            } else {
-                indicator.setProgressCompat(progress, false)
-            }
-            if (progress == 100) {
-                indicator.visibility = View.GONE
-                indicator.setProgress(0)
+            indicator.setProgress(finalProgress, false)
+            if (indicator.visibility != visibility) {
+                indicator.visibility = visibility
             }
         }
     }

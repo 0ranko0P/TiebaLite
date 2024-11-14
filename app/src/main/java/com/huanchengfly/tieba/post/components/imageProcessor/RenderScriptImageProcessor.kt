@@ -20,7 +20,6 @@ package com.huanchengfly.tieba.post.components.imageProcessor
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.os.Build
 import android.renderscript.Allocation
 import android.renderscript.Element
 import android.renderscript.RenderScript
@@ -104,8 +103,5 @@ class RenderScriptImageProcessor(context: Context) : ImageProcessor {
 
     override fun cleanup() {
         mIntrinsicBlur.destroy()
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            mRS.destroy()
-        }
     }
 }

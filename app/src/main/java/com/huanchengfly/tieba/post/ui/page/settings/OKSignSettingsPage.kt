@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -99,7 +98,6 @@ fun OKSignSettingsPage(onBack: () -> Unit) {
                     enabled = depend(key = AppPreferencesUtils.KEY_OKSIGN_AUTO)
                 )
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 prefsItem {
                     TextPref(
                         title = stringResource(id = R.string.title_ignore_battery_optimization),
@@ -120,7 +118,6 @@ fun OKSignSettingsPage(onBack: () -> Unit) {
                         },
                         leadingIcon = Icons.Outlined.BatteryAlert
                     )
-                }
             }
 
             prefsItem {

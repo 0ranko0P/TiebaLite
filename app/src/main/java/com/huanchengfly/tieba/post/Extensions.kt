@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post
 
-import android.animation.LayoutTransition
 import android.app.Activity
 import android.app.PendingIntent
 import android.content.Context
@@ -8,7 +7,6 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Build
-import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.appcompat.content.res.AppCompatResources
@@ -100,11 +98,6 @@ fun Context.toastShort(resId: Int, vararg args: Any) {
     toastShort(getString(resId, *args))
 }
 
-fun ViewGroup.enableChangingLayoutTransition() {
-    this.layoutTransition = LayoutTransition()
-    this.layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
-}
-
 fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
@@ -119,13 +112,7 @@ fun pendingIntentFlagMutable(): Int {
     }
 }
 
-fun pendingIntentFlagImmutable(): Int {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        PendingIntent.FLAG_IMMUTABLE
-    } else {
-        0
-    }
-}
+fun pendingIntentFlagImmutable(): Int = PendingIntent.FLAG_IMMUTABLE
 
 fun <T> ImmutableList<T>.removeAt(index: Int): ImmutableList<T> {
     return this.toMutableList().apply { removeAt(index) }.toImmutableList()

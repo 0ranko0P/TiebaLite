@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.annotation.SuppressLint
-import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
 import com.huanchengfly.tieba.post.App
@@ -56,24 +55,17 @@ object UIDUtil {
         get() = "baidutiebaapp$uUID"
 
     val cUID: String
-        get() {
-            val androidId = androidId
-            var imei = MobileInfoUtil.getIMEI(INSTANCE)
-            if (TextUtils.isEmpty(imei)) {
-                imei = "0"
-            }
-            val raw =
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) imei + androidId + uUID else "com.baidu$androidId"
-            return raw.toMD5().uppercase()
-        }
+        get() = "com.baidu$androidId".toMD5().uppercase()
 
     val finalCUID: String
         get() {
-            var imei = MobileInfoUtil.getIMEI(INSTANCE)
+            var imei: CharSequence = MobileInfoUtil.getIMEI(INSTANCE)
             if (TextUtils.isEmpty(imei)) {
                 imei = "0"
+            } else {
+                imei = StringBuffer(imei).reverse()
             }
-            return cUID + "|" + StringBuffer(imei).reverse()
+            return "$cUID|$imei"
         }
 
     @get:SuppressLint("ApplySharedPref")

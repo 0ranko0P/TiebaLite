@@ -151,15 +151,11 @@ object ImageUtil {
 
         try {
             DownloadUtil.downloadCancelable(url, destFile, onProgress)
-            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                FileProvider.getUriForFile(
-                    context,
-                    context.packageName + ".share.FileProvider",
-                    destFile
-                )
-            } else {
-                Uri.fromFile(destFile)
-            }
+            val uri = FileProvider.getUriForFile(
+                context,
+                context.packageName + ".share.FileProvider",
+                destFile
+            )
             return Result.success(uri)
         } catch (e: Exception) {
             Log.w(TAG, "downloadForShare: ", e)

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.browser.customtabs.CustomTabColorSchemeParams
@@ -99,21 +98,14 @@ val Context.powerManager: PowerManager
 
 @SuppressLint("BatteryLife")
 fun Context.requestIgnoreBatteryOptimizations() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
-            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-            intent.data = Uri.parse("package:${packageName}")
-            startActivity(intent)
-        }
+    if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+        intent.data = Uri.parse("package:${packageName}")
+        startActivity(intent)
     }
 }
 
-fun Context.isIgnoringBatteryOptimizations(): Boolean =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        powerManager.isIgnoringBatteryOptimizations(packageName)
-    } else {
-        true
-    }
+fun Context.isIgnoringBatteryOptimizations(): Boolean = powerManager.isIgnoringBatteryOptimizations(packageName)
 
 suspend fun requestPinShortcut(
     context: Context,
