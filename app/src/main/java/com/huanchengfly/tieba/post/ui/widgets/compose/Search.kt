@@ -407,10 +407,7 @@ fun SearchBox(
                 )
             }
 
-            AnimatedVisibility(
-                visible = isKeywordNotEmpty,
-                modifier = Modifier.padding(start = 8.dp)
-            ) {
+            AnimatedVisibility(visible = isKeywordNotEmpty) {
                 Icon(
                     modifier = Modifier
                         .localSharedElements(SearchIconSharedElementKey)
