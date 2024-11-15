@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.utils
 
+import android.Manifest
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -28,8 +29,9 @@ import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
-import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
+import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
+import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
 import com.huanchengfly.tieba.post.utils.ThemeUtil.isNightMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -169,25 +171,17 @@ object ImageUtil {
     fun download(context: Context, url: String?, onProgress: ProgressListener? = null) {
         if (url == null) return
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            MainScope().launch {
+        MainScope().launch {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 downloadCancelable(context.applicationContext, url, onProgress)
-            }
-            return
-        }
-        askPermission(
-            context,
-            PermissionData(
-                listOf(
-                    PermissionUtils.READ_EXTERNAL_STORAGE,
-                    PermissionUtils.WRITE_EXTERNAL_STORAGE
-                ),
-                context.getString(R.string.tip_permission_storage_download)
-            ),
-            R.string.toast_no_permission_save_photo
-        ) {
-            MainScope().launch {
-                downloadBelowQ(context.applicationContext, url, onProgress)
+            } else {
+                context.askPermission(
+                    R.string.tip_permission_storage_download,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
+                .onGranted { downloadBelowQ(context.applicationContext, url, onProgress) }
+                .onDenied { context.toastShort(R.string.toast_no_permission_save_photo) }
             }
         }
     }

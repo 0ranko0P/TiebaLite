@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.job.JobInfo
 import android.app.job.JobScheduler
@@ -77,7 +78,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.JobServiceUtil
-import com.huanchengfly.tieba.post.utils.PermissionUtils
+import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -85,7 +86,6 @@ import com.huanchengfly.tieba.post.utils.compose.LaunchActivityForResult
 import com.huanchengfly.tieba.post.utils.compose.LaunchActivityRequest
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
-import com.huanchengfly.tieba.post.utils.requestPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -161,12 +161,9 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    private fun requestNotificationPermission() {
+    private suspend fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AccountUtil.isLoggedIn()) {
-            requestPermission {
-                permissions = listOf(PermissionUtils.POST_NOTIFICATIONS)
-                description = getString(R.string.desc_permission_post_notifications)
-            }
+            askPermission(R.string.desc_permission_post_notifications, Manifest.permission.POST_NOTIFICATIONS, noRationale = true)
         }
     }
 

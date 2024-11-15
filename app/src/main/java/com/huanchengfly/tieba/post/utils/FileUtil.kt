@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.utils
 
+import android.Manifest
 import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
@@ -10,8 +11,10 @@ import android.text.TextUtils
 import android.webkit.URLUtil
 import androidx.annotation.WorkerThread
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
+import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
@@ -19,7 +22,6 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
-import java.util.Arrays
 
 object FileUtil {
     const val FILE_TYPE_DOWNLOAD = 0
@@ -100,17 +102,16 @@ object FileUtil {
             downloadBySystemWithPermission(context, fileType, url, fileName)
             return
         }
-        askPermission(
-            context,
-            PermissionData(
-                Arrays.asList(
-                    PermissionUtils.READ_EXTERNAL_STORAGE,
-                    PermissionUtils.WRITE_EXTERNAL_STORAGE
-                ),
-                context.getString(R.string.tip_permission_storage_download)
+
+        MainScope().launch {
+            context.askPermission(
+                desc = R.string.tip_permission_storage_download,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
-        ) {
-            downloadBySystemWithPermission(context, fileType, url, fileName)
+            .onGranted {
+                downloadBySystemWithPermission(context, fileType, url, fileName)
+            }
         }
     }
 
