@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.search
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -262,7 +263,10 @@ fun SearchPage(
                     }
                 },
             ) {
-                if (!isKeywordEmpty) {
+                AnimatedVisibility(
+                    visible = !isKeywordEmpty,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
                     SearchTabRow(pagerState = pagerState, pages = pages)
                 }
             }
@@ -381,9 +385,7 @@ private fun ColumnScope.SearchTabRow(
         divider = {},
         backgroundColor = Color.Transparent,
         contentColor = ExtendedTheme.colors.onTopBar,
-        modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .width(76.dp * pages.size),
+        modifier = Modifier.width(76.dp * pages.size),
     ) {
         pages.fastForEachIndexed { index, item ->
             val tabTextStyle =
