@@ -121,12 +121,10 @@ private fun DialogFullScreen(
                     val attributes = WindowManager.LayoutParams()
                     attributes.copyFrom(activityWindow.attributes)
                     attributes.type = dialogWindow.attributes.type
+                    attributes.width = WindowManager.LayoutParams.MATCH_PARENT
+                    attributes.height = WindowManager.LayoutParams.MATCH_PARENT
                     dialogWindow.attributes = attributes
 
-                    dialogWindow.setLayout(
-                        activityWindow.decorView.width,
-                        activityWindow.decorView.height
-                    )
                     WindowCompat.getInsetsController(dialogWindow, parentView)
                         .isAppearanceLightNavigationBars =
                         properties.isAppearanceLightNavigationBars
