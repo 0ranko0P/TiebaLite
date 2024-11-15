@@ -190,7 +190,6 @@ dependencies {
     implementation(libs.liyujiang.oadi)
 
     implementation(libs.godaddy.colorpicker)
-    implementation(libs.xx.permissions)
     implementation(libs.yalantis.ucrop)
 
     //Test
