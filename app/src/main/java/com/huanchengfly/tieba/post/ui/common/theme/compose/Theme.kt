@@ -33,6 +33,7 @@ import com.huanchengfly.tieba.post.theme.DarkBlueColors
 import com.huanchengfly.tieba.post.theme.DarkGreyColors
 import com.huanchengfly.tieba.post.theme.DarkSystemBar
 import com.huanchengfly.tieba.post.theme.DefaultColors
+import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.LightSystemBar
 import com.huanchengfly.tieba.post.theme.PinkColors
 import com.huanchengfly.tieba.post.theme.PurpleColors
@@ -191,7 +192,7 @@ fun TiebaLiteTheme(darkTheme: Boolean, content: @Composable () -> Unit) {
     val key = if (darkTheme) KEY_DARK_THEME else KEY_THEME
     val theme by rememberPreferenceAsState(
         key = stringPreferencesKey(key),
-        defaultValue = if (darkTheme) ThemeUtil.THEME_AMOLED_DARK else ThemeUtil.THEME_DEFAULT
+        defaultValue = (if (darkTheme) DefaultDarkColors else DefaultColors).theme
     )
 
     // Initialize theme colors from DataStore now
@@ -236,7 +237,7 @@ private fun savedThemeFlow(context: Context, darkMode: Boolean): Flow<ExtendedCo
                     primary = it.getColor(KEY_CUSTOM_PRIMARY_COLOR)!!
                 )
 
-                else -> if (darkMode) BlackColors else DefaultColors
+                else -> if (darkMode) DefaultDarkColors else DefaultColors
             }
 
             // Ignore TintToolbar on translucent theme

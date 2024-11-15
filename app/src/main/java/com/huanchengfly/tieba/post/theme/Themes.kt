@@ -77,6 +77,9 @@ private val LightColors = ExtendedColors(
 val DefaultColors: ExtendedColors
     get() = BlueColors
 
+val DefaultDarkColors: ExtendedColors
+    get() = DarkBlueColors
+
 val BlueColors = LightColors.copy(
     theme = ThemeUtil.THEME_BLUE,
     name = R.string.theme_blue,

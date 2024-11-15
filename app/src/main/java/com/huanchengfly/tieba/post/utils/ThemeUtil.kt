@@ -15,15 +15,15 @@ import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMo
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dataStoreScope
 import com.huanchengfly.tieba.post.putColor
-import com.huanchengfly.tieba.post.theme.DarkAmoledColors
 import com.huanchengfly.tieba.post.theme.DarkGreyColors
 import com.huanchengfly.tieba.post.theme.DefaultColors
+import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import kotlinx.coroutines.launch
 
 object ThemeUtil {
     val themeState: MutableState<ExtendedColors> = mutableStateOf(
-        if (App.isSystemNight) DarkAmoledColors else DefaultColors
+        if (App.isSystemNight) DefaultDarkColors else DefaultColors
     )
 
     const val TAG = "ThemeUtil"
@@ -51,7 +51,6 @@ object ThemeUtil {
     const val THEME_TRANSLUCENT_DARK = "translucent_dark_text"
     const val THEME_CUSTOM = "custom"
     const val THEME_DYNAMIC = "dynamic"
-    const val THEME_DEFAULT = "tieba"
     const val THEME_BLACK = "black"
     const val THEME_BLUE = "blue"
     const val THEME_PURPLE = "purple"
