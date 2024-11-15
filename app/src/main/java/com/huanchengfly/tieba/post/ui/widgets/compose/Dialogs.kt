@@ -407,7 +407,8 @@ fun Dialog(
                     color = ExtendedTheme.colors.windowBackground,
                     shape = RoundedCornerShape(24.dp)
                 )
-                .padding(vertical = 12.dp),
+                .padding(vertical = 12.dp)
+                .animateContentSize(),
         ) {
             val (titleRef, buttonsRef) = createRefs()
             // Apply content padding separately
@@ -421,8 +422,7 @@ fun Dialog(
                         end.linkTo(parent.end)
                         bottom.linkTo(buttonsRef.top)
                         width = Dimension.fillToConstraints
-                    }
-                    .animateContentSize(),
+                    },
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (title != null) {
