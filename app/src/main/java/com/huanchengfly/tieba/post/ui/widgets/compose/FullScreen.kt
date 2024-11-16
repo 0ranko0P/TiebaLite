@@ -30,8 +30,8 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
+import com.huanchengfly.tieba.post.utils.powerManager
 import java.util.UUID
 
 @Composable
@@ -64,10 +64,9 @@ private class FullScreenLayout(
     private val windowManager =
         composeView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
-    private val params = createLayoutParams()
+    private val params = createLayoutParams(composeView.context)
 
     override var shouldCreateCompositionOnAttachedToWindow: Boolean = false
-        private set
 
     init {
         id = android.R.id.content
@@ -94,7 +93,7 @@ private class FullScreenLayout(
         shouldCreateCompositionOnAttachedToWindow = true
     }
 
-    private fun createLayoutParams(): WindowManager.LayoutParams =
+    private fun createLayoutParams(context: Context): WindowManager.LayoutParams =
         WindowManager.LayoutParams().apply {
             type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL
             token = composeView.applicationWindowToken
@@ -104,7 +103,7 @@ private class FullScreenLayout(
             flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
             // Disable blur effect on power save mode
-            val powerSaving = App.INSTANCE.batterySaver.isPowerSaveMode
+            val powerSaving = context.powerManager.isPowerSaveMode
             if (!powerSaving && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
                 blurBehindRadius = 64

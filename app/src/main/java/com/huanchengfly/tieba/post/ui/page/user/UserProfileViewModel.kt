@@ -26,6 +26,7 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import com.huanchengfly.tieba.post.utils.powerManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.catch
@@ -46,7 +47,7 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
 
     // Null when power saver in on
     val imageProcessor: ImageProcessor? by lazy {
-        if (App.INSTANCE.batterySaver.isPowerSaveMode) return@lazy null
+        if (App.INSTANCE.powerManager.isPowerSaveMode) return@lazy null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             RenderEffectImageProcessor()
         } else {

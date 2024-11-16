@@ -63,6 +63,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils.Result
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.utils.powerManager
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 
@@ -158,7 +159,7 @@ class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Ma
             height = WindowManager.LayoutParams.MATCH_PARENT
         }
         // Setup window background
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !App.INSTANCE.batterySaver.isPowerSaveMode) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !context!!.powerManager.isPowerSaveMode) {
             window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
             window.setBackgroundBlurRadius(64)
         } else {

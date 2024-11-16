@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
-import android.os.PowerManager
 import android.os.Process
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -15,7 +14,6 @@ import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import com.github.gzuliyujiang.oaid.DeviceID
-import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.components.OAIDGetter
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.ClientUtils
@@ -31,8 +29,6 @@ import org.litepal.LitePal
 @HiltAndroidApp
 class App : Application() {
     private val mActivityList: MutableList<Activity> = mutableListOf()
-
-    val batterySaver by unsafeLazy { getSystemService(Context.POWER_SERVICE) as PowerManager }
 
     @RequiresApi(api = 28)
     private fun setWebViewPath(context: Context) {
