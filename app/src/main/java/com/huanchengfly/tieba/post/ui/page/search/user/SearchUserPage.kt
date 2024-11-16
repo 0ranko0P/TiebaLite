@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.search.user
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,7 +48,7 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.collections.immutable.persistentListOf
 
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SearchUserPage(
     keyword: String,
@@ -130,17 +129,17 @@ fun SearchUserPage(
         ) {
             MyLazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (showExactMatchResult) {
-                    stickyHeader(key = "ExactMatchHeader") {
+                    item(key = "ExactMatchHeader") {
+                        Chip(
+                            text = stringResource(id = R.string.title_exact_match),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            invertColor = true
+                        )
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(ExtendedTheme.colors.background)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            Chip(
-                                text = stringResource(id = R.string.title_exact_match),
-                                invertColor = true
-                            )
                         }
                     }
                     exactMatch?.let {
@@ -156,18 +155,12 @@ fun SearchUserPage(
                     }
                 }
                 if (showFuzzyMatchResult) {
-                    stickyHeader(key = "FuzzyMatchHeader") {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(ExtendedTheme.colors.background)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Chip(
-                                text = stringResource(id = R.string.title_fuzzy_match_user),
-                                invertColor = false
-                            )
-                        }
+                    item(key = "FuzzyMatchHeader") {
+                        Chip(
+                            text = stringResource(id = R.string.title_fuzzy_match_user),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            invertColor = false
+                        )
                     }
                     items(fuzzyMatch) {
                         SearchUserItem(

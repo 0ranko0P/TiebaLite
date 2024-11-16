@@ -1,8 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.search.forum
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,7 +48,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentListOf
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SearchForumPage(
     keyword: String,
@@ -129,18 +127,12 @@ fun SearchForumPage(
         ) {
             MyLazyColumn(modifier = Modifier.fillMaxSize()) {
                 exactMatchForum?.let {
-                    stickyHeader(key = "ExactMatchHeader") {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(ExtendedTheme.colors.background)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Chip(
-                                text = stringResource(id = R.string.title_exact_match),
-                                invertColor = true
-                            )
-                        }
+                    item(key = "ExactMatchHeader") {
+                        Chip(
+                            text = stringResource(id = R.string.title_exact_match),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            invertColor = true
+                        )
                     }
                     item(key = "ExactMatch") {
                         SearchForumItem(
@@ -153,18 +145,12 @@ fun SearchForumPage(
                     }
                 }
                 if (showFuzzyMatchResult) {
-                    stickyHeader(key = "FuzzyMatchHeader") {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(ExtendedTheme.colors.background)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Chip(
-                                text = stringResource(id = R.string.title_fuzzy_match),
-                                invertColor = false
-                            )
-                        }
+                    item(key = "FuzzyMatchHeader") {
+                        Chip(
+                            text = stringResource(id = R.string.title_fuzzy_match),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            invertColor = false
+                        )
                     }
                     items(fuzzyMatchForumList) {
                         SearchForumItem(
