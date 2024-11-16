@@ -44,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -76,6 +77,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_IGNORE_BATTERY_OPTIMIZATION
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.JobServiceUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
@@ -295,6 +297,11 @@ class MainActivityV2 : BaseComposeActivity() {
         val navController = rememberNavController(bottomSheetNavigator)
         val entryRoute = if (appPreferences.setupFinished) Destination.Main else Destination.Welcome
 
+        var ignoreBatteryOp by rememberPreferenceAsMutableState(
+            key = booleanPreferencesKey(KEY_IGNORE_BATTERY_OPTIMIZATION),
+            defaultValue = false
+        )
+
         ClipBoardDetectDialog(navController)
         AlertDialog(
             dialogState = okSignAlertDialogState,
@@ -312,14 +319,12 @@ class MainActivityV2 : BaseComposeActivity() {
                 )
                 DialogNegativeButton(
                     text = stringResource(id = R.string.button_dont_remind_again),
-                    onClick = {
-                        appPreferences.ignoreBatteryOptimizationsDialog = true
-                    }
+                    onClick = { ignoreBatteryOp = true }
                 )
             },
         )
         LaunchedEffect(Unit) {
-            if (appPreferences.autoSign && !isIgnoringBatteryOptimizations() && !appPreferences.ignoreBatteryOptimizationsDialog) {
+            if (!ignoreBatteryOp && appPreferences.autoSign && !isIgnoringBatteryOptimizations()) {
                 okSignAlertDialogState.show()
             }
         }

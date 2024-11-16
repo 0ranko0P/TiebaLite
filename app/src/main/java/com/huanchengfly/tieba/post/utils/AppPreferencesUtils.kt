@@ -5,20 +5,25 @@ import androidx.annotation.IntDef
 import androidx.annotation.StringDef
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.dataStoreScope
 import com.huanchengfly.tieba.post.getBoolean
-import com.huanchengfly.tieba.post.getFloat
 import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.getLong
 import com.huanchengfly.tieba.post.getString
-import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.putInt
 import com.huanchengfly.tieba.post.putLong
 import com.huanchengfly.tieba.post.putString
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 class AppPreferencesUtils private constructor(context: Context) {
@@ -122,13 +127,23 @@ class AppPreferencesUtils private constructor(context: Context) {
 
     private val dataStore: DataStore<Preferences> = context.dataStore
 
+    /**
+     * DataStore 缓存的缓存, 无法保证数据一致性, 重构前先凑合
+     * */
+    @Volatile private var cache: Preferences = runBlocking { dataStore.data.first() }
+
+    init {
+        dataStoreScope.launch {
+            dataStore.data.collect {
+                cache = it
+                ensureActive()
+            }
+        }
+    }
+
     var userLikeLastRequestUnix: Long
         get() = dataStore.getLong(KEY_LAST_REQUEST_UNIX, 0L)
         set(value) = dataStore.putLong(KEY_LAST_REQUEST_UNIX, value)
-
-    var ignoreBatteryOptimizationsDialog: Boolean
-        get() = dataStore.getBoolean(KEY_IGNORE_BATTERY_OPTIMIZATION, false)
-        set(value) = dataStore.putBoolean(KEY_IGNORE_BATTERY_OPTIMIZATION, value)
 
     val autoSign: Boolean
         get() = dataStore.getBoolean(KEY_OKSIGN_AUTO, false)
@@ -145,13 +160,13 @@ class AppPreferencesUtils private constructor(context: Context) {
         set(value) = dataStore.putInt(ThemeUtil.KEY_DARK_THEME_MODE, value)
 
     val fontScale: Float
-        get() = dataStore.getFloat(KEY_FONT_SCALE, 1.0f)
+        get() = cache[floatPreferencesKey(KEY_FONT_SCALE)] ?:  1.0f
 
     val hideBlockedContent: Boolean
-        get() = dataStore.getBoolean(KEY_POST_HIDE_BLOCKED, defaultValue = false)
+        get() = cache[booleanPreferencesKey(KEY_POST_HIDE_BLOCKED)] == true
 
     val liftUpBottomBar: Boolean
-        get() = dataStore.getBoolean(KEY_LIFT_BOTTOM_BAR, false)
+        get() = cache[booleanPreferencesKey(KEY_LIFT_BOTTOM_BAR)] == true
 
     @get:ForumFabFunction
     val forumFabFunction: String
@@ -162,7 +177,7 @@ class AppPreferencesUtils private constructor(context: Context) {
         get() = dataStore.getInt(KEY_FORUM_SORT_DEFAULT, ForumSortType.BY_REPLY)
 
     val showBothUsernameAndNickname: Boolean
-        get() = dataStore.getBoolean(KEY_SHOW_NICKNAME, false)
+        get() = cache[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true
 
     var signDay: Int
         get() = dataStore.getInt(KEY_OKSIGN_LAST_TIME, -1)
@@ -176,20 +191,21 @@ class AppPreferencesUtils private constructor(context: Context) {
     val translucentThemeBackgroundFile: Flow<File?> by lazy {
         dataStore.data
             .map {
-                val file = it[stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_BACKGROUND_FILE)]
-                file?.run { File(context.filesDir, this) }
+                it[stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_BACKGROUND_FILE)]?.let { file ->
+                    File(context.filesDir, file)
+                }
             }
             .distinctUntilChanged()
     }
 
     val useCustomTabs: Boolean
-        get() = dataStore.getBoolean(KEY_WEB_VIEW_CUSTOM_TAB, true)
+        get() = cache[booleanPreferencesKey(KEY_WEB_VIEW_CUSTOM_TAB)] != false
 
     val useWebView: Boolean
-        get() = dataStore.getBoolean(KEY_USE_WEB_VIEW, true)
+        get() = cache[booleanPreferencesKey(KEY_USE_WEB_VIEW)] != false
 
     val setupFinished: Boolean
-        get() = dataStore.getBoolean(KEY_SETUP_FINISHED, false)
+        get() = cache[booleanPreferencesKey(KEY_SETUP_FINISHED)] == true
 }
 
 val Context.appPreferences: AppPreferencesUtils
