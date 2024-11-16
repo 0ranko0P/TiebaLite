@@ -96,7 +96,7 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
             BlockManager.saveOrUpdateBlock(block.clone(category = category))
         } else {
             BlockManager.saveOrUpdateBlock(
-                Block(category, Block.TYPE_USER, username = uiState.value.profile?.userName, uid = uid)
+                Block(category, Block.TYPE_USER, username = uiState.value.profile?.name, uid = uid)
             )
         }
         _uiState.value = _uiState.value.copy(block = newBlock)
