@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
-import android.os.Build
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
@@ -30,8 +29,8 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.huanchengfly.tieba.post.enableBackgroundBlur
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
-import com.huanchengfly.tieba.post.utils.powerManager
 import java.util.UUID
 
 @Composable
@@ -102,15 +101,10 @@ private class FullScreenLayout(
             format = PixelFormat.TRANSLUCENT
             flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            // Disable blur effect on power save mode
-            val powerSaving = context.powerManager.isPowerSaveMode
-            if (!powerSaving && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
-                blurBehindRadius = 64
-            } else {
-                dimAmount = 0f // Remove for older devices
+
+            if (this.enableBackgroundBlur(context) == null) {
                 val bg = ColorUtils.setAlphaComponent(backgroundColor, 0xF5)
-                setBackgroundColor(bg)
+                this@FullScreenLayout.setBackgroundColor(bg)
             }
         }
 

@@ -7,6 +7,8 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Build
+import android.view.Window
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.appcompat.content.res.AppCompatResources
@@ -14,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.google.gson.reflect.TypeToken
 import com.huanchengfly.tieba.post.utils.GsonUtil
 import com.huanchengfly.tieba.post.utils.MD5Util
+import com.huanchengfly.tieba.post.utils.powerManager
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import java.io.File
@@ -116,4 +119,22 @@ fun pendingIntentFlagImmutable(): Int = PendingIntent.FLAG_IMMUTABLE
 
 fun <T> ImmutableList<T>.removeAt(index: Int): ImmutableList<T> {
     return this.toMutableList().apply { removeAt(index) }.toImmutableList()
+}
+
+/**
+ * @return this instance, `Null` when blur effect is unavailable
+ *
+ * @see [Window.setBackgroundBlurRadius]
+ * */
+fun WindowManager.LayoutParams.enableBackgroundBlur(context: Context, radius: Int = 64): WindowManager.LayoutParams? {
+    // Disable blur effect on power save mode
+    val powerSaving = context.powerManager.isPowerSaveMode
+    return if (!powerSaving && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+        blurBehindRadius = radius
+        this
+    } else {
+        dimAmount = 0f // Remove for older devices
+        null
+    }
 }

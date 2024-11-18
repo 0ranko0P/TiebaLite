@@ -5,8 +5,6 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -42,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -50,24 +47,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentActivity
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.theme.Grey200
+import com.huanchengfly.tieba.post.enableBackgroundBlur
 import com.huanchengfly.tieba.post.theme.Grey600
 import com.huanchengfly.tieba.post.theme.Grey800
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils.Result
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.huanchengfly.tieba.post.utils.powerManager
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 
 class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Map<String, Boolean>> {
+
+    private var backgroundColor by mutableStateOf(Color.Transparent)
 
     private val _result = Channel<Result>(capacity = 1)
     val result: ReceiveChannel<Result>
@@ -107,7 +107,12 @@ class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Ma
 
         return AlertDialog.Builder(context, theme)
             .setView(ComposeView(context).apply {
-                setContent { DialogContent(permissionName, message) }
+                setContent {
+                    val theme by ThemeUtil.themeState
+                    TiebaLiteTheme(theme) {
+                        DialogContent(permissionName, message)
+                    }
+                }
             })
             .create()
     }
@@ -117,6 +122,7 @@ class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Ma
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(backgroundColor)
                 .windowInsetsPadding(WindowInsets.systemBars)
                 .padding(16.dp)
         ) {
@@ -141,10 +147,10 @@ class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Ma
 
     override fun onStart() {
         super.onStart()
+        showRationale = permissions.any { shouldShowRequestPermissionRationale(it)}
+
         dialog?.window?.apply {
             onSetupWindow(window = this)
-
-            showRationale = permissions.any { shouldShowRequestPermissionRationale(it)}
             if (!showRationale && !launcherShowed) {
                 launcherShowed = true
                 permissionLauncher.launch(permissions)
@@ -152,20 +158,19 @@ class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Ma
         }
     }
 
+    // Setup Fullscreen dialog
     private fun onSetupWindow(window: Window) {
-        // Fullscreen dialog
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         window.attributes = window.attributes.apply {
             width = WindowManager.LayoutParams.MATCH_PARENT
             height = WindowManager.LayoutParams.MATCH_PARENT
-        }
-        // Setup window background
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !context!!.powerManager.isPowerSaveMode) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
-            window.setBackgroundBlurRadius(64)
-        } else {
-            val background = (if (App.isSystemNight) Grey800 else Grey200).copy(0.94f).toArgb()
-            window.decorView.background.colorFilter = PorterDuffColorFilter(background, PorterDuff.Mode.SRC)
-            window.setDimAmount(0f)
+
+            // Enable blur effect when showing rationale message
+            if (showRationale && this.enableBackgroundBlur(window.context) != null) {
+                backgroundColor = ThemeUtil.getRawTheme().windowBackground.copy(0.2f)
+            } else {
+                backgroundColor = ThemeUtil.getRawTheme().windowBackground.copy(0.86f)
+            }
         }
     }
 
@@ -254,7 +259,8 @@ class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Ma
             onGrant: () -> Unit,
             onDeny: () -> Unit
         ) {
-            val theme by ThemeUtil.themeState
+            val theme = ExtendedTheme.colors
+
             Column(
                 modifier = modifier
                     .fillMaxWidth()
@@ -263,7 +269,7 @@ class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Ma
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text(text = title, color = theme.text, fontWeight = FontWeight.Bold)
 
                 Spacer(modifier = Modifier.height(12.dp))
 

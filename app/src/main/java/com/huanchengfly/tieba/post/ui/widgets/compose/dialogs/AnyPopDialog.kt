@@ -44,6 +44,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.core.view.WindowCompat
+import com.huanchengfly.tieba.post.enableBackgroundBlur
 import kotlinx.coroutines.delay
 
 
@@ -129,6 +130,11 @@ private fun DialogFullScreen(
                         .isAppearanceLightNavigationBars =
                         properties.isAppearanceLightNavigationBars
                     isAnimateLayout = true
+                }
+            }
+            dialogWindow?.apply {
+                LaunchedEffect(Unit) {
+                    attributes = attributes.enableBackgroundBlur(context)?: return@LaunchedEffect
                 }
             }
             Box(
