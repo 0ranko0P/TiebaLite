@@ -59,7 +59,6 @@ import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.components.ClipBoardLink
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -147,11 +146,8 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     // Convert Deep Link intent to destination route if it's valid
-    private fun handelDeepLinks(intent: Intent): Destination? {
-        val uri = intent.data ?: return null
-        return ClipBoardLinkDetector.parseDeepLink(uri)?.let { clipBoardLink ->
-            linkToRoute(link = clipBoardLink, icon = null)
-        }
+    private fun handelDeepLinks(intent: Intent): Destination? = intent.data?.let { uri ->
+        ClipBoardLinkDetector.parseDeepLink(uri)?.toRoute()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -214,17 +210,6 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    // Convert ClipBoardLink to Navigation Route
-    private fun linkToRoute(link: ClipBoardLink, icon: QuickPreviewUtil.Icon?): Destination? {
-        return when (link) {
-            is ClipBoardLink.Thread -> Destination.Thread(threadId = link.threadId)
-
-            is ClipBoardLink.Forum -> Destination.Forum(forumName = link.forumName, avatar = icon?.url)
-
-            else -> null
-        }
-    }
-
     @Composable
     private fun ClipBoardDetectDialog(navController: NavController) {
         val previewInfo by ClipBoardLinkDetector.previewInfoStateFlow.collectAsState()
@@ -247,7 +232,7 @@ class MainActivityV2 : BaseComposeActivity() {
             buttons = {
                 DialogPositiveButton(text = stringResource(id = R.string.button_open)) {
                     previewInfo?.let {
-                        val route = linkToRoute(it.clipBoardLink, it.icon) ?: return@let
+                        val route = it.clipBoardLink.toRoute(it.icon?.url)
                         navController.navigate(route = route)
                     }
                 }

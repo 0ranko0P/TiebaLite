@@ -116,7 +116,7 @@
     <string name="button_allow">允许</string>
     <string name="button_denied">禁止</string>
     <string name="title_not_ask">不再询问</string>
-    <string name="title_ask_permission">要允许 %1$s 访问您的%2$s吗？</string>
+    <string name="title_ask_permission_location">要允许 %1$s 访问您的位置信息吗？</string>
     <string name="title_ask_permission_clipboard_copy">要允许 %1$s 写入您的剪贴板吗？</string>
     <string name="title_start_app_permission">要允许 %1$s 打开您的%2$s吗？</string>
     <string name="name_multi_app">应用</string>

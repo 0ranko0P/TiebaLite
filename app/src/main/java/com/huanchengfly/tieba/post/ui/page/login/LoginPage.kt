@@ -41,7 +41,6 @@ import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.ui.page.webview.MyWebChromeClient
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebViewClient
 import com.huanchengfly.tieba.post.ui.page.webview.isInternalHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -203,14 +202,8 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                     }
                 },
                 client = remember(navigator) {
-                    LoginWebViewClient(
-                        navigator,
-                        coroutineScope,
-                        snackbarHostState,
-                        onBack
-                    )
+                    LoginWebViewClient(coroutineScope, snackbarHostState, onBack)
                 },
-                chromeClient = remember { MyWebChromeClient(context, coroutineScope) }
             )
 
             if (isLoading) {
@@ -224,11 +217,10 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
 }
 
 private class LoginWebViewClient(
-    nativeNavigator: NavController? = null,
     val coroutineScope: CoroutineScope,
     val snackbarHostState: SnackbarHostState,
     val onLoggedIn: () -> Unit
-) : MyWebViewClient(nativeNavigator) {
+) : MyWebViewClient() {
     private var isLoadingAccount = false
 
     override fun injectCookies(url: String) {}

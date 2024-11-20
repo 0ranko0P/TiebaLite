@@ -8,6 +8,7 @@ import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
 import com.huanchengfly.tieba.post.arch.ControlledRunner
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,17 @@ sealed class ClipBoardLink(val url: String) {
     class Forum(url: String, val forumName: String) : ClipBoardLink(url)
 
     class Thread(url: String, val threadId: Long) : ClipBoardLink(url)
+
+    // Convert ClipBoardLink to Navigation Route
+    fun toRoute(avatarUrl: String? = null): Destination {
+        return when (this) {
+            is Forum -> Destination.Forum(forumName = forumName, avatar = avatarUrl)
+
+            is Thread -> Destination.Thread(threadId = threadId)
+
+            else -> throw RuntimeException("Not implemented ${this::class.simpleName}!")
+        }
+    }
 }
 
 /**
@@ -55,22 +67,16 @@ object ClipBoardLinkDetector {
 
     private var lastClipBoardHash: Int = -1
 
-    private fun isTiebaDomain(host: String?): Boolean {
-        return host != null && (host.equals("wapp.baidu.com", ignoreCase = true) ||
-                host.equals("tieba.baidu.com", ignoreCase = true) ||
-                host.equals("tiebac.baidu.com", ignoreCase = true))
-    }
-
     private fun parseLink(url: String): ClipBoardLink? {
         val uri = Uri.parse(url)
-        if (!isTiebaDomain(uri.host)) return null
+        if (uri.isTieba()) {
+            QuickPreviewUtil.getForumName(uri)?.let {
+                return ClipBoardLink.Forum(url, forumName = it)
+            }
 
-        QuickPreviewUtil.getForumName(uri)?.let {
-            return ClipBoardLink.Forum(url, forumName = it)
-        }
-
-        QuickPreviewUtil.getThreadId(uri)?.let {
-            return ClipBoardLink.Thread(url, threadId = it)
+            QuickPreviewUtil.getThreadId(uri)?.let {
+                return ClipBoardLink.Thread(url, threadId = it)
+            }
         }
 
         return null
@@ -129,6 +135,20 @@ object ClipBoardLinkDetector {
         val item = data.getItemAt(0)
         return item?.text?.toString()
     }
+
+    fun Uri.isBaidu(): Boolean = this.isHttp() && host?.endsWith("baidu.com") == true
+
+    fun Uri.isHttp(): Boolean = scheme?.startsWith("http", ignoreCase = true) == true
+
+    fun Uri.isTieba(): Boolean {
+        return host != null && (host.equals("wapp.baidu.com", ignoreCase = true) ||
+                host.equals("tieba.baidu.com", ignoreCase = true) ||
+                host.equals("tiebac.baidu.com", ignoreCase = true))
+    }
+
+    fun Uri.isLogin(): Boolean = path?.let { p ->
+        host.equals("wappass.baidu.com") && p.startsWith("/passport") && queryParameterNames.contains("login")
+    } == true
 
     fun clear() {
         previewTaskRunner.cancelCurrent()

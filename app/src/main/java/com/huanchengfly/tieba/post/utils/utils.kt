@@ -1,24 +1,19 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.annotation.SuppressLint
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.browser.customtabs.CustomTabColorSchemeParams
-import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.page.Destination
 import java.io.IOException
 
 fun launchUrl(
@@ -49,47 +44,22 @@ fun launchUrl(
         }
         return
     }
-    if (!path.contains("android_asset")) {
-        if (path == "/mo/q/checkurl") {
-            launchUrl(
-                context,
-                navigator,
-                uri.getQueryParameter("url")?.replace("http://https://", "https://").orEmpty()
-            )
-            return
-        }
-        if (host == "tieba.baidu.com" && path.startsWith("/p/")) {
-            val threadId = path.substring(3).toLongOrNull()
-            if (threadId != null) {
-                navigator.navigate(Destination.Thread(threadId))
-            }
-            return
-        }
-        val isTiebaLink =
-            host.contains("tieba.baidu.com") || host.contains("wappass.baidu.com") || host.contains(
-                "ufosdk.baidu.com"
-            ) || host.contains("m.help.baidu.com")
-        if (isTiebaLink || context.appPreferences.useWebView) {
-            navigator.navigate(Destination.WebView(url))
-        } else {
-            if (context.appPreferences.useCustomTabs) {
-                val theme by ThemeUtil.themeState
-                val intentBuilder = CustomTabsIntent.Builder()
-                    .setShowTitle(true)
-                    .setDefaultColorSchemeParams(
-                        CustomTabColorSchemeParams.Builder()
-                            .setToolbarColor(theme.topBar.toArgb())
-                            .build()
-                    )
-                try {
-                    intentBuilder.build().launchUrl(context, uri)
-                } catch (e: ActivityNotFoundException) {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                }
-            } else {
-                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-            }
-        }
+    if (path.contains("android_asset", ignoreCase = true)) return
+
+    if (path == "/mo/q/checkurl") {
+        launchUrl(
+            context,
+            navigator,
+            uri.getQueryParameter("url")?.replace("http://https://", "https://").orEmpty()
+        )
+        return
+    }
+
+    val blocked = TiebaWebView.interceptRequest(context, uri, onLaunchApp = null) { route ->
+        navigator.navigate(route)
+    }
+    if (!blocked) {
+        TiebaWebView.launchCustomTab(context, uri)
     }
 }
 

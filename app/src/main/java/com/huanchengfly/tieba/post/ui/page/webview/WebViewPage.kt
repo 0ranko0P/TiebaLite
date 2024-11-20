@@ -12,26 +12,24 @@ import android.webkit.GeolocationPermissions
 import android.webkit.JsResult
 import android.webkit.ValueCallback
 import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.appcompat.app.AlertDialog
-import androidx.browser.customtabs.CustomTabColorSchemeParams
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
@@ -42,13 +40,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import androidx.core.location.LocationManagerCompat
 import androidx.core.net.toUri
@@ -57,6 +52,9 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isBaidu
+import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.components.dialogs.PermissionDialog
 import com.huanchengfly.tieba.post.models.PermissionBean
 import com.huanchengfly.tieba.post.toastShort
@@ -75,13 +73,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.PermissionUtils.Result
+import com.huanchengfly.tieba.post.utils.FileUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.compose.launchActivityForResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
@@ -89,7 +85,7 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
-import java.lang.ref.WeakReference
+import java.io.IOException
 import java.util.UUID
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -151,13 +147,7 @@ fun WebViewPage(initialUrl: String, navigator: NavController) {
 
     val progress by remember {
         derivedStateOf {
-            webViewState.loadingState.let {
-                if (it is LoadingState.Loading) {
-                    it.progress
-                } else {
-                    0f
-                }
-            }
+            webViewState.loadingState.let { if (it is LoadingState.Loading) it.progress else 0f }
         }
     }
 
@@ -184,55 +174,33 @@ fun WebViewPage(initialUrl: String, navigator: NavController) {
                         }
                     }
                 },
-                navigationIcon = { BackNavigationIcon(onBackPressed = { navigator.navigateUp() }) },
+                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) },
                 actions = {
                     val menuState = rememberMenuState()
                     ClickMenu(
                         menuContent = {
-                            DropdownMenuItem(
-                                onClick = {
-                                    val url = webViewState.webView?.url ?: initialUrl
-                                    TiebaUtil.copyText(context, url)
-                                    dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_copy_link))
+                            TextMenuItem(text = R.string.title_copy_link) {
+                                webViewState.webView?.url?.let { TiebaUtil.copyText(context, it) }
                             }
-                            DropdownMenuItem(
-                                onClick = {
-                                    val uri = (webViewState.webView?.url ?: initialUrl).toUri()
-                                    context.startActivity(
-                                        Intent(
-                                            Intent.ACTION_VIEW,
-                                            uri
-                                        )
-                                    )
-                                    dismiss()
+
+                            TextMenuItem(text = R.string.title_open_in_browser) {
+                                webViewState.webView?.url?.toUri()?.let {
+                                    runCatching {
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, it))
+                                    }
                                 }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_open_in_browser))
                             }
-                            DropdownMenuItem(
-                                onClick = {
-                                    webViewNavigator.reload()
-                                    dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_refresh))
-                            }
+
+                            TextMenuItem(text = R.string.title_refresh, onClick = webViewNavigator::reload)
                         },
                         menuState = menuState,
                         triggerShape = CircleShape
                     ) {
-                        Box(
-                            modifier = Modifier.size(48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = stringResource(id = R.string.btn_more)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(id = R.string.btn_more),
+                            modifier = Modifier.minimumInteractiveComponentSize()
+                        )
                     }
                 },
             )
@@ -249,13 +217,24 @@ fun WebViewPage(initialUrl: String, navigator: NavController) {
                     it.settings.apply {
                         javaScriptEnabled = true
                         domStorageEnabled = true
+                        mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
                         setSupportZoom(true)
                         builtInZoomControls = true
                         displayZoomControls = false
                     }
                 },
-                client = remember(navigator) { MyWebViewClient(navigator) },
-                chromeClient = remember { MyWebChromeClient(context, coroutineScope) }
+                onDispose = TiebaWebView::dispose,
+                client = remember {
+                    MyWebViewClient { route ->
+                        if ((webViewState.webView as TiebaWebView).canNavigate(route)) {
+                            navigator.navigate(route = route)
+                        }
+                    }
+               },
+                chromeClient = remember { MyWebChromeClient(context, coroutineScope) },
+                factory = {
+                    TiebaWebView(it.applicationContext)
+                }
             )
 
             if (isLoading) {
@@ -282,178 +261,76 @@ fun isInternalHost(host: String): Boolean {
 }
 
 open class MyWebViewClient(
-    protected val nativeNavigator: NavController? = null,
+    private val onNavigate: ((Destination) -> Unit)? = null
 ) : AccompanistWebViewClient() {
     val context: Context
         get() = state.webView?.context ?: App.INSTANCE
 
-    private fun interceptWebViewRequest(
-        webView: WebView,
-        request: WebResourceRequest,
-    ): Boolean {
-        val newUri = request.url
-        val scheme = newUri.scheme?.lowercase() ?: return false
-        val host = newUri.host?.lowercase() ?: return false
-        val path = newUri.path?.lowercase() ?: return false
-        val isHttp = scheme.startsWith("http")
-        val isTieba = host == "wapp.baidu.com" ||
-                host.contains("tieba.baidu.com") ||
-                host == "tiebac.baidu.com"
-        val isInternal = isTieba ||
-                host.contains("wappass.baidu.com") ||
-                host.contains("ufosdk.baidu.com") ||
-                host.contains("m.help.baidu.com")
-        return when {
-            isHttp && isTieba -> {
-                if (path == "/f" || path == "/mo/q/m") {
-                    val forumName =
-                        newUri.getQueryParameter("kw") ?: newUri.getQueryParameter("word")
-                    val threadId = newUri.getQueryParameter("kz")?.toLongOrNull()
-                    if (threadId != null) {
-                        nativeNavigator?.navigate(
-                            Destination.Thread(threadId)
-                        )
-                        true
-                    } else if (forumName != null) {
-                        nativeNavigator?.navigate(
-                            Destination.Forum(forumName)
-                        )
-                        true
-                    } else false
-                } else if (path.startsWith("/p/")) {
-                    val threadId = path.substring(3).toLongOrNull()
-                    if (threadId != null) {
-                        nativeNavigator?.navigate(Destination.Thread(threadId))
-                        true
-                    } else false
-                } else false
-            }
+    private val clipboardGuardJs by unsafeLazy {
+        FileUtil.readAssetFile(context, "ClipboardGuard.js") ?: throw IOException()
+    }
 
-            isHttp && !isInternal -> {
-                if (context.appPreferences.useWebView)
-                    false
-                else {
-                    if (context.appPreferences.useCustomTabs) {
-                        val theme = ThemeUtil.getRawTheme()
-                        runCatching {
-                            CustomTabsIntent.Builder()
-                                .setShowTitle(true)
-                                .setDefaultColorSchemeParams(
-                                    CustomTabColorSchemeParams.Builder()
-                                        .setToolbarColor(theme.topBar.toArgb())
-                                        .setNavigationBarColor(theme.bottomBar.toArgb())
-                                        .setNavigationBarDividerColor(theme.divider.toArgb())
-                                        .build()
-                                )
-                                .build()
-                                .launchUrl(context, newUri)
-                        }.onFailure {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    newUri
-                                ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                            )
-                        }
-                    } else {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                newUri
-                            ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                        )
-                    }
-                    true
-                }
-            }
+    private val cookieManager by unsafeLazy { CookieManager.getInstance() }
 
-            !isHttp -> {
-                val currentUri = webView.url?.toUri()
-                val currentHost = currentUri?.host
-                if (currentHost != null) {
-                    launchThirdPartyApp(newUri, currentHost)
-                }
-                true
-            }
-
-            else -> false
+    override fun onPageFinished(view: WebView, url: String?) {
+        super.onPageFinished(view, url)
+        if (url?.startsWith("http") == true) {
+            view.evaluateJavascript(clipboardGuardJs, null)
         }
     }
 
-    private fun launchThirdPartyApp(
-        intent: Intent,
-        host: String,
-    ) {
-        val resolves = context.packageManager.queryIntentActivities(intent, 0)
-        if (resolves.isEmpty()) return
-        val appName = if (resolves.size == 1) {
-            resolves[0].loadLabel(context.packageManager)
-        } else {
-            context.getString(R.string.name_multi_app)
-        }
-        val scheme = intent.scheme ?: ""
+    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+        return TiebaWebView.interceptRequest(context, request.url, this::onLaunchApp, onNavigate)
+    }
+
+    // Show Confirm dialog when web request invokes a DeepLink
+    private fun onLaunchApp(uri: Uri, name: String) {
+        val scheme = uri.scheme ?: ""
         PermissionDialog(
             context,
             PermissionBean(
                 PermissionDialog.CustomPermission.PERMISSION_START_APP,
-                "${host}_${scheme}",
-                context.getString(R.string.title_start_app_permission, host, appName),
+                "${uri.host}_${scheme}",
+                context.getString(R.string.title_start_app_permission, uri.host, name),
                 R.drawable.ic_round_exit_to_app
             )
         )
-            .setOnGrantedCallback { context.startActivity(intent) }
+            .setOnGrantedCallback {
+                val intent = if (uri.scheme.equals("intent", ignoreCase = true)) {
+                    Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME)
+                        .addCategory(Intent.CATEGORY_BROWSABLE)
+                } else {
+                    Intent(Intent.ACTION_VIEW, uri)
+                }
+                runCatching {
+                    context.startActivity(intent)
+                }
+            }
             .show()
     }
 
-    private fun launchThirdPartyApp(
-        uri: Uri,
-        host: String,
-    ) {
-        if (uri.scheme.equals("intent", ignoreCase = true)) {
-            launchThirdPartyApp(
-                Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME)
-                    .addCategory(Intent.CATEGORY_BROWSABLE), host
-            )
-        } else {
-            launchThirdPartyApp(
-                Intent(
-                    Intent.ACTION_VIEW,
-                    uri
-                ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP), host
-            )
-        }
-    }
-
     open fun injectCookies(url: String) {
-        val cookieStr = CookieManager.getInstance().getCookie(url) ?: ""
+        val cookieStr = cookieManager.getCookie(url) ?: ""
         val cookies = AccountUtil.parseCookie(cookieStr)
         val BDUSS = cookies["BDUSS"]
         val currentAccountBDUSS = AccountUtil.getBduss()
         if (currentAccountBDUSS != null && BDUSS != currentAccountBDUSS) {
-            CookieManager.getInstance()
-                .setCookie(url, AccountUtil.getBdussCookie(currentAccountBDUSS))
+            cookieManager.setCookie(url, AccountUtil.getBdussCookie(currentAccountBDUSS))
         }
     }
 
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
-        injectCookies(url ?: "")
-    }
-
-    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest?): Boolean {
-        if (request == null) return false
-        return interceptWebViewRequest(view, request)
+        if (url?.toUri()?.isBaidu() == true) {
+            injectCookies(url = url)
+        }
     }
 }
 
 class MyWebChromeClient(
-    context: Context,
+    val context: Context,
     coroutineScope: CoroutineScope,
 ) : AccompanistWebChromeClient() {
-    private val contextWeakReference = WeakReference(context)
-
-    val context: Context
-        get() = state.webView?.context ?: contextWeakReference.get() ?: App.INSTANCE
 
     private var uploadMessage: ValueCallback<Array<Uri>>? = null
 
@@ -483,11 +360,7 @@ class MyWebChromeClient(
             PermissionBean(
                 PermissionDialog.CustomPermission.PERMISSION_LOCATION,
                 origin,
-                context.getString(
-                    R.string.title_ask_permission,
-                    origin,
-                    context.getString(R.string.common_permission_location)
-                ),
+                context.getString(R.string.title_ask_permission_location, origin),
                 R.drawable.ic_round_location_on
             )
         )
@@ -512,11 +385,7 @@ class MyWebChromeClient(
                 }
             }
             .setOnDeniedCallback {
-                callback.invoke(
-                    origin,
-                    false,
-                    false
-                )
+                callback.invoke(origin, false, false)
             }
             .show()
     }
@@ -556,26 +425,20 @@ class MyWebChromeClient(
         message: String?,
         result: JsResult,
     ): Boolean {
-        val context = view.context ?: context
         if ("ClipboardGuardCopyRequest".equals(message, ignoreCase = true)) {
-            val uri = Uri.parse(url)
-            if (uri != null && uri.host != null) {
-                PermissionDialog(
-                    context,
-                    PermissionBean(
-                        PermissionDialog.CustomPermission.PERMISSION_CLIPBOARD_COPY,
-                        uri.host,
-                        context.getString(
-                            R.string.title_ask_permission_clipboard_copy,
-                            uri.host
-                        ),
-                        R.drawable.ic_round_file_copy
-                    )
+            val host = Uri.parse(url).host ?: return true
+            PermissionDialog(
+                context,
+                PermissionBean(
+                    PermissionDialog.CustomPermission.PERMISSION_CLIPBOARD_COPY,
+                    host,
+                    context.getString(R.string.title_ask_permission_clipboard_copy, host),
+                    R.drawable.ic_round_file_copy
                 )
-                    .setOnGrantedCallback { result.confirm() }
-                    .setOnDeniedCallback { result.cancel() }
-                    .show()
-            }
+            )
+            .setOnGrantedCallback { result.confirm() }
+            .setOnDeniedCallback { result.cancel() }
+            .show()
         } else {
             AlertDialog.Builder(view.context)
                 .setTitle("Confirm")
@@ -591,9 +454,4 @@ class MyWebChromeClient(
         }
         return true
     }
-}
-
-@Composable
-fun MyWebView() {
-
 }

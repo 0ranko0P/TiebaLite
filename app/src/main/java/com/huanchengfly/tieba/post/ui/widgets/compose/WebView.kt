@@ -312,7 +312,8 @@ open class AccompanistWebChromeClient : WebChromeClient() {
     override fun onProgressChanged(view: WebView, newProgress: Int) {
         super.onProgressChanged(view, newProgress)
         if (state.loadingState is Finished) return
-        state.loadingState = Loading(newProgress / 100.0f)
+
+        state.loadingState = if (newProgress == 100) Finished else Loading(newProgress / 100.0f)
     }
 }
 
