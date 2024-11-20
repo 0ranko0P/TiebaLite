@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.login
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.webkit.CookieManager
 import android.webkit.WebView
 import androidx.compose.animation.core.animateFloatAsState
@@ -41,7 +42,7 @@ import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.ui.page.webview.MyWebViewClient
+import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.ui.page.webview.isInternalHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
@@ -202,7 +203,7 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                     }
                 },
                 client = remember(navigator) {
-                    LoginWebViewClient(coroutineScope, snackbarHostState, onBack)
+                    LoginWebViewClient(context, coroutineScope, snackbarHostState, onBack)
                 },
             )
 
@@ -217,10 +218,11 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
 }
 
 private class LoginWebViewClient(
+    context: Context,
     val coroutineScope: CoroutineScope,
     val snackbarHostState: SnackbarHostState,
     val onLoggedIn: () -> Unit
-) : MyWebViewClient() {
+) : TbWebViewClient(context, onNavigate = null) {
     private var isLoadingAccount = false
 
     override fun injectCookies(url: String) {}
