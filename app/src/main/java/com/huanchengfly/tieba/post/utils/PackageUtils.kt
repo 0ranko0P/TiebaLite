@@ -6,6 +6,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.net.Uri
+import android.os.Bundle
 import android.provider.Settings
 import com.huanchengfly.tieba.post.R
 
@@ -17,6 +18,11 @@ fun Context.isPackageInstalled(packageName: String): Boolean {
         false
     }
 }
+
+val Context.applicationMetaData: Bundle
+    get() {
+        return packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData
+    }
 
 fun buildAppSettingsIntent(packageName: String): Intent  = Intent().apply {
     action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
