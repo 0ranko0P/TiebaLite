@@ -5,7 +5,6 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -62,6 +61,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils.Result
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.utils.buildAppSettingsIntent
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 
@@ -201,9 +201,7 @@ class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Ma
                 action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
                 putExtra(Settings.EXTRA_APP_PACKAGE, BuildConfig.APPLICATION_ID)
             } else {
-                action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                addCategory(Intent.CATEGORY_DEFAULT)
-                data = Uri.parse("package:" + BuildConfig.APPLICATION_ID)
+                buildAppSettingsIntent(BuildConfig.APPLICATION_ID)
             }
             settingsLauncher.launch(this)
         }

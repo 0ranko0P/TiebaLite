@@ -6,6 +6,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.net.Uri
+import android.provider.Settings
 import com.huanchengfly.tieba.post.R
 
 fun Context.isPackageInstalled(packageName: String): Boolean {
@@ -15,6 +16,12 @@ fun Context.isPackageInstalled(packageName: String): Boolean {
     } catch (_: Exception) {
         false
     }
+}
+
+fun buildAppSettingsIntent(packageName: String): Intent  = Intent().apply {
+    action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+    addCategory(Intent.CATEGORY_DEFAULT)
+    data = Uri.parse("package:$packageName")
 }
 
 fun List<ResolveInfo>.loadPackageLabel(context: Context): CharSequence? {
