@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -260,10 +261,11 @@ private fun BottomBar(
         NegativeButton(text = stringResource(R.string.button_no_login), onClick = onFinish ?: none)
     }
 
+    Spacer(modifier = Modifier.width(8.dp))
+
     // Proceed button always visible
     PositiveButton(
         text = stringResource(if (onFinish == null) R.string.button_next else R.string.button_login),
-        modifier = Modifier.padding(start = 8.dp),
         enabled = onProceed != null,
         onClick = onProceed ?: none
     )
