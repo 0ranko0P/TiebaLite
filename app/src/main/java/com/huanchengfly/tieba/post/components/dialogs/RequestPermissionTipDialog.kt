@@ -1,33 +1,27 @@
 package com.huanchengfly.tieba.post.components.dialogs
 
 import android.Manifest
-import android.app.AlertDialog
-import android.app.Dialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Window
-import android.view.WindowManager
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.Text
@@ -39,15 +33,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
-import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentActivity
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
@@ -55,7 +46,6 @@ import com.huanchengfly.tieba.post.enableBackgroundBlur
 import com.huanchengfly.tieba.post.theme.Grey600
 import com.huanchengfly.tieba.post.theme.Grey800
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.utils.PermissionUtils
@@ -65,13 +55,15 @@ import com.huanchengfly.tieba.post.utils.buildAppSettingsIntent
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 
-class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Map<String, Boolean>> {
-
-    private var backgroundColor by mutableStateOf(Color.Transparent)
+class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallback<Map<String, Boolean>> {
 
     private val _result = Channel<Result>(capacity = 1)
     val result: ReceiveChannel<Result>
         get() = _result
+
+    private lateinit var description: String
+    private lateinit var permissionName: String
+    private lateinit var message: String
 
     private lateinit var permissions: Array<String>
     private var permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions(), callback = this)
@@ -97,80 +89,51 @@ class RequestPermissionTipDialog() : DialogFragment(), ActivityResultCallback<Ma
 
     override fun getTheme(): Int = R.style.Dialog_RequestPermissionTip
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val context = requireContext()
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
         val bundle = requireArguments()
         permissions = bundle.getStringArray(KEY_PERMISSIONS)!!
-        val description = bundle.getString(KEY_DESCRIPTION)!!
-        val permissionName = PermissionUtils.transformText(context, *permissions).first()
-        val message = context.getString(R.string.message_request_permission_tip_dialog, description)
-
-        return AlertDialog.Builder(context, theme)
-            .setView(ComposeView(context).apply {
-                setContent {
-                    val theme by ThemeUtil.themeState
-                    TiebaLiteTheme(theme) {
-                        DialogContent(permissionName, message)
-                    }
-                }
-            })
-            .create()
+        description = bundle.getString(KEY_DESCRIPTION)!!
+        permissionName = PermissionUtils.transformText(context, *permissions).first()
+        message = context.getString(R.string.message_request_permission_tip_dialog, description)
     }
 
     @Composable
-    private fun DialogContent(name: String, message: String) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(backgroundColor)
-                .windowInsetsPadding(WindowInsets.systemBars)
-                .padding(16.dp)
-        ) {
-            if (showRationale) {
-                PermissionRationale(
-                    modifier = Modifier.align(Alignment.Center),
-                    title = stringResource(R.string.title_permission_rationale, name),
-                    message = message,
-                    onDeny = {
-                        onActivityResult(permissions.associate { it to false })
-                    },
-                    onGrant = this@RequestPermissionTipDialog::openSettings
-                )
-            } else {
-                PermissionTip(
-                    title =  stringResource(R.string.title_request_permission_tip_dialog, name),
-                    message = message
-                )
-            }
+    override fun BoxScope.ContentView(savedInstanceState: Bundle?) {
+        if (showRationale) {
+            PermissionRationale(
+                modifier = Modifier.align(Alignment.Center),
+                title = stringResource(R.string.title_permission_rationale, permissionName),
+                message = message,
+                onDeny = {
+                    onActivityResult(permissions.associate { it to false })
+                },
+                onGrant = this@RequestPermissionTipDialog::openSettings
+            )
+        } else {
+            PermissionTip(
+                title =  stringResource(R.string.title_request_permission_tip_dialog, permissionName),
+                message = message
+            )
         }
     }
 
-    override fun onStart() {
-        super.onStart()
+    override fun onSetupWindow(window: Window) {
+        super.onSetupWindow(window)
         showRationale = permissions.any { shouldShowRequestPermissionRationale(it)}
 
-        dialog?.window?.apply {
-            onSetupWindow(window = this)
-            if (!showRationale && !launcherShowed) {
-                launcherShowed = true
-                permissionLauncher.launch(permissions)
+        window.attributes = window.attributes.apply {
+            // Enable blur effect only when showing rationale message
+            backgroundColor = if (showRationale && enableBackgroundBlur(window.context) != null) {
+                ThemeUtil.getRawTheme().windowBackground.copy(0.2f)
+            } else {
+                ThemeUtil.getRawTheme().windowBackground.copy(0.86f)
             }
         }
-    }
 
-    // Setup Fullscreen dialog
-    private fun onSetupWindow(window: Window) {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.attributes = window.attributes.apply {
-            width = WindowManager.LayoutParams.MATCH_PARENT
-            height = WindowManager.LayoutParams.MATCH_PARENT
-
-            // Enable blur effect when showing rationale message
-            if (showRationale && this.enableBackgroundBlur(window.context) != null) {
-                backgroundColor = ThemeUtil.getRawTheme().windowBackground.copy(0.2f)
-            } else {
-                backgroundColor = ThemeUtil.getRawTheme().windowBackground.copy(0.86f)
-            }
+        if (!showRationale && !launcherShowed) {
+            launcherShowed = true
+            permissionLauncher.launch(permissions)
         }
     }
 
