@@ -1,9 +1,9 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
+import android.os.Build
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.DeleteForever
-import androidx.compose.material.icons.rounded.Web
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,21 +16,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.collectPreferenceAsState
-import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.components.TiebaWebView.Companion.dumpWebViewVersion
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import kotlinx.coroutines.launch
 
@@ -51,32 +47,19 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
     PrefsScreen(
         contentPadding = paddingValues
     ) {
-        prefsItem {
-            SwitchPref(
-                key = AppPreferencesUtils.KEY_USE_WEB_VIEW,
-                leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
-                title = R.string.title_use_webview,
-                summaryOn = R.string.tip_use_webview_on,
-                summaryOff = R.string.tip_use_webview,
-                defaultChecked = true
-            )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            prefsItem {
+                TextPref(
+                    title = stringResource(R.string.title_use_webview),
+                    summary = remember {
+                        dumpWebViewVersion(context) ?: context.getString(R.string.toast_load_failed)
+                    },
+                    leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
+                    enabled = true
+                )
+            }
         }
-        prefsItem {
-            val useWebView by context.dataStore.collectPreferenceAsState(
-                key = booleanPreferencesKey(AppPreferencesUtils.KEY_USE_WEB_VIEW),
-                defaultValue = true
-            )
-            SwitchPref(
-                key = AppPreferencesUtils.KEY_WEB_VIEW_CUSTOM_TAB,
-                leadingIcon = Icons.Rounded.Web,
-                enabled = !useWebView,
-                title = R.string.title_use_custom_tabs,
-                summary = { checked ->
-                    if (checked) R.string.tip_use_custom_tab_on else R.string.tip_use_custom_tab
-                },
-                defaultChecked = true,
-            )
-        }
+
         prefsItem {
             var cacheSize: String? by remember { mutableStateOf(null) }
             if (cacheSize == null) {

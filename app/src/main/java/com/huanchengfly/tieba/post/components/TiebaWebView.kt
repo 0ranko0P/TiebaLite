@@ -1,11 +1,14 @@
 package com.huanchengfly.tieba.post.components
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.webkit.WebBackForwardList
 import android.webkit.WebView
+import androidx.annotation.RequiresApi
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.graphics.toArgb
@@ -57,6 +60,17 @@ class TiebaWebView(context: Context): WebView(context) {
     companion object {
 
         private const val KEY_LAST_NAV_ROUTE = "WEB_ROUTE"
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        @SuppressLint("WebViewApiAvailability")
+        fun dumpWebViewVersion(context: Context): String? {
+            return getCurrentWebViewPackage()?.let {
+                val name = context.packageManager.getApplicationLabel(it.applicationInfo)
+                val version = "${it.versionName} (${it.versionCode})"
+                return "$name\n$version"
+            }
+            return null
+        }
 
         fun launchCustomTab(context: Context, url: Uri): Result<Unit> = runCatching {
             val theme = ThemeUtil.getRawTheme()

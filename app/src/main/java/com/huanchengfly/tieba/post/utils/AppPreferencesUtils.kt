@@ -84,9 +84,6 @@ class AppPreferencesUtils private constructor(context: Context) {
         const val KEY_REPLY_HIDE = "ui_reply_hide"
         const val KEY_REPLY_WARNING = "ui_reply_warning"
 
-        const val KEY_USE_WEB_VIEW = "use_webview"
-        const val KEY_WEB_VIEW_CUSTOM_TAB = "use_custom_tabs"
-
         const val KEY_OKSIGN_AUTO = "auto_sign"
         const val KEY_OKSIGN_SLOW = "sign_slow_mode"
         const val KEY_OKSIGN_OFFICIAL = "sign_using_official"
@@ -197,12 +194,6 @@ class AppPreferencesUtils private constructor(context: Context) {
             }
             .distinctUntilChanged()
     }
-
-    val useCustomTabs: Boolean
-        get() = cache[booleanPreferencesKey(KEY_WEB_VIEW_CUSTOM_TAB)] != false
-
-    val useWebView: Boolean
-        get() = cache[booleanPreferencesKey(KEY_USE_WEB_VIEW)] != false
 
     val setupFinished: Boolean
         get() = cache[booleanPreferencesKey(KEY_SETUP_FINISHED)] == true
