@@ -194,7 +194,7 @@ fun WebViewPage(initialUrl: String, navigator: NavController) {
                 },
                 onDispose = TiebaWebView::dispose,
                 client = remember {
-                    TbWebViewClient(context) { route ->
+                    TbWebViewClient(context, coroutineScope) { route ->
                         if ((webViewState.webView as TiebaWebView).canNavigate(route)) {
                             navigator.navigate(route = route)
                         }

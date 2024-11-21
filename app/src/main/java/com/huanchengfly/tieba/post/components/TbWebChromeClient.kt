@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.components
 
-import android.Manifest
 import android.content.Context
 import android.location.LocationManager
 import android.net.Uri
@@ -11,103 +10,78 @@ import android.webkit.WebView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.getSystemService
 import androidx.core.location.LocationManagerCompat
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.components.dialogs.PermissionDialog
-import com.huanchengfly.tieba.post.models.PermissionBean
+import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog
+import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebChromeClient
-import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
-import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
-import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
-import com.huanchengfly.tieba.post.utils.compose.launchActivityForResult
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.channels.onFailure
+import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 class TbWebChromeClient(
-    val context: Context,
-    coroutineScope: CoroutineScope,
+    private val context: Context,
+    private val coroutineScope: CoroutineScope,
 ) : AccompanistWebChromeClient() {
 
-    private var uploadMessage: ValueCallback<Array<Uri>>? = null
-
-    val id: String = UUID.randomUUID().toString()
-
-    init {
-        coroutineScope.onGlobalEvent<GlobalEvent.ActivityResult>(
-            filter = { it.requesterId == id },
-        ) {
-            uploadMessage?.onReceiveValue(FileChooserParams.parseResult(it.resultCode, it.intent))
-            uploadMessage = null
+    override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) {
+        val host = Uri.parse(origin).host
+        if (host.isNullOrEmpty()) {
+            callback.deny(origin); return
         }
-    }
 
-    private fun isEnabledLocationFunction(): Boolean {
-        val locationManager = context.getSystemService<LocationManager>()
-        return locationManager != null && LocationManagerCompat.isLocationEnabled(locationManager)
-    }
+        coroutineScope.launch {
+            when (WebPermissionDialog.getState(context, host, WebPermission.LOCATION)) {
 
-    override fun onGeolocationPermissionsShowPrompt(
-        origin: String?,
-        callback: GeolocationPermissions.Callback?,
-    ) {
-        if (origin == null || callback == null) return
-        PermissionDialog(
-            context,
-            PermissionBean(
-                PermissionDialog.CustomPermission.PERMISSION_LOCATION,
-                origin,
-                context.getString(R.string.title_ask_permission_location, origin),
-                R.drawable.ic_round_location_on
-            )
-        )
-            .setOnGrantedCallback { isForever: Boolean ->
-                MainScope().launch {
-                    context.askPermission(
-                        desc = R.string.usage_webview_location_permission,
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    )
-                    .onGranted {
-                        if (isEnabledLocationFunction()) {
-                            callback.invoke(origin, true, isForever)
-                        } else {
-                            callback.invoke(origin, false, false)
+                WebPermissionDialog.STATE_ALLOW -> callback.grant(origin)
+
+                WebPermissionDialog.STATE_DENY -> callback.deny(origin)
+
+                else -> {
+                    val message = context.getString(R.string.title_ask_permission_location, host)
+                    WebPermissionDialog.newInstance(WebPermission.LOCATION, host, message)
+                        .show(context)
+                        .receiveResult()
+                        .onFailure { callback.deny(origin) }
+                        .onSuccess { granted ->
+                            if (granted) {
+                                callback.grant(origin)
+                            } else {
+                                callback.deny(origin)
+                                context.toastShort(R.string.tip_no_permission)
+                            }
                         }
-                    }
-                    .onDenied {
-                        context.toastShort(R.string.tip_no_permission)
-                        callback.invoke(origin, false, false)
-                    }
                 }
             }
-            .setOnDeniedCallback {
-                callback.invoke(origin, false, false)
-            }
-            .show()
+        }
     }
 
     override fun onShowFileChooser(
         webView: WebView?,
         filePathCallback: ValueCallback<Array<Uri>>?,
-        fileChooserParams: FileChooserParams?,
+        fileChooserParams: FileChooserParams?
     ): Boolean {
         if (webView == null || filePathCallback == null || fileChooserParams == null) return false
-        uploadMessage?.onReceiveValue(null)
-        uploadMessage = filePathCallback
-        launchActivityForResult(id, fileChooserParams.createIntent())
+
+        coroutineScope.launch {
+            val host = Uri.parse(webView.url).host ?: "?"
+            val message = context.getString(R.string.title_ask_permission_file, host)
+            val intent = fileChooserParams.createIntent()
+
+            WebPermissionDialog.newInstance(WebPermission.File(intent), host, message)
+                .show(context)
+                .receiveResult()
+                .onFailure { filePathCallback.onReceiveValue(null) }
+                .onSuccess {
+                    filePathCallback.onReceiveValue(FileChooserParams.parseResult(it.resultCode, it.data))
+                }
+        }
         return true
     }
 
-    override fun onJsAlert(
-        view: WebView?,
-        url: String?,
-        message: String?,
-        result: JsResult?,
-    ): Boolean {
+    override fun onJsAlert(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
         AlertDialog.Builder(view?.context ?: context)
             .setMessage(message)
             .setPositiveButton(R.string.button_sure_default) { _, _ ->
@@ -119,30 +93,15 @@ class TbWebChromeClient(
         return true
     }
 
-    override fun onJsConfirm(
-        view: WebView,
-        url: String?,
-        message: String?,
-        result: JsResult,
-    ): Boolean {
+    override fun onJsConfirm(view: WebView, url: String?, message: String?, result: JsResult): Boolean {
         if ("ClipboardGuardCopyRequest".equals(message, ignoreCase = true)) {
-            val host = Uri.parse(url).host ?: return true
-            PermissionDialog(
-                context,
-                PermissionBean(
-                    PermissionDialog.CustomPermission.PERMISSION_CLIPBOARD_COPY,
-                    host,
-                    context.getString(R.string.title_ask_permission_clipboard_copy, host),
-                    R.drawable.ic_round_file_copy
-                )
-            )
-                .setOnGrantedCallback { result.confirm() }
-                .setOnDeniedCallback { result.cancel() }
-                .show()
+            val host = Uri.parse(url).host ?: return false
+            onClipboardGuardRequest(host, result)
         } else {
             AlertDialog.Builder(view.context)
                 .setTitle("Confirm")
                 .setMessage(message)
+                .setCancelable(false)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
                     result.confirm()
                 }
@@ -153,5 +112,40 @@ class TbWebChromeClient(
                 .show()
         }
         return true
+    }
+
+    private fun onClipboardGuardRequest(host: String, result: JsResult) = coroutineScope.launch {
+        when (WebPermissionDialog.getState(context, host, WebPermission.CLIPBOARD)) {
+
+            WebPermissionDialog.STATE_ALLOW -> result.confirm()
+
+            WebPermissionDialog.STATE_DENY -> result.cancel()
+
+            else -> {
+                val msg = context.getString(R.string.title_ask_permission_clipboard, host)
+
+                WebPermissionDialog.newInstance(WebPermission.CLIPBOARD, host, msg)
+                    .show(context)
+                    .receiveResult()
+                    .onFailure { result.cancel() }
+                    .onSuccess { grant -> if (grant) result.confirm() else result.cancel() }
+            }
+        }
+    }
+
+    companion object {
+
+        private fun isEnabledLocationFunction(): Boolean {
+            val locationManager = App.INSTANCE.getSystemService<LocationManager>()
+            return locationManager != null && LocationManagerCompat.isLocationEnabled(locationManager)
+        }
+
+        // Do not retain state in callback
+        private fun GeolocationPermissions.Callback.deny(origin: String) = invoke(origin, false, false)
+
+        // Do not retain state in callback
+        private fun GeolocationPermissions.Callback.grant(origin: String) {
+            invoke(origin, isEnabledLocationFunction(), false)
+        }
     }
 }

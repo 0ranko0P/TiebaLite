@@ -116,9 +116,10 @@
     <string name="button_allow">允许</string>
     <string name="button_denied">禁止</string>
     <string name="title_not_ask">不再询问</string>
-    <string name="title_ask_permission_location">要允许 %1$s 访问您的位置信息吗？</string>
-    <string name="title_ask_permission_clipboard_copy">要允许 %1$s 写入您的剪贴板吗？</string>
-    <string name="title_start_app_permission">要允许 %1$s 打开您的%2$s吗？</string>
+    <string name="title_ask_permission_file">%1$s 想要打开本地文件</string>
+    <string name="title_ask_permission_location">%1$s 想要访问您的位置信息</string>
+    <string name="title_ask_permission_clipboard">%1$s 想要写入您的剪贴板</string>
+    <string name="title_start_app_permission">%1$s 想要启动%2$s</string>
     <string name="name_multi_app">应用</string>
     <string name="settings_night_mode">夜间模式主题</string>
     <string name="settings_forum_single">吧列表单列显示</string>

@@ -222,7 +222,7 @@ private class LoginWebViewClient(
     val coroutineScope: CoroutineScope,
     val snackbarHostState: SnackbarHostState,
     val onLoggedIn: () -> Unit
-) : TbWebViewClient(context, onNavigate = null) {
+) : TbWebViewClient(context, coroutineScope, onNavigate = null) {
     private var isLoadingAccount = false
 
     override fun injectCookies(url: String) {}
