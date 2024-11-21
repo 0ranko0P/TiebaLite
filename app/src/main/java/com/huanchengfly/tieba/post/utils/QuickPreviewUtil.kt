@@ -23,8 +23,12 @@ object QuickPreviewUtil {
         if (path.equals("/f", ignoreCase = true) || path.equals("/mo/q/m", ignoreCase = true)) {
             return uri.getQueryParameter("kz")?.toLongOrNull()
         }
+
         if (path.startsWith("/p/")) {
-            return runCatching { path.substring(3).toLong() }.getOrNull()
+            return runCatching {
+                val paramIndex = path.indexOf('&').takeUnless { it == -1 } ?: path.length
+                path.substring(3, paramIndex).toLong()
+            }.getOrNull()
         }
         return null
     }
