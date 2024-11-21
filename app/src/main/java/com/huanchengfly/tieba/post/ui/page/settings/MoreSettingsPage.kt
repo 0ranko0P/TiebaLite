@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
+import android.annotation.SuppressLint
 import android.os.Build
+import android.webkit.WebView
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.DeleteForever
@@ -28,8 +30,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
+import com.huanchengfly.tieba.post.utils.buildAppSettingsIntent
 import kotlinx.coroutines.launch
 
+@SuppressLint("WebViewApiAvailability")
 @Composable
 fun MoreSettingsPage(navigator: NavController) = MyScaffold(
     backgroundColor = Color.Transparent,
@@ -54,8 +58,12 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
                     summary = remember {
                         dumpWebViewVersion(context) ?: context.getString(R.string.toast_load_failed)
                     },
+                    onClick = {
+                        WebView.getCurrentWebViewPackage()?.packageName?.let {
+                            runCatching { context.startActivity(buildAppSettingsIntent(it)) }
+                        }
+                    },
                     leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
-                    enabled = true
                 )
             }
         }
