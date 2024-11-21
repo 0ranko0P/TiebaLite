@@ -7,6 +7,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
+import com.huanchengfly.tieba.post.api.urlDecode
 import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.launch
 import org.intellij.lang.annotations.RegExp
-import java.net.URLDecoder
 import java.util.regex.Pattern
 
 sealed class ClipBoardLink(val url: String) {
@@ -98,7 +98,7 @@ object ClipBoardLinkDetector {
                 else -> null
             }
         } else {
-            parseLink(URLDecoder.decode(uri.toString(), Charsets.UTF_8.name()))
+            parseLink(uri.toString().urlDecode())
         }
     }
 

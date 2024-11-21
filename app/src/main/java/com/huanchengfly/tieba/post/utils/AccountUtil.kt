@@ -14,8 +14,6 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.LoginBean
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.toastShort
 import kotlinx.collections.immutable.ImmutableList
@@ -222,7 +220,6 @@ class AccountUtil private constructor(context: Context) {
         val account = runCatching { getAccountInfo(id) }.getOrNull() ?: return@launch
         _currentAccount.value = account
         saveAccountId(id)
-        emitGlobalEvent(GlobalEvent.AccountSwitched)
     }
 
     private suspend fun updateAccount(

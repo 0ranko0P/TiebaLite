@@ -13,7 +13,6 @@
     <color name="transparent">#00000000</color>
     <color name="color_place_holder">#FFF0F0F0</color>
     <color name="color_place_holder_night">#99000000</color>
-    <color name="color_shadow">#FEE9E9E9</color>
 
     <color name="white">#FFF</color>
     <color name="black">#000</color>
@@ -27,7 +26,6 @@
     <color name="default_color_text_secondary">#FF545967</color>
     <color name="default_color_text_disabled">#FFA8ADBB</color>
     <color name="default_color_background">#FFFFFFFF</color>
-    <color name="default_color_card">#FFFFFFFF</color>
 
     <color name="theme_color_card_light">#FFFFFFFF</color>
 

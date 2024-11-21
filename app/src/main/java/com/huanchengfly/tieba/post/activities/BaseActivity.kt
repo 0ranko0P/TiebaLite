@@ -1,11 +1,9 @@
 package com.huanchengfly.tieba.post.activities
 
-import android.app.Dialog
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Bundle
 import android.util.DisplayMetrics
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.App
@@ -38,24 +36,6 @@ abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
             resources.updateConfiguration(configuration, resources.displayMetrics)
         }
         return resources
-    }
-
-    protected fun showDialog(dialog: Dialog): Boolean {
-        if (isActivityRunning) {
-            dialog.show()
-            return true
-        }
-        return false
-    }
-
-    fun showDialog(builder: AlertDialog.Builder.() -> Unit): AlertDialog {
-        val dialog = AlertDialog.Builder(this)
-            .apply(builder)
-            .create()
-        if (isActivityRunning) {
-            dialog.show()
-        }
-        return dialog
     }
 
     override fun onStop() {

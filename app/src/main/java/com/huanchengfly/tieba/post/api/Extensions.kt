@@ -6,9 +6,9 @@ import okio.Buffer
 import java.net.URLDecoder
 import java.net.URLEncoder
 
-fun String.urlEncode(): String = runCatching { URLEncoder.encode(this, "UTF-8") }.getOrDefault(this)
+fun String.urlEncode(): String = runCatching { URLEncoder.encode(this, Charsets.UTF_8.name()) }.getOrDefault(this)
 
-fun String.urlDecode(): String = runCatching { URLDecoder.decode(this, "UTF-8") }.getOrDefault(this)
+fun String.urlDecode(): String = runCatching { URLDecoder.decode(this, Charsets.UTF_8.name()) }.getOrDefault(this)
 
 fun FormBody.containsEncodedName(name: String): Boolean {
     repeat(size) {

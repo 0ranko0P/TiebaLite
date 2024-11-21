@@ -56,9 +56,6 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -83,8 +80,6 @@ import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.compose.LaunchActivityForResult
-import com.huanchengfly.tieba.post.utils.compose.LaunchActivityRequest
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import dagger.hilt.android.AndroidEntryPoint
@@ -112,12 +107,6 @@ class MainActivityV2 : BaseComposeActivity() {
 
     private val notificationCountFlow: MutableSharedFlow<Int> =
         MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-
-    private val mLaunchActivityForResultLauncher = registerForActivityResult(
-        LaunchActivityForResult()
-    ) {
-        emitGlobalEvent(GlobalEvent.ActivityResult(it.requesterId, it.resultCode, it.intent))
-    }
 
     private val devicePostureFlow: StateFlow<DevicePosture> by lazy {
         WindowInfoTracker.getOrCreate(this)
@@ -314,14 +303,6 @@ class MainActivityV2 : BaseComposeActivity() {
             }
         }
 
-        onGlobalEvent<GlobalEvent.StartActivityForResult> {
-            mLaunchActivityForResultLauncher.launch(
-                LaunchActivityRequest(
-                    it.requesterId,
-                    it.intent
-                )
-            )
-        }
         TiebaLiteLocalProvider {
             TranslucentThemeBackground {
                 RootNavGraph(bottomSheetNavigator, navController, entryRoute)

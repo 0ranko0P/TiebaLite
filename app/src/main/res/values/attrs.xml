@@ -19,12 +19,6 @@
         <attr name="thumbColor" />
     </declare-styleable>
 
-    <declare-styleable name="TintMaterialButton">
-        <attr name="buttonBackgroundTint" format="color" />
-        <attr name="buttonTextColor" format="color" />
-        <attr name="buttonStrokeColor" format="color" />
-    </declare-styleable>
-
     <declare-styleable name="TintCheckBox">
         <attr name="checkboxBackgroundTint" format="color" />
         <attr name="buttonTint" format="color" />
