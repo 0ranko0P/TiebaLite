@@ -7,7 +7,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dataStoreScope
 import com.huanchengfly.tieba.post.getBoolean
@@ -95,6 +97,9 @@ class AppPreferencesUtils private constructor(context: Context) {
         const val KEY_OKSIGN_LAST_TIME = "sign_day"
         const val KEY_OKSIGN_AUTO_TIME = "auto_sign_time"
 
+        private const val KEY_INSTALL_TIME = "se_install_time"
+        private const val KEY_UPDATE_TIME = "se_update_time"
+
         /**
          * 帖子排序方式
          * */
@@ -179,6 +184,16 @@ class AppPreferencesUtils private constructor(context: Context) {
     var signDay: Int
         get() = dataStore.getInt(KEY_OKSIGN_LAST_TIME, -1)
         set(value) = dataStore.putInt(KEY_OKSIGN_LAST_TIME, value)
+
+    val installTime: Long
+        get() = cache[longPreferencesKey(KEY_INSTALL_TIME)] ?: App.INSTANCE.packageInfo.firstInstallTime.apply {
+            dataStore.putLong(KEY_INSTALL_TIME, this)
+        }
+
+    val updateTime: Long
+        get() = cache[longPreferencesKey(KEY_UPDATE_TIME)] ?: App.INSTANCE.packageInfo.lastUpdateTime.apply {
+            dataStore.putLong(KEY_UPDATE_TIME, this)
+        }
 
     /**
      * File of cropped background for Translucent Theme

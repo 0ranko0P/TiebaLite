@@ -20,7 +20,6 @@ import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.SharedPreferencesUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import com.huanchengfly.tieba.post.utils.packageInfo
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -60,7 +59,6 @@ class App : Application() {
         LitePal.initialize(this)
         Config.init(this)
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        registerActivityLifecycleCallbacks(OAIDGetter)
         MainScope().launch {
             BlockManager.init()
             EmoticonManager.init(this@App)
@@ -138,8 +136,10 @@ class App : Application() {
                     isTrackLimited = false
                 }
                 userAgent = WebSettings.getDefaultUserAgent(context)
-                appFirstInstallTime = context.packageInfo.firstInstallTime
-                appLastUpdateTime = context.packageInfo.lastUpdateTime
+                context.appPreferences.run {
+                    appFirstInstallTime = installTime
+                    appLastUpdateTime = updateTime
+                }
                 inited = true
             }
         }
