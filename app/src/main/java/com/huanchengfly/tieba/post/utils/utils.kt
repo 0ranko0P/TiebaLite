@@ -14,6 +14,7 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.page.Destination
 import java.io.IOException
 
 fun launchUrl(
@@ -59,7 +60,7 @@ fun launchUrl(
         navigator.navigate(route)
     }
     if (!blocked) {
-        TiebaWebView.launchCustomTab(context, uri)
+        navigator.navigate(route = Destination.WebView(url))
     }
 }
 
