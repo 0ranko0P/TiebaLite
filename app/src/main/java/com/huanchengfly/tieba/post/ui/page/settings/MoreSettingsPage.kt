@@ -31,6 +31,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import com.huanchengfly.tieba.post.utils.buildAppSettingsIntent
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
 @SuppressLint("WebViewApiAvailability")
@@ -47,6 +49,7 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
     val snackbarHostState = LocalSnackbarHostState.current
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    var diskCacheJob: Job? by remember { mutableStateOf(null) }
 
     PrefsScreen(
         contentPadding = paddingValues
@@ -80,13 +83,14 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
                 title = stringResource(id = R.string.title_clear_picture_cache),
                 onClick = {
                     cacheSize = "0.0B"
-                    coroutineScope.launch {
+                    diskCacheJob = MainScope().launch {
                         snackbarHostState.showSnackbar(context.getString(R.string.toast_clear_picture_cache_success))
                         ImageCacheUtil.clearImageAllCache(context)
                     }
                 },
                 summary = stringResource(id = R.string.tip_cache, cacheSize ?: "..."),
-                leadingIcon = Icons.Rounded.DeleteForever
+                leadingIcon = Icons.Rounded.DeleteForever,
+                enabled = diskCacheJob?.isCompleted != false
             )
         }
         prefsItem {
