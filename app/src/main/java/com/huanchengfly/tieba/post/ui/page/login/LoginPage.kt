@@ -244,10 +244,8 @@ private class LoginWebViewClient(
             if (bduss == null || sToken == null) {
                 return
             }
-            if (!baiduId.isNullOrEmpty() && ClientUtils.baiduId.isNullOrEmpty()) {
-                coroutineScope.launch {
-                    ClientUtils.saveBaiduId(context, baiduId)
-                }
+            if (ClientUtils.baiduId.isNullOrEmpty()) {
+                ClientUtils.saveBaiduId(context, baiduId)
             }
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(

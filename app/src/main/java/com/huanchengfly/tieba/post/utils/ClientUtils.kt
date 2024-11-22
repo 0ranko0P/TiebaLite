@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.asyncEdit
 import com.huanchengfly.tieba.post.dataStore
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.catch
@@ -34,11 +35,10 @@ object ClientUtils {
         sync(context)
     }
 
-    suspend fun saveBaiduId(context: Context, id: String) {
+    fun saveBaiduId(context: Context, id: String?) {
+        if (id.isNullOrEmpty() || id.isBlank() || id == baiduId) return
         baiduId = id
-        context.dataStore.edit {
-            it[baiduIdKey] = id
-        }
+        context.dataStore.asyncEdit(baiduIdKey, id)
     }
 
     suspend fun setActiveTimestamp(context: Context) {
