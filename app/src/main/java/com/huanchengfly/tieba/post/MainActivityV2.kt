@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -73,6 +74,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_IGNORE_BATTERY_OPTIMIZATION
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.JobServiceUtil
@@ -200,108 +202,13 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     @Composable
-    private fun ClipBoardDetectDialog(navController: NavController) {
-        val previewInfo by ClipBoardLinkDetector.previewInfoStateFlow.collectAsState()
-
-        val dialogState = rememberDialogState()
-
-        LaunchedEffect(previewInfo) {
-            if (previewInfo != null) {
-                dialogState.show()
-            }
-        }
-
-        Dialog(
-            dialogState = dialogState,
-            onDismiss = { ClipBoardLinkDetector.clear() },
-            title = {
-                Text(text = stringResource(id = R.string.title_dialog_clip_board_tieba_url))
-            },
-            cancelableOnTouchOutside = false,
-            buttons = {
-                DialogPositiveButton(text = stringResource(id = R.string.button_open)) {
-                    previewInfo?.let {
-                        val route = it.clipBoardLink.toRoute(it.icon?.url)
-                        navController.navigate(route = route)
-                    }
-                }
-                DialogNegativeButton(text = stringResource(id = R.string.btn_close))
-            },
-        ) {
-            previewInfo?.let {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                    border = BorderStroke(1.dp, ExtendedTheme.colors.divider),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        it.icon?.let { icon ->
-                            if (icon.type == QuickPreviewUtil.Icon.TYPE_DRAWABLE_RES) {
-                                AvatarIcon(resId = icon.res, size = Sizes.Medium)
-                            } else {
-                                Avatar(data = icon.url, size = Sizes.Medium)
-                            }
-                        }
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            it.title?.let { title ->
-                                Text(text = title, style = MaterialTheme.typography.subtitle1)
-                            }
-                            it.subtitle?.let { subtitle ->
-                                Text(text = subtitle, style = MaterialTheme.typography.body2)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
     override fun Content() {
-        val okSignAlertDialogState = rememberDialogState()
         val bottomSheetNavigator = rememberBottomSheetNavigator()
         val navController = rememberNavController(bottomSheetNavigator)
         val entryRoute = if (appPreferences.setupFinished) Destination.Main else Destination.Welcome
 
-        var ignoreBatteryOp by rememberPreferenceAsMutableState(
-            key = booleanPreferencesKey(KEY_IGNORE_BATTERY_OPTIMIZATION),
-            defaultValue = false
-        )
-
+        BatteryOpDialog(this, appPreferences)
         ClipBoardDetectDialog(navController)
-        AlertDialog(
-            dialogState = okSignAlertDialogState,
-            title = { Text(text = stringResource(id = R.string.title_dialog_oksign_battery_optimization)) },
-            content = { Text(text = stringResource(id = R.string.message_dialog_oksign_battery_optimization)) },
-            buttons = {
-                DialogPositiveButton(
-                    text = stringResource(id = R.string.button_go_to_ignore_battery_optimization),
-                    onClick = {
-                        requestIgnoreBatteryOptimizations()
-                    }
-                )
-                DialogNegativeButton(
-                    text = stringResource(id = R.string.button_cancel)
-                )
-                DialogNegativeButton(
-                    text = stringResource(id = R.string.button_dont_remind_again),
-                    onClick = { ignoreBatteryOp = true }
-                )
-            },
-        )
-        LaunchedEffect(Unit) {
-            if (!ignoreBatteryOp && appPreferences.autoSign && !isIgnoringBatteryOptimizations()) {
-                okSignAlertDialogState.show()
-            }
-        }
 
         TiebaLiteLocalProvider {
             TranslucentThemeBackground {
@@ -372,6 +279,105 @@ class MainActivityV2 : BaseComposeActivity() {
                     lifecycleScope.launch {
                         notificationCountFlow.emit(count)
                     }
+                }
+            }
+        }
+    }
+
+    companion object {
+
+        @Composable
+        private fun ClipBoardDetectDialog(navController: NavController) {
+            val dialogState = rememberDialogState()
+
+            val previewInfo by ClipBoardLinkDetector.previewInfoStateFlow.collectAsStateWithLifecycle()
+            LaunchedEffect(previewInfo) {
+                if (previewInfo != null) dialogState.show()
+            }
+
+            Dialog(
+                dialogState = dialogState,
+                onDismiss = ClipBoardLinkDetector::clear,
+                title = {
+                    Text(text = stringResource(id = R.string.title_dialog_clip_board_tieba_url))
+                },
+                cancelableOnTouchOutside = false,
+                buttons = {
+                    DialogPositiveButton(text = stringResource(id = R.string.button_open)) {
+                        previewInfo?.let {
+                            val route = it.clipBoardLink.toRoute(it.icon?.url)
+                            navController.navigate(route = route)
+                        }
+                    }
+                    DialogNegativeButton(text = stringResource(id = R.string.btn_close))
+                },
+            ) {
+                previewInfo?.let {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp),
+                        border = BorderStroke(1.dp, ExtendedTheme.colors.divider),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            it.icon?.let { icon ->
+                                if (icon.type == QuickPreviewUtil.Icon.TYPE_DRAWABLE_RES) {
+                                    AvatarIcon(resId = icon.res, size = Sizes.Medium)
+                                } else {
+                                    Avatar(data = icon.url, size = Sizes.Medium)
+                                }
+                            }
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                it.title?.let { title ->
+                                    Text(text = title, style = MaterialTheme.typography.subtitle1)
+                                }
+                                it.subtitle?.let { subtitle ->
+                                    Text(text = subtitle, style = MaterialTheme.typography.body2)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        @Composable
+        private fun BatteryOpDialog(context: Context, prefUtil: AppPreferencesUtils) {
+            var ignoreBatteryOp by rememberPreferenceAsMutableState(
+                key = booleanPreferencesKey(KEY_IGNORE_BATTERY_OPTIMIZATION),
+                defaultValue = false
+            )
+
+            val okSignAlertDialogState = rememberDialogState()
+            AlertDialog(
+                dialogState = okSignAlertDialogState,
+                title = { Text(text = stringResource(id = R.string.title_dialog_oksign_battery_optimization)) },
+                content = { Text(text = stringResource(id = R.string.message_dialog_oksign_battery_optimization)) },
+                buttons = {
+                    DialogPositiveButton(
+                        text = stringResource(id = R.string.button_go_to_ignore_battery_optimization),
+                        onClick = context::requestIgnoreBatteryOptimizations
+                    )
+
+                    DialogNegativeButton(text = stringResource(id = R.string.button_cancel))
+
+                    DialogNegativeButton(text = stringResource(id = R.string.button_dont_remind_again)) {
+                        ignoreBatteryOp = true
+                    }
+                }
+            )
+
+            LaunchedEffect(Unit) {
+                delay(2000L)
+                if (!ignoreBatteryOp && prefUtil.autoSign && !context.isIgnoringBatteryOptimizations()) {
+                    okSignAlertDialogState.show()
                 }
             }
         }
