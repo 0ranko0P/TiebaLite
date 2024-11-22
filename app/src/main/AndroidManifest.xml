@@ -54,7 +54,7 @@
         android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_new_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
+        android:theme="@style/Theme.NewAppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="UnusedAttribute">
         <service
@@ -72,7 +72,7 @@
         <activity
             android:name=".ui.page.photoview.PhotoViewActivity"
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
-            android:theme="@style/AppTheme.Transparent.PhotoView"
+            android:theme="@style/Theme.Transparent.PhotoView"
             android:windowSoftInputMode="adjustResize" />
 
         <receiver
@@ -271,12 +271,12 @@
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
             android:exported="false"
             android:windowSoftInputMode="adjustResize"
-            android:theme="@style/AppTheme.Transparent" />
+            android:theme="@style/Theme.Transparent" />
 
         <activity
             android:name=".activities.UCropActivity"
             android:exported="false"
-            android:theme="@style/AppTheme.Transparent" />
+            android:theme="@style/Theme.Transparent" />
 
         <activity
             android:name=".ui.page.user.edit.EditProfileActivity"
