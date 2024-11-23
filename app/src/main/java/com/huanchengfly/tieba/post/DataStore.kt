@@ -25,11 +25,11 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -62,16 +62,16 @@ fun <T> rememberPreferenceAsMutableState(
     }
 
     LaunchedEffect(key1 = state.value, key2 = defaultValue) {
-        val newValue = state.value
-        try {
-            dataStore.edit {
-                // Keep it default and abort DataStore transaction
-                if (newValue == defaultValue && it[key] == null) {
-                    throw CancellationException()
-                }
-                it[key] = newValue
-            }
-        } catch (_: CancellationException) {
+        delay(200)
+        val newValue: T = state.value
+        val oldValue: T? = dataStore.data.first()[key]
+
+        when {
+            newValue == oldValue -> return@LaunchedEffect
+
+            newValue == defaultValue && oldValue == null -> return@LaunchedEffect
+
+            else -> dataStore.asyncEdit(key, newValue.takeUnless { it == defaultValue })
         }
     }
 
