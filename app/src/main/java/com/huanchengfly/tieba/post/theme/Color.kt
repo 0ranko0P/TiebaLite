@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 val BlueDark = Color(0xFF17212B)
 val BlueDeepDark = Color(0xFF242F3D)
 
+val Blue200 = Color(0xFF90CAF9)
 val BlueGrey400 = Color(0xFF78909C)
 val BlueGrey500 = Color(0xFF607D8B)
 
@@ -26,6 +27,7 @@ val OrangeA700 = Color(0xFFFF6D00)
 
 val YellowA700 = Color(0xFFFFD600)
 
+val Purple100 = Color(0xFFE1BEE7)
 val LightPurple = Color(0xFFAD44E0)
 val DeepPurple = Color(0xFF5f44e0)
 
