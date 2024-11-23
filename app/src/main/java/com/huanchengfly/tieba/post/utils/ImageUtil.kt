@@ -6,8 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -16,7 +14,6 @@ import android.util.Base64
 import android.util.Log
 import android.webkit.URLUtil
 import androidx.annotation.RequiresApi
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.media3.common.MimeTypes
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
@@ -24,7 +21,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.components.glide.ProgressListener
 import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
@@ -32,7 +28,6 @@ import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
-import com.huanchengfly.tieba.post.utils.ThemeUtil.isNightMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -268,27 +263,6 @@ object ImageUtil {
     fun getPicId(picUrl: String?): String {
         val fileName = URLUtil.guessFileName(picUrl, null, MimeTypes.IMAGE_JPEG)
         return fileName.replace(".jpg", "")
-    }
-
-    fun getPlaceHolder(context: Context, radius: Int): Drawable {
-        val drawable = GradientDrawable()
-        val colorResId =
-            if (isNightMode()) R.color.color_place_holder_night else R.color.color_place_holder
-        val color = ContextCompat.getColor(context, colorResId)
-        drawable.setColor(color)
-        drawable.cornerRadius =
-            DisplayUtil.dp2px(context, radius.toFloat()).toFloat()
-        return drawable
-    }
-
-    fun getPlaceHolder(context: Context, radius: Float): Drawable {
-        val drawable = GradientDrawable()
-        val colorResId =
-            if (isNightMode()) R.color.color_place_holder_night else R.color.color_place_holder
-        val color = ContextCompat.getColor(context, colorResId)
-        drawable.setColor(color)
-        drawable.cornerRadius = radius.dpToPxFloat()
-        return drawable
     }
 
     /**

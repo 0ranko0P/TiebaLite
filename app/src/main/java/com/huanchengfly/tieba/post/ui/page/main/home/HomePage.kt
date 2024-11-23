@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.main.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -71,8 +70,7 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
-import com.google.accompanist.drawablepainter.rememberDrawablePainter
-import com.google.accompanist.placeholder.placeholder
+import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -101,6 +99,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
@@ -110,10 +109,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_HOME_PAGE_SHOW_HISTORY
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_HOME_SINGLE_FORUM_LIST
-import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.collections.immutable.persistentListOf
+
+private val FORUM_AVATAR_SIZE = 40.dp
 
 @Preview("SearchBoxPreview")
 @Composable
@@ -192,57 +192,34 @@ private fun ForumItemPlaceholder(
     showAvatar: Boolean,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = CenterVertically
     ) {
         if (showAvatar) {
-            Image(
-                painter = rememberDrawablePainter(
-                    drawable = ImageUtil.getPlaceHolder(
-                        LocalContext.current,
-                        0
-                    )
-                ),
-                contentDescription = null,
+            Box(
                 modifier = Modifier
-                    .clip(CircleShape)
-                    .size(40.dp)
-                    .align(CenterVertically)
-                    .placeholder(visible = true, color = ExtendedTheme.colors.chip),
+                    .size(FORUM_AVATAR_SIZE)
+                    .placeholder(color = ExtendedTheme.colors.chip, shape = CircleShape),
             )
             Spacer(modifier = Modifier.width(14.dp))
         }
+
         Text(
-            color = ExtendedTheme.colors.text,
             text = "",
             modifier = Modifier
                 .weight(1.0f)
-                .align(CenterVertically)
                 .placeholder(visible = true, color = ExtendedTheme.colors.chip),
             fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
         )
+
         Spacer(modifier = Modifier.width(8.dp))
         Box(
             modifier = Modifier
                 .width(54.dp)
-                .background(
-                    color = ExtendedTheme.colors.chip,
-                    shape = RoundedCornerShape(3.dp)
-                )
                 .padding(vertical = 4.dp)
-                .align(CenterVertically)
-                .placeholder(visible = true, color = ExtendedTheme.colors.chip)
+                .placeholder(color = ExtendedTheme.colors.chip, shape = RoundedCornerShape(3.dp))
         ) {
-            Text(
-                text = "0",
-                color = ExtendedTheme.colors.onChip,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Center)
-            )
+            Text(text = "0", fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -307,7 +284,7 @@ private fun ForumItemContent(
                     modifier = Modifier
                         .localSharedBounds(key = ForumAvatarSharedBoundsKey(item.forumName, null)),
                     data = item.avatar,
-                    size = 40.dp,
+                    size = FORUM_AVATAR_SIZE,
                     contentDescription = null
                 )
                 Spacer(modifier = Modifier.width(14.dp))
@@ -584,11 +561,8 @@ fun HomePage(
                                 }
                                 AnimatedVisibility(visible = expandHistoryForum) {
                                     LazyRow(
-                                        contentPadding = PaddingValues(bottom = 8.dp),
+                                        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 8.dp),
                                     ) {
-                                        item(key = "Spacer1") {
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                        }
                                         items(
                                             historyForums,
                                             key = { it.data }
@@ -609,7 +583,7 @@ fun HomePage(
                                                 Avatar(
                                                     data = it.avatar,
                                                     contentDescription = null,
-                                                    size = 24.dp,
+                                                    size = Sizes.Tiny,
                                                     shape = CircleShape
                                                 )
                                                 Text(
@@ -619,9 +593,6 @@ fun HomePage(
                                                     modifier = Modifier.padding(end = 4.dp)
                                                 )
                                             }
-                                        }
-                                        item(key = "Spacer2") {
-                                            Spacer(modifier = Modifier.width(12.dp))
                                         }
                                     }
                                 }
@@ -633,10 +604,7 @@ fun HomePage(
                             Column(
                                 modifier = Modifier.padding(vertical = 8.dp)
                             ) {
-                                Header(
-                                    text = stringResource(id = R.string.title_top_forum),
-                                    invert = true
-                                )
+                                Header(text = stringResource(id = R.string.title_top_forum), invert = true)
                             }
                         }
                         items(
@@ -730,15 +698,11 @@ private fun HomePageSkeletonScreen(
         items(6, key = { "TopPlaceholder$it" }) {
             ForumItemPlaceholder(listSingle)
         }
-        item(
-            key = "Spacer",
-            span = { GridItemSpan(maxLineSpan) }) {
-            Spacer(
-                modifier = Modifier.height(
-                    16.dp
-                )
-            )
+
+        item(key = "Spacer", span = { GridItemSpan(maxLineSpan) }) {
+            Spacer(modifier = Modifier.height(16.dp))
         }
+
         item(key = "ForumHeaderPlaceholder", span = { GridItemSpan(maxLineSpan) }) {
             Column {
                 Header(
