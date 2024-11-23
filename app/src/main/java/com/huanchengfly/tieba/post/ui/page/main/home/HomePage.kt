@@ -95,6 +95,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
@@ -215,7 +217,7 @@ private fun ForumItemPlaceholder(
             color = ExtendedTheme.colors.text,
             text = "",
             modifier = Modifier
-                .weight(1f)
+                .weight(1.0f)
                 .align(CenterVertically)
                 .placeholder(visible = true, color = ExtendedTheme.colors.chip),
             fontSize = 15.sp,
@@ -288,6 +290,7 @@ private fun ForumItemMenuContent(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ForumItemContent(
     item: HomeUiState.Forum,
@@ -300,7 +303,13 @@ private fun ForumItemContent(
     ) {
         AnimatedVisibility(visible = showAvatar) {
             Row {
-                Avatar(data = item.avatar, size = 40.dp, contentDescription = null)
+                Avatar(
+                    modifier = Modifier
+                        .localSharedBounds(key = ForumAvatarSharedBoundsKey(item.forumName, null)),
+                    data = item.avatar,
+                    size = 40.dp,
+                    contentDescription = null
+                )
                 Spacer(modifier = Modifier.width(14.dp))
             }
         }
@@ -308,15 +317,17 @@ private fun ForumItemContent(
             color = ExtendedTheme.colors.text,
             text = item.forumName,
             modifier = Modifier
-                .weight(1f)
-                .align(CenterVertically),
+                .align(CenterVertically)
+                .localSharedBounds(key = ForumTitleSharedBoundsKey(item.forumName, null)),
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
         )
-        Spacer(modifier = Modifier.width(8.dp))
+
+        Spacer(modifier = Modifier.weight(1f))
         Box(
             modifier = Modifier
+                .padding(start = 8.dp)
                 .width(54.dp)
                 .background(
                     color = ExtendedTheme.colors.chip,
@@ -329,7 +340,7 @@ private fun ForumItemContent(
                 modifier = Modifier.align(Center),
             ) {
                 Text(
-                    text = "Lv.${item.levelId}",
+                    text = remember { "Lv.${item.levelId}" },
                     color = ExtendedTheme.colors.onChip,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
@@ -491,6 +502,11 @@ fun HomePage(
             refreshing = isLoading,
             onRefresh = { viewModel.send(HomeUiIntent.Refresh) }
         )
+
+        val onForumClick: (HomeUiState.Forum) -> Unit = remember { {
+            navigator.navigate(Destination.Forum(it.forumName, it.avatar))
+        } }
+
         Box(
             modifier = Modifier
                 .pullRefresh(pullRefreshState)
@@ -630,9 +646,7 @@ fun HomePage(
                             ForumItem(
                                 item,
                                 listSingle,
-                                onClick = {
-                                    navigator.navigate(Destination.Forum(it.forumName))
-                                },
+                                onClick = onForumClick,
                                 onUnfollow = {
                                     unfollowForum = it
                                     confirmUnfollowDialog.show()
@@ -661,9 +675,7 @@ fun HomePage(
                         ForumItem(
                             item,
                             listSingle,
-                            onClick = {
-                                navigator.navigate(Destination.Forum(it.forumName))
-                            },
+                            onClick = onForumClick,
                             onUnfollow = {
                                 unfollowForum = it
                                 confirmUnfollowDialog.show()

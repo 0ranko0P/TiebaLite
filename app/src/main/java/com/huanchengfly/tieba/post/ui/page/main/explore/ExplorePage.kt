@@ -1,10 +1,13 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
@@ -29,13 +32,14 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
-import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
+import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
@@ -106,6 +110,7 @@ private fun TabText(
     Text(text = text, style = style)
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ExplorePage() {
     val account = LocalAccount.current
@@ -148,11 +153,13 @@ fun ExplorePage() {
                 title = stringResource(id = R.string.title_explore),
                 navigationIcon = accountNavIconIfCompact(),
                 actions = {
-                    ActionItem(
-                        icon = Icons.Rounded.Search,
-                        contentDescription = stringResource(id = R.string.title_search),
-                        onClick = { navigator.navigate(Search) }
-                    )
+                    IconButton(onClick = { navigator.navigate(Search) }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = stringResource(id = R.string.title_search),
+                            modifier = Modifier.localSharedElements(SearchIconSharedElementKey)
+                        )
+                    }
                 },
             ) {
                 ExplorePageTab(pagerState = pagerState, pages = pages)

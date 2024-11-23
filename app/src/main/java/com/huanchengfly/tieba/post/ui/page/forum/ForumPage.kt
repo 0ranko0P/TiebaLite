@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -555,6 +556,7 @@ fun ForumHeaderPlaceholder(
             )
 
             if (LocalAccount.current != null) {
+                Spacer(modifier = Modifier.weight(1.0f))
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
