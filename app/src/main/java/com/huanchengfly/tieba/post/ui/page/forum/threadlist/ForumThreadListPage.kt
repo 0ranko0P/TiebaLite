@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.forum.threadlist
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,8 +22,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -39,8 +38,6 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumRuleDetail
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
@@ -53,7 +50,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
-import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.ImmutableList
@@ -143,9 +139,7 @@ fun GoodThreadListPage(
     )
 
     if (goodClassifies.size <= 1) { // Unclassified
-        ForumThreadListPage(modifier.fillMaxSize(), forumId, true, sortType, listState, viewModel) {
-            viewModel.requestRefresh(goodClassifyId = 0)
-        }
+        ForumThreadListPage(modifier.fillMaxSize(), forumId, true, sortType, listState, viewModel)
     } else {
         Column(modifier = modifier.fillMaxSize()) {
             GoodClassifyTabs(
@@ -154,9 +148,7 @@ fun GoodThreadListPage(
                 onSelected = viewModel::requestRefresh
             )
 
-            ForumThreadListPage(modifier, forumId, true, sortType, listState, viewModel) {
-                viewModel.requestRefresh(goodClassifyId = 0)
-            }
+            ForumThreadListPage(modifier, forumId, true, sortType, listState, viewModel)
         }
     }
 }
@@ -179,9 +171,7 @@ fun NormalThreadListPage(
         viewModel.requestRefresh(it.sortType)
     }
 
-    ForumThreadListPage(modifier, forumId, false, sortType, listState, viewModel) {
-        viewModel.requestRefresh(sortType())
-    }
+    ForumThreadListPage(modifier, forumId, false, sortType, listState, viewModel)
 }
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -192,8 +182,7 @@ private fun ForumThreadListPage(
     isGood: Boolean = false,
     sortType: () -> Int,
     listState: LazyListState,
-    viewModel: ForumThreadListViewModel,
-    onRefresh: () -> Unit,
+    viewModel: ForumThreadListViewModel
 ) {
     val context = LocalContext.current
     val navigator = LocalNavController.current
@@ -224,10 +213,7 @@ private fun ForumThreadListPage(
             )
         }
     }
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::isRefreshing,
-        initial = false
-    )
+
     val isLoadingMore by viewModel.uiState.collectPartialAsState(
         prop1 = ForumThreadListUiState::isLoadingMore,
         initial = false
@@ -252,15 +238,9 @@ private fun ForumThreadListPage(
         prop1 = ForumThreadListUiState::threadListIds,
         initial = persistentListOf()
     )
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = onRefresh
-    )
 
-    PullToRefreshLayout(
-        modifier = modifier.fillMaxSize(),
-        onRefresh = onRefresh,
-        refreshing = isRefreshing
+    Box(
+        modifier = modifier.fillMaxSize()
     ) {
         Container {
             SwipeUpLazyLoadColumn(
@@ -366,13 +346,5 @@ private fun ForumThreadListPage(
                 }
             }
         }
-
-        PullRefreshIndicator(
-            refreshing = isRefreshing,
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
-        )
     }
 }

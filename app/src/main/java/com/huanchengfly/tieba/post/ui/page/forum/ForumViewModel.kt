@@ -215,14 +215,18 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
         saveSortType(forumName, sortType)
     }
 
+    fun onRefreshClicked(isGood: Boolean) {
+        scope.launch {
+            emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood))
+            emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
+        }
+    }
+
     fun onFabClicked(context: Context, isGood: Boolean) {
         when (fab) {
             ForumFabFunction.POST -> context.toastShort(R.string.toast_feature_unavailable)
 
-            ForumFabFunction.REFRESH -> scope.launch {
-                emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood))
-                emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
-            }
+            ForumFabFunction.REFRESH -> onRefreshClicked(isGood)
 
             ForumFabFunction.BACK_TO_TOP -> scope.launch {
                 emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood))

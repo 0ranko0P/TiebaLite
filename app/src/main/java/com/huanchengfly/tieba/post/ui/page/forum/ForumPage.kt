@@ -381,6 +381,10 @@ fun ForumPage(
                         forumInfo?.item?.let { viewModel.sendToDesktop(context, forum = it) }
                     }
 
+                    TextMenuItem(text = stringResource(R.string.title_refresh)) {
+                        viewModel.onRefreshClicked(isGood = isGood)
+                    }
+
                     if (tbs != null) {
                         TextMenuItem(text = stringResource(R.string.title_unfollow)) {
                             unlikeDialogState.show()
