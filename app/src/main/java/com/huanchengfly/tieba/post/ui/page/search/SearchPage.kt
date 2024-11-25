@@ -245,25 +245,21 @@ fun SearchPage(
             TopAppBarContainer(
                 modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
                 topBar = {
-                    Box(
+                    SearchTopBar(
                         modifier = Modifier
-                            .height(64.dp)
                             .background(ExtendedTheme.colors.topBar)
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        SearchTopBar(
-                            keyword = inputKeyword,
-                            onKeywordChange = { inputKeyword = it },
-                            onKeywordSubmit = onKeywordSubmit,
-                            onBack = {
-                                if (isKeywordEmpty) {
-                                    navigator.navigateUp()
-                                } else {
-                                    viewModel.send(SearchUiIntent.SubmitKeyword(""))
-                                }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        keyword = inputKeyword,
+                        onKeywordChange = { inputKeyword = it },
+                        onKeywordSubmit = onKeywordSubmit,
+                        onBack = {
+                            if (isKeywordEmpty) {
+                                navigator.navigateUp()
+                            } else {
+                                viewModel.send(SearchUiIntent.SubmitKeyword(""))
                             }
-                        )
-                    }
+                        }
+                    )
                 },
             ) {
                 AnimatedVisibility(
@@ -275,37 +271,35 @@ fun SearchPage(
             }
         }
     ) { contentPadding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (!isKeywordEmpty) {
-                ProvideNavigator(navigator = navigator) {
-                    LazyLoadHorizontalPager(
-                        state = pagerState,
-                        key = { pages[it].id },
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        pages[it].content(contentPadding)
-                    }
+        if (!isKeywordEmpty) {
+            ProvideNavigator(navigator = navigator) {
+                LazyLoadHorizontalPager(
+                    state = pagerState,
+                    key = { pages[it].id },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    pages[it].content(contentPadding)
                 }
+            }
+        } else {
+            if (showSuggestions) {
+                SearchSuggestionList(contentPadding, suggestions, onItemClick = onKeywordSubmit)
             } else {
-                if (showSuggestions) {
-                    SearchSuggestionList(contentPadding, suggestions, onItemClick = onKeywordSubmit)
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(contentPadding)
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        Container {
-                            SearchHistoryList(
-                                searchHistories = searchHistories,
-                                onSearchHistoryClick = onKeywordSubmit,
-                                expanded = expanded,
-                                onToggleExpand = { expanded = !expanded },
-                                onDelete = { viewModel.send(SearchUiIntent.DeleteSearchHistory(it.id)) },
-                                onClear = { viewModel.send(SearchUiIntent.ClearSearchHistory) }
-                            )
-                        }
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(contentPadding)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Container {
+                        SearchHistoryList(
+                            searchHistories = searchHistories,
+                            onSearchHistoryClick = onKeywordSubmit,
+                            expanded = expanded,
+                            onToggleExpand = { expanded = !expanded },
+                            onDelete = { viewModel.send(SearchUiIntent.DeleteSearchHistory(it.id)) },
+                            onClear = { viewModel.send(SearchUiIntent.ClearSearchHistory) }
+                        )
                     }
                 }
             }
@@ -551,6 +545,7 @@ private fun SearchHistoryList(
 
 @Composable
 private fun SearchTopBar(
+    modifier: Modifier = Modifier,
     keyword: String,
     onKeywordChange: (String) -> Unit,
     onKeywordSubmit: (String) -> Unit = {},
@@ -559,7 +554,7 @@ private fun SearchTopBar(
     SearchBox(
         keyword = keyword,
         onKeywordChange = onKeywordChange,
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxWidth(),
         onKeywordSubmit = onKeywordSubmit,
         placeholder = {
             Text(
