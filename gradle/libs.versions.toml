@@ -1,6 +1,6 @@
 [versions]
 accompanist = "0.36.0"
-agp = "8.7.0"
+agp = "8.7.2"
 hilt = "2.52"
 kotlin = "2.0.21"
 coroutines = "1.9.0"
@@ -9,14 +9,14 @@ wire = "4.9.9"
 
 androidx-appcompat = "1.7.0"
 androidx-activity-compose = "1.9.3"
-androidx-compose-bom = "2024.10.00"
+androidx-compose-bom = "2024.11.00"
 androidx-hilt = "1.2.0"
 androidx-lifecycle = "2.8.6"
 androidx-media3 = "1.4.1"
 glide = "5.0.0-rc01"
 glide-compose = "1.0.0-beta01"
 junit = "4.13.2"
-lottie = "6.5.2"
+lottie = "6.6.0"
 retrofit2 = "2.11.0"
 
 [libraries]
@@ -25,8 +25,8 @@ accompanist-drawablepainter = { module = "com.google.accompanist:accompanist-dra
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-browser = { module = "androidx.browser:browser", version = "1.8.0" }
-androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version = "2.1.4" }
-androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version = "1.0.1" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version = "2.2.0" }
+androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version = "1.1.0" }
 
 androidx-compose-animation = { module = "androidx.compose.animation:animation" }
 androidx-compose-animation-graphics = { module = "androidx.compose.animation:animation-graphics" }
@@ -54,7 +54,7 @@ hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hil
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewModel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewmodel-savedstate = { module = "androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "androidx-lifecycle" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version = "2.8.3" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version = "2.8.4" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "androidx-media3" }
 androidx-palette = { module = "androidx.palette:palette-ktx", version = "1.0.0" }
