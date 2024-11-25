@@ -5,11 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -52,6 +55,8 @@ import kotlinx.collections.immutable.persistentListOf
 @Composable
 fun SearchUserPage(
     keyword: String,
+    contentPadding: PaddingValues,
+    listState: LazyListState = rememberLazyListState(),
     viewModel: SearchUserViewModel = pageViewModel(),
 ) {
     val navigator = LocalNavController.current
@@ -123,11 +128,13 @@ fun SearchUserPage(
         }
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState)
+            modifier = Modifier.pullRefresh(pullRefreshState)
         ) {
-            MyLazyColumn(modifier = Modifier.fillMaxSize()) {
+            MyLazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = listState,
+                contentPadding = contentPadding,
+            ) {
                 if (showExactMatchResult) {
                     item(key = "ExactMatchHeader") {
                         Chip(
@@ -177,7 +184,9 @@ fun SearchUserPage(
             PullRefreshIndicator(
                 refreshing = isRefreshing,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .align(Alignment.TopCenter),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.primary,
             )

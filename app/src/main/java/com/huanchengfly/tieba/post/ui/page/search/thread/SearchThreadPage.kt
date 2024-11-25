@@ -1,9 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page.search.thread
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
@@ -43,6 +45,8 @@ import kotlinx.collections.immutable.persistentListOf
 fun SearchThreadPage(
     keyword: String,
     initialSortType: Int = SearchThreadSortType.SORT_TYPE_NEWEST,
+    contentPadding: PaddingValues,
+    listState: LazyListState = rememberLazyListState(),
     viewModel: SearchThreadViewModel = pageViewModel(),
 ) {
     val navigator = LocalNavController.current
@@ -101,7 +105,6 @@ fun SearchThreadPage(
         refreshing = isRefreshing,
         onRefresh = { viewModel.send(SearchThreadUiIntent.Refresh(keyword, sortType)) }
     )
-    val lazyListState = rememberLazyListState()
 
     val isEmpty by remember {
         derivedStateOf { data.isEmpty() }
@@ -124,7 +127,8 @@ fun SearchThreadPage(
         ) {
             SwipeUpLazyLoadColumn(
                 modifier = Modifier.fillMaxSize(),
-                state = lazyListState,
+                state = listState,
+                contentPadding = contentPadding,
                 isLoading = isLoadingMore,
                 onLazyLoad = {
                     if (hasMore) {
@@ -164,7 +168,9 @@ fun SearchThreadPage(
             PullRefreshIndicator(
                 refreshing = isRefreshing,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .align(Alignment.TopCenter),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.primary,
             )

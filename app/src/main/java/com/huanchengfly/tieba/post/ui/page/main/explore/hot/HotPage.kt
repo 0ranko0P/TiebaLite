@@ -7,13 +7,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ContentAlpha
@@ -70,6 +73,8 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 @Composable
 fun HotPage(
     navigator: NavController,
+    contentPadding: PaddingValues,
+    listState: LazyListState = rememberLazyListState(),
     viewModel: HotViewModel = pageViewModel()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -111,6 +116,8 @@ fun HotPage(
     Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
         MyLazyColumn(
             modifier = Modifier.fillMaxSize(),
+            state = listState,
+            contentPadding = contentPadding,
         ) {
             if (topicList.isNotEmpty()) {
                 item(key = "TopicHeader") {
@@ -357,7 +364,9 @@ fun HotPage(
         PullRefreshIndicator(
             refreshing = isLoading,
             state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier
+                .padding(contentPadding)
+                .align(Alignment.TopCenter),
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
             contentColor = ExtendedTheme.colors.primary,
         )

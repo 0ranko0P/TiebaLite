@@ -4,14 +4,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -31,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
@@ -118,6 +117,7 @@ fun GoodThreadListPage(
     forumName: String,
     sortType: () -> Int,
     listState: LazyListState,
+    contentPadding: PaddingValues,
     viewModel: GoodThreadListViewModel = pageViewModel<GoodThreadListViewModel>()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -139,16 +139,16 @@ fun GoodThreadListPage(
     )
 
     if (goodClassifies.size <= 1) { // Unclassified
-        ForumThreadListPage(modifier.fillMaxSize(), forumId, true, sortType, listState, viewModel)
+        ForumThreadListPage(modifier, forumId, true, sortType, listState, contentPadding, viewModel)
     } else {
-        Column(modifier = modifier.fillMaxSize()) {
+        Column(modifier = modifier.padding(contentPadding)) {
             GoodClassifyTabs(
                 goodClassifyHolders = goodClassifies,
                 selectedItem = goodClassifyId,
                 onSelected = viewModel::requestRefresh
             )
 
-            ForumThreadListPage(modifier, forumId, true, sortType, listState, viewModel)
+            ForumThreadListPage(modifier, forumId, true, sortType, listState, PaddingNone, viewModel)
         }
     }
 }
@@ -160,6 +160,7 @@ fun NormalThreadListPage(
     forumName: String,
     sortType: () -> Int,
     listState: LazyListState,
+    contentPadding: PaddingValues,
     viewModel: LatestThreadListViewModel = pageViewModel<LatestThreadListViewModel>()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -171,7 +172,7 @@ fun NormalThreadListPage(
         viewModel.requestRefresh(it.sortType)
     }
 
-    ForumThreadListPage(modifier, forumId, false, sortType, listState, viewModel)
+    ForumThreadListPage(modifier, forumId, false, sortType, listState, contentPadding, viewModel)
 }
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -182,6 +183,7 @@ private fun ForumThreadListPage(
     isGood: Boolean = false,
     sortType: () -> Int,
     listState: LazyListState,
+    contentPadding: PaddingValues,
     viewModel: ForumThreadListViewModel
 ) {
     val context = LocalContext.current
@@ -246,7 +248,7 @@ private fun ForumThreadListPage(
             SwipeUpLazyLoadColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState,
-                contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+                contentPadding = contentPadding,
                 isLoading = isLoadingMore,
                 onLazyLoad = {
                     if (hasMore) {

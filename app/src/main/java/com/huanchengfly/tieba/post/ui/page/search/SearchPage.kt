@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -65,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
+import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
@@ -107,7 +109,7 @@ object SearchIconSharedElementKey
 data class SearchPageItem(
     val id: String,
     val text: @Composable (selected: Boolean) -> Unit,
-    val content: @Composable () -> Unit,
+    val content: @Composable (PaddingValues) -> Unit,
     val supportSort: Boolean = false,
     val sortTypes: Options<Int> = persistentMapOf(),
     val selectedSortType: () -> Int = { -1 },
@@ -198,7 +200,7 @@ fun SearchPage(
                             fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
                         )
                     },
-                    content = { SearchForumPage(keyword = keyword) }
+                    content = { SearchForumPage(keyword = keyword, contentPadding = it) }
                 ),
                 SearchPageItem(
                     id = "thread",
@@ -211,6 +213,7 @@ fun SearchPage(
                     content = {
                         SearchThreadPage(
                             keyword = keyword,
+                            contentPadding = it,
                             initialSortType = initialSortType
                         )
                     },
@@ -231,7 +234,7 @@ fun SearchPage(
                             fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
                         )
                     },
-                    content = { SearchUserPage(keyword = keyword) }
+                    content = { SearchUserPage(keyword = keyword, contentPadding = it) }
                 ),
             )
         }
@@ -271,10 +274,8 @@ fun SearchPage(
                 }
             }
         }
-    ) { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+    ) { contentPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
             if (!isKeywordEmpty) {
                 ProvideNavigator(navigator = navigator) {
                     LazyLoadHorizontalPager(
@@ -282,16 +283,17 @@ fun SearchPage(
                         key = { pages[it].id },
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        pages[it].content()
+                        pages[it].content(contentPadding)
                     }
                 }
             } else {
                 if (showSuggestions) {
-                    SearchSuggestionList(suggestions = suggestions, onItemClick = onKeywordSubmit)
+                    SearchSuggestionList(contentPadding, suggestions, onItemClick = onKeywordSubmit)
                 } else {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
+                            .padding(contentPadding)
                             .verticalScroll(rememberScrollState())
                     ) {
                         Container {
@@ -313,11 +315,13 @@ fun SearchPage(
 
 @Composable
 private fun SearchSuggestionList(
+    contentPadding: PaddingValues = PaddingNone,
     suggestions: ImmutableList<String>,
     onItemClick: (String) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = contentPadding
     ) {
         items(
             items = suggestions,

@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.PagerState
@@ -53,7 +54,7 @@ import kotlinx.coroutines.launch
 data class ExplorePageItem(
     val id: String,
     val name: @Composable (selected: Boolean) -> Unit,
-    val content: @Composable () -> Unit,
+    val content: @Composable (PaddingValues) -> Unit,
 )
 
 @Composable
@@ -123,17 +124,17 @@ fun ExplorePage() {
             if (loggedIn) ExplorePageItem(
                 "concern",
                 { TabText(text = stringResource(id = R.string.title_concern), selected = it) },
-                { ConcernPage(navigator) }
+                { ConcernPage(navigator, it) }
             ) else null,
             ExplorePageItem(
                 "personalized",
                 { TabText(text = stringResource(id = R.string.title_personalized), selected = it) },
-                { PersonalizedPage(navigator) }
+                { PersonalizedPage(navigator, it) }
             ),
             ExplorePageItem(
                 "hot",
                 { TabText(text = stringResource(id = R.string.title_hot), selected = it) },
-                { HotPage(navigator) }
+                { HotPage(navigator, it) }
             ),
         ).toImmutableList()
     }
@@ -167,16 +168,15 @@ fun ExplorePage() {
         },
         bottomBar = {},
         modifier = Modifier.fillMaxSize(),
-    ) { paddingValues ->
+    ) { contentPadding ->
         LazyLoadHorizontalPager(
-            contentPadding = paddingValues,
             state = pagerState,
             key = { pages[it].id },
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) {
-            pages[it].content()
+            pages[it].content(contentPadding)
         }
     }
 }

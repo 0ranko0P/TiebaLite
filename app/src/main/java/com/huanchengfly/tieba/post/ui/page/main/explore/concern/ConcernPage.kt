@@ -2,9 +2,11 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
@@ -41,6 +43,8 @@ import kotlinx.collections.immutable.persistentListOf
 @Composable
 fun ConcernPage(
     navigator: NavController,
+    contentPadding: PaddingValues,
+    listState: LazyListState = rememberLazyListState(),
     viewModel: ConcernViewModel = pageViewModel()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -77,13 +81,16 @@ fun ConcernPage(
         viewModel.send(ConcernUiIntent.Refresh)
     }
 
-    val lazyListState = rememberLazyListState()
-    viewModel.bindScrollToTopEvent(lazyListState = lazyListState)
+    viewModel.bindScrollToTopEvent(lazyListState = listState)
 
-    Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
+    Box(
+        modifier = Modifier.pullRefresh(pullRefreshState),
+        contentAlignment = Alignment.TopCenter
+    ) {
         SwipeUpLazyLoadColumn(
             modifier = Modifier.fillMaxSize(),
-            state = lazyListState,
+            state = listState,
+            contentPadding = contentPadding,
             horizontalAlignment = Alignment.CenterHorizontally,
             isLoading = isLoadingMore,
             onLazyLoad = {
@@ -143,7 +150,7 @@ fun ConcernPage(
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier.padding(contentPadding),
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
             contentColor = ExtendedTheme.colors.primary,
         )

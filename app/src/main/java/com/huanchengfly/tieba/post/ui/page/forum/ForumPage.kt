@@ -466,17 +466,21 @@ fun ForumPage(
             ProvideNavigator(navigator = navigator) {
                 if (page == TAB_FORUM_LATEST) {
                     NormalThreadListPage(
+                        modifier = Modifier.fillMaxSize(),
                         forumId = info.id,
                         forumName = info.name,
                         sortType = { viewModel.sortType },
-                        listState = listState
+                        listState = listState,
+                        contentPadding = contentPadding
                     )
                 } else if (page == TAB_FORUM_GOOD) {
                     GoodThreadListPage(
+                        modifier = Modifier.fillMaxSize(),
                         forumId = info.id,
                         forumName = info.name,
                         sortType = { viewModel.sortType },
-                        listState = listState
+                        listState = listState,
+                        contentPadding = contentPadding
                     )
                 }
             }

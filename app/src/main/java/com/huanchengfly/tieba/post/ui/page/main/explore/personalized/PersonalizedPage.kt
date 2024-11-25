@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -74,6 +76,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun PersonalizedPage(
     navigator: NavController,
+    contentPadding: PaddingValues,
+    listState: LazyListState = rememberLazyListState(),
     viewModel: PersonalizedViewModel = pageViewModel()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -112,8 +116,7 @@ fun PersonalizedPage(
         refreshing = isRefreshing,
         onRefresh = { viewModel.send(PersonalizedUiIntent.Refresh) }
     )
-    val lazyListState = rememberLazyListState()
-    viewModel.bindScrollToTopEvent(lazyListState = lazyListState)
+    viewModel.bindScrollToTopEvent(lazyListState = listState)
     val isEmpty by remember {
         derivedStateOf {
             data.isEmpty()
@@ -145,7 +148,7 @@ fun PersonalizedPage(
         LaunchedEffect(Unit) {
             launch {
                 delay(20)
-                lazyListState.scrollToItem(0, 0)
+                listState.scrollToItem(0, 0)
             }
             delay(2000)
             showRefreshTip = false
@@ -174,7 +177,8 @@ fun PersonalizedPage(
         Container(modifier = Modifier.pullRefresh(pullRefreshState)) {
             SwipeUpLazyLoadColumn(
                 modifier = Modifier.fillMaxSize(),
-                state = lazyListState,
+                state = listState,
+                contentPadding = contentPadding,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 isLoading = isLoadingMore,
                 onLazyLoad = {
@@ -292,7 +296,9 @@ fun PersonalizedPage(
             PullRefreshIndicator(
                 refreshing = isRefreshing,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .align(Alignment.TopCenter),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.primary,
             )
@@ -301,7 +307,9 @@ fun PersonalizedPage(
                 visible = showRefreshTip,
                 enter = fadeIn() + slideInVertically(),
                 exit = slideOutVertically() + fadeOut(),
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .align(Alignment.TopCenter)
             ) {
                 RefreshTip(refreshCount = refreshCount)
             }

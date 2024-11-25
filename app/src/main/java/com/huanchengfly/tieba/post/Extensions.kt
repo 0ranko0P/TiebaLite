@@ -12,6 +12,8 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.Dp
 import androidx.core.content.ContextCompat
 import com.google.gson.reflect.TypeToken
 import com.huanchengfly.tieba.post.utils.GsonUtil
@@ -21,6 +23,8 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import java.io.File
 import kotlin.math.roundToInt
+
+val PaddingNone = PaddingValues(Dp.Hairline)
 
 private val Context.scaledDensity: Float
     get() = resources.displayMetrics.scaledDensity
