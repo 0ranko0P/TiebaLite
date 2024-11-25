@@ -171,6 +171,7 @@ dependencies {
     implementation(libs.google.gson)
 
     implementation(libs.database.litepal)
+    implementation(libs.haze.blur)
 
     //Glide
     implementation(libs.glide)
