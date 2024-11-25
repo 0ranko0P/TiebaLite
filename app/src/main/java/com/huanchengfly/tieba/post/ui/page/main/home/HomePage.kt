@@ -50,7 +50,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,6 +72,7 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -277,6 +277,7 @@ private fun ForumItemContent(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = CenterVertically
     ) {
         AnimatedVisibility(visible = showAvatar) {
             Row {
@@ -293,47 +294,42 @@ private fun ForumItemContent(
         Text(
             color = ExtendedTheme.colors.text,
             text = item.forumName,
-            modifier = Modifier
-                .align(CenterVertically)
-                .localSharedBounds(key = ForumTitleSharedBoundsKey(item.forumName, null)),
+            modifier = Modifier.block { // Enable transition on List Mode (showAvatar) only
+                if (showAvatar) {
+                    localSharedBounds(key = ForumTitleSharedBoundsKey(item.forumName, null))
+                } else {
+                    this
+                }
+            },
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
         )
 
         Spacer(modifier = Modifier.weight(1f))
-        Box(
+        Row(
             modifier = Modifier
                 .padding(start = 8.dp)
                 .width(54.dp)
-                .background(
-                    color = ExtendedTheme.colors.chip,
-                    shape = RoundedCornerShape(3.dp)
-                )
-                .padding(vertical = 4.dp)
-                .align(CenterVertically)
+                .background(color = ExtendedTheme.colors.chip, shape = RoundedCornerShape(3.dp))
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.Center
         ) {
-            Row(
-                modifier = Modifier.align(Center),
-            ) {
-                Text(
-                    text = remember { "Lv.${item.levelId}" },
-                    color = ExtendedTheme.colors.onChip,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(CenterVertically)
+            Text(
+                text = remember { "Lv.${item.levelId}" },
+                color = ExtendedTheme.colors.onChip,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+            )
+
+            if (item.isSign) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = stringResource(id = R.string.tip_signed),
+                    modifier = Modifier.size(12.dp),
+                    tint = ExtendedTheme.colors.onChip
                 )
-                if (item.isSign) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = stringResource(id = R.string.tip_signed),
-                        modifier = Modifier
-                            .size(12.dp)
-                            .align(CenterVertically),
-                        tint = ExtendedTheme.colors.onChip
-                    )
-                }
             }
         }
     }

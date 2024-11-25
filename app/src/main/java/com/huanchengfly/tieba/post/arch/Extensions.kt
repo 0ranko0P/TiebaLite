@@ -10,6 +10,7 @@ import androidx.compose.runtime.currentComposer
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.HiltViewModelFactory
 import androidx.lifecycle.Lifecycle
@@ -192,5 +193,7 @@ inline fun <INTENT : UiIntent, reified VM : BaseViewModel<INTENT, *, *, *>> page
         }
     }
 }
+
+inline fun Modifier.block(modifier: Modifier.() -> Modifier?): Modifier = this then (modifier(Modifier) ?: Modifier)
 
 fun <T> unsafeLazy(initializer: () -> T): Lazy<T> = lazy(LazyThreadSafetyMode.NONE, initializer)
