@@ -52,6 +52,9 @@ import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastMap
+import androidx.compose.ui.util.fastMaxBy
 
 /**
  * Provides the current [Scaffold] content padding values.
@@ -192,26 +195,26 @@ private fun ScaffoldLayout(
         val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
 
         layout(layoutWidth, layoutHeight) {
-            val topBarPlaceables = subcompose(ScaffoldLayoutContent.TopBar, topBar).map {
+            val topBarPlaceables = subcompose(ScaffoldLayoutContent.TopBar, topBar).fastMap {
                 it.measure(looseConstraints)
             }
 
-            val topBarHeight = topBarPlaceables.maxByOrNull { it.height }?.height ?: 0
+            val topBarHeight = topBarPlaceables.fastMaxBy { it.height }?.height ?: 0
 
-            val snackbarPlaceables = subcompose(ScaffoldLayoutContent.Snackbar, snackbar).map {
+            val snackbarPlaceables = subcompose(ScaffoldLayoutContent.Snackbar, snackbar).fastMap {
                 it.measure(looseConstraints)
             }
 
-            val snackbarHeight = snackbarPlaceables.maxByOrNull { it.height }?.height ?: 0
+            val snackbarHeight = snackbarPlaceables.fastMaxBy { it.height }?.height ?: 0
 
-            val fabPlaceables = subcompose(ScaffoldLayoutContent.Fab, fab)
-                .mapNotNull { measurable ->
+            val fabPlaceables =
+                subcompose(ScaffoldLayoutContent.Fab, fab).mapNotNull { measurable ->
                     measurable.measure(looseConstraints).takeIf { it.height != 0 && it.width != 0 }
                 }
 
             val fabPlacement = if (fabPlaceables.isNotEmpty()) {
-                val fabWidth = fabPlaceables.maxByOrNull { it.width }!!.width
-                val fabHeight = fabPlaceables.maxByOrNull { it.height }!!.height
+                val fabWidth = fabPlaceables.fastMaxBy { it.width }?.width ?: 0
+                val fabHeight = fabPlaceables.fastMaxBy { it.height }?.height ?: 0
                 // FAB distance from the left of the layout, taking into account LTR / RTL
                 val fabLeftOffset = if (fabPosition == FabPosition.End) {
                     if (layoutDirection == LayoutDirection.Ltr) {
@@ -238,9 +241,9 @@ private fun ScaffoldLayout(
                     LocalFabPlacement provides fabPlacement,
                     content = bottomBar
                 )
-            }.map { it.measure(looseConstraints) }
+            }.fastMap { it.measure(looseConstraints) }
 
-            val bottomBarHeight = bottomBarPlaceables.maxByOrNull { it.height }?.height ?: 0
+            val bottomBarHeight = bottomBarPlaceables.fastMaxBy { it.height }?.height ?: 0
             val fabOffsetFromBottom = fabPlacement?.let {
                 if (bottomBarHeight == 0) {
                     it.height +
@@ -276,22 +279,26 @@ private fun ScaffoldLayout(
                 CompositionLocalProvider(LocalScaffoldPadding provides innerPadding) {
                     content(innerPadding)
                 }
-            }.map { it.measure(looseConstraints.copy(maxHeight = layoutHeight)) }
+            }.fastMap { it.measure(looseConstraints.copy(maxHeight = layoutHeight)) }
 
             // Placing to control drawing order to match default elevation of each placeable
 
-            bodyContentPlaceables.forEach { it.place(0, 0) }
-            topBarPlaceables.forEach { it.place(0, 0) }
-            snackbarPlaceables.forEach {
+            bodyContentPlaceables.fastForEach {
+                it.place(0, 0)
+            }
+            topBarPlaceables.fastForEach {
+                it.place(0, 0)
+            }
+            snackbarPlaceables.fastForEach {
                 it.place(0, layoutHeight - snackbarOffsetFromBottom)
             }
             // The bottom bar is always at the bottom of the layout
-            bottomBarPlaceables.forEach {
+            bottomBarPlaceables.fastForEach {
                 it.place(0, layoutHeight - bottomBarHeight)
             }
             // Explicitly not using placeRelative here as `leftOffset` already accounts for RTL
             fabPlacement?.let { placement ->
-                fabPlaceables.forEach {
+                fabPlaceables.fastForEach {
                     it.place(placement.left, layoutHeight - fabOffsetFromBottom!!)
                 }
             }
