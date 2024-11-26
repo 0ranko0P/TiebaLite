@@ -134,8 +134,10 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.navigation.compose)
 
+    // Compose Accompanist
     implementation(libs.accompanist.drawablepainter)
     implementation(project(":placeholder-material"))
+    implementation(project(":insets-ui"))
 
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.animation.graphics)
