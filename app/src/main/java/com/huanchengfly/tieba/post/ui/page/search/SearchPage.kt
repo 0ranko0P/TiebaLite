@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.search
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateContentSize
@@ -35,7 +36,6 @@ import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.Text
@@ -112,9 +112,9 @@ object SearchIconSharedElementKey
 @Immutable
 data class SearchPageItem(
     val id: String,
-    val text: @Composable (selected: Boolean) -> Unit,
-    val supportSort: Boolean = false,
-    val sortTypes: Options<Int> = persistentMapOf(),
+    @StringRes
+    val text: Int,
+    val sortTypes: Options<Int>? = null, // SupportSort: Non-Null
     val selectedSortType: () -> Int = { -1 },
     val onSelectedSortTypeChange: (Int) -> Unit = {},
 )
@@ -195,24 +195,11 @@ fun SearchPage(
     val pages by remember {
         derivedStateOf {
             persistentListOf(
-                SearchPageItem(
-                    id = "forum",
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.title_search_forum),
-                            fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                ),
+                SearchPageItem(id = "forum", text = R.string.title_search_forum),
+
                 SearchPageItem(
                     id = "thread",
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.title_search_thread),
-                            fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    supportSort = true,
+                    text = R.string.title_search_thread,
                     sortTypes = persistentMapOf(
                         SearchThreadSortType.SORT_TYPE_NEWEST to R.string.title_search_order_new,
                         SearchThreadSortType.SORT_TYPE_OLDEST to R.string.title_search_order_old,
@@ -221,15 +208,8 @@ fun SearchPage(
                     selectedSortType = { searchThreadSortType },
                     onSelectedSortTypeChange = { searchThreadSortType = it }
                 ),
-                SearchPageItem(
-                    id = "user",
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.title_search_user),
-                            fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                ),
+
+                SearchPageItem(id = "user", text = R.string.title_search_user),
             )
         }
     }
@@ -281,12 +261,13 @@ fun SearchPage(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     val listState = listStates[it] ?: rememberLazyListState().apply { listStates[it] = this }
-                    when(pages[it].id) {
-                        "forum" -> SearchForumPage(keyword, contentPadding, listState)
 
-                        "thread" -> SearchThreadPage(keyword, initialSortType, contentPadding, listState)
+                    when(pages[it].text) {
+                        R.string.title_search_forum -> SearchForumPage(keyword, contentPadding, listState)
 
-                        "user" -> SearchUserPage(keyword, contentPadding, listState)
+                        R.string.title_search_thread -> SearchThreadPage(keyword, initialSortType, contentPadding, listState)
+
+                        R.string.title_search_user -> SearchUserPage(keyword, contentPadding, listState)
                     }
                 }
             }
@@ -394,22 +375,23 @@ private fun ColumnScope.SearchTabRow(
         contentColor = ExtendedTheme.colors.onTopBar,
         modifier = Modifier.width(76.dp * pages.size),
     ) {
+        var selected = false
         pages.fastForEachIndexed { index, item ->
-            val tabTextStyle =
-                MaterialTheme.typography.button.copy(fontSize = 13.sp, letterSpacing = 0.sp)
+            selected = pagerState.currentPage == index
 
-            if (item.supportSort) {
+            if (item.sortTypes != null) { // Check item supports sort
                 TabClickMenu(
-                    selected = pagerState.currentPage == index,
+                    selected = selected,
                     onClick = {
                         coroutineScope.launch {
                             pagerState.animateScrollToPage(index)
                         }
                     },
                     text = {
-                        ProvideTextStyle(value = tabTextStyle) {
-                            item.text(pagerState.currentPage == index)
-                        }
+                        Text(
+                            text = stringResource(item.text),
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                        )
                     },
                     menuContent = {
                         ListSinglePicker(
@@ -425,11 +407,12 @@ private fun ColumnScope.SearchTabRow(
             } else {
                 Tab(
                     text = {
-                        ProvideTextStyle(value = tabTextStyle) {
-                            item.text(pagerState.currentPage == index)
-                        }
+                        Text(
+                            text = stringResource(item.text),
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                        )
                     },
-                    selected = pagerState.currentPage == index,
+                    selected = selected,
                     onClick = {
                         coroutineScope.launch {
                             pagerState.animateScrollToPage(index)
