@@ -175,7 +175,7 @@ class AppPreferencesUtils private constructor(context: Context) {
 
     @get:ForumFabFunction
     val forumFabFunction: String
-        get() = dataStore.getString(KEY_FORUM_FAB_FUNCTION, ForumFabFunction.HIDE)
+        get() = dataStore.getString(KEY_FORUM_FAB_FUNCTION, ForumFabFunction.BACK_TO_TOP)
 
     @get:ForumSortType
     val defaultSortType: Int
