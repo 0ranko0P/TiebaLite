@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -67,6 +68,7 @@ import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
+import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -318,7 +320,7 @@ fun ForumPage(
     val loggedIn = account != null
 
     val pagerState = rememberPagerState { 2 }
-    val listState = rememberLazyListState()
+    val listStates = remember { arrayOfNulls<LazyListState?>(pagerState.pageCount) }
 
     val isGood by remember { derivedStateOf { pagerState.currentPage == TAB_FORUM_GOOD } }
 
@@ -355,7 +357,9 @@ fun ForumPage(
     BlurScaffold(
         scaffoldState = scaffoldState,
         topHazeBlock = remember { {
-            blurEnabled = pagerState.currentPageOffsetFraction != 0f || listState.firstVisibleItemIndex != 0
+            blurEnabled = with(pagerState) {
+                currentPageOffsetFraction != 0f || listStates[currentPage]?.canScrollBackward == true
+            }
         } },
         backgroundColor = Color.Transparent,
         modifier = Modifier.fillMaxSize(),
@@ -434,9 +438,11 @@ fun ForumPage(
         floatingActionButton = {
             if (disableFab || forumInfo == null) return@BlurScaffold
 
+            // Not scrolling & Not top
             val isFabVisible by remember { derivedStateOf {
-                !scrollStateConnection!!.isScrolling.value && listState.firstVisibleItemIndex > 0
+                !scrollStateConnection!!.isScrolling.value && (listStates[pagerState.currentPage]?.firstVisibleItemIndex ?: 0) > 0
             } }
+
             ForumFab(
                 visible = isFabVisible,
                 fab = viewModel.fab,
@@ -460,12 +466,14 @@ fun ForumPage(
             state = pagerState,
             modifier = Modifier
                 .nestedScroll(connection)
-                .then(scrollStateConnection?.run { Modifier.nestedScroll(this) } ?: Modifier)
+                .block { scrollStateConnection?.let { Modifier.nestedScroll(it) } }
                 .fillMaxSize(),
             key = { it },
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) { page ->
+            val listState = listStates[page] ?: rememberLazyListState().also { listStates[page] = it }
+
             ProvideNavigator(navigator = navigator) {
                 if (page == TAB_FORUM_LATEST) {
                     NormalThreadListPage(
