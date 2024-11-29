@@ -6,7 +6,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,9 +54,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
+import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
@@ -288,10 +289,10 @@ fun ForumSearchPostPage(
             ForumSearchPostSortType.RELATIVE to R.string.title_search_post_sort_by_relevant,
         )
     }
-    val filterTypeMapping = remember {
-        persistentMapOf(
-            ForumSearchPostFilterType.ALL to R.string.title_search_filter_all,
-            ForumSearchPostFilterType.ONLY_THREAD to R.string.title_search_filter_only_thread,
+    val filterTypes = remember {
+        persistentListOf(
+            ForumSearchPostFilterType.ALL,
+            ForumSearchPostFilterType.ONLY_THREAD
         )
     }
 
@@ -409,11 +410,6 @@ fun ForumSearchPostPage(
                                         modifier = Modifier
                                             .background(ExtendedTheme.colors.background)
                                             .padding(horizontal = 16.dp, vertical = 8.dp)
-                                            .clickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null,
-                                                onClick = {}
-                                            )
                                     ) {
                                         val menuState = rememberMenuState()
 
@@ -466,39 +462,42 @@ fun ForumSearchPostPage(
                                             verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier.height(IntrinsicSize.Min)
                                         ) {
-                                            filterTypeMapping.keys.map<Int, @Composable () -> Unit> { type ->
-                                                {
-                                                    Text(
-                                                        text = stringResource(filterTypeMapping[type]!!),
-                                                        fontSize = 13.sp,
-                                                        fontWeight = if (type == currentFilterType) {
-                                                            FontWeight.Bold
-                                                        } else {
-                                                            FontWeight.Normal
-                                                        },
-                                                        modifier = Modifier.clickable(
-                                                            interactionSource = remember { MutableInteractionSource() },
-                                                            indication = null,
-                                                            role = Role.RadioButton,
-                                                            onClick = {
-                                                                if (type != currentFilterType) {
-                                                                    viewModel.send(
-                                                                        ForumSearchPostUiIntent.Refresh(
-                                                                            currentKeyword,
-                                                                            forumName,
-                                                                            forumId,
-                                                                            currentSortType,
-                                                                            type
-                                                                        )
-                                                                    )
-                                                                }
-                                                            }
-                                                        )
-                                                    )
+                                            filterTypes.fastForEachIndexed { index, type ->
+                                                val textRes = when (type) {
+                                                    ForumSearchPostFilterType.ALL -> R.string.title_search_filter_all
+
+                                                    ForumSearchPostFilterType.ONLY_THREAD -> R.string.title_search_filter_only_thread
+
+                                                    else -> throw RuntimeException("Invalid type: $type")
                                                 }
-                                            }.forEachIndexed { index, composable ->
-                                                composable()
-                                                if (index < filterTypeMapping.size - 1) {
+
+                                                Text(
+                                                    text = stringResource(textRes),
+                                                    fontSize = 13.sp,
+                                                    fontWeight = if (type == currentFilterType) {
+                                                        FontWeight.Bold
+                                                    } else {
+                                                        FontWeight.Normal
+                                                    },
+                                                    modifier = Modifier.clickableNoIndication(
+                                                        role = Role.RadioButton,
+                                                        onClick = {
+                                                            if (type != currentFilterType) {
+                                                                viewModel.send(
+                                                                    ForumSearchPostUiIntent.Refresh(
+                                                                        currentKeyword,
+                                                                        forumName,
+                                                                        forumId,
+                                                                        currentSortType,
+                                                                        type
+                                                                    )
+                                                                )
+                                                            }
+                                                        }
+                                                    )
+                                                )
+
+                                                if (index != filterTypes.lastIndex) {
                                                     HorizontalDivider(
                                                         modifier = Modifier.padding(horizontal = 8.dp)
                                                     )
