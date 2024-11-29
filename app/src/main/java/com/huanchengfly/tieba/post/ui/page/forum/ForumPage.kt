@@ -69,6 +69,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.block
+import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -372,7 +373,7 @@ fun ForumPage(
                         exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
                     ) {
                         ForumTitle(
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.clickableNoIndication {
                                 forumInfo?.item?.let { navigator.navigateForumDetailPage(it) }
                             },
                             title = forumInfo?.get { name },

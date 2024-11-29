@@ -69,6 +69,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.bumptech.glide.request.RequestListener
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.page.settings.AboutPage
@@ -399,8 +400,7 @@ private fun ColorPanel(list: List<Color>, selected: Color, onSelect: (Color) -> 
         }
         items(list, key = { item: Color -> item.value.toString() }) {
             ColorBox(
-                modifier = Modifier
-                    .clickable(interactionSource = null, indication = null) { onSelect(it) },
+                modifier = Modifier.clickableNoIndication { onSelect(it) },
                 color = it,
                 selected = it.value == selected.value
             )

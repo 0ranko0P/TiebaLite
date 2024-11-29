@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.thread
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -53,6 +52,7 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentText
@@ -341,13 +341,10 @@ private fun StickyHeader(replyNum: Int, isSeeLz: Boolean, onSeeLzChanged: (Boole
                 text = stringResource(R.string.text_all),
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = isSeeLz
-                    ) {
-                        onSeeLzChanged(false)
-                    },
+                    .clickableNoIndication(
+                        enabled = isSeeLz,
+                        onClick = { onSeeLzChanged(false) }
+                    ),
                 fontSize = 13.sp,
                 fontWeight = if (!isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (!isSeeLz) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
@@ -357,13 +354,10 @@ private fun StickyHeader(replyNum: Int, isSeeLz: Boolean, onSeeLzChanged: (Boole
                 text = stringResource(R.string.title_see_lz),
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = !isSeeLz
-                    ) {
-                        onSeeLzChanged(true)
-                    },
+                    .clickableNoIndication(
+                        enabled = !isSeeLz,
+                        onClick = { onSeeLzChanged(true) }
+                    ),
                 fontSize = 13.sp,
                 fontWeight = if (isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (isSeeLz) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,

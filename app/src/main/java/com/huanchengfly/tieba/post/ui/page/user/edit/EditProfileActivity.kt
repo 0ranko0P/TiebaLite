@@ -11,8 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.activity.viewModels
 import androidx.annotation.ColorInt
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -65,6 +63,8 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.UCropActivity
 import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUCropResult
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
+import com.huanchengfly.tieba.post.arch.block
+import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.theme.TiebaBlue
@@ -341,10 +341,9 @@ fun EditProfileCard(
                             end.linkTo(parent.end)
                             width = Dimension.fillToConstraints
                         }
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onModifySex?.invoke() }
+                        .block {
+                            onModifySex?.let { clickableNoIndication(onClick = it) }
+                        }
                         .placeholder(visible = loading)
                 ) {
                     Text(

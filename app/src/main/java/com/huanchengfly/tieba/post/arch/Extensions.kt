@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.arch
 
 import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.InternalComposeApi
@@ -12,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.hilt.navigation.HiltViewModelFactory
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -195,5 +197,11 @@ inline fun <INTENT : UiIntent, reified VM : BaseViewModel<INTENT, *, *, *>> page
 }
 
 inline fun Modifier.block(modifier: Modifier.() -> Modifier?): Modifier = this then (modifier(Modifier) ?: Modifier)
+
+fun Modifier.clickableNoIndication(
+    enabled: Boolean = true,
+    role: Role? = null,
+    onClick: () -> Unit
+): Modifier = this then Modifier.clickable(null, null, enabled, null, role, onClick)
 
 fun <T> unsafeLazy(initializer: () -> T): Lazy<T> = lazy(LazyThreadSafetyMode.NONE, initializer)
