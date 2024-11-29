@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
+import android.os.Build
 import androidx.annotation.IntDef
 import androidx.annotation.StringDef
 import androidx.datastore.core.DataStore
@@ -81,6 +82,8 @@ class AppPreferencesUtils private constructor(context: Context) {
         const val KEY_POST_BLOCK_VIDEO = "ui_block_video"
 
         const val KEY_LIFT_BOTTOM_BAR = "ui_lift_bottom"
+
+        const val KEY_REDUCE_EFFECT = "ui_reduce_effect"
 
         // 隐藏回贴入口
         const val KEY_REPLY_HIDE = "ui_reply_hide"
@@ -177,6 +180,16 @@ class AppPreferencesUtils private constructor(context: Context) {
     @get:ForumSortType
     val defaultSortType: Int
         get() = dataStore.getInt(KEY_FORUM_SORT_DEFAULT, ForumSortType.BY_REPLY)
+
+    val reduceEffect: Boolean
+        get() = cache[booleanPreferencesKey(KEY_REDUCE_EFFECT)] == true
+
+    val useRenderEffect: Boolean
+        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            !reduceEffect && !App.INSTANCE.powerManager.isPowerSaveMode
+        } else {
+            false
+        }
 
     val showBothUsernameAndNickname: Boolean
         get() = cache[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true

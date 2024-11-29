@@ -82,6 +82,7 @@ import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
@@ -89,7 +90,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapseConnection
@@ -352,8 +352,11 @@ fun ForumPage(
     // Toolbar only collapsible if logged in
     val collapsed by remember { derivedStateOf { loggedIn && connection.ratio == 0.0f } }
 
-    MyScaffold(
+    BlurScaffold(
         scaffoldState = scaffoldState,
+        topHazeBlock = remember { {
+            blurEnabled = pagerState.currentPageOffsetFraction != 0f || listState.firstVisibleItemIndex != 0
+        } },
         backgroundColor = Color.Transparent,
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -429,7 +432,7 @@ fun ForumPage(
             }
         },
         floatingActionButton = {
-            if (disableFab || forumInfo == null) return@MyScaffold
+            if (disableFab || forumInfo == null) return@BlurScaffold
 
             val isFabVisible by remember { derivedStateOf {
                 !scrollStateConnection!!.isScrolling.value && listState.firstVisibleItemIndex > 0
@@ -450,7 +453,7 @@ fun ForumPage(
                     FeedCardPlaceholder()
                 }
             }
-            return@MyScaffold
+            return@BlurScaffold
         }
 
         HorizontalPager(

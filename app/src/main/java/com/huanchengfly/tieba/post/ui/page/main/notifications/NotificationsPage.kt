@@ -1,9 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.main.notifications
 
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.Text
@@ -11,9 +9,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
@@ -22,10 +20,13 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
@@ -38,17 +39,11 @@ fun NotificationsPage(
     fromHome: Boolean = false,
     navigator: NavController = LocalNavController.current
 ) {
-    val pages = listOf<Pair<Int, (@Composable () -> Unit)>>(
-        R.string.title_reply_me to @Composable {
-            NotificationsListPage(type = NotificationsType.ReplyMe)
-        },
-        R.string.title_at_me to @Composable {
-            NotificationsListPage(type = NotificationsType.AtMe)
-        }
-    )
+    val pages = NotificationsType.entries
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { pages.size })
     val coroutineScope = rememberCoroutineScope()
-    Scaffold(
+
+    BlurScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
             NotificationsToolBar(navigator = navigator, fromHome = fromHome) {
@@ -58,12 +53,18 @@ fun NotificationsPage(
                         PagerTabIndicator(pagerState, tabPositions, tabWidth = 36.dp)
                     },
                     divider = {},
-                    backgroundColor = ExtendedTheme.colors.topBar,
+                    backgroundColor = Color.Transparent, // Use Toolbar color
                     contentColor = ExtendedTheme.colors.primary,
                 ) {
-                    pages.fastForEachIndexed { index, pair ->
+                    pages.fastForEachIndexed { index, type ->
+                        val text = when(type) {
+                            NotificationsType.ReplyMe -> R.string.title_reply_me
+
+                            NotificationsType.AtMe -> R.string.title_at_me
+                        }
+
                         Tab(
-                            text = { Text(text = stringResource(id = pair.first)) },
+                            text = { Text(text = stringResource(id = text)) },
                             selected = pagerState.currentPage == index,
                             onClick = {
                                 coroutineScope.launch {
@@ -76,18 +77,14 @@ fun NotificationsPage(
                 }
             }
         },
-        bottomBar = {},
-        modifier = Modifier.fillMaxSize(),
-    ) { paddingValues ->
+        bottomBar = if (fromHome) emptyBlurBottomNavigation else BlurNavigationBarPlaceHolder,
+    ) { contentPadding ->
         LazyLoadHorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = paddingValues,
-            userScrollEnabled = true,
-            key = { pages[it].first }
+            key = { pages[it] }
         ) {
             ProvideNavigator(navigator = navigator) {
-                pages[it].second()
+                NotificationsListPage(type = NotificationsType.entries[it], contentPadding)
             }
         }
     }
@@ -110,6 +107,7 @@ private fun NotificationsToolBar(
                     onClick = { navigator.navigate(Search) }
                 )
             },
+            elevation = Dp.Hairline,
             content = content
         )
     } else {
@@ -117,6 +115,7 @@ private fun NotificationsToolBar(
             title = {
                 Text(stringResource(id = R.string.title_notifications))
             },
+            elevation = Dp.Hairline,
             navigationIcon = {
                 BackNavigationIcon(onBackPressed = navigator::navigateUp)
             },

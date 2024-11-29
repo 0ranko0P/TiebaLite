@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,6 +63,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -86,9 +88,11 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
 import com.huanchengfly.tieba.post.ui.page.search.SearchToolbarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
@@ -98,7 +102,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
@@ -132,17 +135,17 @@ fun SearchBoxPreview() {
 @Composable
 private fun SearchBox(
     modifier: Modifier = Modifier,
-    backgroundColor: Color = ExtendedTheme.colors.floorCard,
+    backgroundColor: Color = ExtendedTheme.colors.topBar,
     contentColor: Color = LocalContentColor.current,
     onClick: () -> Unit,
 ) {
     Box(
         modifier = modifier
-            .background(ExtendedTheme.colors.topBar)
+            .background(backgroundColor)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Surface(
-            color = backgroundColor,
+            color = ExtendedTheme.colors.floorCard,
             contentColor = contentColor,
             shape = RoundedCornerShape(6.dp),
             modifier = Modifier
@@ -379,6 +382,8 @@ fun HomePage(
     val account = LocalAccount.current
     val context = LocalContext.current
     val navigator = LocalNavController.current
+    val gridState = rememberLazyGridState()
+
     val isLoading by viewModel.uiState.collectPartialAsState(
         prop1 = HomeUiState::isLoading,
         initial = true
@@ -442,8 +447,14 @@ fun HomePage(
         if (viewModel.initialized) viewModel.send(HomeUiIntent.RefreshHistory)
     }
 
-    MyScaffold(
+    BlurScaffold(
         backgroundColor = Color.Transparent,
+        topHazeBlock = remember { {
+            blurEnabled = !isEmpty && gridState.canScrollBackward
+        } },
+        bottomHazeBlock = remember { {
+            blurEnabled = !isEmpty
+        } },
         topBar = {
             Toolbar(
                 modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
@@ -461,14 +472,17 @@ fun HomePage(
                         contentDescription = stringResource(id = R.string.title_switch_list_single),
                         onClick = { listSingle = !listSingle }
                     )
-                }
+                },
+                elevation = Dp.Hairline
             ) {
-                SearchBox(modifier = Modifier.padding(bottom = 4.dp)) {
-                    navigator.navigate(Destination.Search)
-                }
+                SearchBox(
+                    modifier = Modifier.padding(bottom = 4.dp),
+                    backgroundColor = Color.Transparent,
+                    onClick = { navigator.navigate(Destination.Search) }
+                )
             }
         },
-        bottomBar = {},
+        bottomBar = emptyBlurBottomNavigation,
         modifier = Modifier.fillMaxSize(),
     ) { contentPaddings ->
         val pullRefreshState = rememberPullRefreshState(
@@ -481,9 +495,7 @@ fun HomePage(
         } }
 
         Box(
-            modifier = Modifier
-                .pullRefresh(pullRefreshState)
-                .padding(contentPaddings)
+            modifier = Modifier.pullRefresh(pullRefreshState)
         ) {
             StateScreen(
                 isEmpty = isEmpty,
@@ -495,16 +507,17 @@ fun HomePage(
                 },
                 emptyScreen = {
                     EmptyScreen(
+                        modifier = Modifier.padding(contentPaddings),
                         loggedIn = account != null,
                         canOpenExplore = canOpenExplore,
                         onOpenExplore = onOpenExplore
                     )
                 },
                 loadingScreen = {
-                    HomePageSkeletonScreen(listSingle = listSingle, gridCells = gridCells)
+                    HomePageSkeletonScreen(Modifier.padding(contentPaddings), listSingle, gridCells)
                 },
                 errorScreen = {
-                    error?.let { ErrorScreen(error = it) }
+                    ErrorScreen(error = error, Modifier.padding(contentPaddings))
                 }
             ) {
                 val showHistoryOnHome by rememberPreferenceAsState(booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY), true)
@@ -514,8 +527,9 @@ fun HomePage(
 
                 MyLazyVerticalGrid(
                     columns = gridCells,
-                    contentPadding = PaddingValues(bottom = 12.dp),
                     modifier = Modifier.fillMaxSize(),
+                    state = gridState,
+                    contentPadding = contentPaddings,
                 ) {
                     if (showHistoryForum) {
                         item(key = "HistoryForums", span = { GridItemSpan(maxLineSpan) }) {
@@ -658,7 +672,9 @@ fun HomePage(
             PullRefreshIndicator(
                 refreshing = isLoading,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(contentPaddings),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.primary,
             )
@@ -668,14 +684,13 @@ fun HomePage(
 
 @Composable
 private fun HomePageSkeletonScreen(
+    modifier: Modifier = Modifier,
     listSingle: Boolean,
     gridCells: GridCells
 ) {
     MyLazyVerticalGrid(
         columns = gridCells,
-        contentPadding = PaddingValues(bottom = 12.dp),
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = modifier
     ) {
         item(key = "TopForumHeaderPlaceholder", span = { GridItemSpan(maxLineSpan) }) {
             Column(
@@ -683,10 +698,7 @@ private fun HomePageSkeletonScreen(
             ) {
                 Header(
                     text = stringResource(id = R.string.title_top_forum),
-                    modifier = Modifier.placeholder(
-                        visible = true,
-                        color = ExtendedTheme.colors.chip
-                    ),
+                    modifier = Modifier.placeholder(color = ExtendedTheme.colors.chip),
                     invert = true
                 )
             }
@@ -703,10 +715,7 @@ private fun HomePageSkeletonScreen(
             Column {
                 Header(
                     text = stringResource(id = R.string.forum_list_title),
-                    modifier = Modifier.placeholder(
-                        visible = true,
-                        color = ExtendedTheme.colors.chip
-                    ),
+                    modifier = Modifier.placeholder(color = ExtendedTheme.colors.chip),
                     invert = true
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -720,6 +729,7 @@ private fun HomePageSkeletonScreen(
 
 @Composable
 fun EmptyScreen(
+    modifier: Modifier = Modifier,
     loggedIn: Boolean,
     canOpenExplore: Boolean,
     onOpenExplore: () -> Unit
@@ -733,6 +743,7 @@ fun EmptyScreen(
                 Text(text = stringResource(id = R.string.title_empty))
             }
         },
+        modifier = modifier,
         image = {
             val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_astronaut))
             LottieAnimation(

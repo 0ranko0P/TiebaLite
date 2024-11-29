@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -47,6 +48,7 @@ import kotlinx.collections.immutable.persistentListOf
 @Composable
 fun NotificationsListPage(
     type: NotificationsType,
+    contentPadding: PaddingValues = PaddingNone,
     viewModel: NotificationsListViewModel = when (type) {
         NotificationsType.ReplyMe -> pageViewModel<NotificationsListUiIntent, ReplyMeListViewModel>()
         NotificationsType.AtMe -> pageViewModel<NotificationsListUiIntent, AtMeListViewModel>()
@@ -88,7 +90,7 @@ fun NotificationsListPage(
         SwipeUpLazyLoadColumn(
             modifier = Modifier.fillMaxSize(),
             state = lazyListState,
-            contentPadding = PaddingValues(vertical = 4.dp),
+            contentPadding = contentPadding,
             isLoading = isLoadingMore,
             onLazyLoad = {
                 if (hasMore && data.isNotEmpty()) {
@@ -196,7 +198,9 @@ fun NotificationsListPage(
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(contentPadding),
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
             contentColor = ExtendedTheme.colors.primary,
         )

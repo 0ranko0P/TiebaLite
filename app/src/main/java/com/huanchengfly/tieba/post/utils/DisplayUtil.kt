@@ -5,13 +5,21 @@ import android.content.Context
 import android.content.res.Resources
 import android.graphics.Point
 import android.view.WindowManager
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.core.content.ContextCompat
 import com.huanchengfly.tieba.post.App
+import kotlin.math.roundToInt
 
 object DisplayUtil {
+
+    const val GESTURE_3BUTTON = 48
+
+    const val GESTURE_DEFAULT = 24
+
+    const val GESTURE_NONE = 0
 
     /**
      * 将dp值转换为px值
@@ -59,5 +67,16 @@ object DisplayUtil {
 
     fun IntSize.toDpSize(density: Density): DpSize = with(density) {
         DpSize(width = width.toDp(), height = height.toDp())
+    }
+
+    fun WindowInsets.gestureType(density: Density): Int {
+        val height = with(density) { getBottom(density).toDp() }.value.roundToInt()
+        return if (height >= GESTURE_3BUTTON) {
+            GESTURE_3BUTTON
+        } else if (height >= GESTURE_DEFAULT) {
+            GESTURE_DEFAULT
+        } else {
+            GESTURE_NONE
+        }
     }
 }

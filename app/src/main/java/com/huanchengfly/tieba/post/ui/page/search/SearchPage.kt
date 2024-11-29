@@ -23,7 +23,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -53,6 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +64,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
@@ -83,10 +87,10 @@ import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadPage
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadSortType
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadUiEvent
 import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserPage
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
@@ -109,7 +113,6 @@ object SearchIconSharedElementKey
 data class SearchPageItem(
     val id: String,
     val text: @Composable (selected: Boolean) -> Unit,
-    val content: @Composable (PaddingValues) -> Unit,
     val supportSort: Boolean = false,
     val sortTypes: Options<Int> = persistentMapOf(),
     val selectedSortType: () -> Int = { -1 },
@@ -200,7 +203,6 @@ fun SearchPage(
                             fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
                         )
                     },
-                    content = { SearchForumPage(keyword = keyword, contentPadding = it) }
                 ),
                 SearchPageItem(
                     id = "thread",
@@ -208,13 +210,6 @@ fun SearchPage(
                         Text(
                             text = stringResource(id = R.string.title_search_thread),
                             fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    content = {
-                        SearchThreadPage(
-                            keyword = keyword,
-                            contentPadding = it,
-                            initialSortType = initialSortType
                         )
                     },
                     supportSort = true,
@@ -234,21 +229,27 @@ fun SearchPage(
                             fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
                         )
                     },
-                    content = { SearchUserPage(keyword = keyword, contentPadding = it) }
                 ),
             )
         }
     }
     val pagerState = rememberPagerState { pages.size }
-    MyScaffold(
+    val listStates = remember {
+        SnapshotStateList<LazyListState?>().apply { addAll(arrayOfNulls(pagerState.pageCount)) }
+    }
+
+    BlurScaffold(
+        topHazeBlock = remember { {
+            blurEnabled = !isKeywordEmpty && with(pagerState) {
+                currentPageOffsetFraction != 0f || listStates[currentPage]?.canScrollBackward == true
+            }
+        } },
         topBar = {
             TopAppBarContainer(
                 modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
                 topBar = {
                     SearchTopBar(
-                        modifier = Modifier
-                            .background(ExtendedTheme.colors.topBar)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         keyword = inputKeyword,
                         onKeywordChange = { inputKeyword = it },
                         onKeywordSubmit = onKeywordSubmit,
@@ -261,6 +262,7 @@ fun SearchPage(
                         }
                     )
                 },
+                elevation = Dp.Hairline
             ) {
                 AnimatedVisibility(
                     visible = !isKeywordEmpty,
@@ -278,7 +280,14 @@ fun SearchPage(
                     key = { pages[it].id },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    pages[it].content(contentPadding)
+                    val listState = listStates[it] ?: rememberLazyListState().apply { listStates[it] = this }
+                    when(pages[it].id) {
+                        "forum" -> SearchForumPage(keyword, contentPadding, listState)
+
+                        "thread" -> SearchThreadPage(keyword, initialSortType, contentPadding, listState)
+
+                        "user" -> SearchUserPage(keyword, contentPadding, listState)
+                    }
                 }
             }
         } else {

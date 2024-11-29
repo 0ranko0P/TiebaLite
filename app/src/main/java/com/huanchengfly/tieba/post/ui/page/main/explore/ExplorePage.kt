@@ -2,15 +2,15 @@ package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.Text
@@ -20,12 +20,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
@@ -37,10 +39,12 @@ import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
 import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
@@ -53,8 +57,7 @@ import kotlinx.coroutines.launch
 @Immutable
 data class ExplorePageItem(
     val id: String,
-    val name: @Composable (selected: Boolean) -> Unit,
-    val content: @Composable (PaddingValues) -> Unit,
+    val name: @Composable (selected: Boolean) -> Unit
 )
 
 @Composable
@@ -124,21 +127,21 @@ fun ExplorePage() {
             if (loggedIn) ExplorePageItem(
                 "concern",
                 { TabText(text = stringResource(id = R.string.title_concern), selected = it) },
-                { ConcernPage(navigator, it) }
             ) else null,
             ExplorePageItem(
                 "personalized",
                 { TabText(text = stringResource(id = R.string.title_personalized), selected = it) },
-                { PersonalizedPage(navigator, it) }
             ),
             ExplorePageItem(
                 "hot",
                 { TabText(text = stringResource(id = R.string.title_hot), selected = it) },
-                { HotPage(navigator, it) }
             ),
         ).toImmutableList()
     }
     val pagerState = rememberPagerState(initialPage = if (account != null) 1 else 0) { pages.size }
+    val listStates = remember {
+        SnapshotStateList<LazyListState?>().apply { addAll(arrayOfNulls(pagerState.pageCount)) }
+    }
     val coroutineScope = rememberCoroutineScope()
 
     onGlobalEvent<GlobalEvent.Refresh>(
@@ -147,8 +150,13 @@ fun ExplorePage() {
         coroutineScope.emitGlobalEvent(GlobalEvent.Refresh(pages[pagerState.currentPage].id))
     }
 
-    Scaffold(
+    BlurScaffold(
         backgroundColor = Color.Transparent,
+        topHazeBlock = remember { {
+            blurEnabled = with(pagerState) {
+                currentPageOffsetFraction != 0f || listStates[currentPage]?.canScrollBackward == true
+            }
+        } },
         topBar = {
             Toolbar(
                 title = stringResource(id = R.string.title_explore),
@@ -162,12 +170,12 @@ fun ExplorePage() {
                         )
                     }
                 },
+                elevation = Dp.Hairline
             ) {
                 ExplorePageTab(pagerState = pagerState, pages = pages)
             }
         },
-        bottomBar = {},
-        modifier = Modifier.fillMaxSize(),
+        bottomBar = emptyBlurBottomNavigation,
     ) { contentPadding ->
         LazyLoadHorizontalPager(
             state = pagerState,
@@ -176,7 +184,15 @@ fun ExplorePage() {
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) {
-            pages[it].content(contentPadding)
+            val listState = listStates[it] ?: rememberLazyListState().apply { listStates[it] = this }
+
+            when(pages[it].id) {
+                "concern" -> ConcernPage(navigator, contentPadding, listState)
+
+                "personalized" -> PersonalizedPage(navigator, contentPadding, listState)
+
+                "hot" -> HotPage(navigator, contentPadding, listState)
+            }
         }
     }
 }

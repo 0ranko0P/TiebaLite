@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.utils
 
 import android.graphics.Rect
 import androidx.window.layout.FoldingFeature
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -46,4 +47,21 @@ enum class MainNavigationType {
  */
 enum class MainNavigationContentPosition {
     TOP, CENTER
+}
+
+fun WindowWidthSizeClass.getNavType(posture: DevicePosture): MainNavigationType = when (this) {
+
+    WindowWidthSizeClass.Compact -> MainNavigationType.BOTTOM_NAVIGATION
+
+    WindowWidthSizeClass.Medium -> MainNavigationType.NAVIGATION_RAIL
+
+    WindowWidthSizeClass.Expanded -> {
+        if (posture is DevicePosture.BookPosture) {
+            MainNavigationType.NAVIGATION_RAIL
+        } else {
+            MainNavigationType.PERMANENT_NAVIGATION_DRAWER
+        }
+    }
+
+    else -> MainNavigationType.BOTTOM_NAVIGATION
 }

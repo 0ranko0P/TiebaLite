@@ -68,6 +68,9 @@ enum class LayoutType {
 private val ActiveIndicatorHeight = 56.dp
 private val ActiveIndicatorWidth = 240.dp
 
+// androidx.compose.material.BottomNavigationHeight
+val BottomNavigationHeight = 56.dp
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NavigationDrawerItem(

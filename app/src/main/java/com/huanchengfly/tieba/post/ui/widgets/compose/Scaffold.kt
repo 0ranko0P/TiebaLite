@@ -33,7 +33,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-private fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
+fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
     val dismissState = rememberDismissState(
         confirmStateChange = { value ->
             if (value != DismissValue.Default) {
