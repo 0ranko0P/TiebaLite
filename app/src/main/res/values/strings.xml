@@ -165,6 +165,8 @@
     <string name="title_settings_default_sort_type">吧默认排序方式</string>
     <string name="toast_load_failed">加载失败</string>
     <string name="button_undo">撤销</string>
+    <string name="title_reduce_effect">降低透明度和模糊效果</string>
+    <string name="summary_reduce_effect">提高可读性的同时节省少量电池</string>
     <string name="title_settings_night_mode">夜间模式设置</string>
     <string name="title_image_load_type_smart_origin">智能省流量</string>
     <string name="title_image_load_type_smart_load">智能无图</string>

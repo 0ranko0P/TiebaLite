@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.PendingIntent
 import android.content.Context
@@ -18,7 +19,7 @@ import androidx.core.content.ContextCompat
 import com.google.gson.reflect.TypeToken
 import com.huanchengfly.tieba.post.utils.GsonUtil
 import com.huanchengfly.tieba.post.utils.MD5Util
-import com.huanchengfly.tieba.post.utils.powerManager
+import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import java.io.File
@@ -130,10 +131,9 @@ fun <T> ImmutableList<T>.removeAt(index: Int): ImmutableList<T> {
  *
  * @see [Window.setBackgroundBlurRadius]
  * */
+@SuppressLint("NewApi")
 fun WindowManager.LayoutParams.enableBackgroundBlur(context: Context, radius: Int = 64): WindowManager.LayoutParams? {
-    // Disable blur effect on power save mode
-    val powerSaving = context.powerManager.isPowerSaveMode
-    return if (!powerSaving && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    return if (context.appPreferences.useRenderEffect) {
         flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
         blurBehindRadius = radius
         this

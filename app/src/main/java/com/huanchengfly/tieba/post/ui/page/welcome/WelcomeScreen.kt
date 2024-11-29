@@ -76,6 +76,7 @@ import com.huanchengfly.tieba.post.ui.page.settings.DefaultSortPreference
 import com.huanchengfly.tieba.post.ui.page.settings.ForumListPreference
 import com.huanchengfly.tieba.post.ui.page.settings.HideReplyPreference
 import com.huanchengfly.tieba.post.ui.page.settings.ImageLoadPreference
+import com.huanchengfly.tieba.post.ui.page.settings.ReduceEffectPreference
 import com.huanchengfly.tieba.post.ui.page.welcome.PagerOffset.Companion.LocalPagerOffset
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
@@ -351,6 +352,7 @@ private fun CustomPage(modifier: Modifier = Modifier, onThemeClicked: () -> Unit
         DarkThemeModePreference()
         DarkThemePreference()
         ForumListPreference()
+        ReduceEffectPreference()
     }
 }
 

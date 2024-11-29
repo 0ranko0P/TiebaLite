@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.BlurOn
 import androidx.compose.material.icons.outlined.Brightness2
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.DarkMode
@@ -76,6 +77,11 @@ fun CustomSettingsPage(navigator: NavController) = MyScaffold(
         prefsItem {
             DarkThemePreference()
         }
+
+        prefsItem {
+            ReduceEffectPreference()
+        }
+
         prefsItem {
             ListPref(
                 key = stringPreferencesKey(AppIconUtil.KEY_APP_ICON),
@@ -214,5 +220,17 @@ fun ForumListPreference(modifier: Modifier = Modifier) {
         modifier = modifier,
         defaultChecked = false,
         leadingIcon = Icons.Outlined.ViewAgenda
+    )
+}
+
+@Composable
+fun ReduceEffectPreference(modifier: Modifier = Modifier) {
+    SwitchPref(
+        modifier = modifier,
+        key = AppPreferencesUtils.KEY_REDUCE_EFFECT,
+        title = R.string.title_reduce_effect,
+        defaultChecked = false,
+        leadingIcon = Icons.Outlined.BlurOn,
+        summary = { R.string.summary_reduce_effect },
     )
 }
