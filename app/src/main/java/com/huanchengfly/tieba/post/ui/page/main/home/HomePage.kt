@@ -133,44 +133,27 @@ fun SearchBoxPreview() {
 }
 
 @Composable
-private fun SearchBox(
-    modifier: Modifier = Modifier,
-    backgroundColor: Color = ExtendedTheme.colors.topBar,
-    contentColor: Color = LocalContentColor.current,
-    onClick: () -> Unit,
-) {
-    Box(
+private fun SearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Surface(
+        color = ExtendedTheme.colors.floorCard,
+        contentColor = LocalContentColor.current,
+        shape = RoundedCornerShape(6.dp),
         modifier = modifier
-            .background(backgroundColor)
             .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
     ) {
-        Surface(
-            color = ExtendedTheme.colors.floorCard,
-            contentColor = contentColor,
-            shape = RoundedCornerShape(6.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
+        Row(
+            verticalAlignment = CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Row(
-                verticalAlignment = CenterVertically,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Search,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .align(CenterVertically)
-                        .size(24.dp),
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = stringResource(id = R.string.hint_search),
-                    modifier = Modifier.align(CenterVertically),
-                    fontSize = 14.sp
-                )
-            }
+            Icon(
+                imageVector = Icons.Rounded.Search,
+                contentDescription = null,
+                modifier = Modifier.size(Sizes.Tiny),
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(text = stringResource(id = R.string.hint_search), fontSize = 14.sp)
         }
     }
 }
@@ -477,7 +460,6 @@ fun HomePage(
             ) {
                 SearchBox(
                     modifier = Modifier.padding(bottom = 4.dp),
-                    backgroundColor = Color.Transparent,
                     onClick = { navigator.navigate(Destination.Search) }
                 )
             }
