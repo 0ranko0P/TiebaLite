@@ -33,9 +33,7 @@ import com.huanchengfly.tieba.post.LocalDevicePosture
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
-import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
@@ -57,7 +55,6 @@ import kotlinx.coroutines.launch
 private fun NavigationWrapper(
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
-    onReselected: (position: Int) -> Unit,
     navigationItems: ImmutableList<NavigationItem>,
     navigationType: MainNavigationType,
     navigationContentPosition: MainNavigationContentPosition,
@@ -68,7 +65,6 @@ private fun NavigationWrapper(
             NavigationDrawerContent(
                 currentPosition = currentPosition,
                 onChangePosition = onChangePosition,
-                onReselected = onReselected,
                 navigationItems = navigationItems,
                 navigationContentPosition = navigationContentPosition
             )
@@ -77,7 +73,6 @@ private fun NavigationWrapper(
             NavigationRail(
                 currentPosition = currentPosition,
                 onChangePosition = onChangePosition,
-                onReselected = onReselected,
                 navigationItems = navigationItems,
                 navigationContentPosition = navigationContentPosition
             )
@@ -102,13 +97,11 @@ private fun BlurBottomNavigation(
     modifier: Modifier = Modifier,
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
-    onReselected: (position: Int) -> Unit,
     navigationItems: ImmutableList<NavigationItem>,
 ) = BottomNavigation(
     modifier = modifier,
     currentPosition = currentPosition,
     onChangePosition = onChangePosition,
-    onReselected = onReselected,
     navigationItems = navigationItems,
     themeColors = LocalExtendedColors.current.copy(bottomBar = Color.Transparent)
 )
@@ -216,16 +209,11 @@ fun MainPage(
             }
         }
     }
-    val onReselected: (Int) -> Unit = {
-        coroutineScope.emitGlobalEvent(
-            GlobalEvent.Refresh(navigationItems[it].id)
-        )
-    }
+
     ProvideNavigator(navigator = navHostController) {
         NavigationWrapper(
             currentPosition = pagerState.currentPage,
             onChangePosition = onItemClicked,
-            onReselected = onReselected,
             navigationItems = navigationItems,
             navigationType = navigationType,
             navigationContentPosition = navigationContentPosition
@@ -254,7 +242,6 @@ fun MainPage(
                 BlurBottomNavigation(
                     currentPosition = pagerState.currentPage,
                     onChangePosition = onItemClicked,
-                    onReselected = onReselected,
                     navigationItems = navigationItems
                 )
             }

@@ -72,11 +72,9 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
@@ -402,12 +400,6 @@ fun HomePage(
 
     val isError by remember { derivedStateOf { error != null } }
 
-    onGlobalEvent<GlobalEvent.Refresh>(
-        filter = { it.key == "home" }
-    ) {
-        viewModel.send(HomeUiIntent.Refresh)
-    }
-
     var unfollowForum by remember { mutableStateOf<HomeUiState.Forum?>(null) }
     val confirmUnfollowDialog = rememberDialogState()
     ConfirmDialog(
@@ -467,14 +459,13 @@ fun HomePage(
         bottomBar = emptyBlurBottomNavigation,
         modifier = Modifier.fillMaxSize(),
     ) { contentPaddings ->
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = isLoading,
-            onRefresh = { viewModel.send(HomeUiIntent.Refresh) }
-        )
 
-        val onForumClick: (HomeUiState.Forum) -> Unit = remember { {
-            navigator.navigate(Destination.Forum(it.forumName, it.avatar))
-        } }
+        val onRefreshClick: () -> Unit = remember { { viewModel.send(HomeUiIntent.Refresh) } }
+        val onForumClick: (HomeUiState.Forum) -> Unit = remember {
+            { navigator.navigate(route = Destination.Forum(it.forumName, it.avatar)) }
+        }
+
+        val pullRefreshState = rememberPullRefreshState(refreshing = isLoading, onRefreshClick)
 
         Box(
             modifier = Modifier.pullRefresh(pullRefreshState)
@@ -484,9 +475,7 @@ fun HomePage(
                 isError = isError,
                 isLoading = isLoading,
                 modifier = Modifier.fillMaxSize(),
-                onReload = {
-                    viewModel.send(HomeUiIntent.Refresh)
-                },
+                onReload = onRefreshClick,
                 emptyScreen = {
                     EmptyScreen(
                         modifier = Modifier.padding(contentPaddings),

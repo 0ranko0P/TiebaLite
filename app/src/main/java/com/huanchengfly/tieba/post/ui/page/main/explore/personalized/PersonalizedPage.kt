@@ -48,10 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent.ScrollToTop.bindScrollToTopEvent
-import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
@@ -134,11 +132,6 @@ fun PersonalizedPage(
         mutableStateOf(false)
     }
 
-    onGlobalEvent<GlobalEvent.Refresh>(
-        filter = { it.key == "personalized" }
-    ) {
-        viewModel.send(PersonalizedUiIntent.Refresh)
-    }
     viewModel.onEvent<PersonalizedUiEvent.RefreshSuccess> {
         refreshCount = it.count
         showRefreshTip = true

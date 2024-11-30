@@ -18,8 +18,6 @@ sealed interface GlobalEvent : UiEvent {
 
     data object ScrollToTop : GlobalEvent
 
-    data class Refresh(val key: String) : GlobalEvent
-
     data class ReplySuccess(
         val threadId: Long,
         val newPostId: Long,

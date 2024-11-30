@@ -123,7 +123,6 @@ fun NavigationDrawerItem(
 fun NavigationDrawerContent(
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
-    onReselected: (position: Int) -> Unit,
     navigationItems: ImmutableList<NavigationItem>,
     navigationContentPosition: MainNavigationContentPosition
 ) {
@@ -187,9 +186,7 @@ fun NavigationDrawerContent(
                     NavigationDrawerItem(
                         selected = index == currentPosition,
                         onClick = {
-                            if (index == currentPosition) {
-                                onReselected(index)
-                            } else {
+                            if (index != currentPosition) {
                                 onChangePosition(index)
                             }
                         },
@@ -260,7 +257,6 @@ private fun PositionLayout(
 fun NavigationRail(
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
-    onReselected: (position: Int) -> Unit,
     navigationItems: ImmutableList<NavigationItem>,
     navigationContentPosition: MainNavigationContentPosition
 ) {
@@ -283,9 +279,7 @@ fun NavigationRail(
                 NavigationRailItem(
                     selected = index == currentPosition,
                     onClick = {
-                        if (index == currentPosition) {
-                            onReselected(index)
-                        } else {
+                        if (index != currentPosition) {
                             onChangePosition(index)
                         }
                     },
@@ -321,7 +315,6 @@ fun BottomNavigation(
     modifier: Modifier = Modifier,
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
-    onReselected: (position: Int) -> Unit,
     navigationItems: ImmutableList<NavigationItem>,
     themeColors: ExtendedColors = ExtendedTheme.colors
 ) {
@@ -337,9 +330,7 @@ fun BottomNavigation(
                 BottomNavigationItem(
                     selected = index == currentPosition,
                     onClick = {
-                        if (index == currentPosition) {
-                            onReselected(index)
-                        } else {
+                        if (index != currentPosition) {
                             onChangePosition(index)
                         }
                         navigationItem.onClick?.invoke()

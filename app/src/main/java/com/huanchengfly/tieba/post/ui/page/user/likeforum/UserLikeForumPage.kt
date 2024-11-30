@@ -23,10 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.api.models.UserLikeForumBean
-import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.getOrNull
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
@@ -87,12 +85,6 @@ fun UserLikeForumPage(
     }
     val isError by remember {
         derivedStateOf { error != null }
-    }
-
-    onGlobalEvent<GlobalEvent.Refresh>(
-        filter = { it.key == "user_profile" }
-    ) {
-        viewModel.send(UserLikeForumUiIntent.Refresh(uid))
     }
 
     StateScreen(

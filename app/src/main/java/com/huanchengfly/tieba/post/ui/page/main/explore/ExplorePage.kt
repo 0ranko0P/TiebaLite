@@ -32,9 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
@@ -88,9 +85,7 @@ private fun ColumnScope.ExplorePageTab(
                 selected = pagerState.currentPage == index,
                 onClick = {
                     coroutineScope.launch {
-                        if (pagerState.currentPage == index) {
-                            emitGlobalEvent(GlobalEvent.Refresh(item.id))
-                        } else {
+                        if (pagerState.currentPage != index) {
                             pagerState.animateScrollToPage(index)
                         }
                     }
@@ -141,13 +136,6 @@ fun ExplorePage() {
     val pagerState = rememberPagerState(initialPage = if (account != null) 1 else 0) { pages.size }
     val listStates = remember {
         SnapshotStateList<LazyListState?>().apply { addAll(arrayOfNulls(pagerState.pageCount)) }
-    }
-    val coroutineScope = rememberCoroutineScope()
-
-    onGlobalEvent<GlobalEvent.Refresh>(
-        filter = { it.key == "explore" }
-    ) {
-        coroutineScope.emitGlobalEvent(GlobalEvent.Refresh(pages[pagerState.currentPage].id))
     }
 
     BlurScaffold(

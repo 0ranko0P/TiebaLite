@@ -21,9 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 import com.huanchengfly.tieba.post.arch.CommonUiEvent.ScrollToTop.bindScrollToTopEvent
-import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -74,12 +72,6 @@ fun ConcernPage(
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
         onRefresh = { viewModel.send(ConcernUiIntent.Refresh) })
-
-    onGlobalEvent<GlobalEvent.Refresh>(
-        filter = { it.key == "concern" }
-    ) {
-        viewModel.send(ConcernUiIntent.Refresh)
-    }
 
     viewModel.bindScrollToTopEvent(lazyListState = listState)
 

@@ -47,9 +47,7 @@ import androidx.navigation.NavController
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.hasAgree
-import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
@@ -81,11 +79,7 @@ fun HotPage(
         viewModel.send(HotUiIntent.Load)
         viewModel.initialized = true
     }
-    onGlobalEvent<GlobalEvent.Refresh>(
-        filter = { it.key == "hot" }
-    ) {
-        viewModel.send(HotUiIntent.Load)
-    }
+
     val isLoading by viewModel.uiState.collectPartialAsState(
         prop1 = HotUiState::isRefreshing,
         initial = false
