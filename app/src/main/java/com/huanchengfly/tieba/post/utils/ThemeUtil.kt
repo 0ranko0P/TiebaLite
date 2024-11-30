@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 
 object ThemeUtil {
     val themeState: MutableState<ExtendedColors> = mutableStateOf(
-        if (App.isSystemNight) DefaultDarkColors else DefaultColors
+        if (shouldUseNightMode(INSTANCE.appPreferences.darkMode)) DefaultDarkColors else DefaultColors
     )
 
     const val TAG = "ThemeUtil"
@@ -92,7 +92,7 @@ object ThemeUtil {
     fun isNightMode(): Boolean = getRawTheme().isNightMode
 
     fun shouldUseNightMode(darkMode: Int? = DARK_MODE_FOLLOW_SYSTEM): Boolean {
-        return when(darkMode) {
+        return when (darkMode) {
             DARK_MODE_ALWAYS -> true
             DARK_MODE_DISABLED -> false
             else -> App.isSystemNight // Follow system night mode
