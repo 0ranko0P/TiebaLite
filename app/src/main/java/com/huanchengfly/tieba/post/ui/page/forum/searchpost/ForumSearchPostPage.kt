@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.forum.searchpost
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -11,12 +12,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -26,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
+import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -51,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
@@ -63,23 +65,25 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarContainer
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
+import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.ImmutableList
@@ -89,6 +93,7 @@ import kotlinx.collections.immutable.persistentMapOf
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun SearchHistoryList(
+    modifier: Modifier = Modifier,
     searchHistories: ImmutableList<SearchPostHistory>,
     onSearchHistoryClick: (SearchPostHistory) -> Unit,
     expanded: Boolean = false,
@@ -106,7 +111,7 @@ private fun SearchHistoryList(
         if (!expanded && hasMore) searchHistories.take(6) else searchHistories
     }
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
     ) {
         Row(
@@ -283,19 +288,6 @@ fun ForumSearchPostPage(
     )
     val lazyListState = rememberLazyListState()
 
-    val sortTypeMapping = remember {
-        persistentMapOf(
-            ForumSearchPostSortType.NEWEST to R.string.title_search_post_sort_by_time,
-            ForumSearchPostSortType.RELATIVE to R.string.title_search_post_sort_by_relevant,
-        )
-    }
-    val filterTypes = remember {
-        persistentListOf(
-            ForumSearchPostFilterType.ALL,
-            ForumSearchPostFilterType.ONLY_THREAD
-        )
-    }
-
     val threadClickListener : (SearchThreadBean.ThreadInfoBean) -> Unit = {
         if (it.postInfo != null) {
             navigator.navigate(
@@ -310,56 +302,71 @@ fun ForumSearchPostPage(
         }
     }
 
-    MyScaffold(
+    BlurScaffold(
+        topHazeBlock = {
+            blurEnabled = lazyListState.canScrollBackward == true
+        },
         topBar = {
             TopAppBarContainer(
                 topBar = {
-                    Box(
+                    SearchBox(
+                        keyword = inputKeyword,
+                        onKeywordChange = { inputKeyword = it },
                         modifier = Modifier
-                            .background(ExtendedTheme.colors.topBar)
                             .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        SearchBox(
-                            keyword = inputKeyword,
-                            onKeywordChange = { inputKeyword = it },
-                            modifier = Modifier.fillMaxSize(),
-                            onKeywordSubmit = {
-                                viewModel.send(
-                                    ForumSearchPostUiIntent.Refresh(
-                                        it,
-                                        forumName,
-                                        forumId,
-                                        currentSortType,
-                                        currentFilterType
-                                    )
+                            .fillMaxSize(),
+                        onKeywordSubmit = {
+                            viewModel.send(
+                                ForumSearchPostUiIntent.Refresh(
+                                    it,
+                                    forumName,
+                                    forumId,
+                                    currentSortType,
+                                    currentFilterType
                                 )
-                            },
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.hint_search_in_ba, forumName),
-                                    color = ExtendedTheme.colors.textSecondary
-                                )
-                            },
-                            prependIcon = {
-                                Icon(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .clickable(onClick = navigator::navigateUp),
-                                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                                    contentDescription = stringResource(id = R.string.button_back)
-                                )
-                            },
-                            shape = RoundedCornerShape(6.dp)
-                        )
-                    }
+                            )
+                        },
+                        placeholder = {
+                            Text(
+                                text = stringResource(R.string.hint_search_in_ba, forumName),
+                                color = ExtendedTheme.colors.textSecondary
+                            )
+                        },
+                        prependIcon = {
+                            Icon(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable(onClick = navigator::navigateUp),
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = stringResource(id = R.string.button_back)
+                            )
+                        },
+                        shape = RoundedCornerShape(6.dp)
+                    )
+                },
+                elevation = Dp.Hairline
+            ) {
+                AnimatedVisibility(visible = !isKeywordEmpty) {
+                    SortToolBar(
+                        modifier = Modifier.fillMaxWidth(),
+                        sortType = { currentSortType },
+                        filterType = { currentFilterType },
+                        onSortTypeChanged = { sort  ->
+                            viewModel.send(
+                                ForumSearchPostUiIntent.Refresh(currentKeyword, forumName, forumId, sort, currentFilterType)
+                            )
+                        },
+                        onFilterTypeChanged = { filter ->
+                            viewModel.send(
+                                ForumSearchPostUiIntent.Refresh(currentKeyword, forumName, forumId, currentSortType, filter)
+                            )
+                        }
+                    )
                 }
-            )
+            }
         }
-    ) { paddingValues ->
+    ) { contentPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
         ) {
             ProvideNavigator(navigator = navigator) {
                 if (!isKeywordEmpty) {
@@ -370,15 +377,16 @@ fun ForumSearchPostPage(
                         isLoading = isRefreshing,
                         onReload = ::refresh,
                         errorScreen = {
-                            error?.item?.let {
-                                ErrorScreen(error = it)
-                            }
+                            ErrorScreen(error = error?.item, Modifier.padding(contentPadding))
                         }
                     ) {
-                        Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
+                        Box(
+                            modifier = Modifier.pullRefresh(pullRefreshState)
+                        ) {
                             SwipeUpLazyLoadColumn(
                                 modifier = Modifier.fillMaxSize(),
                                 state = lazyListState,
+                                contentPadding = contentPadding,
                                 isLoading = isLoadingMore,
                                 onLazyLoad = {
                                     if (hasMore) {
@@ -404,109 +412,6 @@ fun ForumSearchPostPage(
                                     )
                                 }
                             ) {
-                                stickyHeader(key = "Sort&Filter") {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .background(ExtendedTheme.colors.background)
-                                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    ) {
-                                        val menuState = rememberMenuState()
-
-                                        val rotate by animateFloatAsState(
-                                            targetValue = if (menuState.expanded) 180f else 0f,
-                                            label = "ArrowIndicatorRotate"
-                                        )
-
-                                        ClickMenu(
-                                            menuContent = {
-                                                ListSinglePicker(
-                                                    items = sortTypeMapping,
-                                                    selected = currentSortType,
-                                                    onItemSelected = { newSortType, changed ->
-                                                        if (changed) {
-                                                            viewModel.send(
-                                                                ForumSearchPostUiIntent.Refresh(
-                                                                    currentKeyword,
-                                                                    forumName,
-                                                                    forumId,
-                                                                    newSortType,
-                                                                    currentFilterType
-                                                                )
-                                                            )
-                                                        }
-                                                        dismiss()
-                                                    }
-                                                )
-                                            },
-                                            menuState = menuState,
-                                            indication = null
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    text = stringResource(sortTypeMapping[currentSortType]!!),
-                                                    fontSize = 13.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                Icon(
-                                                    imageVector = Icons.Rounded.ArrowDropDown,
-                                                    contentDescription = null,
-                                                    modifier = Modifier
-                                                        .size(16.dp)
-                                                        .rotate(rotate)
-                                                )
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.weight(1f))
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.height(IntrinsicSize.Min)
-                                        ) {
-                                            filterTypes.fastForEachIndexed { index, type ->
-                                                val textRes = when (type) {
-                                                    ForumSearchPostFilterType.ALL -> R.string.title_search_filter_all
-
-                                                    ForumSearchPostFilterType.ONLY_THREAD -> R.string.title_search_filter_only_thread
-
-                                                    else -> throw RuntimeException("Invalid type: $type")
-                                                }
-
-                                                Text(
-                                                    text = stringResource(textRes),
-                                                    fontSize = 13.sp,
-                                                    fontWeight = if (type == currentFilterType) {
-                                                        FontWeight.Bold
-                                                    } else {
-                                                        FontWeight.Normal
-                                                    },
-                                                    modifier = Modifier.clickableNoIndication(
-                                                        role = Role.RadioButton,
-                                                        onClick = {
-                                                            if (type != currentFilterType) {
-                                                                viewModel.send(
-                                                                    ForumSearchPostUiIntent.Refresh(
-                                                                        currentKeyword,
-                                                                        forumName,
-                                                                        forumId,
-                                                                        currentSortType,
-                                                                        type
-                                                                    )
-                                                                )
-                                                            }
-                                                        }
-                                                    )
-                                                )
-
-                                                if (index != filterTypes.lastIndex) {
-                                                    HorizontalDivider(
-                                                        modifier = Modifier.padding(horizontal = 8.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
                                 itemsIndexed(data) { index, item ->
                                     if (index > 0) {
                                         VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -545,6 +450,7 @@ fun ForumSearchPostPage(
                     }
                 } else {
                     SearchHistoryList(
+                        modifier = Modifier.padding(contentPadding),
                         searchHistories = searchHistories,
                         onSearchHistoryClick = {
                             viewModel.send(
@@ -565,6 +471,108 @@ fun ForumSearchPostPage(
                         }
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SortToolBar(
+    modifier: Modifier = Modifier,
+    sortType: () -> Int,
+    filterType: () -> Int,
+    onSortTypeChanged: (type: Int) -> Unit,
+    onFilterTypeChanged: (type: Int) -> Unit
+) {
+    val sortTypes: Options<Int> = remember {
+        persistentMapOf(
+            ForumSearchPostSortType.NEWEST to R.string.title_search_post_sort_by_time,
+            ForumSearchPostSortType.RELATIVE to R.string.title_search_post_sort_by_relevant,
+        )
+    }
+
+    val filterTypes: List<Int> = remember {
+        persistentListOf(
+            ForumSearchPostFilterType.ALL,
+            ForumSearchPostFilterType.ONLY_THREAD
+        )
+    }
+    val textColor = LocalContentColor.current.copy(LocalContentAlpha.current)
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        val menuState = rememberMenuState()
+
+        val rotate by animateFloatAsState(
+            targetValue = if (menuState.expanded) 180f else 0f,
+            label = "ArrowIndicatorRotate"
+        )
+
+        ClickMenu(
+            menuContent = {
+                ListSinglePicker(
+                    items = sortTypes,
+                    selected = sortType(),
+                    onItemSelected = { newSortType, changed ->
+                        if (changed) {
+                            onSortTypeChanged(newSortType)
+                        }
+                        dismiss()
+                    }
+                )
+            },
+            menuState = menuState,
+            indication = null
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(sortTypes[sortType()]!!),
+                    color = LocalContentColor.current,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Icon(
+                    imageVector = Icons.Rounded.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .rotate(rotate)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.weight(1f))
+
+        var selected = false
+        filterTypes.fastForEachIndexed { index, type ->
+            selected = type == filterType()
+
+            Text(
+                text = stringResource(
+                    id = when (type) {
+                        ForumSearchPostFilterType.ALL -> R.string.title_search_filter_all
+
+                        ForumSearchPostFilterType.ONLY_THREAD -> R.string.title_search_filter_only_thread
+
+                        else -> throw RuntimeException("Invalid type: $type")
+                    }
+                ),
+                color = if (selected) LocalExtendedColors.current.primary else textColor,
+                fontSize = 13.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                modifier = Modifier
+                    .clickableNoIndication(
+                        role = Role.RadioButton,
+                        enabled = !selected,
+                        onClick = { onFilterTypeChanged(type) }
+                    )
+            )
+
+            if (index != filterTypes.lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
             }
         }
     }
