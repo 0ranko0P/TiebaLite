@@ -393,8 +393,8 @@ fun ForumPage(
                     TextMenuItem(text = stringResource(R.string.title_refresh)) {
                         viewModel.onRefreshClicked(isGood = isGood)
                     }
-
-                    if (tbs != null) {
+                    // Is followed & logged in
+                    if (forumInfo?.item?.is_like == 1 && tbs != null) {
                         TextMenuItem(text = stringResource(R.string.title_unfollow)) {
                             unlikeDialogState.show()
                         }
