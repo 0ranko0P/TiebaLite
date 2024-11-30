@@ -171,7 +171,7 @@ class AppPreferencesUtils private constructor(context: Context) {
         get() = cache[booleanPreferencesKey(KEY_POST_HIDE_BLOCKED)] == true
 
     val liftUpBottomBar: Boolean
-        get() = cache[booleanPreferencesKey(KEY_LIFT_BOTTOM_BAR)] == true
+        get() = cache[booleanPreferencesKey(KEY_LIFT_BOTTOM_BAR)] != false
 
     @get:ForumFabFunction
     val forumFabFunction: String

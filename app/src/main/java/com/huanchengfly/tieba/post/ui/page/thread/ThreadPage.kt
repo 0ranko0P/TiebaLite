@@ -20,8 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeightIn
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -90,6 +89,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
@@ -99,7 +99,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -473,9 +472,10 @@ private fun BottomBar(
     agreeNum: Long = 0,
 ) {
     Column(
-        modifier = modifier.background(ExtendedTheme.colors.threadBottomBar)
+        modifier = modifier
+            .background(ExtendedTheme.colors.threadBottomBar)
+            .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        val context = LocalContext.current
         Row(
             modifier = Modifier
                 .height(IntrinsicSize.Min)
@@ -539,14 +539,7 @@ private fun BottomBar(
             }
         }
 
-        val spacerMinHeight = remember {
-            if (context.appPreferences.liftUpBottomBar) 16.dp else Dp.Hairline
-        }
-        Box(
-            modifier = Modifier.requiredHeightIn(min = spacerMinHeight)
-        ) {
-            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-        }
+        LiftUpSpacer()
     }
 }
 

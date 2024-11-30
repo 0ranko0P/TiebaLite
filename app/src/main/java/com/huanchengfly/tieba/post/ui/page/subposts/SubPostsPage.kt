@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeightIn
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,12 +37,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -73,10 +68,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.OneTimeMeasurer
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
@@ -91,7 +86,6 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -189,7 +183,6 @@ internal fun SubPostsContent(
         },
         isLoading = isRefreshing
     ) {
-        var bottomBarHeight: Dp by remember { mutableStateOf(Dp.Hairline) }
         val hideReply by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_HIDE), false)
 
         MyScaffold(
@@ -203,31 +196,19 @@ internal fun SubPostsContent(
             },
             bottomBar = {
                 if (account == null || hideReply) return@MyScaffold
-                OneTimeMeasurer { size: IntSize? ->
-                    BottomBar(
-                        account = account,
-                        onReply = {
-                            val forumName = forum?.get { name } ?: return@BottomBar
-                            if (forumName.isNotEmpty()) {
-                                navigator.navigate(
-                                    Reply(
-                                        forumId = forum.get { id },
-                                        forumName = forumName,
-                                        threadId = threadId,
-                                        postId = postId)
-                                )
-                            }
-                        }
-                    )
-                    // Update BottomBar's height
-                    if (size != null && bottomBarHeight == Dp.Hairline) {
-                        with(LocalDensity.current) { bottomBarHeight = size.height.toDp() }
+                BottomBar(
+                    account = account,
+                    onReply = {
+                        val forumName = forum?.get { name } ?: return@BottomBar
+                        navigator.navigate(
+                            route = Reply(forumId = forum.get { id }, forumName, threadId, postId)
+                        )
                     }
-                }
+                )
             }
         ) { paddingValues ->
             SwipeUpLazyLoadColumn(
-                modifier = Modifier.fillMaxSize().padding(bottom = bottomBarHeight),
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = paddingValues,
                 isLoading = isLoading,
                 onLazyLoad = {
@@ -366,9 +347,10 @@ private fun TitleBar(isSheet: Boolean, post: PostData?, onBack: () -> Unit, onAc
 @Composable
 private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: () -> Unit) =
     Column(
-        modifier = modifier.background(ExtendedTheme.colors.threadBottomBar)
+        modifier = modifier
+            .background(ExtendedTheme.colors.threadBottomBar)
+            .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        val context = LocalContext.current
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -398,16 +380,7 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
             }
         }
 
-        val spacerMinHeight = remember {
-            if (context.appPreferences.liftUpBottomBar) 16.dp else Dp.Hairline
-        }
-        Box(
-            modifier = Modifier.requiredHeightIn(min = spacerMinHeight)
-        ) {
-            Spacer(
-                modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)
-            )
-        }
+        LiftUpSpacer()
     }
 
 @Composable
