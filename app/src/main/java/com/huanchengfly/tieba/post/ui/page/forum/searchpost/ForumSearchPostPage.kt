@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -95,7 +96,7 @@ import kotlinx.collections.immutable.persistentMapOf
 private fun SearchHistoryList(
     modifier: Modifier = Modifier,
     searchHistories: ImmutableList<SearchPostHistory>,
-    onSearchHistoryClick: (SearchPostHistory) -> Unit,
+    onSearchWithHistory: (history: String) -> Unit,
     expanded: Boolean = false,
     onToggleExpand: () -> Unit = {},
     onDelete: (SearchPostHistory) -> Unit = {},
@@ -143,9 +144,9 @@ private fun SearchHistoryList(
                 Box(
                     modifier = Modifier
                         .padding(bottom = 8.dp)
-                        .clip(RoundedCornerShape(100))
+                        .clip(CircleShape)
                         .combinedClickable(
-                            onClick = { onSearchHistoryClick(searchHistory) },
+                            onClick = { onSearchWithHistory(searchHistory.content) },
                             onLongClick = { onDelete(searchHistory) }
                         )
                         .background(ExtendedTheme.colors.chip)
@@ -212,6 +213,8 @@ fun ForumSearchPostPage(
         listOf(ForumSearchPostUiIntent.Init)
     ),
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val currentKeyword by viewModel.uiState.collectPartialAsState(
         prop1 = ForumSearchPostUiState::keyword,
         initial = ""
@@ -270,22 +273,18 @@ fun ForumSearchPostPage(
         }
     }
 
-    fun refresh() {
+    val onKeywordSubmit: (String) -> Unit = remember { { keyword ->
+        if (inputKeyword != keyword) {
+            inputKeyword = keyword
+        }
         viewModel.send(
-            ForumSearchPostUiIntent.Refresh(
-                currentKeyword,
-                forumName,
-                forumId,
-                currentSortType,
-                currentFilterType
-            )
+            ForumSearchPostUiIntent.Refresh(keyword, forumName, forumId, currentSortType, currentFilterType)
         )
-    }
+        keyboardController?.hide()
+    } }
 
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = ::refresh
-    )
+    val refresh: () -> Unit = { onKeywordSubmit(currentKeyword) }
+    val pullRefreshState = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = refresh)
     val lazyListState = rememberLazyListState()
 
     val threadClickListener : (SearchThreadBean.ThreadInfoBean) -> Unit = {
@@ -315,17 +314,7 @@ fun ForumSearchPostPage(
                         modifier = Modifier
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                             .fillMaxSize(),
-                        onKeywordSubmit = {
-                            viewModel.send(
-                                ForumSearchPostUiIntent.Refresh(
-                                    it,
-                                    forumName,
-                                    forumId,
-                                    currentSortType,
-                                    currentFilterType
-                                )
-                            )
-                        },
+                        onKeywordSubmit = onKeywordSubmit,
                         placeholder = {
                             Text(
                                 text = stringResource(R.string.hint_search_in_ba, forumName),
@@ -375,7 +364,7 @@ fun ForumSearchPostPage(
                         isEmpty = isEmpty,
                         isError = isError,
                         isLoading = isRefreshing,
-                        onReload = ::refresh,
+                        onReload = refresh,
                         errorScreen = {
                             ErrorScreen(error = error?.item, Modifier.padding(contentPadding))
                         }
@@ -452,17 +441,7 @@ fun ForumSearchPostPage(
                     SearchHistoryList(
                         modifier = Modifier.padding(contentPadding),
                         searchHistories = searchHistories,
-                        onSearchHistoryClick = {
-                            viewModel.send(
-                                ForumSearchPostUiIntent.Refresh(
-                                    it.content,
-                                    forumName,
-                                    forumId,
-                                    currentSortType,
-                                    currentFilterType
-                                )
-                            )
-                        },
+                        onSearchWithHistory = onKeywordSubmit,
                         onDelete = {
                             viewModel.send(ForumSearchPostUiIntent.DeleteHistory(it.id))
                         },
