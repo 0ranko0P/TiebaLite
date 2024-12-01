@@ -599,18 +599,6 @@ internal fun ReplyPageContent(
         }
     }
 
-    DisposableEffect(editTextView) {
-        if (editTextView != null) {
-            showKeyboard()
-        }
-
-        onDispose {
-            if (editTextView != null) {
-                hideKeyboard()
-            }
-        }
-    }
-
     fun getDispatchUri(): Uri {
         return if (postId != null) {
             Uri.parse("com.baidu.tieba://unidispatch/pb?obj_locate=comment_lzl_cut_guide&obj_source=wise&obj_name=index&obj_param2=chrome&has_token=0&qd=scheme&refer=tieba.baidu.com&wise_sample_id=3000232_2&hightlight_anchor_pid=${postId}&is_anchor_to_comment=1&comment_sort_type=0&fr=bpush&tid=${threadId}")
@@ -647,10 +635,13 @@ internal fun ReplyPageContent(
                 text = stringResource(id = R.string.button_official_client_reply),
                 onClick = { launchOfficialApp() }
             )
-            DialogNegativeButton(text = stringResource(id = R.string.btn_continue_reply))
+            DialogNegativeButton(
+                text = stringResource(id = R.string.btn_continue_reply),
+                onClick = ::showKeyboard
+            )
             DialogNegativeButton(
                 text = stringResource(id = R.string.btn_cancel_reply),
-                onClick = { onBack() }
+                onClick = onBack
             )
         },
     ) {
@@ -663,6 +654,18 @@ internal fun ReplyPageContent(
     LaunchedEffect(Unit) {
         if (warning) {
             warningDialogState.show()
+        }
+    }
+
+    DisposableEffect(editTextView) {
+        if (!warning && editTextView != null) {
+            showKeyboard()
+        }
+
+        onDispose {
+            if (editTextView != null) {
+                hideKeyboard()
+            }
         }
     }
 }
