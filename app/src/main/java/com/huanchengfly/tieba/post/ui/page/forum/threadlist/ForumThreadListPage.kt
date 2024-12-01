@@ -21,6 +21,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +30,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
@@ -57,6 +57,8 @@ import kotlinx.collections.immutable.persistentListOf
 private enum class ItemType {
     Top, PlainText, SingleMedia, MultiMedia, Video
 }
+
+typealias ClassifyTabsContent = @Composable () -> Unit
 
 @Composable
 private fun GoodClassifyTabs(
@@ -118,6 +120,7 @@ fun GoodThreadListPage(
     sortType: () -> Int,
     listState: LazyListState,
     contentPadding: PaddingValues,
+    onComposeClassifyTab: (ClassifyTabsContent) -> Unit, // Workaround to compose tab inside TopBar for background blur
     viewModel: GoodThreadListViewModel = pageViewModel<GoodThreadListViewModel>()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -138,17 +141,17 @@ fun GoodThreadListPage(
         initial = persistentListOf()
     )
 
-    if (goodClassifies.size <= 1) { // Unclassified
-        ForumThreadListPage(modifier, forumId, true, sortType, listState, contentPadding, viewModel)
-    } else {
-        Column(modifier = modifier.padding(contentPadding)) {
-            GoodClassifyTabs(
-                goodClassifyHolders = goodClassifies,
-                selectedItem = goodClassifyId,
-                onSelected = viewModel::requestRefresh
-            )
+    ForumThreadListPage(modifier, forumId, true, sortType, listState, contentPadding, viewModel)
 
-            ForumThreadListPage(modifier, forumId, true, sortType, listState, PaddingNone, viewModel)
+    if (goodClassifies.size > 1) {
+        LaunchedEffect(Unit) {
+            onComposeClassifyTab {
+                GoodClassifyTabs(
+                    goodClassifyHolders = goodClassifies,
+                    selectedItem = goodClassifyId,
+                    onSelected = viewModel::requestRefresh
+                )
+            }
         }
     }
 }
