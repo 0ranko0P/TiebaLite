@@ -8,14 +8,12 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -23,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,11 +46,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
-@Immutable
-data class ExplorePageItem(
-    val id: String,
-    val name: @Composable (selected: Boolean) -> Unit
-)
+private typealias ExplorePageItem = Int
 
 @Composable
 private fun ColumnScope.ExplorePageTab(
@@ -77,15 +70,22 @@ private fun ColumnScope.ExplorePageTab(
             .align(Alignment.CenterHorizontally)
             .width(76.dp * pages.size),
     ) {
+        var selected = false
         pages.fastForEachIndexed { index, item ->
+            selected = pagerState.currentPage == index
+
             Tab(
-                text = { item.name(pagerState.currentPage == index) },
-                selected = pagerState.currentPage == index,
+                text = {
+                    Text(
+                        text = stringResource(id = item),
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        letterSpacing = 0.75.sp
+                    )
+                },
+                selected = selected,
                 onClick = {
                     coroutineScope.launch {
-                        if (pagerState.currentPage != index) {
-                            pagerState.animateScrollToPage(index)
-                        }
+                        if (!selected) pagerState.animateScrollToPage(index)
                     }
                 },
                 unselectedContentColor = ExtendedTheme.colors.textSecondary
@@ -94,41 +94,18 @@ private fun ColumnScope.ExplorePageTab(
     }
 }
 
-@Composable
-private fun TabText(
-    text: String,
-    selected: Boolean
-) {
-    val style = MaterialTheme.typography.button.copy(
-        letterSpacing = 0.75.sp,
-        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-        textAlign = TextAlign.Center
-    )
-    Text(text = text, style = style)
-}
-
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ExplorePage() {
     val account = LocalAccount.current
     val navigator = LocalNavController.current
-
     val loggedIn = remember(account) { account != null }
 
     val pages = remember {
         listOfNotNull(
-            if (loggedIn) ExplorePageItem(
-                "concern",
-                { TabText(text = stringResource(id = R.string.title_concern), selected = it) },
-            ) else null,
-            ExplorePageItem(
-                "personalized",
-                { TabText(text = stringResource(id = R.string.title_personalized), selected = it) },
-            ),
-            ExplorePageItem(
-                "hot",
-                { TabText(text = stringResource(id = R.string.title_hot), selected = it) },
-            ),
+            R.string.title_concern.takeIf { loggedIn },
+            R.string.title_personalized,
+            R.string.title_hot,
         ).toImmutableList()
     }
     val pagerState = rememberPagerState(initialPage = if (account != null) 1 else 0) { pages.size }
@@ -163,19 +140,18 @@ fun ExplorePage() {
     ) { contentPadding ->
         LazyLoadHorizontalPager(
             state = pagerState,
-            key = { pages[it].id },
+            key = { pages[it] },
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) {
             val listState = listStates[it]
+            when(pages[it]) {
+                R.string.title_concern -> ConcernPage(navigator, contentPadding, listState)
 
-            when(pages[it].id) {
-                "concern" -> ConcernPage(navigator, contentPadding, listState)
+                R.string.title_personalized -> PersonalizedPage(navigator, contentPadding, listState)
 
-                "personalized" -> PersonalizedPage(navigator, contentPadding, listState)
-
-                "hot" -> HotPage(navigator, contentPadding, listState)
+                R.string.title_hot -> HotPage(navigator, contentPadding, listState)
             }
         }
     }
