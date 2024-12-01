@@ -4,8 +4,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.Icon
@@ -20,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +43,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -134,15 +132,13 @@ fun ExplorePage() {
         ).toImmutableList()
     }
     val pagerState = rememberPagerState(initialPage = if (account != null) 1 else 0) { pages.size }
-    val listStates = remember {
-        SnapshotStateList<LazyListState?>().apply { addAll(arrayOfNulls(pagerState.pageCount)) }
-    }
+    val listStates = rememberPagerListStates(size = pagerState.pageCount)
 
     BlurScaffold(
         backgroundColor = Color.Transparent,
         topHazeBlock = remember { {
             blurEnabled = with(pagerState) {
-                currentPageOffsetFraction != 0f || listStates[currentPage]?.canScrollBackward == true
+                currentPageOffsetFraction != 0f || listStates.getOrNull(currentPage)?.canScrollBackward == true
             }
         } },
         topBar = {
@@ -172,7 +168,7 @@ fun ExplorePage() {
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) {
-            val listState = listStates[it] ?: rememberLazyListState().apply { listStates[it] = this }
+            val listState = listStates[it]
 
             when(pages[it].id) {
                 "concern" -> ConcernPage(navigator, contentPadding, listState)

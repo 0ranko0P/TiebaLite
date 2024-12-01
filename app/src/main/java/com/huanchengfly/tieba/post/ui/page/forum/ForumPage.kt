@@ -23,8 +23,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -98,6 +96,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapseConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.LocalAccount
@@ -321,7 +320,7 @@ fun ForumPage(
     val loggedIn = account != null
 
     val pagerState = rememberPagerState { 2 }
-    val listStates = remember { arrayOfNulls<LazyListState?>(pagerState.pageCount) }
+    val listStates = rememberPagerListStates(size = pagerState.pageCount)
 
     val isGood by remember { derivedStateOf { pagerState.currentPage == TAB_FORUM_GOOD } }
 
@@ -359,7 +358,7 @@ fun ForumPage(
         scaffoldState = scaffoldState,
         topHazeBlock = remember { {
             blurEnabled = with(pagerState) {
-                currentPageOffsetFraction != 0f || listStates[currentPage]?.canScrollBackward == true
+                currentPageOffsetFraction != 0f || listStates[currentPage].canScrollBackward == true
             }
         } },
         backgroundColor = Color.Transparent,
@@ -473,7 +472,7 @@ fun ForumPage(
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) { page ->
-            val listState = listStates[page] ?: rememberLazyListState().also { listStates[page] = it }
+            val listState = listStates[page]
 
             ProvideNavigator(navigator = navigator) {
                 if (page == TAB_FORUM_LATEST) {

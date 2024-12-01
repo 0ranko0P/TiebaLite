@@ -24,9 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -55,7 +53,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -97,6 +94,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarContainer
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -214,14 +212,12 @@ fun SearchPage(
         }
     }
     val pagerState = rememberPagerState { pages.size }
-    val listStates = remember {
-        SnapshotStateList<LazyListState?>().apply { addAll(arrayOfNulls(pagerState.pageCount)) }
-    }
+    val listStates = rememberPagerListStates(size = pagerState.pageCount)
 
     BlurScaffold(
         topHazeBlock = remember { {
             blurEnabled = !isKeywordEmpty && with(pagerState) {
-                currentPageOffsetFraction != 0f || listStates[currentPage]?.canScrollBackward == true
+                currentPageOffsetFraction != 0f || listStates[currentPage].canScrollBackward == true
             }
         } },
         topBar = {
@@ -260,7 +256,7 @@ fun SearchPage(
                     key = { pages[it].id },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    val listState = listStates[it] ?: rememberLazyListState().apply { listStates[it] = this }
+                    val listState = listStates[it]
 
                     when(pages[it].text) {
                         R.string.title_search_forum -> SearchForumPage(keyword, contentPadding, listState)
