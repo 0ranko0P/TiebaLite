@@ -5,12 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -51,12 +50,14 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.models.PostData
@@ -94,8 +95,13 @@ const val ITEM_POST_KEY_PREFIX = "Post_"
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: LazyListState) {
-
+fun StateScreenScope.ThreadContent(
+    modifier: Modifier = Modifier,
+    viewModel: ThreadViewModel,
+    lazyListState: LazyListState,
+    contentPadding: PaddingValues = PaddingNone,
+    useStickyHeader: Boolean // Bug: StickyHeader doesn't respect content padding
+) {
     val navigator = LocalNavController.current
 
     val enablePullRefresh by remember {
@@ -110,7 +116,7 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
     )
 
     Container(
-        modifier = Modifier.pullRefresh(state = pullRefreshState, enabled = enablePullRefresh)
+        modifier = modifier.pullRefresh(state = pullRefreshState, enabled = enablePullRefresh)
     ) {
 
         val state = viewModel.threadUiState
@@ -121,6 +127,7 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
         SwipeUpLazyLoadColumn(
             modifier = Modifier.fillMaxSize(),
             state = lazyListState,
+            contentPadding = contentPadding,
             isLoading = viewModel.isLoadingMore,
             onLoad = {
                 if (viewModel.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC) {
@@ -192,12 +199,14 @@ fun StateScreenScope.ThreadContent(viewModel: ThreadViewModel, lazyListState: La
                 }
             }
 
-            stickyHeader(key = "ThreadHeader") {
-                StickyHeader(
-                    replyNum = viewModel.info!!.replyNum - 1,
-                    isSeeLz = viewModel.seeLz,
-                    onSeeLzChanged = { seeLz -> viewModel.requestLoadFirstPage(seeLz) }
-                )
+            if (useStickyHeader) {
+                stickyHeader(key = "ThreadHeader", contentType = Unit) {
+                    ThreadHeader(Modifier.background(LocalExtendedColors.current.topBar), viewModel)
+                }
+            } else {
+                item(key = "ThreadHeader", contentType = Unit) {
+                    ThreadHeader(viewModel = viewModel)
+                }
             }
 
             if (state.sortType == ThreadSortType.BY_DESC && latestPosts.isNotEmpty()) {
@@ -318,51 +327,60 @@ fun PostCardItem(viewModel: ThreadViewModel, post: PostData) {
 }
 
 @Composable
-private fun StickyHeader(replyNum: Int, isSeeLz: Boolean, onSeeLzChanged: (Boolean) -> Unit) =
-    Row(
-        modifier = Modifier
-            .background(MaterialTheme.colors.background)
-            .padding(8.dp),
+fun ThreadHeader(modifier: Modifier = Modifier, viewModel: ThreadViewModel) {
+    StickyHeader(
+        modifier = modifier,
+        replyNum = viewModel.info!!.replyNum - 1,
+        isSeeLz = viewModel.seeLz,
+        onSeeLzChanged = { seeLz -> viewModel.requestLoadFirstPage(seeLz) }
+    )
+}
+
+@Composable
+private fun StickyHeader(
+    modifier: Modifier = Modifier,
+    replyNum: Int,
+    isSeeLz: Boolean,
+    onSeeLzChanged: (Boolean) -> Unit
+) = Row(
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val colors = LocalExtendedColors.current
         Text(
             text = stringResource(R.string.title_thread_header, replyNum.toString()),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            color = ExtendedTheme.colors.text,
-            modifier = Modifier.padding(horizontal = 8.dp),
+            color = colors.text,
         )
+
         Spacer(modifier = Modifier.weight(1f))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.height(IntrinsicSize.Min)
-        ) {
-            Text(
-                text = stringResource(R.string.text_all),
-                modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .clickableNoIndication(
-                        enabled = isSeeLz,
-                        onClick = { onSeeLzChanged(false) }
-                    ),
-                fontSize = 13.sp,
-                fontWeight = if (!isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (!isSeeLz) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
-            )
-            HorizontalDivider()
-            Text(
-                text = stringResource(R.string.title_see_lz),
-                modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .clickableNoIndication(
-                        enabled = !isSeeLz,
-                        onClick = { onSeeLzChanged(true) }
-                    ),
-                fontSize = 13.sp,
-                fontWeight = if (isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (isSeeLz) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
-            )
-        }
+
+        Text(
+            text = stringResource(R.string.text_all),
+            modifier = Modifier
+                .clickableNoIndication(
+                    enabled = isSeeLz,
+                    onClick = { onSeeLzChanged(false) }
+                ),
+            fontSize = 13.sp,
+            fontWeight = if (!isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (!isSeeLz) colors.text else colors.textSecondary,
+        )
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+
+        Text(
+            text = stringResource(R.string.title_see_lz),
+            modifier = Modifier
+                .clickableNoIndication(
+                    enabled = !isSeeLz,
+                    onClick = { onSeeLzChanged(true) }
+                ),
+            fontSize = 13.sp,
+            fontWeight = if (isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSeeLz) colors.text else colors.textSecondary,
+        )
     }
 
 @Composable

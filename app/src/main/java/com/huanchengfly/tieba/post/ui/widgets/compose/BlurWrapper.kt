@@ -105,6 +105,7 @@ inline fun BlurWrapper(
 fun BlurScaffold(
     modifier: Modifier = Modifier,
     scaffoldState: ScaffoldState = rememberScaffoldState(),
+    attachHazeContentState: Boolean = true,
     hazeStyle: HazeStyle = defaultHazeStyle,
     topBar: @Composable () -> Unit = {},
     topHazeBlock: (HazeChildScope.() -> Unit)? = null,
@@ -163,7 +164,7 @@ fun BlurScaffold(
                 drawerScrimColor,
                 backgroundColor,
                 contentColor,
-                content = if (hazeState != null) {
+                content = if (attachHazeContentState && hazeState != null) {
                     { padding -> Box(modifier = Modifier.haze(hazeState)) { content(padding) } }
                 } else {
                     content

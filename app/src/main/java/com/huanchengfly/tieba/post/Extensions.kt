@@ -14,7 +14,10 @@ import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.content.ContextCompat
 import com.google.gson.reflect.TypeToken
 import com.huanchengfly.tieba.post.utils.GsonUtil
@@ -26,6 +29,19 @@ import java.io.File
 import kotlin.math.roundToInt
 
 val PaddingNone = PaddingValues(Dp.Hairline)
+
+fun PaddingValues.copy(
+    direction: LayoutDirection,
+    start: Dp = calculateStartPadding(direction),
+    top: Dp = calculateTopPadding(),
+    end: Dp = calculateEndPadding(direction),
+    bottom: Dp = calculateBottomPadding()
+): PaddingValues = PaddingValues(
+    start = start,
+    top = top,
+    end = end,
+    bottom = bottom
+).takeUnless { it == PaddingNone } ?: PaddingNone
 
 private val Context.scaledDensity: Float
     get() = resources.displayMetrics.scaledDensity

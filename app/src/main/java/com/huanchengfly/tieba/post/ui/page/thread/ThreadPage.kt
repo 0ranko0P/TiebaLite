@@ -8,12 +8,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -63,6 +64,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,7 +76,9 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipContent
@@ -86,19 +90,25 @@ import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -318,19 +328,34 @@ fun ThreadPage(
         isError = viewModel.error != null,
         isLoading = viewModel.isRefreshing,
         errorScreen = {
-            viewModel.error?.let { err -> ErrorScreen(error = err) }
+            ErrorScreen(error = viewModel.error)
         },
         onReload = { viewModel.requestLoad(0, postId) }
     ) {
-        MyScaffold(
+        // Workaround to make StickyHeader respect content padding
+        var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
+
+        BlurScaffold(
+            topHazeBlock = remember { {
+                blurEnabled = lazyListState.canScrollBackward
+            } },
             scaffoldState = scaffoldState,
+            attachHazeContentState = false, // Attach manually since we're blurring the BottomSheet
             topBar = {
                 TopBar(
                     name = forum?.item?.name,
                     avatar = forum?.item?.avatar,
                     onBack = navigator::navigateUp,
-                    onForumClick = { forum?.item?.name?.let { navigator.navigate(Forum(it)) } }
-                )
+                    onForumClick = {
+                        forum?.item?.name?.let { navigator.navigate(Forum(it)) }
+                    }
+                ) {
+                    if (useStickyHeaderWorkaround) {
+                        StickyHeaderOverlay(state = lazyListState) {
+                            ThreadHeader(viewModel = viewModel)
+                        }
+                    }
+                }
             },
             bottomBar = {
                 BottomBar(
@@ -356,11 +381,20 @@ fun ThreadPage(
                     agreeNum = viewModel.info?.diffAgreeNum ?: 0L
                 )
             },
-        ) { paddingValues ->
+        ) { padding ->
+            val hazeState: HazeState? = LocalHazeState.current
+
+            useStickyHeaderWorkaround = padding.calculateTopPadding() != Dp.Hairline
+
+            // Ignore Scaffold padding changes if workaround enabled
+            val direction = LocalLayoutDirection.current
+            val contentPadding = if (useStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
+
             ModalBottomSheetLayout(
                 sheetState = bottomSheetState,
                 sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-                sheetBackgroundColor = ExtendedTheme.colors.threadBottomBar,
+                sheetBackgroundColor = Color.Unspecified, // Set background on SheetContent for blurring
+                sheetContentColor = ExtendedTheme.colors.text,
                 sheetContent = {
                     ThreadMenu(
                         isSeeLz = viewModel.seeLz,
@@ -405,17 +439,24 @@ fun ThreadPage(
                         onDeleteClick = viewModel::onDeleteThread,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .block {
+                                hazeState?.let { hazeChild(it, defaultHazeStyle, null) }
+                            }
+                            .background(color = ExtendedTheme.colors.threadBottomBar)
                             .padding(vertical = 16.dp)
-                            .defaultMinSize(minHeight = 1.dp)
+                            .padding(bottom = contentPadding.calculateBottomPadding())
                     )
                 },
                 scrimColor = Color.Transparent,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
             ) {
                 ProvideNavigator(navigator = navigator) {
-                    ThreadContent(viewModel = viewModel, lazyListState = lazyListState)
+                    ThreadContent(
+                        modifier = Modifier.block { hazeState?.let { haze(it) } },
+                        viewModel = viewModel,
+                        lazyListState = lazyListState,
+                        contentPadding = contentPadding,
+                        useStickyHeader = !useStickyHeaderWorkaround
+                    )
                 }
             }
         }
@@ -423,7 +464,13 @@ fun ThreadPage(
 }
 
 @Composable
-private fun TopBar(name: String?, avatar: String?, onBack: () -> Unit, onForumClick: () -> Unit) =
+private fun TopBar(
+    name: String?,
+    avatar: String?,
+    onBack: () -> Unit,
+    onForumClick: () -> Unit,
+    content: (@Composable ColumnScope.() -> Unit)? = null
+) =
     TitleCentredToolbar(
         title = {
             if (avatar == null || name == null) return@TitleCentredToolbar // Initializing
@@ -431,7 +478,7 @@ private fun TopBar(name: String?, avatar: String?, onBack: () -> Unit, onForumCl
                 modifier = Modifier
                     .padding(horizontal = 48.dp)
                     .height(IntrinsicSize.Min)
-                    .clip(RoundedCornerShape(100))
+                    .clip(CircleShape)
                     .background(ExtendedTheme.colors.chip)
                     .clickable(onClick = onForumClick)
                     .padding(4.dp),
@@ -458,7 +505,8 @@ private fun TopBar(name: String?, avatar: String?, onBack: () -> Unit, onForumCl
         elevation = Dp.Hairline,
         navigationIcon = {
             BackNavigationIcon(onBack)
-        }
+        },
+        content = content
     )
 
 @Composable
@@ -571,7 +619,7 @@ private fun ThreadMenu(
                 .padding(horizontal = 16.dp)
                 .height(4.dp)
                 .fillMaxWidth(0.25f)
-                .clip(RoundedCornerShape(100))
+                .clip(CircleShape)
                 .background(ExtendedTheme.colors.chip)
         )
         VerticalGrid(

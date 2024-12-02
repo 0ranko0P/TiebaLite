@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,10 +48,12 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
 import com.huanchengfly.tieba.post.ui.models.PostData
@@ -65,6 +69,7 @@ import com.huanchengfly.tieba.post.ui.page.thread.PostCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -72,8 +77,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
@@ -186,17 +191,31 @@ internal fun SubPostsContent(
     ) {
         val hideReply by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_HIDE), false)
 
-        MyScaffold(
-            modifier = Modifier.fillMaxSize(),
+        // Workaround to make StickyHeader respect content padding
+        var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
+
+        BlurScaffold(
+            topHazeBlock = remember { {
+                blurEnabled = lazyListState.canScrollBackward
+            } },
             topBar = {
-                TitleBar(isSheet = isSheet, post = state.post, onBack = onNavigateUp) {
-                    navigator.navigate(
-                        Thread(forumId = forumId, threadId = threadId, postId = postId)
-                    )
+                TitleBar(
+                    isSheet = isSheet,
+                    post = state.post,
+                    onBack = onNavigateUp,
+                    onAction = {
+                        navigator.navigate(Thread(forumId = forumId, threadId = threadId, postId = postId))
+                    }
+                ) {
+                    if (useStickyHeaderWorkaround) {
+                        StickyHeaderOverlay(state = lazyListState) {
+                            SubPostsHeader(postNum = state.totalCount)
+                        }
+                    }
                 }
             },
             bottomBar = {
-                if (account == null || hideReply) return@MyScaffold
+                if (account == null || hideReply) return@BlurScaffold
                 BottomBar(
                     account = account,
                     onReply = {
@@ -207,10 +226,18 @@ internal fun SubPostsContent(
                     }
                 )
             }
-        ) { paddingValues ->
+        ) { padding ->
+
+            useStickyHeaderWorkaround = padding.calculateTopPadding() != Dp.Hairline
+
+            // Ignore Scaffold padding changes if workaround enabled
+            val direction = LocalLayoutDirection.current
+            val contentPadding = if (useStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
+
             SwipeUpLazyLoadColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = paddingValues,
+                state = lazyListState,
+                contentPadding = contentPadding,
                 isLoading = isLoading,
                 onLazyLoad = {
                     if (state.hasMore && state.post != null && state.subPosts.isNotEmpty()) {
@@ -266,15 +293,17 @@ internal fun SubPostsContent(
                     }
                 } // End of post card
 
-                stickyHeader(key = "SubPostsHeader") {
-                    Text(
-                        text = stringResource(R.string.title_sub_posts_header, state.totalCount),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(ExtendedTheme.colors.background.copy(0.96f))
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.subtitle1
-                    )
+                if (useStickyHeaderWorkaround) {
+                    item(key = "SubPostsHeader", contentType = Unit) {
+                        SubPostsHeader(postNum = state.totalCount)
+                    }
+                } else {
+                    stickyHeader(key = "SubPostsHeader", contentType = Unit) {
+                        SubPostsHeader(
+                            modifier = Modifier.background(LocalExtendedColors.current.topBar),
+                            postNum = state.totalCount
+                        )
+                    }
                 }
 
                 items(items = state.subPosts, key = { subPost -> subPost.id }) { item ->
@@ -316,7 +345,13 @@ internal fun SubPostsContent(
 }
 
 @Composable
-private fun TitleBar(isSheet: Boolean, post: PostData?, onBack: () -> Unit, onAction: () -> Unit) =
+private fun TitleBar(
+    isSheet: Boolean,
+    post: PostData?,
+    onBack: () -> Unit,
+    onAction: () -> Unit,
+    content: (@Composable ColumnScope.() -> Unit)? = null
+) {
     TitleCentredToolbar(
         title = {
             Text(text = post?.let {
@@ -343,8 +378,10 @@ private fun TitleBar(isSheet: Boolean, post: PostData?, onBack: () -> Unit, onAc
                 }
             }
         },
-        elevation = Dp.Hairline
+        elevation = Dp.Hairline,
+        content = content
     )
+}
 
 @Composable
 private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: () -> Unit) =
@@ -460,6 +497,17 @@ private fun SubPostItem(
             }
         )
     }
+}
+
+@Composable
+private fun SubPostsHeader(modifier: Modifier = Modifier, postNum: Int) {
+    Text(
+        text = stringResource(R.string.title_sub_posts_header, postNum),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        style = MaterialTheme.typography.subtitle1
+    )
 }
 
 @Preview("PostAgreeBtn")
