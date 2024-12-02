@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
+import android.os.PowerManager
 import android.os.Process
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -28,6 +29,10 @@ import org.litepal.LitePal
 @HiltAndroidApp
 class App : Application() {
     private val mActivityList: MutableList<Activity> = mutableListOf()
+
+    val powerManager by lazy {
+        getSystemService(POWER_SERVICE) as PowerManager
+    }
 
     @RequiresApi(api = 28)
     private fun setWebViewPath(context: Context) {

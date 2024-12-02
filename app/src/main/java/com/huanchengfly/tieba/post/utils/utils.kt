@@ -11,6 +11,7 @@ import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.navigation.NavController
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.toastShort
@@ -65,7 +66,7 @@ fun launchUrl(
 }
 
 val Context.powerManager: PowerManager
-    get() = getSystemService(Context.POWER_SERVICE) as PowerManager
+    get() = (applicationContext as App).powerManager
 
 @SuppressLint("BatteryLife")
 fun Context.requestIgnoreBatteryOptimizations() {
