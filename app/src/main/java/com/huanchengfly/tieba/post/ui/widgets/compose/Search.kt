@@ -240,20 +240,17 @@ fun SearchThreadItem(
             Row(modifier = Modifier.fillMaxWidth()) {
                 ThreadReplyBtn(
                     replyNum = StringUtil.tiebaNumToLong(item.postNum).toInt(),
-                    onClick = {},
                     modifier = Modifier.weight(1f)
                 )
 
                 ThreadAgreeBtn(
                     hasAgree = false,
                     agreeNum = StringUtil.tiebaNumToLong(item.likeNum).toInt(),
-                    onClick = {},
                     modifier = Modifier.weight(1f)
                 )
 
                 ThreadShareBtn(
                     shareNum = StringUtil.tiebaNumToLong(item.shareNum),
-                    onClick = {},
                     modifier = Modifier.weight(1f)
                 )
             }

@@ -575,7 +575,7 @@ private fun ThreadForumInfo(
 @Composable
 fun ThreadReplyBtn(
     replyNum: Int,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     ActionBtn(
@@ -602,7 +602,7 @@ fun ThreadReplyBtn(
 fun ThreadAgreeBtn(
     hasAgree: Boolean,
     agreeNum: Int,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val contentColor =
@@ -632,7 +632,7 @@ fun ThreadAgreeBtn(
 @Composable
 fun ThreadShareBtn(
     shareNum: Long,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     ActionBtn(
