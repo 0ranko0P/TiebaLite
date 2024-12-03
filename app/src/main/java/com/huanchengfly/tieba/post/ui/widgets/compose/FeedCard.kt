@@ -521,7 +521,7 @@ private fun ThreadMedia(
 ) {
     ThreadMedia(
         forumId = item.get { forumId },
-        forumName = item.get { forumName },
+        forumName = item.get { forumInfo?.name ?: forumName/* Might be Empty */ },
         threadId = item.get { threadId },
         medias = item.getImmutableList { media },
         videoInfo = item.get { videoInfo }?.wrapImmutable(),
