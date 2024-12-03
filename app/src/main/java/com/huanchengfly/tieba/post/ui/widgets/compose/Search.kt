@@ -69,6 +69,7 @@ import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClas
 import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
+import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.buildAnnotatedStringWithUser
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -238,20 +239,20 @@ fun SearchThreadItem(
         action = {
             Row(modifier = Modifier.fillMaxWidth()) {
                 ThreadReplyBtn(
-                    replyNum = item.postNum.toInt(),
+                    replyNum = StringUtil.tiebaNumToLong(item.postNum).toInt(),
                     onClick = {},
                     modifier = Modifier.weight(1f)
                 )
 
                 ThreadAgreeBtn(
                     hasAgree = false,
-                    agreeNum = item.likeNum.toInt(),
+                    agreeNum = StringUtil.tiebaNumToLong(item.likeNum).toInt(),
                     onClick = {},
                     modifier = Modifier.weight(1f)
                 )
 
                 ThreadShareBtn(
-                    shareNum = item.shareNum.toLong(),
+                    shareNum = StringUtil.tiebaNumToLong(item.shareNum),
                     onClick = {},
                     modifier = Modifier.weight(1f)
                 )

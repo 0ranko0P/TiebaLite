@@ -6,7 +6,6 @@ import android.text.Spannable
 import android.text.SpannableString
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.SpanStyle
@@ -14,9 +13,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -112,6 +109,32 @@ object StringUtil {
         return if (portrait.startsWith("http://") || portrait.startsWith("https://")) {
             portrait
         } else "http://tb.himg.baidu.com/sys/portraith/item/$portrait"
+    }
+
+    // Convert formatted number string
+    fun tiebaNumToLong(str: String): Long {
+        if (str == "0") return 0L
+
+        try {
+            return str.toLongOrNull() ?: str.run {
+                var num = 0L
+                forEachIndexed { i, c ->
+                    if (c.isDigit()) {
+                        if (i != 0) num *= 10
+                        num += c.digitToInt()
+                    } else if (c.equals('W', ignoreCase = true)) {
+                        num *= 10000
+                    } else if (c.equals('K', ignoreCase = true)) {
+                        num *= 1000
+                    }
+                }
+                return@run num
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return 0L
     }
 
     fun Int.getShortNumString(): String {
