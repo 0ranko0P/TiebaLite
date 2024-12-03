@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import com.huanchengfly.tieba.post.LocalDevicePosture
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
+import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
@@ -47,6 +49,7 @@ import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.utils.getNavType
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
@@ -108,20 +111,22 @@ private fun BlurBottomNavigation(
 
 // Empty BottomNavigation for background blurring
 val emptyBlurBottomNavigation: @Composable () -> Unit = {
-    val devicePosture by LocalDevicePosture.current
-    val windowWidthSizeClass by rememberUpdatedState(LocalWindowSizeClass.current.widthSizeClass)
-    val isBottomNavigation by remember { derivedStateOf {
-        windowWidthSizeClass.getNavType(devicePosture) == MainNavigationType.BOTTOM_NAVIGATION
-    } }
+    if (!ThemeUtil.isTranslucentTheme()) {
+        val devicePosture by LocalDevicePosture.current
+        val windowWidthSizeClass by rememberUpdatedState(LocalWindowSizeClass.current.widthSizeClass)
+        val isBottomNavigation by remember { derivedStateOf {
+            windowWidthSizeClass.getNavType(devicePosture) == MainNavigationType.BOTTOM_NAVIGATION
+        } }
 
-    if (isBottomNavigation) {
-        Box(
-            modifier = Modifier
-                .background(color = LocalExtendedColors.current.bottomBar)
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .height(BottomNavigationHeight)
-        )
+        if (isBottomNavigation) {
+            Box(
+                modifier = Modifier
+                    .background(color = LocalExtendedColors.current.bottomBar)
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .height(BottomNavigationHeight)
+            )
+        }
     }
 }
 
@@ -218,8 +223,21 @@ fun MainPage(
             navigationType = navigationType,
             navigationContentPosition = navigationContentPosition
         ) {
+            val isBottomNavigation by remember {
+                derivedStateOf { navigationType == MainNavigationType.BOTTOM_NAVIGATION }
+            }
+
             LazyLoadHorizontalPager(
                 state = pagerState,
+                modifier = Modifier.block {
+                    // MyScaffold places content behind the BottomBar (unlike TopBar)
+                    // Set bottom padding here if current theme is translucent
+                    if (isBottomNavigation && ThemeUtil.isTranslucentTheme()) {
+                        padding(bottom = BottomNavigationHeight).windowInsetsPadding(WindowInsets.navigationBars)
+                    } else {
+                        null
+                    }
+                },
                 key = { navigationItems[it].id },
                 verticalAlignment = Alignment.Top,
                 userScrollEnabled = false
@@ -236,7 +254,7 @@ fun MainPage(
             }
 
             AnimatedVisibility(
-                visible = navigationType == MainNavigationType.BOTTOM_NAVIGATION,
+                visible = isBottomNavigation,
                 modifier = Modifier.align(Alignment.BottomCenter)
             ) {
                 BlurBottomNavigation(
