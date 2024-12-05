@@ -9,6 +9,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.IntSize
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
@@ -209,6 +210,19 @@ private val PbContent.picUrl: String
 val List<PbContent>.plainText: String
     get() = renders.joinToString("\n") { it.toString() }
 
+fun PbContent.getPicSize(): IntSize? {
+    try {
+        if (bsize.isEmpty()) throw IllegalArgumentException("Not a Image PbContent! type: $type")
+
+        return bsize.split(",")
+            .map { it.toIntOrNull() ?: throw NumberFormatException("Not a number $it") }
+            .let { IntSize(width = it[0], height = it[1]) }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return null
+}
+
 @OptIn(ExperimentalTextApi::class)
 val List<PbContent>.renders: ImmutableList<PbContentRender>
     get() {
@@ -249,16 +263,13 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                 }
 
                 3 -> {
-                    val width = it.bsize.split(",")[0].toInt()
-                    val height = it.bsize.split(",")[1].toInt()
                     renders.add(
                         PicContentRender(
                             picUrl = it.picUrl,
                             originUrl = it.originSrc,
                             originSize = it.originSize,
+                            dimensions = it.getPicSize(),
                             picId = ImageUtil.getPicId(it.originSrc),
-                            width = width,
-                            height = height
                         )
                     )
                 }
@@ -306,16 +317,13 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                 }
 
                 20 -> {
-                    val width = it.bsize.split(",")[0].toInt()
-                    val height = it.bsize.split(",")[1].toInt()
                     renders.add(
                         PicContentRender(
                             picUrl = it.src,
                             originUrl = it.src,
                             originSize = it.originSize,
-                            picId = ImageUtil.getPicId(it.src),
-                            width = width,
-                            height = height
+                            dimensions = it.getPicSize(),
+                            picId = ImageUtil.getPicId(it.src)
                         )
                     )
                 }

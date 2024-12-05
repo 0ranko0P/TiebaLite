@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -136,9 +137,8 @@ data class TextContentRender(
 data class PicContentRender(
     val picUrl: String,
     val originUrl: String,
-    val originSize: Int,
-    val width: Int,
-    val height: Int,
+    val originSize: Int, // Bytes
+    val dimensions: IntSize?,
     val picId: String,
     val photoViewData: PhotoViewData? = null,
 ) : PbContentRender {
@@ -153,7 +153,7 @@ data class PicContentRender(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
                 .fillMaxWidth(widthFraction)
-                .aspectRatio(width * 1f / height),
+                .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f),
             contentScale = ContentScale.Crop,
             photoViewDataProvider = { photoViewData },
         )
