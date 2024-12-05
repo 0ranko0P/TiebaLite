@@ -7,6 +7,11 @@ coroutines = "1.9.0"
 ksp = "2.0.21-1.0.25"
 wire = "4.9.9"
 
+buildToolsVersion = "35.0.0"
+compileSdk = "34"
+targetSdk = "34"
+minSdk = "24"
+
 androidx-appcompat = "1.7.0"
 androidx-activity-compose = "1.9.3"
 androidx-compose-bom = "2024.11.00"

@@ -23,13 +23,14 @@ wire {
 }
 
 android {
-    buildToolsVersion = "35.0.0"
-    compileSdk = 34
+    buildToolsVersion = libs.versions.buildToolsVersion.get()
+    compileSdk = libs.versions.compileSdk.get().toInt()
+
     defaultConfig {
         applicationId = "com.huanchengfly.tieba.post"
-        minSdk = 24
+        minSdk = libs.versions.minSdk.get().toInt()
         //noinspection OldTargetApi
-        targetSdk = 34
+        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 390100
         versionName = "4.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

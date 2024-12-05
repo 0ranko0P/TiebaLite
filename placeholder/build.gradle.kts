@@ -26,12 +26,12 @@ kotlin {
 }
 
 android {
-    compileSdk = 34
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = 21
+        minSdk = libs.versions.minSdk.get().toInt()
         // targetSdkVersion has no effect for libraries. This is only used for the test APK
-        testOptions.targetSdk = 33
+        testOptions.targetSdk = libs.versions.targetSdk.get().toInt()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
