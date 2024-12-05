@@ -9,6 +9,8 @@ import com.github.iielse.imageviewer.core.Photo
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.PicPageBean
+import com.huanchengfly.tieba.post.api.models.bestQualitySrc
+import com.huanchengfly.tieba.post.api.models.isGif
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.models.LoadPicPageData
@@ -48,14 +50,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
         val oldDataIds = _state.value.data.mapTo(HashSet()) { it.picId }
         return this
             .filterNot { oldDataIds.contains(it.img.original.id) }
-            .map {
-                PhotoViewItem(
-                    picId = it.img.original.id,
-                    originUrl = it.img.original.originalSrc,
-                    overallIndex = it.overAllIndex.toInt(),
-                    postId = it.postId?.toLongOrNull()
-                )
-            }
+            .map { it.toPhotoItem() }
     }
 
     fun initData(viewData: PhotoViewData) {
@@ -205,6 +200,24 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
                 prev = prev
             ).timeout(4.seconds)
         }
+
+        private fun PicPageBean.PicBean.toPhotoItem(): PhotoViewItem {
+            val originSize = img.original.size.toIntOrNull() ?: 0 // Bytes
+
+            return PhotoViewItem(
+                picId = img.original.id,
+                originUrl = img.bestQualitySrc,
+                overallIndex = overAllIndex.toInt(),
+                postId = postId?.toLongOrNull(),
+                type = when {
+                    img.isGif -> ItemType.PHOTO
+
+                    isLongPic || originSize >= 1024 * 1024 * 2 -> ItemType.SUBSAMPLING
+
+                    else -> ItemType.PHOTO
+                }
+            )
+        }
     }
 }
 
@@ -221,16 +234,18 @@ data class PhotoViewItem(
     val originUrl: String,
     val overallIndex: Int,
     val postId: Long? = null,
+    val type: Int
 ): Photo {
 
     constructor(item: PicItem, overallIndex: Int): this(
         picId = item.picId,
         originUrl = item.originUrl,
         overallIndex = overallIndex,
-        postId = item.postId
+        postId = item.postId,
+        type = ItemType.PHOTO
     )
 
     override fun id(): Long = picId.hashCode().toLong()
 
-    override fun itemType(): Int = ItemType.PHOTO
+    override fun itemType(): Int = type
 }

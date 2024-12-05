@@ -284,6 +284,12 @@ object ImageUtil {
         else imageLoadSettings != SETTINGS_ALL_ORIGIN
     }
 
+    // Check is long image with given width x height size
+    fun isLongImg(width: Int, height: Int): Boolean {
+        if (width <= 0) return false
+        return height.toFloat() / width > 4f
+    }
+
     fun imageToBase64(inputStream: InputStream?): String? {
         if (inputStream == null) {
             return null

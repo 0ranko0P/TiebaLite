@@ -1,8 +1,13 @@
 package com.huanchengfly.tieba.post.utils
 
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.Log
+import androidx.annotation.WorkerThread
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.unit.IntSize
 import com.bumptech.glide.RequestBuilder
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
@@ -10,6 +15,9 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.huanchengfly.tieba.post.arch.unsafeLazy
+import okhttp3.internal.closeQuietly
+import java.io.IOException
+import java.io.InputStream
 
 object GlideUtil {
     val CrossFadeTransition: DrawableTransitionOptions by unsafeLazy {
@@ -63,5 +71,32 @@ object GlideUtil {
         }
 
         return addListener(listener)
+    }
+
+    /**
+     * Decodes the raw dimensions without allocating memory for the entire image
+     * */
+    @WorkerThread
+    fun decodeRawDimensions(context: Context, resource: Uri): Result<IntSize> {
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+
+        var ins: InputStream? = null
+        try {
+            ins = context.contentResolver.openInputStream(resource) ?: throw IOException("Unable to open $resource")
+            BitmapFactory.decodeStream(ins, null, options)
+
+            if (options.outWidth == -1 || options.outHeight == -1) {
+                throw IOException("Failed to decode dimensions of $resource")
+            }
+            return Result.success(
+                IntSize(width = options.outWidth, height = options.outHeight)
+            )
+        } catch (e: Exception) {
+            return Result.failure(e)
+        } finally {
+            ins?.closeQuietly()
+        }
     }
 }

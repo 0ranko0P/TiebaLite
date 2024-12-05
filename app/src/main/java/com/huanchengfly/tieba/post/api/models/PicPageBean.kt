@@ -4,6 +4,7 @@ import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 import com.huanchengfly.tieba.post.api.adapters.StringToBooleanAdapter
 import com.huanchengfly.tieba.post.models.BaseBean
+import com.huanchengfly.tieba.post.utils.ImageUtil
 
 data class PicPageBean(
     @SerializedName("error_code")
@@ -61,3 +62,29 @@ data class PicPageBean(
         val originalSrc: String,
     )
 }
+
+// Do not use PicBean#isLongPic, check manually here
+fun PicPageBean.ImgInfoBean.isLongPic(): Boolean {
+    return runCatching { ImageUtil.isLongImg(width!!.toInt(), height!!.toInt()) }.getOrDefault(false)
+}
+
+val PicPageBean.ImgBean.isGif: Boolean
+    get() = original.format == "2"
+
+val PicPageBean.ImgBean.bestQualitySrc: String
+    get() = with(this.original) {
+        if (isGif) return@with originalSrc
+
+        val size = original.size.toLongOrNull() ?: 0
+
+        return if (size >= 1024 * 1024 * 2 && isLongPic()) {
+            // Quality: bigCdnSrc > waterUrl = url = originalSrc
+            this.bigCdnSrc
+        } else if (size > 1024 * 1024 * 1) {
+            // Quality: waterUrl = url = originalSrc > bigCdnSrc
+            this.originalSrc
+        } else {
+            // Quality: waterUrl = bigCdnSrc = url = originalSrc
+            this.originalSrc
+        }
+    }

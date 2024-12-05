@@ -38,6 +38,13 @@ class SimpleImageLoader(private val onClick: View.OnClickListener) : ImageLoader
     }
 
     override fun load(subsamplingView: SubsamplingScaleImageView, data: Photo, viewHolder: RecyclerView.ViewHolder) {
-        throw RuntimeException("Stub!")
+        if (data !is PhotoViewItem) throw RuntimeException("Not implemented: ${data::class.simpleName}")
+
+        subsamplingView.setOnClickListener(onClick)
+        Glide.with(subsamplingView)
+            .downloadOnly()
+            .error(R.drawable.ic_error)
+            .load(data.originUrl)
+            .into(SubsamplingScaleTarget(subsamplingView))
     }
 }

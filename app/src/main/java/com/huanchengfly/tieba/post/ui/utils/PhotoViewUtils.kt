@@ -5,16 +5,14 @@ import com.huanchengfly.tieba.post.api.models.protos.Post
 import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
+import com.huanchengfly.tieba.post.ui.common.PicContentRender
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
 fun getPhotoViewData(
     post: Post,
-    picId: String,
-    picUrl: String,
-    originUrl: String,
-    originSize: Int,
+    content: PicContentRender,
     seeLz: Boolean = false
 ): PhotoViewData? {
     if (post.from_forum == null) return null
@@ -25,18 +23,18 @@ fun getPhotoViewData(
             threadId = post.tid,
             postId = post.id,
             objType = "pb",
-            picId = picId,
+            picId = content.picId,
             picIndex = 1,
             seeLz = seeLz,
-            originUrl = originUrl,
+            originUrl = content.originUrl,
         ),
         picItems = persistentListOf(
             PicItem(
-                picId = picId,
+                picId = content.picId,
                 picIndex = 1,
-                url = picUrl,
-                originUrl = originUrl,
-                originSize = originSize,
+                url = content.picUrl,
+                originUrl = content.originUrl,
+                originSize = content.originSize,
                 postId = post.id
             )
         )
