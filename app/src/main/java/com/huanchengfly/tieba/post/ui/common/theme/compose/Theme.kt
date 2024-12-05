@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.common.theme.compose
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.material.Colors
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
@@ -11,6 +10,7 @@ import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -24,8 +24,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.android.material.color.MaterialColors
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.distinctUntilChangedByKeys
 import com.huanchengfly.tieba.post.getColor
-import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.theme.BlackColors
 import com.huanchengfly.tieba.post.theme.CustomColors
 import com.huanchengfly.tieba.post.theme.DarkAmoledColors
@@ -48,7 +48,6 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_DARK_THEME
 import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_THEME
 import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_TINT_TOOLBAR
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 
 @Stable
@@ -112,14 +111,15 @@ private fun getColorPalette(darkTheme: Boolean, extendedColors: ExtendedColors):
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
-@Composable
-private fun rememberDynamicColor(darkTheme: Boolean): ExtendedColors {
-    val context = LocalContext.current
-    val tintToolbar by rememberPreferenceAsState(booleanPreferencesKey(KEY_TINT_TOOLBAR), false)
-    return remember(darkTheme, tintToolbar) {
-        val tonalPalette = dynamicTonalPalette(context)
-        if (darkTheme) getDarkDynamicColor(tonalPalette) else getLightDynamicColor(tintToolbar, tonalPalette)
+private fun getDynamicColor(context: Context, dark: Boolean, tintToolbar: Boolean): ExtendedColors {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (dark) {
+            getDarkDynamicColor(tonalPalette = dynamicTonalPalette(context))
+        } else {
+            getLightDynamicColor(tintToolbar, tonalPalette = dynamicTonalPalette(context))
+        }
+    } else { // Won't happen, just make compiler happy
+        throw RuntimeException("Dynamic colors requires Android R+")
     }
 }
 
@@ -189,34 +189,34 @@ fun TiebaLiteTheme(colors: ExtendedColors = DefaultColors, content: @Composable 
 @Composable
 fun TiebaLiteTheme(darkTheme: Boolean, content: @Composable () -> Unit) {
     val context = LocalContext.current
-    val key = if (darkTheme) KEY_DARK_THEME else KEY_THEME
-    val theme by rememberPreferenceAsState(
-        key = stringPreferencesKey(key),
-        defaultValue = (if (darkTheme) DefaultDarkColors else DefaultColors).theme
-    )
+    var extendedColors: ExtendedColors by ThemeUtil.themeState
 
     // Initialize theme colors from DataStore now
-    var extendedColors: ExtendedColors by ThemeUtil.themeState
-    if (theme == ThemeUtil.THEME_DYNAMIC && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        extendedColors = rememberDynamicColor(darkTheme)
-    } else {
-        LaunchedEffect(darkTheme) {
-            savedThemeFlow(context, darkTheme).collect {
-                extendedColors = it
-            }
-        }
+    LaunchedEffect(darkTheme) {
+        savedThemeFlow(context, darkTheme).collect { extendedColors = it }
     }
 
     TiebaLiteTheme(extendedColors, content = content)
 }
 
 private fun savedThemeFlow(context: Context, darkMode: Boolean): Flow<ExtendedColors> {
-    val key = if (darkMode) KEY_DARK_THEME else KEY_THEME
     return context.dataStore.data
-        .distinctUntilChangedBy { it[stringPreferencesKey(key)] }
+        .distinctUntilChangedByKeys(
+            stringPreferencesKey(KEY_THEME),
+            stringPreferencesKey(KEY_DARK_THEME),
+            booleanPreferencesKey(KEY_TINT_TOOLBAR)
+        )
         .map {
+            val key = if (darkMode) KEY_DARK_THEME else KEY_THEME
             val theme: String? = it[stringPreferencesKey(key)]
-            val tintToolbar = it[booleanPreferencesKey(KEY_TINT_TOOLBAR)] ?: false
+            val tintToolbar = it[booleanPreferencesKey(KEY_TINT_TOOLBAR)] == true
+
+            // Dynamic theme supports both light and dark mode
+            val isDynamic = it[stringPreferencesKey(KEY_THEME)] == ThemeUtil.THEME_DYNAMIC
+            if (isDynamic) {
+                return@map getDynamicColor(context, darkMode, tintToolbar)
+            }
+
             val colors = when (theme) {
                 ThemeUtil.THEME_BLACK -> BlackColors
                 ThemeUtil.THEME_PINK -> PinkColors
@@ -255,6 +255,7 @@ private fun savedThemeFlow(context: Context, darkMode: Boolean): Flow<ExtendedCo
 
 object ExtendedTheme {
     val colors: ExtendedColors
+        @ReadOnlyComposable
         @Composable
         get() = LocalExtendedColors.current
 }

@@ -104,7 +104,7 @@ fun <T> DataStore<Preferences>.collectPreferenceAsState(
     return data.map { it[key] ?: defaultValue }.collectAsState(initial = defaultValue)
 }
 
-fun Flow<Preferences>.distinctUntilChangedByKeys(vararg keys: Preferences.Key<Any>): Flow<Preferences> {
+fun Flow<Preferences>.distinctUntilChangedByKeys(vararg keys: Preferences.Key<*>): Flow<Preferences> {
     if (keys.size == 1) return this.distinctUntilChangedBy { it[keys.first()] }
 
     return this.distinctUntilChangedBy { data ->

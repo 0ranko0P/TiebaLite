@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.android.material.color.MaterialColors
 import com.huanchengfly.tieba.post.App
@@ -14,6 +15,7 @@ import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMode
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dataStoreScope
+import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.putColor
 import com.huanchengfly.tieba.post.theme.DarkGreyColors
 import com.huanchengfly.tieba.post.theme.DefaultColors
@@ -66,17 +68,31 @@ object ThemeUtil {
     const val DARK_MODE_ALWAYS = 2
     const val DARK_MODE_DISABLED = 4
 
-    fun switchTheme(newTheme: String, activityContext: Context? = null) {
+    fun switchTheme(newTheme: String, activityContext: Context? = null) = dataStoreScope.launch {
         val isNightTheme = newTheme.endsWith("_dark")
-        dataStoreScope.launch {
-            INSTANCE.dataStore.edit {
-                val key = if (isNightTheme) KEY_DARK_THEME else KEY_THEME
-                it[stringPreferencesKey(key)] = newTheme
+        var darkPreferences = DARK_MODE_FOLLOW_SYSTEM
+
+        INSTANCE.dataStore.edit {
+            darkPreferences = it[intPreferencesKey(KEY_DARK_THEME_MODE)] ?: darkPreferences
+
+            when {
+                newTheme == THEME_DYNAMIC -> it[stringPreferencesKey(KEY_THEME)] = newTheme
+
+                isNightTheme -> it[stringPreferencesKey(KEY_DARK_THEME)] = newTheme
+
+                else -> it[stringPreferencesKey(KEY_THEME)] = newTheme
             }
-            // Notify night mode manually!
+        }
+
+        if (newTheme != THEME_DYNAMIC) {
+            // Ignore [darkPreferences] and notify night mode changes
             activityContext?.setNightMode(isNightTheme)
+        } else {
+            // Respect [darkPreferences] since dynamic theme supports both mode
+            activityContext?.setNightMode(shouldUseNightMode(darkPreferences))
         }
     }
+
 
     fun switchCustomTheme(primaryColor: Color, activityContext: Context?) {
         dataStoreScope.launch {
