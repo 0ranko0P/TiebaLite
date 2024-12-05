@@ -162,9 +162,7 @@ fun PersonalizedPage(
         isLoading = isRefreshing,
         onReload = { viewModel.send(PersonalizedUiIntent.Refresh) },
         errorScreen = {
-            error?.let {
-                ErrorScreen(error = it.get())
-            }
+            ErrorScreen(error = error?.item, modifier = Modifier.padding(contentPadding))
         }
     ) {
         Container(modifier = Modifier.pullRefresh(pullRefreshState)) {
