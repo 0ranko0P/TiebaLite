@@ -1,6 +1,6 @@
 [versions]
 accompanist = "0.36.0"
-agp = "8.7.2"
+agp = "8.7.3"
 hilt = "2.52"
 kotlin = "2.0.21"
 coroutines = "1.9.0"
@@ -21,7 +21,7 @@ androidx-media3 = "1.4.1"
 glide = "5.0.0-rc01"
 glide-compose = "1.0.0-beta01"
 junit = "4.13.2"
-lottie = "6.6.0"
+lottie = "6.6.1"
 retrofit2 = "2.11.0"
 
 [libraries]
@@ -78,7 +78,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 database-litepal = { module = "org.litepal.android:kotlin", version = "3.0.0" }
 lottie = { module = "com.airbnb.android:lottie", version.ref = "lottie" }
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottie" }
-haze-blur = { module = "dev.chrisbanes.haze:haze", version = "1.0.2" }
+haze-blur = { module = "dev.chrisbanes.haze:haze", version = "1.1.1" }
 
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 glide-compose = { module = "com.github.bumptech.glide:compose", version.ref = "glide-compose" }
