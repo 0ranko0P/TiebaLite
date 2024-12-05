@@ -28,6 +28,8 @@ import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DoubleArrow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,6 +68,7 @@ fun ColorPickerDialog(
     extraContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     var color by remember { mutableStateOf(HsvColor.from(initial)) }
+    val androidColor by remember { derivedStateOf { color.toColor() } }
 
     Dialog(
         dialogState = state,
@@ -84,7 +87,7 @@ fun ColorPickerDialog(
                 PositiveButton(
                     text = stringResource(id = R.string.button_finish),
                     onClick = {
-                        onColorChanged(color.toColor()); dismiss()
+                        onColorChanged(androidColor); dismiss()
                     }
                 )
             }
@@ -123,7 +126,7 @@ fun ColorPickerDialog(
                 }
             }
 
-            ColorHexTextFiled(paddingModifier, initial = initial, color = color.toColor()) {
+            ColorHexTextFiled(paddingModifier, initial = initial, color = androidColor) {
                 color = HsvColor.from(it)
             }
 
@@ -145,19 +148,23 @@ private fun ColorHexTextFiled(
 ) {
     val focusManager = LocalFocusManager.current
     var isError: Boolean by remember { mutableStateOf(false) }
-    var userInput by remember { mutableStateOf( color.toHexString()) }
+    var userInput by remember { mutableStateOf(color.toHexString()) }
     val userInputChangeListener: (String) -> Unit = {
         userInput = it.uppercase()
 
         try {
-            val inputColor = Color(it.toColorInt())
+            val inputColor = Color(android.graphics.Color.parseColor(it))
             if (inputColor != color) {
                 onColorChanged(inputColor)
             }
             isError = false
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             isError = true
         }
+    }
+
+    LaunchedEffect(color) { // Update hex text too if color changed
+        userInput = color.toHexString().uppercase()
     }
 
     Row(
