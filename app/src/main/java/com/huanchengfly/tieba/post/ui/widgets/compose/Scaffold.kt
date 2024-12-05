@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
-import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -63,7 +61,6 @@ val NavigationBarPlaceHolder: @Composable () -> Unit = {
         modifier = Modifier
             .fillMaxWidth()
             .windowInsetsBottomHeight(WindowInsets.navigationBars)
-            .background(LocalExtendedColors.current.bottomBar)
     )
 }
 

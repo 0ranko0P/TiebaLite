@@ -27,9 +27,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.insets.ui.Scaffold
+import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_3BUTTON
+import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_DEFAULT
+import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_NONE
 import com.huanchengfly.tieba.post.utils.DisplayUtil.gestureType
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -61,20 +64,27 @@ val defaultHazeStyle: HazeStyle
  * [NavigationBarPlaceHolder] with background blur
  * */
 val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
-    val hazeState = LocalHazeState.current
     val navBarInsets = WindowInsets.navigationBars
+    when(navBarInsets.gestureType(LocalDensity.current)) {
 
-    // Check navBar gesture type, enable blurring conditionally
-    if (hazeState != null && navBarInsets.gestureType(LocalDensity.current) == GESTURE_3BUTTON) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .windowInsetsBottomHeight(navBarInsets)
-                .hazeChild(state = LocalHazeState.current!!, style = defaultHazeStyle)
-                .background(color = LocalExtendedColors.current.bottomBar)
-        )
-    } else {
-        NavigationBarPlaceHolder()
+        // 全面屏手势: 透明背景
+        GESTURE_DEFAULT -> NavigationBarPlaceHolder()
+
+        // 三大金刚: 背景和模糊滤镜
+        GESTURE_3BUTTON ->  {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsBottomHeight(insets = navBarInsets)
+                    .block {
+                        LocalHazeState.current?.let { hazeChild(state = it, defaultHazeStyle) }
+                    }
+                    .background(color = LocalExtendedColors.current.windowBackground)
+            )
+        }
+
+        // 实体按键:
+        GESTURE_NONE -> { /* Empty */ }
     }
 }
 
