@@ -26,7 +26,6 @@ fun getPhotoViewData(
             picId = content.picId,
             picIndex = 1,
             seeLz = seeLz,
-            originUrl = content.originUrl,
         ),
         picItems = persistentListOf(
             PicItem(
@@ -59,7 +58,6 @@ fun getPhotoViewData(
             objType = "index",
             picId = ImageUtil.getPicId(media.originPic),
             picIndex = index + 1,
-            originUrl = media.originPic
         ),
         picItems = medias.mapIndexed { mediaIndex, mediaItem ->
             PicItem(

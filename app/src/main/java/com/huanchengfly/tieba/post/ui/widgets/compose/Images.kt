@@ -1,35 +1,18 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.animation.core.SpringSpec
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import com.bumptech.glide.Glide
 import com.bumptech.glide.integration.compose.CrossFade
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.bumptech.glide.integration.compose.placeholder
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
@@ -52,72 +35,29 @@ fun shouldLoadImage(skipNetworkCheck: Boolean): Boolean {
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-private fun PreviewImage(modifier: Modifier = Modifier, imageUri: String, originImageUri: String?) {
-    val context = LocalContext.current
-    val originRequest = remember {
-        if (originImageUri.isNullOrEmpty() || originImageUri == imageUri) imageUri else originImageUri
-    }
-
-    FullScreen {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(WindowInsets.statusBars.asPaddingValues())
-                .padding(WindowInsets.navigationBars.asPaddingValues())
-                .clip(RoundedCornerShape(6.dp)),
-        ) {
-            GlideImage(
-                model = originRequest,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                failure = placeholder(R.drawable.ic_error)
-            ) {
-                if (originImageUri == imageUri) return@GlideImage it
-                it.thumbnail(
-                    Glide.with(context).load(imageUri)
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalGlideComposeApi::class)
-@Composable
 fun NetworkImage(
     imageUri: String,
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
     skipNetworkCheck: Boolean = false,
-    enablePreview: Boolean = false,
     photoViewDataProvider: (() -> PhotoViewData?)? = null,
 ) {
     val context = LocalContext.current
-    var isLongPressing by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onLongPress = { isLongPressing = true },
-                    onPress = {
-                        tryAwaitRelease()
-                        isLongPressing = false
-                    },
-                    onTap = {
-                        // Launch PhotoViewActivity now, ignore image load settings
-                        val photos = photoViewDataProvider?.invoke() ?: return@detectTapGestures
-                        // bug from caller
-                        if (photos.data != null && photos.data.forumName.isEmpty()) {
-                            context.toastShort(R.string.title_unknown_error)
-                        } else {
-                            context.goToActivity<PhotoViewActivity> {
-                                putExtra(EXTRA_PHOTO_VIEW_DATA, photos)
-                            }
-                        }
+            .clickableNoIndication {
+                // Launch PhotoViewActivity now, ignore image load settings
+                val photos = photoViewDataProvider?.invoke() ?: return@clickableNoIndication
+
+                if (photos.data != null && photos.data.forumName.isEmpty()) { // bug from caller
+                    context.toastShort(R.string.title_unknown_error)
+                } else {
+                    context.goToActivity<PhotoViewActivity> {
+                        putExtra(EXTRA_PHOTO_VIEW_DATA, photos)
                     }
-                )
+                }
             }
     ) {
         val darkenImage by rememberPreferenceAsState(
@@ -137,22 +77,6 @@ fun NetworkImage(
             } else {
                 it.onlyRetrieveFromCache(true)
             }
-        }
-    }
-
-    if (enablePreview) {
-        val previewAlpha by animateFloatAsState(
-            targetValue = if (isLongPressing) 1.0f else 0f,
-            animationSpec = SpringSpec(),
-            label = "AnimatePreviewAlphaAsState"
-        )
-
-        if (previewAlpha != 0f) {
-            PreviewImage(
-                modifier = Modifier.alpha(previewAlpha),
-                imageUri = imageUri,
-                originImageUri = photoViewDataProvider?.invoke()?.data?.originUrl
-            )
         }
     }
 }

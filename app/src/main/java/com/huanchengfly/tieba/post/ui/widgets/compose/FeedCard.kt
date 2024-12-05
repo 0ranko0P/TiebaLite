@@ -485,7 +485,6 @@ private fun ThreadMedia(
                                         .fillMaxHeight()
                                         .weight(1f),
                                     contentScale = ContentScale.Crop,
-                                    enablePreview = true,
                                     photoViewDataProvider = {
                                         getPhotoViewData(
                                             medias = medias.map { it.get() },
