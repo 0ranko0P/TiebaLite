@@ -78,7 +78,7 @@ private fun CopyTextPageContent(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = stringResource(id = R.string.title_copy),
+                        text = stringResource(id = R.string.menu_copy),
                         style = MaterialTheme.typography.h6,
                         fontWeight = FontWeight.Bold
                     )

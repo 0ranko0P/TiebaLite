@@ -704,7 +704,7 @@ fun EmptyScreen(
     TipScreen(
         title = {
             if (!loggedIn) {
-                Text(text = stringResource(id = R.string.title_empty_login))
+                Text(text = stringResource(id = R.string.title_not_logged_in))
             } else {
                 Text(text = stringResource(id = R.string.title_empty))
             }

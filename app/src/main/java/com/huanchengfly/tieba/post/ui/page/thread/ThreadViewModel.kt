@@ -443,7 +443,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
                 .collect { response ->
                     if (response.errorCode == 0) { // clear local status
                         _info = info!!.updateCollectStatus(collected = false, markPostId = 0)
-                        sendMsg(R.string.message_remove_favorite_success)
+                        sendMsg(R.string.delete_store_success)
                     } else {
                         sendMsg(R.string.delete_store_failure, response.errorMsg)
                     }
@@ -453,7 +453,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
 
     fun onAgreePost(post: PostData) = viewModelScope.launch {
         if (threadUiState.user == null) {
-            sendMsg(R.string.title_empty_login); return@launch
+            sendMsg(R.string.title_not_logged_in); return@launch
         }
 
         val start = System.currentTimeMillis()
@@ -478,7 +478,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
     fun onAgreeThreadClicked() {
         if (firstPostId == 0L) return
         if (threadUiState.user == null) {
-            sendMsg(R.string.title_empty_login); return
+            sendMsg(R.string.title_not_logged_in); return
         }
         val newAgreeStatus = info!!.hasAgree.not()
         viewModelScope.launch {

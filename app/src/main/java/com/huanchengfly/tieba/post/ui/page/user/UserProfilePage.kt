@@ -512,7 +512,7 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
                 appendIcon = {
                     Icon(
                         imageVector = Icons.Outlined.ContentCopy,
-                        contentDescription = stringResource(R.string.title_copy)
+                        contentDescription = stringResource(R.string.menu_copy)
                     )
                 },
                 onClick = { TiebaUtil.copyText(context, profile.tiebaUid) }

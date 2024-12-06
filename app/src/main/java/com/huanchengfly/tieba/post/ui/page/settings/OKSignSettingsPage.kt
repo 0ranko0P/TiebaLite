@@ -112,7 +112,7 @@ fun OKSignSettingsPage(onBack: () -> Unit) {
                                 context.requestIgnoreBatteryOptimizations()
                             } else {
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.toast_ignore_battery_optimization_already))
+                                    snackbarHostState.showSnackbar(context.getString(R.string.summary_battery_optimization_ignored))
                                 }
                             }
                         },

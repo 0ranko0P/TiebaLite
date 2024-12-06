@@ -98,11 +98,12 @@ fun AccountNavIcon(
                 .size(size)
         )
     } else {
-        val context = LocalContext.current
         val menuState = rememberMenuState()
         LongClickMenu(
             menuContent = {
                 val allAccounts = LocalAllAccounts.current
+                val iconDescription = stringResource(id = R.string.title_switch_account_long_press)
+
                 allAccounts.fastForEach {
                     DropdownMenuItem(onClick = { AccountUtil.getInstance().switchAccount(it.id) }) {
                         Box(
@@ -112,7 +113,7 @@ fun AccountNavIcon(
                         ) {
                             Avatar(
                                 data = StringUtil.getAvatarUrl(it.portrait),
-                                contentDescription = stringResource(id = R.string.title_switch_account_long_press),
+                                contentDescription = if (currentAccount.id != it.id) iconDescription else null,
                                 size = Sizes.Small,
                             )
                             if (currentAccount.id == it.id) {

@@ -351,7 +351,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                 )
                 ListMenuItem(
                     icon = ImageVector.vectorResource(id = R.drawable.ic_settings_24),
-                    text = stringResource(id = R.string.my_info_settings),
+                    text = stringResource(id = R.string.title_settings),
                     onClick = { navigator.navigate(SettingsDestination.Settings) },
                 )
                 ListMenuItem(
