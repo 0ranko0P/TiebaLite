@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
+import android.content.Context
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.text.InlineTextContent
@@ -579,8 +580,8 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
         ClipBoardLinkDetector.onCopyTiebaLink(link)
     }
 
-    fun onReportThread(navigator: NavController) = viewModelScope.launch {
-        TiebaUtil.reportPost(App.INSTANCE, navigator, firstPostId.toString())
+    fun onReportThread(context: Context, navigator: NavController) = viewModelScope.launch {
+        TiebaUtil.reportPost(context, navigator, firstPostId.toString())
     }
 
     fun onImmersiveModeChanged() {

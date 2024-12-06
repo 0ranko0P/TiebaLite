@@ -435,7 +435,7 @@ fun ThreadPage(
                         },
                         onShareClick = viewModel::onShareThread,
                         onCopyLinkClick = viewModel::onCopyThreadLink,
-                        onReportClick = { viewModel.onReportThread(navigator) },
+                        onReportClick = { viewModel.onReportThread(context, navigator) },
                         onDeleteClick = viewModel::onDeleteThread,
                         modifier = Modifier
                             .fillMaxWidth()
