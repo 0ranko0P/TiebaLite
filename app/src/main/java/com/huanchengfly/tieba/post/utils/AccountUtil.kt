@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.webkit.CookieManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -10,11 +9,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.util.fastFirst
+import androidx.compose.ui.util.fastFirstOrNull
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.LoginBean
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.dataStoreScope
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.putInt
 import com.huanchengfly.tieba.post.toastShort
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -23,13 +30,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,8 +65,7 @@ fun LocalAccountProvider(content: @Composable () -> Unit) {
 
 class AccountUtil private constructor(context: Context) {
     companion object {
-        private const val PREFERENCE_FILE_NAME = "accountData"
-        private const val KEY_CURRENT_ACCOUNT_ID = "now"
+        private const val KEY_CURRENT_ACCOUNT_ID = "account_now"
 
         @Volatile
         private var _instance: AccountUtil? = null
@@ -101,20 +110,23 @@ class AccountUtil private constructor(context: Context) {
         }
     }
 
-    private val _currentAccount: MutableStateFlow<Account?> = MutableStateFlow(null)
-    val currentAccount: StateFlow<Account?> = _currentAccount
+    private val dataStore: DataStore<Preferences> = context.dataStore
+
+    val currentAccount: StateFlow<Account?> = dataStore.data
+        .distinctUntilChangedBy { intPreferencesKey(KEY_CURRENT_ACCOUNT_ID) }
+        .map {
+            val id = it[intPreferencesKey(KEY_CURRENT_ACCOUNT_ID)] ?: -1
+            if (id != -1) getAccountInfo(id) else null
+        }
+        .stateIn(dataStoreScope, SharingStarted.WhileSubscribed(5000), null)
 
     var allAccounts: ImmutableList<Account> by mutableStateOf(persistentListOf())
         private set
-
-    private val preferences: SharedPreferences =
-        context.getSharedPreferences(PREFERENCE_FILE_NAME, Context.MODE_PRIVATE)
 
     private val scope = MainScope()
 
     init {
         scope.launch {
-            _currentAccount.value = getLoginAccount()
             allAccounts = listAllAccount()
         }
     }
@@ -171,13 +183,6 @@ class AccountUtil private constructor(context: Context) {
             .flowOn(Dispatchers.IO)
     }
 
-    private suspend fun getLoginAccount(): Account? = withContext(Dispatchers.IO) {
-        runCatching {
-            val loginUser = preferences.getInt(KEY_CURRENT_ACCOUNT_ID, -1)
-            if (loginUser == -1) null else getAccountInfo(loginUser)
-        }.getOrNull()
-    }
-
     /**
      * Query all Accounts from disk, Non-Cancellable.
      * */
@@ -201,25 +206,23 @@ class AccountUtil private constructor(context: Context) {
         where("bduss = ?", bduss).findFirst(Account::class.java)
     }
 
-    private suspend fun saveAccountId(id: Int): Boolean = withContext(Dispatchers.IO) {
-        preferences.edit().putInt(KEY_CURRENT_ACCOUNT_ID, id).commit()
-    }
+    private fun setCurrentAccountId(id: Int) = dataStore.putInt(KEY_CURRENT_ACCOUNT_ID, id)
 
     suspend fun saveNewAccount(uid: String, account: Account): Boolean = withContext(Dispatchers.Main) {
         val succeed = saveAccount(uid, account)
         if (succeed) {
             allAccounts = listAllAccount()
-            val newAccount = getAccountInfoByUid(account.uid)!!
-            _currentAccount.value = newAccount
-            saveAccountId(newAccount.id)
+            val newAccount = allAccounts.fastFirst { it.uid == account.uid }
+            setCurrentAccountId(id = newAccount.id)
         }
         return@withContext succeed
     }
 
-    fun switchAccount(id: Int) = scope.launch(Dispatchers.Main) {
-        val account = runCatching { getAccountInfo(id) }.getOrNull() ?: return@launch
-        _currentAccount.value = account
-        saveAccountId(id)
+    fun switchAccount(id: Int) {
+        // Double check
+        if (currentAccount.value?.id != id && allAccounts.fastFirstOrNull { it.id == id } == null) {
+            setCurrentAccountId(id)
+        }
     }
 
     private suspend fun updateAccount(
@@ -237,18 +240,18 @@ class AccountUtil private constructor(context: Context) {
     }
 
     fun exit(context: Context) = scope.launch {
-        withContext(Dispatchers.IO) {
-            _currentAccount.value!!.delete()
+        currentAccount.first()!!.let { account ->
+            withContext(Dispatchers.IO) { account.delete() }
         }
+
         CookieManager.getInstance().removeAllCookies(null)
         allAccounts = listAllAccount()
-        if (allAccounts.size > 1) {
-            val account = allAccounts[0]
-            switchAccount(account.id)
-            context.toastShort("退出登录成功，已切换至账号 " + account.nameShow)
+        val nextAccount = allAccounts.firstOrNull()
+        if (nextAccount != null) {
+            setCurrentAccountId(nextAccount.id)
+            context.toastShort(R.string.toast_exit_account_switched, nextAccount.nameShow ?: nextAccount.name)
         } else {
-            _currentAccount.value = null
-            preferences.edit().clear().apply()
+            setCurrentAccountId(-1)
             context.toastShort(R.string.toast_exit_account_success)
         }
     }

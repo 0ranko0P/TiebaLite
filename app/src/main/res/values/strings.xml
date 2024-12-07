@@ -64,6 +64,7 @@
     <string name="title_switch_account">切换账号</string>
     <string name="title_switch_account_long_press">长按切换账号</string>
     <string name="toast_exit_account_success">退出登录成功，请重新登录</string>
+    <string name="toast_exit_account_switched">退出登录成功，已切换至账号 %1$s</string>
     <string name="button_cancel">取消</string>
     <string name="title_delete">删除</string>
     <string name="tip_lz">楼主</string>
