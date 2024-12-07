@@ -5,6 +5,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import com.google.common.base.Preconditions.checkArgument
+import com.google.common.net.InternetDomainName
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
 import com.huanchengfly.tieba.post.api.urlDecode
@@ -136,7 +138,25 @@ object ClipBoardLinkDetector {
         return item?.text?.toString()
     }
 
-    fun Uri.isBaidu(): Boolean = this.isHttp() && host?.endsWith("baidu.com") == true
+    // Return ture: 百度短链接
+    private fun InternetDomainName.isBaiduShortLink(): Boolean = parts().first().let {
+        it == "mr" || it == "mbd" || it == "t" || it == "rh" || (it.first() == 'm' && it.getOrNull(1)?.isDigit() == true)
+    }
+
+    fun Uri.isBaidu(): Boolean = try {
+        checkArgument(this.isHttp())
+        with(InternetDomainName.from(host!!)) {
+            when {
+                isTopPrivateDomain -> "baidu.com" == host
+
+                isUnderPublicSuffix -> "baidu.com" == parent().toString() && !isBaiduShortLink()
+
+                else -> false
+            }
+        }
+    } catch (_: Exception) {
+        false
+    }
 
     fun Uri.isHttp(): Boolean = scheme?.startsWith("http", ignoreCase = true) == true
 
