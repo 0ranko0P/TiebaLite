@@ -43,6 +43,10 @@ object NetworkObserver: ConnectivityManager.NetworkCallback(), DefaultLifecycleO
         isNetworkUnMetered = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
     }
 
+    override fun onAvailable(network: Network) {
+        isNetworkConnected = true
+    }
+
     override fun onUnavailable() {
         isNetworkConnected = false
         isNetworkUnMetered = false
