@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -40,6 +39,8 @@ import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.block
+import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.models.UserData
@@ -141,7 +142,7 @@ fun UserHeader(
         Avatar(
             data = avatar,
             size = Sizes.Small,
-            modifier = onClick?.let { Modifier.clickable(onClick = it) } ?: Modifier,
+            modifier = Modifier.block { onClick?.let { clickableNoIndication(onClick = it) } },
             contentDescription = name
         )
     },
@@ -165,7 +166,7 @@ fun UserDataHeader(
         Avatar(
             data = author.avatarUrl,
             size = Sizes.Small,
-            modifier = onClick?.let { Modifier.clickable(onClick = it) } ?: Modifier,
+            modifier = Modifier.block { onClick?.let { clickableNoIndication(onClick = it) } },
             contentDescription = author.name
         )
     },
