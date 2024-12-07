@@ -37,6 +37,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        resourceConfigurations.addAll(listOf("en", "zh-rCN"))
     }
     buildFeatures {
         compose = true
