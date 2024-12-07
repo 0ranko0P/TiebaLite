@@ -431,7 +431,9 @@ fun ForumSearchPostPage(
                             PullRefreshIndicator(
                                 refreshing = isRefreshing,
                                 state = pullRefreshState,
-                                modifier = Modifier.align(Alignment.TopCenter),
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(contentPadding),
                                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                                 contentColor = ExtendedTheme.colors.primary,
                             )
