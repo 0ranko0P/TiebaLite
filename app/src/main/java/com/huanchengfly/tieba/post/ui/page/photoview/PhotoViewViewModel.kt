@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.PicPageBean
 import com.huanchengfly.tieba.post.api.models.bestQualitySrc
 import com.huanchengfly.tieba.post.api.models.isGif
+import com.huanchengfly.tieba.post.api.models.isLongPic
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.models.LoadPicPageData
@@ -212,7 +213,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
                 type = when {
                     img.isGif -> ItemType.PHOTO
 
-                    isLongPic || originSize >= 1024 * 1024 * 2 -> ItemType.SUBSAMPLING
+                    img.original.isLongPic() || originSize >= 1024 * 1024 * 2 -> ItemType.SUBSAMPLING
 
                     else -> ItemType.PHOTO
                 }
