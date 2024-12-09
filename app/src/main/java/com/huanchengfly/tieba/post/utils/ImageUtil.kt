@@ -16,6 +16,7 @@ import android.webkit.URLUtil
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
 import androidx.media3.common.MimeTypes
+import com.bumptech.glide.load.engine.GlideException
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.NetworkObserver
@@ -33,9 +34,9 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
-import okhttp3.internal.closeQuietly
 import okio.buffer
 import okio.sink
+import okio.source
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -43,6 +44,7 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.nio.file.Files
 
 object ImageUtil {
     /**
@@ -147,15 +149,26 @@ object ImageUtil {
         val destFile = File(pictureFolder, "share_${url.hashCode()}")
 
         try {
-            DownloadUtil.downloadCancelable(url, destFile, onProgress)
-            val uri = FileProvider.getUriForFile(
-                context,
+            // Check downloaded
+            if (destFile.exists() && destFile.length() > 0) {
+                onProgress?.onProgress(100)
+            } else {
+                val glideCache: File = GlideUtil.downloadCancelable(context, url, onProgress)
+                withContext(Dispatchers.IO) {
+                    glideCache.copyTo(destFile, overwrite = true)
+                }
+            }
+
+            val uri = FileProvider.getUriForFile(context,
                 context.packageName + ".share.FileProvider",
                 destFile
             )
             return Result.success(uri)
         } catch (e: Exception) {
-            Log.w(TAG, "downloadForShare: ", e)
+            if (e !is GlideException) {
+                Log.w(TAG, "downloadForShare: ", e)
+            }
+            destFile.deleteQuietly()
             return Result.failure(e)
         }
     }
@@ -189,12 +202,11 @@ object ImageUtil {
         val cr = context.contentResolver
         var uri: Uri? = null
         withContext(Dispatchers.IO) {
-            val responseBody: ResponseBody = DownloadUtil.downloadCancelable(url, onProgress)
             try {
-                var mimeType = responseBody.contentType()?.toString() ?: MimeTypes.IMAGE_JPEG
-
+                val glideCache = GlideUtil.downloadCancelable(context, url, onProgress)
+                var mimeType = MimeTypes.IMAGE_JPEG
                 var fileName = URLUtil.guessFileName(url, null, mimeType)
-                if (isGifFile(responseBody)) {
+                if (isGifFile(glideCache)) {
                     mimeType = MIME_TYPE_GIF
                     fileName = FileUtil.changeFileExtension(fileName, ".gif")
                 }
@@ -209,8 +221,8 @@ object ImageUtil {
                 }
 
                 uri = cr.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)!!
-                cr.openOutputStream(uri!!)!!.sink().buffer().use { bufferedSink ->
-                    bufferedSink.writeAll(responseBody.source())
+                cr.openOutputStream(uri).use { out ->
+                    Files.copy(glideCache.toPath(), out)
                 }
                 withContext(Dispatchers.Main) {
                     context.toastShort(R.string.toast_photo_saved, relativePath)
@@ -219,8 +231,6 @@ object ImageUtil {
             } catch (e: Exception) {
                 uri?.let { cr.delete(it, null, null) }
                 throw e
-            } finally {
-                responseBody.closeQuietly()
             }
         }
     }
@@ -228,14 +238,14 @@ object ImageUtil {
     private suspend fun downloadBelowQ(context: Context, url: String, onProgress: ProgressListener?) {
         withContext(Dispatchers.IO) {
             var destFile: File? = null
-            val responseBody: ResponseBody = DownloadUtil.downloadCancelable(url, onProgress)
             try {
-                val mimeType = responseBody.contentType()?.toString() ?: MimeTypes.IMAGE_JPEG
+                val glideCache = GlideUtil.downloadCancelable(context, url, onProgress)
+                val mimeType = MimeTypes.IMAGE_JPEG
                 val fileName = URLUtil.guessFileName(url, null, mimeType)
                 val pictureFolder =
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                 val appDir = File(pictureFolder, FileUtil.FILE_FOLDER)
-                destFile = if (isGifFile(responseBody)) {
+                destFile = if (isGifFile(glideCache)) {
                     File(appDir, FileUtil.changeFileExtension(fileName, ".gif"))
                 } else {
                     File(appDir, fileName)
@@ -243,7 +253,7 @@ object ImageUtil {
 
                 destFile.ensureParents()
                 destFile.sink().buffer().use { bufferedSink ->
-                    bufferedSink.writeAll(responseBody.source())
+                    bufferedSink.writeAll(glideCache.source())
                 }
                 withContext(Dispatchers.Main) {
                     context.sendBroadcast(
@@ -254,8 +264,6 @@ object ImageUtil {
             } catch (e: Exception) {
                 destFile?.deleteQuietly() // Delete file if error occurred
                 throw e
-            } finally {
-                responseBody.closeQuietly()
             }
         }
     }

@@ -8,16 +8,24 @@ import androidx.annotation.WorkerThread
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.unit.IntSize
+import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestBuilder
 import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.components.glide.ProgressInterceptor
+import com.huanchengfly.tieba.post.components.glide.ProgressListener
+import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.internal.closeQuietly
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 object GlideUtil {
     val CrossFadeTransition: DrawableTransitionOptions by unsafeLazy {
@@ -71,6 +79,53 @@ object GlideUtil {
         }
 
         return addListener(listener)
+    }
+
+    /**
+     * Download image or return cached file directly if [url] loaded
+     * with [DiskCacheStrategy.DATA] before.
+     *
+     * @see Glide.getPhotoCacheDir
+     * */
+    suspend fun downloadCancelable(context: Context, url: String, onProgress: ProgressListener?): File {
+        onProgress?.let { ProgressInterceptor.addListener(url, onProgress) }
+
+        try {
+            return Glide.with(context.applicationContext)
+                .downloadOnly()
+                .load(url)
+                .await()
+        } catch (e: Exception) {
+            throw e
+        } finally {
+            if (onProgress != null) {
+                onProgress.onProgress(100)
+                ProgressInterceptor.removeListener(url)
+            }
+        }
+    }
+
+    suspend inline fun RequestBuilder<File>.await(): File = suspendCancellableCoroutine { continuation ->
+        var canceled = false
+        val future = this
+            .addListener(
+                onLoadFailed = { e, _, _, _ ->
+                    if (!canceled) {
+                        continuation.resumeWithException(e ?: GlideException("Unknown"))
+                    }
+                    false
+                },
+                onResourceReady = { file, _, _, _, _ ->
+                    continuation.resume(file)
+                    false
+                }
+            )
+            .submit()
+
+        continuation.invokeOnCancellation {
+            canceled = true
+            future.cancel(true)
+        }
     }
 
     /**

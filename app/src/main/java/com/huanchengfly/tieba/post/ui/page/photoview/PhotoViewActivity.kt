@@ -156,7 +156,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
         val currentImg = getCurrentItem() ?: return
         toastShort(R.string.toast_preparing_share_pic)
         lifecycleScope.launch {
-            val rec = ImageUtil.downloadForShare(applicationContext, currentImg.originUrl, this@PhotoViewActivity)
+            val rec = ImageUtil.downloadForShare(applicationContext, currentImg.originUrl, null)
             if (rec.isFailure) {
                 rec.exceptionOrNull()?.let { toastShort(it.getErrorMessage()) }
             } else {

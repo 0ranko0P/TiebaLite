@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.utils
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
@@ -16,7 +15,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
-import java.io.IOException
 
 fun launchUrl(
     context: Context,
@@ -88,13 +86,11 @@ suspend fun requestPinShortcut(
 ):Result<Unit> {
     if (ShortcutManagerCompat.isRequestPinShortcutSupported(context)) {
         val imageResult = runCatching {
-            DownloadUtil.downloadCancelable(url = iconImageUri, onProgress = null).use {
-                BitmapFactory.decodeStream(it.byteStream())?: throw IOException("Decode $iconImageUri failed!")
-            }
+            Uri.fromFile(GlideUtil.downloadCancelable(context, iconImageUri, null))
         }
         if (imageResult.isSuccess) {
             val shortcutInfo = ShortcutInfoCompat.Builder(context, shortcutId)
-                .setIcon(IconCompat.createWithBitmap(imageResult.getOrThrow()))
+                .setIcon(IconCompat.createWithContentUri(imageResult.getOrThrow()))
                 .setIntent(shortcutIntent)
                 .setShortLabel(label)
                 .build()
