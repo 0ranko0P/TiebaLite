@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowInsets
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -15,6 +14,7 @@ import androidx.core.app.ShareCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MimeTypes
@@ -48,7 +48,6 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
     private val windowInsetsController: WindowInsetsControllerCompat by lazy {
         WindowCompat.getInsetsController(window, window.decorView)
     }
-    private var isStatusBarVisible = true
 
     private var currentPage: Int = 0
 
@@ -60,19 +59,6 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_photo_view)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-
-        @Suppress("DEPRECATION")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Note: buggy ViewCompat#setOnApplyWindowInsetsListener on old Android devices
-            window.decorView.setOnApplyWindowInsetsListener { _, insets ->
-                isStatusBarVisible = insets.isVisible(WindowInsets.Type.statusBars())
-                return@setOnApplyWindowInsetsListener insets
-            }
-        } else {
-            window.decorView.setOnSystemUiVisibilityChangeListener { visibility ->
-                isStatusBarVisible = visibility.and(View.SYSTEM_UI_FLAG_FULLSCREEN) == 0
-            }
-        }
 
         // Load photos now!
         @Suppress("DEPRECATION")
@@ -147,10 +133,10 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
      * */
     @Suppress("unused")
     private fun onImageClicked(v: View) {
-        if (isStatusBarVisible) {
+        if (appbar.isVisible) {
+            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
             appbar.animate().alpha(0f).withEndAction {
                 appbar.visibility = View.GONE
-                windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
             }
         } else {
             windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
