@@ -4,12 +4,15 @@ import android.app.Activity
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Point
+import android.view.View
 import android.view.WindowManager
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.huanchengfly.tieba.post.App
 import kotlin.math.roundToInt
 
@@ -77,6 +80,16 @@ object DisplayUtil {
             GESTURE_DEFAULT
         } else {
             GESTURE_NONE
+        }
+    }
+
+    /**
+     * @see View.setOnApplyWindowInsetsListener
+     * */
+    inline fun View.doOnApplyWindowInsets(crossinline onApply: View.(insets: WindowInsetsCompat) -> Boolean) {
+        ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
+            ViewCompat.setOnApplyWindowInsetsListener(v, null)
+            if (onApply(insets)) WindowInsetsCompat.CONSUMED else insets
         }
     }
 }

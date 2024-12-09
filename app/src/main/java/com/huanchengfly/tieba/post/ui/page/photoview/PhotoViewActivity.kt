@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -15,6 +16,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MimeTypes
@@ -25,7 +27,6 @@ import com.github.iielse.imageviewer.core.OverlayCustomizer
 import com.github.iielse.imageviewer.core.Transformer
 import com.github.iielse.imageviewer.core.ViewerCallback
 import com.github.iielse.imageviewer.utils.Config
-import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
@@ -34,6 +35,7 @@ import com.huanchengfly.tieba.post.components.glide.ProgressListener
 import com.huanchengfly.tieba.post.components.viewer.SimpleImageLoader
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.utils.DisplayUtil.doOnApplyWindowInsets
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -51,7 +53,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
 
     private var currentPage: Int = 0
 
-    private lateinit var appbar: AppBarLayout
+    private lateinit var appbar: LinearLayout
     private lateinit var indicator: LinearProgressIndicator
     private var toolbar: Toolbar? = null
 
@@ -105,6 +107,11 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
         override fun provideView(parent: ViewGroup): View? {
             val view = layoutInflater.inflate(R.layout.overlay_photo_view, parent, false)
             appbar = view.findViewById(R.id.appbar)
+            appbar.doOnApplyWindowInsets { insets ->
+                updatePadding(top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top)
+                return@doOnApplyWindowInsets true
+            }
+
             indicator = view.findViewById(R.id.progress_indicator)
             toolbar = appbar.findViewById<Toolbar>(R.id.toolbar).apply {
                 inflateMenu(R.menu.menu_photo_view)
