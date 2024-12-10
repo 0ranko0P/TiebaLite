@@ -23,6 +23,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +54,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.launch
 
 private enum class ItemType {
     Top, PlainText, SingleMedia, MultiMedia, Video
@@ -146,10 +148,16 @@ fun GoodThreadListPage(
     if (goodClassifies.size > 1) {
         LaunchedEffect(Unit) {
             onComposeClassifyTab {
+                val scope = rememberCoroutineScope()
+
                 GoodClassifyTabs(
                     goodClassifyHolders = goodClassifies,
                     selectedItem = goodClassifyId,
-                    onSelected = viewModel::requestRefresh
+                    onSelected = {
+                        viewModel.requestRefresh(goodClassifyId = it)
+                        // Scroll to top now
+                        scope.launch { listState.animateScrollToItem(0) }
+                    }
                 )
             }
         }
