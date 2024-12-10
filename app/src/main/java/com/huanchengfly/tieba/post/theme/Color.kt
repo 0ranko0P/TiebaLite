@@ -33,4 +33,6 @@ val DeepPurple = Color(0xFF5f44e0)
 
 val RedA700 = Color(0xFFD50000)
 
+val LightTeal = Color(0xFF44C5E0)
+
 val TiebaBlue = Color(0xFF4477E0)

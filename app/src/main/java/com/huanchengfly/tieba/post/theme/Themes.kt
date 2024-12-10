@@ -84,7 +84,8 @@ val BlueColors = LightColors.copy(
     theme = ThemeUtil.THEME_BLUE,
     name = R.string.theme_blue,
     primary = TiebaBlue,
-    secondary = LightPurple
+    secondary = LightTeal,
+    onSecondary = Grey900,
 )
 
 val BlackColors = LightColors.copy(
@@ -98,7 +99,8 @@ val PinkColors = LightColors.copy(
     theme = ThemeUtil.THEME_PINK,
     name = R.string.theme_pink,
     primary = Color(0xFFFF9A9E),
-    secondary = Color(0xFFFFB3B6)
+    secondary = Color(0xFFFFB3B6),
+    onSecondary = Grey900,
 )
 
 val RedColors = LightColors.copy(
