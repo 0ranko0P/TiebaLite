@@ -19,6 +19,7 @@ import com.bumptech.glide.request.target.Target
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.components.glide.ProgressInterceptor
 import com.huanchengfly.tieba.post.components.glide.ProgressListener
+import com.huanchengfly.tieba.post.components.glide.ProgressListenerOnUI
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.internal.closeQuietly
 import java.io.File
@@ -79,6 +80,30 @@ object GlideUtil {
         }
 
         return addListener(listener)
+    }
+
+    /**
+     * @see ProgressListenerOnUI
+     * @see ProgressListener
+     * */
+    fun <T> RequestBuilder<T>.addProgressListener(
+        url: String,
+        onProgress: ProgressListener
+    ): RequestBuilder<T> {
+        ProgressInterceptor.addListener(url, onProgress)
+
+        return this.addListener(
+            onLoadFailed = { _, _, _, _ ->
+                ProgressInterceptor.removeListener(url)
+                onProgress.onProgress(0)
+                false
+            },
+            onResourceReady = { _, _, _, _, _ ->
+                ProgressInterceptor.removeListener(url)
+                onProgress.onProgress(100)
+                false
+            }
+        )
     }
 
     /**

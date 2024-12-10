@@ -1,5 +1,8 @@
 package com.huanchengfly.tieba.post.components.glide;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import androidx.annotation.NonNull;
 
 import java.io.IOException;
@@ -22,6 +25,8 @@ public class ProgressInterceptor implements Interceptor {
 
     private static final Map<String, ProgressListener> LISTENER_MAP = new ConcurrentHashMap<>();
 
+    private static final Handler handler = new Handler(Looper.getMainLooper());
+
     //入注册下载监听
     public static void addListener(String url, ProgressListener listener) {
         LISTENER_MAP.put(url, listener);
@@ -43,7 +48,18 @@ public class ProgressInterceptor implements Interceptor {
             return response;
         } else {
             ResponseBody body = response.body();
-            return response.newBuilder().body(new ProgressResponseBody(body, listener)).build();
+            ProgressListener progressListener;
+
+            // Check if requesting main thread
+            if (listener instanceof ProgressListenerOnUI) {
+                progressListener = progress -> handler.post(() -> listener.onProgress(progress));
+            } else {
+                progressListener = listener;
+            }
+
+            return response.newBuilder()
+                    .body(new ProgressResponseBody(body, progressListener))
+                    .build();
         }
     }
 }

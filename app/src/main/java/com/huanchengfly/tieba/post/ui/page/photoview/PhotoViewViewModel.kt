@@ -238,6 +238,9 @@ data class PhotoViewItem(
     val type: Int
 ): Photo {
 
+    // Updated by SimpleImageLoader
+    var progress: Int = 0
+
     constructor(item: PicItem, overallIndex: Int): this(
         picId = item.picId,
         originUrl = item.originUrl,

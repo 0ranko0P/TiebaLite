@@ -25,6 +25,11 @@ private const val TAG = "SubsamplingScaleTarget"
  * */
 class SubsamplingScaleTarget(view: SubsamplingScaleImageView): CustomViewTarget<SubsamplingScaleImageView, File>(view) {
 
+    init {
+        view.maxScale = 10F
+        view.isZoomEnabled = true
+    }
+
     override fun onLoadFailed(errorDrawable: Drawable?) {
         view.recycle()
 

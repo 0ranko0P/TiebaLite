@@ -31,17 +31,15 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.collectIn
-import com.huanchengfly.tieba.post.components.glide.ProgressListener
 import com.huanchengfly.tieba.post.components.viewer.SimpleImageLoader
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.DisplayUtil.doOnApplyWindowInsets
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomizer, ViewerCallback {
+class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback {
 
     private val viewModel: PhotoViewViewModel by viewModels()
 
@@ -80,7 +78,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
             Config.SWIPE_DISMISS = false
 
             Components.initialize(
-                imageLoader = SimpleImageLoader(this::onImageClicked),
+                imageLoader = SimpleImageLoader(this::onImageClicked, this::onProgress),
                 dataProvider = viewModel,
                 transformer = object : Transformer { /*** NO-OP ***/ }
             )
@@ -102,8 +100,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
     /**
      * Setup appbar in overlay, it's a workaround
      * */
-    @Suppress("DEPRECATION")
-    private val overlayCustomizer = object : OverlayCustomizer {
+    private val overlayCustomizer: OverlayCustomizer = object : OverlayCustomizer {
         override fun provideView(parent: ViewGroup): View? {
             val view = layoutInflater.inflate(R.layout.overlay_photo_view, parent, false)
             appbar = view.findViewById(R.id.appbar)
@@ -117,7 +114,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
                 inflateMenu(R.menu.menu_photo_view)
                 setNavigationIcon(R.drawable.ic_round_arrow_back)
                 setNavigationOnClickListener { this@PhotoViewActivity.finish() }
-                navigationIcon?.setTint(resources.getColor(android.R.color.white))
+                navigationIcon?.setTint(Color.WHITE)
                 setOnMenuItemClickListener(this@PhotoViewActivity::onOptionsItemSelected)
             }
             return view
@@ -128,7 +125,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
         when (item.itemId) {
             R.id.menu_share -> onShareImage()
 
-            R.id.menu_download -> ImageUtil.download(this, getCurrentItem()?.originUrl, this)
+            R.id.menu_download -> ImageUtil.download(this, url = getCurrentItem()?.originUrl)
 
             else -> return super.onOptionsItemSelected(item)
         }
@@ -170,17 +167,13 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
         }
     }
 
-    override fun onProgress(progress: Int) {
-        lifecycleScope.launch(Dispatchers.Main) {
-            // Hide when progress is 100
-            val visibility = if (progress == 100) View.GONE else View.VISIBLE
-            val finalProgress = if (progress == 100) 0 else progress
+    private fun onProgress(position: Int, data: PhotoViewItem) {
+        if (currentPage != position) return // Preloading item, ignore
 
-            indicator.setProgress(finalProgress, false)
-            if (indicator.visibility != visibility) {
-                indicator.visibility = visibility
-            }
-        }
+        // Hide when progress is 100
+        val progress = if (data.progress == 100) 0 else data.progress
+        indicator.setProgress(progress, false)
+        indicator.isVisible = progress > 0
     }
 
     @SuppressLint("DefaultLocale")
@@ -188,6 +181,7 @@ class PhotoViewActivity : AppCompatActivity(), ProgressListener, OverlayCustomiz
         currentPage = position
         val totalAmount = viewModel.state.value.totalAmount
         toolbar?.title = String.format("%d / %d", position + 1, totalAmount)
+        onProgress(position, getCurrentItem()!!)
     }
 
     private fun getCurrentItem(): PhotoViewItem? {
