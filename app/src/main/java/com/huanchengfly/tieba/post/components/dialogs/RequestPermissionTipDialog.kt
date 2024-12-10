@@ -166,7 +166,9 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
             } else {
                 buildAppSettingsIntent(BuildConfig.APPLICATION_ID)
             }
-            settingsLauncher.launch(this)
+            runCatching {
+                settingsLauncher.launch(this)
+            }
         }
     }
 
