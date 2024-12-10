@@ -6,6 +6,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import retrofit2.Call
 import retrofit2.CallAdapter
 import retrofit2.Callback
+import retrofit2.HttpException
 import retrofit2.Response
 import java.lang.reflect.Type
 import kotlin.coroutines.resume
@@ -48,10 +49,10 @@ class BodyCallAdapter<T>(private val responseType: Type) : CallAdapter<T, Flow<T
                         }
 
                         override fun onResponse(call: Call<T>, response: Response<T>) {
-                            try {
+                            if (response.isSuccessful) {
                                 continuation.resume(response.body()!!)
-                            } catch (e: Exception) {
-                                continuation.resumeWithException(e)
+                            } else {
+                                continuation.resumeWithException(HttpException(response))
                             }
                         }
                     })
