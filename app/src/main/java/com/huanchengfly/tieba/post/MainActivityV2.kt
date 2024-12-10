@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.job.JobInfo
 import android.app.job.JobScheduler
 import android.content.BroadcastReceiver
@@ -45,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -103,8 +104,6 @@ val LocalDevicePosture =
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
 
-    private val newMessageReceiver: BroadcastReceiver = NewMessageReceiver()
-
     private var pendingRoute: Destination? by mutableStateOf(null)
 
     private val notificationCountFlow: MutableSharedFlow<Int> =
@@ -160,10 +159,8 @@ class MainActivityV2 : BaseComposeActivity() {
         super.onStart()
         runCatching {
             AccountUtil.getInstance().currentAccount.value ?: throw TiebaNotLoggedInException()
-            val intentFilter = IntentFilter().apply {
-                addAction(NotifyJobService.ACTION_NEW_MESSAGE)
-            }
-            ContextCompat.registerReceiver(this, newMessageReceiver, intentFilter, ContextCompat.RECEIVER_NOT_EXPORTED)
+            val intentFilter = IntentFilter(NotifyJobService.ACTION_NEW_MESSAGE)
+            ContextCompat.registerReceiver(this, NewMessageReceiver(), intentFilter, ContextCompat.RECEIVER_NOT_EXPORTED)
             startService(Intent(this, NotifyJobService::class.java))
             val builder = JobInfo.Builder(
                 JobServiceUtil.getJobId(this),
@@ -269,8 +266,8 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    private inner class NewMessageReceiver : BroadcastReceiver() {
-        @SuppressLint("RestrictedApi")
+    private inner class NewMessageReceiver : BroadcastReceiver(), DefaultLifecycleObserver {
+
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == NotifyJobService.ACTION_NEW_MESSAGE) {
                 val channel = intent.getStringExtra("channel")
@@ -281,6 +278,10 @@ class MainActivityV2 : BaseComposeActivity() {
                     }
                 }
             }
+        }
+
+        override fun onDestroy(owner: LifecycleOwner) {
+            unregisterReceiver(this)
         }
     }
 
