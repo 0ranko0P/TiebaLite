@@ -9,6 +9,7 @@ import com.huanchengfly.tieba.post.api.models.protos.contentRenders
 import com.huanchengfly.tieba.post.api.models.protos.plainText
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
+import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -82,7 +83,7 @@ data class PostData(
                 floor = post.floor,
                 title = post.title,
                 isNTitle = post.is_ntitle == 1,
-                time = post.time.toLong(),
+                time = DateTimeUtils.fixTimestamp(post.time.toLong()),
                 hasAgree = post.agree?.hasAgree ?: 0,
                 agreeNum = post.agree?.agreeNum ?: 0L,
                 diffAgreeNum = post.agree?.diffAgreeNum ?: 0L,

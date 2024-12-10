@@ -7,12 +7,15 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 object DateTimeUtils {
+
+    private const val MIN_VALID_MILLIS = 1000000000000L
+
     @JvmStatic
     fun getRelativeTimeString(
         context: Context,
         timestampString: String
     ): String {
-        return getRelativeTimeString(context, fixTimestamp(timestampString))
+        return getRelativeTimeString(context, fixTimestamp(timestampString.toLongOrNull() ?: MIN_VALID_MILLIS))
     }
 
     @JvmStatic
@@ -79,15 +82,13 @@ object DateTimeUtils {
         return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(timeInMillis))
     }
 
-    private fun fixTimestamp(timestamp: Long): Long {
-        return fixTimestamp(timestamp.toString())
-    }
+    fun fixTimestamp(timestamp: Long): Long {
+        if (timestamp <= 0 || timestamp > MIN_VALID_MILLIS) return timestamp
 
-    private fun fixTimestamp(timestampString: String): Long {
-        val timestampStrBuilder: StringBuilder = StringBuilder(timestampString)
-        while (timestampStrBuilder.length < 13) {
-            timestampStrBuilder.append("0")
+        var rec = timestamp
+        while (rec < MIN_VALID_MILLIS) {
+            rec *= 10
         }
-        return timestampStrBuilder.toString().toLong()
+        return rec
     }
 }
