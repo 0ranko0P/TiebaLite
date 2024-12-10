@@ -529,8 +529,8 @@ private fun ForumFab(@ForumFabFunction fab: String, visible: Boolean, onClick: (
     ) {
         FloatingActionButton(
             onClick = onClick,
-            backgroundColor = ExtendedTheme.colors.windowBackground,
-            contentColor = ExtendedTheme.colors.primary,
+            backgroundColor = ExtendedTheme.colors.secondary,
+            contentColor = ExtendedTheme.colors.onSecondary,
             modifier = Modifier.navigationBarsPadding()
         ) {
             Icon(
