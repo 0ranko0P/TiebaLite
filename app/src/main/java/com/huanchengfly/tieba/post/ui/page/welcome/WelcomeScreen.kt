@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
@@ -298,7 +300,11 @@ fun DualTitleContent(
     if (content != null) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        Column (modifier = pagerOffset.offsetX(0.2f, easing = LinearOutSlowInEasing)) {
+        Column (
+            modifier = pagerOffset
+                .offsetX(fraction = 0.2f, easing = LinearOutSlowInEasing)
+                .verticalScroll(state = rememberScrollState())
+        ) {
             content()
         }
     }
