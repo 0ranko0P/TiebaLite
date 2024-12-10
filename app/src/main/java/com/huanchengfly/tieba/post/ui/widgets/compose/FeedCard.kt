@@ -654,6 +654,10 @@ fun ThreadShareBtn(
     )
 }
 
+enum class FeedType {
+    Top, PlainText, SingleMedia, MultiMedia, Video
+}
+
 @Composable
 fun FeedCard(
     item: ImmutableHolder<ThreadInfo>,

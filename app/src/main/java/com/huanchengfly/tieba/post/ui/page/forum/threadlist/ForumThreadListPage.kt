@@ -47,6 +47,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
+import com.huanchengfly.tieba.post.ui.widgets.compose.FeedType
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
@@ -55,10 +56,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
-
-private enum class ItemType {
-    Top, PlainText, SingleMedia, MultiMedia, Video
-}
 
 typealias ClassifyTabsContent = @Composable () -> Unit
 
@@ -298,11 +295,11 @@ private fun ForumThreadListPage(
                     contentType = { _, holder ->
                         val item = holder.thread.item
                         when {
-                            item.isTop == 1 -> ItemType.Top
-                            item.media.isNotEmpty() && item.media.size == 1 -> ItemType.SingleMedia
-                            item.media.isNotEmpty() && item.media.size != 1 -> ItemType.MultiMedia
-                            item.videoInfo != null -> ItemType.Video
-                            else -> ItemType.PlainText
+                            item.isTop == 1 -> FeedType.Top
+                            item.media.isNotEmpty() && item.media.size == 1 -> FeedType.SingleMedia
+                            item.media.isNotEmpty() && item.media.size != 1 -> FeedType.MultiMedia
+                            item.videoInfo != null -> FeedType.Video
+                            else -> FeedType.PlainText
                         }
                     }
                 ) { index, (holder, blocked) ->

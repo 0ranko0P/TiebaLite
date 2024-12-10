@@ -61,6 +61,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
+import com.huanchengfly.tieba.post.ui.widgets.compose.FeedType
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
@@ -192,10 +193,10 @@ fun PersonalizedPage(
                     key = { _, it -> it.thread.item.id.toString() },
                     contentType = { _, it ->
                         when {
-                            it.thread.item.videoInfo != null -> "Video"
-                            it.thread.item.media.size == 1 -> "SingleMedia"
-                            it.thread.item.media.size > 1 -> "MultiMedia"
-                            else -> "PlainText"
+                            it.thread.item.videoInfo != null -> FeedType.Video
+                            it.thread.item.media.size == 1 -> FeedType.SingleMedia
+                            it.thread.item.media.size > 1 -> FeedType.MultiMedia
+                            else -> FeedType.PlainText
                         }
                     }
                 ) { index, (item, blocked, personalized, hidden) ->
