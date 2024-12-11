@@ -4,20 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.BottomNavigationDefaults
 import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -39,22 +38,13 @@ fun CopyTextDialogPage(
 ) {
     val context = LocalContext.current
 
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = ExtendedTheme.colors.windowBackground)
-    ) {
-        CopyTextPageContent(
-            text = text,
-            onCopy = {
-                TiebaUtil.copyText(context, it)
-            },
-            onCancel = {
-                navigator.navigateUp()
-            }
-        )
-    }
+    CopyTextPageContent(
+        text = text,
+        onCopy = {
+            TiebaUtil.copyText(context, it)
+        },
+        onCancel = navigator::navigateUp
+    )
 }
 
 @Composable
@@ -64,13 +54,7 @@ private fun CopyTextPageContent(
     onCancel: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(color = ExtendedTheme.colors.windowBackground)
-            .systemBarsPadding()
-            .padding(bottom = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.background(color = ExtendedTheme.colors.windowBackground),
     ) {
         TitleCentredToolbar(
             title = {
@@ -89,57 +73,60 @@ private fun CopyTextPageContent(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = onCancel) {
-                    Icon(
-                        imageVector = Icons.Rounded.Close,
-                        contentDescription = stringResource(id = R.string.btn_close)
-                    )
-                }
+                BackNavigationIcon(onBackPressed = onCancel)
             }
         )
-        Column(
+
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            contentAlignment = Alignment.Center
+        ) {
+            SelectionContainer {
+                Text(
+                    text = text,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp), // Content padding
+                    style = MaterialTheme.typography.body1
+                )
+            }
+        }
+
+        Surface(
+            color = ExtendedTheme.colors.threadBottomBar,
+            elevation = BottomNavigationDefaults.Elevation,
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .weight(1f),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .navigationBarsPadding()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                SelectionContainer {
-                    Text(
-                        text = text,
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.body1
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        onCopy(text)
+                        onCancel()
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.btn_copy_all))
+                }
+
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onCancel,
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = ExtendedTheme.colors.text.copy(alpha = 0.1f),
+                        contentColor = ExtendedTheme.colors.text
                     )
+                ) {
+                    Text(text = stringResource(id = R.string.btn_close))
                 }
-            }
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    onCopy(text)
-                    onCancel()
-                }
-            ) {
-                Text(text = stringResource(id = R.string.btn_copy_all))
-            }
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    onCancel()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = ExtendedTheme.colors.text.copy(alpha = 0.1f),
-                    contentColor = ExtendedTheme.colors.text
-                )
-            ) {
-                Text(text = stringResource(id = R.string.btn_close))
             }
         }
     }
