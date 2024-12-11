@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.google.android.material.color.MaterialColors
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.distinctUntilChangedByKeys
@@ -242,7 +241,7 @@ private fun savedThemeFlow(context: Context, darkMode: Boolean): Flow<ExtendedCo
 
             // Ignore TintToolbar on translucent theme
             if (!ThemeUtil.isTranslucentTheme(colors) && tintToolbar) {
-                val isLightToolbar = MaterialColors.isColorLight(colors.primary.toArgb())
+                val isLightToolbar = ColorUtils.isColorLight(colors.primary.toArgb())
                 colors.copy(
                     topBar = colors.primary,
                     onTopBar = if (isLightToolbar) DarkSystemBar else LightSystemBar

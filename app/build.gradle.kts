@@ -171,7 +171,6 @@ dependencies {
     implementation(libs.androidx.window)
     implementation(libs.androidx.startup.runtime)
 
-    implementation(libs.google.material)
     implementation(libs.google.gson)
 
     implementation(libs.database.litepal)
@@ -184,6 +183,7 @@ dependencies {
     implementation(libs.glide.okhttp3.integration)
 
     // Image Viewer
+    implementation(libs.androidx.recyclerview)
     implementation(libs.iielse.imageviewer)
     implementation(libs.subsampling.image)
 

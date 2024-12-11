@@ -1,5 +1,8 @@
 package com.huanchengfly.tieba.post.utils;
 
+import static android.graphics.Color.TRANSPARENT;
+import static androidx.core.graphics.ColorUtils.calculateLuminance;
+
 import android.graphics.Color;
 
 import androidx.annotation.ColorInt;
@@ -51,5 +54,10 @@ public final class ColorUtils {
         hsv[1] = hsv[1] - sat;
         hsv[2] = hsv[2] - (sat / 3);
         return Color.HSVToColor(hsv);
+    }
+
+    /** Determines if a color should be considered light or dark. */
+    public static boolean isColorLight(@ColorInt int color) {
+        return color != TRANSPARENT && calculateLuminance(color) > 0.5;
     }
 }

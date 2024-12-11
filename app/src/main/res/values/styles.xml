@@ -1,12 +1,6 @@
 <resources>
 
-    <style name="BottomSheetDialogStyle" parent="Theme.Design.BottomSheetDialog">
-        <item name="android:windowFrame">@null</item>
-        <item name="android:backgroundDimEnabled">true</item>
-        <item name="android:windowAnimationStyle">@style/Animation.Bottom</item>
-    </style>
-
-    <style name="Dialog.RequestPermissionTip" parent="Theme.MaterialComponents.DayNight.Dialog">
+    <style name="Dialog.RequestPermissionTip" parent="Theme.AppCompat.DayNight.Dialog">
         <item name="android:windowFrame">@null</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
@@ -17,11 +11,6 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-    <style name="Animation.Bottom" parent="@android:style/Animation">
-        <item name="android:windowEnterAnimation">@anim/in_bottom</item>
-        <item name="android:windowExitAnimation">@anim/out_bottom</item>
-    </style>
-
     <style name="Animation.Fade" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/anim_fade_in</item>
         <item name="android:activityOpenExitAnimation">@anim/anim_fade_out</item>
@@ -29,7 +18,7 @@
         <item name="android:activityCloseExitAnimation">@anim/anim_fade_out</item>
     </style>
 
-    <style name="BaseTransparent" parent="Theme.MaterialComponents.NoActionBar">
+    <style name="BaseTransparent" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
@@ -45,7 +34,7 @@
         <item name="colorControlActivated">@color/tieba</item>
     </style>
 
-    <style name="Theme.NewAppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.NewAppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>

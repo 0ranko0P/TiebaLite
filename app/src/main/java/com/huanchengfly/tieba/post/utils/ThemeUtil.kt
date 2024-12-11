@@ -9,13 +9,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.google.android.material.color.MaterialColors
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMode
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dataStoreScope
-import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.putColor
 import com.huanchengfly.tieba.post.theme.DarkGreyColors
 import com.huanchengfly.tieba.post.theme.DefaultColors
@@ -124,7 +122,7 @@ object ThemeUtil {
         return if (isTranslucentTheme(theme)) {
             theme.theme == THEME_TRANSLUCENT_DARK
         } else {
-            !MaterialColors.isColorLight(theme.onTopBar.toArgb())
+            !ColorUtils.isColorLight(theme.onTopBar.toArgb())
         }
     }
 
