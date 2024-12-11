@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.FloatingActionButtonDefaults
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.LinearProgressIndicator
@@ -531,6 +532,9 @@ private fun ForumFab(@ForumFabFunction fab: String, visible: Boolean, onClick: (
             onClick = onClick,
             backgroundColor = ExtendedTheme.colors.secondary,
             contentColor = ExtendedTheme.colors.onSecondary,
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = Dp.Hairline // Buggy shadow when visibility changes
+            ),
             modifier = Modifier.navigationBarsPadding()
         ) {
             Icon(
