@@ -1,24 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <androidx.fragment.app.FragmentContainerView
+        android:id="@android:id/content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@android:id/content"
         tools:layout="@layout/fragment_image_viewer_dialog" />
 
-    <com.google.android.material.progressindicator.CircularProgressIndicator
+    <ProgressBar
         android:id="@android:id/progress"
+        style="@android:style/Widget.Material.ProgressBar.Large"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal|center_vertical"
-        android:indeterminate="true"
-        app:indicatorColor="@color/colorAccent"
-        app:indicatorSize="82dp"
-        app:trackCornerRadius="6dp"
-        app:trackThickness="6dp" />
+        android:indeterminate="true" />
 </FrameLayout>

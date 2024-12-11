@@ -8,6 +8,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -27,7 +28,6 @@ import com.github.iielse.imageviewer.core.OverlayCustomizer
 import com.github.iielse.imageviewer.core.Transformer
 import com.github.iielse.imageviewer.core.ViewerCallback
 import com.github.iielse.imageviewer.utils.Config
-import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.collectIn
@@ -52,7 +52,7 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
     private var currentPage: Int = 0
 
     private lateinit var appbar: LinearLayout
-    private lateinit var indicator: LinearProgressIndicator
+    private lateinit var indicator: ProgressBar
     private var toolbar: Toolbar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -13,9 +13,17 @@
         android:minHeight="?attr/actionBarSize"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
 
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/progress_indicator"
+    <!-- Workaround to remove ProgressBar padding /-->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone" />
+        android:layout_height="4dp">
+
+        <ProgressBar
+            android:id="@+id/progress_indicator"
+            style="@android:style/Widget.Material.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+    </FrameLayout>
 </LinearLayout>
