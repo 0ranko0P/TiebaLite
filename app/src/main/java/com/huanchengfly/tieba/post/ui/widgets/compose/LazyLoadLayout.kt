@@ -151,7 +151,7 @@ fun SwipeUpLazyLoadColumn(
 private class SwipeUpRefreshScrollConnection(
     private val scope: CoroutineScope,
     threshold: Float,
-    val onRefresh: (() -> Unit)?
+    private var onRefresh: (() -> Unit)?
 ) : NestedScrollConnection {
 
     private var _refreshing = false
@@ -180,6 +180,10 @@ private class SwipeUpRefreshScrollConnection(
         _threshold = -threshold
     }
 
+    fun setOnRefreshListener(onRefresh: (() -> Unit)?) {
+        this.onRefresh = onRefresh
+    }
+
     fun setRefreshing(refreshing: Boolean) {
         _refreshing = refreshing
         if (!refreshing && position < 0f) {
@@ -206,7 +210,7 @@ private class SwipeUpRefreshScrollConnection(
     private fun onRelease(velocity: Float): Float {
         if (adjustedDistancePulled < threshold) {
             if (!_refreshing && onRefresh != null) {
-                onRefresh.invoke()
+                onRefresh?.invoke()
                 animateIndicatorTo(threshold)
             } else {
                 animateIndicatorTo(0f)
@@ -281,6 +285,7 @@ private fun rememberSwipeUpRefreshConnection(
     SideEffect {
         state.setThreshold(thresholdPx)
         state.setRefreshing(refreshing)
+        state.setOnRefreshListener(onRefresh)
     }
 
     return state

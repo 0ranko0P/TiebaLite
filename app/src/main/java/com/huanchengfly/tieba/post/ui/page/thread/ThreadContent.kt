@@ -124,15 +124,17 @@ fun StateScreenScope.ThreadContent(
         val latestPosts = state.latestPosts
         val forum = state.forum
 
+        val onSwipeUpRefresh: () -> Unit = remember {
+            { if (!viewModel.isLoadingMore) viewModel.requestLoadLatestPosts() }
+        }
+
         SwipeUpLazyLoadColumn(
             modifier = Modifier.fillMaxSize(),
             state = lazyListState,
             contentPadding = contentPadding,
             isLoading = viewModel.isLoadingMore,
-            onLoad = {
-                if (viewModel.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC) {
-                    viewModel.requestLoadLatestPosts()
-                }
+            onLoad = onSwipeUpRefresh.takeIf {  // Enable it conditionally
+                viewModel.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC
             },
             onLazyLoad = {
                 if (viewModel.threadUiState.hasMore) viewModel.requestLoadMore()
