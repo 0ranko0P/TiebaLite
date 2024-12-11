@@ -15,6 +15,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.doIfFailure
 import com.huanchengfly.tieba.post.api.retrofit.doIfSuccess
+import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.dialogs.LoadingDialog
 import com.huanchengfly.tieba.post.pendingIntentFlagMutable
 import com.huanchengfly.tieba.post.receivers.AutoSignAlarm
@@ -32,19 +33,12 @@ object TiebaUtil {
         }
     }
 
-    @JvmStatic
-    @JvmOverloads
-    fun copyText(
-        context: Context,
-        text: String?,
-        toast: String = context.getString(R.string.toast_copy_success),
-        isSensitive: Boolean = false
-    ) {
-        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    fun copyText(context: Context, text: String?, isSensitive: Boolean = false) {
+        val cm: ClipboardManager = ClipBoardLinkDetector.clipBoardManager
         val clipData = ClipData.newPlainText("Tieba Lite", text).setIsSensitive(isSensitive)
         cm.setPrimaryClip(clipData)
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
-            context.toastShort(toast)
+            context.toastShort(R.string.toast_copy_success)
         }
     }
 
