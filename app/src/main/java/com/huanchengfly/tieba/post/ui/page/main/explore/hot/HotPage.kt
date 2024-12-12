@@ -25,7 +25,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -201,7 +201,7 @@ fun HotPage(
                                             fontWeight = FontWeight.Bold
                                         )
                                         Icon(
-                                            imageVector = Icons.Rounded.KeyboardArrowRight,
+                                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp)
                                         )
