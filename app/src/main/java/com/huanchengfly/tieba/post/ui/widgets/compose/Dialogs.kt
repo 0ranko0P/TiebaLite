@@ -69,10 +69,8 @@ fun DialogScope.DialogPositiveButton(
         enabled = enabled,
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = MaterialTheme.colors.secondary,
-            contentColor = MaterialTheme.colors.onSecondary,
-            disabledBackgroundColor = MaterialTheme.colors.secondary.copy(ContentAlpha.disabled),
-            disabledContentColor = MaterialTheme.colors.onSecondary.copy(ContentAlpha.disabled)
+            disabledBackgroundColor = MaterialTheme.colors.primary.copy(ContentAlpha.disabled),
+            disabledContentColor = MaterialTheme.colors.onPrimary.copy(ContentAlpha.disabled)
         ),
     ) {
         Text(
