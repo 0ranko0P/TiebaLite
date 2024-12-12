@@ -168,8 +168,7 @@ class ReplyViewModel @Inject constructor() :
                 }
                 .onStart { emit(ReplyPartialChange.Send.Start) }
                 .catch {
-                    Log.i("ReplyViewModel", "failure: ${it.message}")
-                    it.printStackTrace()
+                    Log.w(TAG, "failure", it)
                     emit(ReplyPartialChange.Send.Failure(it.getErrorCode(), it.getErrorMessage()))
                 }
         }

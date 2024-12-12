@@ -167,7 +167,7 @@ inline fun <reified VM : BaseViewModel<*, *, *, *>> pageViewModel(
                             }
 
                     onDispose {
-                        Log.i("pageViewModel", "onDispose")
+                        Log.i(this@apply::class.simpleName, "onDispose")
                         job.cancel()
                     }
                 }
