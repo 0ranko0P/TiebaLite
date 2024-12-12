@@ -186,10 +186,9 @@ fun ErrorStackTraceScreen(
         Text(
             text = stackTrace.getOrDefault(stringResource(R.string.message_unknown_error)),
             modifier = Modifier
-                .heightIn(max = 700.dp)
+                .weight(1.0f)
                 .verticalScroll(rememberScrollState())
-                .horizontalScroll(rememberScrollState())
-            ,
+                .horizontalScroll(rememberScrollState()),
             color = ExtendedTheme.colors.textSecondary,
             softWrap = false,
             style = MaterialTheme.typography.body1
