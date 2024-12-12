@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -328,7 +329,7 @@ fun ThreadPage(
         isError = viewModel.error != null,
         isLoading = viewModel.isRefreshing,
         errorScreen = {
-            ErrorScreen(error = viewModel.error)
+            ErrorScreen(error = viewModel.error, modifier = Modifier.safeContentPadding())
         },
         onReload = { viewModel.requestLoad(0, postId) }
     ) {
