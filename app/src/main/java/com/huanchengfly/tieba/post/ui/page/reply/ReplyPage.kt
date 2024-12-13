@@ -77,7 +77,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -107,9 +109,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_WARNING
+import com.huanchengfly.tieba.post.utils.DisplayUtil.toDpSize
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
+import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.showKeyboard
 import kotlinx.collections.immutable.ImmutableList
@@ -325,17 +329,17 @@ internal fun ReplyPageContent(
         derivedStateOf { max(imeVisibleHeightPx.pxToDpFloat(), 150f).dp }
     }
 
+    val textStyle = LocalTextStyle.current
     val textMeasurer = rememberTextMeasurer()
 
-    val minResult = textMeasurer.measure(
-        AnnotatedString("\n\n"),
-        style = LocalTextStyle.current
-    ).size.height.pxToDpFloat().dp
-
-    val maxResult = textMeasurer.measure(
-        AnnotatedString("\n\n\n\n\n"),
-        style = LocalTextStyle.current
-    ).size.height.pxToDpFloat().dp
+    val minHeight: Dp = remember(textStyle, density) {
+        textMeasurer.measure(
+            text = AnnotatedString("\n\n"),
+            style = textStyle.copy(fontSize = 14.sp * context.appPreferences.fontScale)
+        )
+        .size.toDpSize(density).height
+    }
+    val maxHeight: Dp = minHeight * 3
 
     LaunchedEffect(closingPanel, imeAnimationEnd) {
         if (closingPanel) {
@@ -393,7 +397,7 @@ internal fun ReplyPageContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .requiredHeightIn(min = minResult, max = maxResult)
+                    .requiredHeightIn(min = minHeight, max = maxHeight)
                     .verticalScroll(textFieldScrollState)
             ) {
                 AndroidView(
