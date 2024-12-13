@@ -69,6 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -85,6 +86,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
@@ -93,6 +95,7 @@ import com.huanchengfly.tieba.post.pxToDpFloat
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
 import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.EMOJI
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.IMAGE
@@ -118,6 +121,7 @@ import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.showKeyboard
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlin.math.max
@@ -180,6 +184,7 @@ internal fun ReplyPageContent(
 
     val context = LocalContext.current
     val curTbs = remember(tbs) { tbs ?: AccountUtil.getAccountInfo { this.tbs }.orEmpty() }
+    val colors = ExtendedTheme.colors
 
     val isUploading by viewModel.uiState.collectPartialAsState(
         prop1 = ReplyUiState::isUploading,
@@ -356,19 +361,14 @@ internal fun ReplyPageContent(
 
     val textFieldScrollState = rememberScrollState()
 
-    val parentModifier = if (curKeyboardType == NONE && !closingPanel) {
-        Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-    } else {
-        Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .consumeWindowInsets(WindowInsets.ime)
-    }
-
     Column(
-        modifier = parentModifier,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.threadBottomBar)
+            .navigationBarsPadding()
+            .block {
+                if (curKeyboardType != NONE || closingPanel) consumeWindowInsets(WindowInsets.ime) else null
+            },
         verticalArrangement = Arrangement.Bottom
     ) {
         Row(
@@ -383,7 +383,7 @@ internal fun ReplyPageContent(
             Text(
                 text = "$textLength",
                 style = MaterialTheme.typography.caption,
-                color = ExtendedTheme.colors.textSecondary
+                color = colors.textSecondary
             )
         }
         VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -425,7 +425,10 @@ internal fun ReplyPageContent(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .wrapContentHeight(align = Alignment.Top)
+                        .wrapContentHeight(align = Alignment.Top),
+                    update = {
+                        it.setTextColor(colors.text.toArgb())
+                    }
                 )
             }
 //            BaseTextField(
@@ -657,6 +660,7 @@ internal fun ReplyPageContent(
 
     LaunchedEffect(Unit) {
         if (warning) {
+            delay(300) // Wait BottomSheet animation
             warningDialogState.show()
         }
     }
