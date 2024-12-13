@@ -3,12 +3,17 @@ package com.huanchengfly.tieba.post.ui.page
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.navigation.BottomSheetNavigator
 import androidx.compose.material.navigation.ModalBottomSheetLayout
+import androidx.compose.material.navigation.bottomSheet
+import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -160,7 +165,6 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             ThreadStorePage(navController)
         }
 
-        // Use Type-Safe BottomSheet: b351858980
         composable<Destination.SubPosts> { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.SubPosts>()
             SubPostsSheetPage(params, navController)
@@ -210,8 +214,7 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             CopyTextDialogPage(params.text, navController)
         }
 
-        // Use Type-Safe BottomSheet: b351858980
-        composable<Destination.Reply> { backStackEntry ->
+        bottomSheet<Destination.Reply> { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.Reply>()
             ReplyPage(params, navController::navigateUp)
         }
@@ -224,6 +227,24 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
 
 val DefaultFadeOut: ExitTransition by lazy {
     fadeOut(animationSpec = tween(100))
+}
+
+/**
+ * Create and remember a [BottomSheetNavigator]
+ */
+@Composable
+fun rememberBottomSheetNavigator(
+    animationSpec: AnimationSpec<Float> = SpringSpec(),
+    confirmValueChange: (ModalBottomSheetValue) -> Boolean = { true },
+    skipHalfExpanded: Boolean = false,
+): BottomSheetNavigator {
+    val sheetState = rememberModalBottomSheetState(
+        initialValue = ModalBottomSheetValue.Hidden,
+        animationSpec = animationSpec,
+        confirmValueChange = confirmValueChange,
+        skipHalfExpanded = skipHalfExpanded
+    )
+    return remember(sheetState) { BottomSheetNavigator(sheetState) }
 }
 
 private fun NavController.isLastOrEmptyRoute(): Boolean = visibleEntries.value.size <= 1

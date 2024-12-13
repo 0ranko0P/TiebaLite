@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.navigation.rememberBottomSheetNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +62,7 @@ import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.RootNavGraph
+import com.huanchengfly.tieba.post.ui.page.rememberBottomSheetNavigator
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
 import com.huanchengfly.tieba.post.ui.utils.isSeparating
@@ -200,7 +200,7 @@ class MainActivityV2 : BaseComposeActivity() {
 
     @Composable
     override fun Content() {
-        val bottomSheetNavigator = rememberBottomSheetNavigator()
+        val bottomSheetNavigator = rememberBottomSheetNavigator(skipHalfExpanded = true)
         val navController = rememberNavController(bottomSheetNavigator)
         val entryRoute = if (appPreferences.setupFinished) Destination.Main else Destination.Welcome
 
