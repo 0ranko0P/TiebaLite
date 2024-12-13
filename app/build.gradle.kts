@@ -92,10 +92,12 @@ android {
         jvmTarget = "11"
     }
     packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            excludes += "DebugProbesKt.bin"
-        }
+        resources.excludes += listOf(
+            "META-INF/**",
+            "kotlin/**",
+            "kotlin-tooling-metadata.json", // Unneeded: See KT-48019
+            "**.bin"
+        )
     }
     namespace = "com.huanchengfly.tieba.post"
 }
