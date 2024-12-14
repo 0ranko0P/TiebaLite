@@ -43,16 +43,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.preferencesDataStore
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.APP
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.CLIPBOARD
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.File
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.LOCATION
+import com.huanchengfly.tieba.post.getInt
+import com.huanchengfly.tieba.post.putInt
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
-import com.huanchengfly.tieba.post.utils.SharedPreferencesUtil
-import com.huanchengfly.tieba.post.utils.SharedPreferencesUtil.SP_PERMISSION
 
 class WebPermissionDialog<Result>(): ResultDialog<Result>() {
 
@@ -182,10 +183,10 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
         mResult.trySend(result as Result)
 
         if (result is Boolean && retainPermission) {
-            SharedPreferencesUtil.get(requireContext().applicationContext, SP_PERMISSION)
-                .edit()
-                .putInt(permission.toKey(host), if (result) STATE_ALLOW else STATE_DENY)
-                .apply()
+            requireContext().permissionDataStore.putInt(
+                key = permission.toKey(host),
+                value = if (result) STATE_ALLOW else STATE_DENY
+            )
         }
     }
 
@@ -199,6 +200,8 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
 
     companion object {
         private const val TAG = "WebPermissionDialog"
+
+        private val Context.permissionDataStore by preferencesDataStore(name = "permission")
 
         private const val KEY_HOST = "wp_host"
         private const val KEY_MESSAGE = "wp_msg"
@@ -269,8 +272,10 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
          * [STATE_UNSET] Unset
          * */
         fun getState(context: Context, host: String, permission: WebPermission<*>): Int {
-            return SharedPreferencesUtil.get(context.applicationContext, SP_PERMISSION)
-                .getInt(permission.toKey(host), STATE_UNSET)
+            return context.permissionDataStore.getInt(
+                key = permission.toKey(host),
+                defaultValue = STATE_UNSET
+            )
         }
     }
 }

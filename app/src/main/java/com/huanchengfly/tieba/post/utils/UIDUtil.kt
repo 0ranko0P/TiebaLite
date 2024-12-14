@@ -5,6 +5,9 @@ import android.provider.Settings
 import android.text.TextUtils
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.getString
+import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.toMD5
 import com.huanchengfly.tieba.post.utils.helios.Base32
 import com.huanchengfly.tieba.post.utils.helios.Hasher
@@ -68,17 +71,15 @@ object UIDUtil {
             return "$cUID|$imei"
         }
 
-    @get:SuppressLint("ApplySharedPref")
+    private const val KEY_UUID = "uuid"
+
     val uUID: String
         get() {
-            var uuid = SharedPreferencesUtil.get(INSTANCE, SharedPreferencesUtil.SP_APP_DATA)
-                .getString("uuid", null)
-            if (uuid == null) {
+            val dataStore = INSTANCE.dataStore
+            var uuid = dataStore.getString(KEY_UUID, "")
+            if (uuid.isEmpty()) {
                 uuid = UUID.randomUUID().toString()
-                SharedPreferencesUtil.get(INSTANCE, SharedPreferencesUtil.SP_APP_DATA)
-                    .edit()
-                    .putString("uuid", uuid)
-                    .apply()
+                dataStore.putString(KEY_UUID, uuid)
             }
             return uuid
         }

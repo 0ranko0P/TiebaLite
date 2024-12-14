@@ -19,7 +19,6 @@ import com.huanchengfly.tieba.post.components.OAIDGetter
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.EmoticonManager
-import com.huanchengfly.tieba.post.utils.SharedPreferencesUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.MainScope
@@ -174,15 +173,8 @@ class App : Application() {
         lateinit var INSTANCE: App
             private set
 
-        val isInitialized: Boolean
-            get() = this::INSTANCE.isInitialized
-
         val isSystemNight: Boolean
             get() = nightMode == Configuration.UI_MODE_NIGHT_YES
-
-        val isFirstRun: Boolean
-            get() = SharedPreferencesUtil.get(SharedPreferencesUtil.SP_APP_DATA)
-                .getBoolean("first", true)
 
         private val nightMode: Int
             get() = INSTANCE.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
