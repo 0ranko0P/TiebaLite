@@ -576,6 +576,7 @@ private fun BottomBar(
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
+                    .clip(MaterialTheme.shapes.small)
                     .clickable(onClick = onClickMore)
                     .padding(horizontal = 4.dp),
                 contentAlignment = Alignment.Center
