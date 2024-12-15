@@ -4,6 +4,7 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.Icon
@@ -143,6 +144,7 @@ fun ExplorePage() {
             key = { pages[it] },
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top,
+            flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f),
             userScrollEnabled = true,
         ) {
             val listState = listStates[it]
