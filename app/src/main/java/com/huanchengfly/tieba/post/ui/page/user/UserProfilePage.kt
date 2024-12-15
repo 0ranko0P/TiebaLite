@@ -260,10 +260,8 @@ fun UserProfilePage(
                 HorizontalPager(
                     state = pagerState,
                     key = { it.toString() },
-                    modifier = Modifier
-                        .nestedScroll(connection)
-                        .fillMaxSize()
-                        .padding(paddingValues)
+                    modifier = Modifier.nestedScroll(connection),
+                    contentPadding = paddingValues
                 ) {
                     when(tabs[it]) {
                         is Tab.THREADS -> UserPostPage(uid = uid, isThread = true)
