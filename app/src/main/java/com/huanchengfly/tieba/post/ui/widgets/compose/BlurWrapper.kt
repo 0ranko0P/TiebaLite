@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -61,14 +62,14 @@ val defaultHazeStyle: HazeStyle
     }
 
 /**
- * [NavigationBarPlaceHolder] with background blur
+ * Placeholder to make [Scaffold] consume [WindowInsets.Companion.navigationBars]
  * */
 val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
     val navBarInsets = WindowInsets.navigationBars
     when(navBarInsets.gestureType(LocalDensity.current)) {
 
         // 全面屏手势: 透明背景
-        GESTURE_DEFAULT -> NavigationBarPlaceHolder()
+        GESTURE_DEFAULT -> Spacer(modifier = Modifier.windowInsetsBottomHeight(navBarInsets))
 
         // 三大金刚: 背景和模糊滤镜
         GESTURE_3BUTTON ->  {
@@ -77,9 +78,14 @@ val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
                     .fillMaxWidth()
                     .windowInsetsBottomHeight(insets = navBarInsets)
                     .block {
-                        LocalHazeState.current?.let { hazeChild(state = it, defaultHazeStyle) }
+                        val hazeState = LocalHazeState.current
+                        val colors = LocalExtendedColors.current
+                        if (hazeState != null) {
+                            hazeChild(hazeState, defaultHazeStyle).background(colors.bottomBar)
+                        } else {
+                            background(color = colors.windowBackground)
+                        }
                     }
-                    .background(color = LocalExtendedColors.current.windowBackground)
             )
         }
 

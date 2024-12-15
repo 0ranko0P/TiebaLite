@@ -1,12 +1,7 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.material.DismissValue
 import androidx.compose.material.DrawerDefaults
 import androidx.compose.material.ExperimentalMaterialApi
@@ -54,22 +49,12 @@ fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
 
 val LocalSnackbarHostState = compositionLocalOf<SnackbarHostState> { error("no scaffold here!") }
 
-// Placeholder to make MyScaffold properly offset NavBar
-// since we are enabling Edge-To-Edge everywhere
-val NavigationBarPlaceHolder: @Composable () -> Unit = {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .windowInsetsBottomHeight(WindowInsets.navigationBars)
-    )
-}
-
 @Composable
 fun MyScaffold(
     modifier: Modifier = Modifier,
     scaffoldState: ScaffoldState = rememberScaffoldState(),
     topBar: @Composable () -> Unit = {},
-    bottomBar: @Composable () -> Unit = NavigationBarPlaceHolder,
+    bottomBar: @Composable () -> Unit = BlurNavigationBarPlaceHolder,
     snackbarHost: @Composable (SnackbarHostState) -> Unit = { SwipeToDismissSnackbarHost(it) },
     floatingActionButton: @Composable () -> Unit = {},
     floatingActionButtonPosition: FabPosition = FabPosition.End,
