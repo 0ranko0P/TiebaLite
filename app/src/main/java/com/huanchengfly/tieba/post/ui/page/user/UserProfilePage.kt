@@ -135,7 +135,7 @@ private fun AvatarBackground(
             .background(backgroundColor)
     ) {
         val backgroundAlpha by animateFloatAsState(
-            targetValue = if (collapsed) 0.85f else 0f,
+            targetValue = if (collapsed) 0.25f else 0f,
             animationSpec = tween(easing = FastOutLinearInEasing),
             label = "BackgroundAlphaAnimation"
         )
@@ -151,7 +151,7 @@ private fun AvatarBackground(
                     drawContent()
                     drawRect(brush = topFadeBrush, blendMode = BlendMode.SrcOver)
                 },
-            contentScale = ContentScale.FillWidth,
+            contentScale = ContentScale.Crop,
             alpha = backgroundAlpha
         ) {
             it.transform(BlurTransformation(imgProcessor, 90f))
