@@ -68,7 +68,9 @@ fun NavController.navigateForumDetailPage(forumInfo: ForumInfo/* Big Parcelable 
         memberCount = forumInfo.member_num,
         threadCount = forumInfo.thread_num,
         postCount = forumInfo.post_num,
-        managers = forumInfo.managers.map { ManagerData(it.id, it.name, it.portrait) }
+        managers = forumInfo.managers.map {
+            ManagerData(it.id, it.show_name.takeUnless { it.isEmpty() } ?: it.name, it.portrait)
+        }
     )
     this.navigate(ForumDetail(params))
 }
