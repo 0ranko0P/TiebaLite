@@ -537,7 +537,6 @@ private fun ForumFab(@ForumFabFunction fab: String, visible: Boolean, onClick: (
             elevation = FloatingActionButtonDefaults.elevation(
                 defaultElevation = Dp.Hairline // Buggy shadow when visibility changes
             ),
-            modifier = Modifier.navigationBarsPadding()
         ) {
             Icon(
                 imageVector = when (fab) {
