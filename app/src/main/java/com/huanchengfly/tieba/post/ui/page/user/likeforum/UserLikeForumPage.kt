@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.api.models.UserLikeForumBean
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -95,7 +96,10 @@ fun UserLikeForumPage(
         onReload = {
             viewModel.send(UserLikeForumUiIntent.Refresh(uid))
         },
-        errorScreen = { ErrorScreen(error = error.getOrNull()) },
+        errorScreen = {
+            val throwable = error.getOrNull()
+            ErrorScreen(error = throwable, showReload = throwable !is TiebaNotLoggedInException)
+        },
     ) {
         val pullRefreshState = rememberPullRefreshState(
             refreshing = isRefreshing,
