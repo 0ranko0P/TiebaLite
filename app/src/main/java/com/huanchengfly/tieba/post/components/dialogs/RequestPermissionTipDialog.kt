@@ -45,6 +45,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.enableBackgroundBlur
 import com.huanchengfly.tieba.post.theme.Grey600
 import com.huanchengfly.tieba.post.theme.Grey800
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
@@ -168,6 +169,9 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
             }
             runCatching {
                 settingsLauncher.launch(this)
+            }
+            .onFailure {
+                context?.toastShort(R.string.error_open_settings)
             }
         }
     }

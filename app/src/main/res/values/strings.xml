@@ -22,6 +22,8 @@
     <string name="title_history_delete">清空浏览记录</string>
     <string name="toast_delete_success">删除成功</string>
     <string name="title_about">关于</string>
+    <string name="title_settings_app_link">App Links</string>
+    <string name="summary_app_link">允许浏览器跳转至贴吧Lite. 要更改此选项:\n单击此处打开应用设置, 找到“默认打开”</string>
     <string name="title_settings">设置</string>
     <string name="title_settings_custom">个性化</string>
     <string name="tip_signed">已签</string>
@@ -354,6 +356,7 @@
     <string name="delete_history_failure">删除历史记录失败 %s</string>
     <string name="delete_history_success">删除历史记录成功</string>
     <string name="error_tip">出错了</string>
+    <string name="error_open_settings">无法打开应用设置, 请自行打开设置页面</string>
     <string name="insert_emotions">插入表情</string>
     <string name="send_reply">发送回复</string>
     <string name="insert_photo">插入图片</string>

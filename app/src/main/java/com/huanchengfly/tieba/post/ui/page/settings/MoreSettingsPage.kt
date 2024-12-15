@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.webkit.WebView
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.runtime.Composable
@@ -69,6 +70,24 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
                     leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
                 )
             }
+        }
+
+        prefsItem {
+            TextPref(
+                leadingIcon = Icons.AutoMirrored.Outlined.OpenInNew,
+                title = stringResource(id = R.string.title_settings_app_link),
+                summary = stringResource(id = R.string.summary_app_link),
+                onClick = {
+                    runCatching {
+                        context.startActivity(buildAppSettingsIntent(BuildConfig.APPLICATION_ID))
+                    }
+                    .onFailure {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(context.getString(R.string.error_open_settings))
+                        }
+                    }
+                }
+            )
         }
 
         prefsItem {
