@@ -69,6 +69,7 @@ import com.huanchengfly.tieba.post.ui.page.thread.PostCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
@@ -215,7 +216,11 @@ internal fun SubPostsContent(
                 }
             },
             bottomBar = {
-                if (account == null || hideReply) return@BlurScaffold
+                if (account == null || hideReply) {
+                    BlurNavigationBarPlaceHolder()
+                    return@BlurScaffold
+                }
+
                 BottomBar(
                     account = account,
                     onReply = {
