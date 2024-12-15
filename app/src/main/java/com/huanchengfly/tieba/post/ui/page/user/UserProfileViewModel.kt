@@ -26,7 +26,6 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.huanchengfly.tieba.post.utils.powerManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.catch
@@ -185,7 +184,8 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
                 fans = user.fans_num,
                 agreeNum = user.total_agree_num.getShortNumString(),
                 bazuDesc = user.bazhu_grade?.desc?.takeUnless { it.isEmpty() },
-                newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name
+                newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name,
+                isOfficial = user.is_guanfang == 1
             )
     }
 }
@@ -218,7 +218,8 @@ data class UserProfile(
     val fans: Int,
     val agreeNum: String,
     val bazuDesc: String?,
-    val newGod: String?
+    val newGod: String?,
+    val isOfficial: Boolean
 )
 
 data class UserProfileUiState(

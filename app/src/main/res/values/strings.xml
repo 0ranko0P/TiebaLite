@@ -469,6 +469,7 @@
     <string name="title_profile_forums">关注吧 %s</string>
     <string name="title_user_hide_post">该用户已隐藏动态</string>
     <string name="btn_block">屏蔽选项</string>
+    <string name="text_official_account">官方账号</string>
     <string name="text_god_verify">%s领域大神</string>
     <string name="text_login_failed">登录失败 %s</string>
     <string name="text_login_success">登录成功，即将跳转</string>

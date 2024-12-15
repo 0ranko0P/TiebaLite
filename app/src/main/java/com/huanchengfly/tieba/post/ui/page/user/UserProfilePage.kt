@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -418,6 +420,7 @@ private fun VerifiedText(modifier: Modifier = Modifier, verify: String) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfile) {
     val context = LocalContext.current
@@ -493,13 +496,20 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        Row (horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow (
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             profile.bazuDesc?.let {
                 VerifiedText(verify = it)
             }
 
             profile.newGod?.let {
                 VerifiedText(verify = stringResource(id = R.string.text_god_verify, it))
+            }
+
+            if (profile.isOfficial) {
+                VerifiedText(verify = stringResource(id = R.string.text_official_account))
             }
         }
         Row(
