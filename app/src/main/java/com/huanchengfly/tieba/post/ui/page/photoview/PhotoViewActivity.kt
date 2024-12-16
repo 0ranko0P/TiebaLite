@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.photoview
 
-import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -176,18 +175,17 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         indicator.isVisible = progress > 0
     }
 
-    @SuppressLint("DefaultLocale")
     override fun onPageSelected(position: Int, viewHolder: RecyclerView.ViewHolder) {
         currentPage = position
-        val totalAmount = viewModel.state.value.totalAmount
-        toolbar?.title = String.format("%d / %d", position + 1, totalAmount)
-        onProgress(position, getCurrentItem()!!)
+        toolbar?.let {
+            val state = viewModel.state.value
+            val currentItem = state.data[position]
+            it.title = "${currentItem.overallIndex} / ${state.totalAmount}"
+            onProgress(position, currentItem)
+        }
     }
 
-    private fun getCurrentItem(): PhotoViewItem? {
-        val items = viewModel.state.value.data
-        return if (currentPage in items.indices) items[currentPage] else null
-    }
+    private fun getCurrentItem(): PhotoViewItem? = viewModel.state.value.data.getOrNull(currentPage)
 
     companion object {
         const val EXTRA_PHOTO_VIEW_DATA = "photo_view_data"
