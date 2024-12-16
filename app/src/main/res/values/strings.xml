@@ -97,6 +97,7 @@
     <string name="title_copy_forum_name">复制吧名</string>
     <string name="title_clear_picture_cache">清除图片缓存</string>
     <string name="toast_clear_picture_cache_success">成功清除图片缓存</string>
+    <string name="tip_clearing_cache">清除缓存中</string>
     <string name="tip_cache">当前共有缓存 %1$s</string>
     <string name="tip_no_little_tail">你还没有设置小尾巴</string>
     <string name="toast_no_permission_insert_photo">未授予「存储空间」权限，无法插入图片</string>

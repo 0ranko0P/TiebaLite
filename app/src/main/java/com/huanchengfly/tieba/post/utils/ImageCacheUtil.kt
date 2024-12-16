@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
-import android.text.format.Formatter
 import androidx.annotation.WorkerThread
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.cache.DiskCache.Factory.DEFAULT_DISK_CACHE_DIR
@@ -35,17 +34,12 @@ object ImageCacheUtil {
     }
 
     /**
-     * 获取图片缓存大小, Android O 之后使用国际单位制
-     *
-     * @see Formatter.FLAG_IEC_UNITS
-     * @see Formatter.FLAG_SI_UNITS
-     *
-     * @return Formatted cacheSize
+     * 获取图片缓存大小
      */
-    suspend fun getCacheSize(context: Context): String = withContext(Dispatchers.IO) {
+    suspend fun getCacheSize(context: Context): Long = withContext(Dispatchers.IO) {
         val glideCacheSize = getFolderSize(File(context.cacheDir, DEFAULT_DISK_CACHE_DIR))
         val shareCacheSize = getFolderSize(File(context.cacheDir, FILE_PROVIDER_SHARE_DIR))
-        Formatter.formatShortFileSize(context, glideCacheSize + shareCacheSize)
+        glideCacheSize + shareCacheSize
     }
 
     /**
