@@ -150,11 +150,12 @@ fun StateScreenScope.ThreadContent(
         ) {
             item(key = "FirstPost") {
                 if (firstPost == null) return@item
+                val loggedIn = state.user != null
+
                 Column {
                     PostCard(
                         post = firstPost,
                         contentRenders = firstPost.contentRenders,
-                        canDelete = firstPost.author.id == state.user?.id,
                         immersiveMode = viewModel.isImmersiveMode,
                         isCollected = firstPost.id == viewModel.info?.collectMarkPid,
                         onUserClick = {
@@ -168,14 +169,14 @@ fun StateScreenScope.ThreadContent(
                                     threadId = viewModel.threadId,
                                 )
                             )
-                        }.takeUnless { viewModel.hideReply },
+                        }.takeIf { loggedIn && !viewModel.hideReply },
                         onMenuCopyClick = {
                             navigator.navigate(CopyText(it))
                         },
-                        onMenuFavoriteClick = {
-                            viewModel.requestAddFavorite(firstPost)
-                        },
-                        onMenuDeleteClick = viewModel::onDeleteThread
+                        onMenuFavoriteClick = { viewModel.requestAddFavorite(firstPost) }.takeIf { loggedIn },
+                        onMenuDeleteClick = viewModel::onDeleteThread.takeIf {
+                            loggedIn && firstPost.author.id == state.user.id // Check is my post
+                        }
                     )
 
                     val info = viewModel.info?.originThreadInfo
@@ -297,19 +298,26 @@ private fun LazyListScope.postTipItem(isDesc: Boolean) = this.item("LatestPostsT
 @Composable
 fun PostCardItem(viewModel: ThreadViewModel, post: PostData) {
     val navigator = LocalNavController.current
+    val currentUser = viewModel.threadUiState.user
+
+    val canDelete = post.author.id == currentUser?.id // Check is my post
+    val hideReply = currentUser == null || viewModel.hideReply
+
     PostCard(
         post = post,
         contentRenders = post.contentRenders,
         subPosts = post.subPosts,
-        canDelete = post.author.id == viewModel.threadUiState.user?.id,
         immersiveMode = viewModel.isImmersiveMode,
         isCollected = post.id == viewModel.info?.collectMarkPid,
         onUserClick = {
             navigator.navigate(UserProfile(post.author.id))
         },
         onAgree = { viewModel.onAgreePost(post) },
-        onReplyClick = viewModel::onReplyPost.takeUnless { viewModel.hideReply },
-        onSubPostReplyClick = { subPost -> viewModel.onReplySubPost(post, subPost) },
+        onReplyClick = viewModel::onReplyPost.takeUnless { hideReply },
+        onSubPostReplyClick = { it: SubPostItemData ->
+            viewModel.onReplySubPost(post, it)
+        }
+        .takeUnless { hideReply },
         onOpenSubPosts = { subPostId ->
             viewModel.onOpenSubPost(post, subPostId)
         },
@@ -323,8 +331,8 @@ fun PostCardItem(viewModel: ThreadViewModel, post: PostData) {
             } else {
                 viewModel.requestAddFavorite(post)
             }
-        },
-        onMenuDeleteClick = { viewModel.onDeletePost(post) }
+        }.takeUnless { currentUser == null },
+        onMenuDeleteClick = { viewModel.onDeletePost(post) }.takeIf { canDelete }
     )
 }
 
@@ -390,7 +398,6 @@ fun PostCard(
     post: PostData,
     contentRenders: ImmutableList<PbContentRender>,
     subPosts: ImmutableList<SubPostItemData> = persistentListOf(),
-    canDelete: Boolean,
     immersiveMode: Boolean = false,
     isCollected: Boolean,
     onUserClick: () -> Unit = {},
@@ -449,7 +456,7 @@ fun PostCard(
                         onClick = onMenuFavoriteClick
                     )
                 }
-                if (canDelete && onMenuDeleteClick != null) {
+                if (onMenuDeleteClick != null) {
                     TextMenuItem(text = R.string.title_delete, onClick = onMenuDeleteClick)
                 }
             }

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -191,6 +192,7 @@ internal fun SubPostsContent(
         isLoading = isRefreshing
     ) {
         val hideReply by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_HIDE), false)
+        val canReply by remember { derivedStateOf { !(hideReply || account == null) } }
 
         // Workaround to make StickyHeader respect content padding
         var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
@@ -265,7 +267,6 @@ internal fun SubPostsContent(
                         PostCard(
                             post = postItem,
                             contentRenders = state.postContentRenders,
-                            canDelete = postItem.author.id == account?.uid?.toLongOrNull(),
                             isCollected = false,
                             onUserClick = {
                                 navigator.navigate(UserProfile(postItem.author.id))
@@ -286,14 +287,16 @@ internal fun SubPostsContent(
                                         replyUserPortrait = it.author.portrait
                                     )
                                 )
-                            }.takeUnless { hideReply },
+                            }.takeIf { canReply },
                             onMenuCopyClick = {
                                 navigator.navigate(CopyText(it))
                             },
-                        ) {
-                            deleteSubPost = null
-                            confirmDeleteDialogState.show()
-                        }
+                            onMenuDeleteClick = {
+                                deleteSubPost = null
+                                confirmDeleteDialogState.show()
+                            }
+                            .takeIf { postItem.author.id == account?.uid?.toLongOrNull() } // Check is my Post
+                        )
                         VerticalDivider(thickness = 2.dp)
                     }
                 } // End of post card
@@ -314,14 +317,13 @@ internal fun SubPostsContent(
                 items(items = state.subPosts, key = { subPost -> subPost.id }) { item ->
                     SubPostItem(
                         item = item,
-                        canDelete = item.authorId == account?.uid?.toLongOrNull(),
                         onUserClick = {
                             navigator.navigate(UserProfile(it.id))
                         },
                         onAgree = {
                             viewModel.onAgreeSubPost(subPostId = it.id, !it.hasAgree)
                         },
-                        onReplyClick = { it: SubPostItemData ->
+                        onMenuReplyClick = { it: SubPostItemData ->
                             navigator.navigate(
                                 Reply(
                                     forumId = forumId,
@@ -334,14 +336,14 @@ internal fun SubPostsContent(
                                     replyUserPortrait = it.author.portrait,
                                 )
                             )
-                        }.takeUnless { hideReply },
+                        }.takeIf { canReply },
                         onMenuCopyClick = {
                             navigator.navigate(CopyText(it))
                         },
-                        onMenuDeleteClick = {
+                        onMenuDeleteClick = { it: SubPostItemData ->
                             deleteSubPost = it
                             confirmDeleteDialogState.show()
-                        }
+                        }.takeIf { item.authorId == account?.uid?.toLongOrNull() } // Check is my SubPost
                     )
                 }
             }
@@ -430,10 +432,9 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
 @Composable
 private fun SubPostItem(
     item: SubPostItemData,
-    canDelete: Boolean,
     onUserClick: (UserData) -> Unit = {},
     onAgree: (SubPostItemData) -> Unit = {},
-    onReplyClick: ((SubPostItemData) -> Unit)?,
+    onMenuReplyClick: ((SubPostItemData) -> Unit)?,
     onMenuCopyClick: ((String) -> Unit)? = null,
     onMenuDeleteClick: ((SubPostItemData) -> Unit)? = null,
 ) = BlockableContent(
@@ -453,9 +454,9 @@ private fun SubPostItem(
         menuState = menuState,
         indication = null,
         menuContent = {
-            if (onReplyClick != null) {
+            if (onMenuReplyClick != null) {
                 TextMenuItem(text = stringResource(id = R.string.btn_reply)) {
-                    onReplyClick(item)
+                    onMenuReplyClick(item)
                 }
             }
 
@@ -471,7 +472,7 @@ private fun SubPostItem(
                 }
             }
 
-            if (canDelete && onMenuDeleteClick != null) {
+            if (onMenuDeleteClick != null) {
                 TextMenuItem(text = stringResource(id = R.string.title_delete)) {
                     onMenuDeleteClick(item)
                 }
