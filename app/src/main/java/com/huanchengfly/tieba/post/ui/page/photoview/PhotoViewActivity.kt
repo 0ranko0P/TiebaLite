@@ -15,7 +15,6 @@ import androidx.core.app.ShareCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
@@ -199,5 +198,13 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
                 requireActivity().finish()
             }
         }
+
+        inline var View.isVisible: Boolean
+            get() = visibility == View.VISIBLE
+            set(value) {
+                if (isVisible xor value) {
+                    visibility = if (value) View.VISIBLE else View.GONE
+                }
+            }
     }
 }
