@@ -166,8 +166,8 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         }
     }
 
-    private fun onProgress(position: Int, data: PhotoViewItem) {
-        if (currentPage != position) return // Preloading item, ignore
+    private fun onProgress(data: PhotoViewItem) {
+        if (data.overallIndex != getCurrentItem()?.overallIndex) return // Preloading item, ignore
 
         // Hide when progress is 100
         val progress = if (data.progress == 100) 0 else data.progress
@@ -181,7 +181,7 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
             val state = viewModel.state.value
             val currentItem = state.data[position]
             it.title = "${currentItem.overallIndex} / ${state.totalAmount}"
-            onProgress(position, currentItem)
+            onProgress(currentItem)
         }
     }
 
