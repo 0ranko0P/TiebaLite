@@ -6,6 +6,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -30,6 +31,7 @@ object ThemeUtil {
 
     const val KEY_THEME = "theme"
     const val KEY_DARK_THEME = "dark_theme"
+    const val KEY_USE_DYNAMIC_THEME = "use_dynamic_theme"
 
     /**
      * Dark mode preferences, Default mode is [DARK_MODE_FOLLOW_SYSTEM]
@@ -71,15 +73,17 @@ object ThemeUtil {
         var darkPreferences = DARK_MODE_FOLLOW_SYSTEM
 
         INSTANCE.dataStore.edit {
-            darkPreferences = it[intPreferencesKey(KEY_DARK_THEME_MODE)] ?: darkPreferences
-
-            when {
-                newTheme == THEME_DYNAMIC -> it[stringPreferencesKey(KEY_THEME)] = newTheme
-
-                isNightTheme -> it[stringPreferencesKey(KEY_DARK_THEME)] = newTheme
-
-                else -> it[stringPreferencesKey(KEY_THEME)] = newTheme
+            if (newTheme == THEME_DYNAMIC) {
+                it[booleanPreferencesKey(KEY_USE_DYNAMIC_THEME)] = true
+            } else {
+                it.remove(booleanPreferencesKey(KEY_USE_DYNAMIC_THEME))
+                if (isNightTheme) {
+                    it[stringPreferencesKey(KEY_DARK_THEME)] = newTheme
+                } else {
+                    it[stringPreferencesKey(KEY_THEME)] = newTheme
+                }
             }
+            darkPreferences = it[intPreferencesKey(KEY_DARK_THEME_MODE)] ?: darkPreferences
         }
 
         if (newTheme != THEME_DYNAMIC) {
@@ -97,6 +101,7 @@ object ThemeUtil {
             INSTANCE.dataStore.edit {
                 it.putColor(KEY_CUSTOM_PRIMARY_COLOR, primaryColor)
                 it[stringPreferencesKey(KEY_THEME)] = THEME_CUSTOM
+                it.remove(booleanPreferencesKey(KEY_USE_DYNAMIC_THEME))
             }
             activityContext?.setNightMode(false)
         }

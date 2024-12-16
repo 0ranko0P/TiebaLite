@@ -46,6 +46,7 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_CUSTOM_PRIMARY_COLOR
 import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_DARK_THEME
 import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_THEME
 import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_TINT_TOOLBAR
+import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_USE_DYNAMIC_THEME
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -203,18 +204,19 @@ private fun savedThemeFlow(context: Context, darkMode: Boolean): Flow<ExtendedCo
         .distinctUntilChangedByKeys(
             stringPreferencesKey(KEY_THEME),
             stringPreferencesKey(KEY_DARK_THEME),
+            booleanPreferencesKey(KEY_USE_DYNAMIC_THEME),
             booleanPreferencesKey(KEY_TINT_TOOLBAR)
         )
         .map {
-            val key = if (darkMode) KEY_DARK_THEME else KEY_THEME
-            val theme: String? = it[stringPreferencesKey(key)]
             val tintToolbar = it[booleanPreferencesKey(KEY_TINT_TOOLBAR)] == true
 
             // Dynamic theme supports both light and dark mode
-            val isDynamic = it[stringPreferencesKey(KEY_THEME)] == ThemeUtil.THEME_DYNAMIC
-            if (isDynamic) {
+            if (it[booleanPreferencesKey(KEY_USE_DYNAMIC_THEME)] == true) {
                 return@map getDynamicColor(context, darkMode, tintToolbar)
             }
+
+            val key = if (darkMode) KEY_DARK_THEME else KEY_THEME
+            val theme: String? = it[stringPreferencesKey(key)]
 
             val colors = when (theme) {
                 ThemeUtil.THEME_BLACK -> BlackColors
