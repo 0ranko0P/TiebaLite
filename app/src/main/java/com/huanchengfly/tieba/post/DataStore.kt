@@ -5,13 +5,9 @@ package com.huanchengfly.tieba.post
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -29,7 +25,6 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -45,38 +40,6 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     name = DATA_STORE_NAME,
     scope = dataStoreScope
 )
-
-@Composable
-fun <T> rememberPreferenceAsMutableState(
-    key: Preferences.Key<T>,
-    defaultValue: T
-): MutableState<T> {
-    val dataStore = LocalContext.current.dataStore
-    val state = remember { mutableStateOf(defaultValue) }
-
-    LaunchedEffect(Unit) {
-        dataStore.data
-            .map { it[key] ?: defaultValue }
-            .distinctUntilChanged()
-            .collect { state.value = it }
-    }
-
-    LaunchedEffect(key1 = state.value, key2 = defaultValue) {
-        delay(200)
-        val newValue: T = state.value
-        val oldValue: T? = dataStore.data.first()[key]
-
-        when {
-            newValue == oldValue -> return@LaunchedEffect
-
-            newValue == defaultValue && oldValue == null -> return@LaunchedEffect
-
-            else -> dataStore.asyncEdit(key, newValue.takeUnless { it == defaultValue })
-        }
-    }
-
-    return state
-}
 
 @SuppressLint("ProduceStateDoesNotAssignValue")
 @Composable
@@ -140,8 +103,12 @@ fun DataStore<Preferences>.putString(key: String, value: String?) {
     asyncEdit(stringPreferencesKey(key), value)
 }
 
-fun DataStore<Preferences>.putBoolean(key: String, value: Boolean) {
+fun DataStore<Preferences>.putBoolean(key: String, value: Boolean?) {
     asyncEdit(booleanPreferencesKey(key), value)
+}
+
+fun DataStore<Preferences>.putFloat(key: String, value: Float) {
+    asyncEdit(floatPreferencesKey(key), value)
 }
 
 fun DataStore<Preferences>.putInt(key: String, value: Int) {

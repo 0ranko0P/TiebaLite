@@ -33,9 +33,11 @@ import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.floatPreferencesKey
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dpToPxFloat
+import com.huanchengfly.tieba.post.putFloat
 import com.huanchengfly.tieba.post.pxToSp
-import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
@@ -106,7 +108,8 @@ fun AppFontContentPreview() {
 
 @Composable
 fun AppFontContent(modifier: Modifier = Modifier, onCancel: () -> Unit, onSave: (Float) -> Unit) {
-    var fontScale by rememberPreferenceAsMutableState(
+    val context = LocalContext.current
+    val fontScale by rememberPreferenceAsState(
         key = floatPreferencesKey(AppPreferencesUtils.KEY_FONT_SCALE),
         defaultValue = DEFAULT_FONT_SCALE
     )
@@ -154,7 +157,7 @@ fun AppFontContent(modifier: Modifier = Modifier, onCancel: () -> Unit, onSave: 
                 text = stringResource(id = R.string.button_finish),
                 enabled = abs(fontScale - newFontScale) >= 0.01f,
                 onClick = {
-                    fontScale = newFontScale
+                    context.dataStore.putFloat(AppPreferencesUtils.KEY_FONT_SCALE, newFontScale)
                     onSave(newFontScale)
                 }
             )

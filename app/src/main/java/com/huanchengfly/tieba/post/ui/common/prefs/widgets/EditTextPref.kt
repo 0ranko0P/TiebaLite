@@ -11,9 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.toSize
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.putString
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 
@@ -43,10 +46,11 @@ fun EditTextPref(
     leadingIcon: ImageVector? = null,
     enabled: Boolean = true,
 ) {
+    val context = LocalContext.current
     val dialogState = rememberDialogState()
 
     //value should only change when save button is clicked
-    var value by rememberPreferenceAsMutableState(stringPreferencesKey(key), defaultValue)
+    val value by rememberPreferenceAsState(stringPreferencesKey(key), defaultValue)
 
     //value of the TextField which changes every time the text is modified
     var textVal by remember { mutableStateOf(value) }
@@ -71,7 +75,7 @@ fun EditTextPref(
         PromptDialog(
             onConfirm = {
                 if (it != defaultValue) {
-                    value =  it
+                    context.dataStore.putString(key, it)
                     onValueChange(it)
                 }
             },

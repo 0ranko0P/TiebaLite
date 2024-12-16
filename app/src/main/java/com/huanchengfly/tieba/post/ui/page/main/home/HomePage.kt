@@ -76,7 +76,8 @@ import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.theme.DarkAmoledColors
 import com.huanchengfly.tieba.post.theme.DefaultColors
@@ -392,7 +393,7 @@ fun HomePage(
     val isEmpty by remember { derivedStateOf { forums.isEmpty() } }
     val hasTopForum by remember { derivedStateOf { topForums.isNotEmpty() } }
 
-    var listSingle by rememberPreferenceAsMutableState(
+    val listSingle by rememberPreferenceAsState(
         key = booleanPreferencesKey(KEY_HOME_SINGLE_FORUM_LIST),
         defaultValue = false
     )
@@ -445,8 +446,9 @@ fun HomePage(
                     ActionItem(
                         icon = Icons.Outlined.ViewAgenda,
                         contentDescription = stringResource(id = R.string.title_switch_list_single),
-                        onClick = { listSingle = !listSingle }
-                    )
+                    ) {
+                        context.dataStore.putBoolean(KEY_HOME_SINGLE_FORUM_LIST, !listSingle)
+                    }
                 },
                 elevation = Dp.Hairline
             ) {

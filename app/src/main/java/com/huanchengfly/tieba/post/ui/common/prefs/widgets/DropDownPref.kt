@@ -15,10 +15,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.asyncEdit
+import com.huanchengfly.tieba.post.dataStore
 import kotlinx.collections.immutable.ImmutableMap
 
 /**
@@ -45,13 +47,9 @@ fun <T> DropDownPref(
     leadingIcon: ImageVector? = null,
     options: ImmutableMap<T, String>
 ) {
+    val context = LocalContext.current
     var expanded by rememberSaveable { mutableStateOf(false) }
-
-    var prefs: T by if (key != null) {
-        rememberPreferenceAsMutableState(key, defaultValue)
-    } else {
-        remember { mutableStateOf(defaultValue) }
-    }
+    var prefs: T by remember { mutableStateOf(defaultValue) }
 
     Column {
         TextPref(
@@ -77,6 +75,9 @@ fun <T> DropDownPref(
                             expanded = false
                             if (item.key != defaultValue) {
                                 prefs = item.key
+                                if (key != null) {
+                                    context.dataStore.asyncEdit(key, prefs.takeUnless { it == defaultValue })
+                                }
                                 onValueChange?.invoke(item.key)
                             }
                         }

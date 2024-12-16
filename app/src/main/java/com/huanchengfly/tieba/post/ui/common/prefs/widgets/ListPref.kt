@@ -5,15 +5,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.asyncEdit
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
@@ -48,8 +50,8 @@ fun <T> ListPref(
     optionsIconSupplier: ((T) -> @Composable () -> Unit)? = null
 ) {
     val dialogState = rememberDialogState()
-
-    var prefs: T by rememberPreferenceAsMutableState(key, defaultValue)
+    val context = LocalContext.current
+    val prefs: T by rememberPreferenceAsState(key, defaultValue)
     val summaryRes: Int? = if (useSelectedAsSummary) options[prefs] else summary
 
     TextPref(
@@ -73,7 +75,7 @@ fun <T> ListPref(
             selected = prefs,
             onItemSelected = { value: T, changed: Boolean ->
                 if (changed) {
-                    prefs = value
+                    context.dataStore.asyncEdit(key, value.takeUnless { it == defaultValue })
                     onValueChange?.invoke(value)
                 }
                 dismiss()

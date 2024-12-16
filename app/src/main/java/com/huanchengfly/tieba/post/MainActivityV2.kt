@@ -351,7 +351,7 @@ class MainActivityV2 : BaseComposeActivity() {
 
         @Composable
         private fun BatteryOpDialog(context: Context, prefUtil: AppPreferencesUtils) {
-            var ignoreBatteryOp by rememberPreferenceAsMutableState(
+            val ignoreBatteryOp by rememberPreferenceAsState(
                 key = booleanPreferencesKey(KEY_IGNORE_BATTERY_OPTIMIZATION),
                 defaultValue = false
             )
@@ -370,7 +370,7 @@ class MainActivityV2 : BaseComposeActivity() {
                     DialogNegativeButton(text = stringResource(id = R.string.button_cancel))
 
                     DialogNegativeButton(text = stringResource(id = R.string.button_dont_remind_again)) {
-                        ignoreBatteryOp = true
+                        context.dataStore.putBoolean(KEY_IGNORE_BATTERY_OPTIMIZATION, true)
                     }
                 }
             )

@@ -3,12 +3,14 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.putBoolean
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 
 /**
@@ -33,7 +35,8 @@ fun SwitchPref(
     enabled: Boolean = true,
     leadingIcon: ImageVector? = null
 ) {
-    var checked by rememberPreferenceAsMutableState(booleanPreferencesKey(key), defaultChecked)
+    val context = LocalContext.current
+    val checked by rememberPreferenceAsState(booleanPreferencesKey(key), defaultChecked)
 
     TextPref(
         title = stringResource(title),
@@ -42,8 +45,9 @@ fun SwitchPref(
         leadingIcon = leadingIcon,
         enabled = enabled,
         onClick = {
-            checked = !checked
-            onCheckedChange?.invoke(checked)
+            val newState = !checked
+            context.dataStore.putBoolean(key, value = newState.takeUnless { it == defaultChecked })
+            onCheckedChange?.invoke(newState)
         }
     ) {
         Switch(

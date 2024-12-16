@@ -37,7 +37,6 @@ import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,8 +58,9 @@ import com.bumptech.glide.integration.compose.placeholder
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity
+import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.goToActivity
-import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.theme.BuiltInThemes
 import com.huanchengfly.tieba.post.theme.Grey200
@@ -95,7 +95,7 @@ fun AppThemePage(navigator: NavController = LocalNavController.current) {
     )
     val customPrimaryColor = Color(customPrimaryColorInt)
 
-    var customToolbarPrimaryColor by rememberPreferenceAsMutableState(
+    val customToolbarPrimaryColor by rememberPreferenceAsState(
         key = booleanPreferencesKey(ThemeUtil.KEY_TINT_TOOLBAR),
         defaultValue = false
     )
@@ -112,7 +112,7 @@ fun AppThemePage(navigator: NavController = LocalNavController.current) {
             checked = customToolbarPrimaryColor,
             text = R.string.tip_toolbar_primary_color,
             onCheckedChange = {
-                customToolbarPrimaryColor = it
+                context.dataStore.putBoolean(ThemeUtil.KEY_TINT_TOOLBAR, it)
             }
         )
     }

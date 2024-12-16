@@ -8,8 +8,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.putString
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.widgets.compose.TimePickerDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 
@@ -39,10 +42,11 @@ fun TimePickerPerf(
     leadingIcon: ImageVector? = null,
     enabled: Boolean = true,
 ) {
+    val context = LocalContext.current
     val dialogState = rememberDialogState()
 
     // value should only change when save button is clicked
-    var value by rememberPreferenceAsMutableState(stringPreferencesKey(key), defaultValue)
+    val value by rememberPreferenceAsState(stringPreferencesKey(key), defaultValue)
     var displayValue by remember { mutableStateOf(value)}
 
     TextPref(
@@ -63,8 +67,8 @@ fun TimePickerPerf(
             },
             currentTime = value,
             onConfirm = {
-                value = it
-                displayValue = value
+                context.dataStore.putString(key, it)
+                displayValue = it
                 onValueSaved(it)
             },
             dialogState = dialogState,
