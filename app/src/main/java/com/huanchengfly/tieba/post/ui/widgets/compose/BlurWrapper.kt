@@ -33,6 +33,7 @@ import com.google.accompanist.insets.ui.Scaffold
 import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
+import com.huanchengfly.tieba.post.ui.common.theme.compose.navigationBar
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_3BUTTON
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_DEFAULT
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_NONE
@@ -80,14 +81,9 @@ val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
                     .fillMaxWidth()
                     .windowInsetsBottomHeight(insets = navBarInsets)
                     .block {
-                        val hazeState = LocalHazeState.current
-                        val colors = LocalExtendedColors.current
-                        if (hazeState != null) {
-                            hazeChild(hazeState, defaultHazeStyle).background(colors.bottomBar)
-                        } else {
-                            background(color = colors.windowBackground)
-                        }
+                        LocalHazeState.current?.let { hazeChild(it, defaultHazeStyle) }
                     }
+                    .background(LocalExtendedColors.current.navigationBar)
             )
         }
 
