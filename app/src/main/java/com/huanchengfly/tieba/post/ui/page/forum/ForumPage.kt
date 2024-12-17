@@ -20,9 +20,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
@@ -47,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -101,7 +102,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapseConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.LocalAccount
@@ -325,7 +325,10 @@ fun ForumPage(
     val loggedIn = account != null
 
     val pagerState = rememberPagerState { 2 }
-    val listStates = rememberPagerListStates(size = pagerState.pageCount)
+
+    val listStates = remember{
+        mutableStateListOf(*arrayOfNulls<LazyListState?>(pagerState.pageCount))
+    }
 
     val isGood by remember { derivedStateOf { pagerState.currentPage == TAB_FORUM_GOOD } }
     var goodClassifyTabs: ClassifyTabsContent? by remember { mutableStateOf(null) }
@@ -364,7 +367,7 @@ fun ForumPage(
         scaffoldState = scaffoldState,
         topHazeBlock = remember { {
             blurEnabled = with(pagerState) {
-                currentPageOffsetFraction != 0f || listStates[currentPage].canScrollBackward == true
+                currentPageOffsetFraction != 0f || listStates[currentPage]?.canScrollBackward == true
             }
         } },
         backgroundColor = Color.Transparent,
@@ -483,7 +486,6 @@ fun ForumPage(
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) { page ->
-            val listState = listStates[page]
 
             ProvideNavigator(navigator = navigator) {
                 if (page == TAB_FORUM_LATEST) {
@@ -492,7 +494,7 @@ fun ForumPage(
                         forumId = info.id,
                         forumName = info.name,
                         sortType = { viewModel.sortType },
-                        listState = listState,
+                        onListStateCreated = { listStates[page] = it },
                         contentPadding = contentPadding
                     )
                 } else if (page == TAB_FORUM_GOOD) {
@@ -501,7 +503,7 @@ fun ForumPage(
                         forumId = info.id,
                         forumName = info.name,
                         sortType = { viewModel.sortType },
-                        listState = listState,
+                        onListStateCreated = { listStates[page] = it },
                         contentPadding = contentPadding,
                         onComposeClassifyTab = { goodClassifyTabs = it }
                     )

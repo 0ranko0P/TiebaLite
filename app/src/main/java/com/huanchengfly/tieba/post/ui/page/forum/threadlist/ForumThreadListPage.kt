@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.util.Consumer
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
@@ -58,6 +60,10 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
 typealias ClassifyTabsContent = @Composable () -> Unit
+
+// Passing the state to ForumThreadListPage will cause it reset on the second composition.
+// This is a temporary workaround to get the LazyListState that initialized inside the ListPage.
+typealias ListStateConsumer = Consumer<LazyListState>
 
 @Composable
 private fun GoodClassifyTabs(
@@ -117,7 +123,7 @@ fun GoodThreadListPage(
     forumId: Long,
     forumName: String,
     sortType: () -> Int,
-    listState: LazyListState,
+    onListStateCreated: ListStateConsumer,
     contentPadding: PaddingValues,
     onComposeClassifyTab: (ClassifyTabsContent) -> Unit, // Workaround to compose tab inside TopBar for background blur
     viewModel: GoodThreadListViewModel = pageViewModel<GoodThreadListViewModel>()
@@ -139,6 +145,11 @@ fun GoodThreadListPage(
         prop1 = ForumThreadListUiState::goodClassifies,
         initial = persistentListOf()
     )
+
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState) {
+        onListStateCreated.accept(listState)
+    }
 
     ForumThreadListPage(modifier, forumId, true, sortType, listState, contentPadding, viewModel)
 
@@ -167,10 +178,15 @@ fun NormalThreadListPage(
     forumId: Long,
     forumName: String,
     sortType: () -> Int,
-    listState: LazyListState,
+    onListStateCreated: ListStateConsumer,
     contentPadding: PaddingValues,
     viewModel: LatestThreadListViewModel = pageViewModel<LatestThreadListViewModel>()
 ) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState) {
+        onListStateCreated.accept(listState)
+    }
+
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.onFirstLoad(forumName, forumId, sortType())
         viewModel.initialized = true
