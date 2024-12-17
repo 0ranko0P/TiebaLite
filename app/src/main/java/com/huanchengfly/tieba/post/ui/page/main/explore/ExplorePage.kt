@@ -41,6 +41,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
+import com.huanchengfly.tieba.post.ui.widgets.compose.enableBlur
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import kotlinx.collections.immutable.ImmutableList
@@ -114,11 +115,9 @@ fun ExplorePage() {
 
     BlurScaffold(
         backgroundColor = Color.Transparent,
-        topHazeBlock = remember { {
-            blurEnabled = with(pagerState) {
-                currentPageOffsetFraction != 0f || listStates.getOrNull(currentPage)?.canScrollBackward == true
-            }
-        } },
+        topHazeBlock = {
+            blurEnabled = pagerState.enableBlur(children = listStates)
+        },
         topBar = {
             Toolbar(
                 title = stringResource(id = R.string.title_explore),

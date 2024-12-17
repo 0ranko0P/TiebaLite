@@ -337,9 +337,9 @@ fun ThreadPage(
         var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
 
         BlurScaffold(
-            topHazeBlock = remember { {
+            topHazeBlock = {
                 blurEnabled = lazyListState.canScrollBackward
-            } },
+            },
             scaffoldState = scaffoldState,
             attachHazeContentState = false, // Attach manually since we're blurring the BottomSheet
             topBar = {

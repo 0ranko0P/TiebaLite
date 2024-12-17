@@ -99,6 +99,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.enableBlur
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapseConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
@@ -365,11 +366,9 @@ fun ForumPage(
 
     BlurScaffold(
         scaffoldState = scaffoldState,
-        topHazeBlock = remember { {
-            blurEnabled = with(pagerState) {
-                currentPageOffsetFraction != 0f || listStates[currentPage]?.canScrollBackward == true
-            }
-        } },
+        topHazeBlock = {
+            blurEnabled = pagerState.enableBlur(children = listStates)
+        },
         backgroundColor = Color.Transparent,
         modifier = Modifier.fillMaxSize(),
         topBar = {

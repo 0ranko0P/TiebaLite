@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.DrawerDefaults
 import androidx.compose.material.FabPosition
 import androidx.compose.material.MaterialTheme
@@ -208,5 +210,27 @@ fun BlurScaffold(
             contentColor,
             content = content
         )
+    }
+}
+
+private fun List<LazyListState?>.canScrollBackwardAt(index: Int): Boolean {
+    return getOrNull(index)?.canScrollBackward == true
+}
+
+fun PagerState.enableBlur(children: List<LazyListState?>): Boolean {
+    return when {
+        currentPageOffsetFraction == 0f -> children.canScrollBackwardAt(currentPage)
+
+        // Pager is scrolling forward, check current child and next child
+        currentPageOffsetFraction > 0f -> {
+            children.canScrollBackwardAt(currentPage) || children.canScrollBackwardAt(currentPage + 1)
+        }
+
+        // Pager is scrolling backward, check current child and previous child
+        currentPageOffsetFraction < 0f -> {
+            children.canScrollBackwardAt(currentPage) || children.canScrollBackwardAt(currentPage - 1)
+        }
+
+        else -> false
     }
 }

@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ButtonDefaults
@@ -92,6 +93,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarContainer
+import com.huanchengfly.tieba.post.ui.widgets.compose.enableBlur
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
@@ -215,11 +217,12 @@ fun SearchPage(
     val listStates = rememberPagerListStates(size = pagerState.pageCount)
 
     BlurScaffold(
-        topHazeBlock = remember { {
-            blurEnabled = !isKeywordEmpty && with(pagerState) {
-                currentPageOffsetFraction != 0f || listStates[currentPage].canScrollBackward == true
-            }
-        } },
+        topHazeBlock = {
+            blurEnabled = !isKeywordEmpty && pagerState.enableBlur(children = listStates)
+        },
+        bottomHazeBlock = {
+            blurEnabled = !isKeywordEmpty
+        },
         topBar = {
             TopAppBarContainer(
                 modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
@@ -553,7 +556,7 @@ private fun SearchTopBar(
         prependIcon = {
             Icon(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(100))
+                    .clip(CircleShape)
                     .clickable(onClick = onBack),
                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                 contentDescription = stringResource(id = R.string.button_back)

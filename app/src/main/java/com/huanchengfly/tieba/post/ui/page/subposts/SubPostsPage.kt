@@ -198,9 +198,9 @@ internal fun SubPostsContent(
         var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
 
         BlurScaffold(
-            topHazeBlock = remember { {
+            topHazeBlock = {
                 blurEnabled = lazyListState.canScrollBackward
-            } },
+            },
             topBar = {
                 TitleBar(
                     isSheet = isSheet,
