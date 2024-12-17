@@ -1,12 +1,5 @@
 # 代码混淆压缩比，在0~7之间
 -optimizationpasses 5
-# 混合时不使用大小写混合，混合后的类名为小写
--dontusemixedcaseclassnames
-# 指定不去忽略非公共库的类
--dontskipnonpubliclibraryclasses
-# 不做预校验，preverify是proguard的四个步骤之一，Android不需要preverify，去掉这一步能够加快混淆速度。
--dontpreverify
--verbose
 
 #google推荐算法
 -optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
@@ -28,7 +21,9 @@
 }
 
 # 保留R下面的资源
--keep class **.R$* {*;}
+-keepclassmembers class **.R$* {
+    public static <fields>;
+}
 # 保留四大组件，自定义的Application等这些类不被混淆
 # -keep public class * extends android.app.Fragment
 -keep public class * extends android.app.Activity
@@ -36,13 +31,13 @@
 -keep public class * extends android.app.Service
 -keep public class * extends android.content.BroadcastReceiver
 -keep public class * extends android.content.ContentProvider
--keep public class * extends android.preference.Preference
 
 # 保留在Activity中的方法参数是view的方法，
 # 这样以来我们在layout中写的onClick就不会被影响
--keepclassmembers class * extends android.app.Activity{
-    public void *(android.view.View);
-}
+# -keepclassmembers class * extends android.app.Activity{
+#     public void *(android.view.View);
+# }
+
 # 对于带有回调函数的onXXEvent、**On*Listener的，不能被混淆
 -keepclassmembers class * {
     void *(**On*Event);
@@ -53,15 +48,9 @@
     native <methods>;
 }
 
-# 保留枚举类不被混淆
--keepclassmembers enum * {
-    public static **[] values();
-    public static ** valueOf(java.lang.String);
-}
-
 # 保留Parcelable序列化类不被混淆
--keep class * implements android.os.Parcelable {
-    public static final android.os.Parcelable$Creator *;
+-keepclassmembers class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator CREATOR;
 }
 
 -keepclassmembers class * implements java.io.Serializable {
@@ -78,8 +67,8 @@
     public static *** v(...);
     public static *** d(...);
     public static *** i(...);
-    public static *** w(...);
-    public static *** e(...);
+    # public static *** w(...);
+    # public static *** e(...);
 }
 
 # WebView
@@ -103,35 +92,14 @@
 # Platform used when running on Java 8 VMs. Will not be used at runtime.
 -dontwarn retrofit2.Platform$Java8
 
-# Ignore annotation used for build tooling.
--dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
-
 # Ignore JSR 305 annotations for embedding nullability information.
 -dontwarn javax.annotation.**
 
 # JSR 305 annotations are for embedding nullability information.
 -dontwarn javax.annotation.**
 
-# A resource is loaded with a relative path so the package of this class must be preserved.
--keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
-
-# Animal Sniffer compileOnly dependency to ensure APIs are compatible with older versions of Java.
--dontwarn org.codehaus.mojo.animal_sniffer.*
-
-# OkHttp platform used only on JVM and when Conscrypt dependency is available.
--dontwarn okhttp3.internal.platform.ConscryptPlatform
-
 -keep class com.huanchengfly.tieba.post.models.** { *; }
 -keep class com.huanchengfly.tieba.post.api.models.** { *; }
-
--dontwarn com.yanzhenjie.permission.**
-
--keep public class * implements com.bumptech.glide.module.GlideModule
--keep public class * extends com.bumptech.glide.module.AppGlideModule
--keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
-  **[] $VALUES;
-  public *;
-}
 
 # LitePal相关
 -keep class org.litepal.** {
@@ -165,20 +133,9 @@
     static void checkParameterIsNotNull(java.lang.Object, java.lang.String);
 }
 
-
-# OkHttp3
--dontwarn okhttp3.logging.**
--keep class okhttp3.internal.**{*;}
--dontwarn okio.**
-
 # Retrofit
 -dontwarn retrofit2.**
 -keep class retrofit2.** { *; }
--keep class androidx.recyclerview.widget.RecyclerView$LayoutManager { *; }
--keep class androidx.recyclerview.widget.RecyclerView$LayoutParams { *; }
--keep class androidx.recyclerview.widget.RecyclerView$ViewHolder { *; }
--keep class androidx.recyclerview.widget.ChildHelper { *; }
--keep class androidx.recyclerview.widget.ChildHelper$Bucket { *; }
 
 -keep class com.huanchengfly.tieba.post.plugins.** { *; }
 
@@ -232,7 +189,7 @@
 
 -keep,allowobfuscation,allowshrinking interface retrofit2.Call
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
- -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 
 # Retain generic signatures of TypeToken and its subclasses with R8 version 3.0 and higher.
 -keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
