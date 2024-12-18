@@ -5,7 +5,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,7 +61,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
-import androidx.compose.ui.util.fastForEachIndexed
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -79,6 +77,7 @@ import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
+import com.huanchengfly.tieba.post.api.models.protos.aspectRatio
 import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
@@ -356,6 +355,8 @@ private fun MediaPlaceholder(
     }
 }
 
+private const val MAX_PHOTO_IN_ROW = 3
+
 @Composable
 private fun ThreadMedia(
     forumId: Long,
@@ -367,11 +368,9 @@ private fun ThreadMedia(
 ) {
     val context = LocalContext.current
 
-    val mediaCount = remember(medias) {
-        medias.size
-    }
-    val hasPhoto = remember(mediaCount) { mediaCount > 0 }
-    val isSinglePhoto = remember(mediaCount) { mediaCount == 1 }
+    val mediaCount = medias.size
+    val hasPhoto = mediaCount > 0
+    val isSinglePhoto = mediaCount == 1
 
     val hideMedia by context.dataStore.collectPreferenceAsState(
         key = booleanPreferencesKey(KEY_POST_HIDE_MEDIA),
@@ -385,9 +384,7 @@ private fun ThreadMedia(
         else 0.5f
     }
 
-    val hasMedia = remember(hasPhoto, videoInfo) {
-        hasPhoto || videoInfo != null
-    }
+    val hasMedia = hasPhoto || videoInfo != null
 
     if (hasMedia) {
         Box(modifier = modifier) {
@@ -406,38 +403,21 @@ private fun ThreadMedia(
                         modifier = Modifier.fillMaxWidth()
                     )
                 } else {
-                    val aspectRatio = remember(videoInfo) {
-                        max(
-                            videoInfo
-                                .get { thumbnailWidth }
-                                .toFloat() / videoInfo.get { thumbnailHeight },
-                            16f / 9
-                        )
-                    }
-                    Box(
-                        modifier = Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {}
-                        )
-                    ) {
+                    Box {
                         VideoPlayer(
                             videoUrl = videoInfo.get { videoUrl },
                             thumbnailUrl = videoInfo.get { thumbnailUrl },
                             modifier = Modifier
                                 .fillMaxWidth(singleMediaFraction)
-                                .aspectRatio(aspectRatio)
+                                .aspectRatio(ratio = max(videoInfo.item.aspectRatio(), 16f / 9))
                                 .clip(RoundedCornerShape(8.dp))
                         )
                     }
                 }
             } else if (hasPhoto) {
-                val mediaWidthFraction = remember(isSinglePhoto, singleMediaFraction) {
-                    if (isSinglePhoto) singleMediaFraction else 1f
-                }
-                val mediaAspectRatio = remember(isSinglePhoto) {
-                    if (isSinglePhoto) 2f else 3f
-                }
+                val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
+                val mediaAspectRatio = if (isSinglePhoto) 2f else 3f
+
                 if (hideMedia) {
                     MediaPlaceholder(
                         icon = {
@@ -466,9 +446,7 @@ private fun ThreadMedia(
                         }
                     )
                 } else {
-                    val showMediaCount = remember(medias) { min(medias.size, 3) }
-                    val hasMoreMedia = remember(medias) { medias.size > 3 }
-                    val showMedias = remember(medias) { medias.subList(0, showMediaCount) }
+                    val hasMoreMedia = medias.size > MAX_PHOTO_IN_ROW
                     Box {
                         Row(
                             modifier = Modifier
@@ -477,9 +455,9 @@ private fun ThreadMedia(
                                 .clip(RoundedCornerShape(8.dp)),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            showMedias.fastForEachIndexed { index, media ->
+                            for (index in 0 until min(medias.size, MAX_PHOTO_IN_ROW)) {
                                 NetworkImage(
-                                    imageUri = remember(media) { media.url },
+                                    imageUri = medias[index].url,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .fillMaxHeight()
@@ -500,7 +478,7 @@ private fun ThreadMedia(
                         if (hasMoreMedia) {
                             Badge(
                                 icon = Icons.Rounded.PhotoSizeSelectActual,
-                                text = "${medias.size}",
+                                text = medias.size.toString(),
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
                                     .padding(8.dp)

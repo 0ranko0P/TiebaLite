@@ -26,6 +26,7 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlin.math.max
 
 val List<Abstract>.abstractText: String
     get() = joinToString(separator = "") {
@@ -373,3 +374,5 @@ fun SubPostList.getContentText(threadAuthorId: Long? = null): AnnotatedString {
 
     return userNameString + contentStrings.reduce { acc, annotatedString -> acc + annotatedString }
 }
+
+fun VideoInfo.aspectRatio(): Float = thumbnailWidth.toFloat() / thumbnailHeight
