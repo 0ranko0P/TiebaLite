@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.MutatorMutex
@@ -29,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource.Companion.UserInput
@@ -46,30 +48,29 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.pow
-import kotlin.math.roundToInt
 
 /**
- * Offset the indicator of [SwipeUpLazyLoadColumn] based on given [height] and [pos]
+ * Offset the indicator of [SwipeUpLazyLoadColumn]
  *
- * @param bottomPadding bottom content padding of [SwipeUpLazyLoadColumn] in px
- * @param height indicator's height in px
- * @param pos provider of [SwipeUpRefreshScrollConnection.position]
+ * @param bottomPadding Bottom content padding of [SwipeUpLazyLoadColumn]
  * */
-private fun Modifier.indicatorOffset(bottomPadding: Int, height: Int, pos: () -> Int): Modifier {
-    return if (bottomPadding <= 0) {
-        this then Modifier.offset { IntOffset(x = 0, y = height + pos()) }
-    } else {
-        this then Modifier.offset {
-            val isVisible = pos() <= -4 // Use 4px instead of 0px for list overscroll effect
-            if (isVisible) {
-                // Visible, now append extra bottom padding
-                IntOffset(x = 0, y = height - bottomPadding + pos())
+private fun Modifier.indicatorOffset(bottomPadding: Dp, connection: SwipeUpRefreshScrollConnection): Modifier =
+    this then Modifier.graphicsLayer {
+        // Check is visible (Use 4px instead of 0px for list overscroll effect)
+        if (connection.position <= -4f) {
+            translationY = size.height - (bottomPadding.value * density) + connection.position
+            alpha = if (connection.isRefreshing) {
+                1.0f
             } else {
-                IntOffset(x = 0, y = height + pos())
+                // Set minimum visibility when animating alpha
+                FastOutLinearInEasing.transform((connection.progress + 0.2f).coerceIn(0f, 1.0f))
             }
+        } else {
+            translationY = size.height + connection.position
+            alpha = 0f
         }
     }
-}
+
 
 /**
  * LazyColumn with swipe-up-to-refresh behaviour
@@ -93,7 +94,6 @@ fun SwipeUpLazyLoadColumn(
     bottomIndicator: @Composable BoxScope.(onThreshold: Boolean) -> Unit,
     items: LazyListScope.() -> Unit
 ) {
-    val density = LocalDensity.current
     val refreshState = rememberSwipeUpRefreshConnection(isLoading, onLoad)
 
     if (onLazyLoad != null) {
@@ -125,15 +125,12 @@ fun SwipeUpLazyLoadColumn(
         OneTimeMeasurer(
             modifier = Modifier.align(Alignment.BottomCenter)
         ) { size ->
-            val bottomPadding = remember(contentPadding) {
-                with(density) { contentPadding.calculateBottomPadding().roundToPx() }
-            }
-
             Box(
                 modifier = Modifier
-                    .indicatorOffset(bottomPadding = bottomPadding, height = size?.height ?: 1000) {
-                        refreshState.position.roundToInt()
-                    },
+                    .indicatorOffset(
+                        bottomPadding = contentPadding.calculateBottomPadding(),
+                        connection = refreshState
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 val onThreshold by remember { derivedStateOf { refreshState.progress >= 1.0f } }
@@ -163,6 +160,7 @@ private class SwipeUpRefreshScrollConnection(
 
     val threshold: Float get() = _threshold
     val position: Float get() = _position
+    val isRefreshing: Boolean get() = _refreshing
 
     /**
      * A float representing how far the user has pulled as a percentage of the [threshold].
