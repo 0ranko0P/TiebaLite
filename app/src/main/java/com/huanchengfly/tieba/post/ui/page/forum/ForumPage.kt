@@ -202,8 +202,21 @@ private fun ForumHeader(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun ForumTitle(modifier: Modifier = Modifier, title: String?, avatar: String?) =
+private fun ForumTitle(
+    modifier: Modifier = Modifier,
+    title: String,
+    avatar: String?,
+    transitionEnabled: Boolean,
+    transitionKey: String?
+) {
+    val avatarModifier = if (transitionEnabled) {
+        Modifier.localSharedBounds(key = ForumAvatarSharedBoundsKey(title, transitionKey))
+    } else {
+        Modifier
+    }
+
     Row(
         modifier = modifier
             .fillMaxSize()
@@ -212,13 +225,23 @@ private fun ForumTitle(modifier: Modifier = Modifier, title: String?, avatar: St
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (avatar == null) {
-            AvatarPlaceholder(size = Sizes.Small)
+            AvatarPlaceholder(size = Sizes.Small, modifier = avatarModifier)
         } else {
-            Avatar(data = avatar, size = Sizes.Small, contentDescription = title)
+            Avatar(avatar, size = Sizes.Small, contentDescription = title, modifier = avatarModifier)
         }
 
-        Text(text = stringResource(R.string.title_forum, title ?: ""), maxLines = 1)
+        Text(
+            text = stringResource(R.string.title_forum, title),
+            modifier = if (transitionEnabled) {
+                Modifier.localSharedBounds(key = ForumTitleSharedBoundsKey(title, transitionKey))
+            } else {
+                Modifier
+            },
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
+}
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -383,8 +406,11 @@ fun ForumPage(
                             modifier = Modifier.clickableNoIndication {
                                 forumInfo?.item?.let { navigator.navigateForumDetailPage(it) }
                             },
-                            title = forumInfo?.get { name },
-                            avatar = forumInfo?.get { avatar }
+                            title = forumName,
+                            avatar = avatarUrl ?: forumInfo?.item?.avatar,
+                            // Disable when logged in, let ForumHeader() handle animation
+                            transitionEnabled = !loggedIn,
+                            transitionKey = transitionKey?.takeUnless { loggedIn }
                         )
                     }
                 },
