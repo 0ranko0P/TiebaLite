@@ -46,11 +46,10 @@ fun MediaControlGestures(
 
     val controlsEnabled by controller.collect { controlsEnabled }
     val gesturesEnabled by controller.collect { gesturesEnabled }
-    val controlsVisible by controller.collect { controlsVisible }
     val quickSeekDirection by controller.collect { quickSeekAction.direction }
     val draggingProgress by controller.collect { draggingProgress }
 
-    if (controlsEnabled && !controlsVisible && gesturesEnabled) {
+    if (controlsEnabled && gesturesEnabled) {
         Box(
             modifier = modifier
                 .draggingProgressOverlay(draggingProgress)
@@ -74,7 +73,6 @@ fun GestureBox(modifier: Modifier = Modifier) {
         .pointerInput(controller) {
             var wasPlaying = true
             var totalOffset = Offset.Zero
-            var diffTime = -1f
 
             var duration: Long = 0
             var currentPosition: Long = 0
@@ -101,7 +99,11 @@ fun GestureBox(modifier: Modifier = Modifier) {
                     }
                 },
                 onTap = {
-                    controller.showControls()
+                    if (controller.currentState { it.controlsVisible }) {
+                        controller.hideControls()
+                    } else {
+                        controller.showControls()
+                    }
                 },
                 onDragStart = { offset ->
                     wasPlaying = controller.currentState { it.isPlaying }
@@ -123,7 +125,7 @@ fun GestureBox(modifier: Modifier = Modifier) {
 
                     val diff = totalOffset.x
 
-                    diffTime = if (duration <= 60_000) {
+                    var diffTime = if (duration <= 60_000) {
                         duration.toFloat() * diff / size.width.toFloat()
                     } else {
                         60_000.toFloat() * diff / size.width.toFloat()

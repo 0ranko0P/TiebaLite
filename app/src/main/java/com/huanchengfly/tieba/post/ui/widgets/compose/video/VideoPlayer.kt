@@ -194,6 +194,8 @@ fun VideoPlayer(
 fun BoxScope.MediaController() {
     val videoPlayerController = LocalVideoPlayerController.current
 
+    MediaControlGestures(modifier = Modifier.matchParentSize())
+
     MediaControlButtons(
         modifier = Modifier.matchParentSize()
     )
@@ -237,8 +239,6 @@ fun BoxScope.MediaController() {
             )
         }
     }
-
-    MediaControlGestures(modifier = Modifier.matchParentSize())
 }
 
 @Composable

@@ -4,10 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.IconButton
 import androidx.compose.material.icons.Icons
@@ -63,33 +60,12 @@ fun MediaControlButtons(
                 .background(Color.Black.copy(alpha = appearAlpha.value * 0.6f))
                 .then(modifier)
         )
-    } else {
-        Box(modifier = modifier) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {}
-            )
-        }
     }
 }
 
 @Composable
 private fun MediaControlButtonsContent(modifier: Modifier = Modifier) {
-    val controller = LocalVideoPlayerController.current
-
     Box(modifier = modifier) {
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ) {
-                controller.hideControls()
-            }
-        )
         PlayPauseButton(modifier = Modifier.align(Alignment.Center))
     }
 }
