@@ -230,6 +230,12 @@
         </activity-alias>
 
         <activity
+            android:name=".activities.VideoViewActivity"
+            android:configChanges="uiMode|screenSize|screenLayout|orientation|navigation"
+            android:theme="@style/Theme.Transparent.PhotoView"
+            android:exported="false" />
+
+        <activity
             android:name=".activities.OKSignActivity"
             android:excludeFromRecents="true"
             android:exported="true">
