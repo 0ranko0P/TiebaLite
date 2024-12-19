@@ -16,9 +16,6 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.Anti
 import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.api.models.protos.SubPostList
-import com.huanchengfly.tieba.post.api.models.protos.contentRenders
-import com.huanchengfly.tieba.post.api.models.protos.plainText
-import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
@@ -26,10 +23,8 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
-import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.Destination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
@@ -99,8 +94,7 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
                         totalCount = page.total_count,
                         anti = anti.wrapImmutable(),
                         forum = forum.wrapImmutable(),
-                        post = PostData.from(post),
-                        postContentRenders = post.contentRenders,
+                        post = PostData.from(post = post, fromSubPost = true),
                         subPosts = subPosts,
                     )
                     sendUiEvent(SubPostsUiEvent.ScrollToSubPosts)
@@ -121,7 +115,7 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
                     val subPosts = response.data_?.subpost_list
                         .orEmpty()
                         .toItemDataList(lzId)
-                        .toImmutableList()
+
                     _state.value = _state.value.copy(
                         isLoading = false,
                         hasMore = page.current_page < page.total_page,
@@ -212,21 +206,7 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
         private const val TAG = "SubPostsViewModel"
 
         private fun List<SubPostList>.toItemDataList(lzId: Long) = map { subPost ->
-            SubPostItemData(
-                id = subPost.id,
-                author = UserData(subPost.author!!, lzId == subPost.author_id),
-                time = subPost.time.toLong(),
-                content = subPost.content
-                    .renders
-                    .map { it.toAnnotationString() }
-                    .reduce { acc, annotatedString -> acc + annotatedString },
-                plainText = subPost.content.plainText,
-                isLz = lzId == subPost.author_id,
-                authorId = subPost.author_id,
-                hasAgree = subPost.agree?.hasAgree == 1,
-                agreeNum = subPost.agree?.agreeNum ?: 0L,
-                diffAgreeNum = subPost.agree?.diffAgreeNum ?: 0L
-            )
+            SubPostItemData(subPost, lzId).buildContent(fromSubPost = true)
         }
 
         private fun List<SubPostItemData>.updateAgreeStatus(subPostId: Long, agreed: Boolean): ImmutableList<SubPostItemData> =
@@ -247,7 +227,6 @@ data class SubPostsUiState(
     val anti: ImmutableHolder<Anti>? = null,
     val forum: ImmutableHolder<SimpleForum>? = null,
     val post: PostData? = null,
-    val postContentRenders: ImmutableList<PbContentRender> = persistentListOf(),
     val subPosts: ImmutableList<SubPostItemData> = persistentListOf(),
 ) : UiState
 

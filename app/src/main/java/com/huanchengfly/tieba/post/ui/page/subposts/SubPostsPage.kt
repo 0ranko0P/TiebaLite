@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -52,7 +53,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
-import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
@@ -72,7 +72,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
@@ -266,7 +265,7 @@ internal fun SubPostsContent(
                     Column {
                         PostCard(
                             post = postItem,
-                            contentRenders = state.postContentRenders,
+                            contentRenders = postItem.contentRenders,
                             isCollected = false,
                             onUserClick = {
                                 navigator.navigate(UserProfile(postItem.author.id))
@@ -479,29 +478,30 @@ private fun SubPostItem(
             }
         }
     ) {
-        Card(
-            header = {
-                val author = item.author
-                UserDataHeader(
-                    author = author,
-                    desc = remember { getRelativeTimeString(context, item.time) },
-                    onClick = { onUserClick(author) }
-                ) {
-                    PostAgreeBtn(agreed = item.hasAgree, agreeNum = item.agreeNum) {
-                        onAgree(item)
-                    }
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            UserDataHeader(
+                author = item.author,
+                desc = remember { getRelativeTimeString(context, item.time) },
+                onClick = { onUserClick(item.author) }
+            ) {
+                PostAgreeBtn(agreed = item.hasAgree, agreeNum = item.agreeNum) {
+                    onAgree(item)
                 }
-            },
-            content = {
-                PbContentText(
-                    text = item.content,
-                    modifier = Modifier
-                        .padding(start = 44.dp)
-                        .fillMaxWidth(),
-                    style = MaterialTheme.typography.body1
-                )
             }
-        )
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 44.dp, top = 8.dp)
+            ) {
+                item.pbContent!!.fastForEach {
+                    it.Render()
+                }
+            }
+        }
     }
 }
 

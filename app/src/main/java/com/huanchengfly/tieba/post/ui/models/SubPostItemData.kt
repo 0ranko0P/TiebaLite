@@ -1,50 +1,79 @@
 package com.huanchengfly.tieba.post.ui.models
 
+import androidx.annotation.WorkerThread
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
 import com.huanchengfly.tieba.post.api.models.protos.SubPostList
 import com.huanchengfly.tieba.post.api.models.protos.getContentText
 import com.huanchengfly.tieba.post.api.models.protos.plainText
+import com.huanchengfly.tieba.post.api.models.protos.plainTexts
+import com.huanchengfly.tieba.post.api.models.protos.renders
+import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
+import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
 
 /**
  * Represents [SubPostList] in UI
  * */
 @Immutable
-data class SubPostItemData(
-    val id: Long,
+class SubPostItemData private constructor(
     val author: UserData,
-    val time: Long,
-    val content: AnnotatedString,
-    val plainText: String,
-    val blocked: Boolean = shouldBlock(author.id, plainText),
-    val isLz: Boolean,
-    val authorId: Long,
-    val hasAgree: Boolean,
-    val agreeNum: Long,
-    val diffAgreeNum: Long,
+    val subPost: SubPostList,
 ) {
+    val id: Long
+        get() = subPost.id
+
+    val authorId: Long
+        get() = author.id
+
+    val isLz: Boolean
+        get() = author.isLz
+
+    // Content for ThreadPage
+    var content: AnnotatedString? = null
+        private set
+
+    // Content for SubPostsPage
+    var pbContent: List<PbContentRender>? = null
+        private set
+
+    val blocked: Boolean = shouldBlock(authorId, *subPost.content.plainTexts.toTypedArray())
+
+    val time: Long
+        get() = subPost.time.toLong()
+
+    val plainText: String
+        get() = subPost.content.plainText
+
+    val hasAgree: Boolean
+        get() = subPost.agree?.hasAgree == 1
+
+    val agreeNum: Long
+        get() = subPost.agree?.agreeNum ?: 0
+
+    val diffAgreeNum: Long
+        get() = subPost.agree?.diffAgreeNum ?: 0
+
     constructor(subPost: SubPostList, lzId: Long): this(
-        id = subPost.id,
         author = UserData(subPost.author!!, lzId == subPost.author_id),
-        time = subPost.time.toLong(),
-        content = subPost.getContentText(lzId),
-        plainText = subPost.content.plainText,
-        isLz = lzId == subPost.author_id,
-        authorId = subPost.author_id,
-        hasAgree = subPost.agree?.hasAgree == 1,
-        agreeNum = subPost.agree?.agreeNum ?: 0L,
-        diffAgreeNum = subPost.agree?.diffAgreeNum ?: 0L
+        subPost = subPost
     )
 
+    @WorkerThread
+    fun buildContent(fromSubPost: Boolean): SubPostItemData {
+        if (fromSubPost) {
+            pbContent = subPost.content.renders
+        } else {
+            content = subPost.getContentText(isLz)
+        }
+        return this
+    }
+
     fun updateAgreeStatus(hasAgree: Boolean): SubPostItemData {
-        return if (hasAgree != this.hasAgree) {
-            if (hasAgree) {
-                copy(agreeNum = agreeNum + 1, diffAgreeNum = diffAgreeNum + 1, hasAgree = true)
-            } else {
-                copy(agreeNum = agreeNum - 1, diffAgreeNum = diffAgreeNum - 1, hasAgree = false)
-            }
-        } else this
+        return SubPostItemData(author, subPost.updateAgreeStatus(if (hasAgree) 1 else 0)).also {
+            it.content = content
+            it.pbContent = pbContent
+        }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -54,20 +83,15 @@ data class SubPostItemData(
         other as SubPostItemData
 
         if (id != other.id) return false
-        if (time != other.time) return false
         if (blocked != other.blocked) return false
-        if (isLz != other.isLz) return false
-        if (authorId != other.authorId) return false
 
         return true
     }
 
     override fun hashCode(): Int {
         var result = id.hashCode()
-        result = 31 * result + time.hashCode()
         result = 31 * result + blocked.hashCode()
         result = 31 * result + isLz.hashCode()
-        result = 31 * result + authorId.hashCode()
         return result
     }
 }

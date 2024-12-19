@@ -10,6 +10,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastMapNotNull
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
@@ -26,7 +28,6 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlin.math.max
 
 val List<Abstract>.abstractText: String
     get() = joinToString(separator = "") {
@@ -211,6 +212,9 @@ private val PbContent.picUrl: String
 val List<PbContent>.plainText: String
     get() = renders.joinToString("\n") { it.toString() }
 
+val List<PbContent>.plainTexts: List<String>
+    get() = fastMapNotNull { it.text.takeUnless { it.isEmpty() } }
+
 fun PbContent.getPicSize(): IntSize? {
     try {
         if (bsize.isEmpty()) throw IllegalArgumentException("Not a Image PbContent! type: $type")
@@ -236,7 +240,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
         val currentTheme by ThemeUtil.themeState
         val highLightStyle = SpanStyle(color = currentTheme.primary)
 
-        forEach {
+        fastForEach {
             when (it.type) {
                 0, 9, 27 -> {
                     renders.appendText(it.text)
@@ -351,7 +355,7 @@ val User.bawuType: String?
     } else null
 
 @OptIn(ExperimentalTextApi::class)
-fun SubPostList.getContentText(threadAuthorId: Long? = null): AnnotatedString {
+fun SubPostList.getContentText(isLz: Boolean): AnnotatedString {
     val context = App.INSTANCE
     val currentTheme by ThemeUtil.themeState
     val userNameStyle = SpanStyle(color = currentTheme.primary, fontWeight = FontWeight.Bold)
@@ -363,7 +367,7 @@ fun SubPostList.getContentText(threadAuthorId: Long? = null): AnnotatedString {
                     StringUtil.getUserNameString(context, author?.name ?: "", author?.nameShow)
                 )
             }
-            if (author?.id == threadAuthorId) {
+            if (isLz) {
                 appendInlineContent("Lz")
             }
             append(": ")

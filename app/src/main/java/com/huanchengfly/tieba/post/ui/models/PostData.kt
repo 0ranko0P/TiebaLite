@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.models
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.util.fastMap
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.Post
 import com.huanchengfly.tieba.post.api.models.protos.User
@@ -67,7 +68,7 @@ data class PostData(
     }
 
     companion object {
-        fun from(post: Post): PostData {
+        fun from(post: Post, fromSubPost: Boolean = false): PostData {
             val plainText = post.content.plainText
             val lzId = post.origin_thread_info?.author?.id
 
@@ -90,17 +91,19 @@ data class PostData(
                 blocked = shouldBlock(post.author_id, plainText),
                 plainText = plainText,
                 contentRenders = post.contentRenders,
-                getSubPosts(post),
-                post.sub_post_number
+                subPosts = post.getSubPosts(fromSubPost),
+                subPostNumber = post.sub_post_number
             )
         }
 
         private const val DESC_SEPARATOR = " · "
 
-        private fun getSubPosts(post: Post): ImmutableList<SubPostItemData> = post.run {
-            sub_post_list?.sub_post_list?.map {
-                SubPostItemData(subPost = it, lzId = origin_thread_info?.author?.id?: 0L)
-            }?.toImmutableList() ?: persistentListOf()
+        private fun Post.getSubPosts(fromSubPost: Boolean): ImmutableList<SubPostItemData> {
+            val lzId = origin_thread_info?.author?.id?: 0L
+            return sub_post_list?.sub_post_list
+                ?.fastMap { SubPostItemData(subPost = it, lzId = lzId).buildContent(fromSubPost) }
+                ?.toImmutableList()
+                ?: persistentListOf()
         }
     }
 }

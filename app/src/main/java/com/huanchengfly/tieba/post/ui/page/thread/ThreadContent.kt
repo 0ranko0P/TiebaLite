@@ -595,7 +595,7 @@ private fun SubPostItem(
         onClick = { onOpenSubPosts(subPost.id) }
     ) {
         PbContentText(
-            text = subPost.content,
+            text = subPost.content!!,
             modifier = modifier,
             color = ExtendedTheme.colors.text,
             fontSize = 13.sp,
