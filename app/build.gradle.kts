@@ -99,7 +99,18 @@ android {
             "**.bin"
         )
     }
+
+    dependenciesInfo {
+        // Disables dependency metadata when building APKs.
+        includeInApk = false
+    }
+
     namespace = "com.huanchengfly.tieba.post"
+}
+
+configurations.configureEach {
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk7")
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
 }
 
 composeCompiler {
