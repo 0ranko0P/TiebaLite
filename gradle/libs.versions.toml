@@ -14,7 +14,7 @@ minSdk = "24"
 
 androidx-appcompat = "1.7.0"
 androidx-activity-compose = "1.9.3"
-androidx-compose-bom = "2024.11.00"
+androidx-compose-bom = "2024.12.01"
 androidx-hilt = "1.2.0"
 androidx-lifecycle = "2.8.6"
 androidx-media3 = "1.4.1"
@@ -40,7 +40,7 @@ androidx-compose-foundation = { module = "androidx.compose.foundation:foundation
 androidx-compose-material = { module = "androidx.compose.material:material" }
 androidx-compose-material-iconsCore = { module = "androidx.compose.material:material-icons-core" }
 androidx-compose-material-iconsExtended = { module = "androidx.compose.material:material-icons-extended" }
-androidx-compose-material-navigation = { module = "androidx.compose.material:material-navigation", version = "1.7.0-beta01" }
+androidx-compose-material-navigation = { module = "androidx.compose.material:material-navigation", version = "1.7.6" }
 androidx-compose-ui-test = { module = "androidx.compose.ui:ui-test" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
@@ -59,7 +59,7 @@ hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hil
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewModel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewmodel-savedstate = { module = "androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "androidx-lifecycle" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version = "2.8.4" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version = "2.8.5" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "androidx-media3" }
 androidx-palette = { module = "androidx.palette:palette-ktx", version = "1.0.0" }
