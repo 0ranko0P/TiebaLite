@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -206,14 +205,11 @@ fun BoxScope.MediaController() {
     if (controlsVisible) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
                 .padding(vertical = 8.dp)
                 .align(Alignment.BottomCenter),
         ) {
             if (isFullScreen) {
-                ProgressIndicator(
-                    modifier = Modifier.fillMaxWidth()
-                )
+                ProgressIndicator()
             }
 
             Row(
@@ -227,16 +223,15 @@ fun BoxScope.MediaController() {
                 }
             }
         }
-    }
-    if (!isFullScreen || !controlsVisible) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = 12.dp)
-        ) {
-            ProgressIndicator(
-                modifier = Modifier.fillMaxWidth()
-            )
+
+        if (!isFullScreen) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = 12.dp)
+            ) {
+                ProgressIndicator()
+            }
         }
     }
 }
