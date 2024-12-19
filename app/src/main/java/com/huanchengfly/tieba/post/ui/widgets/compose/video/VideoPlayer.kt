@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.Player
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
@@ -128,7 +129,10 @@ fun VideoPlayer(
         LocalContentColor provides Color.White,
         LocalVideoPlayerController provides videoPlayerController
     ) {
-        val startedPlay by videoPlayerController.collect { startedPlay || playbackState != PlaybackState.IDLE }
+        val startedPlay by videoPlayerController.collect {
+            startedPlay || playbackState != Player.STATE_IDLE
+        }
+
         val aspectRatio by videoPlayerController.collect {
             (videoSize.first / videoSize.second).takeUnless { it.isNaN() || it == 0f } ?: 2f
         }

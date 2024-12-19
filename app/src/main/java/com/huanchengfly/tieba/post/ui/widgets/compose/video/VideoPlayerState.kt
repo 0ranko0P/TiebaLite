@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose.video
 
 import android.os.Parcelable
+import androidx.media3.common.Player
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -16,7 +17,8 @@ data class VideoPlayerState(
     val secondaryProgress: Long = 1L,
     val videoSize: Pair<Float, Float> = 1920f to 1080f,
     val draggingProgress: DraggingProgress? = null,
-    val playbackState: PlaybackState = PlaybackState.IDLE,
+    @Player.State
+    val playbackState: Int = Player.STATE_IDLE,
     val quickSeekAction: QuickSeekAction = QuickSeekAction.none(),
     val isFullScreen: Boolean = false
 ) : Parcelable

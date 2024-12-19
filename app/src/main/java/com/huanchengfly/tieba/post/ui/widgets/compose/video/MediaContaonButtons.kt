@@ -18,6 +18,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.media3.common.Player
 
 @Composable
 fun MediaControlButtons(
@@ -51,11 +52,11 @@ fun PlayPauseButton(modifier: Modifier = Modifier) {
             ShadowedIcon(icon = Icons.Filled.Pause)
         } else {
             when (playbackState) {
-                PlaybackState.ENDED -> {
+                Player.STATE_ENDED -> {
                     ShadowedIcon(icon = Icons.Filled.Restore)
                 }
 
-                PlaybackState.BUFFERING -> {
+                Player.STATE_BUFFERING -> {
                     CircularProgressIndicator()
                 }
 

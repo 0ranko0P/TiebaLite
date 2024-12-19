@@ -94,7 +94,7 @@ internal class DefaultVideoPlayerController(
     private val playerListener = object : Player.Listener {
         @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
         override fun onPlaybackStateChanged(playbackState: Int) {
-            if (PlaybackState.of(playbackState) == PlaybackState.READY) {
+            if (playbackState == STATE_READY) {
                 initialStateRunner?.let {
                     it.invoke()
                     initialStateRunner = null
@@ -111,7 +111,7 @@ internal class DefaultVideoPlayerController(
 
             _state.set {
                 copy(
-                    playbackState = PlaybackState.of(playbackState),
+                    playbackState = playbackState,
                     startedPlay = playbackState != STATE_IDLE
                 )
             }
