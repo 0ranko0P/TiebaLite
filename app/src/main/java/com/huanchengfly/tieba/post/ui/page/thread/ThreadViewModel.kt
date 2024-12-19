@@ -569,10 +569,7 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
         }
     }
 
-    fun onShareThread() {
-        val title = info?.title?: ""
-        TiebaUtil.shareText(App.INSTANCE, "https://tieba.baidu.com/p/$threadId", title)
-    }
+    fun onShareThread() = TiebaUtil.shareThread(App.INSTANCE, info?.title?: "", threadId)
 
     fun onCopyThreadLink() {
         val link = "https://tieba.baidu.com/p/$threadId?see_lz=${seeLz.booleanToString()}"

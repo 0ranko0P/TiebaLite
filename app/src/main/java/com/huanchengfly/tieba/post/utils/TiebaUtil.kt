@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.PersistableBundle
+import androidx.core.app.ShareCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
@@ -108,6 +109,16 @@ object TiebaUtil {
                 "${if (title != null) "「$title」\n" else ""}$text\n（分享自贴吧 Lite）"
             )
         })
+    }
+
+    fun shareThread(context: Context, title: String, threadId: Long) {
+        ShareCompat.IntentBuilder(context)
+            .setType("text/plain")
+            .setChooserTitle(title)
+            .setText("https://tieba.baidu.com/p/$threadId")
+            .let {
+                runCatching { it.startChooser() }
+            }
     }
 
     suspend fun reportPost(

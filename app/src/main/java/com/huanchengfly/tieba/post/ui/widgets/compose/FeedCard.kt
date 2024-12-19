@@ -104,6 +104,7 @@ import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlin.math.max
@@ -652,6 +653,7 @@ fun FeedCard(
     onClickOriginThread: (OriginThreadInfo) -> Unit = {},
     dislikeAction: (@Composable RowScope.() -> Unit)? = null,
 ) {
+    val context = LocalContext.current
     Card(
         header = {
             val author = item.item.author?: return@Card
@@ -699,7 +701,9 @@ fun FeedCard(
             Row(modifier = Modifier.fillMaxWidth()) {
                 ThreadShareBtn(
                     shareNum = item.get { shareNum },
-                    onClick = {},
+                    onClick = {
+                        item.get().also { TiebaUtil.shareThread(context, it.title, it.threadId) }
+                    },
                     modifier = Modifier.weight(1f)
                 )
 
