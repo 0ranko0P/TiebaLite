@@ -2,9 +2,9 @@
 accompanist = "0.36.0"
 agp = "8.7.3"
 hilt = "2.52"
-kotlin = "2.0.21"
+kotlin = "2.1.0"
 coroutines = "1.9.0"
-ksp = "2.0.21-1.0.25"
+ksp = "2.1.0-1.0.29"
 wire = "4.9.9"
 
 buildToolsVersion = "35.0.0"
