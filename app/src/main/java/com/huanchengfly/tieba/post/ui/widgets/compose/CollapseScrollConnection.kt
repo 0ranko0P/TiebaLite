@@ -20,6 +20,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.packInts
 import androidx.compose.ui.util.unpackInt1
@@ -41,11 +42,12 @@ open class CollapseScrollConnection(
     density: Density,
     private val scope: CoroutineScope,
     private val orientation: Orientation,
-    private val spec: AnimationSpec<Float> = TweenSpec()
+    private val spec: AnimationSpec<Float> = TweenSpec(),
+    val collapseThreshold: Dp = DEFAULT_COLLAPSE_THRESHOLD,
 ) : NestedScrollConnection {
 
     companion object {
-        private val COLLAPSE_THRESHOLD = 12.dp
+        val DEFAULT_COLLAPSE_THRESHOLD = 18.dp
 
         fun saver(
             density: Density,
@@ -67,7 +69,7 @@ open class CollapseScrollConnection(
         )
     }
 
-    private val threshold = with(density) { COLLAPSE_THRESHOLD.toPx() }
+    private val threshold = with(density) { collapseThreshold.toPx() }
 
     private enum class CollapseState {
         Expanded, Expanding, Collapsing, Collapsed
