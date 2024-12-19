@@ -100,6 +100,10 @@ android {
         )
     }
 
+    lint {
+        checkReleaseBuilds = false
+    }
+
     dependenciesInfo {
         // Disables dependency metadata when building APKs.
         includeInApk = false
