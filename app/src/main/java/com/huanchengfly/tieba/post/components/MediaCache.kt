@@ -19,12 +19,12 @@ import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import java.io.File
 
+const val BD_VIDEO_HOST = "tb-video.bdstatic.com"
+
 @UnstableApi
 object MediaCache {
 
     private const val LOCAL_CACHE_DIRECTORY = "media"
-
-    private const val BD_VIDEO_HOST = "tb-video.bdstatic.com"
 
     private val Context.mediaCacheDir: File
         get() = if (!Environment.isExternalStorageRemovable()) {

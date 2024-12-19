@@ -14,8 +14,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.bumptech.glide.Glide
+import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
+import com.huanchengfly.tieba.post.components.BD_VIDEO_HOST
 import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.OnFullScreenModeChangedListener
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerController
@@ -67,11 +70,19 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
         const val EXTRA_THUMBNAIL = "video_thumbnail"
 
         fun launch(context: Context, videoUrl: String, thumbnailUrl: String?) {
+            val data = Uri.parse(videoUrl)
+
+            // Check tb-video is unauthorized
+            if (data.host == BD_VIDEO_HOST && videoUrl.endsWith(".mp4")) {
+                context.toastShort(R.string.title_not_logged_in)
+                return
+            }
+
             // Free more memory now
             Glide.get(context).clearMemory()
 
             context.goToActivity<VideoViewActivity> {
-                data = Uri.parse(videoUrl)
+                this.data = data
                 thumbnailUrl?.let { putExtra(EXTRA_THUMBNAIL, it) }
             }
         }
