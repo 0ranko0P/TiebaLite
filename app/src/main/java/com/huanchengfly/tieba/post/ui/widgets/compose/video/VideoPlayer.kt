@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -98,7 +99,6 @@ fun rememberVideoPlayerController(
     )
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun VideoPlayer(
     videoPlayerController: VideoPlayerController,
@@ -129,11 +129,11 @@ fun VideoPlayer(
         LocalVideoPlayerController provides videoPlayerController
     ) {
         val startedPlay by videoPlayerController.collect { startedPlay || playbackState != PlaybackState.IDLE }
-        val aspectRatio by videoPlayerController.collect { videoSize.first / videoSize.second }
-        val supportFullScreen =
-            remember(videoPlayerController) { videoPlayerController.supportFullScreen() }
+        val aspectRatio by videoPlayerController.collect {
+            (videoSize.first / videoSize.second).takeUnless { it.isNaN() || it == 0f } ?: 2f
+        }
 
-        if (supportFullScreen) {
+        if (videoPlayerController.supportFullScreen()) {
             val isFullScreen by videoPlayerController.collect { isFullScreen }
 
             BackHandler(enabled = isFullScreen) {
@@ -146,13 +146,13 @@ fun VideoPlayer(
             modifier = Modifier
                 .background(color = backgroundColor)
                 .fillMaxSize()
-                .then(modifier)
+                .then(modifier),
+            contentAlignment = Alignment.Center
         ) {
             if (startedPlay) {
                 PlayerSurface(
                     modifier = Modifier
-                        .aspectRatio(aspectRatio.takeUnless { it.isNaN() || it == 0f } ?: 2f)
-                        .align(Alignment.Center)
+                        .aspectRatio(aspectRatio)
                 ) {
                     videoPlayerController.playerViewAvailable(it)
                 }
@@ -161,29 +161,13 @@ fun VideoPlayer(
             } else {
                 val thumbnailUrl by videoPlayerController.collect { thumbnailUrl }
 
-                Box(
+                VideoThumbnail(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .align(Alignment.Center),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (thumbnailUrl != null) {
-                        GlideImage(
-                            model = thumbnailUrl,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-
-                    IconButton(onClick = { videoPlayerController.play() }) {
-                        Icon(
-                            imageVector = Icons.Rounded.PlayArrow,
-                            contentDescription = stringResource(id = R.string.btn_play),
-                            modifier = Modifier.size(48.dp)
-                        )
-                    }
-                }
+                        .fillMaxWidth()
+                        .aspectRatio(aspectRatio),
+                    thumbnailUrl = thumbnailUrl,
+                    onClick = { videoPlayerController.play() }
+                )
             }
         }
     }
@@ -284,5 +268,31 @@ private fun FullScreenButton() {
             imageVector = icon,
             contentDescription = stringResource(id = R.string.btn_full_screen)
         )
+    }
+}
+
+@OptIn(ExperimentalGlideComposeApi::class)
+@Composable
+fun VideoThumbnail(modifier: Modifier = Modifier, thumbnailUrl: String?, onClick: () -> Unit) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        if (thumbnailUrl != null) {
+            GlideImage(
+                model = thumbnailUrl,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillWidth
+            )
+        }
+
+        IconButton(onClick = onClick) {
+            Icon(
+                imageVector = Icons.Rounded.PlayArrow,
+                contentDescription = stringResource(id = R.string.btn_play),
+                modifier = Modifier.size(48.dp)
+            )
+        }
     }
 }

@@ -64,11 +64,13 @@ import androidx.compose.ui.util.fastForEach
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
@@ -94,6 +96,7 @@ import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.DefaultVideoPlayerController
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.OnFullScreenModeChangedListener
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerSource
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberVideoPlayerController
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
@@ -357,6 +360,7 @@ private fun MediaPlaceholder(
 
 private const val MAX_PHOTO_IN_ROW = 3
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun ThreadMedia(
     forumId: Long,
@@ -403,18 +407,18 @@ private fun ThreadMedia(
                         modifier = Modifier.fillMaxWidth()
                     )
                 } else {
-                    Box {
-                        VideoPlayer(
-                            videoUrl = videoInfo.get { videoUrl },
-                            thumbnailUrl = videoInfo.get { thumbnailUrl },
-                            modifier = Modifier
-                                .fillMaxWidth(singleMediaFraction)
-                                .aspectRatio(ratio = max(videoInfo.item.aspectRatio(), 16f / 9))
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-                    }
+                    VideoThumbnail(
+                        modifier = Modifier
+                            .fillMaxWidth(singleMediaFraction)
+                            .aspectRatio(ratio = max(videoInfo.item.aspectRatio(), 16f / 9))
+                            .clip(RoundedCornerShape(8.dp)),
+                        thumbnailUrl = videoInfo.item.thumbnailUrl,
+                        onClick = {
+                            VideoViewActivity.launch(context, videoInfo.item)
+                        }
+                    )
                 }
-            } else if (hasPhoto) {
+            } else {
                 val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
                 val mediaAspectRatio = if (isSinglePhoto) 2f else 3f
 

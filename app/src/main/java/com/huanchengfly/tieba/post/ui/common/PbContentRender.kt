@@ -4,8 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -49,6 +48,7 @@ import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayer
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.launchUrl
 
@@ -178,7 +178,7 @@ data class VoiceContentRender(
     }
 
     override fun toString(): String {
-        return "[视频]"
+        return "[语音]"
     }
 }
 
@@ -197,6 +197,7 @@ data class VideoContentRender(
         val widthFraction =
             if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.5f
         val navigator = LocalNavController.current
+        val context = LocalContext.current
 
         if (picUrl.isNotBlank()) {
             val picModifier = Modifier
@@ -205,19 +206,11 @@ data class VideoContentRender(
                 .aspectRatio(width * 1f / height)
 
             if (videoUrl.isNotBlank()) {
-                Box(
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {}
-                    )
-                ) {
-                    com.huanchengfly.tieba.post.ui.widgets.compose.VideoPlayer(
-                        videoUrl = videoUrl,
-                        thumbnailUrl = picUrl,
-                        modifier = picModifier
-                    )
-                }
+                VideoThumbnail(
+                    modifier = picModifier,
+                    thumbnailUrl = picUrl,
+                    onClick = { VideoViewActivity.launch(context, videoUrl, picUrl) }
+                )
             } else {
                 GlideImage(
                     model  = picUrl,
@@ -232,7 +225,7 @@ data class VideoContentRender(
     }
 
     override fun toString(): String {
-        return "[语音]"
+        return "[视频]"
     }
 }
 
