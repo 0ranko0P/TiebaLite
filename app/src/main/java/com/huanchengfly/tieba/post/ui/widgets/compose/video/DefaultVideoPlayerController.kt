@@ -21,6 +21,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
+import com.huanchengfly.tieba.post.components.MediaCache
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.FlowDebouncer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import kotlinx.coroutines.CoroutineScope
@@ -59,7 +60,7 @@ internal class DefaultVideoPlayerController(
         exoPlayer.seekTo(initialState.currentPosition)
     }
 
-    fun <T> currentState(filter: (VideoPlayerState) -> T): T {
+    inline fun <T> currentState(filter: (VideoPlayerState) -> T): T {
         return filter(_state.value)
     }
 
@@ -94,9 +95,9 @@ internal class DefaultVideoPlayerController(
         @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
         override fun onPlaybackStateChanged(playbackState: Int) {
             if (PlaybackState.of(playbackState) == PlaybackState.READY) {
-                initialStateRunner = initialStateRunner?.let {
+                initialStateRunner?.let {
                     it.invoke()
-                    null
+                    initialStateRunner = null
                 }
 
                 updateDurationAndPositionJob?.cancel()
@@ -327,7 +328,7 @@ internal class DefaultVideoPlayerController(
                 }
 
                 is VideoPlayerSource.Network -> {
-                    ProgressiveMediaSource.Factory(dataSourceFactory)
+                    ProgressiveMediaSource.Factory(MediaCache.Factory(context))
                         .createMediaSource(MediaItem.fromUri(source.url))
                 }
             }
