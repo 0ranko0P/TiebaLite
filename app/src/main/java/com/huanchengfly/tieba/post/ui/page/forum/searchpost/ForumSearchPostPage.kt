@@ -525,7 +525,7 @@ private fun SortToolBar(
         }
         Spacer(modifier = Modifier.weight(1f))
 
-        var selected = false
+        var selected: Boolean
         filterTypes.fastForEachIndexed { index, type ->
             selected = type == filterType()
 

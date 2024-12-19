@@ -203,7 +203,7 @@ private fun BlockItem(
         ) {
             if (item.type == Block.TYPE_USER) {
                 Text(
-                    text = "${item.username}",
+                    text = item.username.orEmpty(),
                     style = MaterialTheme.typography.subtitle1
                 )
                 Text(

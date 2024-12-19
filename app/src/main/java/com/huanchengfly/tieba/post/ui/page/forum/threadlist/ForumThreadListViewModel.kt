@@ -372,7 +372,7 @@ sealed interface ForumThreadListPartialChange : PartialChange<ForumThreadListUiS
         ) : LoadMore()
     }
 
-    sealed class Agree private constructor() : ForumThreadListPartialChange {
+    sealed class Agree() : ForumThreadListPartialChange {
         private fun List<ThreadItemData>.updateAgreeStatus(
             threadId: Long,
             hasAgree: Int,

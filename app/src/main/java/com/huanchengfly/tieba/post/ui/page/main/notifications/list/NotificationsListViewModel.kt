@@ -116,7 +116,7 @@ sealed interface NotificationsListUiIntent : UiIntent {
 }
 
 sealed interface NotificationsListPartialChange : PartialChange<NotificationsListUiState> {
-    sealed class Refresh private constructor(): NotificationsListPartialChange {
+    sealed class Refresh() : NotificationsListPartialChange {
         override fun reduce(oldState: NotificationsListUiState): NotificationsListUiState =
             when (this) {
                 Start -> oldState.copy(isRefreshing = true)
@@ -142,7 +142,7 @@ sealed interface NotificationsListPartialChange : PartialChange<NotificationsLis
         ) : Refresh()
     }
 
-    sealed class LoadMore private constructor(): NotificationsListPartialChange {
+    sealed class LoadMore() : NotificationsListPartialChange {
         override fun reduce(oldState: NotificationsListUiState): NotificationsListUiState =
             when (this) {
                 Start -> oldState.copy(isLoadingMore = true)

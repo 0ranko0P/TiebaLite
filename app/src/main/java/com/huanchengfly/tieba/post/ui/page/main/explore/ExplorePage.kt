@@ -72,7 +72,7 @@ private fun ColumnScope.ExplorePageTab(
             .align(Alignment.CenterHorizontally)
             .width(76.dp * pages.size),
     ) {
-        var selected = false
+        var selected: Boolean
         pages.fastForEachIndexed { index, item ->
             selected = pagerState.currentPage == index
 

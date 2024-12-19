@@ -8,11 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.toSize
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.putString
@@ -55,8 +52,6 @@ fun EditTextPref(
     //value of the TextField which changes every time the text is modified
     var textVal by remember { mutableStateOf(value) }
 
-    var dialogSize by remember { mutableStateOf(Size.Zero) }
-
     TextPref(
         modifier = modifier,
         title = title,
@@ -78,9 +73,6 @@ fun EditTextPref(
                     context.dataStore.putString(key, it)
                     onValueChange(it)
                 }
-            },
-            modifier = Modifier.onGloballyPositioned {
-                dialogSize = it.size.toSize()
             },
             dialogState = dialogState,
             initialValue = textVal,

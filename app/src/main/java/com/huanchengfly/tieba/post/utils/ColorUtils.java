@@ -60,4 +60,38 @@ public final class ColorUtils {
     public static boolean isColorLight(@ColorInt int color) {
         return color != TRANSPARENT && calculateLuminance(color) > 0.5;
     }
+
+    @ColorInt
+    public static int getIconColorByLevel(int level) {
+        @ColorInt int color = 0xFFB7BCB6;
+        switch (level) {
+            case 1:
+            case 2:
+            case 3:
+                color = 0xFF2FBEAB;
+                break;
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+            case 9:
+                color = 0xFF3AA7E9;
+                break;
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+                color = 0xFFFFA126;
+                break;
+            case 16:
+            case 17:
+            case 18:
+                color = 0xFFFF9C19;
+                break;
+        }
+        return greifyColor(color, 0.2f);
+    }
 }

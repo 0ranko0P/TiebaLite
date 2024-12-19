@@ -78,11 +78,11 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
             TiebaApi.getInstance().pbFloorFlow(threadId, postId, forumId, pageNum, 0L)
                 .collect { response ->
                     val post = checkNotNull(response.data_?.post)
-                    val page = checkNotNull(response.data_?.page)
-                    val forum = checkNotNull(response.data_?.forum)
-                    val lzId = response.data_?.thread?.origin_thread_info?.author?.id ?: -1L
-                    val anti = checkNotNull(response.data_?.anti)
-                    val subPosts = response.data_?.subpost_list.orEmpty()
+                    val page = checkNotNull(response.data_.page)
+                    val forum = checkNotNull(response.data_.forum)
+                    val lzId = response.data_.thread?.origin_thread_info?.author?.id ?: -1L
+                    val anti = checkNotNull(response.data_.anti)
+                    val subPosts = response.data_.subpost_list
                         .toItemDataList(lzId)
                         .toImmutableList()
 
@@ -111,10 +111,8 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
                 .pbFloorFlow(threadId, postId, forumId, loadPage, subPostId)
                 .collect { response ->
                     val page = checkNotNull(response.data_?.page)
-                    val lzId = response.data_?.thread?.origin_thread_info?.author?.id ?: -1L
-                    val subPosts = response.data_?.subpost_list
-                        .orEmpty()
-                        .toItemDataList(lzId)
+                    val lzId = response.data_.thread?.origin_thread_info?.author?.id ?: -1L
+                    val subPosts = response.data_.subpost_list.toItemDataList(lzId)
 
                     _state.value = _state.value.copy(
                         isLoading = false,

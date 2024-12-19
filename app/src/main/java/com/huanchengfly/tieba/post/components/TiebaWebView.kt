@@ -67,9 +67,8 @@ class TiebaWebView(context: Context): WebView(context) {
             return getCurrentWebViewPackage()?.let {
                 val name = context.packageManager.getApplicationLabel(it.applicationInfo)
                 val version = "${it.versionName} (${it.versionCode})"
-                return "$name\n$version"
+                "$name\n$version"
             }
-            return null
         }
 
         fun launchCustomTab(context: Context, url: Uri): Result<Unit> = runCatching {

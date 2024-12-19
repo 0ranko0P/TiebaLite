@@ -156,7 +156,7 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
         ) : RefreshThreadList()
     }
 
-    sealed class Agree private constructor() : HotPartialChange {
+    sealed class Agree() : HotPartialChange {
         private fun List<ImmutableHolder<ThreadInfo>>.updateAgreeStatus(
             threadId: Long,
             hasAgree: Int

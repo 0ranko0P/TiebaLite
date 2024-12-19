@@ -112,7 +112,7 @@ internal fun List<ConcernData>.distinctById(): ImmutableList<ConcernData> {
 }
 
 sealed interface ConcernPartialChange : PartialChange<ConcernUiState> {
-    sealed class Agree private constructor() : ConcernPartialChange {
+    sealed class Agree() : ConcernPartialChange {
         private fun List<ConcernData>.updateAgreeStatus(
             threadId: Long,
             hasAgree: Int,
@@ -160,7 +160,7 @@ sealed interface ConcernPartialChange : PartialChange<ConcernUiState> {
         ) : Agree()
     }
 
-    sealed class Refresh private constructor() : ConcernPartialChange {
+    sealed class Refresh() : ConcernPartialChange {
         override fun reduce(oldState: ConcernUiState): ConcernUiState =
             when (this) {
                 Start -> oldState.copy(isRefreshing = true)
@@ -186,7 +186,7 @@ sealed interface ConcernPartialChange : PartialChange<ConcernUiState> {
         ) : Refresh()
     }
 
-    sealed class LoadMore private constructor() : ConcernPartialChange {
+    sealed class LoadMore() : ConcernPartialChange {
         override fun reduce(oldState: ConcernUiState): ConcernUiState =
             when (this) {
                 Start -> oldState.copy(isLoadingMore = true)

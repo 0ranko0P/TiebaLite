@@ -26,7 +26,7 @@ object PermissionUtils {
             throw IllegalArgumentException("Empty permission list")
         }
 
-        @StringRes var hint: Int? = null
+        @StringRes var hint: Int?
         for (permission in permissions) {
             hint = when (permission) {
                 Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE -> {

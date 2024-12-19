@@ -374,7 +374,7 @@ private fun ColumnScope.SearchTabRow(
         contentColor = ExtendedTheme.colors.onTopBar,
         modifier = Modifier.width(76.dp * pages.size),
     ) {
-        var selected = false
+        var selected: Boolean
         pages.fastForEachIndexed { index, item ->
             selected = pagerState.currentPage == index
 

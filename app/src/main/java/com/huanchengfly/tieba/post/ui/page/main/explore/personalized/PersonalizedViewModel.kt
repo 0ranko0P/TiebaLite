@@ -156,7 +156,7 @@ sealed interface PersonalizedUiIntent : UiIntent {
 }
 
 sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> {
-    sealed class Agree private constructor() : PersonalizedPartialChange {
+    sealed class Agree() : PersonalizedPartialChange {
         private fun List<ThreadItemData>.updateAgreeStatus(
             threadId: Long,
             hasAgree: Int,
@@ -202,7 +202,7 @@ sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> 
         ) : Agree()
     }
 
-    sealed class Dislike private constructor() : PersonalizedPartialChange {
+    sealed class Dislike() : PersonalizedPartialChange {
         override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
             when (this) {
                 is Start -> {
@@ -236,7 +236,7 @@ sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> 
         ) : Dislike()
     }
 
-    sealed class Refresh private constructor() : PersonalizedPartialChange {
+    sealed class Refresh() : PersonalizedPartialChange {
         override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
             when (this) {
                 Start -> oldState.copy(isRefreshing = true, error = null)

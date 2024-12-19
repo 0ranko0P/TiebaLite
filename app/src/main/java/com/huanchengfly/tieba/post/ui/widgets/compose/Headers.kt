@@ -45,7 +45,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.Util.getIconColorByLevel
+import com.huanchengfly.tieba.post.utils.ColorUtils.getIconColorByLevel
 
 @Composable
 fun UserHeaderPlaceholder(
@@ -197,7 +197,7 @@ fun UserNameText(
     ) {
         Text(text = userName, color = LocalContentColor.current)
 
-        val levelColor = Color(getIconColorByLevel("$userLevel"))
+        val levelColor = Color(getIconColorByLevel(userLevel))
 
         TextChip(
             text = userLevel.toString(),

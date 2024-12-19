@@ -54,9 +54,9 @@ class UCropActivity: com.yalantis.ucrop.UCropActivity(), OnApplyWindowInsetsList
 
             override fun parseResult(resultCode: Int, intent: Intent?): Result<Uri>? {
                 return when (resultCode) {
-                    Activity.RESULT_OK -> Result.success(UCrop.getOutput(intent!!)!!)
+                    RESULT_OK -> Result.success(UCrop.getOutput(intent!!)!!)
 
-                    Activity.RESULT_CANCELED -> null
+                    RESULT_CANCELED -> null
 
                     else -> {
                         val e = intent?.let { UCrop.getError(it) } ?: TiebaUnknownException

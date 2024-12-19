@@ -3,9 +3,6 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -47,7 +44,6 @@ fun TimePickerPerf(
 
     // value should only change when save button is clicked
     val value by rememberPreferenceAsState(stringPreferencesKey(key), defaultValue)
-    var displayValue by remember { mutableStateOf(value)}
 
     TextPref(
         title = title,
@@ -68,14 +64,9 @@ fun TimePickerPerf(
             currentTime = value,
             onConfirm = {
                 context.dataStore.putString(key, it)
-                displayValue = it
                 onValueSaved(it)
             },
             dialogState = dialogState,
-            onValueChange = { displayValue = it },
-            onCancel = {
-                displayValue = value // reset
-            }
         ) {
             if (dialogMessage != null) {
                 Text(text = dialogMessage)

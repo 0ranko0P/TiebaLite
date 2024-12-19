@@ -65,10 +65,6 @@ abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
         INSTANCE.removeActivity(this)
     }
 
-    fun exitApplication() {
-        INSTANCE.removeAllActivity()
-    }
-
     private fun getDeviceDensity() {
         val metrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(metrics)
