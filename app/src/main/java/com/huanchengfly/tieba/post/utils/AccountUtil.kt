@@ -20,6 +20,7 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dataStoreScope
+import com.huanchengfly.tieba.post.distinctUntilChangedByKeys
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.putInt
 import com.huanchengfly.tieba.post.toastShort
@@ -33,7 +34,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOn
@@ -113,7 +113,7 @@ class AccountUtil private constructor(context: Context) {
     private val dataStore: DataStore<Preferences> = context.dataStore
 
     val currentAccount: StateFlow<Account?> = dataStore.data
-        .distinctUntilChangedBy { intPreferencesKey(KEY_CURRENT_ACCOUNT_ID) }
+        .distinctUntilChangedByKeys(intPreferencesKey(KEY_CURRENT_ACCOUNT_ID))
         .map {
             val id = it[intPreferencesKey(KEY_CURRENT_ACCOUNT_ID)] ?: -1
             if (id != -1) getAccountInfo(id) else null
