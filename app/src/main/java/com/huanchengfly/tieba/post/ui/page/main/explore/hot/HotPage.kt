@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.hot
 
-import android.graphics.Typeface
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,9 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,6 +49,7 @@ import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.theme.YellowA700
+import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -149,12 +147,7 @@ fun HotPage(
                                                 ContentAlpha.medium
                                             )
                                         },
-                                        fontFamily = FontFamily(
-                                            Typeface.createFromAsset(
-                                                LocalContext.current.assets,
-                                                "bebas.ttf"
-                                            )
-                                        ),
+                                        fontFamily = BebasFamily,
                                         modifier = Modifier.padding(bottom = 2.dp)
                                     )
                                     Text(

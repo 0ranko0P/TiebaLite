@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.main.user
 
-import android.graphics.Typeface
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,7 +43,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +51,7 @@ import com.google.accompanist.placeholder.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMode
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -183,11 +182,7 @@ private fun RowScope.StatCardItem(
         modifier = Modifier.weight(1f),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = "$statNum",
-            fontSize = 20.sp,
-            fontFamily = FontFamily(Typeface.createFromAsset(LocalContext.current.assets, "bebas.ttf")),
-        )
+        Text(text = "$statNum", fontSize = 20.sp, fontFamily = BebasFamily)
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = statText,

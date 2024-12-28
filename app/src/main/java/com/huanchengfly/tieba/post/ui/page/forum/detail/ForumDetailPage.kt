@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.forum.detail
 
-import android.graphics.Typeface
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,9 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +34,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
 import com.huanchengfly.tieba.post.api.models.protos.plainText
+import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.ForumDetailParams
@@ -233,12 +231,7 @@ private fun RowScope.StatCardItem(statNum: Int, statText: String) {
         Text(
             text = statNum.getShortNumString(),
             fontSize = 20.sp,
-            fontFamily = FontFamily(
-                Typeface.createFromAsset(
-                    LocalContext.current.assets,
-                    "bebas.ttf"
-                )
-            ),
+            fontFamily = BebasFamily,
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
