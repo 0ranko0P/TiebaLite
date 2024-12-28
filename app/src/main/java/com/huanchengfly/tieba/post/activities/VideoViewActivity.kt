@@ -8,7 +8,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
@@ -42,17 +41,14 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
             videoPlayerController = rememberVideoPlayerController(
                 source = VideoPlayerSource.Network(data.toString()),
                 thumbnailUrl = thumbnailUrl,
-                fullScreenModeChangedListener = this
+                fullScreenModeChangedListener = this,
+                playWhenReady = true
             )
             VideoPlayer(
                 videoPlayerController = videoPlayerController!!,
                 modifier = Modifier.fillMaxSize(),
                 backgroundColor = Color.Black
             )
-
-            LaunchedEffect(Unit) {
-                videoPlayerController?.play()
-            }
         }
     }
 
