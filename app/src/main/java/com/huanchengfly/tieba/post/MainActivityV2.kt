@@ -184,7 +184,7 @@ class MainActivityV2 : BaseComposeActivity() {
             delay(2000L)
             requestNotificationPermission()
         }
-        intent?.let { handelDeepLinks(it) }
+        intent?.let { pendingRoute = handelDeepLinks(it) }
 
         runCatching {
             TiebaUtil.initAutoSign(this)
