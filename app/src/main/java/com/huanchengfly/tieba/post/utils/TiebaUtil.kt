@@ -7,9 +7,9 @@ import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.PersistableBundle
-import androidx.core.app.ShareCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
@@ -23,6 +23,7 @@ import com.huanchengfly.tieba.post.receivers.AutoSignAlarm
 import com.huanchengfly.tieba.post.services.OKSignService
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import java.util.Calendar
 
 object TiebaUtil {
@@ -98,27 +99,10 @@ object TiebaUtil {
         )
     }
 
-    @JvmStatic
-    @JvmOverloads
-    fun shareText(context: Context, text: String, title: String? = null) {
-        context.startActivity(Intent().apply {
-            action = Intent.ACTION_SEND
-            type = "text/plain"
-            putExtra(
-                Intent.EXTRA_TEXT,
-                "${if (title != null) "「$title」\n" else ""}$text\n（分享自贴吧 Lite）"
-            )
-        })
-    }
-
     fun shareThread(context: Context, title: String, threadId: Long) {
-        ShareCompat.IntentBuilder(context)
-            .setType("text/plain")
-            .setChooserTitle(title)
-            .setText("https://tieba.baidu.com/p/$threadId")
-            .let {
-                runCatching { it.startChooser() }
-            }
+        Uri.parse("https://tieba.baidu.com/p/$threadId")
+            .toShareIntent(context, "text/plain", title)
+            .let { runCatching { context.startActivity(it) } }
     }
 
     suspend fun reportPost(

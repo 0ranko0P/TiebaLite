@@ -40,8 +40,8 @@ import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEve
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
 import com.huanchengfly.tieba.post.utils.HistoryUtil
-import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
+import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import com.huanchengfly.tieba.post.utils.requestPinShortcut
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineName
@@ -265,11 +265,9 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
     }
 
     fun shareForum(context: Context) {
-        TiebaUtil.shareText(
-            context,
-            "https://tieba.baidu.com/f?kw=$forumName",
-            context.getString(R.string.title_forum, forumName)
-        )
+        Uri.parse("https://tieba.baidu.com/f?kw=$forumName")
+            .toShareIntent(context, "text/plain", context.getString(R.string.title_forum, forumName))
+            .let { intent -> runCatching { context.startActivity(intent) } }
     }
 
     companion object {

@@ -11,7 +11,6 @@ import android.widget.ProgressBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.core.app.ShareCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -34,6 +33,7 @@ import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.DisplayUtil.doOnApplyWindowInsets
 import com.huanchengfly.tieba.post.utils.ImageUtil
+import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -151,17 +151,14 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         val currentImg = getCurrentItem() ?: return
         toastShort(R.string.toast_preparing_share_pic)
         lifecycleScope.launch {
-            val rec = ImageUtil.downloadForShare(applicationContext, currentImg.originUrl, null)
-            if (rec.isFailure) {
-                rec.exceptionOrNull()?.let { toastShort(it.getErrorMessage()) }
-            } else {
-                val uri = rec.getOrNull() ?: return@launch
-                ShareCompat.IntentBuilder(this@PhotoViewActivity)
-                    .setType(MimeTypes.IMAGE_JPEG)
-                    .setStream(uri)
-                    .setChooserTitle(getString(R.string.title_share_pic))
-                    .startChooser()
-            }
+            ImageUtil.downloadForShare(applicationContext, currentImg.originUrl, null)
+                .onSuccess {
+                    val intent = it.toShareIntent(this@PhotoViewActivity, MimeTypes.IMAGE_JPEG, getString(R.string.title_share_pic))
+                    runCatching { startActivity(intent) }
+                }
+                .onFailure {
+                    toastShort(it.getErrorMessage())
+                }
         }
     }
 
