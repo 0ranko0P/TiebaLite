@@ -80,6 +80,7 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.copy
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipContent
@@ -402,13 +403,14 @@ fun ThreadPage(
                         isCollected = viewModel.info!!.collected,
                         isImmersiveMode = viewModel.isImmersiveMode,
                         isDesc = state.sortType == ThreadSortType.BY_DESC,
-                        canDelete = { viewModel.lz?.id == user?.id },
                         onSeeLzClick = {
                             viewModel.requestLoadFirstPage(seeLz = !viewModel.seeLz)
                             closeBottomSheet()
                         },
                         onCollectClick = {
-                            if (viewModel.info!!.collected) {
+                            if (user == null) {
+                                context.toastShort(R.string.title_not_logged_in)
+                            } else if (viewModel.info!!.collected) {
                                 viewModel.requestRemoveFavorite()
                             } else {
                                 lazyListState.lastVisiblePost(viewModel)?.let { post ->
@@ -437,7 +439,7 @@ fun ThreadPage(
                         onShareClick = viewModel::onShareThread,
                         onCopyLinkClick = viewModel::onCopyThreadLink,
                         onReportClick = { viewModel.onReportThread(context, navigator) },
-                        onDeleteClick = viewModel::onDeleteThread,
+                        onDeleteClick = viewModel::onDeleteThread.takeIf { viewModel.lz?.id == user?.id },
                         modifier = Modifier
                             .fillMaxWidth()
                             .block {
@@ -599,7 +601,6 @@ private fun ThreadMenu(
     isCollected: Boolean,
     isImmersiveMode: Boolean,
     isDesc: Boolean,
-    canDelete: () -> Boolean,
     onSeeLzClick: () -> Unit,
     onCollectClick: () -> Unit,
     onImmersiveModeClick: () -> Unit,
@@ -608,7 +609,7 @@ private fun ThreadMenu(
     onShareClick: () -> Unit,
     onCopyLinkClick: () -> Unit,
     onReportClick: () -> Unit,
-    onDeleteClick: () -> Unit,
+    onDeleteClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -697,7 +698,7 @@ private fun ThreadMenu(
                 onClick = onReportClick,
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (canDelete()) {
+            if (onDeleteClick != null) {
                 ListMenuItem(
                     icon = Icons.Rounded.Delete,
                     text = stringResource(id = R.string.title_delete),
