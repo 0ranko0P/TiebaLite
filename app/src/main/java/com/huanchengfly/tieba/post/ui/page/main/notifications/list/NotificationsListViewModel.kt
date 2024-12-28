@@ -5,6 +5,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastMap
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.MessageListBean
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -13,6 +14,7 @@ import com.huanchengfly.tieba.post.arch.PartialChangeProducer
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
@@ -67,8 +70,11 @@ private class NotificationsListPartialChangeProducer(private val type: Notificat
             intentFlow.filterIsInstance<NotificationsListUiIntent.LoadMore>().flatMapConcat { it.produceLoadMorePartialChange() },
         )
 
-    private fun produceRefreshPartialChange(): Flow<NotificationsListPartialChange.Refresh> =
-        (when (type) {
+    private fun produceRefreshPartialChange(): Flow<NotificationsListPartialChange.Refresh> {
+        if (!AccountUtil.isLoggedIn()) {
+            return flowOf(NotificationsListPartialChange.Refresh.Failure(TiebaNotLoggedInException()))
+        }
+        return (when (type) {
             NotificationsType.ReplyMe -> TiebaApi.getInstance().replyMeFlow()
             NotificationsType.AtMe -> TiebaApi.getInstance().atMeFlow()
         }).map<MessageListBean, NotificationsListPartialChange.Refresh> { messageListBean ->
@@ -84,6 +90,7 @@ private class NotificationsListPartialChangeProducer(private val type: Notificat
         }
             .onStart { emit(NotificationsListPartialChange.Refresh.Start) }
             .catch { emit(NotificationsListPartialChange.Refresh.Failure(it)) }
+    }
 
     private fun NotificationsListUiIntent.LoadMore.produceLoadMorePartialChange() =
         (when (type) {
