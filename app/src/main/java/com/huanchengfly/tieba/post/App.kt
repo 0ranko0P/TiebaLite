@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
@@ -12,9 +13,9 @@ import android.os.Process
 import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.annotation.Keep
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import com.github.gzuliyujiang.oaid.DeviceID
+import com.huanchengfly.tieba.post.activities.CrashActivity
 import com.huanchengfly.tieba.post.components.OAIDGetter
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.ClientUtils
@@ -33,17 +34,9 @@ class App : Application() {
         getSystemService(POWER_SERVICE) as PowerManager
     }
 
-    @RequiresApi(api = 28)
-    private fun setWebViewPath(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val processName = getProcessName(context)
-            if (applicationContext.packageName != processName) { //判断不等于默认进程名称
-                WebView.setDataDirectorySuffix(processName!!)
-            }
-        }
-    }
-
     private fun getProcessName(context: Context): String? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) return getProcessName()
+
         val manager = context.getSystemService(ACTIVITY_SERVICE) as ActivityManager
         for (processInfo in manager.runningAppProcesses) {
             if (processInfo.pid == Process.myPid()) {
@@ -56,9 +49,15 @@ class App : Application() {
     override fun onCreate() {
         INSTANCE = this
         super.onCreate()
+        val processName = getProcessName(this)
+        if (processName?.endsWith("error_handler") == true) return
+
+        setupUncaughtExceptionHandler(this)
         ClientUtils.init(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            setWebViewPath(this)
+            if (processName != null && packageName != processName) { //判断不等于默认进程名称
+                WebView.setDataDirectorySuffix(processName)
+            }
         }
         LitePal.initialize(this)
         Config.init(this)
@@ -178,5 +177,18 @@ class App : Application() {
 
         private val nightMode: Int
             get() = INSTANCE.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+
+        private fun setupUncaughtExceptionHandler(context: Context) {
+            val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+            Thread.setDefaultUncaughtExceptionHandler { t, e ->
+                context.goToActivity<CrashActivity> {
+                    // Note: Do not serialize Throwable
+                    putExtra(CrashActivity.KEY_THROWABLE, e.stackTraceToString())
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                }
+                defaultHandler?.uncaughtException(t, e)
+            }
+        }
     }
 }

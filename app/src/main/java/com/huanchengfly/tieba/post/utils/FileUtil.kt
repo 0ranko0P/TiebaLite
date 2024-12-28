@@ -10,6 +10,8 @@ import android.provider.MediaStore
 import android.text.TextUtils
 import android.webkit.URLUtil
 import androidx.annotation.WorkerThread
+import androidx.core.content.FileProvider
+import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
@@ -156,6 +158,12 @@ object FileUtil {
         }
         return false
     }
+
+    fun File.toSharedUri(context: Context): Uri {
+        return FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".share.FileProvider", this)
+    }
+
+    fun Context.createFileInCacheDir(file: String) = File(cacheDir, "misc/$file")
 
     //修改文件扩展名
     fun changeFileExtension(fileName: String, newExtension: String): String {

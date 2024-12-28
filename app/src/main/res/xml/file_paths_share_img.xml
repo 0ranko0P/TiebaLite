@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resource>
     <paths>
-        <cache-path
-            name="shareCache"
-            path=".shareTemp" />
+        <!-- Images -->
+        <cache-path name="shareCache" path=".shareTemp" />
+
+        <!-- Misc stuff -->
+        <cache-path name="misc" path="misc" />
     </paths>
 </resource>

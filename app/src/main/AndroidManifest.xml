@@ -230,6 +230,12 @@
         </activity-alias>
 
         <activity
+            android:name=".activities.CrashActivity"
+            android:exported="false"
+            android:process=":error_handler"
+            android:theme="@style/Theme.NewAppTheme" />
+
+        <activity
             android:name=".activities.VideoViewActivity"
             android:configChanges="uiMode|screenSize|screenLayout|orientation|navigation"
             android:theme="@style/Theme.Transparent.PhotoView"

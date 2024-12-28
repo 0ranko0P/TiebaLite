@@ -39,8 +39,8 @@ object CrashLogUtil {
                 PrintStream(file.outputStream(), true, StandardCharsets.UTF_8.name()).use {
                     it.println(getDebugInfo())
                     it.println()
-                    it.println(System.currentTimeMillis())
-                    exception?.printStackTrace(it)
+                    exception?.message?.let { msg -> it.println(msg) }
+                    // exception?.printStackTrace(it)
                     it.println()
                 }
 

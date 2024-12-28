@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.rememberScrollState
@@ -42,8 +41,6 @@ import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindo
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
 
 @Composable
 fun TipScreen(
@@ -157,20 +154,27 @@ fun ErrorTipScreen(
     )
 }
 
+@NonRestartableComposable
 @Composable
 fun ErrorStackTraceScreen(
     modifier: Modifier = Modifier,
     throwable: Throwable,
     actions: @Composable (ColumnScope.() -> Unit) = {}
 ) {
-    val stackTrace = remember { runCatching {
-        val bos = ByteArrayOutputStream()
-        PrintStream(bos).use { out ->
-            throwable.printStackTrace(out)
-            bos.toString()
-        }
-    } }
+    val context = LocalContext.current
+    val stackTrace = remember {
+        runCatching { throwable.stackTraceToString() }.getOrDefault(context.getString(R.string.message_unknown_error))
+    }
 
+    ErrorStackTraceScreen(modifier, stackTrace, actions)
+}
+
+@Composable
+fun ErrorStackTraceScreen(
+    modifier: Modifier = Modifier,
+    stackTrace: String,
+    actions: @Composable (ColumnScope.() -> Unit) = {}
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -180,11 +184,13 @@ fun ErrorStackTraceScreen(
     ) {
         Text(
             text = stringResource(id = R.string.title_unknown_error),
+            color = ExtendedTheme.colors.text,
+            fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.h6
         )
 
         Text(
-            text = stackTrace.getOrDefault(stringResource(R.string.message_unknown_error)),
+            text = stackTrace,
             modifier = Modifier
                 .weight(1.0f)
                 .verticalScroll(rememberScrollState())
