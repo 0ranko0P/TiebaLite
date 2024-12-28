@@ -13,6 +13,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -23,9 +24,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +51,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.launchUrl
 
 @Stable
@@ -57,9 +59,12 @@ interface PbContentRender {
     @Composable
     fun Render()
 
-    fun toAnnotationString(): AnnotatedString {
-        return buildAnnotatedString {}
-    }
+    fun toAnnotationString(): AnnotatedString = AnnotatedString(this.toString())
+}
+
+private fun highlightContent(content: String): AnnotatedString {
+    val theme by ThemeUtil.themeState
+    return AnnotatedString(content, SpanStyle(fontWeight = FontWeight.Bold, color = theme.primary))
 }
 
 class PureTextContentRender(val text: String): PbContentRender {
@@ -96,9 +101,7 @@ data class TextContentRender(
         )
     }
 
-    override fun toAnnotationString(): AnnotatedString {
-        return text
-    }
+    override fun toAnnotationString() = text
 
     operator fun plus(text: String): TextContentRender {
         return TextContentRender(this.text + AnnotatedString(text))
@@ -177,6 +180,8 @@ data class VoiceContentRender(
         VoicePlayer(url = voiceUrl, duration = duration)
     }
 
+    override fun toAnnotationString() = highlightContent(toString())
+
     override fun toString(): String {
         return "[语音]"
     }
@@ -223,6 +228,8 @@ data class VideoContentRender(
             }
         }
     }
+
+    override fun toAnnotationString() = highlightContent(toString())
 
     override fun toString(): String {
         return "[视频]"
