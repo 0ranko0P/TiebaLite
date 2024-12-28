@@ -1,13 +1,13 @@
 package com.huanchengfly.tieba.post.api.retrofit.interceptors
 
-import com.google.gson.Gson
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
+import com.huanchengfly.tieba.post.utils.GsonUtil
 import okhttp3.Interceptor
 import okhttp3.Response
 
 object FailureResponseInterceptor : Interceptor {
-    private val gson = Gson()
+    private val gson = GsonUtil.getGson()
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
