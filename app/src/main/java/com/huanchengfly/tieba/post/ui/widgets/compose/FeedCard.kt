@@ -37,6 +37,7 @@ import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.material.icons.rounded.SwapCalls
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
@@ -272,19 +273,35 @@ fun FeedCardPlaceholder() {
 
 /**
  * 贴吧头像过渡动画唯一标识键
- *
- * @param forumName 吧名
- * @param extraKey 额外标识键. 确保推荐页, 搜索页中多个贴子来自同一个吧时过渡动画的唯一性
  * */
-data class ForumAvatarSharedBoundsKey(val forumName: String, val extraKey: String?)
+@Immutable
+@JvmInline
+value class ForumAvatarSharedBoundsKey(private val value: String) {
+
+    /**
+     * @param forumName 吧名
+     * @param extraKey 额外标识键. 确保推荐页, 搜索页中多个贴子来自同一个吧时过渡动画的唯一性
+     * */
+    constructor(forumName: String, extraKey: Any?): this(
+        if (extraKey != null) forumName + extraKey else forumName
+    )
+}
 
 /**
  * 贴吧吧名过渡动画唯一标识键
- *
- * @param forumName 吧吧名
- * @param extraKey 额外标识键. 确保推荐页, 搜索页中多个贴子来自同一个吧时过渡动画的唯一性
  * */
-data class ForumTitleSharedBoundsKey(val forumName: String, val extraKey: String?)
+@Immutable
+@JvmInline
+value class ForumTitleSharedBoundsKey(private val value: String) {
+
+    /**
+     * @param forumName 吧吧名
+     * @param extraKey 额外标识键. 确保推荐页, 搜索页中多个贴子来自同一个吧时过渡动画的唯一性
+     * */
+    constructor(forumName: String, extraKey: Any?): this(
+        if (extraKey != null) forumName + extraKey else forumName
+    )
+}
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
