@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.photoview
 
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -33,6 +32,7 @@ import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.DisplayUtil.doOnApplyWindowInsets
 import com.huanchengfly.tieba.post.utils.ImageUtil
+import com.huanchengfly.tieba.post.utils.extension.getParcelableExtraCompat
 import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -58,14 +58,7 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         setContentView(R.layout.activity_photo_view)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        // Load photos now!
-        @Suppress("DEPRECATION")
-        val data: PhotoViewData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(EXTRA_PHOTO_VIEW_DATA, PhotoViewData::class.java)!!
-        } else {
-            intent.getParcelableExtra(EXTRA_PHOTO_VIEW_DATA)!!
-        }
-
+        val data: PhotoViewData = intent.getParcelableExtraCompat(EXTRA_PHOTO_VIEW_DATA)!!
         viewModel.initData(data)
         viewModel.state.collectIn(this) { uiState ->
             if (uiState.data.isEmpty()) return@collectIn
