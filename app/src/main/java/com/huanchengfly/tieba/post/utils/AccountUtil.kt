@@ -118,7 +118,7 @@ class AccountUtil private constructor(context: Context) {
             val id = it[intPreferencesKey(KEY_CURRENT_ACCOUNT_ID)] ?: -1
             if (id != -1) getAccountInfo(id) else null
         }
-        .stateIn(dataStoreScope, SharingStarted.WhileSubscribed(5000), null)
+        .stateIn(dataStoreScope, SharingStarted.Eagerly, null)
 
     var allAccounts: ImmutableList<Account> by mutableStateOf(persistentListOf())
         private set
