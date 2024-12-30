@@ -192,8 +192,7 @@ data class VideoContentRender(
     val videoUrl: String,
     val picUrl: String,
     val webUrl: String,
-    val width: Int,
-    val height: Int
+    val dimensions: IntSize?
 ) : PbContentRender {
 
     @OptIn(ExperimentalGlideComposeApi::class)
@@ -208,7 +207,7 @@ data class VideoContentRender(
             val picModifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
                 .fillMaxWidth(widthFraction)
-                .aspectRatio(width * 1f / height)
+                .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f)
 
             if (videoUrl.isNotBlank()) {
                 VideoThumbnail(

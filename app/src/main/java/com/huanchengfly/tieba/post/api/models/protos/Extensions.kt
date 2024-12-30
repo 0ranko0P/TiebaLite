@@ -294,15 +294,12 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
 
                 5 -> {
                     if (it.src.isNotBlank()) {
-                        val width = it.bsize.split(",")[0].toInt()
-                        val height = it.bsize.split(",")[1].toInt()
                         renders.add(
                             VideoContentRender(
                                 videoUrl = it.link,
                                 picUrl = it.src,
                                 webUrl = it.text,
-                                width = width,
-                                height = height
+                                dimensions = it.getPicSize()
                             )
                         )
                     } else {
