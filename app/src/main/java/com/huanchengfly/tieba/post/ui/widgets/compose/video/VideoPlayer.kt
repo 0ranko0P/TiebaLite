@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -51,6 +50,8 @@ import androidx.media3.common.Player
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.clickableNoIndication
+import com.huanchengfly.tieba.post.theme.Grey100
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 
 internal val LocalVideoPlayerController =
@@ -279,7 +280,7 @@ private fun FullScreenButton() {
 @Composable
 fun VideoThumbnail(modifier: Modifier = Modifier, thumbnailUrl: String?, onClick: () -> Unit) {
     Box(
-        modifier = modifier,
+        modifier = modifier.clickableNoIndication(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         if (thumbnailUrl != null) {
@@ -291,12 +292,11 @@ fun VideoThumbnail(modifier: Modifier = Modifier, thumbnailUrl: String?, onClick
             )
         }
 
-        IconButton(onClick = onClick) {
-            Icon(
-                imageVector = Icons.Rounded.PlayArrow,
-                contentDescription = stringResource(id = R.string.btn_play),
-                modifier = Modifier.size(48.dp)
-            )
-        }
+        Icon(
+            imageVector = Icons.Rounded.PlayArrow,
+            contentDescription = stringResource(id = R.string.btn_play),
+            modifier = Modifier.size(48.dp),
+            tint = Grey100
+        )
     }
 }
