@@ -22,12 +22,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
@@ -48,13 +48,14 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -77,6 +78,7 @@ import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.theme.DarkAmoledColors
@@ -99,7 +101,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
@@ -114,6 +115,7 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_HOME_
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.collections.immutable.persistentListOf
+import java.util.Objects
 
 private val FORUM_AVATAR_SIZE = 40.dp
 
@@ -158,18 +160,10 @@ private fun SearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Header(
-    text: String,
-    modifier: Modifier = Modifier,
-    invert: Boolean = false
-) {
-    Chip(
-        text = text,
-        modifier = Modifier
-            .padding(start = 16.dp)
-            .then(modifier),
-        invertColor = invert
-    )
+private fun Header(text: String, modifier: Modifier = Modifier, invert: Boolean = false) {
+    Box(modifier = modifier) {
+        Chip(text = text, modifier = Modifier.padding(start = 16.dp), invertColor = invert)
+    }
 }
 
 @Composable
@@ -210,45 +204,71 @@ private fun ForumItemPlaceholder(
 }
 
 @Composable
-private fun ForumItemMenuContent(
-    menuState: MenuState,
-    isTopForum: Boolean,
-    onDeleteTopForum: () -> Unit,
-    onAddTopForum: () -> Unit,
-    onCopyName: () -> Unit,
-    onUnfollow: () -> Unit,
+private fun HistoryForums(
+    modifier: Modifier = Modifier,
+    forums: List<History>,
+    onHistoryClicked: (History) -> Unit
 ) {
-    DropdownMenuItem(
-        onClick = {
-            if (isTopForum) {
-                onDeleteTopForum()
-            } else {
-                onAddTopForum()
+    var expandHistoryForum by rememberSaveable { mutableStateOf(true) }
+
+    val degrees by animateFloatAsState(
+        targetValue = if (expandHistoryForum) 90f else 0f,
+        label = "ExpandRotateAnim"
+    )
+    Column(modifier = modifier) {
+        Row(
+            verticalAlignment = CenterVertically,
+            modifier = Modifier
+                .clickableNoIndication { expandHistoryForum = !expandHistoryForum }
+                .padding(vertical = 8.dp)
+                .padding(end = 16.dp)
+        ) {
+            Header(text = stringResource(id = R.string.title_history_forum))
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = stringResource(id = R.string.desc_show),
+                modifier = Modifier.graphicsLayer {
+                    rotationZ = degrees
+                }
+            )
+        }
+
+        AnimatedVisibility(visible = expandHistoryForum) {
+            LazyRow(
+                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 8.dp),
+            ) {
+                items(items = forums, key = { it.timestamp }) {
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .height(IntrinsicSize.Min)
+                            .clip(CircleShape)
+                            .background(color = ExtendedTheme.colors.chip)
+                            .clickable {
+                                onHistoryClicked(it)
+                            }
+                            .padding(4.dp),
+                        verticalAlignment = CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Avatar(
+                            data = it.avatar,
+                            contentDescription = null,
+                            size = Sizes.Tiny
+                        )
+                        Text(
+                            text = it.data,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                    }
+                }
             }
-            menuState.expanded = false
         }
-    ) {
-        if (isTopForum) {
-            Text(text = stringResource(id = R.string.menu_top_del))
-        } else {
-            Text(text = stringResource(id = R.string.menu_top))
-        }
-    }
-    DropdownMenuItem(
-        onClick = {
-            onCopyName()
-            menuState.expanded = false
-        }
-    ) {
-        Text(text = stringResource(id = R.string.title_copy_forum_name))
-    }
-    DropdownMenuItem(
-        onClick = {
-            onUnfollow()
-            menuState.expanded = false
-        }
-    ) {
-        Text(text = stringResource(id = R.string.button_unfollow))
     }
 }
 
@@ -264,18 +284,19 @@ private fun ForumItemContent(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = CenterVertically
     ) {
-        AnimatedVisibility(visible = showAvatar) {
-            Row {
-                Avatar(
-                    modifier = Modifier
-                        .localSharedBounds(key = ForumAvatarSharedBoundsKey(item.forumName, null)),
-                    data = item.avatar,
-                    size = FORUM_AVATAR_SIZE,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.width(14.dp))
-            }
+        if (showAvatar) {
+            Avatar(
+                data = item.avatar,
+                modifier = Modifier
+                    .padding(end = 14.dp)
+                    .size(FORUM_AVATAR_SIZE)
+                    .localSharedBounds(key = ForumAvatarSharedBoundsKey(item.forumName, null)),
+                transition = null
+            )
+        } else {
+            Spacer(modifier = Modifier.width(4.dp))
         }
+
         Text(
             color = ExtendedTheme.colors.text,
             text = item.forumName,
@@ -301,7 +322,7 @@ private fun ForumItemContent(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                text = remember { "Lv.${item.levelId}" },
+                text = item.level,
                 color = ExtendedTheme.colors.onChip,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
@@ -322,36 +343,44 @@ private fun ForumItemContent(
 
 @Composable
 private fun ForumItem(
+    modifier: Modifier = Modifier,
     item: HomeUiState.Forum,
     showAvatar: Boolean,
     onClick: (HomeUiState.Forum) -> Unit,
     onUnfollow: (HomeUiState.Forum) -> Unit,
-    onAddTopForum: (HomeUiState.Forum) -> Unit,
-    onDeleteTopForum: (HomeUiState.Forum) -> Unit,
+    onTopStateChanged: (HomeUiState.Forum, Boolean) -> Unit,
     isTopForum: Boolean = false,
 ) {
     val context = LocalContext.current
     val menuState = rememberMenuState()
     LongClickMenu(
         menuContent = {
-            ForumItemMenuContent(
-                menuState = menuState,
-                isTopForum = isTopForum,
-                onDeleteTopForum = { onDeleteTopForum(item) },
-                onAddTopForum = { onAddTopForum(item) },
-                onCopyName = {
-                    TiebaUtil.copyText(context, item.forumName)
-                },
-                onUnfollow = { onUnfollow(item) }
-            )
+            TextMenuItem(text = if (isTopForum) R.string.menu_top_del else R.string.menu_top) {
+                onTopStateChanged(item, isTopForum)
+            }
+            TextMenuItem(text = R.string.title_copy_forum_name) {
+                TiebaUtil.copyText(context, item.forumName)
+            }
+            TextMenuItem(text = R.string.button_unfollow) {
+                onUnfollow(item)
+            }
         },
+        modifier = modifier,
         menuState = menuState,
-        onClick = {
-            onClick(item)
-        }
+        onClick = { onClick(item) }
     ) {
         ForumItemContent(item = item, showAvatar = showAvatar)
     }
+}
+
+private val DefaultGridSpan: LazyGridItemSpanScope.() -> GridItemSpan = {
+    GridItemSpan(maxLineSpan)
+}
+
+private sealed interface ForumType {
+    object History: ForumType
+    object ListItem: ForumType
+    object GridItem: ForumType
 }
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalSharedTransitionApi::class)
@@ -382,10 +411,6 @@ fun HomePage(
         prop1 = HomeUiState::historyForums,
         initial = persistentListOf()
     )
-    val expandHistoryForum by viewModel.uiState.collectPartialAsState(
-        prop1 = HomeUiState::expandHistoryForum,
-        initial = true
-    )
     val error by viewModel.uiState.collectPartialAsState(
         prop1 = HomeUiState::error,
         initial = null
@@ -410,6 +435,7 @@ fun HomePage(
                 viewModel.send(HomeUiIntent.Unfollow(it.forumId, it.forumName))
             }
         },
+        onDismiss = { unfollowForum = null }
     ) {
         Text(
             text = stringResource(
@@ -425,12 +451,12 @@ fun HomePage(
 
     BlurScaffold(
         backgroundColor = Color.Transparent,
-        topHazeBlock = remember { {
+        topHazeBlock = {
             blurEnabled = !isEmpty && gridState.canScrollBackward
-        } },
-        bottomHazeBlock = remember { {
+        },
+        bottomHazeBlock = {
             blurEnabled = !isEmpty
-        } },
+        },
         topBar = {
             Toolbar(
                 modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
@@ -463,9 +489,14 @@ fun HomePage(
     ) { contentPaddings ->
 
         val onRefreshClick: () -> Unit = remember { { viewModel.send(HomeUiIntent.Refresh) } }
-        val onForumClick: (HomeUiState.Forum) -> Unit = remember {
-            { navigator.navigate(route = Destination.Forum(it.forumName, it.avatar)) }
-        }
+        val onForumClick: (HomeUiState.Forum) -> Unit = remember { {
+            navigator.navigate(route = Destination.Forum(it.forumName, it.avatar))
+        } }
+
+        val onUnfollow: (HomeUiState.Forum) -> Unit = remember { {
+            unfollowForum = it
+            confirmUnfollowDialog.show()
+        } }
 
         val pullRefreshState = rememberPullRefreshState(refreshing = isLoading, onRefreshClick)
 
@@ -498,6 +529,10 @@ fun HomePage(
                     showHistoryOnHome && historyForums.isNotEmpty()
                 } }
 
+                val contentType: (item: HomeUiState.Forum) -> ForumType = remember {
+                    { if (listSingle) ForumType.ListItem else ForumType.GridItem }
+                }
+
                 MyLazyVerticalGrid(
                     columns = gridCells,
                     modifier = Modifier.fillMaxSize(),
@@ -505,133 +540,47 @@ fun HomePage(
                     contentPadding = contentPaddings,
                 ) {
                     if (showHistoryForum) {
-                        item(key = "HistoryForums", span = { GridItemSpan(maxLineSpan) }) {
-                            val rotate by animateFloatAsState(
-                                targetValue = if (expandHistoryForum) 90f else 0f,
-                                label = "rotate"
-                            )
-                            Column {
-                                Row(
-                                    verticalAlignment = CenterVertically,
-                                    modifier = Modifier
-                                        .clickableNoIndication {
-                                            viewModel.send(
-                                                HomeUiIntent.ToggleHistory(expandHistoryForum)
-                                            )
-                                        }
-                                        .padding(vertical = 8.dp)
-                                        .padding(end = 16.dp)
-                                ) {
-                                    Header(
-                                        text = stringResource(id = R.string.title_history_forum),
-                                        invert = false
-                                    )
-
-                                    Spacer(modifier = Modifier.weight(1f))
-
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                                        contentDescription = stringResource(id = R.string.desc_show),
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .rotate(rotate)
-                                    )
-                                }
-                                AnimatedVisibility(visible = expandHistoryForum) {
-                                    LazyRow(
-                                        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 8.dp),
-                                    ) {
-                                        items(
-                                            historyForums,
-                                            key = { it.data }
-                                        ) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .padding(horizontal = 4.dp)
-                                                    .height(IntrinsicSize.Min)
-                                                    .clip(RoundedCornerShape(100))
-                                                    .background(color = ExtendedTheme.colors.chip)
-                                                    .clickable {
-                                                        navigator.navigate(Destination.Forum(forumName = it.data))
-                                                    }
-                                                    .padding(4.dp),
-                                                verticalAlignment = CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Avatar(
-                                                    data = it.avatar,
-                                                    contentDescription = null,
-                                                    size = Sizes.Tiny,
-                                                    shape = CircleShape
-                                                )
-                                                Text(
-                                                    text = it.title,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    modifier = Modifier.padding(end = 4.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                        item(key = Objects.hashCode(ForumType.History), DefaultGridSpan, { ForumType.History }) {
+                            HistoryForums(forums = historyForums) {
+                                navigator.navigate(Destination.Forum(forumName = it.data))
                             }
                         }
                     }
+
                     if (hasTopForum) {
-                        item(key = "TopForumHeader", span = { GridItemSpan(maxLineSpan) }) {
-                            Column(
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            ) {
-                                Header(text = stringResource(id = R.string.title_top_forum), invert = true)
-                            }
+                        item(key = "TopForumHeader", span = DefaultGridSpan) {
+                            Header(
+                                text = stringResource(id = R.string.title_top_forum),
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                invert = true
+                            )
                         }
-                        items(
-                            items = topForums,
-                            key = { "Top${it.forumId}" }
-                        ) { item ->
+                        items(items = topForums, key = { it.forumId }, contentType = contentType) {
                             ForumItem(
-                                item,
-                                listSingle,
+                                modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
+                                item = it,
+                                showAvatar = listSingle,
                                 onClick = onForumClick,
-                                onUnfollow = {
-                                    unfollowForum = it
-                                    confirmUnfollowDialog.show()
-                                },
-                                onAddTopForum = {
-                                    viewModel.send(HomeUiIntent.TopForums.Add(it))
-                                },
-                                onDeleteTopForum = {
-                                    viewModel.send(HomeUiIntent.TopForums.Delete(it.forumId))
-                                },
+                                onUnfollow = onUnfollow,
+                                onTopStateChanged = viewModel::onTopStateChanged,
                                 isTopForum = true
                             )
                         }
                     }
                     if (showHistoryForum || hasTopForum) {
-                        item(key = "ForumHeader", span = { GridItemSpan(maxLineSpan) }) {
-                            Column(
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            ) {
-                                Header(text = stringResource(id = R.string.forum_list_title))
-                            }
+                        item(key = "ForumHeader", span = DefaultGridSpan) {
+                            Header(text = stringResource(id = R.string.forum_list_title))
                         }
                     }
 
-                    items(items = forums, key = { it.forumId }) { item ->
+                    items(items = forums, key = { it.forumId }, contentType = contentType) {
                         ForumItem(
-                            item,
-                            listSingle,
+                            modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
+                            item = it,
+                            showAvatar = listSingle,
                             onClick = onForumClick,
-                            onUnfollow = {
-                                unfollowForum = it
-                                confirmUnfollowDialog.show()
-                            },
-                            onAddTopForum = {
-                                viewModel.send(HomeUiIntent.TopForums.Add(it))
-                            },
-                            onDeleteTopForum = {
-                                viewModel.send(HomeUiIntent.TopForums.Delete(it.forumId))
-                            }
+                            onUnfollow = onUnfollow,
+                            onTopStateChanged = viewModel::onTopStateChanged,
                         )
                     }
                 }
@@ -660,26 +609,23 @@ private fun HomePageSkeletonScreen(
         columns = gridCells,
         modifier = modifier
     ) {
-        item(key = "TopForumHeaderPlaceholder", span = { GridItemSpan(maxLineSpan) }) {
-            Column(
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                Header(
-                    text = stringResource(id = R.string.title_top_forum),
-                    modifier = Modifier.placeholder(color = ExtendedTheme.colors.chip),
-                    invert = true
-                )
-            }
+        item(key = "TopForumHeaderPlaceholder", span = DefaultGridSpan) {
+            Header(
+                text = stringResource(id = R.string.title_top_forum),
+                modifier = Modifier
+                    .padding(vertical = 8.dp)
+                    .placeholder(color = ExtendedTheme.colors.chip),
+            )
         }
         items(6, key = { "TopPlaceholder$it" }) {
             ForumItemPlaceholder(listSingle)
         }
 
-        item(key = "Spacer", span = { GridItemSpan(maxLineSpan) }) {
+        item(key = "Spacer", span = DefaultGridSpan) {
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        item(key = "ForumHeaderPlaceholder", span = { GridItemSpan(maxLineSpan) }) {
+        item(key = "ForumHeaderPlaceholder", span = DefaultGridSpan) {
             Column {
                 Header(
                     text = stringResource(id = R.string.forum_list_title),

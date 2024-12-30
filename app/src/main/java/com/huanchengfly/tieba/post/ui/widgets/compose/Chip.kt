@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,7 +31,7 @@ fun Chip(
     appendIcon: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     invertColor: Boolean = false,
-    shape: Shape = RoundedCornerShape(100),
+    shape: Shape = CircleShape,
 ) {
     val color =
         if (invertColor) ExtendedTheme.colors.invertChipContent else ExtendedTheme.colors.onChip

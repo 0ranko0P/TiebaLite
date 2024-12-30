@@ -5,17 +5,23 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
 import androidx.annotation.WorkerThread
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.unit.IntSize
 import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestBuilder
+import com.bumptech.glide.integration.compose.CrossFade
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.Placeholder
+import com.bumptech.glide.integration.compose.Transition
+import com.bumptech.glide.integration.compose.placeholder
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
+import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.components.glide.ProgressInterceptor
 import com.huanchengfly.tieba.post.components.glide.ProgressListener
@@ -29,9 +35,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 object GlideUtil {
-    val CrossFadeTransition: DrawableTransitionOptions by unsafeLazy {
-        DrawableTransitionOptions.withCrossFade()
-    }
+    val DefaultTransition: Transition.Factory = CrossFade(TweenSpec())
+
+    @OptIn(ExperimentalGlideComposeApi::class)
+    val DefaultErrorPlaceholder: Placeholder = placeholder(R.drawable.ic_error)
 
     private val ErrorListener by lazy {
         object : RequestListener<Any> {

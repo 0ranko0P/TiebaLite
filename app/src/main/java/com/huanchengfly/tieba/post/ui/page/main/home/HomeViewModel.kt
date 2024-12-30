@@ -2,8 +2,11 @@ package com.huanchengfly.tieba.post.ui.page.main.home
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.util.fastFilter
+import androidx.compose.ui.util.fastForEach
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.CommonResponse
+import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -26,7 +29,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -63,8 +65,6 @@ class HomeViewModel : BaseViewModel<HomeUiIntent, HomePartialChange, HomeUiState
                     .flatMapConcat { it.toPartialChangeFlow() },
                 intentFlow.filterIsInstance<HomeUiIntent.Unfollow>()
                     .flatMapConcat { it.toPartialChangeFlow() },
-                intentFlow.filterIsInstance<HomeUiIntent.ToggleHistory>()
-                    .flatMapConcat { it.toPartialChangeFlow() }
             )
         }
 
@@ -74,18 +74,18 @@ class HomeViewModel : BaseViewModel<HomeUiIntent, HomePartialChange, HomeUiState
                 .zip(
                     TiebaApi.getInstance().forumRecommendNewFlow()
                 ) { historyForums, forumRecommend ->
-                    val forums = forumRecommend.data_?.like_forum?.map {
-                        HomeUiState.Forum(
-                            it.avatar,
-                            it.forum_id.toString(),
-                            it.forum_name,
-                            it.is_sign == 1,
-                            it.level_id.toString()
-                        )
-                    } ?: emptyList()
+                    val topForumIds = LitePal.findAll(TopForum::class.java).mapTo(HashSet()) { it.forumId }
+                    val forums = mutableListOf<HomeUiState.Forum>()
                     val topForums = mutableListOf<HomeUiState.Forum>()
-                    val topForumsDB = LitePal.findAll(TopForum::class.java).map { it.forumId }
-                    topForums.addAll(forums.filter { topForumsDB.contains(it.forumId) })
+
+                    forumRecommend.data_?.like_forum?.fastForEach {
+                        val isTopForum = topForumIds.contains(it.forum_id)
+                        if (isTopForum) {
+                            topForums.add(it.toForum())
+                        } else {
+                            forums.add(it.toForum())
+                        }
+                    }
                     HomePartialChange.Refresh.Success(
                         forums,
                         topForums,
@@ -103,7 +103,7 @@ class HomeViewModel : BaseViewModel<HomeUiIntent, HomePartialChange, HomeUiState
 
         private fun HomeUiIntent.TopForums.Delete.toPartialChangeFlow() =
             flow {
-                val deletedRows = LitePal.deleteAll(TopForum::class.java, "forumId = ?", forumId)
+                val deletedRows = LitePal.deleteAll(TopForum::class.java, "forumId = ?", forumId.toString())
                 if (deletedRows > 0) {
                     emit(HomePartialChange.TopForums.Delete.Success(forumId))
                 } else {
@@ -114,7 +114,7 @@ class HomeViewModel : BaseViewModel<HomeUiIntent, HomePartialChange, HomeUiState
 
         private fun HomeUiIntent.TopForums.Add.toPartialChangeFlow() =
             flow {
-                val success = TopForum(forum.forumId).saveOrUpdate("forumId = ?", forum.forumId)
+                val success = TopForum(forum.forumId).saveOrUpdate("forumId = ?", forum.forumId.toString())
                 if (success) {
                     emit(HomePartialChange.TopForums.Add.Success(forum))
                 } else {
@@ -125,15 +125,48 @@ class HomeViewModel : BaseViewModel<HomeUiIntent, HomePartialChange, HomeUiState
 
         private fun HomeUiIntent.Unfollow.toPartialChangeFlow() =
             TiebaApi.getInstance()
-                .unlikeForumFlow(forumId, forumName, AccountUtil.getLoginInfo()!!.tbs)
+                .unlikeForumFlow(forumId.toString(), forumName, AccountUtil.getLoginInfo()!!.tbs)
                 .map<CommonResponse, HomePartialChange.Unfollow> {
                     HomePartialChange.Unfollow.Success(forumId)
                 }
                 .catch { emit(HomePartialChange.Unfollow.Failure(it.getErrorMessage())) }
-
-        private fun HomeUiIntent.ToggleHistory.toPartialChangeFlow() =
-            flowOf(HomePartialChange.ToggleHistory(!currentExpand))
     }
+
+    fun onTopStateChanged(forum: HomeUiState.Forum, isTop: Boolean) {
+        if (isTop) {
+            send(HomeUiIntent.TopForums.Delete(forum.forumId))
+        } else {
+            send(HomeUiIntent.TopForums.Add(forum))
+        }
+    }
+}
+
+private fun LikeForum.toForum(): HomeUiState.Forum = HomeUiState.Forum(
+    avatar = avatar,
+    forumId = forum_id,
+    forumName = forum_name,
+    isSign = is_sign == 1,
+    level = "Lv.$level_id"
+)
+
+private fun HomeUiState.addOrDeleteTopForum(forumId: Long, add: Boolean): HomeUiState {
+    val forums = this.forums.toMutableList()
+    val topForums = this.topForums.toMutableList()
+
+    if (add) {
+        val index = forums.indexOfFirst { it.forumId == forumId }
+        topForums.add(forums[index])
+        forums.removeAt(index)
+    } else {
+        val index = topForums.indexOfFirst { it.forumId == forumId }
+        forums.add(topForums[index])
+        topForums.removeAt(index)
+    }
+
+    return copy(
+        topForums = topForums.toImmutableList(),
+        forums = forums.toImmutableList()
+    )
 }
 
 sealed interface HomeUiIntent : UiIntent {
@@ -141,15 +174,13 @@ sealed interface HomeUiIntent : UiIntent {
 
     data object RefreshHistory : HomeUiIntent
 
-    data class Unfollow(val forumId: String, val forumName: String) : HomeUiIntent
+    data class Unfollow(val forumId: Long, val forumName: String) : HomeUiIntent
 
     sealed interface TopForums : HomeUiIntent {
-        data class Delete(val forumId: String) : TopForums
+        data class Delete(val forumId: Long) : TopForums
 
         data class Add(val forum: HomeUiState.Forum) : TopForums
     }
-
-    data class ToggleHistory(val currentExpand: Boolean) : HomeUiIntent
 }
 
 sealed interface HomePartialChange : PartialChange<HomeUiState> {
@@ -158,9 +189,9 @@ sealed interface HomePartialChange : PartialChange<HomeUiState> {
             when (this) {
                 is Success -> {
                     oldState.copy(
-                        forums = oldState.forums.filterNot { it.forumId == forumId }
+                        forums = oldState.forums.fastFilter { it.forumId != forumId }
                             .toImmutableList(),
-                        topForums = oldState.topForums.filterNot { it.forumId == forumId }
+                        topForums = oldState.topForums.fastFilter { it.forumId != forumId }
                             .toImmutableList(),
                     )
                 }
@@ -168,7 +199,7 @@ sealed interface HomePartialChange : PartialChange<HomeUiState> {
                 is Failure -> oldState
             }
 
-        data class Success(val forumId: String) : Unfollow()
+        data class Success(val forumId: Long) : Unfollow()
 
         data class Failure(val errorMessage: String) : Unfollow()
     }
@@ -224,13 +255,12 @@ sealed interface HomePartialChange : PartialChange<HomeUiState> {
         sealed interface Delete : HomePartialChange {
             override fun reduce(oldState: HomeUiState): HomeUiState =
                 when (this) {
-                    is Success -> oldState.copy(topForums = oldState.topForums.filterNot { it.forumId == forumId }
-                        .toImmutableList())
+                    is Success -> oldState.addOrDeleteTopForum(forumId = forumId, add = false)
 
                     is Failure -> oldState
                 }
 
-            data class Success(val forumId: String) : Delete
+            data class Success(val forumId: Long) : Delete
 
             data class Failure(val errorMessage: String) : Delete
         }
@@ -238,14 +268,7 @@ sealed interface HomePartialChange : PartialChange<HomeUiState> {
         sealed interface Add : HomePartialChange {
             override fun reduce(oldState: HomeUiState): HomeUiState =
                 when (this) {
-                    is Success -> {
-                        val topForumsId = oldState.topForums.map { it.forumId }.toMutableList()
-                        topForumsId.add(forum.forumId)
-                        oldState.copy(
-                            topForums = oldState.forums.filter { topForumsId.contains(it.forumId) }
-                                .toImmutableList()
-                        )
-                    }
+                    is Success -> oldState.addOrDeleteTopForum(forumId = forum.forumId, add = true)
 
                     is Failure -> oldState
                 }
@@ -255,11 +278,6 @@ sealed interface HomePartialChange : PartialChange<HomeUiState> {
             data class Failure(val errorMessage: String) : Add
         }
     }
-
-    data class ToggleHistory(val expand: Boolean) : HomePartialChange {
-        override fun reduce(oldState: HomeUiState): HomeUiState =
-            oldState.copy(expandHistoryForum = expand)
-    }
 }
 
 @Immutable
@@ -268,16 +286,15 @@ data class HomeUiState(
     val forums: ImmutableList<Forum> = persistentListOf(),
     val topForums: ImmutableList<Forum> = persistentListOf(),
     val historyForums: ImmutableList<History> = persistentListOf(),
-    val expandHistoryForum: Boolean = true,
     val error: Throwable? = null,
 ) : UiState {
     @Immutable
     data class Forum(
         val avatar: String,
-        val forumId: String,
+        val forumId: Long,
         val forumName: String,
         val isSign: Boolean,
-        val levelId: String,
+        val level: String,
     )
 }
 

@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -23,10 +22,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.bumptech.glide.integration.compose.CrossFade
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.bumptech.glide.integration.compose.placeholder
+import com.bumptech.glide.integration.compose.Transition
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
@@ -118,17 +116,16 @@ fun Avatar(
     contentDescription: String? = null,
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
+    transition: Transition.Factory? = GlideUtil.DefaultTransition,
 ) {
     GlideImage(
         model = data,
         contentDescription = contentDescription,
         modifier = modifier.clip(shape),
         contentScale = ContentScale.Crop,
-        failure = placeholder(R.drawable.ic_error),
-        transition = CrossFade(TweenSpec())
-    ) {
-        it.addListener(GlideUtil.getDefaultErrorListener())
-    }
+        failure = GlideUtil.DefaultErrorPlaceholder,
+        transition = transition
+    )
 }
 
 @Composable
