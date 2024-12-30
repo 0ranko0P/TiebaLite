@@ -10,7 +10,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
@@ -228,12 +230,14 @@ fun PbContent.getPicSize(): IntSize? {
     return null
 }
 
+private val PureTextType = setOf(0, 9, 27, 40)
+
 @OptIn(ExperimentalTextApi::class)
 val List<PbContent>.renders: ImmutableList<PbContentRender>
     get() {
-        val pureText = find { it.type != 0 && it.type != 9 && it.type != 27 } == null
+        val pureText = fastFirstOrNull { it.type !in PureTextType } == null
         if (pureText) {
-            return map { PureTextContentRender(it.text) }.toImmutableList()
+            return fastMap { PureTextContentRender(it.text) }.toImmutableList()
         }
         // 富文本 Render
         val renders = mutableListOf<PbContentRender>()
@@ -242,9 +246,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
 
         fastForEach {
             when (it.type) {
-                0, 9, 27 -> {
-                    renders.appendText(it.text)
-                }
+                in PureTextType -> renders.appendText(it.text)
 
                 1 -> {
                     val text = buildAnnotatedString {
