@@ -117,10 +117,10 @@ data class TextContentRender(
         ) {
             val lastRender = lastOrNull()
             if (lastRender is TextContentRender) {
-                removeLast()
-                add(lastRender + text)
-            } else
+                this[lastIndex] = lastRender + text
+            } else {
                 add(TextContentRender(text))
+            }
         }
 
         fun MutableList<PbContentRender>.appendText(
@@ -128,10 +128,10 @@ data class TextContentRender(
         ) {
             val lastRender = lastOrNull()
             if (lastRender is TextContentRender) {
-                removeLast()
-                add(lastRender + text)
-            } else
+                this[lastIndex] = lastRender + text
+            } else {
                 add(TextContentRender(text))
+            }
         }
     }
 }
