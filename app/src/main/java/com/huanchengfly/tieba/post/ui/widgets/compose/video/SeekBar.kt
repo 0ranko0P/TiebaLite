@@ -64,7 +64,7 @@ fun SeekBar(
         label = "indicatorSize"
     )
 
-    BoxWithConstraints {
+    BoxWithConstraints(modifier = modifier) {
         if (progress >= max) return@BoxWithConstraints
 
         val boxWidth = constraints.maxWidth.toFloat()

@@ -199,7 +199,7 @@ fun BoxScope.MediaController() {
                 .align(Alignment.BottomCenter),
         ) {
             if (isFullScreen) {
-                ProgressIndicator()
+                ProgressIndicator(Modifier.padding(horizontal = 16.dp))
             }
 
             Row(
@@ -220,7 +220,7 @@ fun BoxScope.MediaController() {
                     .align(Alignment.BottomCenter)
                     .offset(y = 12.dp)
             ) {
-                ProgressIndicator()
+                ProgressIndicator(Modifier.padding(horizontal = 16.dp))
             }
         }
     }
