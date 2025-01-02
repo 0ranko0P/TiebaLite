@@ -5,6 +5,7 @@ import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,6 +18,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.bumptech.glide.Glide
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
+import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.components.BD_VIDEO_HOST
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.toastShort
@@ -25,6 +27,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerController
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberVideoPlayerController
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 
 class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
 
@@ -52,9 +55,23 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
             )
 
             LaunchedEffect(Unit) {
-                videoPlayerController?.play()
+                videoPlayerController!!.play()
+                videoPlayerController!!.state
+                    .distinctUntilChangedBy { it.isPlaying }
+                    .collectIn(this@VideoViewActivity) {
+                        if (it.isPlaying) {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        } else {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
+                    }
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        videoPlayerController?.pause()
     }
 
     override fun onFullScreenModeChanged() {
