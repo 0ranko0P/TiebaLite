@@ -115,7 +115,7 @@ fun EmoticonText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
-    inlineContent: Map<String, InlineTextContent> = emptyMap(),
+    inlineContent: Map<String, InlineTextContent>? = null,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current
 ) {
@@ -157,7 +157,7 @@ fun EmoticonText(
         softWrap,
         maxLines,
         minLines,
-        emoticonInlineContent + inlineContent,
+        inlineContent?.let { emoticonInlineContent + it} ?: emoticonInlineContent,
         onTextLayout,
         style
     )
@@ -287,7 +287,7 @@ fun HighlightText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
-    inlineContent: Map<String, InlineTextContent> = emptyMap(),
+    inlineContent: Map<String, InlineTextContent>? = null,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
     highlightKeywords: List<String> = emptyList(),

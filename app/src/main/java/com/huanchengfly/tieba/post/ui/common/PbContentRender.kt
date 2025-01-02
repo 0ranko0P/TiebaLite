@@ -284,7 +284,7 @@ fun PbContentText(
         softWrap = softWrap,
         maxLines = maxLines,
         minLines = minLines,
-        inlineContent = emptyMap(),
+        inlineContent = null,
         onTextLayout = onTextLayout,
         style = style
     )
@@ -308,7 +308,7 @@ fun PbContentText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
-    inlineContent: Map<String, InlineTextContent> = emptyMap(),
+    inlineContent: Map<String, InlineTextContent>? = null,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
 ) {

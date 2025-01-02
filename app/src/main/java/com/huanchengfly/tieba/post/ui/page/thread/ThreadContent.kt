@@ -602,7 +602,7 @@ private fun SubPostItem(
             overflow = TextOverflow.Ellipsis,
             maxLines = 4,
             lineSpacing = 0.4.sp,
-            inlineContent = if (subPost.isLz) ThreadViewModel.getCachedLzInlineContent() else emptyMap(),
+            inlineContent = if (subPost.isLz) ThreadViewModel.getCachedLzInlineContent() else null,
             style = MaterialTheme.typography.body2,
         )
     }
