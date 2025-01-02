@@ -5,22 +5,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountCircle
-import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.SlowMotionVideo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -28,9 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -48,10 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dpToPxFloat
-import com.huanchengfly.tieba.post.pxToDp
-import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.pxToSpFloat
 import com.huanchengfly.tieba.post.spToPxFloat
 import com.huanchengfly.tieba.post.ui.common.PbContentText
@@ -60,7 +48,6 @@ import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager.calcLineHeightPx
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import java.util.regex.Pattern
-import kotlin.math.roundToInt
 
 const val EMOTICON_SIZE_SCALE = 0.9f
 
@@ -151,14 +138,10 @@ fun EmoticonText(
         )
     )
     val sizePx = calcLineHeightPx(mergedStyle)
-    val spacingLineHeight =
-        remember(sizePx) { (sizePx + lineSpacing.value.spToPxFloat()).pxToSpFloat().sp }
+    val spacingLineHeight = (sizePx + lineSpacing.value.spToPxFloat()).pxToSpFloat().sp
+    val emoticonInlineContent = EmoticonManager.getEmoticonInlineContent(sizePx, EMOTICON_SIZE_SCALE)
 
-    val emoticonInlineContent = remember(sizePx) {
-        EmoticonManager.getEmoticonInlineContent((sizePx * EMOTICON_SIZE_SCALE).roundToInt())
-    }
-
-    IconText(
+    Text(
         text.emoticonString,
         modifier,
         color,
@@ -177,176 +160,6 @@ fun EmoticonText(
         emoticonInlineContent + inlineContent,
         onTextLayout,
         style
-    )
-}
-
-@Composable
-fun IconText(
-    text: AnnotatedString,
-    modifier: Modifier = Modifier,
-    color: Color = Color.Unspecified,
-    fontSize: TextUnit = TextUnit.Unspecified,
-    fontStyle: FontStyle? = null,
-    fontWeight: FontWeight? = null,
-    fontFamily: FontFamily? = null,
-    letterSpacing: TextUnit = TextUnit.Unspecified,
-    textDecoration: TextDecoration? = null,
-    textAlign: TextAlign? = null,
-    lineHeight: TextUnit = TextUnit.Unspecified,
-    overflow: TextOverflow = TextOverflow.Clip,
-    softWrap: Boolean = true,
-    maxLines: Int = Int.MAX_VALUE,
-    minLines: Int = 1,
-    inlineContent: Map<String, InlineTextContent> = emptyMap(),
-    onTextLayout: (TextLayoutResult) -> Unit = {},
-    style: TextStyle = LocalTextStyle.current
-) {
-    val textColor = color.takeOrElse {
-        style.color.takeOrElse {
-            LocalContentColor.current.copy(alpha = LocalContentAlpha.current)
-        }
-    }
-    val mergedStyle = style.merge(
-        TextStyle(
-            color = textColor,
-            fontSize = fontSize,
-            fontWeight = fontWeight,
-            textAlign = textAlign ?: TextAlign.Unspecified,
-            lineHeight = lineHeight,
-            fontFamily = fontFamily,
-            textDecoration = textDecoration,
-            fontStyle = fontStyle,
-            letterSpacing = letterSpacing
-        )
-    )
-    val sizePx = calcLineHeightPx(mergedStyle) * 9 / 10
-    val sizeSp = sizePx.pxToSp(LocalContext.current).sp
-    val sizeDp = sizePx.pxToDp().dp
-    val iconInlineContent =
-        remember(sizeSp) {
-            mapOf(
-                "link_icon" to InlineTextContent(
-                    placeholder = Placeholder(
-                        width = sizeSp,
-                        height = sizeSp,
-                        placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
-                    ),
-                    children = {
-                        Icon(
-                            Icons.Rounded.Link,
-                            contentDescription = stringResource(id = R.string.link),
-                            modifier = Modifier.size(sizeDp),
-                            tint = ExtendedTheme.colors.primary,
-                        )
-                    }
-                ),
-                "video_icon" to InlineTextContent(
-                    placeholder = Placeholder(
-                        width = sizeSp,
-                        height = sizeSp,
-                        placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
-                    ),
-                    children = {
-                        Icon(
-                            Icons.Rounded.SlowMotionVideo,
-                            contentDescription = stringResource(id = R.string.desc_video),
-                            modifier = Modifier.size(sizeDp),
-                            tint = ExtendedTheme.colors.primary,
-                        )
-                    }
-                ),
-                "user_icon" to InlineTextContent(
-                    placeholder = Placeholder(
-                        width = sizeSp,
-                        height = sizeSp,
-                        placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
-                    ),
-                    children = {
-                        Icon(
-                            Icons.Rounded.AccountCircle,
-                            contentDescription = stringResource(id = R.string.user),
-                            modifier = Modifier.size(sizeDp),
-                            tint = ExtendedTheme.colors.primary,
-                        )
-                    }
-                ),
-            )
-        }
-    Text(
-        text,
-        modifier,
-        color,
-        fontSize,
-        fontStyle,
-        fontWeight,
-        fontFamily,
-        letterSpacing,
-        textDecoration,
-        textAlign,
-        lineHeight,
-        overflow,
-        softWrap,
-        maxLines,
-        minLines,
-        iconInlineContent + inlineContent,
-        onTextLayout,
-        style
-    )
-}
-
-/**
- * A [Text] composable that supports setting its minimum width to width of the specified number of Chinese characters
- */
-@Composable
-fun TextWithMinWidth(
-    text: String,
-    modifier: Modifier = Modifier,
-    color: Color = Color.Unspecified,
-    fontSize: TextUnit = TextUnit.Unspecified,
-    fontStyle: FontStyle? = null,
-    fontWeight: FontWeight? = null,
-    fontFamily: FontFamily? = null,
-    letterSpacing: TextUnit = TextUnit.Unspecified,
-    textDecoration: TextDecoration? = null,
-    textAlign: TextAlign? = null,
-    lineHeight: TextUnit = TextUnit.Unspecified,
-    overflow: TextOverflow = TextOverflow.Clip,
-    softWrap: Boolean = true,
-    maxLines: Int = Int.MAX_VALUE,
-    minLines: Int = 1,
-    minLength: Int = 0,
-    onTextLayout: (TextLayoutResult) -> Unit = {},
-    style: TextStyle = LocalTextStyle.current,
-) {
-    val textMeasurer = rememberTextMeasurer()
-    val singleChar = stringResource(id = R.string.single_chinese_char)
-    val singleCharWidth = remember(style) {
-        textMeasurer.measure(
-            text = singleChar,
-            style = style
-        ).size.width.pxToDp().dp
-    }
-
-    Text(
-        text = text,
-        modifier = Modifier
-            .defaultMinSize(minWidth = singleCharWidth * minLength)
-            .then(modifier),
-        color = color,
-        fontSize = fontSize,
-        fontStyle = fontStyle,
-        fontWeight = fontWeight,
-        fontFamily = fontFamily,
-        letterSpacing = letterSpacing,
-        textDecoration = textDecoration,
-        textAlign = textAlign,
-        lineHeight = lineHeight,
-        overflow = overflow,
-        softWrap = softWrap,
-        maxLines = maxLines,
-        minLines = minLines,
-        onTextLayout = onTextLayout,
-        style = style
     )
 }
 

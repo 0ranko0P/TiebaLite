@@ -4,6 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.SlowMotionVideo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -25,6 +29,8 @@ import com.huanchengfly.tieba.post.models.EmoticonCache
 import com.huanchengfly.tieba.post.pxToDp
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.toJson
+import com.huanchengfly.tieba.post.ui.common.PbContentRender
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -74,8 +80,8 @@ object EmoticonManager {
     private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
     private var cacheUpdateJob: Job = Job()
 
-    fun getEmoticonInlineContent(sizePx: Int): Map<String, InlineTextContent> {
-        val size = sizePx.pxToSp()
+    fun getEmoticonInlineContent(sizePx: Int, emoticonScale: Float): Map<String, InlineTextContent> {
+        val size = (sizePx * emoticonScale).pxToSp()
         val cached = inlineTextCache[size]?.get()
         if (cached == null) {
             val placeholder = Placeholder(size.sp, size.sp, PlaceholderVerticalAlign.TextCenter)
@@ -84,10 +90,37 @@ object EmoticonManager {
                     placeholder = placeholder,
                     children = { EmoticonInlineImage(Modifier.size(sizePx.pxToDp().dp), id) }
                 )
-            }.apply { inlineTextCache[size] = WeakReference(this) }
+            }
+            .plus(map = getIconInlineContent(sizePx))
+            .apply { inlineTextCache[size] = WeakReference(this) }
         } else {
             return cached
         }
+    }
+
+    fun getIconInlineContent(sizePx: Int): Map<String, InlineTextContent> {
+        val sizeSp = (sizePx * 9 / 10).pxToSp().sp
+        val sizeDp = sizePx.pxToDp().dp
+        val placeholder = Placeholder(sizeSp, sizeSp, PlaceholderVerticalAlign.TextCenter)
+
+        return mapOf(
+            PbContentRender.INLINE_LINK to InlineTextContent(placeholder = placeholder) {
+                Icon(
+                    imageVector = Icons.Rounded.Link,
+                    contentDescription = stringResource(id = R.string.link),
+                    modifier = Modifier.size(sizeDp),
+                    tint = ExtendedTheme.colors.primary,
+                )
+            },
+            PbContentRender.INLINE_VIDEO to InlineTextContent(placeholder = placeholder) {
+                Icon(
+                    imageVector = Icons.Rounded.SlowMotionVideo,
+                    contentDescription = stringResource(id = R.string.desc_video),
+                    modifier = Modifier.size(sizeDp),
+                    tint = ExtendedTheme.colors.primary,
+                )
+            }
+        )
     }
 
     @OptIn(ExperimentalGlideComposeApi::class)
