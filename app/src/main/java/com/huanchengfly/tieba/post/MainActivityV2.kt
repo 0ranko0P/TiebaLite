@@ -43,8 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -55,8 +53,8 @@ import androidx.window.layout.WindowInfoTracker
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
+import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -109,6 +107,8 @@ class MainActivityV2 : BaseComposeActivity() {
     private val notificationCountFlow: MutableSharedFlow<Int> =
         MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
+    private var mNewMessageReceiver: NewMessageReceiver? = null
+
     private val devicePostureFlow: StateFlow<DevicePosture> by lazy {
         WindowInfoTracker.getOrCreate(this)
             .windowLayoutInfo(this)
@@ -157,20 +157,24 @@ class MainActivityV2 : BaseComposeActivity() {
 
     override fun onStart() {
         super.onStart()
-        runCatching {
-            AccountUtil.getInstance().currentAccount.value ?: throw TiebaNotLoggedInException()
-            val intentFilter = IntentFilter(NotifyJobService.ACTION_NEW_MESSAGE)
-            ContextCompat.registerReceiver(this, NewMessageReceiver(), intentFilter, ContextCompat.RECEIVER_NOT_EXPORTED)
-            startService(Intent(this, NotifyJobService::class.java))
-            val builder = JobInfo.Builder(
-                JobServiceUtil.getJobId(this),
-                ComponentName(this, NotifyJobService::class.java)
-            )
-                .setPersisted(true)
-                .setPeriodic(30 * 60 * 1000L)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-            val jobScheduler = getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
-            jobScheduler.schedule(builder.build())
+        AccountUtil.getInstance().currentAccount.collectIn(this) { account ->
+            if (account == null) return@collectIn
+            if (mNewMessageReceiver != null) return@collectIn
+
+            runCatching {
+                mNewMessageReceiver = NewMessageReceiver()
+                ContextCompat.registerReceiver(this@MainActivityV2, mNewMessageReceiver!!,
+                    IntentFilter(NotifyJobService.ACTION_NEW_MESSAGE), ContextCompat.RECEIVER_NOT_EXPORTED)
+
+                startService(Intent(this, NotifyJobService::class.java))
+                val notifyJobService = ComponentName(this, NotifyJobService::class.java)
+                val builder = JobInfo.Builder(JobServiceUtil.getJobId(this), notifyJobService)
+                    .setPersisted(true)
+                    .setPeriodic(30 * 60 * 1000L)
+                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                val jobScheduler = getSystemService(JOB_SCHEDULER_SERVICE) as JobScheduler
+                jobScheduler.schedule(builder.build())
+            }
         }
     }
 
@@ -256,6 +260,11 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        mNewMessageReceiver?.let { unregisterReceiver(it) }
+    }
+
     @Composable
     fun TiebaLiteLocalProvider(content: @Composable () -> Unit) {
         CompositionLocalProvider(
@@ -266,7 +275,7 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    private inner class NewMessageReceiver : BroadcastReceiver(), DefaultLifecycleObserver {
+    private inner class NewMessageReceiver : BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == NotifyJobService.ACTION_NEW_MESSAGE) {
@@ -278,10 +287,6 @@ class MainActivityV2 : BaseComposeActivity() {
                     }
                 }
             }
-        }
-
-        override fun onDestroy(owner: LifecycleOwner) {
-            unregisterReceiver(this)
         }
     }
 
