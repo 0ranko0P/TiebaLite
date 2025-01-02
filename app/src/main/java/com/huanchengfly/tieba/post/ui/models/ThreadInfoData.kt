@@ -8,7 +8,7 @@ import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 /**
  * Represents [ThreadInfo] in UI
  *
- * @param collected         True when [ThreadInfo.collectStatus] is 1
+ * @param collected         True when [ThreadInfo.collectStatus] not 0
  * @param isShareThread     True when [ThreadInfo.is_share_thread] is 1
  * */
 data class ThreadInfoData(
@@ -26,7 +26,7 @@ data class ThreadInfoData(
     constructor(info: ThreadInfo): this(
         title = info.title,
         collectMarkPid = info.collectMarkPid.toLongOrNull()?: 0L,
-        collected = info.collectStatus == 1,
+        collected = info.collectStatus != 0,
         firstPostId = info.firstPostId,
         hasAgree = info.hasAgree == 1,
         agreeNum = info.agreeNum,
