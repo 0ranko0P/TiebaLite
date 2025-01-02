@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import android.content.pm.ActivityInfo
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -40,7 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,8 +59,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.google.accompanist.placeholder.PlaceholderHighlight
@@ -87,18 +82,13 @@ import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.collectPreferenceAsState
 import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.DefaultVideoPlayerController
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.OnFullScreenModeChangedListener
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberVideoPlayerController
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
@@ -877,60 +867,6 @@ private fun ActionBtn(
                 text()
             }
         }
-    }
-}
-
-@Composable
-fun VideoPlayer(
-    videoUrl: String,
-    thumbnailUrl: String,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    val videoPlayerController = rememberVideoPlayerController(
-        source = VideoPlayerSource.Network(videoUrl),
-        thumbnailUrl = thumbnailUrl,
-        fullScreenModeChangedListener = object : OnFullScreenModeChangedListener {
-            override fun onFullScreenModeChanged(isFullScreen: Boolean) {
-                context.findActivity()?.run {
-                    val insetsCtl = WindowCompat.getInsetsController(window, window.decorView)
-                    if (isFullScreen) {
-                        insetsCtl.hide(WindowInsetsCompat.Type.systemBars())
-                        this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                    } else {
-                        insetsCtl.show(WindowInsetsCompat.Type.systemBars())
-                        this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                    }
-                }
-            }
-        }
-    )
-
-    val fullScreen by (videoPlayerController as DefaultVideoPlayerController).collect { isFullScreen }
-    val videoPlayerContent =
-        movableContentOf { isFullScreen: Boolean, playerModifier: Modifier ->
-            com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayer(
-                videoPlayerController = videoPlayerController,
-                modifier = playerModifier,
-                backgroundColor = if (isFullScreen) Color.Black else Color.Transparent
-            )
-        }
-
-    if (fullScreen) {
-        Spacer(
-            modifier = modifier
-        )
-        FullScreen {
-            videoPlayerContent(
-                true,
-                Modifier.fillMaxSize()
-            )
-        }
-    } else {
-        videoPlayerContent(
-            false,
-            modifier
-        )
     }
 }
 

@@ -53,6 +53,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.theme.Grey100
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
+import com.huanchengfly.tieba.post.utils.DisplayUtil
 
 internal val LocalVideoPlayerController =
     compositionLocalOf<DefaultVideoPlayerController> { error("VideoPlayerController is not initialized") }
@@ -139,7 +140,7 @@ fun VideoPlayer(
         }
 
         if (videoPlayerController.supportFullScreen()) {
-            val isFullScreen by videoPlayerController.collect { isFullScreen }
+            val isFullScreen = DisplayUtil.isLandscape
 
             BackHandler(enabled = isFullScreen) {
                 Log.i("VideoPlayer", "handleBackPress")
@@ -189,7 +190,7 @@ fun BoxScope.MediaController() {
     )
 
     val controlsVisible by videoPlayerController.collect { controlsVisible }
-    val isFullScreen by videoPlayerController.collect { isFullScreen }
+    val isFullScreen = DisplayUtil.isLandscape
 
     if (controlsVisible) {
         Column(
@@ -253,8 +254,7 @@ fun PositionAndDuration(
 @Composable
 private fun FullScreenButton() {
     val videoPlayerController = LocalVideoPlayerController.current
-    val isFullScreen by videoPlayerController.collect { isFullScreen }
-    val icon = if (isFullScreen) {
+    val icon = if (DisplayUtil.isLandscape) {
         Icons.Rounded.FullscreenExit
     } else {
         Icons.Rounded.Fullscreen

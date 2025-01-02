@@ -2,11 +2,15 @@ package com.huanchengfly.tieba.post.utils
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Point
 import android.view.View
 import android.view.WindowManager
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
@@ -23,6 +27,11 @@ object DisplayUtil {
     const val GESTURE_DEFAULT = 24
 
     const val GESTURE_NONE = 0
+
+    val isLandscape: Boolean
+        @ReadOnlyComposable
+        @Composable
+        get() = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     /**
      * 将dp值转换为px值

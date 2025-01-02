@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
 interface OnFullScreenModeChangedListener {
-    fun onFullScreenModeChanged(isFullScreen: Boolean)
+    fun onFullScreenModeChanged()
 }
 
 internal class DefaultVideoPlayerController(
@@ -384,8 +384,7 @@ internal class DefaultVideoPlayerController(
 
     override fun toggleFullScreen() {
         require(fullScreenModeChangedListener != null) { "Full screen mode is not supported" }
-        fullScreenModeChangedListener.onFullScreenModeChanged(!currentState { it.isFullScreen })
-        _state.set { copy(isFullScreen = !isFullScreen) }
+        fullScreenModeChangedListener.onFullScreenModeChanged()
     }
 }
 

@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.activities
 
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -56,8 +57,8 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
         }
     }
 
-    override fun onFullScreenModeChanged(isFullScreen: Boolean) {
-        if (isFullScreen) {
+    override fun onFullScreenModeChanged() {
+        if (resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE) {
             mInsetsController.hide(WindowInsetsCompat.Type.systemBars())
             this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         } else {
