@@ -16,6 +16,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -43,6 +44,8 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.models.PhotoViewData
+import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
+import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
@@ -60,6 +63,14 @@ interface PbContentRender {
     fun Render()
 
     fun toAnnotationString(): AnnotatedString = AnnotatedString(this.toString())
+
+    companion object {
+        const val TAG_URL = "url"
+        const val TAG_USER = "user"
+
+        const val INLINE_LINK = "link_icon"
+        const val INLINE_VIDEO = "video_icon"
+    }
 }
 
 private fun highlightContent(content: String): AnnotatedString {
@@ -304,16 +315,16 @@ fun PbContentText(
     val context = LocalContext.current
     val navigator = LocalNavController.current
 
-    val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+    var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     EmoticonText(
         text = text,
         modifier = modifier.pointerInput(Unit) {
             awaitEachGesture {
                 val change = awaitFirstDown()
                 val annotation =
-                    layoutResult.value?.getOffsetForPosition(change.position)?.let { offset ->
+                    layoutResult?.getOffsetForPosition(change.position)?.let { offset ->
                         text.getStringAnnotations(start = offset, end = offset)
-                            .firstOrNull { it.tag == "url" || it.tag == "user" }
+                            .firstOrNull { it.tag == TAG_URL || it.tag == TAG_USER }
                     }
                 if (annotation != null) {
                     if (change.pressed != change.previousPressed) change.consume()
@@ -321,12 +332,12 @@ fun PbContentText(
                         waitForUpOrCancellation()?.also { if (it.pressed != it.previousPressed) it.consume() }
                     if (up != null) {
                         when (annotation.tag) {
-                            "url" -> {
+                            TAG_URL -> {
                                 val url = annotation.item
                                 launchUrl(context, navigator, url)
                             }
 
-                            "user" -> {
+                            TAG_USER -> {
                                 val uid = annotation.item.toLong()
                                 navigator.navigate(Destination.UserProfile(uid))
                             }
@@ -351,7 +362,7 @@ fun PbContentText(
         minLines = minLines,
         inlineContent = inlineContent,
         onTextLayout = {
-            layoutResult.value = it
+            layoutResult = it
             onTextLayout(it)
         },
         style = style

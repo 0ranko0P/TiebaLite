@@ -17,6 +17,10 @@ import androidx.compose.ui.util.fastMapNotNull
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
+import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.INLINE_LINK
+import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.INLINE_VIDEO
+import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
+import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.common.PicContentRender
 import com.huanchengfly.tieba.post.ui.common.PureTextContentRender
 import com.huanchengfly.tieba.post.ui.common.TextContentRender.Companion.appendText
@@ -250,8 +254,8 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
 
                 1 -> {
                     val text = buildAnnotatedString {
-                        appendInlineContent("link_icon", alternateText = "🔗")
-                        withAnnotation(tag = "url", annotation = it.link) {
+                        appendInlineContent(INLINE_LINK, alternateText = "🔗")
+                        withAnnotation(tag = TAG_URL, annotation = it.link) {
                             withStyle(highLightStyle) {
                                 append(it.text)
                             }
@@ -283,7 +287,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
 
                 4 -> {
                     val text = buildAnnotatedString {
-                        withAnnotation(tag = "user", annotation = "${it.uid}") {
+                        withAnnotation(tag = TAG_USER, annotation = "${it.uid}") {
                             withStyle(highLightStyle) {
                                 append(it.text)
                             }
@@ -304,8 +308,8 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                         )
                     } else {
                         val text = buildAnnotatedString {
-                            appendInlineContent("video_icon", alternateText = "🎥")
-                            withAnnotation(tag = "url", annotation = it.text) {
+                            appendInlineContent(INLINE_VIDEO, alternateText = "🎥")
+                            withAnnotation(tag = TAG_URL, annotation = it.text) {
                                 withStyle(highLightStyle) {
                                     append(App.INSTANCE.getString(R.string.tag_video))
                                     append(it.text)
