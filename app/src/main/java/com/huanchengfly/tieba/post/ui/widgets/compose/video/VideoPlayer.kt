@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Icon
@@ -182,7 +182,6 @@ fun VideoPlayer(
 @Composable
 fun BoxScope.MediaController() {
     val videoPlayerController = LocalVideoPlayerController.current
-
     MediaControlGestures(modifier = Modifier.matchParentSize())
 
     MediaControlButtons(
@@ -190,17 +189,15 @@ fun BoxScope.MediaController() {
     )
 
     val controlsVisible by videoPlayerController.collect { controlsVisible }
-    val isFullScreen = DisplayUtil.isLandscape
 
     if (controlsVisible) {
         Column(
             modifier = Modifier
                 .padding(vertical = 8.dp)
+                .safeContentPadding()
                 .align(Alignment.BottomCenter),
         ) {
-            if (isFullScreen) {
-                ProgressIndicator(Modifier.padding(horizontal = 16.dp))
-            }
+            ProgressIndicator(modifier = Modifier.padding(horizontal = 16.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -211,16 +208,6 @@ fun BoxScope.MediaController() {
                 if (videoPlayerController.supportFullScreen()) {
                     FullScreenButton()
                 }
-            }
-        }
-
-        if (!isFullScreen) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = 12.dp)
-            ) {
-                ProgressIndicator(Modifier.padding(horizontal = 16.dp))
             }
         }
     }
