@@ -612,14 +612,6 @@ private fun HomePageSkeletonScreen(
         columns = gridCells,
         modifier = modifier
     ) {
-        item(key = "TopForumHeaderPlaceholder", span = DefaultGridSpan) {
-            Header(
-                text = stringResource(id = R.string.title_top_forum),
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .placeholder(color = ExtendedTheme.colors.chip),
-            )
-        }
         items(6, key = { "TopPlaceholder$it" }) {
             ForumItemPlaceholder(listSingle)
         }
