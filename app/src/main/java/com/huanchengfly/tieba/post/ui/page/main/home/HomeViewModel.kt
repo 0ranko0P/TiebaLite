@@ -7,6 +7,7 @@ import androidx.compose.ui.util.fastForEach
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -69,8 +71,12 @@ class HomeViewModel : BaseViewModel<HomeUiIntent, HomePartialChange, HomeUiState
         }
 
         @Suppress("USELESS_CAST")
-        private fun produceRefreshPartialChangeFlow(): Flow<HomePartialChange.Refresh> =
-            HistoryUtil.getFlow(HistoryUtil.TYPE_FORUM, 0)
+        private fun produceRefreshPartialChangeFlow(): Flow<HomePartialChange.Refresh> {
+            if (!AccountUtil.isLoggedIn()) {
+                return flowOf(HomePartialChange.Refresh.Failure(TiebaNotLoggedInException()))
+            }
+
+            return HistoryUtil.getFlow(HistoryUtil.TYPE_FORUM, 0)
                 .zip(
                     TiebaApi.getInstance().forumRecommendNewFlow()
                 ) { historyForums, forumRecommend ->
@@ -94,6 +100,7 @@ class HomeViewModel : BaseViewModel<HomeUiIntent, HomePartialChange, HomeUiState
                 }
                 .onStart { emit(HomePartialChange.Refresh.Start) }
                 .catch { emit(HomePartialChange.Refresh.Failure(it)) }
+        }
 
         @Suppress("USELESS_CAST")
         private fun produceRefreshHistoryPartialChangeFlow(): Flow<HomePartialChange.RefreshHistory> =

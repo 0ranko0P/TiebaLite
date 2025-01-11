@@ -73,6 +73,7 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -424,7 +425,9 @@ fun HomePage(
     )
     val gridCells = if (listSingle) GridCells.Fixed(1) else GridCells.Adaptive(180.dp)
 
-    val isError by remember { derivedStateOf { error != null } }
+    val isError by remember { // Show EmptyScreen when not logged in
+        derivedStateOf { error != null && error !is TiebaNotLoggedInException }
+    }
 
     var unfollowForum by remember { mutableStateOf<HomeUiState.Forum?>(null) }
     val confirmUnfollowDialog = rememberDialogState()
