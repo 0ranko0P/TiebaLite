@@ -80,49 +80,38 @@ private fun highlightContent(content: String): AnnotatedString {
     return AnnotatedString(content, SpanStyle(fontWeight = FontWeight.Bold, color = theme.primary))
 }
 
-class PureTextContentRender(val text: String): PbContentRender {
+@JvmInline
+value class PureTextContentRender(val value: String) : PbContentRender {
 
     @Composable
-    override fun Render() = Text(text = text, style = MaterialTheme.typography.body1)
+    override fun Render() = Text(text = value, style = MaterialTheme.typography.body1)
 
-    override fun toAnnotationString(): AnnotatedString = AnnotatedString(text)
+    override fun toAnnotationString(): AnnotatedString = AnnotatedString(value)
 
-    override fun toString(): String = text
-
-    override fun equals(other: Any?): Boolean = text == other
-
-    override fun hashCode(): Int = text.hashCode()
+    override fun toString(): String = value
 }
 
-@Suppress("unused")
-@Stable
-data class TextContentRender(
-    val text: AnnotatedString
-) : PbContentRender {
+@JvmInline
+value class TextContentRender(val value: AnnotatedString) : PbContentRender {
+
     constructor(text: String) : this(AnnotatedString(text))
 
-    override fun toString(): String {
-        return text.toString()
-    }
+    override fun toString(): String = value.text
 
     @Composable
     override fun Render() {
         PbContentText(
-            text = text,
+            text = value,
             style = MaterialTheme.typography.body1,
             lineSpacing = 0.8.sp
         )
     }
 
-    override fun toAnnotationString() = text
+    override fun toAnnotationString() = value
 
-    operator fun plus(text: String): TextContentRender {
-        return TextContentRender(this.text + AnnotatedString(text))
-    }
+    operator fun plus(text: String): TextContentRender = this + AnnotatedString(text)
 
-    operator fun plus(text: AnnotatedString): TextContentRender {
-        return TextContentRender(this.text + text)
-    }
+    operator fun plus(text: AnnotatedString): TextContentRender = TextContentRender(value + text)
 
     companion object {
         fun MutableList<PbContentRender>.appendText(
