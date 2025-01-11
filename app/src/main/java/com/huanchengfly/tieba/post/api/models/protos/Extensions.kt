@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.api.models.protos
 
+import android.net.Uri
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.AnnotatedString
@@ -16,8 +17,11 @@ import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isTieba
+import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.INLINE_LINK
+import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.INLINE_LINK_MALICIOUS
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.INLINE_VIDEO
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
@@ -236,6 +240,15 @@ fun PbContent.getPicSize(): IntSize? {
 
 private val PureTextType = setOf(0, 9, 27, 40)
 
+// 显示为贴吧链接实际是外部链接, 这种情况应直接标记为恶意链接
+private fun isMaliciousLink(linkPbContent: PbContent): Boolean {
+    return if (Uri.parse(linkPbContent.text).isTieba()) {
+        !Uri.parse(linkPbContent.link).isTieba()
+    } else {
+        false
+    }
+}
+
 @OptIn(ExperimentalTextApi::class)
 val List<PbContent>.renders: ImmutableList<PbContentRender>
     get() {
@@ -247,17 +260,26 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
         val renders = mutableListOf<PbContentRender>()
         val currentTheme by ThemeUtil.themeState
         val highLightStyle = SpanStyle(color = currentTheme.primary)
+        val redHighLightStyle = SpanStyle(color = RedA700)
 
         fastForEach {
             when (it.type) {
                 in PureTextType -> renders.appendText(it.text)
 
                 1 -> {
-                    val text = buildAnnotatedString {
-                        appendInlineContent(INLINE_LINK, alternateText = "🔗")
-                        withAnnotation(tag = TAG_URL, annotation = it.link) {
-                            withStyle(highLightStyle) {
-                                append(it.text)
+                    val text = if (isMaliciousLink(it)) {
+                        buildAnnotatedString {
+                            appendInlineContent(INLINE_LINK_MALICIOUS, alternateText = "🔗")
+                            // Display actual link when it's malicious
+                            withAnnotation(tag = TAG_URL, annotation = it.link) {
+                                withStyle(redHighLightStyle) { append(it.link) }
+                            }
+                        }
+                    } else {
+                        buildAnnotatedString {
+                            appendInlineContent(INLINE_LINK, alternateText = "🔗")
+                            withAnnotation(tag = TAG_URL, annotation = it.link) {
+                                withStyle(highLightStyle) { append(it.text) }
                             }
                         }
                     }

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastFirstOrNull
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
@@ -69,6 +70,7 @@ interface PbContentRender {
         const val TAG_USER = "user"
 
         const val INLINE_LINK = "link_icon"
+        const val INLINE_LINK_MALICIOUS = "link_icon_malicious"
         const val INLINE_VIDEO = "video_icon"
     }
 }
@@ -324,7 +326,7 @@ fun PbContentText(
                 val annotation =
                     layoutResult?.getOffsetForPosition(change.position)?.let { offset ->
                         text.getStringAnnotations(start = offset, end = offset)
-                            .firstOrNull { it.tag == TAG_URL || it.tag == TAG_USER }
+                            .fastFirstOrNull { it.tag == TAG_URL || it.tag == TAG_USER }
                     }
                 if (annotation != null) {
                     if (change.pressed != change.previousPressed) change.consume()

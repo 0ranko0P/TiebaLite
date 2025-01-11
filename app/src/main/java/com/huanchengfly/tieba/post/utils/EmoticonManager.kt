@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Report
 import androidx.compose.material.icons.rounded.SlowMotionVideo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import com.huanchengfly.tieba.post.fromJson
 import com.huanchengfly.tieba.post.models.EmoticonCache
 import com.huanchengfly.tieba.post.pxToDp
 import com.huanchengfly.tieba.post.pxToSp
+import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -110,6 +112,14 @@ object EmoticonManager {
                     contentDescription = stringResource(id = R.string.link),
                     modifier = Modifier.size(sizeDp),
                     tint = ExtendedTheme.colors.primary,
+                )
+            },
+            PbContentRender.INLINE_LINK_MALICIOUS to InlineTextContent(placeholder = placeholder) {
+                Icon(
+                    imageVector = Icons.Rounded.Report,
+                    contentDescription = stringResource(id = R.string.link),
+                    modifier = Modifier.size(sizeDp),
+                    tint = RedA700,
                 )
             },
             PbContentRender.INLINE_VIDEO to InlineTextContent(placeholder = placeholder) {

@@ -149,7 +149,9 @@ object ClipBoardLinkDetector {
             when {
                 isTopPrivateDomain -> "baidu.com" == host
 
-                isUnderPublicSuffix -> "baidu.com" == parent().toString() && !isBaiduShortLink()
+                isUnderPublicSuffix -> {
+                    "baidu.com" == parent().toString() && !isBaiduShortLink() && path?.endsWith("checkurl") != true
+                }
 
                 else -> false
             }
@@ -164,6 +166,7 @@ object ClipBoardLinkDetector {
         return host != null && (host.equals("wapp.baidu.com", ignoreCase = true) ||
                 host.equals("tieba.baidu.com", ignoreCase = true) ||
                 host.equals("tiebac.baidu.com", ignoreCase = true))
+                && queryParameterNames?.contains("tbjump") != true // Exclude Tieba redirect
     }
 
     fun Uri.isLogin(): Boolean = path?.let { p ->
