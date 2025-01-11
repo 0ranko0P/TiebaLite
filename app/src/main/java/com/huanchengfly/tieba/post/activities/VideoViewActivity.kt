@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.bumptech.glide.Glide
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
@@ -28,16 +30,23 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerControlle
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberVideoPlayerController
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import java.util.Objects
 
 class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
 
-    private val mInsetsController by lazy { WindowCompat.getInsetsController(window, window.decorView) }
+    private lateinit var mInsetsController: WindowInsetsControllerCompat
 
     private var videoPlayerController: VideoPlayerController? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(scrim = android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(scrim = android.graphics.Color.TRANSPARENT)
+        )
+
         super.onCreate(savedInstanceState)
+        mInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        mInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         val data = intent.data ?: throw NullPointerException("No video provided!")
         val thumbnailUrl = intent.getStringExtra(EXTRA_THUMBNAIL)
@@ -57,12 +66,20 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
             LaunchedEffect(Unit) {
                 videoPlayerController!!.play()
                 videoPlayerController!!.state
-                    .distinctUntilChangedBy { it.isPlaying }
+                    .distinctUntilChangedBy { Objects.hash(it.isPlaying, it.controlsVisible) }
                     .collectIn(this@VideoViewActivity) {
                         if (it.isPlaying) {
                             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            // Update SystemBars visibility
+                            if (it.controlsVisible) {
+                                mInsetsController.show(WindowInsetsCompat.Type.systemBars())
+                            } else {
+                                mInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+                            }
                         } else {
                             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            // SystemBars always visible if video paused
+                            mInsetsController.show(WindowInsetsCompat.Type.systemBars())
                         }
                     }
             }
