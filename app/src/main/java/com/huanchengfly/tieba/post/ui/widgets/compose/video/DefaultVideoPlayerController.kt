@@ -278,7 +278,7 @@ internal class DefaultVideoPlayerController(
     private fun autoHideControls() {
         cancelAutoHideControls()
         autoHideControllerJob = coroutineScope.launch {
-            delay(5000)
+            delay(2000)
             hideControls()
         }
     }
