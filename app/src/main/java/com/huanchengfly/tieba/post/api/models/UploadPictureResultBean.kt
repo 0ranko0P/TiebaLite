@@ -12,10 +12,10 @@ data class UploadPictureResultBean(
     @SerialName("error_msg")
     @SerializedName("error_msg")
     val errorMsg: String,
-    val resourceId: String,
+    val resourceId: String? = null,
     val chunkNo: String,
-    val picId: String,
-    val picInfo: PicInfo
+    val picId: String? = null,
+    val picInfo: PicInfo? = null
 )
 
 @Serializable
