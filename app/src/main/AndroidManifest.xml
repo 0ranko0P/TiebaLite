@@ -152,6 +152,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="tblite" />
             </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <data
+                    android:host="unidispatch"
+                    android:scheme="com.baidu.tieba" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+            </intent-filter>
         </activity-alias>
 
         <activity-alias
@@ -173,6 +184,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="tblite" />
             </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <data
+                    android:host="unidispatch"
+                    android:scheme="com.baidu.tieba" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+            </intent-filter>
         </activity-alias>
 
         <activity-alias
@@ -193,6 +215,17 @@
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="tblite" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <data
+                    android:host="unidispatch"
+                    android:scheme="com.baidu.tieba" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
         </activity-alias>
 
