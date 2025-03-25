@@ -169,6 +169,8 @@ class SearchRepository @Inject constructor(
                 id = info.forumId!!,
                 name = forumName ?: forumNameShow.orEmpty(),
                 avatar = avatar.orEmpty(),
+                postNum = info.postNum,
+                concernNum = info.concernNum,
                 slogan = slogan?.takeUnless { it.isEmpty() || it.isBlank() }
             )
         }

@@ -11,5 +11,7 @@ class SearchForum(
     val id: Long = -1,
     val name: String,
     val avatar: String = "",
+    val postNum: String = "0",
+    val concernNum: String = "0",
     val slogan: String? = null,
 )

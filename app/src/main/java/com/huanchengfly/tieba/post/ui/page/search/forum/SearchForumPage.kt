@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MarkUnreadChatAlt
+import androidx.compose.material.icons.filled.PersonOutline
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -113,6 +117,8 @@ fun SearchForumPage(
 
 @Composable
 fun SearchForumItem(forum: SearchForum, transitionKey: String? = null, onClick: (SearchForum) -> Unit) {
+    val postNumSting = stringResource(id = R.string.forum_concern_num, forum.postNum)
+    val concernNumString = stringResource(id = R.string.forum_concern_num, forum.concernNum)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -138,8 +144,39 @@ fun SearchForumItem(forum: SearchForum, transitionKey: String? = null, onClick: 
                 modifier = Modifier.localSharedBounds(
                     key = ForumTitleSharedBoundsKey(forumName = forum.name, extraKey = transitionKey)
                 ),
+                maxLines = 1,
                 style = MaterialTheme.typography.titleMedium
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Chip(
+                    text = forum.concernNum,
+                    //invertColor = true,
+                    modifier = Modifier
+                        .padding(end = 4.dp),
+                    prefixIcon = {
+                        Icon(
+                            imageVector = Icons.Default.PersonOutline,
+                            contentDescription = concernNumString
+                        )
+                    },
+                )
+                Chip(
+                    text = forum.postNum,
+                    //invertColor = true,
+                    modifier = Modifier
+                        .padding(start = 4.dp),
+                    prefixIcon = {
+                        Icon(
+                            imageVector = Icons.Default.MarkUnreadChatAlt,
+                            contentDescription = postNumSting
+                        )
+                    },
+                )
+            }
 
             if (forum.slogan != null) {
                 Text(

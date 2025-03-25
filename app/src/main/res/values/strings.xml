@@ -124,6 +124,8 @@
     <string name="summary_auto_sign_time">当前设置为 %1$s</string>
     <string name="tip_auto_sign">在 Android 12 及以上版本中，后台启动前台服务被严格限制。为了避免一键签到服务无法正常启动，请忽略本应用的“电池优化”。\n若使用的是 MIUI 等国产定制 UI，你还需要在系统设置中进行相应修改。</string>
     <string name="title_forum">%1$s吧</string>
+    <string name="forum_post_num">帖子数 %1$s</string>
+    <string name="forum_concern_num">关注数 %1$s</string>
     <string name="menu_edit_info">编辑资料</string>
     <string name="button_allow">允许</string>
     <string name="button_denied">禁止</string>
