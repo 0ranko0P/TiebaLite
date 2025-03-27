@@ -117,11 +117,14 @@ fun NotificationsListPage(
                     Column(
                         modifier = Modifier
                             .clickable {
-                                val postId: Long = info.postId
                                 val route = if (info.isFloor) {
-                                    Destination.SubPosts(info.threadId, subPostId = postId)
+                                    Destination.SubPosts(
+                                        threadId = info.threadId,
+                                        postId = info.quotePid ?: 0,
+                                        subPostId = info.postId,
+                                    )
                                 } else {
-                                    Destination.Thread(info.threadId, postId = postId)
+                                    Destination.Thread(threadId = info.threadId, postId = info.postId)
                                 }
                                 navigator.navigate(route)
                             }
@@ -154,8 +157,12 @@ fun NotificationsListPage(
                                 .fillMaxWidth()
                                 .clip(MaterialTheme.shapes.small)
                                 .clickable {
-                                    val route = if (info.isFloor && info.quotePid != null) {
-                                        Destination.SubPosts(info.threadId, postId = info.quotePid)
+                                    val route = if (info.isFloor) {
+                                        Destination.SubPosts(
+                                            threadId = info.threadId,
+                                            postId = info.quotePid ?: 0,
+                                            subPostId = info.postId
+                                        )
                                     } else {
                                         Destination.Thread(info.threadId)
                                     }

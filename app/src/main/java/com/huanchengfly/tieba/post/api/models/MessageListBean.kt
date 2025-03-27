@@ -54,6 +54,7 @@ class MessageListBean : BaseBean() {
         val content: String? = null,
 
         @SerializedName("quote_content")
+        //有时候会引用的回复楼，有时候引用的楼中楼
         val quoteContent: String? = null,
         val replyer: ReplyerInfoBean? = null,
 
