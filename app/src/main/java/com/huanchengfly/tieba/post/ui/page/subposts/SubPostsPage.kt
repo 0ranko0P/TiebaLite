@@ -111,7 +111,7 @@ fun SubPostsSheetPage(
 ) {
     ProvideNavigator(navigator) {
         with(params) {
-            SubPostsContent(viewModel, forumId, threadId, postId, true, navigator::navigateUp)
+            SubPostsContent(viewModel, threadId, postId, true, navigator::navigateUp)
         }
     }
 }
@@ -124,7 +124,6 @@ private val HeaderContentType = Unit
 @Composable
 internal fun SubPostsContent(
     viewModel: SubPostsViewModel,
-    forumId: Long,
     threadId: Long,
     postId: Long,
     isSheet: Boolean = false,
@@ -141,6 +140,7 @@ internal fun SubPostsContent(
     val isLoadingMore = uiState.isLoadingMore
     val hasMore = uiState.page.hasMore
     val forumName = uiState.forumName
+    val forumId = viewModel.forumId
 
     val lazyListState = rememberLazyListState()
 
@@ -209,7 +209,7 @@ internal fun SubPostsContent(
                     replyUserPortrait = item.author.portrait,
                 )
             )
-        }.takeIf { canReply }
+        }.takeIf { canReply && forumId > 0 }
 
         val onReplyPostClickedListener: ((PostData) -> Unit)? =  { it: PostData ->
             navigator.navigate(
@@ -223,7 +223,7 @@ internal fun SubPostsContent(
                     replyUserPortrait = it.author.portrait
                 )
             )
-        }.takeIf { canReply }
+        }.takeIf { canReply && forumId > 0 }
 
         // non-nullable, initialize here for convenience
         val onCopyClickedListener: (String) -> Unit = { navigator.navigate(CopyText(it)) }

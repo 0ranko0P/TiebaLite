@@ -82,7 +82,7 @@ class SubPostsViewModel @Inject constructor(
 
     private val threadId = params.threadId
 
-    private val forumId: Long
+    val forumId: Long
         get() = currentState.thread?.simpleForum?.first ?: params.forumId
 
     private val postId: Long
