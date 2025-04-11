@@ -41,6 +41,7 @@ import com.huanchengfly.tieba.post.api.models.SubFloorListBean
 import com.huanchengfly.tieba.post.api.models.Sync
 import com.huanchengfly.tieba.post.api.models.ThreadContentBean
 import com.huanchengfly.tieba.post.api.models.ThreadStoreBean
+import com.huanchengfly.tieba.post.api.models.TopicDetailBean
 import com.huanchengfly.tieba.post.api.models.UserLikeForumBean
 import com.huanchengfly.tieba.post.api.models.UserPostBean
 import com.huanchengfly.tieba.post.api.models.WebReplyResultBean
@@ -647,6 +648,27 @@ object MixedTiebaApiImpl : ITiebaApi {
             keyword,
             page,
             sort
+        )
+
+    override fun topicDetailFlow(
+        topicId: String,
+        topicName: String,
+        isNew: Int,
+        isShare: Int,
+        page: Int,
+        pageSize: Int,
+        offset: Int,
+        lastId: String
+    ): Flow<TopicDetailBean> =
+        RetrofitTiebaApi.HYBRID_TIEBA_API.topicDetailFlow(
+            topicId,
+            topicName,
+            isNew,
+            isShare,
+            page,
+            pageSize,
+            offset,
+            lastId
         )
 
     override fun searchPostFlow(

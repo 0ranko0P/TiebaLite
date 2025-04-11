@@ -43,6 +43,7 @@ import com.huanchengfly.tieba.post.ui.page.forum.detail.ForumDetailPage
 import com.huanchengfly.tieba.post.ui.page.forum.rule.ForumRuleDetailPage
 import com.huanchengfly.tieba.post.ui.page.forum.searchpost.ForumSearchPostPage
 import com.huanchengfly.tieba.post.ui.page.history.HistoryPage
+import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailPage
 import com.huanchengfly.tieba.post.ui.page.hottopic.list.HotTopicListPage
 import com.huanchengfly.tieba.post.ui.page.login.LoginPage
 import com.huanchengfly.tieba.post.ui.page.main.MainPage
@@ -190,6 +191,15 @@ private fun buildRootNavGraph(
 
         composable<Destination.HotTopicList> {
             HotTopicListPage(navigator = navController)
+        }
+
+        composable<Destination.HotTopicDetail> { backStackEntry ->
+            val params = backStackEntry.toRoute<Destination.HotTopicDetail>()
+            TopicDetailPage(
+                topicId = params.topicId,
+                topicName = params.topicName,
+                navigator = navController
+            )
         }
 
         composable<Destination.Login> {

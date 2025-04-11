@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.hottopic.list
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.theme.YellowA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.TopicTag
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
@@ -177,7 +179,10 @@ fun HotTopicListPage(
                 ) { index, item ->
                     if (index < 3) {
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable {
+                                    navigator.navigate(Destination.HotTopicDetail(item.topic_id, item.topic_name))
+                                },
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             TopicImage(index = index, imageUri = item.topic_image)
@@ -185,7 +190,10 @@ fun HotTopicListPage(
                         }
                     } else {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable {
+                                    navigator.navigate(Destination.HotTopicDetail(item.topic_id, item.topic_name))
+                                },
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {

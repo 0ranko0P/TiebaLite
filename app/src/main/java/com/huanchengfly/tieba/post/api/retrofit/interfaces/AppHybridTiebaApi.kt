@@ -56,11 +56,12 @@ interface AppHybridTiebaApi {
     fun topicDetailFlow(
         @Query("topic_id") topicId: String,
         @Query("topic_name") topicName: String,
-        @Query("is_new") isNew: Int = 0,
+        @Query("is_new") isNew: Int = 1,
         @Query("is_share") isShare: Int = 1,
-        @Query("pn") page: Int,
+        @Query("pn") page: Int = 1,
         @Query("rn") pageSize: Int = 10,
         @Query("offset") offset: Int = 0,
+        @Query("last_id") lastId: String = "",
         @Query("derivative_to_pic_id") derivativeToPicId: String = "",
     ): Flow<TopicDetailBean>
 }

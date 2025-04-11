@@ -18,19 +18,30 @@ data class TopicDetailDataBean(
     val topicInfo: TopicInfoBean,
     val user: UserBean,
     val tbs: String,
+    @SerialName("relate_forum")
     val relateForum: List<RelateForumBean>,
-    @SerialName("special_topic")
-    val specialTopic: List<SpecialTopicBean>,
+//    @SerialName("special_topic")
+//    val specialTopic: List<SpecialTopicBean>,
     @SerialName("relate_thread")
     val relateThread: RelateThreadBean,
     @SerialName("has_more")
     val hasMore: Boolean,
+    @SerialName("wreq")
+    val wreq: Wreq,
 )
 
 @Serializable
 data class RelateThreadBean(
     @SerialName("thread_list")
     val threadList: List<ThreadBean>,
+)
+
+@Serializable
+data class Wreq(
+    @SerialName("pn")
+    val page: Int,
+    @SerialName("rn")
+    val pageSize: Int,
 )
 
 @Serializable
@@ -54,7 +65,7 @@ data class TopicInfoBean(
     @SerialName("topic_desc")
     val topicDesc: String,
     @SerialName("discuss_num")
-    val discussNum: String,
+    val discussNum: Long,
     @SerialName("topic_image")
     val topicImage: String,
     @SerialName("share_title")
@@ -63,6 +74,8 @@ data class TopicInfoBean(
     val sharePic: String,
     @SerialName("is_video_topic")
     val isVideoTopic: Int,
+    @SerialName("idx_num")
+    val idxNum: Int,
 )
 
 @Serializable
@@ -106,7 +119,7 @@ data class ThreadInfoBean(
     val id: Long,
     @SerialName("feed_id")
     val feedId: Long,
-    val title: String,
+    val title: String? = "",
     @SerialName("tid")
     val threadId: Long,
     @SerialName("forum_id")
@@ -125,9 +138,9 @@ data class ThreadInfoBean(
     @SerialName("media_num")
     val mediaNum: MediaNumBean,
     @SerialName("agree_num")
-    val agreeNum: Long,
+    val agreeNum: Int,
     @SerialName("reply_num")
-    val replyNum: Long,
+    val replyNum: Int,
     @SerialName("share_num")
     val shareNum: Long,
     @SerialName("user_id")
@@ -136,6 +149,34 @@ data class ThreadInfoBean(
     val firstPostId: Long,
     @SerialName("user_agree")
     val userAgree: Int,
+    @SerialName("author")
+    val author: Author,
+    val agree: Agree,
+)
+
+
+
+@Serializable
+data class Agree(
+    @SerialName("agree_num")
+    val agreeNum: Int,
+
+    @SerialName("agree_type")
+    val agreeType: Int,
+
+    @SerialName("has_agree")
+    val hasAgree: Int,
+)
+
+@Serializable
+data class Author(
+    val name: String,
+    val id: Long,
+    @SerialName("show_nickname")
+    val showNickName: String ,
+    @SerialName("name_show")
+    val nameShow: String,
+    val portrait: String,
 )
 
 @Serializable

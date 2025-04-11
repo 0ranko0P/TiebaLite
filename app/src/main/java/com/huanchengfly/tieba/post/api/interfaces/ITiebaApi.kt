@@ -900,6 +900,29 @@ interface ITiebaApi {
     ): Flow<SearchThreadBean>
 
     /**
+     * 话题详情
+     *
+     * @param topicId 话题id
+     * @param topicName 话题名
+     * @param isNew
+     * @param isShare
+     * @param page 分页页码(初始为1)
+     * @param pageSize 分页大小
+     * @param offset （分页页码-1）* 分页大小
+     * @param lastId 上次返回的最后一个feedid，初次请求留空
+     */
+     fun topicDetailFlow(
+        topicId: String,
+        topicName: String,
+        isNew: Int,
+        isShare: Int,
+        page: Int,
+        pageSize: Int,
+        offset: Int,
+        lastId: String,
+    ): Flow<TopicDetailBean>
+
+    /**
      * 吧内搜索
      *
      * @param keyword 搜索关键词
