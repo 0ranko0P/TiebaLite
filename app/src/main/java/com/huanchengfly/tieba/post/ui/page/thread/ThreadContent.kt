@@ -159,12 +159,15 @@ fun StateScreenScope.ThreadContent(
             state.thread?.replyNum?.let { replyNum ->
                 if (useStickyHeader) {
                     stickyHeader(key = Type.Header.key, contentType = Type.Header) {
-                        val modifier = Modifier.stickyHeaderBackground(topAppBarScrollBehavior.state, lazyListState)
-                        ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged, modifier)
+                        ThreadHeader(
+                            modifier = Modifier.stickyHeaderBackground(topAppBarScrollBehavior.state, lazyListState),
+                            uiState = state,
+                            viewModel = viewModel
+                        )
                     }
                 } else {
                     item(key = Type.Header.key, contentType = Type.Header) {
-                        ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged)
+                        ThreadHeader(uiState = state, viewModel = viewModel)
                     }
                 }
             }
@@ -302,10 +305,12 @@ private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: L
 
 @Composable
 fun ThreadHeader(
-    replyNum: Int,
-    isSeeLz: Boolean,
-    onSeeLzChanged: () -> Unit,
     modifier: Modifier = Modifier,
+    replyNum: Int,
+    @ThreadSortType sortType: Int = ThreadSortType.BY_ASC,
+    onSortTypeChanged: (Int) -> Unit = {},
+    isSeeLz: Boolean,
+    onSeeLzChanged: () -> Unit = {},
 ) = Row(
         modifier = modifier
             .height(IntrinsicSize.Min)
@@ -319,16 +324,6 @@ fun ThreadHeader(
             fontWeight = FontWeight.Bold,
         )
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text(
-            text = stringResource(R.string.text_all),
-            modifier = Modifier.clickableNoIndication(enabled = isSeeLz, onClick = onSeeLzChanged),
-            fontSize = 13.sp,
-            fontWeight = if (!isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (!isSeeLz) colors.onSurface else colors.onSurfaceVariant,
-        )
-
         VerticalDivider(modifier = Modifier.padding(horizontal = 8.dp))
 
         Text(
@@ -338,7 +333,50 @@ fun ThreadHeader(
             fontWeight = if (isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
             color = if (isSeeLz) colors.onSurface else colors.onSurfaceVariant,
         )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Text(
+            text = stringResource(R.string.title_asc),
+            modifier = Modifier.clickableNoIndication(
+                enabled = sortType == ThreadSortType.BY_DESC,
+                onClick = { onSortTypeChanged(ThreadSortType.BY_ASC) }
+            ),
+            fontSize = 13.sp,
+            fontWeight = if (sortType == 0) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (sortType == 0) colors.onSurface else colors.onSurfaceVariant,
+        )
+
+        VerticalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+
+        Text(
+            text = stringResource(R.string.title_desc),
+            modifier = Modifier.clickableNoIndication(
+                enabled = sortType == ThreadSortType.BY_ASC,
+                onClick = { onSortTypeChanged(ThreadSortType.BY_DESC) }
+            ),
+            fontSize = 13.sp,
+            fontWeight = if (sortType == 1) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (sortType == 1) colors.onSurface else colors.onSurfaceVariant,
+        )
     }
+
+@NonRestartableComposable
+@Composable
+fun ThreadHeader(
+    modifier: Modifier = Modifier,
+    uiState: ThreadUiState,
+    viewModel: ThreadViewModel,
+) {
+    ThreadHeader(
+        modifier = modifier,
+        replyNum = uiState.thread?.replyNum ?: 0,
+        sortType = uiState.sortType,
+        onSortTypeChanged = viewModel::onSortChanged,
+        isSeeLz = uiState.seeLz,
+        onSeeLzChanged = viewModel::onSeeLzChanged
+    )
+}
 
 @NonRestartableComposable
 @Composable

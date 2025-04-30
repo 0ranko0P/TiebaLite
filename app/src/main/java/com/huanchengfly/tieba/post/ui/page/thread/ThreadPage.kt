@@ -376,7 +376,7 @@ fun ThreadPage(
                     if (useStickyHeaderWorkaround && replyNum != null) {
                         Container {
                             StickyHeaderOverlay(state = lazyListState) {
-                                ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged)
+                                ThreadHeader(uiState = state, viewModel = viewModel)
                             }
                         }
                     }

@@ -38,6 +38,8 @@
     <string name="tip_login">请先登录</string>
     <string name="text_loading">正在加载…</string>
     <string name="title_sort">倒序浏览</string>
+    <string name="title_asc">正序</string>
+    <string name="title_desc">倒序</string>
     <string name="title_see_lz">只看楼主</string>
     <string name="title_collect_on">取消收藏</string>
     <string name="title_reply">回复</string>
