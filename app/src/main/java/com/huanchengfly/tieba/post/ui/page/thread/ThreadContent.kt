@@ -435,7 +435,7 @@ fun PostCard(
                     }
                 }
                 TextMenuItem(text = R.string.menu_copy) {
-                    onMenuCopyClick(post.plainText)
+                    onMenuCopyClick(if (post.floor == 1) post.title + "\n" + post.plainText else post.plainText)
                 }
                 TextMenuItem(text = R.string.title_report) {
                     coroutineScope.launch {
