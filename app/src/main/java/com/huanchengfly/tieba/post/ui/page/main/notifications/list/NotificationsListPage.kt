@@ -120,7 +120,8 @@ fun NotificationsListPage(
                                 val route = if (info.isFloor) {
                                     Destination.SubPosts(
                                         threadId = info.threadId,
-                                        postId = info.quotePid ?: 0,
+                                        //postId = info.quotePid ?: 0,
+                                        postId = 0,
                                         subPostId = info.postId,
                                     )
                                 } else {
