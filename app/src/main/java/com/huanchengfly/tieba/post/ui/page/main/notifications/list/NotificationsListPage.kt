@@ -120,7 +120,8 @@ fun NotificationsListPage(
                                 val route = if (info.isFloor) {
                                     Destination.SubPosts(
                                         threadId = info.threadId,
-                                        //postId = info.quotePid ?: 0,
+                                        //quotePid引用不确定，可能为postId，也可能未subPostId,导致子楼加载失败或者子回复异常
+                                        //先传0，在子楼页面获取正确的postId
                                         postId = 0,
                                         subPostId = info.postId,
                                     )

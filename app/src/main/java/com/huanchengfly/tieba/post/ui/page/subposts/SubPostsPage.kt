@@ -141,6 +141,7 @@ internal fun SubPostsContent(
     val hasMore = uiState.page.hasMore
     val forumName = uiState.forumName
     val forumId = viewModel.forumId
+    val postId = uiState.post?.id ?: postId
 
     val lazyListState = rememberLazyListState()
 
