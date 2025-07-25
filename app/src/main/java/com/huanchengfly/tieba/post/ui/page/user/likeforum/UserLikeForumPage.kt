@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.user.likeforum
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +32,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.user.post.TipScreenPostHide
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -40,6 +42,16 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentListOf
+
+@Composable
+fun UserLikeForumPageHide() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        TipScreenPostHide()
+    }
+}
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -122,7 +134,7 @@ fun UserLikeForumPage(
                     }
                 },
                 onLoad = {
-                    viewModel.send(UserLikeForumUiIntent.LoadMore(uid, currentPage))
+                    viewModel.send(UserLikeForumUiIntent.Refresh(uid))
                 },
                 bottomIndicator = { onThreshold ->
                     LoadMoreIndicator(

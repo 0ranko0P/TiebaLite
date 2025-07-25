@@ -63,6 +63,26 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.collections.immutable.persistentListOf
 
+@Composable
+fun TipScreenPostHide(modifier: Modifier = Modifier) {
+    TipScreen(
+        title = { Text(text = stringResource(id = R.string.title_user_hide_post)) },
+        modifier = modifier,
+        image = {
+            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_hide))
+            LottieAnimation(
+                composition = composition,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(2.5f)
+            )
+        },
+        scrollable = false,
+    )
+}
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun UserPostPage(
@@ -145,23 +165,7 @@ fun UserPostPage(
                 contentAlignment = Alignment.TopCenter
             ) {
                 if (hidePost) {
-                    TipScreen(
-                        title = { Text(text = stringResource(id = R.string.title_user_hide_post)) },
-                        image = {
-                            val composition by rememberLottieComposition(
-                                LottieCompositionSpec.RawRes(R.raw.lottie_hide)
-                            )
-                            LottieAnimation(
-                                composition = composition,
-                                iterations = LottieConstants.IterateForever,
-                                modifier = Modifier
-                                    .padding(vertical = 16.dp)
-                                    .fillMaxWidth()
-                                    .aspectRatio(2.5f)
-                            )
-                        },
-                        scrollable = false,
-                    )
+                    TipScreenPostHide()
                 } else {
                     TipScreen(
                         title = { Text(text = stringResource(id = R.string.title_empty)) },

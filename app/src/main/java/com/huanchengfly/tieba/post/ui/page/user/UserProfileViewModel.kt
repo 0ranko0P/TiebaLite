@@ -185,6 +185,7 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
                 agreeNum = user.total_agree_num.getShortNumString(),
                 bazuDesc = user.bazhu_grade?.desc?.takeUnless { it.isEmpty() },
                 newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name,
+                privateForum = user.privSets?.like != 1,
                 isOfficial = user.is_guanfang == 1
             )
     }
@@ -199,6 +200,7 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
  * @param forumNum formatted [User.my_like_num]
  * @param followNum formatted [User.concern_num]
  * @param agreeNum formatted [User.total_agree_num]
+ * @param privateForum 隐藏关注的吧
  * */
 data class UserProfile(
     val uid: Long,
@@ -219,6 +221,7 @@ data class UserProfile(
     val agreeNum: String,
     val bazuDesc: String?,
     val newGod: String?,
+    val privateForum: Boolean,
     val isOfficial: Boolean
 )
 

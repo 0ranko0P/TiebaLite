@@ -86,6 +86,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
+import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPageHide
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -265,8 +266,16 @@ fun UserProfilePage(
                 ) {
                     when(tabs[it]) {
                         is Tab.THREADS -> UserPostPage(uid = uid, isThread = true)
+
                         is Tab.POSTS -> UserPostPage(uid = uid, isThread = false)
-                        is Tab.FORUMS -> UserLikeForumPage(uid = uid)
+
+                        is Tab.FORUMS -> {
+                            if (userProfile.privateForum) {
+                                UserLikeForumPageHide()
+                            } else {
+                                UserLikeForumPage(uid = uid)
+                            }
+                        }
                     }
                 }
             }
