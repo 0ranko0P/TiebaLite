@@ -47,7 +47,7 @@ fun Modifier.localSharedElements(
 
     with(sharedTransitionScope) {
         Modifier.sharedElement(
-            state = rememberSharedContentState(key = key),
+            sharedContentState = rememberSharedContentState(key = key),
             animatedVisibilityScope = animatedVisibilityScope,
             boundsTransform = boundsTransform,
             placeHolderSize = placeHolderSize,

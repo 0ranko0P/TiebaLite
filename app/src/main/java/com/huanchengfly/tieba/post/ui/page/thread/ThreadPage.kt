@@ -110,7 +110,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -443,7 +443,7 @@ fun ThreadPage(
                         modifier = Modifier
                             .fillMaxWidth()
                             .block {
-                                hazeState?.let { hazeChild(it, defaultHazeStyle, null) }
+                                hazeState?.let { hazeEffect(it, defaultHazeStyle, null) }
                             }
                             .background(color = ExtendedTheme.colors.threadBottomBar)
                             .padding(vertical = 16.dp)

@@ -40,11 +40,11 @@ import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_NONE
 import com.huanchengfly.tieba.post.utils.DisplayUtil.gestureType
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import dev.chrisbanes.haze.HazeChildScope
+import dev.chrisbanes.haze.HazeEffectScope
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
@@ -81,7 +81,7 @@ val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
                     .fillMaxWidth()
                     .windowInsetsBottomHeight(insets = navBarInsets)
                     .block {
-                        LocalHazeState.current?.let { hazeChild(it, defaultHazeStyle) }
+                        LocalHazeState.current?.let { hazeEffect(it, defaultHazeStyle) }
                     }
                     .background(LocalExtendedColors.current.navigationBar)
             )
@@ -96,13 +96,13 @@ val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
 inline fun BlurWrapper(
     modifier: Modifier = Modifier,
     hazeStyle: HazeStyle = defaultHazeStyle,
-    noinline hazeBlock: (HazeChildScope.() -> Unit)? = null,
+    noinline hazeBlock: (HazeEffectScope.() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     val hazeState = LocalHazeState.current
 
     if (hazeState != null) {
-        Box(modifier = modifier.hazeChild(hazeState, hazeStyle, hazeBlock)) { content() }
+        Box(modifier = modifier.hazeEffect(hazeState, hazeStyle, hazeBlock)) { content() }
     } else {
         Box(modifier = modifier) { content() }
     }
@@ -122,9 +122,9 @@ fun BlurScaffold(
     attachHazeContentState: Boolean = true,
     hazeStyle: HazeStyle = defaultHazeStyle,
     topBar: @Composable () -> Unit = {},
-    topHazeBlock: (HazeChildScope.() -> Unit)? = null,
+    topHazeBlock: (HazeEffectScope.() -> Unit)? = null,
     bottomBar: @Composable () -> Unit = BlurNavigationBarPlaceHolder,
-    bottomHazeBlock: (HazeChildScope.() -> Unit)? = null,
+    bottomHazeBlock: (HazeEffectScope.() -> Unit)? = null,
     snackbarHost: @Composable (SnackbarHostState) -> Unit = { SwipeToDismissSnackbarHost(it) },
     floatingActionButton: @Composable () -> Unit = {},
     floatingActionButtonPosition: FabPosition = FabPosition.End,
@@ -179,7 +179,7 @@ fun BlurScaffold(
                 backgroundColor,
                 contentColor,
                 content = if (attachHazeContentState && hazeState != null) {
-                    { padding -> Box(modifier = Modifier.haze(hazeState)) { content(padding) } }
+                    { padding -> Box(modifier = Modifier.hazeSource(hazeState)) { content(padding) } }
                 } else {
                     content
                 }

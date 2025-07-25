@@ -23,7 +23,6 @@ wire {
 }
 
 android {
-    buildToolsVersion = libs.versions.buildToolsVersion.get()
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
@@ -65,10 +64,7 @@ android {
         val gitVersion = gitVersionProvider.get()
 
         all {
-            signingConfig =
-                if (signingConfigs.any { it.name == "config" })
-                    signingConfigs.getByName("config")
-                else signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("config") ?: signingConfigs.getByName("debug")
 
             buildConfigField("String", "BUILD_GIT", "\"${gitVersion}\"")
         }

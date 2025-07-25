@@ -17,6 +17,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.util.fastDistinctBy
+import androidx.core.graphics.createBitmap
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
@@ -212,7 +213,7 @@ class TranslucentThemeViewModel : ViewModel() {
 
                     // Apply alpha filter
                     if (canvasAlpha < 255) {
-                        val alphaBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, bitmap.config)
+                        val alphaBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.config!!)
                         Canvas(alphaBitmap).apply {
                             drawColor(Color.Black.toArgb())
                             drawBitmap(bitmap, 0f, 0f, Paint().also {it.alpha = canvasAlpha })
