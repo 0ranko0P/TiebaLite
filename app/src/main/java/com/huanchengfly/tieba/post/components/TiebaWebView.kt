@@ -65,7 +65,8 @@ class TiebaWebView(context: Context): WebView(context) {
         @SuppressLint("WebViewApiAvailability")
         fun dumpWebViewVersion(context: Context): String? {
             return getCurrentWebViewPackage()?.let {
-                val name = context.packageManager.getApplicationLabel(it.applicationInfo)
+                val appInfo = it.applicationInfo?: return null
+                val name = context.packageManager.getApplicationLabel(appInfo)
                 val version = "${it.versionName} (${it.versionCode})"
                 "$name\n$version"
             }
@@ -113,7 +114,7 @@ class TiebaWebView(context: Context): WebView(context) {
             val tiebaDeepLink = ClipBoardLinkDetector.parseDeepLink(url)
             val isTieba = tiebaDeepLink != null
 
-            return when {
+            when {
                 isTieba -> {
                     onNavigate?.invoke(tiebaDeepLink.toRoute())
                     return true
