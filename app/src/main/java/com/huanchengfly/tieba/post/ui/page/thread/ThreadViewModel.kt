@@ -668,7 +668,8 @@ class ThreadViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : 
         val thread = response.data_.thread
         val postList = response.data_.post_list
         val firstPost = response.data_.first_floor_post
-        val notFirstPosts = postList.filterNot { it.floor == 1 }
+        val notFirstPosts = postList.filterNot { it.floor <= 1 } // 0楼: 伪装的广告, 1楼: 楼主
+
         val user = if (response.data_.user?.is_login == 1) UserData(response.data_.user, response.data_.user.id == author.id) else null
         if (user == null) {
             hideReply = true
