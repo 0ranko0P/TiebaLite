@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
@@ -49,11 +50,8 @@ import dev.chrisbanes.haze.hazeSource
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
 // Override TopBar & BottomBar background for blurring effect
-private fun ExtendedColors.overrideSysBarColor(blur: Boolean): ExtendedColors = if (blur) {
+private fun ExtendedColors.overrideSysBarColor(): ExtendedColors =
     this.copy(topBar = topBar.copy(0.6f), bottomBar = bottomBar.copy(0.78f))
-} else {
-    this.copy(topBar = topBar.copy(0.98f), bottomBar = bottomBar.copy(0.98f))
-}
 
 val defaultHazeStyle: HazeStyle
     @Composable
@@ -98,15 +96,11 @@ inline fun BlurWrapper(
     hazeStyle: HazeStyle = defaultHazeStyle,
     noinline hazeBlock: (HazeEffectScope.() -> Unit)? = null,
     content: @Composable () -> Unit
-) {
-    val hazeState = LocalHazeState.current
-
-    if (hazeState != null) {
-        Box(modifier = modifier.hazeEffect(hazeState, hazeStyle, hazeBlock)) { content() }
-    } else {
-        Box(modifier = modifier) { content() }
-    }
-}
+) = Box(
+    modifier = modifier
+        .hazeEffect(LocalHazeState.current, hazeStyle, hazeBlock),
+    content = { content() }
+)
 
 /**
  * Scaffold which lays out [content] behind both the top bar and the bottom bar content with Haze
@@ -143,15 +137,12 @@ fun BlurScaffold(
     val appPreferences = LocalContext.current.appPreferences
     val colors = LocalExtendedColors.current
 
-    // Disable blurring on translucent theme
-    if (!ThemeUtil.isTranslucentTheme(colors) && !appPreferences.reduceEffect) {
-        val hazeState = remember {
-            if (appPreferences.useRenderEffect) HazeState() else null
-        }
+    if (!ThemeUtil.isTranslucentTheme(colors) && appPreferences.useRenderEffect) {
+        val hazeState = remember { HazeState() }
 
         CompositionLocalProvider(
             LocalSnackbarHostState provides scaffoldState.snackbarHostState,
-            LocalExtendedColors provides colors.overrideSysBarColor(hazeState != null),
+            LocalExtendedColors provides colors.overrideSysBarColor(),
             LocalHazeState provides hazeState,
         ) {
             Scaffold(
@@ -177,13 +168,18 @@ fun BlurScaffold(
                 drawerContentColor,
                 drawerScrimColor,
                 backgroundColor,
-                contentColor,
-                content = if (attachHazeContentState && hazeState != null) {
-                    { padding -> Box(modifier = Modifier.hazeSource(hazeState)) { content(padding) } }
-                } else {
-                    content
+                contentColor
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .block {
+                            if (attachHazeContentState) hazeSource(hazeState) else null
+                        }
+                ) {
+                    content(paddingValues)
                 }
-            )
+            }
         }
     } else {
         MyScaffold(
