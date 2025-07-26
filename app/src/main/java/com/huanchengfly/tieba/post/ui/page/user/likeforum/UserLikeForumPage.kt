@@ -133,15 +133,13 @@ fun UserLikeForumPage(
                         viewModel.send(UserLikeForumUiIntent.LoadMore(uid, currentPage))
                     }
                 },
-                onLoad = {
-                    viewModel.send(UserLikeForumUiIntent.Refresh(uid))
-                },
-                bottomIndicator = { onThreshold ->
+                onLoad = null, // Disable manual refresh
+                bottomIndicator = {
                     LoadMoreIndicator(
                         modifier = Modifier.fillMaxWidth(),
                         isLoading = isLoadingMore,
                         noMore = !hasMore,
-                        onThreshold = onThreshold
+                        onThreshold = false
                     )
                 }
             ) {
