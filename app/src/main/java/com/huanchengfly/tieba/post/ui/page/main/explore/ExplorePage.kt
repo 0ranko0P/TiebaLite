@@ -41,9 +41,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.enableBlur
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.LocalAccount
+import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
@@ -96,7 +98,7 @@ private fun ColumnScope.ExplorePageTab(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalHazeApi::class)
 @Composable
 fun ExplorePage() {
     val account = LocalAccount.current
@@ -117,6 +119,7 @@ fun ExplorePage() {
         backgroundColor = Color.Transparent,
         topHazeBlock = {
             blurEnabled = pagerState.enableBlur(children = listStates)
+            inputScale = DefaultInputScale
         },
         topBar = {
             Toolbar(

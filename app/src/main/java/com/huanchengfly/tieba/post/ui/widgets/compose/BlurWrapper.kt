@@ -41,7 +41,9 @@ import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_NONE
 import com.huanchengfly.tieba.post.utils.DisplayUtil.gestureType
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
+import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeEffectScope
+import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
@@ -52,6 +54,9 @@ val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 // Override TopBar & BottomBar background for blurring effect
 private fun ExtendedColors.overrideSysBarColor(): ExtendedColors =
     this.copy(topBar = topBar.copy(0.6f), bottomBar = bottomBar.copy(0.78f))
+
+@OptIn(ExperimentalHazeApi::class)
+val DefaultInputScale = HazeInputScale.Fixed(0.66f)
 
 val defaultHazeStyle: HazeStyle
     @Composable

@@ -94,6 +94,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
@@ -108,9 +109,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -174,6 +176,7 @@ private fun LazyListState.lastVisiblePost(viewModel: ThreadViewModel): PostData?
     } ?: viewModel.threadUiState.firstPost
 }
 
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun ThreadPage(
     threadId: Long,
@@ -340,6 +343,7 @@ fun ThreadPage(
         BlurScaffold(
             topHazeBlock = {
                 blurEnabled = lazyListState.canScrollBackward
+                inputScale = DefaultInputScale
             },
             scaffoldState = scaffoldState,
             attachHazeContentState = false, // Attach manually since we're blurring the BottomSheet
@@ -454,7 +458,7 @@ fun ThreadPage(
             ) {
                 ProvideNavigator(navigator = navigator) {
                     ThreadContent(
-                        modifier = Modifier.block { hazeState?.let { haze(it) } },
+                        modifier = Modifier.block { hazeState?.let { hazeSource(it) } },
                         viewModel = viewModel,
                         lazyListState = lazyListState,
                         contentPadding = contentPadding,

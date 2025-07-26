@@ -99,6 +99,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.enableBlur
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapseConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -106,6 +107,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.LocalAccount
+import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlin.math.max
 import kotlin.math.min
 
@@ -289,6 +291,7 @@ private fun ForumToolbar(
     )
 }
 
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun ForumPage(
     forumName: String,
@@ -391,6 +394,7 @@ fun ForumPage(
         scaffoldState = scaffoldState,
         topHazeBlock = {
             blurEnabled = pagerState.enableBlur(children = listStates)
+            inputScale = DefaultInputScale
         },
         backgroundColor = Color.Transparent,
         modifier = Modifier.fillMaxSize(),
