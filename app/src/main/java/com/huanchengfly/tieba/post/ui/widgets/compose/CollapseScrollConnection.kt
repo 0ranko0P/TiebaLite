@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.TweenSpec
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
@@ -18,10 +17,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.packInts
 import androidx.compose.ui.util.unpackInt1
 import androidx.compose.ui.util.unpackInt2
@@ -29,7 +24,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -39,20 +33,14 @@ import kotlin.math.roundToInt
  * @see ratio
  * */
 open class CollapseScrollConnection(
-    density: Density,
     private val scope: CoroutineScope,
-    private val orientation: Orientation,
     private val spec: AnimationSpec<Float> = TweenSpec(),
-    val collapseThreshold: Dp = DEFAULT_COLLAPSE_THRESHOLD,
 ) : NestedScrollConnection {
 
     companion object {
-        val DEFAULT_COLLAPSE_THRESHOLD = 18.dp
 
         fun saver(
-            density: Density,
             scope: CoroutineScope,
-            orientation: Orientation,
         ): Saver<CollapseScrollConnection, *> = Saver(
             save = {
                 packInts(val1 = it.state.ordinal, val2 = it.ratio.roundToInt())
@@ -61,23 +49,22 @@ open class CollapseScrollConnection(
                 val state = CollapseState.entries[unpackInt1(value = saved)]
                 val ratio = unpackInt2(value = saved).toFloat()
 
-                CollapseScrollConnection(density, scope, orientation).apply {
+                CollapseScrollConnection(scope).apply {
                     this.state = state
                     this.ratio = ratio
                 }
             }
         )
+
+        enum class CollapseState {
+            Expanded, Expanding, Collapsing, Collapsed
+        }
     }
 
-    private val threshold = with(density) { collapseThreshold.toPx() }
+    var state = CollapseState.Expanded
+        private set
 
-    private enum class CollapseState {
-        Expanded, Expanding, Collapsing, Collapsed
-    }
-
-    private var state = CollapseState.Expanded
-
-    val animator = Animatable(0f)
+    private val animator = Animatable(0f)
 
     /**
      * Animated collapse ratio, from 0f to -1f when [state] changes.
@@ -90,18 +77,29 @@ open class CollapseScrollConnection(
     private fun isExpandState(): Boolean = state.ordinal <= 1
 
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        val delta: Float = if (orientation == Orientation.Vertical) available.y else available.x
+        return when {
+            state == CollapseState.Expanding || state == CollapseState.Collapsing -> available
 
-        if (delta > 0f && isCollapseState()) {
-            updateAnimation(CollapseState.Expanded)
-            return available
-        } else if (delta < 0f && isExpandState()) {
-            // Collapse only if hits threshold
-            if (abs(delta) < threshold) return Offset.Zero
-            updateAnimation(CollapseState.Collapsed)
-            return available
-        } else {
-            return Offset.Zero
+            source == NestedScrollSource.UserInput && available.y < 0f && isExpandState() -> {
+                updateAnimation(CollapseState.Collapsed)
+                available
+            }
+
+            else -> Offset.Zero
+        }
+    }
+
+    override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+        return when {
+            state == CollapseState.Expanding || state == CollapseState.Collapsing -> available
+
+            available.y > 0 && isCollapseState() -> {
+                updateAnimation(CollapseState.Expanded)
+                available
+            }
+
+            else -> Offset.Zero
+
         }
     }
 
@@ -120,15 +118,13 @@ open class CollapseScrollConnection(
 @Composable
 fun rememberCollapseConnection(
     scope: CoroutineScope = rememberCoroutineScope(),
-    orientation: Orientation = Orientation.Vertical
 ): CollapseScrollConnection {
-    val density = LocalDensity.current
     return rememberSaveable(
-        orientation,
-        saver = CollapseScrollConnection.saver(density, scope, orientation)
-    ) {
-        CollapseScrollConnection(density, scope, orientation)
-    }
+        saver = CollapseScrollConnection.saver(scope),
+        init = {
+            CollapseScrollConnection(scope)
+        }
+    )
 }
 
 @Composable
