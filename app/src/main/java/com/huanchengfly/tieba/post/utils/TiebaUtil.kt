@@ -25,6 +25,7 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import java.util.Calendar
+import androidx.core.net.toUri
 
 object TiebaUtil {
     private fun ClipData.setIsSensitive(isSensitive: Boolean): ClipData = apply {
@@ -100,9 +101,12 @@ object TiebaUtil {
     }
 
     fun shareThread(context: Context, title: String, threadId: Long) {
-        Uri.parse("https://tieba.baidu.com/p/$threadId")
+        val link = "https://tieba.baidu.com/p/$threadId"
+        link.toUri()
             .toShareIntent(context, "text/plain", title)
             .let { runCatching { context.startActivity(it) } }
+
+        ClipBoardLinkDetector.onCopyTiebaLink(link)
     }
 
     suspend fun reportPost(
