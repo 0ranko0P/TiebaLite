@@ -106,13 +106,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
+import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -457,13 +457,16 @@ fun ThreadPage(
                 scrimColor = Color.Transparent,
             ) {
                 ProvideNavigator(navigator = navigator) {
-                    ThreadContent(
-                        modifier = Modifier.block { hazeState?.let { hazeSource(it) } },
-                        viewModel = viewModel,
-                        lazyListState = lazyListState,
-                        contentPadding = contentPadding,
-                        useStickyHeader = !useStickyHeaderWorkaround
-                    )
+                    Box(
+                        modifier = Modifier.hazeSource(hazeState),
+                    ) {
+                        ThreadContent(
+                            viewModel = viewModel,
+                            lazyListState = lazyListState,
+                            contentPadding = contentPadding,
+                            useStickyHeader = !useStickyHeaderWorkaround
+                        )
+                    }
                 }
             }
         }

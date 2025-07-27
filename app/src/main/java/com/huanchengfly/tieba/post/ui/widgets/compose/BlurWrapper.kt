@@ -21,6 +21,7 @@ import androidx.compose.material.contentColorFor
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -209,6 +210,14 @@ fun BlurScaffold(
         )
     }
 }
+
+@Stable
+fun Modifier.hazeSource(
+    state: HazeState?,
+    zIndex: Float = 0f,
+    key: Any? = null,
+): Modifier =
+    if (state == null) Modifier else (this.hazeSource(state, zIndex, key))
 
 private fun List<LazyListState?>.canScrollBackwardAt(index: Int): Boolean {
     return getOrNull(index)?.canScrollBackward == true
