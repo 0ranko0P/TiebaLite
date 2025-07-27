@@ -86,6 +86,7 @@ import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
@@ -504,21 +505,6 @@ private fun ThreadMedia(
 }
 
 @Composable
-private fun ThreadMedia(
-    item: ImmutableHolder<ThreadInfo>,
-    modifier: Modifier = Modifier,
-) {
-    ThreadMedia(
-        forumId = item.get { forumId },
-        forumName = item.get { forumInfo?.name ?: forumName/* Might be Empty */ },
-        threadId = item.get { threadId },
-        medias = item.getImmutableList { media },
-        videoInfo = item.get { videoInfo }?.wrapImmutable(),
-        modifier = modifier,
-    )
-}
-
-@Composable
 fun OriginThreadCard(
     originThreadInfo: ImmutableHolder<OriginThreadInfo>,
     modifier: Modifier = Modifier,
@@ -590,7 +576,7 @@ fun ThreadReplyBtn(
 @Composable
 fun ThreadAgreeBtn(
     hasAgree: Boolean,
-    agreeNum: Int,
+    agreeNum: Long,
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -607,7 +593,7 @@ fun ThreadAgreeBtn(
         },
         text = {
             Text(
-                text = if (agreeNum == 0)
+                text = if (agreeNum == 0L)
                     stringResource(id = R.string.title_agree)
                 else agreeNum.getShortNumString()
             )
@@ -650,7 +636,7 @@ enum class FeedType {
 
 @Composable
 fun FeedCard(
-    item: ImmutableHolder<ThreadInfo>,
+    item: ThreadInfoItem,
     onClick: (ThreadInfo) -> Unit,
     onAgree: (ThreadInfo) -> Unit,
     modifier: Modifier = Modifier,
@@ -661,74 +647,78 @@ fun FeedCard(
     dislikeAction: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val context = LocalContext.current
+    val thread = item.info
     Card(
         header = {
-            val author = item.item.author?: return@Card
+            val author = thread.author?: return@Card
             UserHeader(
                 name = author.name,
                 nameShow = author.nameShow,
                 portrait = author.portrait,
                 onClick = { onClickUser(author) },
                 desc = remember {
-                    DateTimeUtils.getRelativeTimeString(App.INSTANCE, item.get { lastTimeInt }.toString())
+                    DateTimeUtils.getRelativeTimeString(App.INSTANCE, thread.lastTimeInt.toString())
                 },
                 content = dislikeAction
             )
         },
         content = {
-            ThreadContent(
-                content = remember { with(item.get()) {
-                    buildThreadContent(title, abstractText, tabName, isGood = this.isGood == 1)
-                } }
-            )
+            ThreadContent(content = item.content)
 
-            ThreadMedia(
-                item = item,
-            )
+            with(thread) {
+                ThreadMedia(
+                    forumId = forumId,
+                    forumName = forumInfo?.name ?: forumName, // Might be Empty
+                    threadId = threadId,
+                    medias = media.wrapImmutable(),
+                    videoInfo = videoInfo?.wrapImmutable(),
+                    modifier = modifier,
+                )
+            }
 
-            item.getNullableImmutable { origin_thread_info }
-                .takeIf { item.get { is_share_thread } == 1 }?.let {
+            thread.origin_thread_info
+                .takeIf { thread.is_share_thread == 1 }?.let {
                     OriginThreadCard(
-                        originThreadInfo = it,
+                        originThreadInfo = it.wrapImmutable(),
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
                             .background(ExtendedTheme.colors.floorCard)
                             .clickable {
-                                onClickOriginThread(it.get())
+                                onClickOriginThread(it)
                             }
                             .padding(16.dp)
                     )
                 }
 
             if (onClickForum != null) {
-                ThreadForumInfo(item = item, onClick = onClickForum)
+                ThreadForumInfo(item = thread.wrapImmutable(), onClick = onClickForum)
             }
         },
         action = {
             Row(modifier = Modifier.fillMaxWidth()) {
                 ThreadShareBtn(
-                    shareNum = item.get { shareNum },
+                    shareNum = thread.shareNum,
                     onClick = {
-                        item.get().also { TiebaUtil.shareThread(context, it.title, it.threadId) }
+                        thread.also { TiebaUtil.shareThread(context, it.title, it.threadId) }
                     },
                     modifier = Modifier.weight(1f)
                 )
 
                 ThreadReplyBtn(
-                    replyNum = item.get { replyNum },
-                    onClick = { onClickReply(item.get()) },
+                    replyNum = thread.replyNum,
+                    onClick = { onClickReply(thread) },
                     modifier = Modifier.weight(1f)
                 )
 
                 ThreadAgreeBtn(
-                    hasAgree = item.get { agree?.hasAgree == 1 },
-                    agreeNum = item.get { agreeNum },
-                    onClick = { onAgree(item.get()) },
+                    hasAgree = item.hasAgree,
+                    agreeNum = item.agreeNum,
+                    onClick = { onAgree(thread) },
                     modifier = Modifier.weight(1f)
                 )
             }
         },
-        onClick = { onClick(item.get()) },
+        onClick = { onClick(thread) },
         modifier = modifier,
     )
 }
@@ -808,7 +798,7 @@ fun FeedCard(
 
                 ThreadAgreeBtn(
                     hasAgree = item.get { agree?.hasAgree == 1 },
-                    agreeNum = item.get { agree_num },
+                    agreeNum = item.get { agree_num }.toLong(),
                     onClick = { onAgree(item.get()) },
                     modifier = Modifier.weight(1f)
                 )
@@ -874,7 +864,7 @@ private fun ActionBtn(
 @Composable
 fun FeedCardPreview() {
     FeedCard(
-        item = wrapImmutable(
+        item = ThreadInfoItem(
             ThreadInfo(
                 title = "预览",
                 author = User(),

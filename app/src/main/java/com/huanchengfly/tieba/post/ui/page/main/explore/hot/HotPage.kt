@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.theme.OrangeA700
@@ -274,11 +273,11 @@ fun HotPage(
                 } else {
                     itemsIndexed(
                         items = threadList,
-                        key = { _, item -> "Thread_${item.get { threadId }}" }
+                        key = { _, item -> "Thread_${item.threadId}" }
                     ) { index, item ->
                         Container {
                             FeedCard(
-                                item = item,
+                                item = item.thread,
                                 onClick = {
                                     navigator.navigate(Destination.Thread(threadId = it.id))
                                 },
@@ -290,12 +289,12 @@ fun HotPage(
                                         HotUiIntent.Agree(
                                             threadId = it.threadId,
                                             postId = it.firstPostId,
-                                            hasAgree = it.hasAgree
+                                            hasAgree = item.thread.hasAgree
                                         )
                                     )
                                 },
                                 onClickForum = {
-                                    val extraKey = item.item.threadId.toString()
+                                    val extraKey = item.threadId.toString()
                                     navigator.navigate(
                                         route = Destination.Forum(it.name, it.avatar, extraKey)
                                     )
@@ -323,7 +322,7 @@ fun HotPage(
                                     Text(
                                         text = stringResource(
                                             id = R.string.hot_num,
-                                            item.get { hotNum }.getShortNumString()
+                                            item.thread.info.hotNum.getShortNumString()
                                         ),
                                         style = MaterialTheme.typography.caption,
                                         color = color
@@ -331,18 +330,6 @@ fun HotPage(
                                 }
                             }
                         }
-//                        ThreadListItem(
-//                            index = index,
-//                            itemHolder = item,
-//                            onClick = {
-//                                navigator.navigate(
-//                                    ThreadPageDestination(
-//                                        threadId = it.id,
-//                                        threadInfo = it
-//                                    )
-//                                )
-//                            }
-//                        )
                     }
                 }
             }

@@ -1,12 +1,12 @@
 package com.huanchengfly.tieba.post.ui.page.forum.threadlist
 
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.util.fastMap
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
@@ -22,6 +22,7 @@ import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.repository.FrsPageRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadItemData
 import com.huanchengfly.tieba.post.ui.models.distinctById
+import com.huanchengfly.tieba.post.ui.models.updateAgreeStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -148,7 +149,7 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
             .map<FrsPageResponse, ForumThreadListPartialChange.FirstLoad> { response ->
                 if (response.data_?.page == null) throw TiebaUnknownException
                 val threadList =
-                    response.data_.thread_list.map { ThreadItemData(it.wrapImmutable()) }
+                    response.data_.thread_list.fastMap { ThreadItemData(it) }
                 ForumThreadListPartialChange.FirstLoad.Success(
                     response.data_.forum_rule?.title.takeIf {
                         type == ForumThreadListType.Latest && response.data_.forum_rule?.has_forum_rule == 1
@@ -175,7 +176,7 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
             .map<FrsPageResponse, ForumThreadListPartialChange.Refresh> { response ->
                 if (response.data_?.page == null) throw TiebaUnknownException
                 val threadList =
-                    response.data_.thread_list.map { ThreadItemData(it.wrapImmutable()) }
+                    response.data_.thread_list.fastMap { ThreadItemData(it) }
                 ForumThreadListPartialChange.Refresh.Success(
                     threadList,
                     response.data_.thread_id_list,
@@ -197,14 +198,14 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
                 sortType,
                 threadListIds.subList(0, size).joinToString(separator = ",") { "$it" }
             ).map { response ->
-                if (response.data_ == null) throw TiebaUnknownException
-                val threadList =
-                    response.data_.thread_list.map { ThreadItemData(it.wrapImmutable()) }
+                val data = response.data_ ?: throw TiebaUnknownException
+                val threadList = data.thread_list.fastMap { ThreadItemData(it) }
+
                 ForumThreadListPartialChange.LoadMore.Success(
                     threadList = threadList,
                     threadListIds = threadListIds.drop(size),
                     currentPage = currentPage,
-                    hasMore = response.data_.thread_list.isNotEmpty()
+                    hasMore = threadList.isNotEmpty()
                 )
             }
         } else {
@@ -218,7 +219,7 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
                 .map<FrsPageResponse, ForumThreadListPartialChange.LoadMore> { response ->
                     if (response.data_?.page == null) throw TiebaUnknownException
                     val threadList =
-                        response.data_.thread_list.map { ThreadItemData(it.wrapImmutable()) }
+                        response.data_.thread_list.fastMap { ThreadItemData(it) }
                     ForumThreadListPartialChange.LoadMore.Success(
                         threadList = threadList,
                         threadListIds = response.data_.thread_id_list,
@@ -239,11 +240,11 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
             hasAgree,
             objType = 3
         ).map<AgreeBean, ForumThreadListPartialChange.Agree> {
-            ForumThreadListPartialChange.Agree.Success(threadId, hasAgree xor 1)
+            ForumThreadListPartialChange.Agree.Success
         }.catch {
             emit(ForumThreadListPartialChange.Agree.Failure(threadId, postId, hasAgree, it))
         }.onStart {
-            emit(ForumThreadListPartialChange.Agree.Start(threadId, hasAgree xor 1))
+            emit(ForumThreadListPartialChange.Agree.Start(threadId))
         }
 }
 
@@ -373,57 +374,23 @@ sealed interface ForumThreadListPartialChange : PartialChange<ForumThreadListUiS
     }
 
     sealed class Agree() : ForumThreadListPartialChange {
-        private fun List<ThreadItemData>.updateAgreeStatus(
-            threadId: Long,
-            hasAgree: Int,
-        ): ImmutableList<ThreadItemData> {
-            return map { data ->
-                val (thread) = data
-                if (thread.get { id } == threadId) {
-                    ThreadItemData(thread.getImmutable { updateAgreeStatus(hasAgree) })
-                } else data
-            }.toImmutableList()
-        }
 
         override fun reduce(oldState: ForumThreadListUiState): ForumThreadListUiState =
             when (this) {
                 is Start -> {
-                    oldState.copy(
-                        threadList = oldState.threadList.updateAgreeStatus(
-                            threadId,
-                            hasAgree
-                        )
-                    )
+                    oldState.copy(threadList = oldState.threadList.updateAgreeStatus(threadId))
                 }
 
-                is Success -> {
-                    oldState.copy(
-                        threadList = oldState.threadList.updateAgreeStatus(
-                            threadId,
-                            hasAgree
-                        )
-                    )
-                }
+                is Success -> oldState
 
                 is Failure -> {
-                    oldState.copy(
-                        threadList = oldState.threadList.updateAgreeStatus(
-                            threadId,
-                            hasAgree
-                        )
-                    )
+                    oldState.copy(threadList = oldState.threadList.updateAgreeStatus(threadId))
                 }
             }
 
-        data class Start(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
+        data class Start(val threadId: Long) : Agree()
 
-        data class Success(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
+        object Success: Agree()
 
         data class Failure(
             val threadId: Long,

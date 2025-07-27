@@ -7,7 +7,6 @@ import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.protos.personalized.DislikeReason
 import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponse
-import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -20,8 +19,10 @@ import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.models.DislikeBean
 import com.huanchengfly.tieba.post.repository.PersonalizedRepository
+import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
 import com.huanchengfly.tieba.post.ui.models.ThreadItemData
 import com.huanchengfly.tieba.post.ui.models.distinctById
+import com.huanchengfly.tieba.post.ui.models.updateAgreeStatus
 import com.huanchengfly.tieba.post.utils.appPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
@@ -106,16 +107,17 @@ class PersonalizedViewModel @Inject constructor() :
         private fun PersonalizedUiIntent.Agree.producePartialChange(): Flow<PersonalizedPartialChange.Agree> =
             TiebaApi.getInstance()
                 .opAgreeFlow(
-                    threadId.toString(), postId.toString(), hasAgree, objType = 3
+                    threadId.toString(), postId.toString(), if (hasAgree) 1 else 0, objType = 3
                 )
                 .map<AgreeBean, PersonalizedPartialChange.Agree> {
-                    PersonalizedPartialChange.Agree.Success(
-                        threadId,
-                        hasAgree xor 1
-                    )
+                    PersonalizedPartialChange.Agree.Success
                 }
-                .catch { emit(PersonalizedPartialChange.Agree.Failure(threadId, hasAgree, it)) }
-                .onStart { emit(PersonalizedPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
+                .catch {
+                    emit(PersonalizedPartialChange.Agree.Failure(threadId, it))
+                }
+                .onStart {
+                    emit(PersonalizedPartialChange.Agree.Start(threadId))
+                }
 
         private fun PersonalizedResponse.toData(): ImmutableList<ThreadItemData> {
             val threadPersonalizedData = data_?.thread_personalized
@@ -127,7 +129,7 @@ class PersonalizedViewModel @Inject constructor() :
                 .map { thread ->
                     val personalized = threadPersonalizedData?.firstOrNull { it.tid == thread.id }
                     ThreadItemData(
-                        thread = thread.wrapImmutable(),
+                        thread = ThreadInfoItem(thread),
                         personalized = personalized?.wrapImmutable()
                     )
                 }
@@ -144,7 +146,7 @@ sealed interface PersonalizedUiIntent : UiIntent {
     data class Agree(
         val threadId: Long,
         val postId: Long,
-        val hasAgree: Int
+        val hasAgree: Boolean
     ) : PersonalizedUiIntent
 
     data class Dislike(
@@ -157,47 +159,22 @@ sealed interface PersonalizedUiIntent : UiIntent {
 
 sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> {
     sealed class Agree() : PersonalizedPartialChange {
-        private fun List<ThreadItemData>.updateAgreeStatus(
-            threadId: Long,
-            hasAgree: Int,
-        ): ImmutableList<ThreadItemData> {
-            return map {
-                val threadInfo = it.thread.item
-                if (threadInfo.threadId == threadId) {
-                    val newThreadInfo = threadInfo.updateAgreeStatus(hasAgree)
-                    it.copy(thread = newThreadInfo.wrapImmutable())
-                } else {
-                    it
-                }
-            }.toImmutableList()
-        }
 
         override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
             when (this) {
-                is Start -> {
-                    oldState.copy(data = oldState.data.updateAgreeStatus(threadId, hasAgree))
-                }
-                is Success -> {
-                    oldState.copy(data = oldState.data.updateAgreeStatus(threadId, hasAgree))
-                }
-                is Failure -> {
-                    oldState.copy(data = oldState.data.updateAgreeStatus(threadId, hasAgree))
-                }
+                is Start -> oldState.copy(data = oldState.data.updateAgreeStatus(threadId))
+
+                is Success -> oldState
+
+                is Failure -> oldState.copy(data = oldState.data.updateAgreeStatus(threadId))
             }
 
-        data class Start(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
+        data class Start(val threadId: Long) : Agree()
 
-        data class Success(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
+        object Success: Agree()
 
         data class Failure(
             val threadId: Long,
-            val hasAgree: Int,
             val error: Throwable
         ) : Agree()
     }
@@ -269,7 +246,7 @@ sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> 
         ) : Refresh()
     }
 
-    sealed class LoadMore private constructor() : PersonalizedPartialChange {
+    sealed class LoadMore : PersonalizedPartialChange {
         override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
             when (this) {
                 Start -> oldState.copy(isLoadingMore = true, error = null)

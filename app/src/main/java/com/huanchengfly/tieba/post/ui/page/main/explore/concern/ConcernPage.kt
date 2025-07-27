@@ -23,9 +23,9 @@ import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 import com.huanchengfly.tieba.post.arch.CommonUiEvent.ScrollToTop.bindScrollToTopEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
@@ -104,10 +104,10 @@ fun ConcernPage(
                 contentType = { _, item -> item.recommendType }
             ) { index, item ->
                 Container {
-                    if (item.recommendType == 1) {
+                    if (item.recommendType == 1 && item.threadList != null) {
                         Column {
                             FeedCard(
-                                item = wrapImmutable(item.threadList!!),
+                                item = ThreadInfoItem(item.threadList),
                                 onClick = {
                                     navigator.navigate(Thread(it.threadId, it.forumId))
                                 },

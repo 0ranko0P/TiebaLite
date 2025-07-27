@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.util.Consumer
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -307,9 +308,9 @@ private fun ForumThreadListPage(
 
                 itemsIndexed(
                     items = threadList,
-                    key = { index, holder -> "${index}_${holder.thread.item.id}" },
+                    key = { _, holder -> holder.threadId },
                     contentType = { _, holder ->
-                        val item = holder.thread.item
+                        val item: ThreadInfo = holder.thread.info
                         when {
                             item.isTop == 1 -> FeedType.Top
                             item.media.isNotEmpty() && item.media.size == 1 -> FeedType.SingleMedia
@@ -318,16 +319,15 @@ private fun ForumThreadListPage(
                             else -> FeedType.PlainText
                         }
                     }
-                ) { index, (holder, blocked) ->
+                ) { index, item ->
                     BlockableContent(
-                        blocked = blocked,
+                        blocked = item.blocked,
                         blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp, horizontal = 16.dp),
                     ) {
-                        val (item) = holder
-                        if (item.isTop == 1) {
+                        if (item.isTop) {
                             TopThreadItem(
                                 title = item.title,
                                 onClick = {
@@ -339,13 +339,13 @@ private fun ForumThreadListPage(
                         } else {
                             Column {
                                 if (index > 0) {
-                                    if (threadList[index - 1].thread.get { isTop } == 1) {
+                                    if (threadList[index - 1].isTop) {
                                         Spacer(modifier = Modifier.height(8.dp))
                                     }
                                     VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                 }
                                 FeedCard(
-                                    item = holder,
+                                    item = item.thread,
                                     onClick = {
                                         navigator.navigate(
                                             Thread(item.threadId, forumId = item.forumId)

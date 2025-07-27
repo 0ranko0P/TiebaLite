@@ -190,18 +190,21 @@ fun PersonalizedPage(
             ) {
                 itemsIndexed(
                     items = data,
-                    key = { _, it -> it.thread.item.id.toString() },
+                    key = { _, it -> it.thread.info.id.toString() },
                     contentType = { _, it ->
                         when {
-                            it.thread.item.videoInfo != null -> FeedType.Video
-                            it.thread.item.media.size == 1 -> FeedType.SingleMedia
-                            it.thread.item.media.size > 1 -> FeedType.MultiMedia
+                            it.thread.info.videoInfo != null -> FeedType.Video
+                            it.thread.info.media.size == 1 -> FeedType.SingleMedia
+                            it.thread.info.media.size > 1 -> FeedType.MultiMedia
                             else -> FeedType.PlainText
                         }
                     }
-                ) { index, (item, blocked, personalized, hidden) ->
+                ) { index, item ->
+                    val hidden = item.hidden
+                    val personalized = item.personalized
+
                     val isHidden = remember(hiddenThreadIds, item, hidden) {
-                        hiddenThreadIds.contains(item.get().threadId) || hidden
+                        hiddenThreadIds.contains(item.threadId) || hidden
                     }
 
                     val isRefreshPosition = remember(index, refreshPosition) {
@@ -220,7 +223,7 @@ fun PersonalizedPage(
                     ) {
                         Column {
                             BlockableContent(
-                                blocked = blocked,
+                                blocked = item.blocked,
                                 blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -228,7 +231,7 @@ fun PersonalizedPage(
                             ) {
                                 Column {
                                     FeedCard(
-                                        item = item,
+                                        item = item.thread,
                                         onClick = {
                                             navigator.navigate(Thread(it.id, it.forumId))
                                         },
@@ -240,12 +243,12 @@ fun PersonalizedPage(
                                                 PersonalizedUiIntent.Agree(
                                                     it.threadId,
                                                     it.firstPostId,
-                                                    it.agree?.hasAgree ?: 0
+                                                    item.thread.hasAgree
                                                 )
                                             )
                                         },
                                         onClickForum = {
-                                            val extraKey = item.item.threadId.toString()
+                                            val extraKey = item.threadId.toString()
                                             navigator.navigate(Forum(it.name, it.avatar, extraKey))
                                         },
                                         onClickUser = {
@@ -256,8 +259,8 @@ fun PersonalizedPage(
                                             Dislike(personalized = personalized) { clickTime, reasons ->
                                                 viewModel.send(
                                                     PersonalizedUiIntent.Dislike(
-                                                        forumId = item.get().forumInfo?.id ?: 0,
-                                                        threadId = item.get().threadId,
+                                                        forumId = item.thread.info.forumInfo?.id ?: 0,
+                                                        threadId = item.threadId,
                                                         reasons = reasons,
                                                         clickTime = clickTime
                                                     )

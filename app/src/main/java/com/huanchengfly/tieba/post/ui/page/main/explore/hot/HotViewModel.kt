@@ -5,7 +5,6 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.protos.FrsTabInfo
 import com.huanchengfly.tieba.post.api.models.protos.RecommendTopicList
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponse
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
@@ -15,9 +14,12 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.ui.models.ThreadItemData
+import com.huanchengfly.tieba.post.ui.models.updateAgreeStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -56,7 +58,7 @@ class HotViewModel @Inject constructor() :
                     HotPartialChange.Load.Success(
                         it.data_?.topicList ?: emptyList(),
                         it.data_?.hotThreadTabInfo ?: emptyList(),
-                        it.data_?.threadInfo ?: emptyList()
+                        it.data_?.threadInfo?.map { info -> ThreadItemData(info) } ?: emptyList()
                     )
                 }
                 .onStart { emit(HotPartialChange.Load.Start) }
@@ -67,25 +69,30 @@ class HotViewModel @Inject constructor() :
                 .map<HotThreadListResponse, HotPartialChange.RefreshThreadList> {
                     HotPartialChange.RefreshThreadList.Success(
                         tabCode,
-                        it.data_?.threadInfo ?: emptyList()
+                        it.data_?.threadInfo?.map { info -> ThreadItemData(info) } ?: emptyList()
                     )
                 }
-                .onStart { emit(HotPartialChange.RefreshThreadList.Start(tabCode)) }
-                .catch { emit(HotPartialChange.RefreshThreadList.Failure(tabCode, it)) }
+                .onStart {
+                    emit(HotPartialChange.RefreshThreadList.Start(tabCode))
+                }
+                .catch {
+                    emit(HotPartialChange.RefreshThreadList.Failure(tabCode, it))
+                }
 
         private fun HotUiIntent.Agree.producePartialChange(): Flow<HotPartialChange.Agree> =
             TiebaApi.getInstance()
                 .opAgreeFlow(
-                    threadId.toString(), postId.toString(), hasAgree, objType = 3
+                    threadId.toString(), postId.toString(), if (hasAgree) 1 else 0, objType = 3
                 )
                 .map<AgreeBean, HotPartialChange.Agree> {
-                    HotPartialChange.Agree.Success(
-                        threadId,
-                        hasAgree xor 1
-                    )
+                    HotPartialChange.Agree.Success
                 }
-                .onStart { emit(HotPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
-                .catch { emit(HotPartialChange.Agree.Failure(threadId, hasAgree, it)) }
+                .onStart {
+                    emit(HotPartialChange.Agree.Start(threadId))
+                }
+                .catch {
+                    emit(HotPartialChange.Agree.Failure(threadId, it))
+                }
     }
 }
 
@@ -97,7 +104,7 @@ sealed interface HotUiIntent : UiIntent {
     data class Agree(
         val threadId: Long,
         val postId: Long,
-        val hasAgree: Int
+        val hasAgree: Boolean
     ) : HotUiIntent
 }
 
@@ -111,7 +118,7 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
                     currentTabCode = "all",
                     topicList = topicList.wrapImmutable(),
                     tabList = tabList.wrapImmutable(),
-                    threadList = threadList.wrapImmutable()
+                    threadList = threadList.toImmutableList()
                 )
 
                 is Failure -> oldState.copy(isRefreshing = false)
@@ -122,7 +129,7 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
         data class Success(
             val topicList: List<RecommendTopicList>,
             val tabList: List<FrsTabInfo>,
-            val threadList: List<ThreadInfo>,
+            val threadList: List<ThreadItemData>,
         ) : Load()
 
         data class Failure(
@@ -137,7 +144,7 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
                 is Success -> oldState.copy(
                     isLoadingThreadList = false,
                     currentTabCode = tabCode,
-                    threadList = threadList.wrapImmutable()
+                    threadList = threadList.toImmutableList()
                 )
 
                 is Failure -> oldState.copy(isLoadingThreadList = false)
@@ -147,7 +154,7 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
 
         data class Success(
             val tabCode: String,
-            val threadList: List<ThreadInfo>
+            val threadList: List<ThreadItemData>
         ) : RefreshThreadList()
 
         data class Failure(
@@ -157,91 +164,26 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
     }
 
     sealed class Agree() : HotPartialChange {
-        private fun List<ImmutableHolder<ThreadInfo>>.updateAgreeStatus(
-            threadId: Long,
-            hasAgree: Int
-        ): ImmutableList<ImmutableHolder<ThreadInfo>> {
-            return map {
-                val threadInfo = it.get()
-                if (threadInfo.threadId == threadId) {
-                    if (threadInfo.agree != null) {
-                        if (hasAgree != threadInfo.agree.hasAgree) {
-                            if (hasAgree == 1) {
-                                threadInfo.copy(
-                                    agreeNum = threadInfo.agreeNum + 1,
-                                    agree = threadInfo.agree.copy(
-                                        agreeNum = threadInfo.agree.agreeNum + 1,
-                                        diffAgreeNum = threadInfo.agree.diffAgreeNum + 1,
-                                        hasAgree = 1
-                                    )
-                                )
-                            } else {
-                                threadInfo.copy(
-                                    agreeNum = threadInfo.agreeNum - 1,
-                                    agree = threadInfo.agree.copy(
-                                        agreeNum = threadInfo.agree.agreeNum - 1,
-                                        diffAgreeNum = threadInfo.agree.diffAgreeNum - 1,
-                                        hasAgree = 0
-                                    )
-                                )
-                            }
-                        } else {
-                            threadInfo
-                        }
-                    } else {
-                        threadInfo.copy(
-                            agreeNum = if (hasAgree == 1) threadInfo.agreeNum + 1 else threadInfo.agreeNum - 1
-                        )
-                    }
-                } else {
-                    threadInfo
-                }
-            }.wrapImmutable()
-        }
 
         override fun reduce(oldState: HotUiState): HotUiState =
             when (this) {
-                is Start -> {
-                    oldState.copy(
-                        threadList = oldState.threadList.updateAgreeStatus(
-                            threadId,
-                            hasAgree
-                        )
-                    )
-                }
+                is Start -> oldState.copy(
+                    threadList = oldState.threadList.updateAgreeStatus(threadId)
+                )
 
-                is Success -> {
-                    oldState.copy(
-                        threadList = oldState.threadList.updateAgreeStatus(
-                            threadId,
-                            hasAgree
-                        )
-                    )
-                }
+                is Success -> oldState
 
-                is Failure -> {
-                    oldState.copy(
-                        threadList = oldState.threadList.updateAgreeStatus(
-                            threadId,
-                            hasAgree
-                        )
-                    )
-                }
+                is Failure -> oldState.copy(
+                    threadList = oldState.threadList.updateAgreeStatus(threadId)
+                )
             }
 
-        data class Start(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
+        data class Start(val threadId: Long) : Agree()
 
-        data class Success(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
+        object Success: Agree()
 
         data class Failure(
             val threadId: Long,
-            val hasAgree: Int,
             val error: Throwable
         ) : Agree()
     }
@@ -253,7 +195,7 @@ data class HotUiState(
     val isLoadingThreadList: Boolean = false,
     val topicList: ImmutableList<ImmutableHolder<RecommendTopicList>> = persistentListOf(),
     val tabList: ImmutableList<ImmutableHolder<FrsTabInfo>> = persistentListOf(),
-    val threadList: ImmutableList<ImmutableHolder<ThreadInfo>> = persistentListOf(),
+    val threadList: List<ThreadItemData> = emptyList(),
 ) : UiState
 
 sealed interface HotUiEvent : UiEvent

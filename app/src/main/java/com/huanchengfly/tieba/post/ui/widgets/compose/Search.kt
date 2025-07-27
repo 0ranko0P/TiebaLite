@@ -245,7 +245,7 @@ fun SearchThreadItem(
 
                 ThreadAgreeBtn(
                     hasAgree = false,
-                    agreeNum = StringUtil.tiebaNumToLong(item.likeNum).toInt(),
+                    agreeNum = StringUtil.tiebaNumToLong(item.likeNum),
                     modifier = Modifier.weight(1f)
                 )
 
