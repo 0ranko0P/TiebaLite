@@ -25,6 +25,7 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.fromJson
 import com.huanchengfly.tieba.post.models.EmoticonCache
 import com.huanchengfly.tieba.post.pxToDp
@@ -37,7 +38,6 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -64,23 +64,22 @@ object EmoticonManager {
     /**
      * Default emoticon download directory
      * */
-    private val EMOTICON_CACHE_DIR: File by lazy {
-        getContext().run { File(externalCacheDir ?: cacheDir, EMOTICON_ASSET_NAME) }
-    }
+    private val EMOTICON_CACHE_DIR: File
+        get() = with(getContext()) {
+            File(externalCacheDir ?: cacheDir, EMOTICON_ASSET_NAME)
+        }
 
     private lateinit var contextRef: WeakReference<Context>
-    private val emoticonIds: MutableList<String> = mutableListOf()
+    private val emoticonIds: MutableSet<String> = hashSetOf()
 
-    private val inlineTextCache by lazy {
-        HashMap<Int, WeakReference<Map<String, InlineTextContent>>>()
-    }
+    private val inlineTextCache = HashMap<Int, WeakReference<Map<String, InlineTextContent>>>()
 
-    private val lineHeightCache by lazy { HashMap<TextStyle, Int>(4) }
+    private val lineHeightCache = HashMap<TextStyle, Int>(4)
 
     private val emoticonMapping: MutableMap<String, String> = ConcurrentHashMap()
 
     private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
-    private var cacheUpdateJob: Job = Job()
+    private val cacheUpdateRunner = ControlledRunner<Unit>()
 
     fun getEmoticonInlineContent(sizePx: Int, emoticonScale: Float): Map<String, InlineTextContent> {
         val size = (sizePx * emoticonScale).pxToSp()
@@ -172,13 +171,13 @@ object EmoticonManager {
     }
 
     private fun updateCache() {
-        if (cacheUpdateJob.isActive) cacheUpdateJob.cancel()
-
-        cacheUpdateJob = scope.launch(Dispatchers.IO) {
-            val emoticonDataCacheFile = File(EMOTICON_CACHE_DIR, "emoticon_data_cache")
+        scope.launch {
             val emoticonJson = EmoticonCache(emoticonIds, emoticonMapping).toJson()
-            ensureActive()
-            FileUtil.writeFile(emoticonDataCacheFile, emoticonJson, false)
+            cacheUpdateRunner.cancelPreviousThenRun(Dispatchers.IO) {
+                val emoticonDataCacheFile = File(EMOTICON_CACHE_DIR, "emoticon_data_cache")
+                ensureActive()
+                FileUtil.writeFile(emoticonDataCacheFile, emoticonJson, false)
+            }
         }
     }
 
