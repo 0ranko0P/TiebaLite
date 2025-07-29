@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.WorkerThread
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.ActivityCompat
@@ -28,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlin.coroutines.CoroutineContext
 
@@ -53,30 +55,28 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
                     getString(R.string.text_please_wait)
                 ).build()
             )
+            return super.onStartCommand(intent, flags, startId)
+        } else {
+            throw RuntimeException("Invalid intent: ${intent?.action ?: "null"}")
         }
-        return super.onStartCommand(intent, flags, startId)
     }
 
     @Deprecated("Deprecated in Java")
+    @WorkerThread
     override fun onHandleIntent(intent: Intent?) {
-        Log.i(TAG, "onHandleWork")
-        if (intent?.action == ACTION_START_SIGN) {
-            val loginInfo = AccountUtil.getLoginInfo()
+        runBlocking {
+            val loginInfo = AccountUtil.getInstance().currentAccount.firstOrNull()
             if (loginInfo != null) {
-                runBlocking {
-                    val signer = SingleAccountSigner(this@OKSignService, loginInfo)
-                    signer.setProgressListener(this@OKSignService)
-                    signer.start()
-                }
+                val signer = SingleAccountSigner(this@OKSignService, loginInfo)
+                signer.setProgressListener(this@OKSignService)
+                signer.start()
             } else {
                 updateNotification(
                     getString(R.string.title_oksign_fail),
                     getString(R.string.tip_login)
                 )
-                ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
             }
-        } else {
-            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            ServiceCompat.stopForeground(this@OKSignService, ServiceCompat.STOP_FOREGROUND_DETACH)
         }
     }
 
@@ -149,11 +149,6 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
-    private fun clearNotification() {
-        notificationManager.cancel(NOTIFICATION_ID)
-    }
-
-
     override fun onStart(total: Int) {
         updateNotification(getString(R.string.title_start_sign), null)
         if (total > 0) Toast.makeText(
@@ -220,14 +215,11 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         )
-        sendBroadcast(Intent(ACTION_SIGN_SUCCESS_ALL))
-        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
     }
 
     override fun onFailure(current: Int, total: Int, errorCode: Int, errorMsg: String) {
         lastSignData.let {
             if (it == null) {
-                ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
                 updateNotification(getString(R.string.title_oksign_fail), errorMsg)
             } else {
                 updateNotification(
@@ -244,17 +236,10 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
     }
 
     companion object {
-//        fun enqueueWork(context: Context, work: Intent) {
-//            enqueueWork(context, OKSignService::class.java, JOB_ID, work)
-//        }
-//
-//        private const val JOB_ID = 233
 
         const val TAG = "OKSignService"
         const val NOTIFICATION_CHANNEL_ID = "1"
         const val NOTIFICATION_ID = 1
-        const val ACTION_SIGN_SUCCESS_ALL =
-            "com.huanchengfly.tieba.post.service.action.SIGN_SUCCESS_ALL"
         const val ACTION_START_SIGN = "com.huanchengfly.tieba.post.service.action.ACTION_SIGN_START"
     }
 }
