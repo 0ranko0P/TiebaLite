@@ -1,13 +1,16 @@
 package com.huanchengfly.tieba.post.activities
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
+import android.widget.RelativeLayout
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
@@ -15,30 +18,57 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.updatePadding
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
+import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.yalantis.ucrop.UCrop
 
 private typealias UCropRequest = UCrop
 
+/**
+ * Fix EdgeToEdge for parent activity
+ * */
 class UCropActivity: com.yalantis.ucrop.UCropActivity(), OnApplyWindowInsetsListener {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        if (!intent.getBooleanExtra(UCrop.Options.EXTRA_HIDE_BOTTOM_CONTROLS, false)) {
-            ViewCompat.setOnApplyWindowInsetsListener(window.decorView, this)
-        }
+    private val hideBottomBar by unsafeLazy { // NPE
+        intent.getBooleanExtra(UCrop.Options.EXTRA_HIDE_BOTTOM_CONTROLS, false)
     }
 
     @SuppressLint("PrivateResource")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val widgetBackground = ContextCompat.getColor(this, com.yalantis.ucrop.R.color.ucrop_color_widget_background)
+        val windowBackground = intent.getIntExtra(
+            UCrop.Options.EXTRA_UCROP_ROOT_VIEW_BACKGROUND_COLOR,
+            ContextCompat.getColor(this, com.yalantis.ucrop.R.color.ucrop_color_crop_background)
+        )
+        enableEdgeToEdge(
+            navigationBarStyle = SystemBarStyle.dark(if (hideBottomBar) windowBackground else widgetBackground)
+        )
+        ViewCompat.setOnApplyWindowInsetsListener(window.decorView, this)
+    }
+
     override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
-        // Has navigation bar
-        if (insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom > 0) {
-            // Apply bottom widget color to navigation bar
-            window.navigationBarColor = ContextCompat.getColor(this, com.yalantis.ucrop.R.color.ucrop_color_widget_background)
-        }
         v.setOnApplyWindowInsetsListener(null)
-        return ViewCompat.onApplyWindowInsets(v, insets)
+        val sysBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+
+        findViewById<ViewGroup>(com.yalantis.ucrop.R.id.ucrop_photobox)
+            .updatePadding(left = sysBars.left, right = sysBars.right)
+
+        findViewById<View>(com.yalantis.ucrop.R.id.toolbar).updatePadding(top = sysBars.top)
+
+        if (sysBars.bottom > 0 && !hideBottomBar) {
+            findViewById<ViewGroup>(com.yalantis.ucrop.R.id.wrapper_states).apply {
+                updatePadding(bottom = sysBars.bottom)
+                updateLayoutParams<RelativeLayout.LayoutParams> {
+                    height = height + sysBars.bottom
+                }
+            }
+        }
+
+        return WindowInsetsCompat.CONSUMED
     }
 
     companion object {
