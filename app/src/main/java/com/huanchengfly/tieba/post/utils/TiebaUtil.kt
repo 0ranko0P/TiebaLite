@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.utils
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.ClipData
@@ -7,10 +8,11 @@ import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PersistableBundle
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
@@ -25,7 +27,6 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import java.util.Calendar
-import androidx.core.net.toUri
 
 object TiebaUtil {
     private fun ClipData.setIsSensitive(isSensitive: Boolean): ClipData = apply {
@@ -77,24 +78,15 @@ object TiebaUtil {
 
     @JvmStatic
     fun startSign(context: Context) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            context.toastShort(R.string.toast_no_permission_notification)
+            return
+        }
+
         context.appPreferences.signDay = Calendar.getInstance()[Calendar.DAY_OF_MONTH]
-//        OKSignService.enqueueWork(
-//            context,
-//            Intent()
-//                .setClassName(
-//                    context.packageName,
-//                    "${context.packageName}.services.OKSignService"
-//                )
-//                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-//                .setAction(OKSignService.ACTION_START_SIGN)
-//        )
         ContextCompat.startForegroundService(
             context,
-            Intent()
-                .setClassName(
-                    context.packageName,
-                    "${context.packageName}.services.OKSignService"
-                )
+            Intent(context, OKSignService::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .setAction(OKSignService.ACTION_START_SIGN)
         )
