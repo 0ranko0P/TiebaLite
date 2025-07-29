@@ -55,7 +55,7 @@ class SubPostItemData private constructor(
         get() = subPost.agree?.diffAgreeNum ?: 0
 
     constructor(subPost: SubPostList, lzId: Long): this(
-        author = UserData(subPost.author!!, lzId == subPost.author_id),
+        author = UserData(subPost.author!!, isLz = lzId == subPost.author.id),
         subPost = subPost
     )
 

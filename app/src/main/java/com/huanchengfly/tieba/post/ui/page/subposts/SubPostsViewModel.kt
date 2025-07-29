@@ -80,7 +80,7 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
                     val post = checkNotNull(response.data_?.post)
                     val page = checkNotNull(response.data_.page)
                     val forum = checkNotNull(response.data_.forum)
-                    val lzId = response.data_.thread?.origin_thread_info?.author?.id ?: -1L
+                    val lzId = response.data_.thread?.author?.id ?: -1L
                     val anti = checkNotNull(response.data_.anti)
                     val subPosts = response.data_.subpost_list
                         .toItemDataList(lzId)
@@ -111,7 +111,7 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
                 .pbFloorFlow(threadId, postId, forumId, loadPage, subPostId)
                 .collect { response ->
                     val page = checkNotNull(response.data_?.page)
-                    val lzId = response.data_.thread?.origin_thread_info?.author?.id ?: -1L
+                    val lzId = response.data_.thread?.author?.id ?: -1L
                     val subPosts = response.data_.subpost_list.toItemDataList(lzId)
 
                     _state.value = _state.value.copy(
