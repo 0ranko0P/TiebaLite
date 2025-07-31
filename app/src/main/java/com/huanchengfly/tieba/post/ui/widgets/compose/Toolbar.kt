@@ -54,12 +54,11 @@ import androidx.compose.ui.util.fastForEach
 import androidx.core.content.ContextCompat
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass.Companion.Compact
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.utils.AccountUtil
@@ -72,8 +71,7 @@ val AppBarHeight: Dp = 56.dp
 
 @Composable
 fun accountNavIconIfCompact(): (@Composable () -> Unit)? =
-    if (LocalWindowSizeClass.current.widthSizeClass == Compact) (@Composable { AccountNavIcon() })
-    else null
+    (@Composable { AccountNavIcon() }).takeIf { isWindowWidthCompat() }
 
 @Composable
 fun AccountNavIcon(

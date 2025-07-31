@@ -8,7 +8,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.drawable.ColorDrawable
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import androidx.compose.animation.animateColorAsState
@@ -23,12 +23,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.WindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -44,12 +45,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import androidx.window.layout.FoldingFeature
-import androidx.window.layout.WindowInfoTracker
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -61,9 +59,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.RootNavGraph
 import com.huanchengfly.tieba.post.ui.page.rememberBottomSheetNavigator
-import com.huanchengfly.tieba.post.ui.utils.DevicePosture
-import com.huanchengfly.tieba.post.ui.utils.isBookPosture
-import com.huanchengfly.tieba.post.ui.utils.isSeparating
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
@@ -88,16 +83,13 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 val LocalNotificationCountFlow =
     staticCompositionLocalOf<Flow<Int>> { throw IllegalStateException("not allowed here!") }
-val LocalDevicePosture =
-    staticCompositionLocalOf<State<DevicePosture>> { throw IllegalStateException("not allowed here!") }
+
+val LocalWindowAdaptiveInfo =
+    staticCompositionLocalOf<WindowAdaptiveInfo> { throw IllegalStateException("not allowed here!") }
 
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
@@ -108,32 +100,6 @@ class MainActivityV2 : BaseComposeActivity() {
         MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private var mNewMessageReceiver: NewMessageReceiver? = null
-
-    private val devicePostureFlow: StateFlow<DevicePosture> by lazy {
-        WindowInfoTracker.getOrCreate(this)
-            .windowLayoutInfo(this)
-            .flowWithLifecycle(lifecycle)
-            .map { layoutInfo ->
-                val foldingFeature =
-                    layoutInfo.displayFeatures
-                        .filterIsInstance<FoldingFeature>()
-                        .firstOrNull()
-                when {
-                    isBookPosture(foldingFeature) ->
-                        DevicePosture.BookPosture(foldingFeature.bounds)
-
-                    isSeparating(foldingFeature) ->
-                        DevicePosture.Separating(foldingFeature.bounds, foldingFeature.orientation)
-
-                    else -> DevicePosture.NormalPosture
-                }
-            }
-            .stateIn(
-                scope = lifecycleScope,
-                started = SharingStarted.Eagerly,
-                initialValue = DevicePosture.NormalPosture
-            )
-    }
 
     // Convert Deep Link intent to destination route if it's valid
     private fun handelDeepLinks(intent: Intent): Destination? = intent.data?.let { uri ->
@@ -181,8 +147,7 @@ class MainActivityV2 : BaseComposeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        window.decorView.setBackgroundColor(0)
-        window.setBackgroundDrawable(ColorDrawable(0))
+        window.decorView.setBackgroundColor(Color.TRANSPARENT)
         lifecycleScope.launch {
             ClientUtils.setActiveTimestamp(applicationContext)
             delay(2000L)
@@ -266,13 +231,12 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     @Composable
-    fun TiebaLiteLocalProvider(content: @Composable () -> Unit) {
+    private fun TiebaLiteLocalProvider(content: @Composable () -> Unit) {
         CompositionLocalProvider(
             LocalNotificationCountFlow provides notificationCountFlow,
-            LocalDevicePosture provides devicePostureFlow.collectAsState(),
-        ) {
-            content()
-        }
+            LocalWindowAdaptiveInfo provides currentWindowAdaptiveInfo(),
+            content = content
+        )
     }
 
     private inner class NewMessageReceiver : BroadcastReceiver() {

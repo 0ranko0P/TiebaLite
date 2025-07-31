@@ -15,11 +15,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -47,6 +46,7 @@ import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
@@ -57,9 +57,11 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
+import com.huanchengfly.tieba.post.ui.widgets.compose.DrawerWindowInsets
+import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarWindowInsets
+import com.huanchengfly.tieba.post.ui.widgets.compose.RailWindowInsets
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import kotlinx.collections.immutable.ImmutableList
 
 enum class LayoutType {
     HEADER, CONTENT
@@ -123,19 +125,18 @@ fun NavigationDrawerItem(
 fun NavigationDrawerContent(
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
-    navigationItems: ImmutableList<NavigationItem>,
+    navigationItems: List<NavigationItem>,
     navigationContentPosition: MainNavigationContentPosition
 ) {
     PositionLayout(
         modifier = Modifier
             .width(ActiveIndicatorWidth)
             .background(ExtendedTheme.colors.bottomBar)
-            .padding(16.dp),
+            .padding(16.dp)
+            .windowInsetsPadding(DrawerWindowInsets),
         content = {
             Column(
-                modifier = Modifier
-                    .layoutId(LayoutType.HEADER)
-                    .statusBarsPadding(),
+                modifier = Modifier.layoutId(LayoutType.HEADER),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp) // NavigationRailVerticalPadding
             ) {
@@ -257,16 +258,14 @@ private fun PositionLayout(
 fun NavigationRail(
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
-    navigationItems: ImmutableList<NavigationItem>,
+    navigationItems: List<NavigationItem>,
     navigationContentPosition: MainNavigationContentPosition
 ) {
     NavigationRail(
         backgroundColor = ExtendedTheme.colors.bottomBar,
         contentColor = ExtendedTheme.colors.primary,
-        modifier = Modifier
-            .fillMaxHeight()
-            .statusBarsPadding(),
-        elevation = 0.dp,
+        modifier = Modifier.windowInsetsPadding(RailWindowInsets),
+        elevation = Dp.Hairline,
         header = {
             AccountNavIcon(spacer = false)
         }
@@ -275,7 +274,7 @@ fun NavigationRail(
             modifier = Modifier.fillMaxHeight(),
             verticalArrangement = if (navigationContentPosition == MainNavigationContentPosition.TOP) Arrangement.Top else Arrangement.Center
         ) {
-            navigationItems.forEachIndexed { index, navigationItem ->
+            navigationItems.fastForEachIndexed { index, navigationItem ->
                 NavigationRailItem(
                     selected = index == currentPosition,
                     onClick = {
@@ -303,7 +302,6 @@ fun BottomNavigationDivider(
     if (!themeColors.isNightMode) {
         Spacer(
             modifier = Modifier
-                .fillMaxWidth()
                 .height(1.5.dp)
                 .background(themeColors.divider)
         )
@@ -315,13 +313,13 @@ fun BottomNavigation(
     modifier: Modifier = Modifier,
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
-    navigationItems: ImmutableList<NavigationItem>,
+    navigationItems: List<NavigationItem>,
     themeColors: ExtendedColors = ExtendedTheme.colors
 ) {
     Column(modifier = modifier.background(themeColors.bottomBar)) {
         BottomNavigationDivider(themeColors)
         BottomNavigation(
-            modifier = Modifier.navigationBarsPadding(),
+            modifier = Modifier.windowInsetsPadding(NavigationBarWindowInsets),
             backgroundColor = Color.Transparent,
             contentColor = themeColors.primary,
             elevation = 0.dp,

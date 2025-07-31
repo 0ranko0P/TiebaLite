@@ -43,11 +43,10 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
@@ -149,8 +148,7 @@ data class PicContentRender(
 ) : PbContentRender {
     @Composable
     override fun Render() {
-        val widthFraction =
-            if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.5f
+        val widthFraction = if (isWindowWidthCompat()) 1f else 0.5f
 
         NetworkImage(
             imageUri = picUrl,
@@ -200,12 +198,12 @@ data class VideoContentRender(
     @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
     override fun Render() {
-        val widthFraction =
-            if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.5f
         val navigator = LocalNavController.current
         val context = LocalContext.current
 
         if (picUrl.isNotBlank()) {
+            val widthFraction = if (isWindowWidthCompat()) 1f else 0.5f
+
             val picModifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
                 .fillMaxWidth(widthFraction)

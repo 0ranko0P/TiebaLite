@@ -7,22 +7,16 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.huanchengfly.tieba.post.activities.BaseActivity
 import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowSizeClass
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.calculateWindowSizeClass
 import com.huanchengfly.tieba.post.utils.LocalAccountProvider
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 
@@ -49,11 +43,7 @@ abstract class BaseComposeActivity : BaseActivity() {
                 }
 
                 LocalAccountProvider {
-                    CompositionLocalProvider(
-                        LocalWindowSizeClass provides calculateWindowSizeClass(activity = this)
-                    ) {
-                        Content()
-                    }
+                    Content()
                 }
             }
         }
@@ -80,10 +70,6 @@ abstract class BaseComposeActivity : BaseActivity() {
     }
 
     companion object {
-        val LocalWindowSizeClass =
-            staticCompositionLocalOf<WindowSizeClass> {
-                WindowSizeClass.calculateFromSize(DpSize(0.dp, 0.dp))
-            }
 
         // Expose night mode setter for settings page
         fun Context.setNightMode(nightMode: Boolean) {

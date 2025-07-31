@@ -45,9 +45,8 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
@@ -386,7 +385,6 @@ fun Dialog(
     buttons: @Composable (DialogScope.() -> Unit) = {},
     content: @Composable (DialogScope.() -> Unit),
 ) {
-    val windowWidthSizeClass = LocalWindowSizeClass.current.widthSizeClass
     BaseDialog(
         modifier = modifier,
         dialogState = dialogState,
@@ -398,7 +396,7 @@ fun Dialog(
         ConstraintLayout(
             modifier = modifier
                 .fillMaxWidth(
-                    fraction = if (windowWidthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.6f
+                    fraction = if (isWindowWidthCompat()) 1f else 0.6f
                 )
                 .padding(16.dp)
                 .background(

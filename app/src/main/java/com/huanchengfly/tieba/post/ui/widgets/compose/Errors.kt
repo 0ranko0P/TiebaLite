@@ -37,9 +37,8 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 
 @Composable
@@ -53,8 +52,8 @@ fun TipScreen(
 ) {
     val scrollableModifier =
         if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier
-    val widthFraction =
-        if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) 0.9f else 0.5f
+    val widthFraction = if (isWindowWidthCompat()) 0.9f else 0.5f
+
     Box(
         contentAlignment = Alignment.TopCenter,
         modifier = modifier

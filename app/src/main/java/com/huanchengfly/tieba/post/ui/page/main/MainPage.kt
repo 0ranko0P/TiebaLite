@@ -1,93 +1,48 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavHostController
-import com.huanchengfly.tieba.post.LocalDevicePosture
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
+import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
-import com.huanchengfly.tieba.post.arch.block
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePage
 import com.huanchengfly.tieba.post.ui.page.main.home.HomePage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
 import com.huanchengfly.tieba.post.ui.page.main.user.UserPage
-import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
-import com.huanchengfly.tieba.post.ui.utils.getNavType
+import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
+import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarWindowInsets
+import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationSuiteScaffold
+import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
-
-@Composable
-private fun NavigationWrapper(
-    currentPosition: Int,
-    onChangePosition: (position: Int) -> Unit,
-    navigationItems: ImmutableList<NavigationItem>,
-    navigationType: MainNavigationType,
-    navigationContentPosition: MainNavigationContentPosition,
-    content: @Composable BoxScope.() -> Unit,
-) {
-    Row(modifier = Modifier.fillMaxSize()) {
-        AnimatedVisibility(visible = navigationType == MainNavigationType.PERMANENT_NAVIGATION_DRAWER) {
-            NavigationDrawerContent(
-                currentPosition = currentPosition,
-                onChangePosition = onChangePosition,
-                navigationItems = navigationItems,
-                navigationContentPosition = navigationContentPosition
-            )
-        }
-        AnimatedVisibility(visible = navigationType == MainNavigationType.NAVIGATION_RAIL) {
-            NavigationRail(
-                currentPosition = currentPosition,
-                onChangePosition = onChangePosition,
-                navigationItems = navigationItems,
-                navigationContentPosition = navigationContentPosition
-            )
-        }
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            content = content
-        )
-    }
-}
 
 /**
  * Workaround to enable background blurring since MainPage's BottomBar is outside the [BlurScaffold].
@@ -96,11 +51,11 @@ private fun NavigationWrapper(
  * */
 @NonRestartableComposable
 @Composable
-private fun BlurBottomNavigation(
+fun BlurBottomNavigation(
     modifier: Modifier = Modifier,
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
-    navigationItems: ImmutableList<NavigationItem>,
+    navigationItems: List<NavigationItem>,
 ) = BottomNavigation(
     modifier = modifier,
     currentPosition = currentPosition,
@@ -111,23 +66,22 @@ private fun BlurBottomNavigation(
 
 // Empty BottomNavigation for background blurring
 val emptyBlurBottomNavigation: @Composable () -> Unit = {
-    if (!ThemeUtil.isTranslucentTheme()) {
-        val devicePosture by LocalDevicePosture.current
-        val windowWidthSizeClass by rememberUpdatedState(LocalWindowSizeClass.current.widthSizeClass)
-        val isBottomNavigation by remember { derivedStateOf {
-            windowWidthSizeClass.getNavType(devicePosture) == MainNavigationType.BOTTOM_NAVIGATION
-        } }
-
-        if (isBottomNavigation) {
-            Box(
-                modifier = Modifier
-                    .background(color = LocalExtendedColors.current.bottomBar)
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .height(BottomNavigationHeight)
-            )
-        }
+    if (!ThemeUtil.isTranslucentTheme() && isBottomNavigation()) {
+        Box(
+            modifier = Modifier
+                .background(color = LocalExtendedColors.current.bottomBar)
+                .fillMaxWidth()
+                .windowInsetsPadding(NavigationBarWindowInsets)
+                .height(BottomNavigationHeight)
+        )
     }
+}
+
+@Composable
+@ReadOnlyComposable
+fun isBottomNavigation(): Boolean {
+    val windowInfo = LocalWindowAdaptiveInfo.current
+    return calculateNavigationType(windowInfo) == MainNavigationType.BOTTOM_NAVIGATION
 }
 
 @OptIn(ExperimentalAnimationGraphicsApi::class)
@@ -137,10 +91,7 @@ fun MainPage(
     viewModel: MainViewModel = pageViewModel<MainUiIntent, MainViewModel>(emptyList()),
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val windowSizeClass = LocalWindowSizeClass.current
-    val windowHeightSizeClass by rememberUpdatedState(newValue = windowSizeClass.heightSizeClass)
-    val windowWidthSizeClass by rememberUpdatedState(newValue = windowSizeClass.widthSizeClass)
-    val foldingDevicePosture by LocalDevicePosture.current
+    val account = LocalAccount.current
 
     val messageCount by viewModel.uiState.collectPartialAsState(
         prop1 = MainUiState::messageCount,
@@ -154,13 +105,7 @@ fun MainPage(
         }
     }
 
-    val pagerState = rememberPagerState { 4 }
-
-    val onItemClicked: (position: Int) -> Unit = remember { {
-        coroutineScope.launch { pagerState.scrollToPage(it) }
-    } }
-
-    val navigationItems = remember { persistentListOf(
+    val navigationItems = remember { listOfNotNull(
         NavigationItem(
             id = "home",
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_inventory_2) },
@@ -181,63 +126,30 @@ fun MainPage(
             onClick = {
                 viewModel.send(MainUiIntent.NewMessage.Clear)
             },
-        ),
+        ).takeIf { account != null },
         NavigationItem(
             id = "user",
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_person) },
             title = R.string.title_user,
         ))
     }
-    val navigationType by remember {
-        derivedStateOf { windowWidthSizeClass.getNavType(foldingDevicePosture) }
-    }
 
-    /**
-     * Content inside Navigation Rail/Drawer can also be positioned at top, bottom or center for
-     * ergonomics and reachability depending upon the height of the device.
-     */
-    val navigationContentPosition by remember {
-        derivedStateOf {
-            when (windowHeightSizeClass) {
-                WindowHeightSizeClass.Compact -> {
-                    MainNavigationContentPosition.TOP
-                }
+    val pagerState = rememberPagerState { navigationItems.size }
 
-                WindowHeightSizeClass.Medium,
-                WindowHeightSizeClass.Expanded -> {
-                    MainNavigationContentPosition.CENTER
-                }
-
-                else -> {
-                    MainNavigationContentPosition.TOP
-                }
-            }
-        }
-    }
+    val onItemClicked: (position: Int) -> Unit = remember { {
+        coroutineScope.launch { pagerState.scrollToPage(it) }
+    } }
 
     ProvideNavigator(navigator = navHostController) {
-        NavigationWrapper(
+        NavigationSuiteScaffold(
             currentPosition = pagerState.currentPage,
             onChangePosition = onItemClicked,
             navigationItems = navigationItems,
-            navigationType = navigationType,
-            navigationContentPosition = navigationContentPosition
+            navigationBarAtop = !ThemeUtil.isTranslucentTheme(),
         ) {
-            val isBottomNavigation by remember {
-                derivedStateOf { navigationType == MainNavigationType.BOTTOM_NAVIGATION }
-            }
-
             LazyLoadHorizontalPager(
                 state = pagerState,
-                modifier = Modifier.block {
-                    // MyScaffold places content behind the BottomBar (unlike TopBar)
-                    // Set bottom padding here if current theme is translucent
-                    if (isBottomNavigation && ThemeUtil.isTranslucentTheme()) {
-                        padding(bottom = BottomNavigationHeight).windowInsetsPadding(WindowInsets.navigationBars)
-                    } else {
-                        null
-                    }
-                },
+                modifier = Modifier.windowInsetsPadding(NavigationBarWindowInsets.only(WindowInsetsSides.End)),
                 key = { navigationItems[it].id },
                 verticalAlignment = Alignment.Top,
                 userScrollEnabled = false
@@ -251,17 +163,6 @@ fun MainPage(
 
                     R.string.title_user -> UserPage()
                 }
-            }
-
-            AnimatedVisibility(
-                visible = isBottomNavigation,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            ) {
-                BlurBottomNavigation(
-                    currentPosition = pagerState.currentPage,
-                    onChangePosition = onItemClicked,
-                    navigationItems = navigationItems
-                )
             }
         }
     }

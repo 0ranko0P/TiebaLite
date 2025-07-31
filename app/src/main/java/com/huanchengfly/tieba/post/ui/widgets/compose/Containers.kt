@@ -12,8 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntSize
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_LOWER_BOUND
+import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
+import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 
 @Composable
 fun Container(
@@ -21,16 +22,13 @@ fun Container(
     fluid: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val windowWidthSizeClass = LocalWindowSizeClass.current.widthSizeClass
-    val widthFraction = remember(windowWidthSizeClass) {
-        if (fluid) {
-            1f
-        } else {
-            when (windowWidthSizeClass) {
-                WindowWidthSizeClass.Medium -> 0.87f
-                WindowWidthSizeClass.Expanded -> 0.75f
-                else -> 1f
-            }
+    val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
+    val widthFraction = remember(windowSize) {
+        when {
+            fluid -> 1f
+            windowSize.isWidthAtLeastBreakpoint(WIDTH_DP_EXPANDED_LOWER_BOUND) -> 0.75f
+            windowSize.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND) -> 0.87f
+            else -> 1f
         }
     }
 

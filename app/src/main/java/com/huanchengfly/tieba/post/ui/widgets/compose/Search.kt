@@ -59,13 +59,12 @@ import androidx.compose.ui.util.fastForEach
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.collectPreferenceAsState
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
 import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
@@ -279,12 +278,7 @@ fun SearchMedia(
         defaultValue = false
     )
 
-    val windowWidthSizeClass = BaseComposeActivity.LocalWindowSizeClass.current.widthSizeClass
-    val singleMediaFraction = remember(windowWidthSizeClass) {
-        if (windowWidthSizeClass == WindowWidthSizeClass.Compact)
-            1f
-        else 0.5f
-    }
+    val singleMediaFraction = if (isWindowWidthCompat()) 1f else 0.5f
 
     if (hasPhoto && !hideMedia) {
         val mediaWidthFraction = remember(isSinglePhoto, singleMediaFraction) {

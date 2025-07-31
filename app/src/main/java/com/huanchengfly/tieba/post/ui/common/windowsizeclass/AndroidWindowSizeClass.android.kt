@@ -2,10 +2,12 @@ package com.huanchengfly.tieba.post.ui.common.windowsizeclass
 
 import android.app.Activity
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.toComposeRect
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
+import androidx.window.core.layout.WindowSizeClass
 import androidx.window.layout.WindowMetricsCalculator
+import androidx.window.layout.adapter.computeWindowSizeClass
+import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 
 @Composable
 fun calculateWindowSizeClass(activity: Activity): WindowSizeClass {
@@ -14,8 +16,13 @@ fun calculateWindowSizeClass(activity: Activity): WindowSizeClass {
     // API levels, hence why this function needs to be @Composable so we can observe the
     // ComposeView's configuration changes.
     LocalConfiguration.current
-    val density = LocalDensity.current
     val metrics = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(activity)
-    val size = with(density) { metrics.bounds.toComposeRect().size.toDpSize() }
-    return WindowSizeClass.calculateFromSize(size)
+    return WindowSizeClass.BREAKPOINTS_V1.computeWindowSizeClass(metrics)
+}
+
+@ReadOnlyComposable
+@Composable
+fun isWindowWidthCompat(): Boolean {
+    val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
+    return !windowSize.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
 }

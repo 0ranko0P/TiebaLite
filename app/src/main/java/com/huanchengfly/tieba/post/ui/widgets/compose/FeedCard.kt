@@ -77,7 +77,6 @@ import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.aspectRatio
 import com.huanchengfly.tieba.post.api.models.protos.renders
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.collectPreferenceAsState
@@ -85,7 +84,7 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
@@ -390,12 +389,7 @@ private fun ThreadMedia(
         defaultValue = false
     )
 
-    val windowWidthSizeClass = LocalWindowSizeClass.current.widthSizeClass
-    val singleMediaFraction = remember(windowWidthSizeClass) {
-        if (windowWidthSizeClass == WindowWidthSizeClass.Compact)
-            1f
-        else 0.5f
-    }
+    val singleMediaFraction = if (isWindowWidthCompat()) 1f else 0.5f
 
     val hasMedia = hasPhoto || videoInfo != null
 

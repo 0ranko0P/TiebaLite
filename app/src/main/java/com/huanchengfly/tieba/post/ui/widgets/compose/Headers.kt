@@ -233,7 +233,6 @@ private fun TextChip(
 ) = Text(
     text = text,
     modifier = modifier
-        .fillMaxHeight()
         .clip(shape)
         .background(color = backgroundColor)
         .padding(horizontal = 8.dp, vertical = 1.dp),

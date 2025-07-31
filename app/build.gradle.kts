@@ -159,13 +159,13 @@ dependencies {
 
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.animation.graphics)
+    implementation(libs.bundles.compose.md3)
     implementation(libs.androidx.compose.material)
     implementation(libs.androidx.compose.material.navigation)
     implementation(libs.androidx.compose.material.iconsCore)
     // Optional - Add full set of material icons
     implementation(libs.androidx.compose.material.iconsExtended)
     implementation(libs.androidx.compose.ui.util)
-//    implementation "androidx.compose.material3:material3"
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
