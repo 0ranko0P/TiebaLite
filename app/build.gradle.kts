@@ -209,7 +209,6 @@ dependencies {
     implementation(libs.squareup.retrofit2)
     implementation(libs.squareup.retrofit2.wire)
 
-    implementation(libs.colorful.sliders)
     implementation(libs.liyujiang.oadi)
 
     implementation(libs.godaddy.colorpicker)
