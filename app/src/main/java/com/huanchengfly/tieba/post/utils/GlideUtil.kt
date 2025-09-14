@@ -5,16 +5,13 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
 import androidx.annotation.WorkerThread
-import androidx.compose.animation.core.TweenSpec
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.unit.IntSize
 import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestBuilder
-import com.bumptech.glide.integration.compose.CrossFade
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.Placeholder
-import com.bumptech.glide.integration.compose.Transition
 import com.bumptech.glide.integration.compose.placeholder
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -35,7 +32,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 object GlideUtil {
-    val DefaultTransition: Transition.Factory = CrossFade(TweenSpec())
 
     @OptIn(ExperimentalGlideComposeApi::class)
     val DefaultErrorPlaceholder: Placeholder = placeholder(R.drawable.ic_error)
@@ -71,10 +67,10 @@ object GlideUtil {
             isFirstResource: Boolean
         ) -> Boolean = { _, _, _, _ -> false },
         crossinline onResourceReady: (
-            resource: T,
-            model: Any,
-            target: Target<T>?,
-            dataSource: DataSource,
+            resource: T?,
+            model: Any?,
+            target: Target<T?>?,
+            dataSource: DataSource?,
             isFirstResource: Boolean
         ) -> Boolean = { _, _, _, _, _ -> false }
     ): RequestBuilder<T> {
@@ -82,7 +78,7 @@ object GlideUtil {
             override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<T>, isFirstResource: Boolean): Boolean =
                 onLoadFailed.invoke(e, model, target, isFirstResource)
 
-            override fun onResourceReady(resource: T & Any, model: Any, target: Target<T>?, dataSource: DataSource, isFirstResource: Boolean): Boolean =
+            override fun onResourceReady(resource: T?, model: Any?, target: Target<T?>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean =
                 onResourceReady.invoke(resource, model, target, dataSource, isFirstResource)
         }
 
@@ -148,7 +144,11 @@ object GlideUtil {
                     false
                 },
                 onResourceReady = { file, _, _, _, _ ->
-                    continuation.resume(file)
+                    if (file != null) {
+                        continuation.resume(file)
+                    } else {
+                        continuation.resumeWithException(NullPointerException("Null resource!"))
+                    }
                     false
                 }
             )

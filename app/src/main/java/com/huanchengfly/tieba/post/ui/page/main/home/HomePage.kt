@@ -302,7 +302,6 @@ private fun ForumItemContent(
                     .padding(end = 14.dp)
                     .size(FORUM_AVATAR_SIZE)
                     .localSharedBounds(key = ForumAvatarSharedBoundsKey(item.forumName, null)),
-                transition = null
             )
         } else {
             Spacer(modifier = Modifier.width(4.dp))

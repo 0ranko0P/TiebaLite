@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.bumptech.glide.integration.compose.Transition
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.utils.GlideUtil
@@ -91,18 +90,20 @@ fun Avatar(
     data: String?,
     contentDescription: String? = null,
     modifier: Modifier = Modifier,
-    shape: Shape = CircleShape,
-    transition: Transition.Factory? = GlideUtil.DefaultTransition,
-) {
-    GlideImage(
-        model = data,
-        contentDescription = contentDescription,
-        modifier = modifier.clip(shape),
-        contentScale = ContentScale.Crop,
-        failure = GlideUtil.DefaultErrorPlaceholder,
-        transition = transition
-    )
-}
+    shape: Shape = CircleShape
+) =
+    // TODO: Unbox when glide-compose stable released
+    Box(
+        modifier = modifier.clip(shape)
+    ) {
+        GlideImage(
+            model = data,
+            contentDescription = contentDescription,
+            modifier = Modifier.matchParentSize(),
+            contentScale = ContentScale.Crop,
+            failure = GlideUtil.DefaultErrorPlaceholder,
+        )
+    }
 
 @Composable
 fun Avatar(
