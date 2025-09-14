@@ -49,9 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.accompanist.placeholder.PlaceholderHighlight
-import com.google.accompanist.placeholder.material.fade
-import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.isDarkScheme
@@ -67,6 +64,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -79,10 +77,7 @@ private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
         modifier = modifier
             .height(76.dp)
             .fillMaxWidth()
-            .placeholder(
-                highlight = PlaceholderHighlight.fade(),
-                shape = MaterialTheme.shapes.small
-            )
+            .placeholder()
     )
 }
 
@@ -132,21 +127,21 @@ private fun InfoCardPlaceHolder(modifier: Modifier = Modifier) {
                 fontSize = 20.sp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .placeholder(highlight = PlaceholderHighlight.fade()),
+                    .placeholder(),
             )
             Text(
                 text = "",
                 fontSize = 12.sp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .placeholder(highlight = PlaceholderHighlight.fade()),
+                    .placeholder(),
             )
         }
         Spacer(modifier = Modifier.width(16.dp))
         Box(
             modifier = Modifier
                 .size(Sizes.Large)
-                .placeholder(highlight = PlaceholderHighlight.fade(), shape = CircleShape),
+                .placeholder(shape = CircleShape),
         )
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -25,9 +26,6 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.Transition
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
-import com.google.accompanist.placeholder.PlaceholderHighlight
-import com.google.accompanist.placeholder.material.fade
-import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.utils.GlideUtil
 
@@ -62,13 +60,15 @@ fun AvatarIcon(
     )
 }
 
+@NonRestartableComposable
 @Composable
-fun AvatarPlaceholder(size: Dp, modifier: Modifier = Modifier)
-= Box(
-    modifier = modifier
-        .size(size)
-        .placeholder(highlight = PlaceholderHighlight.fade(), shape = CircleShape)
-)
+fun AvatarPlaceholder(size: Dp, modifier: Modifier = Modifier)  {
+    Box(
+        modifier = modifier
+            .size(size)
+            .placeholder(shape = CircleShape)
+    )
+}
 
 @Composable
 fun Avatar(

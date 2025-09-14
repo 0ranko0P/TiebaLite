@@ -41,6 +41,7 @@ androidx-compose-material3 = { module = "androidx.compose.material3:material3", 
 androidx-compose-material3-navsuite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3" }
 androidx-compose-material-iconsCore = { module = "androidx.compose.material:material-icons-core" }
 androidx-compose-material-iconsExtended = { module = "androidx.compose.material:material-icons-extended" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
 androidx-compose-ui-test = { module = "androidx.compose.ui:ui-test" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }

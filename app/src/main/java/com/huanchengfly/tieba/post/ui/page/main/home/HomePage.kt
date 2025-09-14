@@ -69,7 +69,7 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
-import com.google.accompanist.placeholder.material.placeholder
+import com.google.accompanist.placeholder.PlaceholderDefaults
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -105,6 +105,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
+import com.huanchengfly.tieba.post.ui.widgets.compose.color
+import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -165,14 +167,12 @@ private fun Header(text: String, modifier: Modifier = Modifier, invert: Boolean 
 }
 
 @Composable
-private fun ForumItemPlaceholder(
-    showAvatar: Boolean,
-) {
+private fun ForumItemPlaceholder(showAvatar: Boolean) {
     Row(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = CenterVertically
     ) {
-        val placeholderColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        val placeholderColor = PlaceholderDefaults.color()
 
         if (showAvatar) {
             Box(
@@ -196,7 +196,7 @@ private fun ForumItemPlaceholder(
             modifier = Modifier
                 .width(54.dp)
                 .padding(vertical = 4.dp)
-                .placeholder(color = placeholderColor, shape = MaterialTheme.shapes.extraSmall)
+                .placeholder(color = placeholderColor)
         ) {
             Text(text = "0", fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }

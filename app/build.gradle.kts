@@ -154,7 +154,7 @@ dependencies {
 
     // Compose Accompanist
     implementation(libs.accompanist.drawablepainter)
-    implementation(project(":placeholder-material"))
+    implementation(project(":placeholder"))
     implementation(project(":insets-ui"))
 
     implementation(libs.androidx.compose.animation)

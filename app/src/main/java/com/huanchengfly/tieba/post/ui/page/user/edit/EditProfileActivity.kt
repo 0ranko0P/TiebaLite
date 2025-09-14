@@ -59,7 +59,6 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.UCropActivity
 import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUCropResult
@@ -79,6 +78,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
+import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -225,7 +225,7 @@ fun EditProfileCard(
                     .size(64.dp)
                     .clip(CircleShape)
                     .align(Alignment.CenterHorizontally)
-                    .placeholder(visible = loading)
+                    .placeholder(visible = loading, shape = CircleShape)
             ) {
                 GlideImage(
                     model = remember { StringUtil.getAvatarUrl(portrait) },

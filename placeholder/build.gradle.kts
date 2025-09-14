@@ -49,6 +49,13 @@ android {
         compose = true
     }
 
+    lint {
+        textReport = false
+        // We run a full lint analysis as build part in CI, so skip vital checks for assemble tasks
+        checkReleaseBuilds = false
+        disable += setOf("GradleOverrides")
+    }
+
     packaging {
         // Some of the META-INF files conflict with coroutines-test. Exclude them to enable
         // our test APK to build (has no effect on our AARs)
@@ -62,8 +69,11 @@ android {
 
 dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
-    implementation(composeBom)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.ui.util)
-    implementation(libs.kotlinx.coroutines.android)
+    api(composeBom)
+
+    api(libs.kotlin.stdlib)
+    api(libs.androidx.compose.foundation)
+    api(libs.androidx.compose.ui)
+    api(libs.androidx.compose.ui.util)
+    api(libs.kotlinx.coroutines.android)
 }

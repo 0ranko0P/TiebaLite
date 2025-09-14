@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Android Open Source Project
+ * Copyright 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package com.google.accompanist.placeholder.material
+@file:Suppress("UnusedReceiverParameter", "unused")
 
+package com.huanchengfly.tieba.post.ui.widgets.compose
+
+import androidx.annotation.FloatRange
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.InfiniteRepeatableSpec
 import androidx.compose.animation.core.Transition
 import androidx.compose.animation.core.spring
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.contentColorFor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -30,53 +35,104 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.isSpecified
 import com.google.accompanist.placeholder.PlaceholderDefaults
 import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.fade
 import com.google.accompanist.placeholder.placeholder
+import com.google.accompanist.placeholder.shimmer
+
+/**
+ * com.google.accompanist:accompanist-placeholder-material3
+ *
+ * commit 7b34402 'Remove napier' on branch compose-1.6
+ *
+ * 0Ranko0p changes:
+ *   1. Revert 'Deprecating accompanist placeholder'
+ *   2. Use PlaceholderHighlight.fade() as default highlight animation
+ * */
 
 /**
  * Returns the value used as the the `color` parameter value on [Modifier.placeholder].
  *
  * @param backgroundColor The current background color of the layout. Defaults to
- * `MaterialTheme.colors.surface`.
+ * `MaterialTheme.colorScheme.surface`.
  * @param contentColor The content color to be used on top of [backgroundColor].
  * @param contentAlpha The alpha component to set on [contentColor] when compositing the color
  * on top of [backgroundColor]. Defaults to `0.1f`.
  */
 @Composable
-public fun PlaceholderDefaults.color(
-    backgroundColor: Color = MaterialTheme.colors.surface,
+fun PlaceholderDefaults.color(
+    backgroundColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = contentColorFor(backgroundColor),
     contentAlpha: Float = 0.1f,
 ): Color = contentColor.copy(contentAlpha).compositeOver(backgroundColor)
 
 /**
  * Returns the value used as the the `highlightColor` parameter value of
- * [PlaceholderHighlight.Companion.fade].
+ * [com.huanchengfly.tieba.post.ui.widgets.compose.fade].
  *
  * @param backgroundColor The current background color of the layout. Defaults to
- * `MaterialTheme.colors.surface`.
+ * `MaterialTheme.colorScheme.surface`.
  * @param alpha The alpha component to set on [backgroundColor]. Defaults to `0.3f`.
  */
 @Composable
-public fun PlaceholderDefaults.fadeHighlightColor(
-    backgroundColor: Color = MaterialTheme.colors.surface,
+fun PlaceholderDefaults.fadeHighlightColor(
+    backgroundColor: Color = MaterialTheme.colorScheme.surface,
     alpha: Float = 0.3f,
 ): Color = backgroundColor.copy(alpha = alpha)
 
 /**
  * Returns the value used as the the `highlightColor` parameter value of
- * [PlaceholderHighlight.Companion.shimmer].
+ * [com.huanchengfly.tieba.post.ui.widgets.compose.shimmer].
  *
  * @param backgroundColor The current background color of the layout. Defaults to
- * `MaterialTheme.colors.surface`.
+ * `MaterialTheme.colorScheme.inverseSurface`.
  * @param alpha The alpha component to set on [backgroundColor]. Defaults to `0.75f`.
  */
 @Composable
-public fun PlaceholderDefaults.shimmerHighlightColor(
-    backgroundColor: Color = MaterialTheme.colors.surface,
+fun PlaceholderDefaults.shimmerHighlightColor(
+    backgroundColor: Color = MaterialTheme.colorScheme.inverseSurface,
     alpha: Float = 0.75f,
 ): Color {
     return backgroundColor.copy(alpha = alpha)
 }
+
+/**
+ * Creates a [PlaceholderHighlight] which fades in an appropriate color, using the
+ * given [animationSpec].
+ *
+ * @sample com.google.accompanist.sample.placeholder.DocSample_Material_PlaceholderFade
+ *
+ * @param animationSpec the [AnimationSpec] to configure the animation.
+ */
+@Composable
+fun PlaceholderHighlight.Companion.fade(
+    animationSpec: InfiniteRepeatableSpec<Float> = PlaceholderDefaults.fadeAnimationSpec,
+): PlaceholderHighlight = PlaceholderHighlight.fade(
+    highlightColor = PlaceholderDefaults.fadeHighlightColor(),
+    animationSpec = animationSpec,
+)
+
+/**
+ * Creates a [PlaceholderHighlight] which 'shimmers', using a default color.
+ *
+ * The highlight starts at the top-start, and then grows to the bottom-end during the animation.
+ * During that time it is also faded in, from 0f..progressForMaxAlpha, and then faded out from
+ * progressForMaxAlpha..1f.
+ *
+ * @sample com.google.accompanist.sample.placeholder.DocSample_Material_PlaceholderShimmer
+ *
+ * @param animationSpec the [AnimationSpec] to configure the animation.
+ * @param progressForMaxAlpha The progress where the shimmer should be at it's peak opacity.
+ * Defaults to 0.6f.
+ */
+@Composable
+fun PlaceholderHighlight.Companion.shimmer(
+    animationSpec: InfiniteRepeatableSpec<Float> = PlaceholderDefaults.shimmerAnimationSpec,
+    @FloatRange(from = 0.0, to = 1.0) progressForMaxAlpha: Float = 0.6f,
+): PlaceholderHighlight = PlaceholderHighlight.shimmer(
+    highlightColor = PlaceholderDefaults.shimmerHighlightColor(),
+    animationSpec = animationSpec,
+    progressForMaxAlpha = progressForMaxAlpha,
+)
 
 /**
  * Draws some skeleton UI which is typically used whilst content is 'loading'.
@@ -89,7 +145,8 @@ public fun PlaceholderDefaults.shimmerHighlightColor(
  * [placeholderFadeTransitionSpec] parameters.
  *
  * You can provide a [PlaceholderHighlight] which runs an highlight animation on the placeholder.
- * The [shimmer] and [fade] implementations are provided for easy usage.
+ * The [com.huanchengfly.tieba.post.ui.widgets.compose.shimmer] and [com.huanchengfly.tieba.post.ui.widgets.compose.fade]
+ * implementations are provided for easy usage.
  *
  * You can find more information on the pattern at the Material Theming
  * [Placeholder UI](https://material.io/design/communication/launch-screen.html#placeholder-ui)
@@ -108,7 +165,7 @@ public fun PlaceholderDefaults.shimmerHighlightColor(
  * @param contentFadeTransitionSpec The transition spec to use when fading the content
  * on/off screen. The boolean parameter defined for the transition is [visible].
  */
-public fun Modifier.placeholder(
+fun Modifier.placeholder(
     visible: Boolean = true,
     color: Color = Color.Unspecified,
     shape: Shape? = null,
@@ -120,7 +177,7 @@ public fun Modifier.placeholder(
         visible = visible,
         color = if (color.isSpecified) color else PlaceholderDefaults.color(),
         shape = shape ?: MaterialTheme.shapes.small,
-        highlight = highlight,
+        highlight = highlight ?: PlaceholderHighlight.fade(),
         placeholderFadeTransitionSpec = placeholderFadeTransitionSpec,
         contentFadeTransitionSpec = contentFadeTransitionSpec,
     )

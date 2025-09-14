@@ -49,9 +49,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.google.accompanist.placeholder.PlaceholderHighlight
-import com.google.accompanist.placeholder.material.fade
-import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
@@ -84,6 +81,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
@@ -550,7 +548,7 @@ fun ForumHeaderPlaceholder(
                 Spacer(modifier = Modifier.weight(1.0f))
                 Box(
                     modifier = Modifier
-                        .placeholder(highlight = PlaceholderHighlight.fade(), shape = CircleShape)
+                        .placeholder(shape = CircleShape)
                         .padding(horizontal = 18.dp, vertical = 6.dp)
                 ) {
                     Text(text = stringResource(id = R.string.button_sign_in), fontSize = 13.sp)
