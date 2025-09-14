@@ -16,15 +16,15 @@ data class SignResultBean(
         @SerializedName("user_id")
         val userId: String? = null,
         @SerializedName("is_sign_in")
-        val isSignIn: String? = null,
+        val isSignIn: Int? = null,
         @SerializedName("cont_sign_num")
-        val contSignNum: String? = null,
+        val contSignNum: Int? = null,
         @SerializedName("user_sign_rank")
-        val userSignRank: String? = null,
+        val userSignRank: Int? = null,
         @SerializedName("sign_time")
         val signTime: String? = null,
         @SerializedName("sign_bonus_point")
-        val signBonusPoint: String? = null,
+        val signBonusPoint: Int? = null,
         @SerializedName("level_name")
         val levelName: String? = null,
         @SerializedName("levelup_score")

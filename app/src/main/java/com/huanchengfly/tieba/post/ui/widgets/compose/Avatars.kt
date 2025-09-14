@@ -3,23 +3,16 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -33,30 +26,6 @@ object Sizes {
     val Small = 36.dp
     val Medium = 48.dp
     val Large = 56.dp
-}
-
-@Composable
-fun AvatarIcon(
-    @DrawableRes
-    resId: Int,
-    size: Dp,
-    contentDescription: String? = null,
-    modifier: Modifier = Modifier,
-    iconSize: Dp = 24.dp,
-    color: Color = LocalContentColor.current,
-    backgroundColor: Color = Color.Transparent,
-    shape: Shape = CircleShape,
-) {
-    Icon(
-        imageVector = ImageVector.vectorResource(id = resId),
-        contentDescription = contentDescription,
-        tint = color,
-        modifier = modifier
-            .size(size)
-            .clip(shape)
-            .background(color = backgroundColor)
-            .padding((size - iconSize) / 2),
-    )
 }
 
 @NonRestartableComposable
@@ -110,13 +79,14 @@ fun Avatar(
     @DrawableRes data: Int,
     size: Dp,
     contentDescription: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    shape: Shape = CircleShape
 ) = Image(
     painter = painterResource(id = data),
     contentDescription = contentDescription,
     modifier = modifier
         .size(size)
-        .clip(CircleShape),
+        .clip(shape = shape),
     contentScale = ContentScale.Crop
 )
 

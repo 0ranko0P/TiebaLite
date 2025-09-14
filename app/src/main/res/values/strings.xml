@@ -86,7 +86,7 @@
     <string name="content_top">置顶</string>
     <string name="tip_forum_header_liked">LV%1$d %2$s</string>
     <string name="title_forum_name">%1$s吧</string>
-    <string name="toast_sign_success">签到成功， 经验 +%1$s。你是今天第 %2$s 个签到的。</string>
+    <string name="toast_sign_success">签到成功， 经验 +%1$d。你是今天第 %2$d 个签到的。</string>
     <string name="button_sign_in">签到</string>
     <string name="toast_like_success">关注成功，你是第 %s 个关注本吧的</string>
     <string name="tab_forum_latest">最新</string>
@@ -186,7 +186,7 @@
     <string name="tip_permission_phone">获取您的 IMEI 以用于请求百度 API</string>
     <string name="title_show_both_username_and_nickname">同时显示用户名和昵称</string>
     <string name="title_dialog_clip_board_tieba_url">是否要打开剪贴板中的链接</string>
-    <string name="subtitle_quick_preview_thread">来自%1$s吧，共 %2$s 条回复</string>
+    <string name="subtitle_quick_preview_thread">来自%1$s吧，共 %2$d 条回复</string>
     <string name="subtitle_link">网页链接</string>
     <string name="toast_preparing_share_pic">下载图片中…</string>
     <string name="title_select_pic">选择背景图片</string>

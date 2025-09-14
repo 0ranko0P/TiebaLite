@@ -55,7 +55,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
@@ -249,15 +248,7 @@ fun HotPage(
                         onClickReply = {
                             navigator.navigate(Destination.Thread(threadId = it.id, scrollToReply = true))
                         },
-                        onAgree = {
-                            viewModel.send(
-                                HotUiIntent.Agree(
-                                    threadId = it.threadId,
-                                    postId = it.firstPostId,
-                                    hasAgree = item.thread.hasAgree
-                                )
-                            )
-                        },
+                        onAgree = viewModel::onAgreeClicked,
                         onClickForum = {
                             val extraKey = item.threadId.toString()
                             navigator.navigate(

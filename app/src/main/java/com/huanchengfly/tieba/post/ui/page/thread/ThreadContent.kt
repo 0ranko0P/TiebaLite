@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -109,10 +108,9 @@ fun StateScreenScope.ThreadContent(
         if (!state.isLoadingMore) viewModel.requestLoadLatestPosts()
     }
 
-    Container(modifier = modifier) {
-
+    Container {
         SwipeUpLazyLoadColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             state = lazyListState,
             contentPadding = contentPadding,
             isLoading = isLoadingMore,
@@ -197,7 +195,6 @@ fun StateScreenScope.ThreadContent(
     }
 }
 
-@NonRestartableComposable
 @Composable
 private fun LoadPreviousButton(onClick: () -> Unit) {
     TextButton(

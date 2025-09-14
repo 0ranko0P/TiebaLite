@@ -5,10 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.activities.TranslucentThemeViewModel.Companion.translucentBackground
 import com.huanchengfly.tieba.post.arch.shareInBackground
+import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
+import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
+import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +21,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -30,17 +33,24 @@ import javax.inject.Inject
 
 data class MainUiState(
     val setupFinished: Boolean? = null,
-    val ignoreBatteryOpDialogVisible: Boolean = false
+    val ignoreBatteryOpDialogVisible: Boolean = false,
+    val preview: PreviewInfo? = null
 )
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     @ApplicationContext val context: Context,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val forumRepo: ForumRepository
 ) : ViewModel() {
 
     private val _uiState: MutableStateFlow<MainUiState> = MutableStateFlow(MainUiState())
-    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<MainUiState> = combine(
+        _uiState,
+        ClipBoardLinkDetector.previewInfoStateFlow,
+        { ui, preview -> ui.copy(preview = preview) }
+    )
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MainUiState())
 
     /**
      * Cropped wallpaper file of [Theme.TRANSLUCENT], **null** when current theme is not translucent.
@@ -86,4 +96,12 @@ class MainViewModel @Inject constructor(
         settingsRepository.signConfig.save { it.copy(ignoreBatteryOp = true) }
         _uiState.update { it.copy(ignoreBatteryOpDialogVisible = false) }
     }
+
+    fun onCheckClipBoard() {
+        viewModelScope.launch {
+            ClipBoardLinkDetector.checkClipBoard(context, forumRepo)
+        }
+    }
+
+    fun onClipBoardDetectDialogDismiss() = ClipBoardLinkDetector.clear()
 }

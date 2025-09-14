@@ -140,6 +140,16 @@ class PersonalizedViewModel @Inject constructor() :
                 .toImmutableList()
         }
     }
+
+    fun onAgreeClicked(thread: ThreadInfoItem) {
+        send(
+            PersonalizedUiIntent.Agree(
+                threadId = thread.info.threadId,
+                postId = thread.info.firstPostId,
+                hasAgree = thread.like.liked
+            )
+        )
+    }
 }
 
 sealed interface PersonalizedUiIntent : UiIntent {

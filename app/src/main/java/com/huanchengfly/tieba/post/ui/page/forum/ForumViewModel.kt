@@ -2,65 +2,56 @@ package com.huanchengfly.tieba.post.ui.page.forum
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.CommonResponse
-import com.huanchengfly.tieba.post.api.models.LikeForumResultBean
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
+import com.huanchengfly.tieba.post.api.models.SignResultBean
+import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
-import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.models.ForumHistoryExtra
 import com.huanchengfly.tieba.post.models.database.History
-import com.huanchengfly.tieba.post.repository.FrsPageRepository
+import com.huanchengfly.tieba.post.repository.ForumRepository
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.models.forum.ForumData
+import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
+import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.forum.ForumViewModel.Companion.sortTypeKey
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.HistoryUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
-import com.huanchengfly.tieba.post.utils.extension.toShareIntent
+import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.requestPinShortcut
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
@@ -68,421 +59,229 @@ import javax.inject.Inject
 @HiltViewModel
 class ForumViewModel @Inject constructor(
     @ApplicationContext val context: Context,
+    private val forumRepo: ForumRepository,
+    settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle
-) :
-    BaseViewModel<ForumUiIntent, ForumPartialChange, ForumUiState, ForumUiEvent>() {
+) : ViewModel() {
 
-    val param = savedStateHandle.toRoute<Destination.Forum>()
+    private val handler = CoroutineExceptionHandler { _, e ->
+        if (e !is NoConnectivityException) {
+            Log.e(TAG, "onError: ", e)
+        }
+        _uiState.update { it.copy(error = e) }
+    }
 
-    private var forumName: String = param.forumName
+    private val param = savedStateHandle.toRoute<Destination.Forum>()
 
-    @ForumFabFunction
-    val fab: String = context.appPreferences.forumFabFunction
+    private val forumName: String = param.forumName
 
-    @get:ForumSortType
-    var sortType by mutableIntStateOf(ForumSortType.BY_REPLY)
-        private set
+    val fab = settingsRepository.habitSettings.flow
+        .map { it.forumFAB }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ForumFAB.BACK_TO_TOP)
+
+    val sortType = forumRepo.getSortType(forumName)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ForumSortType.BY_REPLY)
+
+    /**
+     * One-off [UiEvent], but no guarantee to be received.
+     * */
+    private val _uiEvent: MutableSharedFlow<UiEvent> = MutableSharedFlow()
+    val uiEvent: Flow<UiEvent> = _uiEvent.asSharedFlow()
+
+    private val _uiState: MutableStateFlow<ForumUiState> = MutableStateFlow(ForumUiState())
+    val uiState: StateFlow<ForumUiState> = _uiState.asStateFlow()
+
+    private var singleJob: Job? = null
 
     init {
-        requestLoadForm(context)
+        requestLoadForm()
     }
 
-    override fun createInitialState(): ForumUiState = ForumUiState()
-
-    override fun createPartialChangeProducer(): PartialChangeProducer<ForumUiIntent, ForumPartialChange, ForumUiState> =
-        ForumPartialChangeProducer
-
-    override fun dispatchEvent(partialChange: ForumPartialChange): UiEvent? {
-        return when (partialChange) {
-            is ForumPartialChange.SignIn.Success -> ForumUiEvent.SignIn.Success(
-                partialChange.signBonusPoint,
-                partialChange.userSignRank
-            )
-
-            is ForumPartialChange.SignIn.Failure -> ForumUiEvent.SignIn.Failure(
-                partialChange.error.getErrorCode(),
-                partialChange.error.getErrorMessage()
-            )
-
-            is ForumPartialChange.Like.Success -> ForumUiEvent.Like.Success(partialChange.data.info.memberSum)
-            is ForumPartialChange.Like.Failure -> ForumUiEvent.Like.Failure(
-                partialChange.error.getErrorCode(),
-                partialChange.error.getErrorMessage()
-            )
-
-            is ForumPartialChange.Unlike.Success -> ForumUiEvent.Unlike.Success
-            is ForumPartialChange.Unlike.Failure -> ForumUiEvent.Unlike.Failure(
-                partialChange.error.getErrorCode(),
-                partialChange.error.getErrorMessage()
-            )
-
-            else -> null
-        }
-    }
-
-    private object ForumPartialChangeProducer :
-        PartialChangeProducer<ForumUiIntent, ForumPartialChange, ForumUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<ForumUiIntent>): Flow<ForumPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<ForumUiIntent.Load>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-                intentFlow.filterIsInstance<ForumUiIntent.SignIn>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-                intentFlow.filterIsInstance<ForumUiIntent.Like>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-                intentFlow.filterIsInstance<ForumUiIntent.Unlike>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-                intentFlow.filterIsInstance<ForumUiIntent.ToggleShowHeader>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-            )
-
-        private fun ForumUiIntent.Load.produceLoadPartialChange() =
-            FrsPageRepository.frsPage(forumName, 1, 1, sortType, null, true)
-                .map<FrsPageResponse, ForumPartialChange.Load> {
-                    if (it.data_?.forum == null) {
-                        throw NullPointerException(it.error?.error_msg ?: "未知错误")
-                    }
-                    ForumPartialChange.Load.Success(it.data_.forum, it.data_.anti?.tbs)
-                }
-                .onStart { emit(ForumPartialChange.Load.Start) }
-                .catch { emit(ForumPartialChange.Load.Failure(it)) }
-
-        private fun ForumUiIntent.SignIn.produceLoadPartialChange() =
-            TiebaApi.getInstance().signFlow("$forumId", forumName, tbs)
-                .map { signResultBean ->
-                    if (signResultBean.userInfo?.signBonusPoint != null &&
-                        signResultBean.userInfo.levelUpScore != null &&
-                        signResultBean.userInfo.contSignNum != null &&
-                        signResultBean.userInfo.userSignRank != null &&
-                        signResultBean.userInfo.isSignIn != null &&
-                        signResultBean.userInfo.levelName != null &&
-                        signResultBean.userInfo.allLevelInfo.isNotEmpty()
-                    ) {
-                        val levelUpScore = signResultBean.userInfo.levelUpScore.toInt()
-                        ForumPartialChange.SignIn.Success(
-                            signResultBean.userInfo.signBonusPoint.toInt(),
-                            levelUpScore,
-                            signResultBean.userInfo.contSignNum.toInt(),
-                            signResultBean.userInfo.userSignRank.toInt(),
-                            signResultBean.userInfo.isSignIn.toInt(),
-                            signResultBean.userInfo.allLevelInfo.last { it.score.toInt() < levelUpScore }.id.toInt(),
-                            signResultBean.userInfo.levelName
-                        )
-                    } else ForumPartialChange.SignIn.Failure(NullPointerException("未知错误"))
-                }
-                .catch { emit(ForumPartialChange.SignIn.Failure(it)) }
-
-        private fun ForumUiIntent.Like.produceLoadPartialChange() =
-            TiebaApi.getInstance().likeForumFlow("$forumId", forumName, tbs)
-                .map<LikeForumResultBean, ForumPartialChange.Like> {
-                    ForumPartialChange.Like.Success(it)
-                }
-                .catch { emit(ForumPartialChange.Like.Failure(it)) }
-
-        private fun ForumUiIntent.Unlike.produceLoadPartialChange() =
-            TiebaApi.getInstance().unlikeForumFlow("$forumId", forumName, tbs)
-                .map<CommonResponse, ForumPartialChange.Unlike> {
-                    ForumPartialChange.Unlike.Success
-                }
-                .catch { emit(ForumPartialChange.Unlike.Failure(it)) }
-
-        private fun ForumUiIntent.ToggleShowHeader.produceLoadPartialChange() =
-            flowOf(ForumPartialChange.ToggleShowHeader(showHeader))
-    }
-
-    fun saveHistory(forum: ForumInfo) = viewModelScope.launch(Dispatchers.IO) {
+    private fun saveHistory(forum: ForumData) {
         HistoryUtil.saveHistory(
-            History(
+            history = History(
                 timestamp = System.currentTimeMillis(),
                 avatar = forum.avatar,
                 type = HistoryUtil.TYPE_FORUM,
                 data = forum.name,
                 extras = Json.encodeToString(ForumHistoryExtra(forum.id))
-            ), false
+            )
         )
     }
 
-    private fun requestLoadForm(context: Context) = viewModelScope.launch {
-        sortType = withContext(Dispatchers.IO) {
-            getSortType(context, forumName).first()
-        }
-        send(ForumUiIntent.Load(forumName, sortType))
+    private fun requestLoadForm() = viewModelScope.launch(handler) {
+        _uiState.set { copy(forum = null, error = null) }
+        val forumData = forumRepo.loadForumInfo(forumName)
+        _uiState.set { copy(forum = forumData) }
+        saveHistory(forumData)
     }
 
-    fun onSortTypeChanged(@ForumSortType sortType: Int, isGood: Boolean) = viewModelScope.launch {
-        this@ForumViewModel.sortType = sortType
-        emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
-        saveSortType(context, forumName, sortType)
+    fun onGoodClassifyChanged(classifyId: Int) {
+        _uiState.set { copy(goodClassifyId = classifyId) }
+        viewModelScope.launch(handler) {
+            emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood = true))
+            delay(200) // wait ScrollToTop animation
+            emitGlobalEventSuspend(ForumThreadListUiEvent.ClassifyChanged(classifyId))
+        }
+    }
+
+    fun onSortTypeChanged(@ForumSortType sortType: Int) {
+        viewModelScope.launch {
+            forumRepo.saveSortType(forumName, sortType)
+            emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood = false))
+            delay(200) // wait ScrollToTop animation
+            emitGlobalEventSuspend(ForumThreadListUiEvent.SortTypeChanged(sortType))
+        }
     }
 
     fun onRefreshClicked(isGood: Boolean) {
         viewModelScope.launch {
             emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood))
-            emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
+            delay(200) // wait ScrollToTop animation
+            emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh)
         }
     }
 
-    fun onFabClicked(context: Context, isGood: Boolean) {
-        when (fab) {
-            ForumFabFunction.POST -> context.toastShort(R.string.toast_feature_unavailable)
+    fun onFabClicked(isGood: Boolean) {
+        when (fab.value) {
+            ForumFAB.POST -> sendMsg(context.getString(R.string.toast_feature_unavailable))
 
-            ForumFabFunction.REFRESH -> onRefreshClicked(isGood)
+            ForumFAB.REFRESH -> onRefreshClicked(isGood)
 
-            ForumFabFunction.BACK_TO_TOP -> viewModelScope.launch {
+            ForumFAB.BACK_TO_TOP -> viewModelScope.launch {
                 emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood))
             }
 
-            ForumFabFunction.HIDE -> throw IllegalStateException("Incorrect Compose state")
+            ForumFAB.HIDE -> throw IllegalStateException("Incorrect Compose state")
         }
     }
 
-    fun onSignIn(forum: ForumInfo, tbs: String) {
-        if (forum.sign_in_info?.user_info?.is_sign_in != 1) {
-            send(ForumUiIntent.SignIn(forum.id, forum.name, tbs))
+    fun onSignIn() {
+        if (singleJob?.isActive == true || _uiState.value.forum?.signed == true) return
+
+        singleJob = viewModelScope.launch(handler) {
+            val currentForum = _uiState.first().forum!!
+            runCatching {
+                forumRepo.forumSignIn(currentForum.id, forumName,  currentForum.tbs!!)
+            }
+            .onFailure { sendUiEvent(ForumUiEvent.SignIn.Failure(it.getErrorMessage())) }
+            .onSuccess {
+                sendUiEvent(ForumUiEvent.SignIn.Success(it.signBonusPoint!!, it.userSignRank!!))
+                _uiState.update { u -> u.copy(forum = currentForum.updateSignIn(info = it)) }
+            }
         }
     }
 
-    fun onFollow(forum: ForumInfo, tbs: String) {
-        if (forum.is_like != 1) {
-            send(ForumUiIntent.Like(forum.id, forum.name, tbs))
+    fun onLikeForum() {
+        val currentForum = _uiState.value.forum
+        if (currentForum == null || currentForum.liked) return
+
+        singleJob = viewModelScope.launch(Dispatchers.IO + handler) {
+            val rec = TiebaApi.getInstance()
+                .likeForumFlow(forumId = currentForum.id.toString(), forumName, tbs = currentForum.tbs!!)
+                .catch {
+                    sendUiEvent(ForumUiEvent.Like.Failure(it.getErrorMessage()))
+                }
+                .firstOrNull() ?: return@launch
+
+            val info = rec.info
+            val newForum = currentForum.copy(
+                liked = true,
+                level = info.levelId.toInt(),
+                levelName = info.levelName,
+                score = info.curScore.toInt(),
+                scoreLevelUp = info.levelUpScore.toInt(),
+                members = info.memberSum.toInt()
+            )
+            _uiState.update { it.copy(forum = newForum) }
+            sendUiEvent(ForumUiEvent.Like.Success(info.memberSum))
         }
     }
 
-    fun sendToDesktop(context: Context, forum: ForumInfo) = viewModelScope.launch {
-        val result = requestPinShortcut(
+    fun onDislikeForum() {
+        val currentForum = _uiState.value.forum
+        if (currentForum == null || !currentForum.liked) return
+
+        singleJob = viewModelScope.launch(Dispatchers.IO + handler) {
+            TiebaApi.getInstance()
+                .unlikeForumFlow(forumId = currentForum.id.toString(), forumName, currentForum.tbs!!)
+                .catch {
+                    sendUiEvent(ForumUiEvent.Dislike.Failure(it.getErrorMessage()))
+                }
+                .firstOrNull() ?: return@launch
+            _uiState.update { it.copy(forum = it.forum!!.copy(liked = false)) }
+            sendUiEvent(ForumUiEvent.Dislike.Success)
+        }
+    }
+
+    private fun sendUiEvent(event: UiEvent) = viewModelScope.launch { _uiEvent.emit(event) }
+
+    private fun sendMsg(msg: String) {
+        if (viewModelScope.isActive) {
+            sendUiEvent(CommonUiEvent.Toast(message = msg))
+        } else {
+            context.toastShort(text = msg)
+        }
+    }
+
+    fun sendToDesktop() = viewModelScope.launch {
+        val forum = _uiState.value.forum ?: return@launch
+        requestPinShortcut(
             context,
             "forum_${forum.id}",
             forum.avatar,
             context.getString(R.string.title_forum, forum.name),
-            Intent(Intent.ACTION_VIEW).setData(Uri.parse("tblite://forum/${forum.name}"))
+            Intent(Intent.ACTION_VIEW, "tblite://forum/${forum.name}".toUri())
         )
-        if (result.isSuccess) {
-            context.toastShort(R.string.toast_send_to_desktop_success)
-        } else {
-            val message = result.exceptionOrNull()?.message ?: return@launch
-            context.toastShort(message)
+        .onSuccess {
+            sendMsg(context.getString(R.string.toast_send_to_desktop_success))
+        }
+        .onFailure {
+            sendMsg(it.getErrorMessage())
         }
     }
 
-    fun shareForum(context: Context) {
-        Uri.parse("https://tieba.baidu.com/f?kw=$forumName")
-            .toShareIntent(context, "text/plain", context.getString(R.string.title_forum, forumName))
-            .let { intent -> runCatching { context.startActivity(intent) } }
-    }
+    fun shareForum() = TiebaUtil.shareForum(context, forumName)
 
     companion object {
         private const val TAG = "ForumViewModel"
 
-        /**
-         * PreferenceDataStore where [sortTypeKey] saved
-         * */
-        private val DataStore by lazy {
-            PreferenceDataStoreFactory.create {
-                App.INSTANCE.preferencesDataStoreFile(name = "forum_preferences")
-            }
-        }
-
-        private fun sortTypeKey(forumName: String) = intPreferencesKey("${forumName}_sort_type")
-
-        /**
-         * Sort preference per forum
-         *
-         * @see [ForumSortType]
-         * */
-        fun getSortType(context: Context, forumName: String): Flow<Int> {
-            return DataStore.data
-                .map { it[sortTypeKey(forumName)] ?: context.appPreferences.defaultSortType }
-                .distinctUntilChanged()
-        }
-
-        private suspend fun saveSortType(context: Context, forumName: String, @ForumSortType sortType: Int) {
-            // Default from app_preference
-            val default = context.appPreferences.defaultSortType
-            // Save to forum_preferences
-            DataStore.edit {
-                val key = sortTypeKey(forumName)
-                if (sortType == default) {
-                    it.remove(key) // Keep dataStore clean
-                } else {
-                    it[key] = sortType
-                }
-            }
-        }
-    }
-}
-
-sealed interface ForumUiIntent : UiIntent {
-    data class Load(
-        val forumName: String,
-        val sortType: Int = -1
-    ) : ForumUiIntent
-
-    data class SignIn(
-        val forumId: Long,
-        val forumName: String,
-        val tbs: String
-    ) : ForumUiIntent
-
-    data class Like(
-        val forumId: Long,
-        val forumName: String,
-        val tbs: String
-    ) : ForumUiIntent
-
-    data class Unlike(
-        val forumId: Long,
-        val forumName: String,
-        val tbs: String
-    ) : ForumUiIntent
-
-    data class ToggleShowHeader(
-        val showHeader: Boolean
-    ) : ForumUiIntent
-}
-
-sealed interface ForumPartialChange : PartialChange<ForumUiState> {
-    sealed class Load : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState = when (this) {
-            Start -> oldState.copy(isLoading = true)
-            is Success -> oldState.copy(
-                isLoading = true,
-                isError = false,
-                forum = forum.wrapImmutable(),
-                tbs = tbs
-            )
-
-            is Failure -> oldState.copy(isLoading = false, isError = true)
-        }
-
-        object Start : Load()
-
-        data class Success(
-            val forum: ForumInfo,
-            val tbs: String?
-        ) : Load()
-
-        data class Failure(
-            val error: Throwable
-        ) : Load()
-    }
-
-    sealed class SignIn : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState = when (this) {
-            is Failure -> oldState
-            is Success -> oldState.copy(
-                forum = oldState.forum?.getImmutable {
-                    copy(
-                        user_level = level,
-                        level_name = levelName,
-                        cur_score = oldState.forum.get { cur_score } + signBonusPoint,
-                        levelup_score = levelUpScore,
-                        sign_in_info = oldState.forum.get { sign_in_info }?.copy(
-                            user_info = oldState.forum.get { sign_in_info }?.user_info?.copy(
-                                is_sign_in = isSignIn,
-                                user_sign_rank = userSignRank,
-                                cont_sign_num = contSignNum
-                            )
-                        )
-                    )
-                }
+        private fun ForumData.updateSignIn(info: SignResultBean.UserInfo): ForumData {
+            return copy(
+                signed  = info.isSignIn == 1,
+                signedDays = info.contSignNum ?: signedDays,
+                signedRank = info.userSignRank ?: signedRank,
+                levelName = info.levelName ?: levelName,
+                score = score + (info.signBonusPoint ?: 0),
+                scoreLevelUp = info.levelUpScore?.toIntOrNull() ?: scoreLevelUp
             )
         }
-
-        data class Success(
-            val signBonusPoint: Int,
-            val levelUpScore: Int,
-            val contSignNum: Int,
-            val userSignRank: Int,
-            val isSignIn: Int,
-            val level: Int,
-            val levelName: String
-        ) : SignIn()
-
-        data class Failure(
-            val error: Throwable
-        ) : SignIn()
-    }
-
-    sealed class Like : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState = when (this) {
-            is Failure -> oldState
-            is Success -> oldState.copy(
-                forum = oldState.forum?.getImmutable {
-                    copy(
-                        is_like = 1,
-                        cur_score = data.info.curScore.toInt(),
-                        levelup_score = data.info.levelUpScore.toInt(),
-                        user_level = data.info.levelId.toInt(),
-                        level_name = data.info.levelName,
-                        member_num = data.info.memberSum.toInt()
-                    )
-                }
-            )
-        }
-
-        data class Success(val data: LikeForumResultBean) : Like()
-
-        data class Failure(val error: Throwable) : Like()
-    }
-
-    sealed class Unlike : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState = when (this) {
-            is Failure -> oldState
-            is Success -> oldState.copy(
-                forum = oldState.forum?.getImmutable { copy(is_like = 0) }
-            )
-        }
-
-        object Success : Unlike()
-
-        data class Failure(val error: Throwable) : Unlike()
-    }
-
-    data class ToggleShowHeader(val showHeader: Boolean) : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState =
-            oldState.copy(showForumHeader = showHeader)
     }
 }
 
 data class ForumUiState(
-    val isLoading: Boolean = false,
-    val isError: Boolean = false,
-    val forum: ImmutableHolder<ForumInfo>? = null,
-    val tbs: String? = null,
-    val showForumHeader: Boolean = true
-) : UiState
+    val forum: ForumData? = null,
+    val goodClassifyId: Int? = null,
+    val error: Throwable? = null
+)
 
 sealed interface ForumUiEvent : UiEvent {
-    sealed interface SignIn : ForumUiEvent {
-        data class Success(
-            val signBonusPoint: Int,
-            val userSignRank: Int,
-        ) : SignIn
 
-        data class Failure(
-            val errorCode: Int,
-            val errorMsg: String,
-        ) : SignIn
+    sealed interface SignIn : ForumUiEvent {
+        data class Success(val signBonusPoint: Int, val userSignRank: Int) : SignIn
+
+        data class Failure(val errorMsg: String) : SignIn
     }
 
     sealed interface Like : ForumUiEvent {
-        data class Success(
-            val memberSum: String
-        ) : Like
+        data class Success(val memberSum: String) : Like
 
-        data class Failure(
-            val errorCode: Int,
-            val errorMsg: String,
-        ) : Like
+        data class Failure(val errorMsg: String) : Like
     }
 
-    sealed interface Unlike : ForumUiEvent {
-        object Success : Like
+    sealed interface Dislike : ForumUiEvent {
+        object Success : Dislike
 
-        data class Failure(
-            val errorCode: Int,
-            val errorMsg: String,
-        ) : Like
+        class Failure(val errorMsg: String) : Dislike
     }
 }

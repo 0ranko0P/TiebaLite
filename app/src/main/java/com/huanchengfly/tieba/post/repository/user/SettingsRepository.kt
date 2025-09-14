@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.repository.user
 
+import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
+import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
@@ -19,6 +21,10 @@ interface Settings<T> {
  * App Settings
  * */
 interface SettingsRepository {
+
+    val blockSettings: Settings<BlockSettings>
+
+    val habitSettings: Settings<HabitSettings>
 
     val themeSettings: Settings<ThemeSettings>
     val uiSettings: Settings<UISettings>

@@ -38,7 +38,7 @@ abstract class BaseViewModel<
 
     private val initialState: State by lazy { createInitialState() }
 
-    private val partialChangeProducer: PartialChangeProducer<Intent, PC, State> by lazy { createPartialChangeProducer() }
+    private val partialChangeProducer: PartialChangeProducer<Intent, PC, State> = createPartialChangeProducer()
 
     protected abstract fun createInitialState(): State
     protected abstract fun createPartialChangeProducer(): PartialChangeProducer<Intent, PC, State>

@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.forum.threadlist
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,77 +12,40 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumRuleDetail
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListViewModel.Companion.ForumVMFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
-import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedType
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.utils.appPreferences
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.launch
-
-typealias ClassifyTabsContent = @Composable () -> Unit
-
-@Composable
-private fun GoodClassifyTabs(
-    goodClassifyHolders: ImmutableList<ImmutableHolder<Classify>>,
-    selectedItem: Int?,
-    onSelected: (Int) -> Unit,
-) {
-    LazyRow(
-        modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(
-            items = goodClassifyHolders,
-            key = { it.get { "${class_id}_$class_name" } }
-        ) { holder ->
-            Chip(
-                text = holder.get { class_name },
-                invertColor = selectedItem == holder.get { class_id },
-                onClick = { onSelected(holder.get { class_id }) }
-            )
-        }
-    }
-}
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import java.util.Objects
 
 @Composable
 private fun TopThreadItem(
@@ -130,170 +92,89 @@ private val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
 }
 
 @Composable
-fun GoodThreadListPage(
+fun ForumThreadList(
     modifier: Modifier = Modifier,
     forumId: Long,
     forumName: String,
-    sortType: () -> Int,
+    type: ForumType,
+    forumRuleTitle: String?,
     contentPadding: PaddingValues,
-    onComposeClassifyTab: (ClassifyTabsContent) -> Unit, // Workaround to compose tab inside TopBar for background blur
-    viewModel: GoodThreadListViewModel = pageViewModel<GoodThreadListViewModel>()
+    viewModel: ForumThreadListViewModel = hiltViewModel<ForumThreadListViewModel, ForumVMFactory>(
+        key = Objects.hash(forumId, forumName, type).toString()
+    ) {
+        it.create(forumName, forumId, type = type)
+    }
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.onFirstLoad(forumName, forumId)
-        viewModel.initialized = true
-    }
-    // Request from ForumPage
-    onGlobalEvent<ForumThreadListUiEvent.Refresh>(filter = { it.isGood }) {
-        viewModel.requestRefresh(goodClassifyId = 0)
-    }
-
-    val goodClassifyId by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::goodClassifyId,
-        initial = null
-    )
-    val goodClassifies by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::goodClassifies,
-        initial = persistentListOf()
-    )
-
-    val listState = rememberLazyListState()
-
-    ForumThreadListPage(modifier, forumId, true, sortType, listState, contentPadding, viewModel)
-
-    if (goodClassifies.size > 1) {
-        LaunchedEffect(Unit) {
-            onComposeClassifyTab {
-                val scope = rememberCoroutineScope()
-
-                GoodClassifyTabs(
-                    goodClassifyHolders = goodClassifies,
-                    selectedItem = goodClassifyId,
-                    onSelected = {
-                        viewModel.requestRefresh(goodClassifyId = it)
-                        // Scroll to top now
-                        scope.launch { listState.animateScrollToItem(0) }
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun NormalThreadListPage(
-    modifier: Modifier = Modifier,
-    forumId: Long,
-    forumName: String,
-    sortType: () -> Int,
-    contentPadding: PaddingValues,
-    viewModel: LatestThreadListViewModel = pageViewModel<LatestThreadListViewModel>()
-) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.onFirstLoad(forumName, forumId, sortType())
-        viewModel.initialized = true
-    }
-    // Request from ForumPage
-    onGlobalEvent<ForumThreadListUiEvent.Refresh>(filter = { !it.isGood }) {
-        viewModel.requestRefresh(it.sortType)
-    }
-
-    ForumThreadListPage(
-        modifier = modifier,
-        forumId = forumId,
-        isGood = false,
-        sortType = sortType,
-        contentPadding = contentPadding,
-        viewModel = viewModel
-    )
-}
-
-@Composable
-private fun ForumThreadListPage(
-    modifier: Modifier = Modifier,
-    forumId: Long,
-    isGood: Boolean = false,
-    sortType: () -> Int,
-    listState: LazyListState = rememberLazyListState(),
-    contentPadding: PaddingValues,
-    viewModel: ForumThreadListViewModel
-) {
-    val context = LocalContext.current
+    val isGood = type == ForumType.Good
     val navigator = LocalNavController.current
     val snackbarHostState = LocalSnackbarHostState.current
-    val hideBlocked = context.appPreferences.hideBlockedContent
+    val listState = rememberLazyListState()
 
     onGlobalEvent<ForumThreadListUiEvent.BackToTop>(
         filter = { it.isGood == isGood },
     ) {
-        listState.animateScrollToItem(0)
+        listState.scrollToItem(0)
     }
-    viewModel.onEvent<ForumThreadListUiEvent.AgreeFail> {
-        val snackbarResult = snackbarHostState.showSnackbar(
-            message = context.getString(
-                R.string.snackbar_agree_fail,
-                it.errorCode,
-                it.errorMsg
-            ),
-            actionLabel = context.getString(R.string.button_retry),
-            duration = SnackbarDuration.Short
-        )
 
-        if (snackbarResult == SnackbarResult.ActionPerformed) {
-            viewModel.send(
-                ForumThreadListUiIntent.Agree(
-                    it.threadId,
-                    it.postId,
-                    it.hasAgree
-                )
-            )
+    onGlobalEvent<ForumThreadListUiEvent.Refresh> {
+        viewModel.onRefresh()
+    }
+
+    if (isGood) {
+        onGlobalEvent<ForumThreadListUiEvent.ClassifyChanged> {
+            viewModel.onClassifyIdChanged(classifyId = it.goodClassifyId)
+        }
+    } else {
+        onGlobalEvent<ForumThreadListUiEvent.SortTypeChanged> {
+            viewModel.onSortTypeChanged(sortType = it.sortType)
         }
     }
 
-    val isLoadingMore by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::isLoadingMore,
-        initial = false
+    val threadList by viewModel.uiState.collectPartialAsState(
+        prop1 = ForumThreadListUiState::threads,
+        initial = emptyList()
     )
-    val hasMore by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::hasMore,
+    val isLoading by viewModel.uiState.collectPartialAsState(
+        prop1 = ForumThreadListUiState::isRefreshing,
         initial = true
     )
-    val currentPage by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::currentPage,
-        initial = 1
-    )
-    val forumRuleTitle by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::forumRuleTitle,
+    val error by viewModel.uiState.collectPartialAsState(
+        prop1 = ForumThreadListUiState::error,
         initial = null
     )
-    val threadList by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::threadList,
-        initial = persistentListOf()
-    )
-    val threadListIds by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumThreadListUiState::threadListIds,
-        initial = persistentListOf()
-    )
 
-    Box(
-        modifier = modifier.fillMaxSize()
+    StateScreen(
+        modifier = Modifier.fillMaxSize(),
+        isEmpty = threadList.isEmpty(),
+        isError = error != null,
+        isLoading = isLoading,
+        errorScreen = {
+            error?.let { ErrorScreen(it, modifier = Modifier.padding(contentPadding)) }
+        }
     ) {
+        val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()
+
+        val isLoadingMore by viewModel.uiState.collectPartialAsState(
+            prop1 = ForumThreadListUiState::isLoadingMore,
+            initial = false
+        )
+        val hasMore by viewModel.uiState.collectPartialAsState(
+            prop1 = ForumThreadListUiState::hasMore,
+            initial = true
+        )
+
         Container {
             SwipeUpLazyLoadColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = modifier.fillMaxSize(),
                 state = listState,
                 contentPadding = contentPadding,
                 isLoading = isLoadingMore,
                 onLazyLoad = {
                     if (hasMore) {
-                        viewModel.onLoadMore(currentPage, threadListIds, sortType())
+                        viewModel.loadMore()
                     }
                 },
-                onLoad = {
-                    if (threadList.isNotEmpty()) {
-                        viewModel.onLoadMore(currentPage, threadListIds, sortType())
-                    }
-                },
+                onLoad = viewModel::loadMore.takeUnless{ threadList.isEmpty() },
                 bottomIndicator = { onThreshold ->
                     LoadMoreIndicator(
                         modifier = Modifier.fillMaxWidth(),
@@ -317,13 +198,13 @@ private fun ForumThreadListPage(
 
                 itemsIndexed(
                     items = threadList,
-                    key = { _, holder -> holder.threadId },
+                    key = { _, item -> item.threadId },
                     contentType = { _, holder ->
                         val item: ThreadInfo = holder.thread.info
                         when {
                             item.isTop == 1 -> FeedType.Top
-                            item.media.isNotEmpty() && item.media.size == 1 -> FeedType.SingleMedia
-                            item.media.isNotEmpty() && item.media.size != 1 -> FeedType.MultiMedia
+                            item.media.size == 1 -> FeedType.SingleMedia
+                            item.media.size > 1 -> FeedType.MultiMedia
                             item.videoInfo != null -> FeedType.Video
                             else -> FeedType.PlainText
                         }

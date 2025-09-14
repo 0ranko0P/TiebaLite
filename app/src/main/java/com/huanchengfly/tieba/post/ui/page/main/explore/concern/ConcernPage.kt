@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
@@ -110,11 +109,7 @@ fun ConcernPage(
                                 onClickReply = {
                                     navigator.navigate(Thread(it.threadId, it.forumId, scrollToReply = true))
                                 },
-                                onAgree = {
-                                    viewModel.send(
-                                        ConcernUiIntent.Agree(it.threadId, it.firstPostId, it.hasAgree)
-                                    )
-                                },
+                                onAgree = viewModel::onAgreeClicked,
                                 onClickForum = {
                                     val extraKey = item.threadList.threadId.toString()
                                     navigator.navigate(route = Forum(it.name, it.avatar, extraKey))

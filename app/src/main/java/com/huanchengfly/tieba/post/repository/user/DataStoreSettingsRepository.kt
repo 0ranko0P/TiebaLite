@@ -13,7 +13,6 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.android.material.color.utilities.Variant
-import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.getColor
 import com.huanchengfly.tieba.post.putBoolean
@@ -22,8 +21,12 @@ import com.huanchengfly.tieba.post.putInt
 import com.huanchengfly.tieba.post.putLong
 import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.theme.TiebaBlue
+import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
+import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
+import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
+import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
@@ -38,7 +41,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.getValue
 
 private interface PreferenceTransformer<T> {
     val get: (preference: Preferences) -> T
@@ -77,12 +79,38 @@ class DataStoreSettingsRepository @Inject constructor(
         }
     }
 
-    override val themeSettings: Settings<ThemeSettings> = ComplexSettings(ThemeSettingsTransformer)
-    override val uiSettings: Settings<UISettings> = ComplexSettings(UISettingsTransformer)
-
     override val clientConfig: Settings<ClientConfig> = ComplexSettings(ClientConfigTransformer)
 
+    override val blockSettings: Settings<BlockSettings> = ComplexSettings(BlockTransformer)
+
+    override val habitSettings: Settings<HabitSettings> = ComplexSettings(HabitSettingsTransformer)
+
+    override val themeSettings: Settings<ThemeSettings> = ComplexSettings(ThemeSettingsTransformer)
+
+    override val uiSettings: Settings<UISettings> = ComplexSettings(UISettingsTransformer)
+
     override val signConfig: Settings<SignConfig> = ComplexSettings(SignConfigTransformer)
+}
+
+
+private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
+    override val get: (Preferences) -> HabitSettings = {
+        HabitSettings(
+            forumSortType = it[intPreferencesKey(KEY_FORUM_SORT_DEFAULT)] ?: ForumSortType.BY_REPLY,
+            forumFAB = it[intPreferencesKey(KEY_FORUM_FAB_FUNCTION)] ?: ForumFAB.BACK_TO_TOP,
+            showBothName = it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true
+        )
+    }
+
+    override val set: (MutablePreferences, HabitSettings) -> Unit = { it, habit ->
+        it[intPreferencesKey(KEY_FORUM_SORT_DEFAULT)] = habit.forumSortType
+        it[intPreferencesKey(KEY_FORUM_FAB_FUNCTION)] = habit.forumFAB
+        it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] = habit.showBothName
+    }
+
+    private const val KEY_FORUM_FAB_FUNCTION = "forum_fab"
+    private const val KEY_FORUM_SORT_DEFAULT = "forum_sort_type"
+    private const val KEY_SHOW_NICKNAME = "ui_show_both_name"
 }
 
 private object ThemeSettingsTransformer : PreferenceTransformer<ThemeSettings> {
@@ -133,9 +161,9 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
     }
 
     override val set: (MutablePreferences, UISettings) -> Unit = { it, ui ->
-        it.putInt(KEY_DARK_THEME_MODE, ui.darkPreference.ordinal)
-        it.putBoolean(KEY_REDUCE_EFFECT, ui.reduceEffect)
-        it.putBoolean(KEY_SETUP_FINISHED, ui.setupFinished)
+        it[intPreferencesKey(KEY_DARK_THEME_MODE)] = ui.darkPreference.ordinal
+        it[booleanPreferencesKey(KEY_REDUCE_EFFECT)] = ui.reduceEffect
+        it[booleanPreferencesKey(KEY_SETUP_FINISHED)] = ui.setupFinished
     }
 
     /**
@@ -146,6 +174,23 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
     private const val KEY_DARK_THEME_MODE = "dark_mode"
     private const val KEY_SETUP_FINISHED = "ui_setup"
     private const val KEY_REDUCE_EFFECT = "ui_reduce_effect"
+}
+
+private object BlockTransformer: PreferenceTransformer<BlockSettings> {
+    override val get: (Preferences) -> BlockSettings = {
+        BlockSettings(
+            blockVideo = it[booleanPreferencesKey(KEY_BLOCK_VIDEO)] == true,
+            hideBlocked = it[booleanPreferencesKey(KEY_HIDE_BLOCKED)] ?: true
+        )
+    }
+
+    override val set: (MutablePreferences, BlockSettings) -> Unit = { it, block ->
+        it[booleanPreferencesKey(KEY_BLOCK_VIDEO)] = block.blockVideo
+        it[booleanPreferencesKey(KEY_HIDE_BLOCKED)] = block.hideBlocked
+    }
+
+    private const val KEY_HIDE_BLOCKED = "ui_post_hide_blocked"
+    private const val KEY_BLOCK_VIDEO = "ui_block_video"
 }
 
 private object SignConfigTransformer: PreferenceTransformer<SignConfig> {

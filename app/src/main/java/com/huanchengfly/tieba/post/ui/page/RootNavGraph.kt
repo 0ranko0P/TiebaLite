@@ -25,11 +25,9 @@ import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
-import com.huanchengfly.tieba.post.ui.page.Destination.Companion.parcelableListType
 import com.huanchengfly.tieba.post.ui.page.dialogs.CopyTextDialogPage
 import com.huanchengfly.tieba.post.ui.page.forum.ForumPage
 import com.huanchengfly.tieba.post.ui.page.forum.detail.ForumDetailPage
-import com.huanchengfly.tieba.post.ui.page.forum.detail.ManagerData
 import com.huanchengfly.tieba.post.ui.page.forum.rule.ForumRuleDetailPage
 import com.huanchengfly.tieba.post.ui.page.forum.searchpost.ForumSearchPostPage
 import com.huanchengfly.tieba.post.ui.page.history.HistoryPage
@@ -128,16 +126,10 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             }
         }
 
-        composable<Destination.ForumDetail>(
-            typeMap = mapOf(typeOf<ArrayList<ManagerData>>() to parcelableListType<ManagerData>())
-        ) { backStackEntry ->
-            val params = backStackEntry.toRoute<Destination.ForumDetail>()
+        composable<Destination.ForumDetail> { backStackEntry ->
             ForumDetailPage(
-                avatar = params.avatar,
-                postCount = params.postCount,
-                managers = params.managers,
                 onBack = navController::navigateUp,
-                onManagerClicked = { navController.navigate(Destination.UserProfile(it.id)) }
+                onManagerClicked = { navController.navigate(Destination.UserProfile(uid = it)) }
             )
         }
 

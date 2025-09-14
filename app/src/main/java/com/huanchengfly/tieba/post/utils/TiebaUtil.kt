@@ -18,6 +18,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.doIfFailure
 import com.huanchengfly.tieba.post.api.retrofit.doIfSuccess
+import com.huanchengfly.tieba.post.api.urlEncode
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.dialogs.LoadingDialog
 import com.huanchengfly.tieba.post.pendingIntentFlagMutable
@@ -90,6 +91,16 @@ object TiebaUtil {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .setAction(OKSignService.ACTION_START_SIGN)
         )
+    }
+
+    fun shareForum(context: Context, forum: String) {
+        val forumName = forum.urlEncode()
+        val link = "https://tieba.baidu.com/f?kw=$forumName"
+        link.toUri()
+            .toShareIntent(context, "text/plain", context.getString(R.string.title_forum, forum))
+            .let { intent -> runCatching { context.startActivity(intent) } }
+
+        ClipBoardLinkDetector.onCopyTiebaLink(link)
     }
 
     fun shareThread(context: Context, title: String, threadId: Long) {

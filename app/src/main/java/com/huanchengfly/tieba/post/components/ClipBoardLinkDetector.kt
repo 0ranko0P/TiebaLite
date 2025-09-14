@@ -3,22 +3,26 @@ package com.huanchengfly.tieba.post.components
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import com.google.common.base.Preconditions.checkArgument
 import com.google.common.net.InternetDomainName
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
+import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.api.urlDecode
 import com.huanchengfly.tieba.post.arch.ControlledRunner
+import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.checkClipBoard
+import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
+import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.Icon
+import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.retry
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import org.intellij.lang.annotations.RegExp
 import java.util.regex.Pattern
 
@@ -34,8 +38,6 @@ sealed class ClipBoardLink(val url: String) {
             is Forum -> Destination.Forum(forumName = forumName, avatar = avatarUrl)
 
             is Thread -> Destination.Thread(threadId = threadId)
-
-            else -> throw RuntimeException("Not implemented ${this::class.simpleName}!")
         }
     }
 }
@@ -61,12 +63,12 @@ object ClipBoardLinkDetector {
         App.INSTANCE.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
 
-    private val mutablePreviewInfoStateFlow = MutableStateFlow<QuickPreviewUtil.PreviewInfo?>(null)
-    val previewInfoStateFlow
-        get() = mutablePreviewInfoStateFlow.asStateFlow()
+    private val _previewInfoStateFlow = MutableStateFlow<PreviewInfo?>(null)
+    val previewInfoStateFlow: StateFlow<PreviewInfo?> = _previewInfoStateFlow.asStateFlow()
 
     private val previewTaskRunner = ControlledRunner<Unit>()
 
+    @Volatile
     private var lastClipBoardHash: Int = -1
 
     private fun parseLink(url: String): ClipBoardLink? {
@@ -104,24 +106,44 @@ object ClipBoardLinkDetector {
         }
     }
 
-    fun checkClipBoard(owner: LifecycleOwner, context: Context) {
+    suspend fun checkClipBoard(context: Context, forumRepo: ForumRepository) {
         val clipBoardText = getClipBoardText()
         if (clipBoardText == null || lastClipBoardHash == clipBoardText.hashCode()) return
 
-        owner.lifecycleScope.launch(Dispatchers.IO) {
-            previewTaskRunner.cancelPreviousThenRun {
+        previewTaskRunner.cancelPreviousThenRun {
+            val clipBoardLink = withContext(Dispatchers.Default) {
                 val matcher = pattern.matcher(clipBoardText)
-                if (matcher.find()) {
-                    val link = parseLink(url = matcher.group()) ?: return@cancelPreviousThenRun
-                    lastClipBoardHash = clipBoardText.hashCode()
-                    QuickPreviewUtil.getPreviewInfoFlow(context, link)
-                        .catch { it.printStackTrace() }
-                        .retry(retries = 2) { err -> err !is NoConnectivityException }
-                        .collect {
-                            mutablePreviewInfoStateFlow.value = it
-                        }
-                } else {
-                    clear()
+                if (matcher.find()) parseLink(url = matcher.group()) else null
+            }
+            if (clipBoardLink == null) {
+                clear()
+                return@cancelPreviousThenRun
+            }
+
+            lastClipBoardHash = clipBoardText.hashCode()
+            val title = when(clipBoardLink) {
+                is ClipBoardLink.Forum -> clipBoardLink.forumName
+                is ClipBoardLink.Thread -> clipBoardLink.url
+            }
+            _previewInfoStateFlow.update {
+                PreviewInfo(
+                    clipBoardLink = clipBoardLink,
+                    title = title,
+                    subtitle = context.getString(R.string.subtitle_link),
+                    icon = Icon(R.drawable.ic_link)
+                )
+            }
+            runCatching {
+                QuickPreviewUtil.loadPreviewInfo(context, clipBoardLink, forumRepo)
+            }
+            .onSuccess { preview ->
+                yield()
+                _previewInfoStateFlow.update { preview }
+            }
+            .onFailure { e ->
+                yield()
+                _previewInfoStateFlow.update {
+                    PreviewInfo(clipBoardLink, title, e.getErrorMessage(), Icon(R.drawable.ic_error))
                 }
             }
         }
@@ -175,6 +197,6 @@ object ClipBoardLinkDetector {
 
     fun clear() {
         previewTaskRunner.cancelCurrent()
-        mutablePreviewInfoStateFlow.value = null
+        _previewInfoStateFlow.update { null }
     }
 }

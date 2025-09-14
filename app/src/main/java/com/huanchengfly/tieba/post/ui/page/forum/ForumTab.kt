@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -9,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.launch
 
@@ -42,7 +42,7 @@ fun ForumTab(
     modifier: Modifier = Modifier,
     pagerState: PagerState,
     sortType: Int,
-    onSortTypeChanged: (sortType: Int, isGood: Boolean) -> Unit
+    onSortTypeChanged: (sortType: Int) -> Unit
 ) {
     val currentPage = pagerState.currentPage
     val coroutineScope = rememberCoroutineScope()
@@ -70,18 +70,13 @@ fun ForumTab(
                 }
             },
             text = {
-                Text(
-                    text = stringResource(id = R.string.tab_forum_latest),
-                    style = tabTextStyle
-                )
+                Text(text = stringResource(id = R.string.tab_forum_latest), style = tabTextStyle)
             },
             menuContent = {
                 ListPickerMenuItems(
                     items = TabSortTypes,
                     picked = sortType,
-                    onItemPicked = {
-                        onSortTypeChanged(it, currentPage == TAB_FORUM_GOOD)
-                    }
+                    onItemPicked = onSortTypeChanged
                 )
             },
             unselectedContentColor = unselectedContentColor
@@ -98,7 +93,7 @@ fun ForumTab(
         ) {
             Box(
                 modifier = Modifier
-                    .height(48.dp)
+                    .minimumInteractiveComponentSize()
                     .padding(horizontal = 16.dp),
                 contentAlignment = Alignment.Center
             ) {

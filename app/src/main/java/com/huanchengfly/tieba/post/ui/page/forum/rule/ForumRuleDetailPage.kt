@@ -14,11 +14,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEach
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -32,16 +32,23 @@ fun ForumRuleDetailPage(
     navigator: NavController,
     viewModel: ForumRuleDetailViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by viewModel.uiState.collectPartialAsState(
+        prop1 = ForumRuleDetailUiState::isLoading,
+        initial = true
+    )
+    val error by viewModel.uiState.collectPartialAsState(
+        prop1 = ForumRuleDetailUiState::error,
+        initial = null
+    )
 
     ProvideNavigator(navigator = navigator) {
         StateScreen(
             modifier = Modifier.fillMaxSize(),
-            isError = uiState is ForumRuleDetailUiState.Error,
-            isLoading = uiState == ForumRuleDetailUiState.Loading,
+            isError = error != null,
+            isLoading = isLoading,
             onReload = viewModel::reload,
             errorScreen = {
-                ErrorScreen(error = (uiState as ForumRuleDetailUiState.Error).throwable)
+                error?.let { e -> ErrorScreen(e) }
             }
         ) {
             Scaffold(
@@ -54,12 +61,11 @@ fun ForumRuleDetailPage(
                     )
                 }
             ) { contentPadding ->
+                val state by viewModel.uiState.collectAsStateWithLifecycle()
+                val forumRule = state.data ?: return@Scaffold
 
-                val state = uiState as? ForumRuleDetailUiState.Success ?: return@Scaffold
-                val publishTime = state.publishTime
-                val preface = state.preface
-                val data = state.data
                 val ruleTitleStyle = MaterialTheme.typography.titleMedium
+                val ruleContentStyle = MaterialTheme.typography.bodyLarge
 
                 LazyColumn(
                     modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp),
@@ -67,29 +73,26 @@ fun ForumRuleDetailPage(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     item {
-                        Text(text = state.title, style = MaterialTheme.typography.headlineSmall)
+                        Text(text = forumRule.headLine, style = MaterialTheme.typography.titleLarge)
                     }
 
-                    state.author?.item?.let {
-                        item {
+                    forumRule.author?.let {
+                        item(key = it.id) {
                             UserHeader(
-                                name = it.user_name,
-                                nameShow = it.name_show,
-                                portrait = it.portrait,
-                                onClick = {
-                                    navigator.navigate(Destination.UserProfile(uid = it.user_id))
-                                },
-                                desc = publishTime.takeIf { time -> time.isNotEmpty() }
+                                name = it.name,
+                                avatar = it.avatarUrl,
+                                onClick = { navigator.navigate(Destination.UserProfile(uid = it.id)) },
+                                desc = forumRule.publishTime
                             )
                         }
                     }
 
                     item {
-                        Text(text = preface, style = MaterialTheme.typography.bodyLarge)
+                        Text(text = forumRule.preface, style = ruleContentStyle)
                     }
 
                     items(
-                        items = data,
+                        items = forumRule.data,
                         key = { it -> it.hashCode() },
                         contentType = { R.string.title_forum_rule }
                     ) {
@@ -97,14 +100,10 @@ fun ForumRuleDetailPage(
                             modifier = Modifier.padding(top = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            data.fastForEach {
-                                it.title?.let { title ->
-                                    Text(text = title, style = ruleTitleStyle)
-                                }
+                            Text(text = it.title, style = ruleTitleStyle)
 
-                                it.contentRenders.fastForEach { render ->
-                                    render.Render()
-                                }
+                            it.content?.let { content ->
+                                Text(text = content, style = ruleContentStyle)
                             }
                         }
                     }

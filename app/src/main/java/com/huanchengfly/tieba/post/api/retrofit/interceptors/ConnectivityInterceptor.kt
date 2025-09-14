@@ -13,22 +13,30 @@ import javax.net.ssl.SSLHandshakeException
 
 object ConnectivityInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val response = runCatching { chain.proceed(chain.request()) }
+        return runCatching { chain.proceed(chain.request()) }
+            .onFailure {
+                throw wrapException(it)
+            }
+            .getOrThrow()
+    }
 
-        val exception = response.exceptionOrNull()
+    fun wrapException(e: Throwable): Throwable {
+        return when (e) {
+            is SocketTimeoutException,
+            is SocketException,
+            is SSLHandshakeException -> if (isNetworkConnected) {
+                NoConnectivityException(App.INSTANCE.getString(R.string.connectivity_timeout))
+            } else {
+                e
+            }
 
-        return when {
-            (exception is SocketTimeoutException || exception is SocketException || exception is SSLHandshakeException) && isNetworkConnected -> throw NoConnectivityException(
-                App.INSTANCE.getString(R.string.connectivity_timeout)
-            )
+            is IOException -> if (!isNetworkConnected) {
+                NoConnectivityException(App.INSTANCE.getString(R.string.no_internet_connectivity))
+            } else {
+                e
+            }
 
-            exception is IOException && !isNetworkConnected -> throw NoConnectivityException(
-                App.INSTANCE.getString(
-                    R.string.no_internet_connectivity
-                )
-            )
-
-            else -> response.getOrThrow()
+            else -> e
         }
     }
 }

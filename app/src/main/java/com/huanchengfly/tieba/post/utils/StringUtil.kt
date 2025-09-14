@@ -48,6 +48,16 @@ object StringUtil {
         return@withContext spannableString
     }
 
+    fun getUserNameString(showBoth: Boolean, username: String, nickname: String?): String {
+        val canShowBoth = !nickname.isNullOrBlank() && username != nickname && username.isNotBlank()
+        return if (canShowBoth && showBoth) {
+            "$nickname $username"
+        } else {
+            nickname ?: username
+        }
+    }
+
+    @Deprecated("Deprecated")
     fun getUserNameString(context: Context, username: String, nickname: String?): String {
         val canShowBoth = !nickname.isNullOrBlank() && username != nickname && username.isNotBlank()
         return if (canShowBoth && context.appPreferences.showBothUsernameAndNickname) {

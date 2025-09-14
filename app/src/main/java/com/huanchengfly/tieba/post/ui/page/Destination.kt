@@ -5,7 +5,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
 import androidx.navigation.NavType
-import com.huanchengfly.tieba.post.ui.page.forum.detail.ManagerData
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -42,20 +41,8 @@ sealed interface Destination {
     @Serializable
     data class Forum(val forumName: String, val avatar: String? = null, val transitionKey: String? = null): Destination
 
-    /**
-     * 因为ForumDetailFlow 未登录时返回的数据不全，需额外提供ForumInfo.
-     *
-     * @see com.huanchengfly.tieba.post.ui.page.forum.detail.navigateForumDetailPage
-     * */
     @Serializable
-    data class ForumDetail(
-        val forumId: Long,
-        val forumName: String,
-        val avatar: String,
-        val threadCount: Int,
-        val postCount: Int,
-        val managers: ArrayList<ManagerData>
-    ): Destination
+    data class ForumDetail(val forumName: String): Destination
 
     @Serializable
     data class ForumSearchPost(val forumName: String, val forumId: Long): Destination

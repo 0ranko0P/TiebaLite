@@ -40,7 +40,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.collectIn
@@ -52,7 +51,6 @@ import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.RootNavGraph
 import com.huanchengfly.tieba.post.ui.page.settings.theme.TranslucentThemeBackground
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
@@ -65,6 +63,7 @@ import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
+import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import dagger.hilt.android.AndroidEntryPoint
@@ -152,7 +151,7 @@ class MainActivityV2 : BaseComposeActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         // Due to the privacy changes in Android 10, check Clipboard only when focused
         if (hasFocus) {
-            ClipBoardLinkDetector.checkClipBoard(owner = this, context = this)
+            viewModel.onCheckClipBoard()
         }
     }
 
@@ -172,7 +171,12 @@ class MainActivityV2 : BaseComposeActivity() {
                     RootNavGraph(/* bottomSheetNavigator, */navController, startDestination = entryRoute)
                 }
 
-                ClipBoardDetectDialog(navController)
+                ClipBoardDetectDialog(uiState.preview, viewModel::onClipBoardDetectDialogDismiss) {
+                    uiState.preview?.let {
+                        val route: Destination = it.clipBoardLink.toRoute(avatarUrl = it.icon?.url)
+                        navController.navigate(route = route)
+                    }
+                }
 
                 if (uiState.ignoreBatteryOpDialogVisible) {
                     BatteryOpDialog(
@@ -249,12 +253,16 @@ class MainActivityV2 : BaseComposeActivity() {
     companion object {
 
         @Composable
-        private fun ClipBoardDetectDialog(navController: NavController) {
+        private fun ClipBoardDetectDialog(
+            preview: PreviewInfo?,
+            onDismiss: () -> Unit,
+            onOpen: () -> Unit
+        ) {
             val dialogState = rememberDialogState()
 
-            val previewInfo by ClipBoardLinkDetector.previewInfoStateFlow.collectAsStateWithLifecycle()
-            LaunchedEffect(previewInfo) {
-                if (previewInfo != null) dialogState.show()
+            if (preview == null) return
+            LaunchedEffect(Unit) {
+                if (!dialogState.show) dialogState.show()
             }
 
             Dialog(
@@ -263,47 +271,41 @@ class MainActivityV2 : BaseComposeActivity() {
                     direction = DirectionState.CENTER,
                     dismissOnClickOutside = false
                 ),
-                onDismiss = ClipBoardLinkDetector::clear,
+                onDismiss = onDismiss,
                 title = {
                     Text(text = stringResource(id = R.string.title_dialog_clip_board_tieba_url))
                 },
                 buttons = {
                     DialogNegativeButton(text = stringResource(id = R.string.btn_close))
-                    DialogPositiveButton(text = stringResource(id = R.string.button_open)) {
-                        previewInfo?.let {
-                            val route = it.clipBoardLink.toRoute(it.icon?.url)
-                            navController.navigate(route = route)
-                        }
-                    }
+                    DialogPositiveButton(text = stringResource(id = R.string.button_open), onClick = onOpen)
                 },
             ) {
-                previewInfo?.let {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        shape = MaterialTheme.shapes.medium
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            it.icon?.let { icon ->
-                                if (icon.type == QuickPreviewUtil.Icon.TYPE_DRAWABLE_RES) {
-                                    AvatarIcon(resId = icon.res, size = Sizes.Medium)
-                                } else {
-                                    Avatar(data = icon.url, size = Sizes.Medium)
-                                }
+                        preview.icon?.let { icon ->
+                            val iconShape = MaterialTheme.shapes.extraSmall
+                            if (icon.type == QuickPreviewUtil.Icon.TYPE_DRAWABLE_RES) {
+                                Avatar(data = icon.res, size = Sizes.Medium, shape = iconShape)
+                            } else {
+                                Avatar(data = icon.url, size = Sizes.Medium, shape = iconShape)
                             }
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                it.title?.let { title ->
-                                    Text(text = title, style = MaterialTheme.typography.titleMedium)
-                                }
-                                it.subtitle?.let { subtitle ->
-                                    Text(text = subtitle, style = MaterialTheme.typography.bodySmall)
-                                }
+                        }
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            preview.title?.let { title ->
+                                Text(text = title, style = MaterialTheme.typography.titleMedium)
+                            }
+                            preview.subtitle?.let { subtitle ->
+                                Text(text = subtitle, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }

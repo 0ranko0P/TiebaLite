@@ -1,7 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.forum.detail
 
-import android.content.Context
-import android.os.Parcelable
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,71 +40,35 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
 import com.huanchengfly.tieba.post.theme.Grey300
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
-import com.huanchengfly.tieba.post.ui.page.Destination.ForumDetail
+import com.huanchengfly.tieba.post.ui.models.forum.ForumManager
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import kotlinx.parcelize.Parcelize
-import kotlinx.serialization.Serializable
-
-/**
- * 导航至 [ForumDetailPage], 因为ForumDetailFlow 未登录时返回的数据不全, 需额外提供ForumInfo.
- *
- * @see ForumDetail
- * */
-fun NavController.navigateForumDetailPage(forum: ForumInfo/* Big Parcelable */, context: Context) {
-    navigate(
-        route = ForumDetail(
-            forumId = forum.id,
-            forumName = forum.name,
-            avatar = forum.avatar,
-            threadCount = forum.thread_num,
-            postCount = forum.post_num,
-            managers = forum.managers.mapTo(ArrayList(forum.managers.size)) {
-                val displayName = StringUtil.getUserNameString(context, it.name, it.show_name)
-                ManagerData(id = it.id, name = displayName, portrait = it.portrait)
-            }
-        )
-    )
-}
-
-@Serializable
-@Parcelize
-data class ManagerData(
-    val id: Long,
-    val name: String,
-    val portrait: String
-): Parcelable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForumDetailPage(
-    avatar: String,
-    postCount: Int,
-    managers: List<ManagerData>,
-    onBack: () -> Unit,
     viewModel: ForumDetailViewModel = hiltViewModel(),
-    onManagerClicked: (ManagerData) -> Unit,
+    onManagerClicked: (uid: Long) -> Unit,
+    onBack: () -> Unit,
 ) {
+
     val uiState by viewModel.state.collectAsStateWithLifecycle()
 
     StateScreen(
-        isError = uiState is ForumDetailUiState.Error,
-        isLoading = uiState === ForumDetailUiState.Loading,
+        isError = uiState.error != null,
+        isLoading = uiState.isLoading,
         onReload = viewModel::reload,
         errorScreen = {
-            ErrorScreen(error = (uiState as ForumDetailUiState.Error).error)
+            uiState.error?.let { ErrorScreen(error = it) }
         },
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -115,42 +76,41 @@ fun ForumDetailPage(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = { Text(stringResource(id = R.string.title_forum_info)) },
-                    navigationIcon = { BackNavigationIcon(onBack) }
+                    navigationIcon = { BackNavigationIcon(onBackPressed = onBack) }
                 )
             }
         ) { paddingValues ->
-            val state = uiState as ForumDetailUiState.Success
-
+            val forumDetail = uiState.detail ?: return@Scaffold
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 ForumDetailContent(
-                    avatar = avatar,
-                    name = state.name,
-                    memberCount = state.memberCount,
-                    threadCount = state.threadCount,
-                    postCount = postCount
+                    avatar = forumDetail.avatar,
+                    name = forumDetail.name,
+                    memberCount = forumDetail.memberCount,
+                    threadCount = forumDetail.threadCount,
+                    postCount = forumDetail.postCount
                 )
 
-                IntroItem(slogan = state.slogan, intro = state.intro)
+                IntroItem(slogan = forumDetail.slogan, intro = forumDetail.intro)
 
-                if (managers.isEmpty()) {
-                    Chip(text = stringResource(id = R.string.title_forum_manager_none))
-                    return@Scaffold
-                }
-                Chip(text = stringResource(id = R.string.title_forum_manager))
+                if (forumDetail.managers != null) {
+                    Chip(text = stringResource(id = R.string.title_forum_manager))
 
-                LazyRow {
-                    items(managers, key = { it.id }) {
-                        ManagerItem(name = it.name, portrait = it.portrait) {
-                            onManagerClicked(it)
+                    LazyRow {
+                        items(forumDetail.managers, key = { it.id }) {
+                            ManagerItem(manager = it) {
+                                onManagerClicked(it.id)
+                            }
                         }
                     }
+                } else {
+                    Chip(text = stringResource(id = R.string.title_forum_manager_none))
                 }
             }
         }
@@ -241,8 +201,7 @@ private fun IntroItem(modifier: Modifier = Modifier, slogan: String, intro: Stri
 @Composable
 private fun ManagerItem(
     modifier: Modifier = Modifier,
-    name: String,
-    portrait: String,
+    manager: ForumManager,
     onClick: () -> Unit
 ) {
     Column(
@@ -251,18 +210,14 @@ private fun ManagerItem(
             .semantics {
                 role = Role.Image
                 isTraversalGroup = true
-                contentDescription = name
+                contentDescription = manager.name
             }
             .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Avatar(
-            data = remember { StringUtil.getAvatarUrl(portrait) },
-            size = Sizes.Medium,
-            contentDescription = null,
-        )
-        Text(text = name, modifier = Modifier.padding(4.dp))
+        Avatar(data = manager.avatarUrl, size = Sizes.Medium)
+        Text(text = manager.name, modifier = Modifier.padding(top = 4.dp))
     }
 }
 

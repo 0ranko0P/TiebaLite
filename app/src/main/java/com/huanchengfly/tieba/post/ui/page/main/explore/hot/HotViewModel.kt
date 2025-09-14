@@ -14,6 +14,7 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
 import com.huanchengfly.tieba.post.ui.models.ThreadItemData
 import com.huanchengfly.tieba.post.ui.models.updateAgreeStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -93,6 +94,17 @@ class HotViewModel @Inject constructor() :
                 .catch {
                     emit(HotPartialChange.Agree.Failure(threadId, it))
                 }
+    }
+
+
+    fun onAgreeClicked(thread: ThreadInfoItem) {
+        send(
+            HotUiIntent.Agree(
+                threadId = thread.info.threadId,
+                postId = thread.info.firstPostId,
+                hasAgree = thread.like.liked
+            )
+        )
     }
 }
 

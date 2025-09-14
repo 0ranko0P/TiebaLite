@@ -229,15 +229,7 @@ fun PersonalizedPage(
                                         onClickReply = {
                                             navigator.navigate(Thread(it.id, it.forumId, scrollToReply = true))
                                         },
-                                        onAgree = {
-                                            viewModel.send(
-                                                PersonalizedUiIntent.Agree(
-                                                    it.threadId,
-                                                    it.firstPostId,
-                                                    item.thread.hasAgree
-                                                )
-                                            )
-                                        },
+                                        onAgree = viewModel::onAgreeClicked,
                                         onClickForum = {
                                             val extraKey = item.threadId.toString()
                                             navigator.navigate(Forum(it.name, it.avatar, extraKey))

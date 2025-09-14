@@ -153,7 +153,7 @@ val List<PbContent>.plainText: String
         val builder = StringBuilder()
         var text: String
 
-        forEach {
+        forEachIndexed { i, it ->
             text = when (it.type) {
                 in PureTextType -> it.text
 
@@ -171,7 +171,8 @@ val List<PbContent>.plainText: String
 
                 else -> it.text
             }
-            builder.append(text).append('\n')
+            builder.append(text)
+            if (i < lastIndex) builder.append('\n')
         }
 
         return builder.toString()

@@ -398,13 +398,12 @@ fun ThreadPage(
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,
                     onRefresh = viewModel::requestLoadFirstPage,
-                    modifier = Modifier
-                        .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
-                        .hazeSource(hazeState),
+                    modifier = Modifier.hazeSource(hazeState),
                     enabled = enablePullRefresh,
                     contentPadding = contentPadding
                 ) {
                     ThreadContent(
+                        modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                         viewModel = viewModel,
                         lazyListState = lazyListState,
                         contentPadding = contentPadding,

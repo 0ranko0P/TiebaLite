@@ -5,15 +5,12 @@ import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
+import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.components.ClipBoardLink
-import com.huanchengfly.tieba.post.repository.FrsPageRepository
+import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.ui.page.forum.ForumViewModel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
 
 object QuickPreviewUtil {
     fun getThreadId(uri: Uri): Long? {
@@ -46,55 +43,46 @@ object QuickPreviewUtil {
         return null
     }
 
-    private fun getThreadPreviewInfoFlow(
-        context: Context,
-        link: ClipBoardLink.Thread,
-    ): Flow<PreviewInfo> =
-        PbPageRepository
+    private suspend fun loadThreadPreview(context: Context, link: ClipBoardLink.Thread): PreviewInfo {
+        val response = PbPageRepository
             .pbPage(link.threadId)
-            .map {
-                PreviewInfo(
-                    clipBoardLink = link,
-                    title = it.data_?.thread?.title,
-                    subtitle = context.getString(
-                        R.string.subtitle_quick_preview_thread,
-                        it.data_?.forum?.name,
-                        it.data_?.thread?.replyNum?.toString()
-                    ),
-                    icon = Icon(StringUtil.getAvatarUrl(it.data_?.thread?.author?.portrait))
-                )
-            }
+            .firstOrThrow()
+        val data = response.data_ ?: throw TiebaException(response.error?.error_msg)
+        val forumName = data.forum?.name ?: "?"
+        val replies = data.thread?.replyNum ?: 0
 
-    private fun getForumPreviewInfoFlow(
-        context: Context,
-        link: ClipBoardLink.Forum
-    ): Flow<PreviewInfo> =
-        ForumViewModel.getSortType(context, link.forumName)
-            .map { sortType ->
-                val response = FrsPageRepository.frsPage(link.forumName, 1, 1, sortType).first()
-                val data = requireNotNull(response.data_)
-                PreviewInfo(
-                    clipBoardLink = link,
-                    title = context.getString(R.string.title_forum, link.forumName),
-                    subtitle = data.forum?.slogan,
-                    icon = data.forum?.avatar?.let { Icon(it) }
-                )
-            }
-
-    fun getPreviewInfoFlow(context: Context, clipBoardLink: ClipBoardLink): Flow<PreviewInfo?> {
-        val detailFlow = when (clipBoardLink) {
-            is ClipBoardLink.Forum -> getForumPreviewInfoFlow(context, clipBoardLink)
-            is ClipBoardLink.Thread -> getThreadPreviewInfoFlow(context, clipBoardLink)
-        }
-        val flow = flowOf(
-            PreviewInfo(
-                clipBoardLink = clipBoardLink,
-                title = clipBoardLink.url,
-                subtitle = context.getString(R.string.subtitle_link),
-                icon = Icon(R.drawable.ic_link)
-            )
+        return PreviewInfo(
+            clipBoardLink = link,
+            title = data.thread?.title,
+            subtitle = context.getString(R.string.subtitle_quick_preview_thread, forumName, replies),
+            icon = data.thread?.author?.portrait?.let { Icon(StringUtil.getAvatarUrl(it)) }
         )
-        return merge(flow, detailFlow)
+    }
+
+    private suspend fun loadForumPreview(
+        context: Context,
+        link: ClipBoardLink.Forum,
+        forumRepo: ForumRepository
+    ): PreviewInfo {
+        val info = forumRepo.loadForumInfo(forumName = link.forumName, forceNew = false)
+        return PreviewInfo(
+            clipBoardLink = link,
+            title = context.getString(R.string.title_forum, link.forumName),
+            subtitle = info.slogan.orEmpty(),
+            icon = Icon(url = info.avatar)
+        )
+    }
+
+    @Throws(TiebaException::class, NoConnectivityException::class)
+    suspend fun loadPreviewInfo(
+        context: Context,
+        clipBoardLink: ClipBoardLink,
+        forumRepo: ForumRepository
+    ): PreviewInfo {
+        return when (clipBoardLink) {
+            is ClipBoardLink.Forum -> loadForumPreview(context, clipBoardLink, forumRepo)
+            is ClipBoardLink.Thread -> loadThreadPreview(context, clipBoardLink)
+        }
     }
 
     @Immutable

@@ -15,6 +15,7 @@ import com.huanchengfly.tieba.post.arch.PartialChangeProducer
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
 import com.huanchengfly.tieba.post.utils.appPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
@@ -90,6 +91,16 @@ class ConcernViewModel @Inject constructor() :
         private fun UserLikeResponse.toData(): List<ConcernData> {
             return data_?.threadInfo ?: emptyList()
         }
+    }
+
+    fun onAgreeClicked(thread: ThreadInfoItem) {
+        send(
+            ConcernUiIntent.Agree(
+                threadId = thread.info.threadId,
+                postId = thread.info.firstPostId,
+                hasAgree = if (thread.like.liked) 1 else 0
+            )
+        )
     }
 }
 

@@ -7,6 +7,7 @@ import androidx.compose.ui.util.fastMap
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
+import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 import com.huanchengfly.tieba.post.api.models.protos.personalized.ThreadPersonalized
 import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
@@ -40,27 +41,41 @@ class ThreadItemData(
 
     val isTop: Boolean
         get() = thread.info.isTop == 1
+
+    fun copy(
+        thread: ThreadInfoItem = this.thread,
+        blocked: Boolean = this.blocked,
+        personalized: ImmutableHolder<ThreadPersonalized>? = this.personalized,
+        hidden: Boolean = this.hidden,
+    ) = ThreadItemData(
+        thread, blocked, personalized, hidden
+    )
 }
 
 /**
  * Wrapper class to cache [content] AnnotatedString
  * */
 @Immutable
-class ThreadInfoItem(val info: ThreadInfo) {
-    val hasAgree: Boolean = info.agree?.hasAgree == 1 // Like button
-    val agreeNum: Long = info.agree?.agreeNum?: 0
+class ThreadInfoItem(
+    val info: ThreadInfo,
+    val like: Like = info.agree?.let { Like(it) } ?: LikeZero
+) {
 
     val content: AnnotatedString = with(info) {
         buildThreadContent(title, abstractText, tabName, isGood = this.isGood == 1)
     }
 }
 
-fun List<ThreadItemData>.updateAgreeStatus(threadId: Long): ImmutableList<ThreadItemData> {
+fun List<ThreadItemData>.updateAgreeStatus(threadId: Long, loading: Boolean = false): ImmutableList<ThreadItemData> {
     return fastMap { data ->
-        val thread = data.thread.info
-        if (thread.id == threadId) {
-            val hasAgree = if (data.thread.hasAgree) 0 else 1
-            ThreadItemData(thread.updateAgreeStatus(hasAgree = hasAgree))
+        val thread = data.thread
+        if (thread.info.id == threadId) {
+            val hasAgree = if (thread.info.hasAgree == 1) 0 else 1
+            val newLike = thread.like.updateLikeStatus(!thread.like.liked).setLoading(loading)
+            // TODO: deprecated agree status
+            data.copy(
+                ThreadInfoItem(thread.info.updateAgreeStatus(hasAgree = hasAgree), newLike)
+            )
         } else data
     }.toImmutableList()
 }

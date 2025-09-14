@@ -522,7 +522,7 @@ enum class FeedType {
 fun FeedCard(
     item: ThreadInfoItem,
     onClick: (ThreadInfo) -> Unit,
-    onAgree: (ThreadInfo) -> Unit,
+    onAgree: (ThreadInfoItem) -> Unit,
     modifier: Modifier = Modifier,
     onClickReply: (ThreadInfo) -> Unit = {},
     onClickUser: (User) -> Unit = {},
@@ -590,13 +590,13 @@ fun FeedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shareNum = thread.shareNum,
                 replyNum = thread.replyNum,
-                agreeNum = item.agreeNum,
-                agreed = item.hasAgree,
+                agreeNum = item.like.count,
+                agreed = item.like.liked,
                 onShareClicked = {
                     TiebaUtil.shareThread(context, thread.title, thread.threadId)
                 },
                 onReplyClicked = { onClickReply(thread) },
-                onAgreeClicked = { onAgree(thread) }
+                onAgreeClicked = { onAgree(item) }
             )
         },
         onClick = { onClick(thread) },
