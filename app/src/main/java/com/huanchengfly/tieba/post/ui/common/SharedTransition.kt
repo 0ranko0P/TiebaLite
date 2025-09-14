@@ -91,12 +91,12 @@ fun Modifier.localSharedBounds(
 private val ParentClip: OverlayClip =
     object : OverlayClip {
         override fun getClipPath(
-            state: SharedContentState,
+            sharedContentState: SharedContentState,
             bounds: Rect,
             layoutDirection: LayoutDirection,
             density: Density
         ): Path? {
-            return state.parentSharedContentState?.clipPathInOverlay
+            return sharedContentState.parentSharedContentState?.clipPathInOverlay
         }
     }
 

@@ -21,7 +21,7 @@ data class ThreadStoreBean(
         val author: AuthorInfo,
         val media: List<MediaInfo>,
         @SerializedName("is_deleted")
-        val isDeleted: String,
+        val isDeleted: Int,
         @SerializedName("last_time")
         val lastTime: String,
         val type: String,
@@ -35,10 +35,10 @@ data class ThreadStoreBean(
         @SerializedName("mark_status")
         val markStatus: String,
         @SerializedName("post_no")
-        val postNo: String,
+        val postNo: Int,
         @SerializedName("post_no_msg")
         val postNoMsg: String,
-        val count: String
+        val count: Int
     ) : BaseBean()
 
     data class MediaInfo(

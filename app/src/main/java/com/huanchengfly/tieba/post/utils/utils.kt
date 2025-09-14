@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -65,19 +64,19 @@ fun launchUrl(
     }
 }
 
-val Context.powerManager: PowerManager
-    get() = (applicationContext as App).powerManager
-
 @SuppressLint("BatteryLife")
 fun Context.requestIgnoreBatteryOptimizations() {
+    val powerManager = (applicationContext as App).powerManager
     if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
         val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-        intent.data = Uri.parse("package:${packageName}")
+        intent.data = Uri.fromParts("package", packageName, null)
         startActivity(intent)
     }
 }
 
-fun Context.isIgnoringBatteryOptimizations(): Boolean = powerManager.isIgnoringBatteryOptimizations(packageName)
+fun Context.isIgnoringBatteryOptimizations(): Boolean {
+    return (applicationContext as App).powerManager.isIgnoringBatteryOptimizations(packageName)
+}
 
 suspend fun requestPinShortcut(
     context: Context,

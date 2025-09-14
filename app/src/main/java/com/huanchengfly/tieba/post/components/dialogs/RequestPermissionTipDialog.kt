@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import android.view.Window
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,16 +23,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.AppBarDefaults
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,13 +41,17 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.dialogs.RequestPermissionTipDialog.Companion.PermissionRationale
+import com.huanchengfly.tieba.post.components.dialogs.RequestPermissionTipDialog.Companion.PermissionTip
 import com.huanchengfly.tieba.post.enableBackgroundBlur
 import com.huanchengfly.tieba.post.theme.Grey600
 import com.huanchengfly.tieba.post.theme.Grey800
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogMargin
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.dialogAdaptiveFraction
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils.Result
 import com.huanchengfly.tieba.post.utils.ThemeUtil
@@ -72,9 +75,10 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
 
     // Launch app settings, let user grant permission manually
     private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        val context = this.context?: return@registerForActivityResult
-        val permissionMap = permissions.associate {
-            it to (ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED)
+        val context = this.context ?: return@registerForActivityResult
+        // Back from settings activity, check permissions now
+        val permissionMap = permissions.associateWith {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
         onActivityResult(result = permissionMap)
     }
@@ -107,7 +111,7 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
                 title = stringResource(R.string.title_permission_rationale, permissionName),
                 message = message,
                 onDeny = {
-                    onActivityResult(permissions.associate { it to false })
+                    onActivityResult(permissions.associateWith { false })
                 },
                 onGrant = this@RequestPermissionTipDialog::openSettings
             )
@@ -126,9 +130,9 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
         window.attributes = window.attributes.apply {
             // Enable blur effect only when showing rationale message
             backgroundColor = if (showRationale && enableBackgroundBlur(window.context) != null) {
-                ThemeUtil.getRawTheme().windowBackground.copy(0.2f)
+                ThemeUtil.currentColorScheme().background.copy(0.2f)
             } else {
-                ThemeUtil.getRawTheme().windowBackground.copy(0.86f)
+                ThemeUtil.currentColorScheme().background.copy(0.86f)
             }
         }
 
@@ -139,9 +143,14 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
     }
 
     override fun onActivityResult(result: Map<String, Boolean>) {
-        val denylist = result.filter { it.value == false }.keys
-        val rec = if (denylist.isEmpty()) Result.Grant else Result.Deny(denylist)
-        _result.trySend(rec)
+        val denylist = result.filter { (_, granted) -> !granted }.keys
+        _result.trySend(
+            if (denylist.isEmpty()) {
+                Result.Grant
+            } else {
+                Result.Deny(denylist)
+            }
+        )
         dismiss()
     }
 
@@ -158,21 +167,22 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
     }
 
     private fun openSettings() {
-        with(Intent()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                permissions.size == 1 && permissions[0] == Manifest.permission.POST_NOTIFICATIONS
-            ) {
-                action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            TextUtils.equals(permissions[0], Manifest.permission.POST_NOTIFICATIONS)
+        ) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                 putExtra(Settings.EXTRA_APP_PACKAGE, BuildConfig.APPLICATION_ID)
-            } else {
-                buildAppSettingsIntent(BuildConfig.APPLICATION_ID)
             }
-            runCatching {
-                settingsLauncher.launch(this)
-            }
-            .onFailure {
-                context?.toastShort(R.string.error_open_settings)
-            }
+        } else {
+            buildAppSettingsIntent(BuildConfig.APPLICATION_ID)
+        }
+
+        runCatching {
+            settingsLauncher.launch(intent)
+        }
+        .onFailure {
+            context?.toastShort(R.string.error_open_settings)
+            dismiss()
         }
     }
 
@@ -196,16 +206,15 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
         private fun PermissionTip(modifier: Modifier = Modifier, title: String, message: String) {
             Row(
                 modifier = modifier
-                    .fillMaxWidth()
-                    .shadow(AppBarDefaults.TopAppBarElevation, RoundedCornerShape(16.dp))
-                    .background(Color.White, RoundedCornerShape(16.dp)) // Hardcode background color
-                    .padding(16.dp),
+                    .fillMaxWidth(dialogAdaptiveFraction)
+                    .background(Color.White, MaterialTheme.shapes.large) // Hardcode background color
+                    .padding(DefaultDialogMargin),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_launcher_round),
                     contentDescription = null,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(Sizes.Small)
                 )
 
                 Column(
@@ -226,23 +235,16 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
             onGrant: () -> Unit,
             onDeny: () -> Unit
         ) {
-            val theme = ExtendedTheme.colors
-
             Column(
                 modifier = modifier
-                    .fillMaxWidth()
-                    .shadow(AppBarDefaults.TopAppBarElevation, RoundedCornerShape(16.dp))
-                    .background(theme.windowBackground, RoundedCornerShape(16.dp))
-                    .padding(16.dp),
+                    .fillMaxWidth(dialogAdaptiveFraction)
+                    .padding(DefaultDialogMargin),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = title, color = theme.text, fontWeight = FontWeight.Bold)
+                Text(text = title, fontWeight = FontWeight.Bold)
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(message, Modifier.align(Alignment.Start), color = theme.textSecondary)
-
-                Spacer(modifier = Modifier.height(12.dp))
+                Text(message, Modifier.align(Alignment.Start))
 
                 Row(
                     modifier = Modifier.align(Alignment.End)

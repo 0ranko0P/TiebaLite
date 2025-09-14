@@ -1,15 +1,17 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,27 +19,24 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AlignVerticalTop
 import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,54 +45,52 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.ui.common.PbContentRender
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.PbContentText
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.page.Destination.CopyText
-import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.subposts.PostAgreeBtn
+import com.huanchengfly.tieba.post.ui.page.subposts.PostLikeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
-import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
+import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
 const val ITEM_POST_KEY_PREFIX = "Post_"
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+private sealed class Type(val key: String) {
+    object FirstPost: Type("FirstPost")
+    object Header: Type("ThreadHeader")
+    object LoadPrevious: Type("LoadPreviousBtn")
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StateScreenScope.ThreadContent(
     modifier: Modifier = Modifier,
@@ -103,99 +100,53 @@ fun StateScreenScope.ThreadContent(
     useStickyHeader: Boolean // Bug: StickyHeader doesn't respect content padding
 ) {
     val navigator = LocalNavController.current
+    val state by viewModel.threadUiState.collectAsStateWithLifecycle()
+    val latestPosts = state.latestPosts
+    val isLoadingMore = state.isLoadingMore
+    val localUid = state.user?.id
 
-    val enablePullRefresh by remember {
-        derivedStateOf {
-            viewModel.threadUiState.run { hasPrevious || sortType == ThreadSortType.BY_DESC }
-        }
+    val onSwipeUpRefresh: () -> Unit = {
+        if (!state.isLoadingMore) viewModel.requestLoadLatestPosts()
     }
 
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = viewModel.isRefreshing,
-        onRefresh = viewModel::requestLoadFirstPage
-    )
-
-    Container(
-        modifier = modifier.pullRefresh(state = pullRefreshState, enabled = enablePullRefresh)
-    ) {
-
-        val state = viewModel.threadUiState
-        val firstPost = state.firstPost
-        val latestPosts = state.latestPosts
-        val forum = state.forum
-
-        val onSwipeUpRefresh: () -> Unit = remember {
-            { if (!viewModel.isLoadingMore) viewModel.requestLoadLatestPosts() }
-        }
+    Container(modifier = modifier) {
 
         SwipeUpLazyLoadColumn(
             modifier = Modifier.fillMaxSize(),
             state = lazyListState,
             contentPadding = contentPadding,
-            isLoading = viewModel.isLoadingMore,
+            isLoading = isLoadingMore,
             onLoad = onSwipeUpRefresh.takeIf {  // Enable it conditionally
-                viewModel.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC
+                state.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC
             },
-            onLazyLoad = {
-                if (viewModel.threadUiState.hasMore) viewModel.requestLoadMore()
-            },
+            onLazyLoad = { if (state.hasMore) viewModel.requestLoadMore() },
             bottomIndicator = { onThreshold ->
                 LoadMoreIndicator(
                     modifier = Modifier.fillMaxWidth(),
-                    isLoading = viewModel.isLoadingMore,
+                    isLoading = isLoadingMore,
                     noMore = state.hasMore.not(),
                     onThreshold = onThreshold
                 )
             }
         ) {
-            item(key = "FirstPost") {
-                if (firstPost == null) return@item
-                val loggedIn = state.user != null
-
+            item(key = Type.FirstPost.key, contentType = Type.FirstPost) {
+                val firstPost = state.firstPost ?: return@item
                 Column {
-                    PostCard(
-                        post = firstPost,
-                        contentRenders = firstPost.contentRenders,
-                        immersiveMode = viewModel.isImmersiveMode,
-                        isCollected = firstPost.id == viewModel.info?.collectMarkPid,
-                        onUserClick = {
-                            navigator.navigate(UserProfile(uid = firstPost.author.id))
-                        },
-                        onReplyClick = { _: PostData ->
-                            navigator.navigate(
-                                Reply(
-                                    forumId = viewModel.curForumId ?: 0,
-                                    forumName = forum?.get { name }.orEmpty(),
-                                    threadId = viewModel.threadId,
-                                )
-                            )
-                        }.takeIf { loggedIn && !viewModel.hideReply },
-                        onMenuCopyClick = {
-                            navigator.navigate(CopyText(it))
-                        },
-                        onMenuFavoriteClick = { viewModel.requestAddFavorite(firstPost) }.takeIf { loggedIn },
-                        onMenuDeleteClick = viewModel::onDeleteThread.takeIf {
-                            loggedIn && firstPost.author.id == state.user.id // Check is my post
-                        }
-                    )
+                    PostCardItem(viewModel, firstPost, localUid)
 
                     val info = viewModel.info?.originThreadInfo
                     if (info != null && viewModel.info?.isShareThread == true) {
                         OriginThreadCard(
                             originThreadInfo = info.wrapImmutable(),
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .padding(bottom = 16.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(ExtendedTheme.colors.floorCard)
-                                .clickable {
-                                    navigator.navigate(Thread(threadId = info.tid.toLong(), forumId = info.fid))
-                                }
-                                .padding(16.dp)
-                        )
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                        ) {
+                            navigator.navigate(
+                                route = Thread(threadId = info.tid.toLong(), forumId = info.fid)
+                            )
+                        }
                     }
 
-                    VerticalDivider(
+                    HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
                         thickness = 2.dp
                     )
@@ -203,137 +154,137 @@ fun StateScreenScope.ThreadContent(
             }
 
             if (useStickyHeader) {
-                stickyHeader(key = "ThreadHeader", contentType = Unit) {
-                    ThreadHeader(Modifier.background(LocalExtendedColors.current.topBar), viewModel)
+                stickyHeader(key = Type.Header.key, contentType = Type.Header) {
+                    ThreadHeader(Modifier.background(MaterialTheme.colorScheme.surfaceContainer), viewModel)
                 }
             } else {
-                item(key = "ThreadHeader", contentType = Unit) {
+                item(key = Type.Header.key, contentType = Type.Header) {
                     ThreadHeader(viewModel = viewModel)
                 }
             }
 
             if (state.sortType == ThreadSortType.BY_DESC && latestPosts.isNotEmpty()) {
                 items(items = latestPosts, key = { post -> "LatestPost_${post.id}" }) { post ->
-                    PostCardItem(viewModel, post)
+                    PostCardItem(viewModel, post, localUid)
                 }
                 postTipItem(isDesc = true)    // DESC tip on bottom
             }
 
             if (state.hasPrevious) {
-                item(key = "LoadPreviousBtn") {
+                item(key = Type.LoadPrevious.key, contentType = Type.LoadPrevious) {
                     LoadPreviousButton(onClick = viewModel::requestLoadPrevious)
                 }
             }
 
-            if (viewModel.data.isEmpty()) {
+            val data = state.data
+            if (data.isEmpty()) {
                 item(key = "EmptyTip") {
                     EmptyScreen(canReload, onReload = this@ThreadContent::reload)
                 }
             } else {
-                items(viewModel.data, key = { "$ITEM_POST_KEY_PREFIX${it.id}" }) { item ->
-                    PostCardItem(viewModel, item)
+                items(data, key = { "$ITEM_POST_KEY_PREFIX${it.id}" }) { item ->
+                    PostCardItem(viewModel, item, localUid)
                 }
             }
 
             if (state.sortType != ThreadSortType.BY_DESC && latestPosts.isNotEmpty()) {
                 postTipItem(isDesc = false)  // ASC Tip on top
                 items(items = latestPosts, key = { post -> "LatestPost_${post.id}" }) { post ->
-                    PostCardItem(viewModel, post)
+                    PostCardItem(viewModel, post, localUid)
                 }
             }
         }
-
-        PullRefreshIndicator(
-            refreshing = viewModel.isRefreshing,
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
-        )
     }
 }
 
 @NonRestartableComposable
 @Composable
-private fun LoadPreviousButton(onClick: () -> Unit) = Row(
-    modifier = Modifier
-        .fillMaxWidth()
-        .clickable(onClick = onClick)
-        .padding(8.dp)
-        .clip(MaterialTheme.shapes.medium),
-    horizontalArrangement = Arrangement.Center,
-    verticalAlignment = Alignment.CenterVertically
-) {
-    Icon(
-        imageVector = Icons.Rounded.AlignVerticalTop,
-        contentDescription = stringResource(id = R.string.btn_load_previous),
-        modifier = Modifier.size(16.dp)
-    )
-    Spacer(modifier = Modifier.width(16.dp))
-    Text(
-        text = stringResource(id = R.string.btn_load_previous),
-        color = ExtendedTheme.colors.text,
-        fontSize = 14.sp
-    )
+private fun LoadPreviousButton(onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.extraSmall
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.AlignVerticalTop,
+                contentDescription = stringResource(id = R.string.btn_load_previous),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(text = stringResource(id = R.string.btn_load_previous))
+        }
+    }
 }
 
 private fun LazyListScope.postTipItem(isDesc: Boolean) = this.item("LatestPostsTip") {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        VerticalDivider(modifier = Modifier.weight(1f))
+        HorizontalDivider(modifier = Modifier.weight(1f))
         Text(
             text = stringResource(if (isDesc) R.string.above_is_latest_post else R.string.below_is_latest_post),
-            color = ExtendedTheme.colors.textSecondary,
-            style = MaterialTheme.typography.caption,
+            color = MaterialTheme.colorScheme.secondary,
+            style = MaterialTheme.typography.bodySmall,
         )
-        VerticalDivider(modifier = Modifier.weight(1f))
+        HorizontalDivider(modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
-fun PostCardItem(viewModel: ThreadViewModel, post: PostData) {
+private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: Long?) {
     val navigator = LocalNavController.current
-    val currentUser = viewModel.threadUiState.user
+    val loggedIn = localUid != null
 
-    val canDelete = post.author.id == currentUser?.id // Check is my post
-    val hideReply = currentUser == null || viewModel.hideReply
-
-    PostCard(
-        post = post,
-        contentRenders = post.contentRenders,
-        subPosts = post.subPosts,
-        immersiveMode = viewModel.isImmersiveMode,
-        isCollected = post.id == viewModel.info?.collectMarkPid,
-        onUserClick = {
-            navigator.navigate(UserProfile(post.author.id))
-        },
-        onAgree = { viewModel.onAgreePost(post) },
-        onReplyClick = viewModel::onReplyPost.takeUnless { hideReply },
-        onSubPostReplyClick = { it: SubPostItemData ->
-            viewModel.onReplySubPost(post, it)
-        }
-        .takeUnless { hideReply },
-        onOpenSubPosts = { subPostId ->
-            viewModel.onOpenSubPost(post, subPostId)
-        },
-        onMenuCopyClick = {
-            navigator.navigate(CopyText(it))
-        },
-        onMenuFavoriteClick = {
-            val isPostCollected = post.id == viewModel.info?.collectMarkPid
-            if (isPostCollected) {
-                viewModel.requestRemoveFavorite()
-            } else {
-                viewModel.requestAddFavorite(post)
+    if (loggedIn) {
+        PostCard(
+            post = post,
+            immersiveMode = viewModel.isImmersiveMode,
+            isCollected = post.id == viewModel.info?.collectMarkPid,
+            onUserClick = {
+                navigator.navigate(UserProfile(post.author.id))
+            },
+            onLikeClick = viewModel::onPostLikeClicked,
+            onReplyClick = viewModel::onReplyClicked.takeUnless { viewModel.hideReply },
+            onSubPostReplyClick = viewModel::onReplySubPost.takeUnless { viewModel.hideReply },
+            onOpenSubPosts = { subPostId ->
+                viewModel.onOpenSubPost(post, subPostId)
+            },
+            onMenuCopyClick = {
+                navigator.navigate(CopyText(it))
+            },
+            onMenuFavoriteClick = {
+                val isPostCollected = post.id == viewModel.info?.collectMarkPid
+                if (isPostCollected) {
+                    viewModel.requestRemoveFavorite()
+                } else {
+                    viewModel.requestAddFavorite(post)
+                }
+            },
+            onMenuDeleteClick = { viewModel.onDeletePost(post) }.takeIf { post.author.id == localUid }
+        )
+    } else {
+        PostCard(
+            post = post,
+            immersiveMode = viewModel.isImmersiveMode,
+            onUserClick = {
+                navigator.navigate(UserProfile(post.author.id))
+            },
+            onLikeClick = viewModel::onPostLikeClicked,
+            onOpenSubPosts = { subPostId -> viewModel.onOpenSubPost(post, subPostId) },
+            onMenuCopyClick = {
+                navigator.navigate(CopyText(it))
             }
-        }.takeUnless { currentUser == null },
-        onMenuDeleteClick = { viewModel.onDeletePost(post) }.takeIf { canDelete }
-    )
+        )
+    }
 }
 
 @Composable
@@ -353,15 +304,16 @@ private fun StickyHeader(
     isSeeLz: Boolean,
     onSeeLzChanged: (Boolean) -> Unit
 ) = Row(
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = modifier
+            .height(IntrinsicSize.Min)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val colors = LocalExtendedColors.current
+        val colors = MaterialTheme.colorScheme
         Text(
             text = stringResource(R.string.title_thread_header, replyNum.toString()),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            color = colors.text,
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -375,10 +327,10 @@ private fun StickyHeader(
                 ),
             fontSize = 13.sp,
             fontWeight = if (!isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (!isSeeLz) colors.text else colors.textSecondary,
+            color = if (!isSeeLz) colors.onSurface else colors.onSurfaceVariant,
         )
 
-        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+        VerticalDivider(modifier = Modifier.padding(horizontal = 8.dp))
 
         Text(
             text = stringResource(R.string.title_see_lz),
@@ -389,52 +341,52 @@ private fun StickyHeader(
                 ),
             fontSize = 13.sp,
             fontWeight = if (isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isSeeLz) colors.text else colors.textSecondary,
+            color = if (isSeeLz) colors.onSurface else colors.onSurfaceVariant,
         )
     }
+
+val SubPostBlockedTip: @Composable BoxScope.() -> Unit = {
+    Text(
+        text = stringResource(id = R.string.tip_blocked_sub_post),
+        style = MaterialTheme.typography.bodyMedium
+    )
+}
 
 @Composable
 fun PostCard(
     post: PostData,
-    contentRenders: ImmutableList<PbContentRender>,
-    subPosts: ImmutableList<SubPostItemData> = persistentListOf(),
     immersiveMode: Boolean = false,
-    isCollected: Boolean,
+    isCollected: Boolean = false,
     onUserClick: () -> Unit = {},
-    onAgree: () -> Unit = {},
-    onReplyClick: ((PostData) -> Unit)?,
-    onSubPostReplyClick: ((SubPostItemData) -> Unit)? = null,
+    onLikeClick: (PostData) -> Unit = {},
+    onReplyClick: ((PostData) -> Unit)? = null,
+    onSubPostReplyClick: ((PostData, SubPostItemData) -> Unit)? = null,
     onOpenSubPosts: (subPostId: Long) -> Unit = {},
     onMenuCopyClick: (String) -> Unit,
     onMenuFavoriteClick: (() -> Unit)? = null,
     onMenuDeleteClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val preferences = context.appPreferences
     val navigator = LocalNavController.current
     val coroutineScope = rememberCoroutineScope()
-    val hasPadding = post.floor > 1 && !immersiveMode
 
-    val paddingModifier = Modifier.padding(start = if (hasPadding) Sizes.Small + 8.dp else 0.dp)
+    val hasPadding = post.floor > 1 && !immersiveMode
+    val paddingModifier = if (hasPadding) Modifier.padding(start = Sizes.Small + 8.dp) else Modifier
     val author = post.author
-    val showTitle = post.title.isNotBlank() && post.floor <= 1 && !post.isNTitle
-    val hasAgreed = post.hasAgree == 1
-    val agreeNum = post.diffAgreeNum
-    val menuState = rememberMenuState()
+    val showTitle = post.title != null && post.floor <= 1
 
     BlockableContent(
         blocked = post.blocked,
+        modifier = Modifier.fillMaxWidth(),
         blockedTip = {
             BlockTip {
                 Text(stringResource(id = R.string.tip_blocked_post, post.floor))
             }
         },
-        hideBlockedContent = context.appPreferences.hideBlockedContent || immersiveMode,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp)
+        hideBlockedContent = preferences.hideBlockedContent || immersiveMode,
     ) {
         LongClickMenu(
-            menuState = menuState,
             shape = MaterialTheme.shapes.medium,
             menuContent = {
                 if (onReplyClick != null) {
@@ -470,7 +422,7 @@ fun PostCard(
                         onClick = onUserClick
                     ) {
                         if (post.floor > 1) {
-                            PostAgreeBtn(agreed = hasAgreed, agreeNum = agreeNum, onClick = onAgree)
+                            PostLikeButton(like = post.like, onClick = { onLikeClick(post) })
                         }
                     }
                 },
@@ -482,7 +434,7 @@ fun PostCard(
                         if (showTitle) {
                             Text(
                                 text = post.title,
-                                style = MaterialTheme.typography.subtitle1,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontSize = 15.sp
                             )
                         }
@@ -501,59 +453,52 @@ fun PostCard(
                             )
                         }
 
-                        contentRenders.fastForEach { it.Render() }
+                        post.contentRenders.fastForEach { it.Render() }
                     }
 
-                    if (subPosts.isEmpty() || post.subPostNumber <= 0 || immersiveMode) return@Card
+                    if (post.subPosts == null || post.subPostNumber <= 0 || immersiveMode) return@Card
 
-                    val blockedStyle = MaterialTheme.typography.body2.copy(
-                        color = ExtendedTheme.colors.text.copy(ContentAlpha.disabled),
-                        fontSize = 13.sp
-                    )
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(paddingModifier)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.floorCard)
-                            .padding(vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    Surface(
+                        modifier = paddingModifier,
+                        shape = MaterialTheme.shapes.small,
+                        tonalElevation = 4.dp
                     ) {
-                        subPosts.fastForEach { item ->
-                            BlockableContent(
-                                blocked = item.blocked,
-                                blockedTip = {
-                                    Text(
-                                        text = stringResource(id = R.string.tip_blocked_sub_post),
-                                        style = blockedStyle,
-                                        modifier = Modifier.padding(horizontal = 12.dp)
+                        Column(
+                            modifier = Modifier.padding(vertical = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            val hideBlockedContent = preferences.hideBlockedContent
+                            post.subPosts.fastForEach { item ->
+                                BlockableContent(
+                                    blocked = item.blocked,
+                                    blockedTip = SubPostBlockedTip,
+                                    hideBlockedContent = hideBlockedContent
+                                ) {
+                                    SubPostItem(
+                                        subPost = item,
+                                        modifier = Modifier
+                                            .padding(horizontal = 12.dp)
+                                            .fillMaxWidth(),
+                                        onReplyClick = onSubPostReplyClick?.let {
+                                            { onSubPostReplyClick(post, item) }
+                                        },
+                                        onOpenSubPosts = onOpenSubPosts,
+                                        onMenuCopyClick = onMenuCopyClick
                                     )
-                                },
-                            ) {
-                                SubPostItem(
-                                    subPost = item,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp),
-                                    onReplyClick = onSubPostReplyClick,
-                                    onOpenSubPosts = onOpenSubPosts,
-                                    onMenuCopyClick = onMenuCopyClick
-                                )
+                                }
                             }
+
+                            if (post.subPostNumber <= post.subPosts.size) return@Column
+                            Text(
+                                text = stringResource(R.string.open_all_sub_posts, post.subPostNumber),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onOpenSubPosts(0) }
+                                    .padding(vertical = 2.dp, horizontal = 12.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.labelLarge,
+                            )
                         }
-
-                        if (post.subPostNumber <= subPosts.size) return@Column
-
-                        Text(
-                            text = stringResource(R.string.open_all_sub_posts, post.subPostNumber),
-                            style = MaterialTheme.typography.caption,
-                            fontSize = 13.sp,
-                            color = ExtendedTheme.colors.primary,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOpenSubPosts(0) }
-                                .padding(vertical = 2.dp, horizontal = 12.dp)
-                        )
                     }
                 }
             )
@@ -565,7 +510,7 @@ fun PostCard(
 private fun SubPostItem(
     subPost: SubPostItemData,
     modifier: Modifier = Modifier,
-    onReplyClick: ((SubPostItemData) -> Unit)?,
+    onReplyClick: (() -> Unit)?,
     onOpenSubPosts: (Long) -> Unit,
     onMenuCopyClick: (String) -> Unit,
 ) {
@@ -578,9 +523,7 @@ private fun SubPostItem(
         menuState = menuState,
         menuContent = {
             if (onReplyClick != null) {
-                TextMenuItem(text = R.string.title_reply) {
-                    onReplyClick(subPost)
-                }
+                TextMenuItem(text = R.string.title_reply, onClick = onReplyClick)
             }
             TextMenuItem(text = R.string.menu_copy) {
                 onMenuCopyClick(subPost.plainText)
@@ -591,19 +534,17 @@ private fun SubPostItem(
                 }
             }
         },
-        shape = RoundedCornerShape(0),
+        shape = MaterialTheme.shapes.extraSmall,
         onClick = { onOpenSubPosts(subPost.id) }
     ) {
         PbContentText(
             text = subPost.content!!,
             modifier = modifier,
-            color = ExtendedTheme.colors.text,
-            fontSize = 13.sp,
             overflow = TextOverflow.Ellipsis,
             maxLines = 4,
             lineSpacing = 0.4.sp,
-            inlineContent = if (subPost.isLz) ThreadViewModel.getCachedLzInlineContent() else null,
-            style = MaterialTheme.typography.body2,
+            inlineContent = if (subPost.isLz) ThreadViewModel.cachedLzInlineContent else null,
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }
@@ -624,18 +565,17 @@ private fun EmptyScreen(canReload: Boolean, onReload: () -> Unit) =
             )
         },
         actions = {
-            Button(onClick = onReload, enabled = canReload) {
-                Text(text = stringResource(id = R.string.btn_refresh))
-            }
+            PositiveButton(textRes = R.string.btn_refresh, enabled = canReload, onClick = onReload)
         },
-        scrollable = false
     )
 
 @Preview("LoadPreviousButton")
 @Composable
 private fun LoadPreviousButtonPreview() {
     TiebaLiteTheme {
-        LoadPreviousButton(onClick = {})
+        Column {
+            LoadPreviousButton(onClick = {})
+        }
     }
 }
 

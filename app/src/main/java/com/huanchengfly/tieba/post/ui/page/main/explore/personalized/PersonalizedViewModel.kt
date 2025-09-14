@@ -23,6 +23,7 @@ import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
 import com.huanchengfly.tieba.post.ui.models.ThreadItemData
 import com.huanchengfly.tieba.post.ui.models.distinctById
 import com.huanchengfly.tieba.post.ui.models.updateAgreeStatus
+import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
 import com.huanchengfly.tieba.post.utils.appPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
@@ -122,15 +123,18 @@ class PersonalizedViewModel @Inject constructor() :
         private fun PersonalizedResponse.toData(): ImmutableList<ThreadItemData> {
             val threadPersonalizedData = data_?.thread_personalized
             val threadList = data_?.thread_list ?: return persistentListOf()
+            val hideBlocked = App.INSTANCE.appPreferences.hideBlockedContent
+            val videoBlocked = App.INSTANCE.appPreferences.blockVideo
 
             return threadList
-                .filter { !App.INSTANCE.appPreferences.blockVideo || it.videoInfo == null }
+                .filter { !videoBlocked || it.videoInfo == null }
                 .filter { it.ala_info == null }
                 .map { thread ->
                     val personalized = threadPersonalizedData?.firstOrNull { it.tid == thread.id }
                     ThreadItemData(
                         thread = ThreadInfoItem(thread),
-                        personalized = personalized?.wrapImmutable()
+                        personalized = personalized?.wrapImmutable(),
+                        hidden = thread.shouldBlock() && hideBlocked
                     )
                 }
                 .toImmutableList()

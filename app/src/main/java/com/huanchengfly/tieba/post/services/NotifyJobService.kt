@@ -12,7 +12,6 @@ import android.content.Intent.ACTION_VIEW
 import android.net.Uri
 import android.os.Build
 import android.util.Log
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
 import com.huanchengfly.tieba.post.R
@@ -59,7 +58,8 @@ class NotifyJobService : JobService() {
 
             override fun onResponse(call: Call<MsgBean>, response: Response<MsgBean>) {
                 val msgBean = response.body() ?: return
-                if (notificationManager != null) {
+                // Check weird empty message
+                if (notificationManager != null &&  "{}" != msgBean.message?.toString()) {
                     var total = 0
                     if ("0" != msgBean.message?.replyMe) {
                         val replyCount = msgBean.message?.replyMe?.let { Integer.valueOf(it) }
@@ -129,7 +129,7 @@ class NotifyJobService : JobService() {
         channelName: String,
         intent: Intent
     ) {
-        val theme by ThemeUtil.themeState
+        val currentColorScheme = ThemeUtil.currentColorScheme()
         val notification = NotificationCompat.Builder(this, channel)
             .setSubText(channelName)
             .setContentText(getString(R.string.tip_touch_to_view))
@@ -146,7 +146,7 @@ class NotifyJobService : JobService() {
                     pendingIntentFlagImmutable()
                 )
             )
-            .setColor(theme.primary.toArgb())
+            .setColor(currentColorScheme.primary.toArgb())
             .build()
         notificationManager!!.notify(id, notification)
     }

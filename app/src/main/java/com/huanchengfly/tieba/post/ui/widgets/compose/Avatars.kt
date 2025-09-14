@@ -8,9 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.LocalContentColor
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,36 +40,13 @@ object Sizes {
 
 @Composable
 fun AvatarIcon(
-    icon: ImageVector,
-    size: Dp,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    iconSize: Dp = 24.dp,
-    color: Color = LocalContentColor.current.copy(alpha = LocalContentAlpha.current),
-    backgroundColor: Color = Color.Transparent,
-    shape: Shape = CircleShape,
-) {
-    Icon(
-        imageVector = icon,
-        contentDescription = contentDescription,
-        tint = color,
-        modifier = modifier
-            .size(size)
-            .clip(shape)
-            .background(color = backgroundColor)
-            .padding((size - iconSize) / 2),
-    )
-}
-
-@Composable
-fun AvatarIcon(
     @DrawableRes
     resId: Int,
     size: Dp,
     contentDescription: String? = null,
     modifier: Modifier = Modifier,
     iconSize: Dp = 24.dp,
-    color: Color = LocalContentColor.current.copy(alpha = LocalContentAlpha.current),
+    color: Color = LocalContentColor.current,
     backgroundColor: Color = Color.Transparent,
     shape: Shape = CircleShape,
 ) {

@@ -14,12 +14,13 @@ import com.huanchengfly.tieba.post.api.models.isGif
 import com.huanchengfly.tieba.post.api.models.isLongPic
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.JobQueue
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -28,6 +29,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.timeout
 import kotlinx.coroutines.launch
@@ -35,6 +37,7 @@ import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.seconds
 
 class PhotoViewViewModel : ViewModel(), DataProvider {
+
     private val _state: MutableStateFlow<PhotoViewUiState> = MutableStateFlow(PhotoViewUiState())
     val state: StateFlow<PhotoViewUiState> get() = _state
 
@@ -47,8 +50,8 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
 
     private var data: LoadPicPageData? = null
 
-    private fun List<PicPageBean.PicBean>.toUniquePhotoViewItems(): List<PhotoViewItem> {
-        val oldDataIds = _state.value.data.mapTo(HashSet()) { it.picId }
+    private fun List<PicPageBean.PicBean>.toUniquePhotoViewItems(old: List<PhotoViewItem>): List<PhotoViewItem> {
+        val oldDataIds = old.mapTo(HashSet()) { it.picId }
         return this
             .filterNot { oldDataIds.contains(it.img.original.id) }
             .map { it.toPhotoItem() }
@@ -59,51 +62,53 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
         this.data = viewData.data
 
         if (viewData.data == null) {
-            val newState = state.value.copy(
-                data = viewData.picItems
-                    .mapIndexed { i, item -> PhotoViewItem(item = item, overallIndex = i + 1) }
-                    .toImmutableList(),
-                totalAmount = viewData.picItems.size,
-                initialIndex = viewData.index
-            )
-            viewModelScope.launch(Dispatchers.Main.immediate) { _state.emit(newState) }
+             _state.set {
+                 copy(
+                     data = viewData.picItems
+                         .mapIndexed { i, item -> PhotoViewItem(item = item, overallIndex = i + 1) },
+                     totalAmount = viewData.picItems.size,
+                     initialIndex = viewData.index
+                 )
+             }
         } else {
-            queue.submit(Dispatchers.IO + handler) {
-                viewData.data.toPageFlow(viewData.data.picId, viewData.data.picIndex, prev = false)
-                    .retryWhen { cause, attempt ->  cause !is TiebaApiException && attempt < 3 }
-                    .collect { picPageBean ->
-                        val picAmount = picPageBean.picAmount.toInt()
-                        val fetchedItems = picPageBean.picList.toUniquePhotoViewItems()
-                        val firstItemIndex = fetchedItems.first().overallIndex
-                        val localItems =
-                            if (viewData.data.picIndex == 1) emptyList() else viewData.picItems.subList(
-                                0,
-                                viewData.data.picIndex - 1
-                            ).mapIndexed { index, item ->
-                                PhotoViewItem(
-                                    item = item,
-                                    overallIndex = firstItemIndex - (viewData.data.picIndex - 1 - index),
-                                )
-                            }
-                        val items = localItems + fetchedItems
-                        val hasNext = items.last().overallIndex < picAmount
-                        val hasPrev = items.first().overallIndex > 1
-                        val initialIndex: Int? = items
-                            .indexOfFirst { it.picId == viewData.data.picId }
-                            .takeIf { it != -1 }
-                        val newState = state.value.copy(
-                            data = items.toImmutableList(),
-                            hasNext = hasNext,
-                            hasPrev = hasPrev,
-                            totalAmount = picAmount,
-                            initialIndex = initialIndex ?: (viewData.data.picIndex - 1),
-                        )
+            viewModelScope.launch(Dispatchers.Default + handler) {
+                val picPageBean = viewData.data
+                    .toPageFlow(viewData.data.picId, viewData.data.picIndex, prev = false)
+                    .retryWhen { cause, attempt -> cause !is TiebaApiException && attempt < 3 }
+                    .firstOrThrow()
 
-                        withContext(Dispatchers.Main.immediate) {
-                            this@PhotoViewViewModel.data = viewData.data
-                            _state.emit(newState)
-                        }
+                val stateSnapshot = _state.first()
+                val picAmount = picPageBean.picAmount.toInt()
+                val fetchedItems = picPageBean.picList.toUniquePhotoViewItems(old = stateSnapshot.data)
+                val firstItemIndex = fetchedItems.first().overallIndex
+                val localItems =
+                    if (viewData.data.picIndex == 1) emptyList() else viewData.picItems.subList(
+                        0,
+                        viewData.data.picIndex - 1
+                    ).mapIndexed { index, item ->
+                        PhotoViewItem(
+                            item = item,
+                            overallIndex = firstItemIndex - (viewData.data.picIndex - 1 - index),
+                        )
                     }
+                val items = localItems + fetchedItems
+                val hasNext = items.last().overallIndex < picAmount
+                val hasPrev = items.first().overallIndex > 1
+                val initialIndex: Int? = items
+                    .indexOfFirst { it.picId == viewData.data.picId }
+                    .takeIf { it != -1 }
+                val newState = PhotoViewUiState(
+                    data = items.toImmutableList(),
+                    hasNext = hasNext,
+                    hasPrev = hasPrev,
+                    totalAmount = picAmount,
+                    initialIndex = initialIndex ?: (viewData.data.picIndex - 1),
+                )
+
+                withContext(Dispatchers.Main.immediate) {
+                    data = viewData.data
+                    _state.set { newState }
+                }
             }
         }
     }
@@ -111,20 +116,21 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
     override fun loadInitial(): List<Photo> {
         if (data == null) throw RuntimeException("ViewModel is uninitialized!, call initData before load")
 
-        val items = state.value.data
-        val initIndex = state.value.initialIndex
+        val stateSnapshot = _state.value
+        val items = stateSnapshot.data
+        val initIndex = stateSnapshot.initialIndex
         return if (initIndex != 0) {
             // Trim out items before initial index
             // Basically the same with [ViewPager.setCurrentItem()]
             items.subList(initIndex, items.size)
         } else {
-            state.value.data
+            stateSnapshot.data
         }
     }
 
     override fun loadBefore(key: Long, callback: (List<Photo>) -> Unit) {
-        queue.submit(Dispatchers.IO + handler) {
-            val uiState = _state.value
+        queue.submit(Dispatchers.Default + handler) {
+            val uiState = _state.first()
             val items = uiState.data
             val index = items.indexOfFirst { it.id() == key }
 
@@ -135,25 +141,24 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
             } else {
                 val item: PhotoViewItem = items[index]
 
-                data!!.toPageFlow(item.picId, item.overallIndex, prev = true)
+                val picPageBean = data!!.toPageFlow(item.picId, item.overallIndex, prev = true)
                     .retryWhen { cause, attempt ->  cause !is TiebaApiException && attempt < 3 }
-                    .collect { picPageBean ->
-                        val hasPrev = picPageBean.picList.first().overAllIndex.toInt() > 1
-                        val uniqueItems = picPageBean.picList.toUniquePhotoViewItems()
-                        val newItems = (uniqueItems + uiState.data).toImmutableList()
-                        withContext(Dispatchers.Main.immediate) {
-                            _state.emit(
-                                uiState.copy(data = newItems, hasPrev = hasPrev)
-                            )
-                            callback(uniqueItems)
-                        }
-                    }
+                    .firstOrThrow()
+
+                val hasPrev = picPageBean.picList.first().overAllIndex.toInt() > 1
+                val uniqueItems = picPageBean.picList.toUniquePhotoViewItems(uiState.data)
+                val newItems = (uniqueItems + uiState.data).toImmutableList()
+
+                withContext(Dispatchers.Main.immediate) {
+                    _state.set { copy(data = newItems, hasPrev = hasPrev) }
+                    callback(uniqueItems)
+                }
             }
         }
     }
 
     override fun loadAfter(key: Long, callback: (List<Photo>) -> Unit) {
-        queue.submit(Dispatchers.IO + handler) {
+        queue.submit(Dispatchers.Default + handler) {
             val uiState = _state.value
             val items = uiState.data
             val index = items.indexOfFirst { it.id() == key }
@@ -164,19 +169,19 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
             }
 
             val item: PhotoViewItem = items[index]
-            data!!.toPageFlow(item.picId, item.overallIndex, prev = false)
+            val picPageBean = data!!.toPageFlow(item.picId, item.overallIndex, prev = false)
                 .retryWhen { cause, attempt ->  cause !is TiebaApiException && attempt < 3 }
-                .collect { picPageBean ->
-                    val newData = picPageBean.picList
-                    val hasNext = newData.last().overAllIndex.toInt() < picPageBean.picAmount.toInt()
-                    val uniqueItems = newData.toUniquePhotoViewItems()
-                    val newItems = (uiState.data + uniqueItems).toImmutableList()
+                .firstOrThrow()
 
-                    withContext(Dispatchers.Main.immediate) {
-                        _state.emit(uiState.copy(data = newItems, hasNext = hasNext))
-                        callback(uniqueItems)
-                    }
-                }
+            val newData = picPageBean.picList
+            val hasNext = newData.last().overAllIndex.toInt() < picPageBean.picAmount.toInt()
+            val uniqueItems = newData.toUniquePhotoViewItems(old = uiState.data)
+            val newItems = (uiState.data + uniqueItems).toImmutableList()
+
+            withContext(Dispatchers.Main.immediate) {
+                _state.set { copy(data = newItems, hasNext = hasNext) }
+                callback(uniqueItems)
+            }
         }
     }
 
@@ -223,7 +228,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
 }
 
 data class PhotoViewUiState(
-    val data: ImmutableList<PhotoViewItem> = persistentListOf(),
+    val data: List<PhotoViewItem> = persistentListOf(),
     val totalAmount: Int = 0,
     val hasNext: Boolean = false,
     val hasPrev: Boolean = false,

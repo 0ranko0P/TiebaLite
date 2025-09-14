@@ -1,10 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page.user
 
+import android.content.Context
 import android.os.Build
 import android.util.Log
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,10 +11,12 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.User
+import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderEffectImageProcessor
@@ -24,65 +24,73 @@ import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImagePr
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : ViewModel() {
+class UserProfileViewModel @Inject constructor(
+    @ApplicationContext val context: Context,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
 
     val uid: Long = savedStateHandle.toRoute<Destination.UserProfile>().uid
 
     private val handler = CoroutineExceptionHandler { _, e ->
-        Log.e(TAG, "onError: ", e)
-        _uiState.value = _uiState.value.copy(
-            isRefreshing = false, disableButton = false, error = e.wrapImmutable()
-        )
+        if (e !is NoConnectivityException) {
+            Log.e(TAG, "onError: ", e)
+        }
+        _uiState.update {
+            it.copy(isRefreshing = false, disableButton = false, error = e.wrapImmutable())
+        }
     }
 
     // Null when power saver in on
     val imageProcessor: ImageProcessor? by lazy {
-        if (App.INSTANCE.powerManager.isPowerSaveMode) return@lazy null
+        if ((context as App).powerManager.isPowerSaveMode) return@lazy null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             RenderEffectImageProcessor()
         } else {
-            RenderScriptImageProcessor(App.INSTANCE)
+            RenderScriptImageProcessor(context)
         }
     }
 
-    private val _uiState: MutableState<UserProfileUiState> = mutableStateOf(UserProfileUiState())
-    val uiState: State<UserProfileUiState>
-        get() = _uiState
-
-    val isRefreshing: Boolean
-        get() = _uiState.value.isRefreshing
+    private val _uiState = MutableStateFlow(UserProfileUiState())
+    val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
 
     init {
         refresh()
     }
 
     fun refresh() {
-        if (isRefreshing) return
-        _uiState.value = _uiState.value.copy(isRefreshing = true, error = null)
+        if (_uiState.value.isRefreshing) return
+        _uiState.set { copy(isRefreshing = true, error = null) }
 
         viewModelScope.launch(handler) {
-            TiebaApi.getInstance()
+            val newState = TiebaApi.getInstance()
                 .userProfileFlow(uid)
-                .collect {
+                .map {
                     val user = it.data_?.user ?: throw TiebaException("Null user data: ${it.error}")
-                    val block = BlockManager.findUserById(uid)
-                    _uiState.value = _uiState.value.copy(
-                        isRefreshing = false,
-                        disableButton = false,
-                        error = null,
-                        block = block,
+                    UserProfileUiState(
+                        block = BlockManager.findUserById(uid),
                         profile = parseUserProfile(user)
                     )
                 }
+                .firstOrThrow()
+
+            _uiState.update { newState }
         }
     }
 
@@ -99,7 +107,7 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
                 Block(category, Block.TYPE_USER, username = uiState.value.profile?.name, uid = uid)
             )
         }
-        _uiState.value = _uiState.value.copy(block = newBlock)
+        _uiState.update { it.copy(block = newBlock) }
     }
 
     fun onBlackListClicked() = updateBlockCategory(Block.CATEGORY_BLACK_LIST)
@@ -113,11 +121,9 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
         // Adjust fans num if needed
         var fansChanges = 0
         if (profile?.following != following) fansChanges = if (following) 1 else -1
+        val newProfile = profile?.copy(following = following, fans = profile.fans + fansChanges)
 
-        _uiState.value = state.copy(
-            disableButton = !state.disableButton,
-            profile = profile?.copy(following = following, fans = profile.fans + fansChanges)
-        )
+        _uiState.update { it.copy(disableButton = !state.disableButton, profile = newProfile) }
     }
 
     fun onFollowClicked(tbs: String) {
@@ -129,11 +135,11 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
                 .followFlow(portrait, tbs)
                 .catch {
                     setupFollowState(following = false)
-                    App.INSTANCE.toastShort(R.string.toast_like_failed, it.getErrorMessage())
+                    context.toastShort(R.string.toast_like_failed, it.getErrorMessage())
                 }
-                .collect {
-                    setupFollowState(following = true)
-                }
+                .firstOrNull() ?: return@launch
+
+            setupFollowState(following = true)
         }
     }
 
@@ -146,10 +152,11 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
                 .unfollowFlow(portrait, tbs)
                 .catch {
                     setupFollowState(following = true)
-                    App.INSTANCE.toastShort(R.string.toast_unlike_failed, it.getErrorMessage())
-                }.collect {
-                    setupFollowState(following = false)
+                    context.toastShort(R.string.toast_unlike_failed, it.getErrorMessage())
                 }
+                .firstOrNull() ?: return@launch
+
+            setupFollowState(following = false)
         }
     }
 
@@ -166,7 +173,7 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
                 uid = user.id,
                 portrait = user.portrait,
                 name = user.nameShow.trim(),
-                userName = user.name.takeUnless { it == user.nameShow || it.length <= 1 }?.trim(),
+                userName = user.name.takeUnless { it == user.nameShow || it.length <= 1 }?.trim()?.let { "($it)" },
                 tiebaUid = user.tieba_uid,
                 intro = user.intro.takeUnless { it.isEmpty() },
                 sex = when (user.sex) {
@@ -177,9 +184,9 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
                 tbAge = user.tb_age,
                 address = user.ip_address.takeUnless { it.isEmpty() },
                 following = user.has_concerned != 0,
-                threadNum = user.thread_num.getShortNumString(),
-                postNum = user.post_num.getShortNumString(),
-                forumNum = user.my_like_num.toString(),
+                threadNum = user.thread_num,
+                postNum = user.post_num,
+                forumNum = user.my_like_num,
                 followNum = user.concern_num.getShortNumString(),
                 fans = user.fans_num,
                 agreeNum = user.total_agree_num.getShortNumString(),
@@ -195,9 +202,6 @@ class UserProfileViewModel @Inject constructor(savedStateHandle: SavedStateHandl
  * Data class that represents [User] in UserProfilePage
  *
  * @param following [User.has_concerned] to Boolean
- * @param threadNum formatted [User.thread_num]
- * @param postNum formatted [User.post_num]
- * @param forumNum formatted [User.my_like_num]
  * @param followNum formatted [User.concern_num]
  * @param agreeNum formatted [User.total_agree_num]
  * @param privateForum 隐藏关注的吧
@@ -213,9 +217,9 @@ data class UserProfile(
     val tbAge: String,
     val address: String?,
     val following: Boolean,
-    val threadNum: String,
-    val postNum: String,
-    val forumNum: String,
+    val threadNum: Int,
+    val postNum: Int,
+    val forumNum: Int,
     val followNum: String,
     val fans: Int,
     val agreeNum: String,

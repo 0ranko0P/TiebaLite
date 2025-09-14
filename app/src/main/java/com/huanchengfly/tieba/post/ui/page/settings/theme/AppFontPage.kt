@@ -6,15 +6,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Slider
-import androidx.compose.material.SliderDefaults
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastRoundToInt
 import androidx.datastore.preferences.core.floatPreferencesKey
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
@@ -38,10 +37,10 @@ import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.putFloat
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
@@ -53,32 +52,23 @@ private const val FONT_SCALE_MIN = 0.8f
 private const val FONT_SCALE_STEP = 0.05f
 const val DEFAULT_FONT_SCALE = 1f
 
-private val SIZE_TEXT_MAPPING = mapOf(
-    R.string.text_size_small to 0..1,
-    R.string.text_size_little_small to 2..3,
-    R.string.text_size_default to 4..4,
-    R.string.text_size_little_large to 5..6,
-    R.string.text_size_large to 7..8,
-    R.string.text_size_very_large to 9..10
-)
-
 private fun getSizeTextHint(sliderPosition: Int): Int {
-    val sizeTexts = SIZE_TEXT_MAPPING.filterValues { sliderPosition in it }
-    return sizeTexts.map { it.key }[0]
+    return when(sliderPosition) {
+        in 0..1 -> R.string.text_size_small
+        in 2..3 -> R.string.text_size_little_small
+        4 -> R.string.text_size_default
+        in 5..6 -> R.string.text_size_little_large
+        in 7..8 -> R.string.text_size_large
+        else -> R.string.text_size_very_large
+    }
 }
 
 @Composable
 fun AppFontPage(onBack: () -> Unit) {
-    Scaffold(
-        backgroundColor = Color.Transparent,
+    MyScaffold(
         topBar = {
             TitleCentredToolbar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.title_custom_font_size),
-                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
-                    )
-                },
+                title =  stringResource(id = R.string.title_custom_font_size),
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = onBack)
                 }
@@ -96,14 +86,6 @@ fun AppFontPage(onBack: () -> Unit) {
             )
         }
     )
-}
-
-@Preview
-@Composable
-fun AppFontContentPreview() {
-    TiebaLiteTheme {
-        AppFontContent(onCancel = {}) { }
-    }
 }
 
 @Composable
@@ -133,8 +115,7 @@ fun AppFontContent(modifier: Modifier = Modifier, onCancel: () -> Unit, onSave: 
         ChatBubbleText(
             modifier = modifier.padding(end = 32.dp),
             text = stringResource(id = R.string.bubble_change_font_size),
-            background = ExtendedTheme.colors.text.copy(0.1f),
-            color = ExtendedTheme.colors.text,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             fontSize = fontSize
         )
 
@@ -148,14 +129,18 @@ fun AppFontContent(modifier: Modifier = Modifier, onCancel: () -> Unit, onSave: 
             }
         )
 
-        Row(Modifier.padding(top = 18.dp)) {
+        Row(modifier = Modifier.padding(top = 12.dp)) {
+            val fontSizeChanged by remember {
+                derivedStateOf { abs(fontScale - newFontScale) >= 0.01f }
+            }
+
             NegativeButton(text = stringResource(id = R.string.button_cancel), onClick = onCancel)
 
             Spacer(modifier = Modifier.weight(1.0f))
 
             PositiveButton(
                 text = stringResource(id = R.string.button_finish),
-                enabled = abs(fontScale - newFontScale) >= 0.01f,
+                enabled = fontSizeChanged,
                 onClick = {
                     context.dataStore.putFloat(AppPreferencesUtils.KEY_FONT_SCALE, newFontScale)
                     onSave(newFontScale)
@@ -173,27 +158,19 @@ private fun TextHintSlider(
 ) {
     Column(modifier = modifier) {
         Text(
-            text = stringResource(getSizeTextHint(progress.roundToInt())),
+            text = stringResource(id = getSizeTextHint(progress.fastRoundToInt())),
             modifier = Modifier.align(Alignment.CenterHorizontally),
-            color = ExtendedTheme.colors.primary,
+            color = MaterialTheme.colorScheme.primary,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Surface(
-            shape = RoundedCornerShape(100),
-            color = MaterialTheme.colors.primary.copy(alpha = 0.1f)
-        ) {
-            Slider(
-                value = progress,
-                colors = SliderDefaults.colors(
-                    inactiveTrackColor = Color.LightGray,
-                ),
-                steps = 6,
-                valueRange = 0f..10f,
-                onValueChange = onProgressChanged
-            )
-        }
+        Slider(
+            value = progress,
+            onValueChange = onProgressChanged,
+            steps = 8,
+            valueRange = 0f..10f,
+        )
     }
 }
 
@@ -201,16 +178,24 @@ private fun TextHintSlider(
 private fun ChatBubbleText(
     modifier: Modifier = Modifier,
     text: String,
-    color: Color = ExtendedTheme.colors.onPrimary,
-    background: Color = ExtendedTheme.colors.primary,
+    containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
+    contentColor: Color = contentColorFor(containerColor),
     fontSize: TextUnit
 ) {
     Text(
         text = text,
         modifier = modifier
-            .background(color = background, shape = MaterialTheme.shapes.medium)
+            .background(color = containerColor, shape = MaterialTheme.shapes.medium)
             .padding(8.dp),
-        color = color,
+        color = contentColor,
         fontSize = fontSize
     )
+}
+
+@Preview
+@Composable
+private fun AppFontContentPreview() {
+    TiebaLiteTheme {
+        AppFontContent(onCancel = {}, onSave = {})
+    }
 }

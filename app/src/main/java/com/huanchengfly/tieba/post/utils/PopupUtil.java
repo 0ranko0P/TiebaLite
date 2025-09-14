@@ -11,7 +11,6 @@ import androidx.appcompat.widget.MenuPopupWindow;
 import androidx.appcompat.widget.PopupMenu;
 
 import com.huanchengfly.tieba.post.R;
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors;
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils;
 
 import java.lang.reflect.Field;
@@ -23,7 +22,6 @@ public class PopupUtil {
 
     private static void replaceBackground(PopupMenu popupMenu, Context context) {
         try {
-            ExtendedColors colors = ThemeUtil.getRawTheme();
             Field field = PopupMenu.class.getDeclaredField("mPopup");
             field.setAccessible(true);
             MenuPopupHelper menuPopupHelper = (MenuPopupHelper) field.get(popupMenu);
@@ -31,14 +29,14 @@ public class PopupUtil {
             Field popupField = obj.getClass().getDeclaredField("mPopup");
             popupField.setAccessible(true);
             MenuPopupWindow menuPopupWindow = (MenuPopupWindow) popupField.get(obj);
-            Log.i(PopupUtil.class.getSimpleName(), colors.getTheme());
 
-            int backgroundColor = colors.isNightMode() ? Color.BLACK : Color.WHITE;
+            boolean isDarkMode = ThemeUtil.INSTANCE.getDarkModeState().getValue();
+            int backgroundColor = isDarkMode ? Color.BLACK : Color.WHITE;
             menuPopupWindow.setBackgroundDrawable(
                     ThemeUtils.tintDrawable(context.getDrawable(R.drawable.bg_popup), backgroundColor)
             );
         } catch (NoSuchFieldException | IllegalAccessException | NullPointerException e) {
-            e.printStackTrace();
+            Log.w(PopupUtil.class.getSimpleName(), "onReplaceBackground", e);
         }
     }
 

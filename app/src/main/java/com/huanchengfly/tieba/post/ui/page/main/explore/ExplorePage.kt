@@ -1,130 +1,164 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.VerticalAlignTop
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_MEDIUM_LOWER_BOUND
+import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.arch.isScrolling
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.ui.common.localSharedElements
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
+import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
+import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
-import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
-import com.huanchengfly.tieba.post.ui.widgets.compose.enableBlur
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
+import com.huanchengfly.tieba.post.utils.BooleanBitSet
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import dev.chrisbanes.haze.ExperimentalHazeApi
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
-private typealias ExplorePageItem = Int
+sealed class ExplorePageItem(val name: String, val title: Int){
+    object Concern: ExplorePageItem("concern", R.string.title_concern)
 
+    object Personalized: ExplorePageItem("personalized",  R.string.title_personalized)
+
+    object Hot: ExplorePageItem("hot", R.string.title_hot)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ColumnScope.ExplorePageTab(
+private fun ExplorePageTab(
     pagerState: PagerState,
-    pages: ImmutableList<ExplorePageItem>
+    pages: List<ExplorePageItem>
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    TabRow(
+    SecondaryTabRow(
         selectedTabIndex = pagerState.currentPage,
-        indicator = { tabPositions ->
-            PagerTabIndicator(
-                pagerState = pagerState,
-                tabPositions = tabPositions
-            )
+        indicator = {
+            FancyAnimatedIndicatorWithModifier(index = pagerState.currentPage)
         },
-        divider = {},
-        backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.primary,
-        modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .width(76.dp * pages.size),
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.primary,
     ) {
-        var selected: Boolean
         pages.fastForEachIndexed { index, item ->
-            selected = pagerState.currentPage == index
-
+            val selected = pagerState.currentPage == index
             Tab(
                 text = {
                     Text(
-                        text = stringResource(id = item),
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                        letterSpacing = 0.75.sp
+                        text = stringResource(id = item.title),
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        letterSpacing = 1.sp
                     )
                 },
                 selected = selected,
                 onClick = {
+                    if (selected) return@Tab
                     coroutineScope.launch {
-                        if (!selected) pagerState.animateScrollToPage(index)
+                        if (abs(pagerState.currentPage - index) > 1) {
+                            pagerState.scrollToPage(index)
+                        } else {
+                            pagerState.animateScrollToPage(index)
+                        }
                     }
                 },
-                unselectedContentColor = ExtendedTheme.colors.textSecondary
+                unselectedContentColor = MaterialTheme.colorScheme.onSurface
             )
         }
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalHazeApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalHazeApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ExplorePage() {
+    val coroutineScope = rememberCoroutineScope()
     val account = LocalAccount.current
     val navigator = LocalNavController.current
-    val loggedIn = remember(account) { account != null }
+    val loggedIn by remember { derivedStateOf { account != null } }
+    val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
 
-    val pages = remember {
+    val pages = remember(loggedIn) {
         listOfNotNull(
-            R.string.title_concern.takeIf { loggedIn },
-            R.string.title_personalized,
-            R.string.title_hot,
-        ).toImmutableList()
+            ExplorePageItem.Concern.takeIf { loggedIn },
+            ExplorePageItem.Personalized,
+            ExplorePageItem.Hot
+        )
     }
-    val pagerState = rememberPagerState(initialPage = if (account != null) 1 else 0) { pages.size }
-    val listStates = rememberPagerListStates(size = pagerState.pageCount)
+    val pagerState = rememberPagerState(initialPage = if (loggedIn) 1 else 0) { pages.size }
+
+    val scrollBehaviors = rememberTopAppBarScrollBehaviors(pages.size) {
+        if (windowSize.isHeightAtLeastBreakpoint(HEIGHT_DP_MEDIUM_LOWER_BOUND)) {
+            TopAppBarDefaults.pinnedScrollBehavior(state = it)
+        } else {
+            TopAppBarDefaults.enterAlwaysScrollBehavior(state = it)
+        }
+    }
+
+    val scrollStateConnection = rememberScrollStateConnection()
+    // FAB visibility of each page
+    var fabHideStates by remember(pages) { mutableStateOf(BooleanBitSet()) }
 
     BlurScaffold(
-        backgroundColor = Color.Transparent,
         topHazeBlock = {
-            blurEnabled = pagerState.enableBlur(children = listStates)
+            blurEnabled = !fabHideStates.get(pagerState.currentPage) || pagerState.isScrolling
             inputScale = DefaultInputScale
         },
         topBar = {
-            Toolbar(
-                title = stringResource(id = R.string.title_explore),
-                navigationIcon = accountNavIconIfCompact(),
+            TopAppBar(
+                titleRes = R.string.title_explore,
+                navigationIcon = accountNavIconIfCompact,
                 actions = {
                     IconButton(onClick = { navigator.navigate(Search) }) {
                         Icon(
@@ -134,29 +168,90 @@ fun ExplorePage() {
                         )
                     }
                 },
-                elevation = Dp.Hairline
+                scrollBehavior = scrollBehaviors[pagerState.currentPage]
             ) {
                 ExplorePageTab(pagerState = pagerState, pages = pages)
             }
         },
-        bottomBar = emptyBlurBottomNavigation,
-    ) { contentPadding ->
-        LazyLoadHorizontalPager(
-            state = pagerState,
-            key = { pages[it] },
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.Top,
-            flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f),
-            userScrollEnabled = true,
-        ) {
-            val listState = listStates[it]
-            when(pages[it]) {
-                R.string.title_concern -> ConcernPage(navigator, contentPadding, listState)
+        bottomBar = emptyBlurBottomNavigation, // MainPage workaround when enabling BottomBar blurring
+        bottomHazeBlock = {
+            inputScale = DefaultInputScale
+        },
+        floatingActionButton = {
+            // FAB visibility: not scrolling, pager not scrolling, current page not refreshing
+            val visible by remember {
+                derivedStateOf {
+                    !scrollStateConnection.isScrolling && !pagerState.isScrolling &&
+                            !fabHideStates.get(pagerState.currentPage)
+                }
+            }
 
-                R.string.title_personalized -> PersonalizedPage(navigator, contentPadding, listState)
-
-                R.string.title_hot -> HotPage(navigator, contentPadding, listState)
+            AnimatedVisibility(
+                visible = visible,
+                enter = DefaultFabEnterTransition,
+                exit = DefaultFabExitTransition
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop)
+                    },
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = Dp.Hairline)
+                ) {
+                    Icon(Icons.Rounded.VerticalAlignTop, stringResource(R.string.btn_back_to_top))
+                }
             }
         }
+    ) { contentPadding ->
+        Container {
+            LazyLoadHorizontalPager(
+                state = pagerState,
+                key = { pages[it].title },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollStateConnection),
+                verticalAlignment = Alignment.Top,
+                flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
+            ) {
+                // Attach ScrollBehavior connections
+                val pageModifier = Modifier.nestedScroll(scrollBehaviors[it].nestedScrollConnection)
+
+                // Callbacks when page requesting FAB to hide
+                val onHideFab: (Boolean) -> Unit = { hide: Boolean -> fabHideStates = fabHideStates.set(it, hide) }
+
+                when (pages[it]) {
+                    ExplorePageItem.Concern -> {
+                        ConcernPage(navigator, contentPadding, pageModifier, onHideFab)
+                    }
+
+                    ExplorePageItem.Personalized -> {
+                        PersonalizedPage(navigator, contentPadding, pageModifier, onHideFab)
+                    }
+
+                    ExplorePageItem.Hot -> {
+                        HotPage(navigator, contentPadding, pageModifier, onHideFab)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LaunchedFabStateEffect(
+    listState: LazyListState,
+    onHideFab: (Boolean) -> Unit,
+    isRefreshing: Boolean,
+    isError: Boolean
+) {
+    onGlobalEvent<GlobalEvent.ScrollToTop> {
+        listState.scrollToItem(0)
+    }
+
+    val isTop by remember {
+        derivedStateOf { listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset > 0 }
+    }
+
+    LaunchedEffect(isTop, onHideFab, isRefreshing, isError) {
+        onHideFab(!isTop || isRefreshing || isError)
     }
 }

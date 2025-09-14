@@ -6,13 +6,12 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +35,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -46,7 +44,7 @@ import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
@@ -57,39 +55,46 @@ import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.launchUrl
 
-@Stable
+@Immutable
 interface PbContentRender {
     @Composable
     fun Render()
 
-    fun toAnnotationString(): AnnotatedString = AnnotatedString(this.toString())
+    fun toAnnotationString(): AnnotatedString = highlightContent(toString())
 
     companion object {
         const val TAG_URL = "url"
         const val TAG_USER = "user"
+        const val TAG_LZ = "Lz"
 
         const val INLINE_LINK = "link_icon"
         const val INLINE_LINK_MALICIOUS = "link_icon_malicious"
         const val INLINE_VIDEO = "video_icon"
+
+        const val MEDIA_PICTURE = "[图片]"
+        const val MEDIA_VIDEO = "[视频]"
+        const val MEDIA_VOICE = "[语音]"
     }
 }
 
 private fun highlightContent(content: String): AnnotatedString {
-    val theme by ThemeUtil.themeState
-    return AnnotatedString(content, SpanStyle(fontWeight = FontWeight.Bold, color = theme.primary))
+    val colorScheme = ThemeUtil.currentColorScheme()
+    return AnnotatedString(content, SpanStyle(colorScheme.primary, fontWeight = FontWeight.Bold))
 }
 
+@Immutable
 @JvmInline
 value class PureTextContentRender(val value: String) : PbContentRender {
 
     @Composable
-    override fun Render() = Text(text = value, style = MaterialTheme.typography.body1)
+    override fun Render() = Text(text = value, style = MaterialTheme.typography.bodyLarge)
 
     override fun toAnnotationString(): AnnotatedString = AnnotatedString(value)
 
     override fun toString(): String = value
 }
 
+@Immutable
 @JvmInline
 value class TextContentRender(val value: AnnotatedString) : PbContentRender {
 
@@ -101,7 +106,7 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
     override fun Render() {
         PbContentText(
             text = value,
-            style = MaterialTheme.typography.body1,
+            style = MaterialTheme.typography.bodyLarge,
             lineSpacing = 0.8.sp
         )
     }
@@ -137,8 +142,8 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
     }
 }
 
-@Stable
-data class PicContentRender(
+@Immutable
+/*data */class PicContentRender(
     val picUrl: String,
     val originUrl: String,
     val originSize: Int, // Bytes
@@ -146,15 +151,16 @@ data class PicContentRender(
     val picId: String,
     val photoViewData: PhotoViewData? = null,
 ) : PbContentRender {
+
     @Composable
     override fun Render() {
-        val widthFraction = if (isWindowWidthCompat()) 1f else 0.5f
+        val widthFraction = if (isWindowWidthCompact()) 1f else 0.5f
 
         NetworkImage(
             imageUri = picUrl,
             contentDescription = null,
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
+                .clip(shape = MaterialTheme.shapes.small)
                 .fillMaxWidth(widthFraction)
                 .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f),
             contentScale = ContentScale.Crop,
@@ -162,13 +168,22 @@ data class PicContentRender(
         )
     }
 
-    override fun toString(): String {
-        return "[图片]"
+    fun copy(
+        picUrl: String  = this.picUrl,
+        originUrl: String = this.originUrl,
+        originSize: Int = this.originSize,
+        dimensions: IntSize? = this.dimensions,
+        picId: String = this.picId,
+        photoViewData: PhotoViewData? = this.photoViewData,
+    ): PicContentRender {
+        return PicContentRender(picUrl,  originUrl, originSize, dimensions, picId, photoViewData)
     }
+
+    override fun toString(): String = PbContentRender.MEDIA_PICTURE
 }
 
-@Stable
-data class VoiceContentRender(
+@Immutable
+class VoiceContentRender(
     val voiceMd5: String,
     val duration: Int
 ) : PbContentRender {
@@ -180,59 +195,52 @@ data class VoiceContentRender(
         VoicePlayer(url = voiceUrl, duration = duration)
     }
 
-    override fun toAnnotationString() = highlightContent(toString())
-
-    override fun toString(): String {
-        return "[语音]"
-    }
+    override fun toString(): String = PbContentRender.MEDIA_VOICE
 }
 
-@Stable
-data class VideoContentRender(
+@Immutable
+class VideoContentRender(
     val videoUrl: String,
     val picUrl: String,
     val webUrl: String,
     val dimensions: IntSize?
 ) : PbContentRender {
 
+    init {
+        require(picUrl.isNotBlank() && picUrl.isNotEmpty()) { "Invalid video cover url" }
+    }
+
     @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
     override fun Render() {
-        val navigator = LocalNavController.current
-        val context = LocalContext.current
+        val widthFraction = if (isWindowWidthCompact()) 1f else 0.5f
 
-        if (picUrl.isNotBlank()) {
-            val widthFraction = if (isWindowWidthCompat()) 1f else 0.5f
+        val picModifier = Modifier
+            .fillMaxWidth(widthFraction)
+            .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f)
+            .clip(shape = MaterialTheme.shapes.small)
 
-            val picModifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .fillMaxWidth(widthFraction)
-                .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f)
-
-            if (videoUrl.isNotBlank()) {
-                VideoThumbnail(
-                    modifier = picModifier,
-                    thumbnailUrl = picUrl,
-                    onClick = { VideoViewActivity.launch(context, videoUrl, picUrl) }
-                )
-            } else {
-                GlideImage(
-                    model  = picUrl,
-                    contentDescription = stringResource(id = R.string.desc_video),
-                    modifier = picModifier.clickable {
-                        navigator.navigate(Destination.WebView(webUrl))
-                    },
-                    contentScale = ContentScale.Crop
-                )
-            }
+        if (videoUrl.isNotBlank()) {
+            val context = LocalContext.current
+            VideoThumbnail(
+                modifier = picModifier,
+                thumbnailUrl = picUrl,
+                onClick = { VideoViewActivity.launch(context, videoUrl, picUrl) }
+            )
+        } else {
+            val navigator = LocalNavController.current
+            GlideImage(
+                model  = picUrl,
+                contentDescription = stringResource(id = R.string.desc_video),
+                modifier = picModifier.clickable {
+                    navigator.navigate(Destination.WebView(webUrl))
+                },
+                contentScale = ContentScale.Crop
+            )
         }
     }
 
-    override fun toAnnotationString() = highlightContent(toString())
-
-    override fun toString(): String {
-        return "[视频]"
-    }
+    override fun toString(): String = PbContentRender.MEDIA_VIDEO
 }
 
 @Composable

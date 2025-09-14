@@ -1,10 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -12,19 +7,16 @@ import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.SupervisedUserCircle
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.navigation.NavController
@@ -34,9 +26,10 @@ import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.DropDownPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.EditTextPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TipPref
 import com.huanchengfly.tieba.post.ui.page.Destination.Login
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_LITTLE_TAIL
@@ -48,8 +41,7 @@ import kotlinx.collections.immutable.toImmutableMap
 
 @Composable
 fun AccountManagePage(navigator: NavController) {
-    Scaffold(
-        backgroundColor = Color.Transparent,
+    MyScaffold(
         topBar = {
             TitleCentredToolbar(
                 title = stringResource(id = R.string.title_account_manage),
@@ -97,32 +89,28 @@ fun AccountManagePage(navigator: NavController) {
                 )
             }
             prefsItem {
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(
-                            style = SpanStyle(
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append(stringResource(id = R.string.tip_start))
+                TipPref {
+                    val tip = remember {
+                        buildAnnotatedString {
+                            withStyle(
+                                style = SpanStyle(fontWeight = FontWeight.Bold)
+                            ) {
+                                append(context.getString(R.string.tip_start))
+                            }
+                            append(context.getString(R.string.tip_account_error))
                         }
-                        append(stringResource(id = R.string.tip_account_error))
-                    },
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .padding(start = 8.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(color = ExtendedTheme.colors.chip)
-                        .padding(12.dp),
-                    color = ExtendedTheme.colors.onChip,
-                    fontSize = 12.sp
-                )
+                    }
+
+                    Text(text = tip, fontSize = 12.sp)
+                }
             }
             prefsItem {
                 TextPref(
                     title = stringResource(id = R.string.title_exit_account),
                     onClick = {
-                        if (accountUtil.allAccounts.size <= 1) navigator.navigateUp()
+                        if (accountUtil.allAccounts.size <= 1) {
+                            navigator.navigateUp()
+                        }
                         accountUtil.exit(context)
                     },
                     leadingIcon = Icons.AutoMirrored.Outlined.Logout

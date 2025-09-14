@@ -3,22 +3,17 @@ package com.huanchengfly.tieba.post.ui.page.search.forum
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -34,8 +29,6 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
@@ -47,19 +40,22 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalShouldLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentListOf
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchForumPage(
+    modifier: Modifier = Modifier,
     keyword: String,
     contentPadding: PaddingValues,
-    listState: LazyListState = rememberLazyListState(),
     viewModel: SearchForumViewModel = pageViewModel(),
 ) {
     val navigator = LocalNavController.current
+    val listState = rememberLazyListState()
+
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(SearchForumUiIntent.Refresh(keyword))
         viewModel.initialized = true
@@ -89,11 +85,6 @@ fun SearchForumPage(
         derivedStateOf { fuzzyMatchForumList.isNotEmpty() }
     }
 
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = { viewModel.send(SearchForumUiIntent.Refresh(keyword)) }
-    )
-
     val isEmpty by remember {
         derivedStateOf { exactMatchForum == null && !showFuzzyMatchResult }
     }
@@ -112,24 +103,28 @@ fun SearchForumPage(
         }
     }
 
+    val onReload: () -> Unit = { viewModel.send(SearchForumUiIntent.Refresh(keyword)) }
+
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
         isError = error != null,
         isLoading = isRefreshing,
-        onReload = { viewModel.send(SearchForumUiIntent.Refresh(keyword)) },
+        onReload = onReload,
         errorScreen = {
-            error?.let {
-                val (e) = it
-                ErrorScreen(error = e)
+            error?.item?.let {
+                ErrorScreen(error = it)
             }
         }
     ) {
-        Box(
-            modifier = Modifier.pullRefresh(pullRefreshState)
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onReload,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
         ) {
             MyLazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = modifier.fillMaxSize(),
                 state = listState,
                 contentPadding = contentPadding,
             ) {
@@ -156,7 +151,6 @@ fun SearchForumPage(
                         Chip(
                             text = stringResource(id = R.string.title_fuzzy_match),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            invertColor = false
                         )
                     }
                     items(fuzzyMatchForumList) {
@@ -170,16 +164,6 @@ fun SearchForumPage(
                     }
                 }
             }
-
-            PullRefreshIndicator(
-                refreshing = isRefreshing,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .align(Alignment.TopCenter),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
-            )
         }
     }
 
@@ -218,12 +202,12 @@ private fun SearchForumItem(
                 modifier = Modifier.localSharedBounds(
                     key = ForumTitleSharedBoundsKey(forumName = forumName, extraKey = null)
                 ),
-                style = MaterialTheme.typography.subtitle1
+                style = MaterialTheme.typography.titleMedium
             )
             if (!item.intro.isNullOrEmpty()) {
                 Text(
                     text = item.slogan.orEmpty(),
-                    style = MaterialTheme.typography.body2,
+                    style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1
                 )
             }

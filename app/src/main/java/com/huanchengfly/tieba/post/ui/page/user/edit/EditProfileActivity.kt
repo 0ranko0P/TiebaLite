@@ -24,14 +24,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Card
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PhotoCamera
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -63,15 +64,13 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.UCropActivity
 import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUCropResult
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
-import com.huanchengfly.tieba.post.arch.block
-import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.theme.TiebaBlue
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BaseTextField
@@ -96,7 +95,7 @@ import java.io.File
 
 @AndroidEntryPoint
 class EditProfileActivity : BaseComposeActivity() {
-    private var theme: ExtendedColors? = null
+    private var colorScheme: ColorScheme? = null
 
     private val portraitFile: File by lazy { File(cacheDir, "cropped_portrait") }
 
@@ -116,7 +115,7 @@ class EditProfileActivity : BaseComposeActivity() {
             delay(240L) // Wait exit animation of MediaPicker Activity
 
             // Launch UCropActivity now
-            val primaryColor = (theme?.primary?: TiebaBlue).toArgb()
+            val primaryColor = (colorScheme?.primary?: TiebaBlue).toArgb()
             uCropLauncher.launch(buildUCropOptions(uri, primaryColor))
         }
     }
@@ -144,9 +143,9 @@ class EditProfileActivity : BaseComposeActivity() {
     override fun Content() {
         PageEditProfile(viewModel, onBackPressed = { onBackPressed() })
 
-        val localTheme = LocalExtendedColors.current
+        val colors = MaterialTheme.colorScheme
         SideEffect {
-            theme = localTheme
+            colorScheme = colors
         }
     }
 
@@ -208,13 +207,14 @@ fun EditProfileCard(
     loading: Boolean,
     onNickNameChange: ((String) -> Unit)? = null,
     onIntroChange: ((String) -> Unit)? = null,
-    onUploadPortrait: (() -> Unit)? = null,
+    onUploadPortrait: () -> Unit = {},
     onModifySex: (() -> Unit)? = null,
-    color: Color = ExtendedTheme.colors.background,
 ) {
     val context = LocalContext.current
-    val disabledText = ExtendedTheme.colors.text.copy(ContentAlpha.disabled)
-    Card(elevation = 0.dp, backgroundColor = color) {
+    val disabledText = MaterialTheme.colorScheme.outlineVariant
+    Surface(
+        shape = MaterialTheme.shapes.small
+    ) {
         Column(
             modifier = Modifier
                 .padding(dimensionResource(id = R.dimen.card_margin))
@@ -228,7 +228,7 @@ fun EditProfileCard(
                     .placeholder(visible = loading)
             ) {
                 GlideImage(
-                    model = StringUtil.getAvatarUrl(portrait),
+                    model = remember { StringUtil.getAvatarUrl(portrait) },
                     contentDescription = name,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -236,16 +236,11 @@ fun EditProfileCard(
                     modifier = Modifier
                         .background(color = Color(0x77000000))
                         .fillMaxSize(),
-                    onClick = {
-                        onUploadPortrait?.invoke()
-                    }
+                    onClick = onUploadPortrait
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.PhotoCamera,
                         contentDescription = stringResource(id = R.string.upload_portrait),
-                        modifier = Modifier
-                            .size(24.dp)
-                            .align(Alignment.Center),
                         tint = Color.White
                     )
                 }
@@ -354,13 +349,12 @@ fun EditProfileCard(
                                 else -> R.string.profile_sex_unset
                             }
                         ),
-                        color = ExtendedTheme.colors.text,
                         modifier = Modifier.weight(1f)
                     )
                     Icon(
                         imageVector = ImageVector.vectorResource(id = R.drawable.ic_round_chevron_right),
                         contentDescription = null,
-                        tint = ExtendedTheme.colors.textSecondary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
                             .size(16.dp)
                             .align(Alignment.CenterVertically)
@@ -397,7 +391,7 @@ fun EditProfileCard(
 }
 
 @Composable
-fun PageEditProfile(
+private fun PageEditProfile(
     viewModel: EditProfileViewModel,
     onBackPressed: () -> Unit,
 ) {
@@ -416,7 +410,7 @@ fun PageEditProfile(
             topBar = {
                 Toolbar(
                     title = stringResource(id = R.string.title_activity_edit_profile),
-                    navigationIcon = { BackNavigationIcon { onBackPressed() } },
+                    navigationIcon = { BackNavigationIcon(onBackPressed) },
                     actions = {
                         ActionItem(
                             icon = ImageVector.vectorResource(id = R.drawable.ic_round_save_24),
@@ -496,7 +490,7 @@ fun PageEditProfile(
             topBar = {
                 Toolbar(
                     title = stringResource(id = R.string.title_activity_edit_profile),
-                    navigationIcon = { BackNavigationIcon { onBackPressed() } }
+                    navigationIcon = { BackNavigationIcon(onBackPressed) }
                 )
             },
         ) { contentPadding ->
@@ -525,27 +519,29 @@ fun PageEditProfile(
 @Preview
 @Composable
 fun EditProfileCardPreview() {
-    EditProfileCard(
-        portrait = "",
-        name = "test",
-        nickName = "test",
-        sex = 1,
-        intro = "test",
-        loading = false,
-        color = Color.White
-    )
+    TiebaLiteTheme {
+        EditProfileCard(
+            portrait = "",
+            name = "test",
+            nickName = "test",
+            sex = 1,
+            intro = "test",
+            loading = false,
+        )
+    }
 }
 
 @Preview
 @Composable
 fun EditProfileCardLoadingPreview() {
-    EditProfileCard(
-        portrait = "",
-        name = "",
-        nickName = "",
-        sex = 0,
-        intro = "",
-        loading = true,
-        color = Color.White
-    )
+    TiebaLiteTheme {
+        EditProfileCard(
+            portrait = "",
+            name = "",
+            nickName = "",
+            sex = 0,
+            intro = "",
+            loading = true,
+        )
+    }
 }

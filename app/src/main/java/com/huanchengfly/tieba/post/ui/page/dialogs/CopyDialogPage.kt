@@ -4,129 +4,103 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.BottomNavigationDefaults
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.Button
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CopyTextDialogPage(
     text: String,
     navigator: NavController,
 ) {
-    val context = LocalContext.current
-
-    CopyTextPageContent(
-        text = text,
-        onCopy = {
-            TiebaUtil.copyText(context, it)
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(text = stringResource(id = R.string.menu_copy))
+                        Text(
+                            text = stringResource(id = R.string.tip_copy_text),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                },
+                navigationIcon = {
+                    BackNavigationIcon(onBackPressed = navigator::navigateUp)
+                },
+                scrollBehavior = scrollBehavior
+            )
         },
-        onCancel = navigator::navigateUp
-    )
-}
+        bottomBar = {
+            val context = LocalContext.current
 
-@Composable
-private fun CopyTextPageContent(
-    text: String,
-    onCopy: (String) -> Unit,
-    onCancel: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.background(color = ExtendedTheme.colors.windowBackground),
-    ) {
-        TitleCentredToolbar(
-            title = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.menu_copy),
-                        style = MaterialTheme.typography.h6,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = stringResource(id = R.string.tip_copy_text),
-                        style = MaterialTheme.typography.caption
-                    )
-                }
-            },
-            navigationIcon = {
-                BackNavigationIcon(onBackPressed = onCancel)
-            }
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
-            contentAlignment = Alignment.Center
-        ) {
-            SelectionContainer {
-                Text(
-                    text = text,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp), // Content padding
-                    style = MaterialTheme.typography.body1
-                )
-            }
-        }
-
-        Surface(
-            color = ExtendedTheme.colors.threadBottomBar,
-            elevation = BottomNavigationDefaults.Elevation,
-        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
                     .navigationBarsPadding()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Button(
+                PositiveButton(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        onCopy(text)
-                        onCancel()
-                    }
+                    textRes = R.string.btn_copy_all,
                 ) {
-                    Text(text = stringResource(id = R.string.btn_copy_all))
+                    TiebaUtil.copyText(context, text)
+                    navigator.navigateUp()
                 }
 
-                Button(
+                FilledTonalButton(
+                    onClick = navigator::navigateUp,
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = onCancel,
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = ExtendedTheme.colors.text.copy(alpha = 0.1f),
-                        contentColor = ExtendedTheme.colors.text
-                    )
-                ) {
-                    Text(text = stringResource(id = R.string.btn_close))
-                }
+                    content = {
+                        Text(text = stringResource(id = R.string.btn_close))
+                    }
+                )
+            }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState()),
+            contentAlignment = Alignment.Center
+        ) {
+            SelectionContainer(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = text,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
     }

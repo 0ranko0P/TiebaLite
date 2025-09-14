@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.widgets.compose.dialogs
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -21,12 +20,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DoubleArrow
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -50,7 +51,8 @@ import com.godaddy.android.colorpicker.HsvColor
 import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
@@ -59,6 +61,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.RoundedSlider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.extension.toHexString
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColorPickerDialog(
     state: DialogState = rememberDialogState(),
@@ -69,10 +72,15 @@ fun ColorPickerDialog(
 ) {
     var color by remember { mutableStateOf(HsvColor.from(initial)) }
     val androidColor by remember { derivedStateOf { color.toColor() } }
+    val isHeightCompat = isWindowHeightCompact()
 
     Dialog(
         dialogState = state,
-        title = title?.let { { Text(text = stringResource(it)) } },
+        title = if (!isHeightCompat && title != null) {
+            { Text(text = stringResource(title)) }
+        } else {
+            null
+        },
         buttons = {
             Row (
                 Modifier.fillMaxWidth()
@@ -97,12 +105,12 @@ fun ColorPickerDialog(
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             val focusManager = LocalFocusManager.current
 
-            // Paddings to align widgets with color picker visually
-            val paddingModifier = Modifier.padding(horizontal = 24.dp)
+            // Paddings to align widgets with button visually
+            val paddingModifier = Modifier.padding(start = 8.dp)
 
             val isKeyboardOpen by rememberUpdatedState(WindowInsets.ime.getBottom(density) > 0)
             // Hide picker to make room for soft keyboard
-            if (!isKeyboardOpen) {
+            if (!isKeyboardOpen && !isHeightCompat) {
                 HarmonyColorPicker(
                     harmonyMode = ColorHarmonyMode.ANALOGOUS,
                     color = color,
@@ -121,12 +129,11 @@ fun ColorPickerDialog(
                         value = color.value,
                         onValueChange = { color = color.copy(value = it) },
                         modifier = Modifier.padding(start = 12.dp),
-                        trackHeight = 10.dp
                     )
                 }
             }
 
-            ColorHexTextFiled(paddingModifier, initial = initial, color = androidColor) {
+            ColorHexTextField(paddingModifier, initial = initial, color = androidColor) {
                 color = HsvColor.from(it)
             }
 
@@ -140,7 +147,7 @@ fun ColorPickerDialog(
 }
 
 @Composable
-private fun ColorHexTextFiled(
+private fun ColorHexTextField(
     modifier: Modifier = Modifier,
     initial: Color = Color.Red,
     color: Color = initial,
@@ -153,7 +160,7 @@ private fun ColorHexTextFiled(
         userInput = it.uppercase()
 
         try {
-            val inputColor = Color(android.graphics.Color.parseColor(it))
+            val inputColor = Color(userInput.toColorInt())
             if (inputColor != color) {
                 onColorChanged(inputColor)
             }
@@ -171,7 +178,7 @@ private fun ColorHexTextFiled(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val border = BorderStroke(0.5.dp, MaterialTheme.colors.onSurface)
+        val border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline)
 
         // Color box for initial color
         Box(
@@ -181,11 +188,7 @@ private fun ColorHexTextFiled(
                 .border(border),
         )
 
-        Image(
-            imageVector = Icons.Rounded.DoubleArrow,
-            contentDescription = null,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
+        Icon(imageVector = Icons.Rounded.DoubleArrow, contentDescription = null)
 
         // Color box for picked color
         Box(
@@ -207,10 +210,9 @@ private fun ColorHexTextFiled(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp),
-            textStyle = MaterialTheme.typography.body2.copy(fontSize = 18.sp),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                cursorColor = MaterialTheme.colors.primary,
+                .padding(start = 12.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp),
+            colors = OutlinedTextFieldDefaults.colors(
                 errorCursorColor = Color.Red,
                 errorBorderColor = Color.Red
             )
@@ -218,8 +220,8 @@ private fun ColorHexTextFiled(
     }
 }
 
-@Preview("ColorHexTextFiled", showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Preview("ColorHexTextField", showBackground = true, backgroundColor = 0xFFFFFFFF)
 @Composable
 private fun ColorHexTextFiledPreview() = TiebaLiteTheme {
-    ColorHexTextFiled(initial = Color.Cyan, color = Color.Blue) {  }
+    ColorHexTextField(initial = Color.Cyan, color = Color.Blue) {  }
 }

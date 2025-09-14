@@ -5,7 +5,6 @@ import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.HideSource
 import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
@@ -21,7 +20,6 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 @Composable
 fun BlockSettingsPage(navigator: NavController) {
     MyScaffold(
-        backgroundColor = Color.Transparent,
         topBar = {
             TitleCentredToolbar(
                 title = stringResource(id = R.string.title_block_settings),

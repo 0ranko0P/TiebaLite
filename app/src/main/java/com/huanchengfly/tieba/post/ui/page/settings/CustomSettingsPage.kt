@@ -5,22 +5,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.BlurOn
-import androidx.compose.material.icons.outlined.Brightness2
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.FontDownload
-import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.material.icons.outlined.Upcoming
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -28,8 +23,6 @@ import androidx.navigation.NavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMode
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
@@ -45,7 +38,6 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -75,10 +67,6 @@ fun CustomSettingsPage(navigator: NavController) = MyScaffold(
         }
 
         prefsItem {
-            DarkThemePreference()
-        }
-
-        prefsItem {
             ReduceEffectPreference()
         }
 
@@ -100,10 +88,7 @@ fun CustomSettingsPage(navigator: NavController) = MyScaffold(
                         LauncherIcons.OLD_ICON -> R.drawable.ic_launcher_round
                         else -> throw RuntimeException("Invalid icon option: $option")
                     }
-
-                    @Composable {
-                        GlideImage(icon, contentDescription = null, Modifier.size(Sizes.Medium))
-                    }
+                    GlideImage(icon, contentDescription = null, Modifier.size(Sizes.Medium))
                 },
                 onValueChange = AppIconUtil::setIcon,
                 useSelectedAsSummary = true
@@ -142,15 +127,6 @@ fun CustomSettingsPage(navigator: NavController) = MyScaffold(
             }
         }
         prefsItem {
-            SwitchPref(
-                key = ThemeUtil.KEY_TINT_TOOLBAR,
-                title = R.string.tip_toolbar_primary_color,
-                defaultChecked = false,
-                leadingIcon = Icons.Outlined.FormatColorFill,
-                summary = { R.string.tip_toolbar_primary_color_summary },
-            )
-        }
-        prefsItem {
             ForumListPreference()
         }
         prefsItem {
@@ -165,10 +141,8 @@ fun CustomSettingsPage(navigator: NavController) = MyScaffold(
     }
 }
 
-@NonRestartableComposable
 @Composable
 fun DarkThemeModePreference(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
     ListPref(
         key = intPreferencesKey(ThemeUtil.KEY_DARK_THEME_MODE),
         title = R.string.title_settings_night_mode,
@@ -176,7 +150,7 @@ fun DarkThemeModePreference(modifier: Modifier = Modifier) {
         defaultValue = ThemeUtil.DARK_MODE_FOLLOW_SYSTEM,
         onValueChange = { value ->
             // Notify changes manually instead of observe DataStore in Activity
-            context.setNightMode(ThemeUtil.shouldUseNightMode(value))
+            ThemeUtil.overrideDarkMode(darkMode = ThemeUtil.shouldUseNightMode(value))
         },
         leadingIcon = Icons.Outlined.DarkMode,
         options = persistentMapOf(
@@ -187,31 +161,6 @@ fun DarkThemeModePreference(modifier: Modifier = Modifier) {
     )
 }
 
-@NonRestartableComposable
-@Composable
-fun DarkThemePreference(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val enabled by context.dataStore.data
-        .map { it[intPreferencesKey(ThemeUtil.KEY_DARK_THEME_MODE)] != ThemeUtil.DARK_MODE_DISABLED }
-        .collectAsState(true)
-
-    ListPref(
-        key = stringPreferencesKey(ThemeUtil.KEY_DARK_THEME),
-        title = R.string.settings_night_mode,
-        modifier = modifier,
-        defaultValue = ThemeUtil.THEME_BLUE_DARK,
-        leadingIcon = Icons.Outlined.Brightness2,
-        enabled = enabled,
-        options = persistentMapOf(
-            ThemeUtil.THEME_BLUE_DARK to R.string.theme_blue_dark,
-            ThemeUtil.THEME_GREY_DARK to R.string.theme_grey_dark,
-            ThemeUtil.THEME_AMOLED_DARK to R.string.theme_amoled_dark
-        ),
-        useSelectedAsSummary = true,
-    )
-}
-
-@NonRestartableComposable
 @Composable
 fun ForumListPreference(modifier: Modifier = Modifier) {
     SwitchPref(
@@ -231,6 +180,5 @@ fun ReduceEffectPreference(modifier: Modifier = Modifier) {
         title = R.string.title_reduce_effect,
         defaultChecked = false,
         leadingIcon = Icons.Outlined.BlurOn,
-        summary = { R.string.summary_reduce_effect },
     )
 }

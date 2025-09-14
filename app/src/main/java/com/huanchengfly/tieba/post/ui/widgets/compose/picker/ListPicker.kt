@@ -1,30 +1,27 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose.picker
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonColors
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.Text
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlinx.collections.immutable.ImmutableMap
 
 /**
@@ -33,64 +30,52 @@ import kotlinx.collections.immutable.ImmutableMap
 typealias Options<Option> = ImmutableMap<Option, Int>
 
 @Composable
-private fun selectedButtonColor(selected: Boolean): ButtonColors {
-    return if (selected) {
-        ButtonDefaults.textButtonColors(
-            backgroundColor = ExtendedTheme.colors.primary.copy(0.1f),
-            contentColor = ExtendedTheme.colors.primary
-        )
-    } else {
-        ButtonDefaults.textButtonColors(
-            backgroundColor = Color.Transparent,
-            contentColor = ExtendedTheme.colors.text
-        )
-    }
-}
-
-@Composable
 fun <Option> ListSinglePicker(
     items: Options<Option>,
     selected: Option,
     onItemSelected: (item: Option, changed: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     selectedIndicator: @Composable () -> Unit = {
-        Icon(
-            imageVector = Icons.Rounded.Check,
-            contentDescription = stringResource(id = R.string.desc_checked)
-        )
+        Icon(Icons.Rounded.Check, contentDescription = null)
     },
     enabled: Boolean = true,
-    itemIconSupplier: ((Option) -> @Composable () -> Unit)? = null
+    itemIconSupplier: (@Composable (Option) -> Unit)? = null
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Column(modifier = modifier) {
-        items.forEach {
-            val value = it.key
-            val description = stringResource(it.value)
+        items.forEach { (value, description) ->
             val isSelected = value == selected
+            val descriptionText = stringResource(id = description)
 
-            Button(
+            Surface(
                 onClick = { onItemSelected(value, !isSelected)},
+                modifier = Modifier.semantics(mergeDescendants = true) {
+                    contentDescription = descriptionText
+                    role = Role.DropdownList
+                    this.selected = isSelected
+                },
                 enabled = enabled,
-                elevation = null,
-                shape = RectangleShape,
-                colors = selectedButtonColor(isSelected),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+                color = if (isSelected) colorScheme.primaryContainer else Color.Transparent,
+                contentColor = if (isSelected) colorScheme.onPrimaryContainer else colorScheme.onSurface,
             ) {
-                itemIconSupplier?.invoke(value)?.let { icon ->
-                    icon()
-                    Spacer(Modifier.size(16.dp))
-                }
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (itemIconSupplier != null) {
+                        itemIconSupplier(value)
+                        Spacer(modifier = Modifier.width(16.dp))
+                    }
 
-                Text(
-                    text = description,
-                    modifier = Modifier.weight(1f),
-                    color = LocalContentColor.current.copy(LocalContentAlpha.current),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-                if (isSelected) {
-                    Box(modifier = Modifier.align(Alignment.CenterVertically)) {
+                    Text(
+                        text = descriptionText,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    if (isSelected) {
                         selectedIndicator()
                     }
                 }

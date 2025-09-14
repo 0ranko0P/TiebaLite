@@ -4,36 +4,35 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Text
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.forum.rule.ForumRuleDetailViewModel.Companion.ForumRuleDetailUiState
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 
 @Composable
 fun ForumRuleDetailPage(
-    forumId: Long,
     navigator: NavController,
     viewModel: ForumRuleDetailViewModel = hiltViewModel(),
 ) {
-    val uiState = viewModel.uiState
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     ProvideNavigator(navigator = navigator) {
         StateScreen(
@@ -45,8 +44,7 @@ fun ForumRuleDetailPage(
                 ErrorScreen(error = (uiState as ForumRuleDetailUiState.Error).throwable)
             }
         ) {
-            if (uiState !is ForumRuleDetailUiState.Success) return@StateScreen
-            MyScaffold(
+            Scaffold(
                 topBar = {
                     TitleCentredToolbar(
                         title = stringResource(id = R.string.title_forum_rule),
@@ -55,48 +53,57 @@ fun ForumRuleDetailPage(
                         }
                     )
                 }
-            ) {
-                val publishTime = uiState.publishTime
-                val preface = uiState.preface
-                val data = uiState.data
+            ) { contentPadding ->
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState()),
+                val state = uiState as? ForumRuleDetailUiState.Success ?: return@Scaffold
+                val publishTime = state.publishTime
+                val preface = state.preface
+                val data = state.data
+                val ruleTitleStyle = MaterialTheme.typography.titleMedium
+
+                LazyColumn(
+                    modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp),
+                    contentPadding = contentPadding,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(text = uiState.title, style = MaterialTheme.typography.h5)
-                    uiState.author?.let {
-                        UserHeader(
-                            name = it.get { user_name },
-                            nameShow = it.get { name_show },
-                            portrait = it.get { portrait },
-                            onClick = {
-                                navigator.navigate(Destination.UserProfile(uid = it.get { user_id }))
-                            },
-                            desc = publishTime.takeIf { time -> time.isNotEmpty() }
-                        )
+                    item {
+                        Text(text = state.title, style = MaterialTheme.typography.headlineSmall)
                     }
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+
+                    state.author?.item?.let {
+                        item {
+                            UserHeader(
+                                name = it.user_name,
+                                nameShow = it.name_show,
+                                portrait = it.portrait,
+                                onClick = {
+                                    navigator.navigate(Destination.UserProfile(uid = it.user_id))
+                                },
+                                desc = publishTime.takeIf { time -> time.isNotEmpty() }
+                            )
+                        }
+                    }
+
+                    item {
+                        Text(text = preface, style = MaterialTheme.typography.bodyLarge)
+                    }
+
+                    items(
+                        items = data,
+                        key = { it -> it.hashCode() },
+                        contentType = { R.string.title_forum_rule }
                     ) {
-                        ProvideTextStyle(value = MaterialTheme.typography.body1) {
-                            Text(text = preface)
+                        Column(
+                            modifier = Modifier.padding(top = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             data.fastForEach {
-                                if (it.title.isNotEmpty()) {
-                                    Text(
-                                        text = it.title,
-                                        style = MaterialTheme.typography.subtitle1
-                                    )
+                                it.title?.let { title ->
+                                    Text(text = title, style = ruleTitleStyle)
                                 }
-                                Column(
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    it.contentRenders.fastForEach { render ->
-                                        render.Render()
-                                    }
+
+                                it.contentRenders.fastForEach { render ->
+                                    render.Render()
                                 }
                             }
                         }

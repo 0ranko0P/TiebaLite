@@ -1,10 +1,7 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose.video
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -17,21 +14,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.FullscreenExit
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.ripple
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
@@ -50,8 +45,8 @@ import androidx.media3.common.Player
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.theme.Grey100
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 import com.huanchengfly.tieba.post.utils.DisplayUtil
 
@@ -143,7 +138,6 @@ fun VideoPlayer(
             val isFullScreen = DisplayUtil.isLandscape
 
             BackHandler(enabled = isFullScreen) {
-                Log.i("VideoPlayer", "handleBackPress")
                 videoPlayerController.toggleFullScreen()
             }
         }
@@ -249,12 +243,7 @@ private fun FullScreenButton() {
     Box(
         modifier = Modifier
             .padding(8.dp)
-            .clickable(
-                indication = ripple(bounded = false),
-                interactionSource = remember { MutableInteractionSource() }
-            ) {
-                videoPlayerController.toggleFullScreen()
-            }
+            .clickableNoIndication(onClick = videoPlayerController::toggleFullScreen)
     ) {
         Icon(
             imageVector = icon,

@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.models
 
 import android.content.Context
+import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.bawuType
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -8,7 +9,8 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 /**
  * Represents [User] in UI
  * */
-data class UserData(
+@Immutable
+class UserData(
     val id: Long,
     val name: String,
     val nameShow: String,

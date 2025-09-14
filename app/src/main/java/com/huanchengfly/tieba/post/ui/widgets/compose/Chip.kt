@@ -1,75 +1,101 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Text
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipBackground
-import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipContent
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+
+@Composable
+fun ChipText(
+    modifier: Modifier = Modifier,
+    text: String,
+    containerColor: Color = MaterialTheme.colorScheme.primary,
+    contentColor: Color = contentColorFor(containerColor),
+    onClick: (() -> Unit)? = null,
+){
+    Box(
+        modifier = modifier
+            .block {
+                if (onClick != null) {
+                    clip(CircleShape).background(containerColor).clickable(onClick = onClick)
+                } else {
+                    background(color = containerColor, shape = CircleShape)
+                }
+            }
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Text(
+            color = contentColor,
+            text = text,
+            maxLines = 1,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelMedium
+        )
+    }
+}
 
 @Composable
 fun Chip(
     text: String,
     modifier: Modifier = Modifier,
-    prefixIcon: (@Composable () -> Unit)? = null,
-    appendIcon: (@Composable () -> Unit)? = null,
-    onClick: (() -> Unit)? = null,
+    prefixIcon: (@Composable BoxScope.() -> Unit)? = null,
+    appendIcon: (@Composable BoxScope.() -> Unit)? = null,
     invertColor: Boolean = false,
-    shape: Shape = CircleShape,
+    onClick: (() -> Unit)? = null
 ) {
-    val color =
-        if (invertColor) ExtendedTheme.colors.invertChipContent else ExtendedTheme.colors.onChip
-    val backgroundColor =
-        if (invertColor) ExtendedTheme.colors.invertChipBackground else ExtendedTheme.colors.chip
+    val colors = MaterialTheme.colorScheme
+    val color = if (invertColor) colors.onPrimary else colors.onSecondaryContainer
+    val containerColor = if (invertColor) colors.primary else colors.secondaryContainer
 
-    val animatedColor by animateColorAsState(targetValue = color, label = "ChipColor")
-    val animatedBackgroundColor by animateColorAsState(
-        targetValue = backgroundColor,
-        label = "ChipBackgroundColor"
-    )
+    if (prefixIcon == null && appendIcon == null) {
+        ChipText(modifier, text, containerColor, color, onClick)
+        return
+    }
 
-    ProvideContentColor(color = animatedColor) {
-        Row(
-            modifier = modifier
-                .clip(shape)
-                .background(color = animatedBackgroundColor)
-                .clickable(enabled = onClick != null) {
-                    onClick?.invoke()
-                }
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            prefixIcon?.let {
-                Box(modifier = Modifier.size(16.dp)) {
-                    it()
+    Row(
+        modifier = modifier
+            .block {
+                if (onClick != null) {
+                    clip(CircleShape).background(containerColor).clickable(onClick = onClick)
+                } else {
+                    background(color = containerColor, shape = CircleShape)
                 }
             }
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        CompositionLocalProvider(LocalContentColor provides color) {
+            prefixIcon?.let {
+                Box(modifier = Modifier.size(16.dp), content = it)
+            }
+
             Text(
-                fontSize = 12.sp,
+                text = text,
                 fontWeight = FontWeight.Bold,
-                text = text
+                style = MaterialTheme.typography.labelMedium
             )
+
             appendIcon?.let {
-                Box(modifier = Modifier.size(16.dp)) {
-                    it()
-                }
+                Box(modifier = Modifier.size(16.dp), content = it)
             }
         }
     }

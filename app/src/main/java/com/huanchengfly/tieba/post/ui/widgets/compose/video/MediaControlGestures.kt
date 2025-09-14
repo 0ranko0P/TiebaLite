@@ -5,13 +5,14 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,18 +45,18 @@ fun MediaControlGestures(
 ) {
     val controller = LocalVideoPlayerController.current
 
-    val controlsEnabled by controller.collect { controlsEnabled }
-    val gesturesEnabled by controller.collect { gesturesEnabled }
+    val gesturesEnabled by controller.collect { controlsEnabled && gesturesEnabled }
     val quickSeekDirection by controller.collect { quickSeekAction.direction }
     val draggingProgress by controller.collect { draggingProgress }
 
-    if (controlsEnabled && gesturesEnabled) {
+    if (gesturesEnabled) {
         Box(
             modifier = modifier
-                .draggingProgressOverlay(draggingProgress)
                 .quickSeekAnimation(quickSeekDirection) {
                     controller.setQuickSeekAction(QuickSeekAction.none())
-                }) {
+                }
+        ) {
+            DraggingProgressText(draggingProgress = draggingProgress)
             GestureBox()
         }
     }
@@ -191,12 +192,10 @@ suspend fun PointerInputScope.detectMediaPlayerGesture(
             )
         }
 
-        launch {
-            detectTapGestures(
-                onTap = onTap,
-                onDoubleTap = onDoubleTap
-            )
-        }
+        detectTapGestures(
+            onTap = onTap,
+            onDoubleTap = onDoubleTap
+        )
     }
 }
 
@@ -250,24 +249,26 @@ fun Modifier.quickSeekAnimation(
     this
 }
 
-fun Modifier.draggingProgressOverlay(draggingProgress: DraggingProgress?) = composed {
+@Composable
+private fun BoxScope.DraggingProgressText(
+    modifier: Modifier = Modifier,
+    draggingProgress: DraggingProgress?
+) {
     if (draggingProgress != null) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Text(
-                draggingProgress.progressText,
+        val textStyle = remember {
+            TextStyle(
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
-                style = TextStyle(
-                    shadow = Shadow(
-                        blurRadius = 8f,
-                        offset = Offset(2f, 2f)
-                    )
-                ),
-                modifier = Modifier.align(Alignment.Center)
+                shadow = Shadow(blurRadius = 8f, offset = Offset(2f, 2f))
             )
         }
+
+        Text(
+            text = draggingProgress.progressText,
+            style = textStyle,
+            modifier = modifier.align(Alignment.Center)
+        )
     }
-    this
 }
 
 @Parcelize

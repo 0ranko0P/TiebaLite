@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -14,15 +15,16 @@ import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 
 /**
- * Simple preference with a trailing [Switch]
+ * Switchable preference with checked/unchecked states
  *
- * @param key Key used to identify this Pref in the DataStore
+ * @param key key used to identify this preference in the DataStore
  * @param title Main text which describes the Pref
- * @param modifier Modifier applied to the Text aspect of this Pref
+ * @param modifier the [Modifier] to be applied on this preference
  * @param summary Used to give some more information about what this Pref is for
- * @param defaultChecked If the switch should be checked by default. Only used if a value for this [key] doesn't already exist in the DataStore
- * @param onCheckedChange Callback to be invoked when [SwitchPref] is being clicked, Parse null to disable this pref.
- * @param leadingIcon Icon which is positioned at the start of the Pref
+ * @param defaultChecked default checked state when [key] doesn't exist in the DataStore
+ * @param onCheckedChange called when this preference is clicked, parse null to disable this pref.
+ * @param enabled controls the enabled state of this preference
+ * @param leadingIcon icon will be drawn at the start of the preference
  */
 @Composable
 fun SwitchPref(
@@ -58,6 +60,7 @@ fun SwitchPref(
     }
 }
 
+@NonRestartableComposable
 @Composable
 fun SwitchPref(
     key: String,

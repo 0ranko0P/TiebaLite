@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.activities
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
 import android.graphics.BitmapFactory
@@ -8,231 +9,200 @@ import android.graphics.Paint
 import android.net.Uri
 import android.os.Build
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.annotation.WorkerThread
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.DefaultAlpha
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.util.fastDistinctBy
 import androidx.core.graphics.createBitmap
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
-import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
-import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.arch.shareInBackground
 import com.huanchengfly.tieba.post.components.glide.BlurTransformation
+import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderEffectImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImageProcessor
-import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.getColor
-import com.huanchengfly.tieba.post.putColor
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_TRANSLUCENT_PRIMARY_COLOR
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.theme.BlueViolet
+import com.huanchengfly.tieba.post.theme.MerlotPink
+import com.huanchengfly.tieba.post.theme.SunsetOrange
+import com.huanchengfly.tieba.post.theme.TiebaBlue
+import com.huanchengfly.tieba.post.ui.models.settings.Theme
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.ImageUtil.toFile
-import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil.KEY_TRANSLUCENT_BACKGROUND_FILE
-import com.huanchengfly.tieba.post.utils.ThemeUtil.THEME_TRANSLUCENT_DARK
-import com.huanchengfly.tieba.post.utils.ThemeUtil.THEME_TRANSLUCENT_LIGHT
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import javax.inject.Inject
 import kotlin.math.roundToInt
 
-class TranslucentThemeViewModel : ViewModel() {
-    private val context = App.INSTANCE
-    private val dataStore = context.dataStore
+/**
+ * Ui State for Translucent Activity
+ *
+ * @param primaryColor current Accent/Primary color
+ * @param colorPalette palette generated from picked [wallpaper]
+ * @param isDarkTheme is Light/Dark translucent theme, default is false
+ * @param alpha alpha filter on wallpaper
+ * @param wallpaper current cropped wallpaper file
+ * @param wallpaperTransformation blur filter transformation
+ * */
+@Immutable
+/* data */class UiState(
+    val primaryColor: Color = TiebaBlue,
+    val colorPalette: List<Color> = emptyList(),
+    val isDarkTheme: Boolean = false,
+    val alpha: Float = DefaultAlpha,
+    val wallpaper: Uri? = null,
+    val wallpaperTransformation: BlurTransformation? = null,
+) {
+    val blur: Float
+        get() = wallpaperTransformation?.radius ?: 0f
 
-    private val KEY_IS_DARK_COLOR_MODE by lazy { booleanPreferencesKey("trans_dark_color") }
-    private val KEY_TRANSLUCENT_BLUR by lazy { floatPreferencesKey("trans_blur") }
-    private val KEY_TRANSLUCENT_ALPHA by lazy { floatPreferencesKey("trans_alpha") }
+    fun copy(
+        primaryColor: Color = this.primaryColor,
+        colorPalette: List<Color> = this.colorPalette,
+        isDarkTheme: Boolean = this.isDarkTheme,
+        alpha: Float = this.alpha,
+        wallpaper: Uri? = this.wallpaper,
+        wallpaperTransformation: BlurTransformation? = this.wallpaperTransformation,
+    ) = UiState(
+        primaryColor, colorPalette, isDarkTheme, alpha, wallpaper, wallpaperTransformation
+    )
+}
 
-    private val _colorPalette: SnapshotStateList<Color> = mutableStateListOf()
-    val colorPalette: List<Color> get() = _colorPalette
+@HiltViewModel
+class TranslucentThemeViewModel @Inject constructor(
+    @ApplicationContext val application: Context,
+    private val settingsRepository: SettingsRepository
+) : ViewModel() {
 
-    /**
-     * Accent/Primary color of Translucent Theme
-     *
-     * @see KEY_TRANSLUCENT_PRIMARY_COLOR
-     * */
-    var primaryColor: Color by mutableStateOf(DefaultColors[0]) // TiebaBlue by default
-        private set
-
-    /**
-     * Is Light/Dark translucent theme, default is false (Light Theme)
-     * */
-    var isDarkTheme: Boolean by mutableStateOf(false)
-        private set
-
-    var alpha: Float by mutableFloatStateOf(1f)
-        private set
-
-    var blurRadius: Float by mutableFloatStateOf(0f)
-        private set
-
-    var wallpaper: Uri? by mutableStateOf(null)
-        private set
-
-    var wallpaperTransformation: BitmapTransformation? by mutableStateOf(null)
-        private set
-
-    var savingWallpaper: Boolean by mutableStateOf(false)
-        private set
+    private val _uiState = MutableStateFlow(UiState())
+    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private val imageProcessor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         RenderEffectImageProcessor()
     } else {
-        RenderScriptImageProcessor(context)
+        RenderScriptImageProcessor(application)
     }
 
-    var configChanged: Boolean by mutableStateOf(false)
-        private set
+    val configChanged: SharedFlow<Boolean> = combine(
+        flow = settingsRepository.themeSettings.flow,
+        flow2 = _uiState
+    ) { settings, state ->
+        when {
+            state.wallpaper == null -> false
+
+            settings.theme != Theme.TRANSLUCENT -> true
+
+            else -> state.isDarkTheme != settings.transDarkColorMode
+                    || state.primaryColor != settings.transColor
+                    || state.alpha != settings.transAlpha
+                    || state.blur != settings.transBlur
+        }
+    }
+    .shareInBackground()
 
     /**
      * Backup File without any filter
      * */
-    private val croppedWallpaperFile: File = File(context.filesDir, CROPPED_WALLPAPER_FILE)
+    private val croppedWallpaperFile: File = application.translucentBackground(CROPPED_WALLPAPER_FILE)
 
     init {
         viewModelScope.launch {
-            if (croppedWallpaperFile.exists()) {
-                wallpaper = Uri.fromFile(croppedWallpaperFile)
-                // Wallpaper cropped before, user can apply theme immediately
-                configChanged = !ThemeUtil.isTranslucentTheme()
+            val wallpaper: Uri? = withContext(Dispatchers.IO) {
+                Uri.fromFile(croppedWallpaperFile).takeIf { croppedWallpaperFile.exists() }
             }
-            // Restore saved configs
-            val data = dataStore.data.first()
-            isDarkTheme = data[KEY_IS_DARK_COLOR_MODE] ?: false
-            primaryColor = data.getColor(KEY_TRANSLUCENT_PRIMARY_COLOR) ?: DefaultColors[0]
-            alpha = data[KEY_TRANSLUCENT_ALPHA] ?: 1f
-            blurRadius = data[KEY_TRANSLUCENT_BLUR]?: 0f
+            val initState = settingsRepository.themeSettings.flow
+                .map {
+                    val blur: Float? = it.transBlur.takeUnless { f -> f == 0f }
+                    UiState(
+                        primaryColor = it.transColor,
+                        isDarkTheme = it.transDarkColorMode,
+                        alpha = it.transAlpha,
+                        wallpaper = wallpaper,
+                        wallpaperTransformation = blur?.let { BlurTransformation(imageProcessor, blur) }
+                    )
+                }
+                .first()
+            _uiState.set { initState }
         }
     }
 
     fun onWallpaperDecoded(bitmap: Bitmap) {
+        val colorPalette = _uiState.value.colorPalette
         // Do not generate for blurring bitmap
-        if (_colorPalette.isEmpty()) {
-            viewModelScope.launch(Dispatchers.Main) {
-                val result = genPalette(bitmap)
-                _colorPalette.clear()
-                _colorPalette.addAll(result)
+        if (colorPalette.isEmpty()) {
+            viewModelScope.launch {
+                val newPalette = genPalette(bitmap)
+                _uiState.update { it.copy(colorPalette = newPalette) }
             }
         }
     }
 
     fun onNewWallpaperSelected(uri: Uri) {
-        if (uri.path != wallpaper?.path) {
-            // Clear all filters
-            blurRadius = 0f
-            wallpaperTransformation = null
-            alpha = 1.0f
-            _colorPalette.clear()
-
-            // Update new wallpaper now
-            wallpaper = uri
-            configChanged = true
-        }
-    }
-
-    fun onColorPicked(color: Color) {
-        if (primaryColor != color) {
-            primaryColor = color
-            checkConfigChanges()
-        }
-    }
-
-    fun onColorModeChanged() {
-        this.isDarkTheme = !this.isDarkTheme
-        checkConfigChanges()
-    }
-
-    fun onAlphaChanged(alpha: Float) {
-        this.alpha = alpha
-    }
-
-    fun onBlurChanged(radius: Float) {
-        this.blurRadius = radius
-    }
-
-    fun updateImage() {
-        val radius = blurRadius
-        wallpaperTransformation = if (radius == 0f) null else BlurTransformation(imageProcessor, radius)
-        checkConfigChanges()
-    }
-
-    private fun checkConfigChanges() {
-        if (wallpaper == null) return
-        if (!ThemeUtil.isTranslucentTheme(ThemeUtil.themeState.value)) {
-            configChanged = true
-        } else {
-            viewModelScope.launch {
-                configChanged = dataStore.data.map {
-                    isDarkTheme != it[KEY_IS_DARK_COLOR_MODE]
-                            || primaryColor != it.getColor(KEY_TRANSLUCENT_PRIMARY_COLOR)
-                            || alpha != it[KEY_TRANSLUCENT_ALPHA]
-                            || blurRadius != it[KEY_TRANSLUCENT_BLUR]
-                }.first()
+        val oldWallpaper = _uiState.value.wallpaper
+        if (uri.path != oldWallpaper?.path) {
+            _uiState.set { // Clear all filters
+                copy(
+                    colorPalette = emptyList(),
+                    alpha = 1.0f,
+                    wallpaper = uri,
+                    wallpaperTransformation = null,
+                )
             }
         }
     }
 
+    fun onColorPicked(color: Color) {
+        if (color != _uiState.value.primaryColor) {
+            _uiState.set { copy(primaryColor = color) }
+        }
+    }
+
+    fun onColorModeChanged() = _uiState.set { copy(isDarkTheme = !isDarkTheme) }
+
+    fun onAlphaChanged(alpha: Float) = _uiState.set { copy(alpha = alpha) }
+
+    fun onBlurChanged(radius: Float) {
+        val transformation = if (radius > 0f) BlurTransformation(imageProcessor, radius) else null
+        _uiState.set { copy(wallpaperTransformation = transformation) }
+    }
+
     fun saveWallpaper(): Deferred<Result<Unit>> {
-        savingWallpaper = true
         val start = System.currentTimeMillis()
-        val context = App.INSTANCE
-        val source = File(wallpaper?.path ?: throw IOException("Invalid URI: $wallpaper"))
-        val target = File(context.filesDir, "background_${System.currentTimeMillis()}.webp")
-        val isWallpaperChanged = source != croppedWallpaperFile
-        val hasFilter = alpha < 1.0f || blurRadius > 0
 
         return viewModelScope.async (Dispatchers.IO) {
+            val state = _uiState.first()
+            val source = File(state.wallpaper?.path ?: throw IOException("Invalid URI: ${state.wallpaper}"))
+            val target = File(application.filesDir, "background_${System.currentTimeMillis()}.webp")
+            val isWallpaperChanged = source != croppedWallpaperFile
+
+            val alpha = state.alpha
+            val blurRadius = state.blur
+            val hasFilter = alpha < 1.0f || blurRadius > 0
+
             try {
                 if (hasFilter) {
-                    val canvasAlpha = (alpha * 255).roundToInt()
-                    // Decode full background wallpaper
-                    var bitmap = source.inputStream().use { ins ->
-                        BitmapFactory.decodeStream(ins, null, BitmapFactory.Options().apply {
-                            inPreferredConfig = Bitmap.Config.ARGB_8888
-                            inMutable = true
-                        })
-                    } ?: throw IOException("Decode $source failed!")
-
-                    // Apply alpha filter
-                    if (canvasAlpha < 255) {
-                        val alphaBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.config!!)
-                        Canvas(alphaBitmap).apply {
-                            drawColor(Color.Black.toArgb())
-                            drawBitmap(bitmap, 0f, 0f, Paint().also {it.alpha = canvasAlpha })
-                        }
-                        bitmap.recycle()
-                        bitmap = alphaBitmap
-                    }
-
-                    // Apply blur filter
-                    if (blurRadius > 0) {
-                        imageProcessor.configureInputAndOutput(bitmap)
-                        bitmap = imageProcessor.blur(blurRadius)
-                    }
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        bitmap.toFile(target, 99, CompressFormat.WEBP_LOSSY)
-                    } else {
-                        bitmap.toFile(target, 99, CompressFormat.WEBP)
-                    }
+                    processWallpaper(imageProcessor, source, target, alpha, blurRadius)
                 }
 
                 // Save unmodified original copy
@@ -242,38 +212,34 @@ class TranslucentThemeViewModel : ViewModel() {
                     source.deleteQuietly() // Clean source manually
                 }
 
-                var previousWallpaperFile: String? = null
-                dataStore.edit {
-                    val wallpaperKey = stringPreferencesKey(KEY_TRANSLUCENT_BACKGROUND_FILE)
-                    previousWallpaperFile = it[wallpaperKey]
-
-                    it.putColor(KEY_TRANSLUCENT_PRIMARY_COLOR, primaryColor)
-                    it[KEY_IS_DARK_COLOR_MODE] = isDarkTheme
-                    it[KEY_TRANSLUCENT_ALPHA] = alpha
-                    it[KEY_TRANSLUCENT_BLUR] = blurRadius
-                    // Save the image file name
-                    it[wallpaperKey] = if (hasFilter) target.name else CROPPED_WALLPAPER_FILE
+                val themeSettings = settingsRepository.themeSettings
+                val currentTheme = themeSettings.flow.first()
+                val previousWallpaper: String? = currentTheme.transBackground
+                themeSettings.save {
+                    it.copy(
+                        theme = Theme.TRANSLUCENT,
+                        transColor = state.primaryColor,
+                        transAlpha = state.alpha,
+                        transBlur = state.blur,
+                        transDarkColorMode = state.isDarkTheme,
+                        transBackground = if (hasFilter) target.name else CROPPED_WALLPAPER_FILE
+                    )
                 }
 
                 // Delete previous wallpaper now
-                previousWallpaperFile?.let {
-                    if (it != CROPPED_WALLPAPER_FILE) File(context.filesDir, it).deleteQuietly()
+                if (previousWallpaper != null && previousWallpaper != CROPPED_WALLPAPER_FILE) {
+                    application.translucentBackground(previousWallpaper).deleteQuietly()
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "onSaveWallpaper: ", e)
+                Log.w(TAG, "onSaveWallpaper", e)
                 if (e is IOException) {
                     target.deleteQuietly()
                 }
-                savingWallpaper = false
                 return@async Result.failure(e)
             }
 
             val cost = System.currentTimeMillis() - start
-            withContext(Dispatchers.Main) {
-                val theme = if (isDarkTheme) THEME_TRANSLUCENT_DARK else THEME_TRANSLUCENT_LIGHT
-                ThemeUtil.switchTheme(theme)
-                Log.i(TAG, "onSaveWallpaper: cost ${cost}ms, filter: $hasFilter, reused: ${!isWallpaperChanged}")
-            }
+            Log.i(TAG, "onSaveWallpaper: cost ${cost}ms, filter: $hasFilter, reused: ${!isWallpaperChanged}")
             return@async Result.success(Unit)
         }
     }
@@ -290,18 +256,17 @@ class TranslucentThemeViewModel : ViewModel() {
 
         val DefaultColors by lazy {
             arrayOf(
-                Color(0xFF4477E0),
-                Color(0xFFFF9A9E),
-                Color(0xFFC51100),
-                Color(0xFF000000),
-                Color(0xFF512DA8)
+                Color(TiebaBlue.toArgb()),
+                Color(MerlotPink.toArgb()),
+                Color(SunsetOrange.toArgb()),
+                Color(BlueViolet.toArgb()),
             )
         }
 
         private suspend fun genPalette(bitmap: Bitmap): List<Color> = withContext(Dispatchers.IO) {
             val target = if (!bitmap.isMutable) bitmap.copy(Bitmap.Config.RGB_565, true) else bitmap
             val palette = Palette.from(target).generate()
-            if (target != bitmap) {
+            if (target !== bitmap) {
                 target.recycle()
             }
             ensureActive()
@@ -317,6 +282,48 @@ class TranslucentThemeViewModel : ViewModel() {
 
             // Append our default colors and distinct
             return@withContext (colors + DefaultColors).fastDistinctBy { it.value }
+        }
+
+        fun Context.translucentBackground(name: String): File = File(filesDir, name)
+
+        @WorkerThread
+        private fun processWallpaper(
+            imageProcessor: ImageProcessor,
+            source: File,
+            target: File,
+            alpha: Float,
+            blurRadius: Float
+        ) {
+            val canvasAlpha = (alpha * 255).roundToInt()
+            var bitmap = source.inputStream().use { ins ->
+                BitmapFactory.decodeStream(ins, null, BitmapFactory.Options().apply {
+                    inPreferredConfig = Bitmap.Config.ARGB_8888
+                    inMutable = true
+                })
+            } ?: throw IOException("Decode $source failed!")
+
+            // Apply alpha filter
+            if (canvasAlpha < 255) {
+                val alphaBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.config!!)
+                Canvas(alphaBitmap).apply {
+                    drawColor(Color.Black.toArgb())
+                    drawBitmap(bitmap, 0f, 0f, Paint().also {it.alpha = canvasAlpha })
+                }
+                bitmap.recycle()
+                bitmap = alphaBitmap
+            }
+
+            // Apply blur filter
+            if (blurRadius > 0) {
+                imageProcessor.configureInputAndOutput(bitmap)
+                bitmap = imageProcessor.blur(blurRadius)
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                bitmap.toFile(target, 99, CompressFormat.WEBP_LOSSY)
+            } else {
+                bitmap.toFile(target, 99, CompressFormat.WEBP)
+            }
         }
     }
 }

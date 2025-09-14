@@ -1,23 +1,13 @@
 package com.huanchengfly.tieba.post.ui.page.user
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,38 +15,45 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.ScrollableTabRow
-import androidx.compose.material.Tab
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.contentColorFor
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.rounded.NoAccounts
 import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -64,11 +61,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -81,24 +78,25 @@ import com.huanchengfly.tieba.post.components.glide.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.database.Block
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.FloatProducer
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
+import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPageEmpty
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPageHide
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.CollapseScrollConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapseConnection
+import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -107,6 +105,7 @@ import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 private sealed class Tab(val text: String) {
     class POSTS(text: String): Tab(text)
@@ -116,50 +115,50 @@ private sealed class Tab(val text: String) {
     class FORUMS(text: String): Tab(text)
 }
 
+private val UserProfileExpandHeight = 206.dp
+
 // Blurry avatar background
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun AvatarBackground(
-    modifier: Modifier = Modifier,
     imgProcessor: ImageProcessor,
     avatar: String,
-    collapsed: Boolean
+    collapseFraction: FloatProducer
 ) {
-    val backgroundColor = ExtendedTheme.colors.windowBackground
-    val topFadeBrush = remember(ExtendedTheme.colors.theme) {
-        Brush.verticalGradient(0.35f to Color.Transparent, 0.45f to backgroundColor.copy(0.2f), 0.7f to backgroundColor)
-    }
-
-    Box(
-        modifier = modifier
+    val color = MaterialTheme.colorScheme.background
+    GlideImage(
+        model = avatar,
+        contentDescription = null,
+        modifier = Modifier
             .fillMaxSize()
-            .background(backgroundColor)
-    ) {
-        val backgroundAlpha by animateFloatAsState(
-            targetValue = if (collapsed) 0.25f else 0f,
-            animationSpec = tween(easing = FastOutLinearInEasing),
-            label = "BackgroundAlphaAnimation"
-        )
-
-        GlideImage(
-            model = avatar,
-            contentDescription = null,
-            modifier = modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.5f)
-                .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
-                .drawWithContent {
+            .drawWithCache {
+                onDrawWithContent {
                     drawContent()
-                    drawRect(brush = topFadeBrush, blendMode = BlendMode.SrcOver)
-                },
-            contentScale = ContentScale.Crop,
-            alpha = backgroundAlpha
-        ) {
-            it.transform(BlurTransformation(imgProcessor, 90f))
-        }
+                    // draw surface mask with alpha(0.8..0.98)
+                    // this looks way better than change alpha directly and no banding artifact
+                    drawRect(
+                        color = color.copy(alpha = collapseFraction() * 0.18f + 0.8f)
+                    )
+                }
+            },
+        contentScale = ContentScale.Crop,
+    ) {
+        it.transform(BlurTransformation(imgProcessor, 120f))
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@NonRestartableComposable
+@Composable
+private fun rememberAvatarTopBarColors(): TopAppBarColors {
+    val colorScheme = MaterialTheme.colorScheme
+    val defaultColors = TopAppBarDefaults.topAppBarColors()
+    return remember(colorScheme) {
+        defaultColors.copy(containerColor = colorScheme.surfaceContainer.copy(0.01f)) // Nearly transparent
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfilePage(
     uid: Long,
@@ -167,16 +166,15 @@ fun UserProfilePage(
     viewModel: UserProfileViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val connection: CollapseScrollConnection = rememberCollapseConnection(coroutineScope)
 
-    val uiState by viewModel.uiState
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isError by remember { derivedStateOf { uiState.error != null } }
+    val isRefreshing by remember { derivedStateOf { uiState.isRefreshing } }
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isError = isError,
-        isLoading = uiState.isRefreshing,
+        isLoading = isRefreshing,
         onReload = viewModel::refresh,
         errorScreen = { ErrorScreen(error = uiState.error.getOrNull()) }
     ) {
@@ -187,105 +185,140 @@ fun UserProfilePage(
         val tabs = remember {
             with(userProfile) {
                 listOfNotNull(
-                    Tab.THREADS(text = context.getString(R.string.title_profile_threads, threadNum)),
+                    Tab.THREADS(
+                        text = context.getString(R.string.title_profile_threads, threadNum.getShortNumString())
+                    ),
 
-                    Tab.POSTS(text = context.getString(R.string.title_profile_posts, postNum)).takeIf { isSelf },
+                    Tab.POSTS(
+                        text = context.getString(R.string.title_profile_posts, postNum.getShortNumString())
+                    ).takeIf { isSelf },
 
-                    Tab.FORUMS(text = context.getString(R.string.title_profile_forums, forumNum))
+                    Tab.FORUMS(
+                        text = context.getString(R.string.title_profile_forums, forumNum.getShortNumString())
+                    )
                 ).toImmutableList()
             }
         }
 
         val pagerState = rememberPagerState { tabs.size }
-        val collapsed by remember { derivedStateOf { connection.ratio == 0.0f } }
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+        val collapseFraction = FloatProducer { scrollBehavior.state.collapsedFraction }
 
         val avatarUrl = remember { StringUtil.getAvatarUrl(portrait = userProfile.portrait) }
 
         // Replace Scaffold's background with AvatarBackground()
-        var backgroundColor = ExtendedTheme.colors.background
+        var backgroundColor = MaterialTheme.colorScheme.surface
         viewModel.imageProcessor?.let {
             backgroundColor = Color.Transparent
-            AvatarBackground(imgProcessor = it, avatar = avatarUrl, collapsed = collapsed)
+            AvatarBackground(imgProcessor = it, avatar = avatarUrl, collapseFraction)
         }
         // ?: power saver is on, do noting
 
-        MyScaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = {
-                Column {
-                    UserProfileToolbar (
-                        title = {
-                            AnimatedVisibility(
-                                visible = collapsed.not(),
-                                enter =  fadeIn() + expandVertically(expandFrom = Alignment.Top),
-                                exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
-                            ) {
-                                ToolbarTitle(avatarUrl = avatarUrl, name = userProfile.name)
-                            }
-                        },
-                        isSelf = isSelf,
-                        isFollowing = userProfile.following,
-                        onActionClicked = {
-                            if (isSelf) {
-                                context.goToActivity<EditProfileActivity>()
-                            } else if (userProfile.following) {
-                                viewModel.onUnFollowClicked(tbs = account!!.tbs)
-                            } else {
-                                viewModel.onFollowClicked(tbs = account!!.tbs)
-                            }
-                        }.takeUnless { uiState.disableButton || account == null },
-                        block = uiState.block,
-                        onBlackListClicked = viewModel::onBlackListClicked,
-                        onWhiteListClicked = viewModel::onWhiteListClicked,
-                        onBack = navigator::navigateUp
-                    ) {
-                        AnimatedVisibility(
-                            visible = collapsed,
-                            enter =  fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
-                            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
-                        ) {
-                            UserProfileDetail(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                profile = userProfile
-                            )
-                        }
-                    } // End of UserProfileToolbar
-
-                    UserProfileTabRow(tabs = tabs, pagerState = pagerState)
-                }
-            },
-            backgroundColor = backgroundColor,
-            contentColor = contentColorFor(MaterialTheme.colors.background)
-        ) { paddingValues ->
-            ProvideNavigator(navigator = navigator) {
+        val pagerContent = remember(pagerState) {
+            movableContentOf<Pair<Boolean, NestedScrollConnection?>> { (fluid, scrollConnection) ->
                 HorizontalPager(
                     state = pagerState,
-                    key = { it.toString() },
-                    modifier = Modifier.nestedScroll(connection),
-                    contentPadding = paddingValues
+                    key = { it },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onNotNull(scrollConnection) { nestedScroll(connection = it) },
                 ) {
                     when(tabs[it]) {
-                        is Tab.THREADS -> UserPostPage(uid = uid, isThread = true)
+                        is Tab.THREADS -> UserPostPage(uid = uid, isThread = true, fluid = fluid)
 
-                        is Tab.POSTS -> UserPostPage(uid = uid, isThread = false)
+                        is Tab.POSTS -> UserPostPage(uid = uid, isThread = false, fluid = fluid)
 
                         is Tab.FORUMS -> {
-                            if (userProfile.privateForum) {
-                                UserLikeForumPageHide()
-                            } else {
-                                UserLikeForumPage(uid = uid)
+                            when {
+                                userProfile.privateForum -> UserLikeForumPageHide()
+
+                                userProfile.forumNum == 0 -> UserLikeForumPageEmpty()
+
+                                else -> UserLikeForumPage(uid = uid, fluid = fluid)
                             }
                         }
                     }
                 }
             }
         }
+        val userProfileDetail: @Composable () -> Unit = {
+            UserProfileDetail(profile = userProfile)
+        }
+
+        val isLooseWindowWidth = isLooseWindowWidth()
+
+        MyScaffold(
+            topBar = {
+                UserProfileToolbar(
+                    title = userProfileDetail.takeUnless { isLooseWindowWidth },
+                    collapsedTitle = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Avatar(data = avatarUrl, size = Sizes.Small)
+                            Text(text = userProfile.name, maxLines = 1)
+                        }
+                    },
+                    isSelf = isSelf,
+                    isFollowing = userProfile.following,
+                    onActionClicked = {
+                        if (isSelf) {
+                            context.goToActivity<EditProfileActivity>()
+                        } else if (userProfile.following) {
+                            viewModel.onUnFollowClicked(tbs = account!!.tbs)
+                        } else {
+                            viewModel.onFollowClicked(tbs = account!!.tbs)
+                        }
+                    }.takeUnless { uiState.disableButton || account == null },
+                    block = uiState.block,
+                    onBlackListClicked = viewModel::onBlackListClicked,
+                    onWhiteListClicked = viewModel::onWhiteListClicked,
+                    onBack = navigator::navigateUp,
+                    scrollBehavior = scrollBehavior
+                ) {
+                    if (isLooseWindowWidth) return@UserProfileToolbar
+                    UserProfileTabRow(tabs, pagerState, collapseFraction)
+                }
+            },
+            backgroundColor = backgroundColor
+        ) { paddingValues ->
+            ProvideNavigator(navigator = navigator) {
+                if (isLooseWindowWidth) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(paddingValues),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(0.35f)
+                                .padding(start = 16.dp, bottom = 16.dp)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            userProfileDetail()
+                        }
+
+                        Column {
+                            UserProfileTabRow(tabs, pagerState, collapseFraction)
+                            pagerContent(true to null) // fluid and set ScrollBehavior to null
+                        }
+                    }
+                } else {
+                    pagerContent(false to scrollBehavior.nestedScrollConnection)
+                }
+            }
+        }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UserProfileToolbar(
-    title: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    title: (@Composable () -> Unit)?,
+    collapsedTitle: @Composable () -> Unit,
     block: Block? = null,
     isSelf: Boolean = false,
     isFollowing: Boolean = false,
@@ -293,29 +326,23 @@ private fun UserProfileToolbar(
     onBlackListClicked: () -> Unit = {},
     onWhiteListClicked: () -> Unit = {},
     onBack: () -> Unit = {},
+    scrollBehavior: TopAppBarScrollBehavior? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Toolbar(
-        title = title,
-        navigationIcon = {
-            BackNavigationIcon(onBackPressed = onBack)
-        },
-        actions = {
-            if (onActionClicked != null) {
-                TextButton(
-                    onClick = onActionClicked
-                ) {
-                    if (isSelf) {
-                        Text(text = stringResource(id = R.string.menu_edit_info))
-                    } else if (isFollowing) {
-                        Text(text = stringResource(id = R.string.button_unfollow))
-                    } else {
-                        Text(text = stringResource(id = R.string.button_follow))
+    val actionsMenu: @Composable RowScope.() -> Unit = {
+        if (onActionClicked != null) {
+            TextButton(onClick = onActionClicked) {
+                Text(
+                    text = when {
+                        isSelf -> stringResource(id = R.string.menu_edit_info)
+                        isFollowing -> stringResource(id = R.string.button_unfollow)
+                        else -> stringResource(id = R.string.button_follow)
                     }
-                }
+                )
             }
+        }
 
-            if (isSelf) return@Toolbar
+        if (!isSelf) {
             val isInBlackList = block != null && block.category == Block.CATEGORY_BLACK_LIST
             val isInWhiteList = block != null && block.category == Block.CATEGORY_WHITE_LIST
 
@@ -330,33 +357,62 @@ private fun UserProfileToolbar(
                         onClick = onWhiteListClicked
                     )
                 },
+                modifier = Modifier.padding(end = 12.dp),
                 triggerShape = CircleShape
             ) {
                 Icon(
                     imageVector = Icons.Rounded.NoAccounts,
                     contentDescription = stringResource(id = R.string.btn_block),
-                    modifier = Modifier.padding(end = 12.dp)
+                    modifier = Modifier.minimumInteractiveComponentSize()
                 )
             }
-        },
-        backgroundColor = Color.Transparent,
-        elevation = Dp.Hairline,
-        content = content
-    )
+        }
+    }
+
+    if (title != null) {
+        TwoRowsTopAppBar(
+            modifier = modifier,
+            title = title,
+            smallTitle = collapsedTitle,
+            navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+            actions = actionsMenu,
+            expandedHeight = UserProfileExpandHeight,
+            colors = rememberAvatarTopBarColors(),
+            scrollBehavior = scrollBehavior,
+            content = content
+        )
+    } else {
+        TopAppBar(
+            modifier = modifier,
+            title = {},
+            navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+            actions = actionsMenu,
+            colors = rememberAvatarTopBarColors(),
+        )
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun UserProfileTabRow(modifier: Modifier = Modifier, tabs: ImmutableList<Tab>, pagerState: PagerState) {
+private fun UserProfileTabRow(
+    tabs: ImmutableList<Tab>,
+    pagerState: PagerState,
+    collapseFraction: FloatProducer,
+    modifier: Modifier = Modifier,
+) {
     val coroutineScope = rememberCoroutineScope()
-    ScrollableTabRow(
+    val colorScheme = MaterialTheme.colorScheme
+
+    PrimaryTabRow(
         selectedTabIndex = pagerState.currentPage,
-        indicator = { tabPositions ->
-            PagerTabIndicator(pagerState = pagerState, tabPositions = tabPositions)
+        indicator = {
+            FancyAnimatedIndicatorWithModifier(pagerState.currentPage)
         },
-        divider = {},
-        backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.primary,
-        edgePadding = Dp.Hairline,
+        divider = { // visible when collapsed
+            HorizontalDivider(modifier = Modifier.graphicsLayer { alpha = collapseFraction() })
+        },
+        containerColor = Color.Transparent,
+        contentColor = colorScheme.primary,
         modifier = modifier,
     ) {
         tabs.fastForEachIndexed { i, tab ->
@@ -364,29 +420,19 @@ private fun UserProfileTabRow(modifier: Modifier = Modifier, tabs: ImmutableList
                 selected = pagerState.currentPage == i,
                 onClick = {
                     coroutineScope.launch {
-                        pagerState.animateScrollToPage(i)
+                        if (abs(pagerState.currentPage - i) > 1) {
+                            pagerState.scrollToPage(i)
+                        } else {
+                            pagerState.animateScrollToPage(i)
+                        }
                     }
                 },
-                modifier = Modifier
-                    .height(48.dp)
-                    .padding(horizontal = 16.dp),
-                selectedContentColor = ExtendedTheme.colors.primary,
-                unselectedContentColor = ExtendedTheme.colors.textSecondary,
-            ) {
-                Text(text = tab.text, color = LocalContentColor.current, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            }
+                text = {
+                    Text(text = tab.text)
+                },
+                unselectedContentColor = colorScheme.onSurface
+            )
         }
-    }
-}
-
-@Composable
-private fun ToolbarTitle(modifier: Modifier = Modifier, avatarUrl: String, name: String) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Avatar(data = avatarUrl, size = Sizes.Small, contentDescription = null)
-        Text(text = name, Modifier.padding(start = 8.dp), maxLines = 1)
     }
 }
 
@@ -397,9 +443,9 @@ private fun StatusText(modifier: Modifier = Modifier, name: String, status: Stri
         verticalArrangement = Arrangement.spacedBy(2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = name, color = ExtendedTheme.colors.textSecondary)
+        Text(text = name, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-        Text(text = status, color = ExtendedTheme.colors.text, fontWeight = FontWeight.Bold)
+        Text(text = status, color = LocalContentColor.current, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -413,57 +459,60 @@ private fun VerifiedText(modifier: Modifier = Modifier, verify: String) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
+        val tintColor = MaterialTheme.colorScheme.primary
         Icon(
             imageVector = Icons.Rounded.Verified,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = ExtendedTheme.colors.primary,
+            tint = tintColor,
         )
         Text(
             text = verify,
-            style = MaterialTheme.typography.body2,
-            color = ExtendedTheme.colors.primary
+            style = MaterialTheme.typography.bodyMedium,
+            color = tintColor
         )
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfile) {
     val context = LocalContext.current
     val avatarUrl: String = remember { StringUtil.getBigAvatarUrl(profile.portrait) }
+    val flowArrangement = Arrangement.spacedBy(8.dp)
+
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = flowArrangement
     ) {
-        Row(
-            modifier = Modifier.padding(bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        FlowRow(
+            modifier = Modifier
+                .padding(bottom = 10.dp)
+                .align(Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Avatar(data = avatarUrl, size = 96.dp, contentDescription = null)
+
+            Spacer(Modifier.size(16.dp))
 
             Column {
                 Text(
                     text = profile.name,
-                    color = MaterialTheme.colors.onSurface,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.h6,
+                    overflow = TextOverflow.Ellipsis
                 )
                 profile.userName?.let { userName -> // 同时显示用户名与昵称
                     Text(
-                        text = remember { "($userName)" },
-                        color = MaterialTheme.colors.onSurface.copy(ContentAlpha.medium),
+                        text = userName,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 16.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
 
-                Spacer(Modifier.height(12.dp))
-                ProvideTextStyle(MaterialTheme.typography.body2) {
+                ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -475,19 +524,19 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
                             status = profile.followNum,
                         )
                         // 粉丝
-                        HorizontalDivider(modifier = Modifier.fillMaxHeight())
+                        VerticalDivider()
                         StatusText(
                             name = stringResource(id = R.string.text_stat_fans),
                             status = remember { profile.fans.getShortNumString() },
                         )
                         // 赞
-                        HorizontalDivider(modifier = Modifier.fillMaxHeight())
+                        VerticalDivider()
                         StatusText(
                             name = stringResource(id = R.string.text_stat_agrees),
                             status = profile.agreeNum,
                         )
                         // 吧龄
-                        HorizontalDivider(modifier = Modifier.fillMaxHeight())
+                        VerticalDivider()
                         StatusText(
                             name = stringResource(id = R.string.text_stat_tbage),
                             status = stringResource(id = R.string.text_profile_tb_age, profile.tbAge)
@@ -499,13 +548,14 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
 
         Text(
             text = profile.intro ?: stringResource(id = R.string.tip_no_intro),
-            style = MaterialTheme.typography.body2,
+            style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+
         FlowRow (
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = flowArrangement,
+            verticalArrangement = flowArrangement
         ) {
             profile.bazuDesc?.let {
                 VerifiedText(verify = it)
@@ -519,9 +569,10 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
                 VerifiedText(verify = stringResource(id = R.string.text_official_account))
             }
         }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+
+        FlowRow(
+            horizontalArrangement = flowArrangement,
+            verticalArrangement = flowArrangement
         ) {
             Chip(text = profile.sex, invertColor = true)
             Chip(
@@ -541,16 +592,6 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
     }
 }
 
-@Composable
-private fun HorizontalDivider(modifier: Modifier = Modifier) {
-    Box(
-        modifier = Modifier
-            .background(ExtendedTheme.colors.textSecondary)
-            .width(1.dp)
-            .then(modifier)
-    )
-}
-
 @Preview("UserProfileDetail", showBackground = true, backgroundColor = 0xFFFFFFFF)
 @Composable
 private fun UserProfileDetailPreview() {
@@ -559,7 +600,7 @@ private fun UserProfileDetailPreview() {
             modifier = Modifier.padding(16.dp),
             profile = UserProfileViewModel.parseUserProfile(
                 User(
-                    name = "tieba#0812",
+                    name = "(tieba#0812)",
                     nameShow = "我是谁",
                     tieba_uid = "114514",
                     tb_age = "10",

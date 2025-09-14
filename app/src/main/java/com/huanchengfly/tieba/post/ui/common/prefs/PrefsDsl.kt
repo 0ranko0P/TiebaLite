@@ -1,9 +1,9 @@
 package com.huanchengfly.tieba.post.ui.common.prefs
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.getBoolean
+import androidx.compose.runtime.getValue
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 
 /**
  * Receiver scope which is used by [PrefsScreen].
@@ -43,5 +43,6 @@ internal class PrefsItem(
 
 @Composable
 fun depend(key: String): Boolean {
-    return LocalContext.current.dataStore.getBoolean(key, defaultValue = true)
+    val checked by rememberPreferenceAsState(booleanPreferencesKey(key), true)
+    return checked
 }

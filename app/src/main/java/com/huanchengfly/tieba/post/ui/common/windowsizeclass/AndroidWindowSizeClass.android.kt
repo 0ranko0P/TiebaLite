@@ -5,6 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.window.core.layout.WindowSizeClass
+import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_MEDIUM_LOWER_BOUND
+import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_LOWER_BOUND
+import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
 import androidx.window.layout.WindowMetricsCalculator
 import androidx.window.layout.adapter.computeWindowSizeClass
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
@@ -22,7 +25,23 @@ fun calculateWindowSizeClass(activity: Activity): WindowSizeClass {
 
 @ReadOnlyComposable
 @Composable
-fun isWindowWidthCompat(): Boolean {
+fun isWindowWidthCompact(): Boolean {
     val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
-    return !windowSize.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
+    return !windowSize.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND)
+}
+
+@ReadOnlyComposable
+@Composable
+fun isWindowHeightCompact(): Boolean {
+    val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
+    return !windowSize.isHeightAtLeastBreakpoint(HEIGHT_DP_MEDIUM_LOWER_BOUND)
+}
+
+@ReadOnlyComposable
+@Composable
+fun isLooseWindowWidth(): Boolean = LocalWindowAdaptiveInfo.current.windowSizeClass.isLooseWindowWidth()
+
+fun WindowSizeClass.isLooseWindowWidth(): Boolean {
+    return !isHeightAtLeastBreakpoint(HEIGHT_DP_MEDIUM_LOWER_BOUND) ||
+            isWidthAtLeastBreakpoint(WIDTH_DP_EXPANDED_LOWER_BOUND)
 }

@@ -9,7 +9,7 @@ data class VideoPlayerState(
     val thumbnailUrl: String? = null,
     val startedPlay: Boolean = false,
     val isPlaying: Boolean = false,
-    val controlsVisible: Boolean = true,
+    val controlsVisible: Boolean = false,
     val controlsEnabled: Boolean = true,
     val gesturesEnabled: Boolean = true,
     val duration: Long = 1L,

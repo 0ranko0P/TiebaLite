@@ -86,7 +86,6 @@ internal fun dynamicTonalPalette(context: Context): TonalPalette = TonalPalette(
     tertiary0 = ColorResourceHelper.getColor(context, android.R.color.system_accent3_1000),
 )
 
-@RequiresApi(23)
 private object ColorResourceHelper {
     @DoNotInline
     fun getColor(context: Context, @ColorRes id: Int): Color {

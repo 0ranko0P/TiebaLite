@@ -1,27 +1,21 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BatteryAlert
 import androidx.compose.material.icons.outlined.BrowseGallery
 import androidx.compose.material.icons.outlined.OfflinePin
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.WatchLater
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
@@ -29,7 +23,7 @@ import com.huanchengfly.tieba.post.ui.common.prefs.depend
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TimePickerPerf
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TipPref
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -44,13 +38,12 @@ import kotlinx.coroutines.launch
 fun OKSignSettingsPage(onBack: () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
     MyScaffold(
-        backgroundColor = Color.Transparent,
         topBar = {
             TitleCentredToolbar(
                 title = stringResource(id = R.string.title_oksign),
                 navigationIcon = { BackNavigationIcon(onBackPressed = onBack) }
             )
-        }
+        },
     ) { paddingValues ->
         val context = LocalContext.current
         val snackbarHostState = LocalSnackbarHostState.current
@@ -121,26 +114,19 @@ fun OKSignSettingsPage(onBack: () -> Unit) {
             }
 
             prefsItem {
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(
-                            style = SpanStyle(
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append(stringResource(id = R.string.tip_start))
+                TipPref {
+                    val tip = remember {
+                        buildAnnotatedString {
+                            withStyle(
+                                style = SpanStyle(fontWeight = FontWeight.Bold)
+                            ) {
+                                append(context.getString(R.string.tip_start))
+                            }
+                            append(context.getString(R.string.tip_auto_sign))
                         }
-                        append(stringResource(id = R.string.tip_auto_sign))
-                    },
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .padding(start = 8.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(color = ExtendedTheme.colors.chip)
-                        .padding(12.dp),
-                    color = ExtendedTheme.colors.onChip,
-                    fontSize = 12.sp
-                )
+                    }
+                    Text(text = tip, fontSize = 12.sp)
+                }
             }
         }
     }

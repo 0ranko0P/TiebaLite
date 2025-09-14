@@ -85,7 +85,6 @@ object QuickPreviewUtil {
         val detailFlow = when (clipBoardLink) {
             is ClipBoardLink.Forum -> getForumPreviewInfoFlow(context, clipBoardLink)
             is ClipBoardLink.Thread -> getThreadPreviewInfoFlow(context, clipBoardLink)
-            else -> throw RuntimeException("Not implement")
         }
         val flow = flowOf(
             PreviewInfo(

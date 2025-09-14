@@ -3,22 +3,18 @@ package com.huanchengfly.tieba.post.ui.page.main.notifications.list
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -29,22 +25,21 @@ import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
-import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
+import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.persistentListOf
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsListPage(
     type: NotificationsType,
@@ -59,6 +54,9 @@ fun NotificationsListPage(
         viewModel.initialized = true
     }
     val navigator = LocalNavController.current
+    val context = LocalContext.current
+    val hideBlocked = context.appPreferences.hideBlockedContent
+
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = NotificationsListUiState::isRefreshing,
         initial = false
@@ -79,17 +77,14 @@ fun NotificationsListPage(
         prop1 = NotificationsListUiState::currentPage,
         initial = 1
     )
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = { viewModel.send(NotificationsListUiIntent.Refresh) }
-    )
-    val lazyListState = rememberLazyListState()
-    Container(
-        modifier = Modifier.pullRefresh(pullRefreshState)
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.send(NotificationsListUiIntent.Refresh) },
+        contentPadding = contentPadding,
     ) {
         SwipeUpLazyLoadColumn(
             modifier = Modifier.fillMaxSize(),
-            state = lazyListState,
             contentPadding = contentPadding,
             isLoading = isLoadingMore,
             onLazyLoad = {
@@ -107,18 +102,18 @@ fun NotificationsListPage(
                 )
             }
         ) {
+            val blockedTip: @Composable BoxScope.() -> Unit = {
+                BlockTip { Text(text = stringResource(id = R.string.tip_blocked_message)) }
+            }
+
             items(
                 items = data,
                 key = { "${it.info.postId}_${it.info.replyer?.id}_${it.info.time}" },
             ) { (info, blocked) ->
                 BlockableContent(
                     blocked = blocked,
-                    blockedTip = {
-                        BlockTip {
-                            Text(text = stringResource(id = R.string.tip_blocked_message))
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    blockedTip = blockedTip,
+                    hideBlockedContent = hideBlocked
                 ) {
                     Column(
                         modifier = Modifier
@@ -171,7 +166,7 @@ fun NotificationsListPage(
                             text = quoteText,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(MaterialTheme.shapes.small)
                                 .clickable {
                                     val threadId = info.threadId!!.toLong()
                                     if ("1" == info.isFloor && info.quotePid != null) {
@@ -185,24 +180,14 @@ fun NotificationsListPage(
                                         navigator.navigate(Destination.Thread(threadId = threadId))
                                     }
                                 }
-                                .background(ExtendedTheme.colors.chip, RoundedCornerShape(6.dp))
+                                .background(MaterialTheme.colorScheme.secondaryContainer)
                                 .padding(8.dp),
-                            color = ExtendedTheme.colors.onChip,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
                             fontSize = 12.sp,
                         )
                     }
                 }
             }
         }
-
-        PullRefreshIndicator(
-            refreshing = isRefreshing,
-            state = pullRefreshState,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(contentPadding),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
-        )
     }
 }

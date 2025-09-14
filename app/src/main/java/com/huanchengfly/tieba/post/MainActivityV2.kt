@@ -8,75 +8,64 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.AnimationConstants
-import androidx.compose.animation.core.TweenSpec
+import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.NonSkippableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
-import com.bumptech.glide.integration.compose.GlideImage
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.services.NotifyJobService
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.RootNavGraph
-import com.huanchengfly.tieba.post.ui.page.rememberBottomSheetNavigator
-import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
+import com.huanchengfly.tieba.post.ui.page.settings.theme.TranslucentThemeBackground
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
+import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_IGNORE_BATTERY_OPTIMIZATION
 import com.huanchengfly.tieba.post.utils.ClientUtils
-import com.huanchengfly.tieba.post.utils.JobServiceUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.BufferOverflow
@@ -106,6 +95,8 @@ class MainActivityV2 : BaseComposeActivity() {
         ClipBoardLinkDetector.parseDeepLink(uri)?.toRoute()
     }
 
+    private val viewModel: MainViewModel by viewModels()
+
     override fun onNewIntent(intent: Intent) {
         val route: Destination? = handelDeepLinks(intent)
         if (route != null) {
@@ -132,9 +123,8 @@ class MainActivityV2 : BaseComposeActivity() {
                 ContextCompat.registerReceiver(this@MainActivityV2, mNewMessageReceiver!!,
                     IntentFilter(NotifyJobService.ACTION_NEW_MESSAGE), ContextCompat.RECEIVER_NOT_EXPORTED)
 
-                startService(Intent(this, NotifyJobService::class.java))
                 val notifyJobService = ComponentName(this, NotifyJobService::class.java)
-                val builder = JobInfo.Builder(JobServiceUtil.getJobId(this), notifyJobService)
+                val builder = JobInfo.Builder(appPreferences.autoSignJobId, notifyJobService)
                     .setPersisted(true)
                     .setPeriodic(30 * 60 * 1000L)
                     .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
@@ -147,9 +137,8 @@ class MainActivityV2 : BaseComposeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        window.decorView.setBackgroundColor(Color.TRANSPARENT)
         lifecycleScope.launch {
-            ClientUtils.setActiveTimestamp(applicationContext)
+            ClientUtils.refreshActiveTimestamp()
             delay(2000L)
             requestNotificationPermission()
         }
@@ -167,18 +156,37 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
-        val bottomSheetNavigator = rememberBottomSheetNavigator(skipHalfExpanded = true)
-        val navController = rememberNavController(bottomSheetNavigator)
-        val entryRoute = if (appPreferences.setupFinished) Destination.Main else Destination.Welcome
-
-        BatteryOpDialog(this, appPreferences)
-        ClipBoardDetectDialog(navController)
+        // val bottomSheetNavigator = rememberBottomSheetNavigator(skipPartiallyExpanded = true)
+        val navController = rememberNavController(/* bottomSheetNavigator */)
 
         TiebaLiteLocalProvider {
-            TranslucentThemeBackground {
-                RootNavGraph(bottomSheetNavigator, navController, entryRoute)
+            TiebaExtendedTheme {
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                val okSignAlertDialogState = rememberDialogState()
+
+                uiState.setupFinished?.let {
+                    val entryRoute = if (it) Destination.Main else Destination.Welcome
+                    RootNavGraph(/* bottomSheetNavigator, */navController, startDestination = entryRoute)
+                }
+
+                ClipBoardDetectDialog(navController)
+
+                if (uiState.ignoreBatteryOpDialogVisible) {
+                    BatteryOpDialog(
+                        dialogState = okSignAlertDialogState,
+                        onDismiss = viewModel::onDismissBatteryOpDialog,
+                        onIgnore = viewModel::onIgnoreBatteryOpDialog,
+                        onOpenSettings = this::requestIgnoreBatteryOptimizations
+                    )
+
+                    LaunchedEffect(Unit) {
+                        delay(2000L)
+                        okSignAlertDialogState.show()
+                    }
+                }
             }
         }
 
@@ -190,38 +198,22 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
-    private fun TranslucentThemeBackground(
-        modifier: Modifier = Modifier,
-        content: @Composable () -> Unit,
-    ) {
-        val backgroundColor by animateColorAsState(
-            targetValue = MaterialTheme.colors.background,
-            animationSpec = TweenSpec(durationMillis = AnimationConstants.DefaultDurationMillis),
-            label = "BackgroundColorAnimation"
-        )
-        Surface(
-            color = backgroundColor,
-            contentColor = MaterialTheme.colors.onBackground,
-            modifier = modifier
-        ) {
-            val isTranslucentTheme by remember {
-                derivedStateOf { ThemeUtil.isTranslucentTheme(ThemeUtil.themeState.value) }
+    private fun TiebaExtendedTheme(content: @Composable () -> Unit) {
+        val colorsExt by viewModel.extendedColorScheme.collectAsStateWithLifecycle()
+        val backgroundImage by viewModel.translucentThemeBackground.collectAsStateWithLifecycle(null)
+
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (backgroundImage != null) {
+                TranslucentThemeBackground(Modifier.matchParentSize(), file = backgroundImage)
+            } else {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .animateBackground(color = colorsExt.colorScheme.background)
+                )
             }
-            if (isTranslucentTheme) {
-                val background by appPreferences.translucentThemeBackgroundFile.collectAsState(null)
-                if (background != null) {
-                    GlideImage(
-                        model = background,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        requestBuilderTransform = { it.diskCacheStrategy(DiskCacheStrategy.NONE) }
-                    )
-                }
-            }
-            content()
+            TiebaLiteTheme(colorSchemeExt = colorsExt, content = content)
         }
     }
 
@@ -230,11 +222,11 @@ class MainActivityV2 : BaseComposeActivity() {
         mNewMessageReceiver?.let { unregisterReceiver(it) }
     }
 
+    @NonSkippableComposable
     @Composable
     private fun TiebaLiteLocalProvider(content: @Composable () -> Unit) {
         CompositionLocalProvider(
             LocalNotificationCountFlow provides notificationCountFlow,
-            LocalWindowAdaptiveInfo provides currentWindowAdaptiveInfo(),
             content = content
         )
     }
@@ -267,28 +259,29 @@ class MainActivityV2 : BaseComposeActivity() {
 
             Dialog(
                 dialogState = dialogState,
+                dialogProperties = AnyPopDialogProperties(
+                    direction = DirectionState.CENTER,
+                    dismissOnClickOutside = false
+                ),
                 onDismiss = ClipBoardLinkDetector::clear,
                 title = {
                     Text(text = stringResource(id = R.string.title_dialog_clip_board_tieba_url))
                 },
-                cancelableOnTouchOutside = false,
                 buttons = {
+                    DialogNegativeButton(text = stringResource(id = R.string.btn_close))
                     DialogPositiveButton(text = stringResource(id = R.string.button_open)) {
                         previewInfo?.let {
                             val route = it.clipBoardLink.toRoute(it.icon?.url)
                             navController.navigate(route = route)
                         }
                     }
-                    DialogNegativeButton(text = stringResource(id = R.string.btn_close))
                 },
             ) {
                 previewInfo?.let {
                     Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp),
-                        border = BorderStroke(1.dp, ExtendedTheme.colors.divider),
-                        shape = RoundedCornerShape(6.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -306,10 +299,10 @@ class MainActivityV2 : BaseComposeActivity() {
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 it.title?.let { title ->
-                                    Text(text = title, style = MaterialTheme.typography.subtitle1)
+                                    Text(text = title, style = MaterialTheme.typography.titleMedium)
                                 }
                                 it.subtitle?.let { subtitle ->
-                                    Text(text = subtitle, style = MaterialTheme.typography.body2)
+                                    Text(text = subtitle, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
@@ -319,37 +312,32 @@ class MainActivityV2 : BaseComposeActivity() {
         }
 
         @Composable
-        private fun BatteryOpDialog(context: Context, prefUtil: AppPreferencesUtils) {
-            val ignoreBatteryOp by rememberPreferenceAsState(
-                key = booleanPreferencesKey(KEY_IGNORE_BATTERY_OPTIMIZATION),
-                defaultValue = false
-            )
-
-            val okSignAlertDialogState = rememberDialogState()
-            AlertDialog(
-                dialogState = okSignAlertDialogState,
+        private fun BatteryOpDialog(
+            dialogState: DialogState,
+            onDismiss: () -> Unit,
+            onIgnore: () -> Unit,
+            onOpenSettings: () -> Unit
+        ) {
+            Dialog(
+                dialogState = dialogState,
+                onDismiss = onDismiss,
                 title = { Text(text = stringResource(id = R.string.title_dialog_oksign_battery_optimization)) },
-                content = { Text(text = stringResource(id = R.string.message_dialog_oksign_battery_optimization)) },
-                buttons = {
-                    DialogPositiveButton(
-                        text = stringResource(id = R.string.button_go_to_ignore_battery_optimization),
-                        onClick = context::requestIgnoreBatteryOptimizations
-                    )
+                content = {
+                    Text(text = stringResource(id = R.string.message_dialog_oksign_battery_optimization))
+                },
+                buttons = { rowScope ->
+                    DialogNegativeButton(text = stringResource(id = R.string.button_dont_remind_again), onClick = onIgnore)
+
+                    with(rowScope) { Spacer(modifier = Modifier.weight(1.0f)) }
 
                     DialogNegativeButton(text = stringResource(id = R.string.button_cancel))
 
-                    DialogNegativeButton(text = stringResource(id = R.string.button_dont_remind_again)) {
-                        context.dataStore.putBoolean(KEY_IGNORE_BATTERY_OPTIMIZATION, true)
-                    }
+                    DialogPositiveButton(
+                        text = stringResource(id = R.string.btn_open_settings),
+                        onClick = onOpenSettings
+                    )
                 }
             )
-
-            LaunchedEffect(Unit) {
-                delay(2000L)
-                if (!ignoreBatteryOp && prefUtil.autoSign && !context.isIgnoringBatteryOptimizations()) {
-                    okSignAlertDialogState.show()
-                }
-            }
         }
     }
 }

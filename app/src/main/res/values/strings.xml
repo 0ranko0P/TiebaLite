@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">贴吧 Lite</string>
+    <string name="activity_translucent">透明主题</string>
     <string name="icon_new">新图标</string>
     <string name="icon_new_invert">新图标（反色）</string>
     <string name="icon_old">旧图标</string>
@@ -68,6 +69,7 @@
     <string name="toast_exit_account_success">退出登录成功，请重新登录</string>
     <string name="toast_exit_account_switched">退出登录成功，已切换至账号 %1$s</string>
     <string name="button_cancel">取消</string>
+    <string name="button_discard">放弃更改</string>
     <string name="title_delete">删除</string>
     <string name="tip_lz">楼主</string>
     <string name="title_auto_sign_time">自动签到时间</string>
@@ -82,7 +84,7 @@
     <string name="toast_unlike_success">取消关注成功</string>
     <string name="toast_unlike_failed">取消关注失败 %1$s</string>
     <string name="content_top">置顶</string>
-    <string name="tip_forum_header_liked">LV%1$s %2$s</string>
+    <string name="tip_forum_header_liked">LV%1$d %2$s</string>
     <string name="title_forum_name">%1$s吧</string>
     <string name="toast_sign_success">签到成功， 经验 +%1$s。你是今天第 %2$s 个签到的。</string>
     <string name="button_sign_in">签到</string>
@@ -94,6 +96,7 @@
     <string name="button_yes">是</string>
     <string name="title_agree">点赞</string>
     <string name="toast_agree_failed">点赞失败 %1$s</string>
+    <string name="toast_agree_loading">连接中请稍候..</string>
     <string name="title_copy_forum_name">复制吧名</string>
     <string name="title_clear_picture_cache">清除图片缓存</string>
     <string name="toast_clear_picture_cache_success">成功清除图片缓存</string>
@@ -125,7 +128,6 @@
     <string name="title_ask_permission_clipboard">%1$s 想要写入您的剪贴板</string>
     <string name="title_start_app_permission">%1$s 想要启动%2$s</string>
     <string name="name_multi_app">应用</string>
-    <string name="settings_night_mode">夜间模式主题</string>
     <string name="settings_forum_single">吧列表单列显示</string>
     <string name="toast_clear_success">清除成功啦( •̀ ω •́ )✧</string>
     <string name="button_retry">重试</string>
@@ -156,9 +158,7 @@
     <string name="button_previous">上一步</string>
     <string name="button_finish">完成</string>
     <string name="tip_primary_color">主题色</string>
-    <string name="title_custom_theme">设置自定义主题</string>
     <string name="title_color_picker_primary">选择主题色</string>
-    <string name="tip_toolbar_primary_color">顶栏颜色跟随主题色</string>
     <string name="cpv_select">选择</string>
     <string name="cpv_custom">自定义</string>
     <string name="cpv_presets">预设</string>
@@ -169,8 +169,7 @@
     <string name="title_settings_default_sort_type">吧默认排序方式</string>
     <string name="toast_load_failed">加载失败</string>
     <string name="button_undo">撤销</string>
-    <string name="title_reduce_effect">降低透明度和模糊效果</string>
-    <string name="summary_reduce_effect">提高可读性的同时节省少量电池</string>
+    <string name="title_reduce_effect">降低模糊效果</string>
     <string name="title_settings_night_mode">夜间模式设置</string>
     <string name="title_image_load_type_smart_origin">智能省流量</string>
     <string name="title_image_load_type_smart_load">智能无图</string>
@@ -257,9 +256,7 @@
     <string name="title_ui_settings">界面设置</string>
     <string name="dark_color">深色</string>
     <string name="light_color">浅色</string>
-    <string name="title_translucent_theme_wallpapers">推荐壁纸</string>
     <string name="title_translucent_theme_experimental_feature">透明主题当前仍为实验性特性</string>
-    <string name="title_theme_translucent">透明主题</string>
     <string name="bubble_want_change_font_size">怎么调节应用内的字体大小呢？</string>
     <string name="bubble_change_font_size">尝试着调节下方的控制条吧，可以在这里即时预览字体大小。</string>
     <string name="text_size_small">小</string>
@@ -314,7 +311,6 @@
     <string name="title_stat_posts_num">回贴</string>
     <string name="toast_feature_unavailable">该功能尚未实现</string>
     <string name="desc_permission_post_notifications">用于发送消息通知、显示一键签到进度</string>
-    <string name="desc_current_account">当前登录</string>
     <string name="source_code">开源代码</string>
     <string name="summary_now_account">已登录账号 %s</string>
     <string name="summary_not_logged_in">未登录，点击登录</string>
@@ -365,7 +361,6 @@
     <string name="emoticon">表情 %s</string>
     <string name="title_dialog_oksign_battery_optimization">请忽略“电池优化”</string>
     <string name="message_dialog_oksign_battery_optimization">在 Android 12 及以上版本中，后台启动前台服务被严格限制。为了避免一键签到无法正常启动，请忽略本应用的“电池优化”。</string>
-    <string name="button_go_to_ignore_battery_optimization">好的，去忽略</string>
     <string name="button_dont_remind_again">不再提示</string>
     <string name="link">链接</string>
     <string name="title_empty">这里什么都没有</string>
@@ -381,6 +376,7 @@
     <string name="title_unknown_error">发生了一个奇怪的错误…</string>
     <string name="message_no_internet_connectivity">%s。请检查你的网络连接是否正常</string>
     <string name="message_unknown_error">哦我的老伙计，我向你保证这真的是一个奇怪的错误……</string>
+    <string name="btn_open_settings">前往设置</string>
     <string name="btn_reload">重新加载</string>
     <string name="title_not_logged_in">你尚未登录</string>
     <string name="message_not_logged_in">请登录后继续访问</string>
@@ -388,7 +384,6 @@
     <string name="tip_reply_thread">评论一番</string>
     <string name="btn_load_previous">查看上一页</string>
     <string name="desc_video">视频</string>
-    <string name="tag_video">[视频]</string>
     <string name="message_add_favorite_success">已收藏至第 %d 楼</string>
     <string name="message_update_collect_mark">本次阅读到第 %d 楼，是否更新收藏楼层？</string>
     <string name="message_update_collect_mark_failed">更新收藏楼层失败 %s</string>
@@ -440,10 +435,7 @@
     <string name="button_expand_more_history">展开历史</string>
     <string name="button_expand_less_history">收起历史</string>
     <string name="button_clear_all">清除全部</string>
-    <string name="title_dynamic_theme">动态取色</string>
-    <string name="desc_night_theme">夜间主题</string>
     <string name="settings_image_darken_when_night_mode">夜间模式压暗缩略图</string>
-    <string name="tip_toolbar_primary_color_summary">修改重启后生效</string>
     <string name="title_hide_reply">隐藏回贴入口</string>
     <string name="title_settings_use_themed_icon">应用图标使用动态取色</string>
     <string name="tip_settings_use_themed_icon_summary_not_supported">当前正在使用的应用图标暂不支持动态取色</string>
@@ -484,6 +476,14 @@
     <string name="desc_show">显示</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
     <string name="brightness">亮度</string>
+    <string name="theme_dialog_unsave">主题未保存</string>
+    <string name="theme_dialog_unsave_msg">保存或放弃更改?</string>
+    <string name="theme_dialog_saving">应用主题中</string>
+    <string name="theme_dialog_saving_msg">请坐和放宽</string>
+    <string name="theme_btn_color_picker">拾色器</string>
+    <string name="theme_title_color_picker">自定义主题颜色</string>
+    <string name="theme_tab_featured">精选</string>
+    <string name="theme_tab_custom">定制</string>
     <string name="welcome_intro">欢迎使用贴吧 Lite</string>
     <string name="welcome_intro_subtitle">极简的贴吧第三方客户端</string>
     <string name="welcome_permission">权限申请</string>

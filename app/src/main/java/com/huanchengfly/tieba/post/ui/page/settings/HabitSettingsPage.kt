@@ -14,7 +14,6 @@ import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material.icons.rounded.UnfoldLess
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -153,7 +152,6 @@ fun HabitSettingsPage(onBack: () -> Unit) = MyScaffold(
     }
 }
 
-@NonRestartableComposable
 @Composable
 fun ImageLoadPreference(modifier: Modifier = Modifier) {
     ListPref(
@@ -172,7 +170,6 @@ fun ImageLoadPreference(modifier: Modifier = Modifier) {
     )
 }
 
-@NonRestartableComposable
 @Composable
 fun DefaultSortPreference(modifier: Modifier = Modifier) {
     ListPref(
@@ -189,7 +186,6 @@ fun DefaultSortPreference(modifier: Modifier = Modifier) {
     )
 }
 
-@NonRestartableComposable
 @Composable
 fun CollectSeeLzPreference(modifier: Modifier = Modifier) {
     SwitchPref(
@@ -203,7 +199,6 @@ fun CollectSeeLzPreference(modifier: Modifier = Modifier) {
     )
 }
 
-@NonRestartableComposable
 @Composable
 fun HideReplyPreference(modifier: Modifier = Modifier) {
     SwitchPref(

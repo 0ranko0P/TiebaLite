@@ -1,30 +1,23 @@
 package com.huanchengfly.tieba.post.ui.page.search.thread
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
@@ -34,22 +27,21 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalShouldLoad
+import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentListOf
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchThreadPage(
+    modifier: Modifier = Modifier,
     keyword: String,
     initialSortType: Int = SearchThreadSortType.SORT_TYPE_NEWEST,
     contentPadding: PaddingValues,
-    listState: LazyListState = rememberLazyListState(),
     viewModel: SearchThreadViewModel = pageViewModel(),
 ) {
-    val navigator = LocalNavController.current
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(SearchThreadUiIntent.Refresh(keyword, initialSortType))
         viewModel.initialized = true
@@ -101,33 +93,44 @@ fun SearchThreadPage(
         }
     }
 
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = { viewModel.send(SearchThreadUiIntent.Refresh(keyword, sortType)) }
-    )
-
     val isEmpty by remember {
         derivedStateOf { data.isEmpty() }
+    }
+    val isError by remember {
+        derivedStateOf { error != null }
     }
 
     onGlobalEvent<SearchUiEvent.KeywordChanged> {
         viewModel.send(SearchThreadUiIntent.Refresh(it.keyword, sortType))
     }
 
+    val onReload: () -> Unit = {
+        viewModel.send(SearchThreadUiIntent.Refresh(keyword, sortType))
+    }
+
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
-        isError = error != null,
+        isError = isError,
         isLoading = isRefreshing,
-        onReload = { viewModel.send(SearchThreadUiIntent.Refresh(keyword, sortType)) },
-        errorScreen = { error?.let { ErrorScreen(error = it.item) } }
+        onReload = onReload,
+        errorScreen = {
+            error?.let {
+                ErrorScreen(error = it.item, Modifier.padding(contentPadding))
+            }
+        }
     ) {
-        Box(
-            modifier = Modifier.pullRefresh(pullRefreshState)
+        val navigator = LocalNavController.current
+
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onReload,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
         ) {
             SwipeUpLazyLoadColumn(
-                modifier = Modifier.fillMaxSize(),
-                state = listState,
+                modifier = modifier.fillMaxSize(),
+                state = rememberLazyListState(),
                 contentPadding = contentPadding,
                 isLoading = isLoadingMore,
                 onLazyLoad = {
@@ -147,33 +150,21 @@ fun SearchThreadPage(
             ) {
                 itemsIndexed(data) { index, item ->
                     if (index > 0) {
-                        VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     }
+
                     SearchThreadItem(
                         item = item,
-                        onClick = {
-                            navigator.navigate(Thread(threadId = it.tid.toLong()))
-                        },
-                        onUserClick = {
-                            navigator.navigate(UserProfile(it.userId.toLong()))
+                        onClick = { navigator.navigate(Thread(threadId = item.tid)) },
+                        onValidUserClick = {
+                            navigator.navigate(UserProfile(item.userId))
                         },
                         onForumClick = { forum, transitionKey ->
                             navigator.navigate(Forum(forum.forumName, forum.avatar, transitionKey))
-                        },
-                        searchKeyword = keyword
+                        }
                     )
                 }
             }
-
-            PullRefreshIndicator(
-                refreshing = isRefreshing,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .align(Alignment.TopCenter),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
-            )
         }
     }
 }

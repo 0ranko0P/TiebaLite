@@ -8,22 +8,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.integration.compose.CrossFade
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion.EXTRA_PHOTO_VIEW_DATA
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_DARKEN_IMAGE_WHEN_NIGHT_MODE
 import com.huanchengfly.tieba.post.utils.GlideUtil
 import com.huanchengfly.tieba.post.utils.ImageUtil
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 
 fun shouldLoadImage(skipNetworkCheck: Boolean): Boolean {
     val imageLoadSettings = ImageUtil.imageLoadSettings
@@ -64,12 +65,14 @@ fun NetworkImage(
             key = booleanPreferencesKey(KEY_DARKEN_IMAGE_WHEN_NIGHT_MODE),
             defaultValue = true
         )
+        val darkMode by ThemeUtil.darkModeState.collectAsStateWithLifecycle()
+
         GlideImage(
             model = imageUri,
             contentDescription = contentDescription,
             modifier = Modifier.fillMaxSize(),
             contentScale = contentScale,
-            colorFilter = if (darkenImage && ExtendedTheme.colors.isNightMode) GlideUtil.DarkFilter else null,
+            colorFilter = if (darkenImage && darkMode) GlideUtil.DarkFilter else null,
             transition = CrossFade
         ) {
             if (shouldLoadImage(skipNetworkCheck)) {

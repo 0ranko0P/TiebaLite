@@ -1,24 +1,18 @@
 package com.huanchengfly.tieba.post.ui.page.search.user
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -34,8 +28,6 @@ import com.huanchengfly.tieba.post.api.models.SearchUserBean
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
@@ -45,21 +37,24 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalShouldLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.collections.immutable.persistentListOf
 
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchUserPage(
+    modifier: Modifier = Modifier,
     keyword: String,
     contentPadding: PaddingValues,
-    listState: LazyListState = rememberLazyListState(),
     viewModel: SearchUserViewModel = pageViewModel(),
 ) {
     val navigator = LocalNavController.current
+    val listState = rememberLazyListState()
+
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(SearchUserUiIntent.Refresh(keyword))
         viewModel.initialized = true
@@ -68,17 +63,13 @@ fun SearchUserPage(
         prop1 = SearchUserUiState::keyword,
         initial = ""
     )
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUserUiState::isRefreshing,
-        initial = true
-    )
     val error by viewModel.uiState.collectPartialAsState(
         prop1 = SearchUserUiState::error,
         initial = null
     )
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = { viewModel.send(SearchUserUiIntent.Refresh(keyword)) }
+    val isRefreshing by viewModel.uiState.collectPartialAsState(
+        prop1 = SearchUserUiState::isRefreshing,
+        initial = true
     )
     val exactMatch by viewModel.uiState.collectPartialAsState(
         prop1 = SearchUserUiState::exactMatch,
@@ -114,42 +105,41 @@ fun SearchUserPage(
         derivedStateOf { !showExactMatchResult && !showFuzzyMatchResult }
     }
 
+    val onReload: () -> Unit = { viewModel.send(SearchUserUiIntent.Refresh(keyword)) }
+
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
         isError = error != null,
         isLoading = isRefreshing,
-        onReload = { viewModel.send(SearchUserUiIntent.Refresh(keyword)) },
+        onReload = onReload,
         errorScreen = {
-            error?.let {
-                val (e) = it
-                ErrorScreen(error = e)
+            error?.item?.let {
+                ErrorScreen(error = it)
             }
         }
     ) {
-        Box(
-            modifier = Modifier.pullRefresh(pullRefreshState)
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onReload,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
         ) {
             MyLazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = modifier.fillMaxSize(),
                 state = listState,
                 contentPadding = contentPadding,
             ) {
                 if (showExactMatchResult) {
-                    item(key = "ExactMatchHeader") {
-                        Chip(
-                            text = stringResource(id = R.string.title_exact_match),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            invertColor = true
-                        )
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(ExtendedTheme.colors.background)
-                        ) {
-                        }
-                    }
                     exactMatch?.let {
+                        item(key = "ExactMatchHeader") {
+                            Chip(
+                                text = stringResource(id = R.string.title_exact_match),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                invertColor = true
+                            )
+                        }
+
                         item(key = "ExactMatch") {
                             SearchUserItem(
                                 item = it,
@@ -166,7 +156,6 @@ fun SearchUserPage(
                         Chip(
                             text = stringResource(id = R.string.title_fuzzy_match_user),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            invertColor = false
                         )
                     }
                     items(fuzzyMatch) {
@@ -180,16 +169,6 @@ fun SearchUserPage(
                     }
                 }
             }
-
-            PullRefreshIndicator(
-                refreshing = isRefreshing,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .align(Alignment.TopCenter),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
-            )
         }
     }
 }
@@ -199,6 +178,7 @@ private fun SearchUserItem(
     item: SearchUserBean.UserBean,
     onClick: () -> Unit,
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -208,7 +188,7 @@ private fun SearchUserItem(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Avatar(
-            data = StringUtil.getAvatarUrl(item.portrait),
+            data = remember { StringUtil.getAvatarUrl(item.portrait) },
             size = Sizes.Medium,
             contentDescription = item.name
         )
@@ -218,17 +198,16 @@ private fun SearchUserItem(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = StringUtil.getUserNameString(
-                    LocalContext.current,
-                    item.name.orEmpty(),
-                    item.showNickname
-                ),
-                style = MaterialTheme.typography.subtitle1
+                text = remember {
+                    StringUtil.getUserNameString(context, item.name.orEmpty(), item.showNickname)
+                },
+                style = MaterialTheme.typography.titleMedium
             )
+
             if (!item.intro.isNullOrEmpty()) {
                 Text(
                     text = item.intro,
-                    style = MaterialTheme.typography.body2,
+                    style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1
                 )
             }

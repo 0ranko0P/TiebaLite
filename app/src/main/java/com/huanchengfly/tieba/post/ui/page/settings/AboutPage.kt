@@ -13,24 +13,23 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.TopBarColors
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 
@@ -41,18 +40,17 @@ fun AboutPage(
     onBackClicked: () -> Unit = {},
     onHomePageClicked: () -> Unit = {}
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = modifier.windowInsetsPadding(WindowInsets.navigationBars),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TitleCentredToolbar(
             title = {
-                Text( text = stringResource(id = R.string.title_about))
+                Text(text = stringResource(id = R.string.title_about))
             },
-            color = MaterialTheme.colors.surface,
-            contentColor = MaterialTheme.colors.onSurface,
             navigationIcon = { BackNavigationIcon(onBackPressed = onBackClicked) },
-            elevation = Dp.Hairline
+            colors = TopBarColors(colorScheme)
         )
 
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -66,25 +64,25 @@ fun AboutPage(
         TextButton(
             shape = CircleShape,
             colors = ButtonDefaults.textButtonColors(
-                backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
-                contentColor = MaterialTheme.colors.onSurface
+                containerColor = colorScheme.primaryContainer.copy(alpha = 0.1f),
+                contentColor = colorScheme.onPrimaryContainer
             ),
             onClick = onHomePageClicked,
             modifier = Modifier.fillMaxWidth(0.5f)
         ) {
-            Text(stringResource(id = R.string.source_code), color = LocalContentColor.current)
+            Text(stringResource(id = R.string.source_code))
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME),
-            style = MaterialTheme.typography.caption,
-            color = MaterialTheme.colors.onSurface
+            style = MaterialTheme.typography.bodySmall,
+            color = colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = BuildConfig.BUILD_GIT,
-            style = MaterialTheme.typography.caption,
-            color = MaterialTheme.colors.onSurface
+            style = MaterialTheme.typography.bodySmall,
+            color = colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(48.dp))
     }

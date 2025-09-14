@@ -1,54 +1,46 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Text
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.OndemandVideo
 import androidx.compose.material.icons.rounded.Photo
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
-import androidx.compose.material.icons.rounded.SwapCalls
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -59,7 +51,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
@@ -79,33 +70,34 @@ import com.huanchengfly.tieba.post.api.models.protos.aspectRatio
 import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.collectPreferenceAsState
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlin.math.max
 import kotlin.math.min
 
-private val ImmutableHolder<Media>.url: String
+private val Media.url: String
     get() = ImageUtil.getThumbnail(
-        // item.srcPic, // Best  quality in [Media]
-        item.bigPic,
-        item.originPic  // Worst quality in [Media]
+        // srcPic, // Best  quality in [Media]
+        bigPic,
+        originPic  // Worst quality in [Media]
     )
 
 @Composable
@@ -117,24 +109,24 @@ fun Card(
     onClick: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
 ) {
-    val cardModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
-
-    val paddingModifier = if (action != null) Modifier.padding(top = 16.dp)
-    else Modifier.padding(vertical = 16.dp)
-
     Column(
-        modifier = cardModifier
-            .then(modifier)
-            .then(paddingModifier)
+        modifier = modifier
+            .block {
+                onClick?.let { clickable(onClick = it) }
+            }
+            .block {
+                if (action != null) padding(top = 16.dp) else padding(vertical = 16.dp)
+            }
             .padding(contentPadding)
     ) {
         header()
+
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            content()
-        }
+            modifier = Modifier.padding(top = 8.dp),
+            content = content
+        )
+
         action?.invoke(this)
     }
 }
@@ -144,14 +136,12 @@ fun Badge(
     icon: ImageVector,
     text: String,
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(100),
     backgroundColor: Color = Color.Black.copy(0.5f),
     contentColor: Color = Color.White,
 ) {
     Row(
         modifier = modifier
-            .clip(shape)
-            .background(backgroundColor)
+            .background(color = backgroundColor, shape = CircleShape)
             .padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -183,31 +173,31 @@ fun ThreadContent(
         lineSpacing = 0.8.sp,
         overflow = TextOverflow.Ellipsis,
         maxLines = maxLines,
-        style = MaterialTheme.typography.body1,
+        style = MaterialTheme.typography.bodyLarge,
         highlightKeywords = highlightKeywords
     )
 }
 
 fun buildThreadContent(
-    title: String,
+    title: String?,
     abstractText: String,
-    tabName: String = "",
+    tabName: String? = null,
     isGood: Boolean = false
 ): AnnotatedString = buildAnnotatedString {
-    val theme by ThemeUtil.themeState
-    val showTitle = title.isNotBlank()
+    val colorScheme = ThemeUtil.currentColorScheme()
+    val showTitle = !title.isNullOrBlank()
     val showAbstract = abstractText.isNotBlank()
 
     if (showTitle) {
         withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
             if (isGood) {
-                withStyle(style = SpanStyle(color = theme.primary)) {
+                withStyle(style = SpanStyle(color = colorScheme.tertiaryContainer)) {
                     append(App.INSTANCE.getString(R.string.tip_good))
                 }
                 append(" ")
             }
 
-            if (tabName.isNotBlank()) {
+            if (!tabName.isNullOrBlank()) {
                 append(tabName)
                 append(" | ")
             }
@@ -230,7 +220,7 @@ fun FeedCardPlaceholder() {
         content = {
             Text(
                 text = "TitlePlaceholder",
-                style = MaterialTheme.typography.subtitle1,
+                style = MaterialTheme.typography.titleMedium,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -240,7 +230,7 @@ fun FeedCardPlaceholder() {
 
             Text(
                 text = "Text",
-                style = MaterialTheme.typography.body1,
+                style = MaterialTheme.typography.bodyLarge,
                 fontSize = 15.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -306,8 +296,8 @@ fun ForumInfoChip(
     Row(
         modifier = modifier
             .height(IntrinsicSize.Min)
-            .clip(RoundedCornerShape(4.dp))
-            .background(color = ExtendedTheme.colors.chip)
+            .clip(MaterialTheme.shapes.extraSmall)
+            .background(color = MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(onClick = onClick)
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -320,15 +310,15 @@ fun ForumInfoChip(
                     .fillMaxHeight()
                     .aspectRatio(1f)
                     .localSharedBounds(key = ForumAvatarSharedBoundsKey(forumName, extraKey)),
-                shape = RoundedCornerShape(4.dp)
+                shape = MaterialTheme.shapes.extraSmall
             )
         }
         Text(
             text = stringResource(id = R.string.title_forum_name, forumName),
             modifier = Modifier
                 .localSharedBounds(key = ForumTitleSharedBoundsKey(forumName, extraKey)),
-            style = MaterialTheme.typography.body2,
-            color = ExtendedTheme.colors.onChip,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = 12.sp,
         )
     }
@@ -336,37 +326,36 @@ fun ForumInfoChip(
 
 @Composable
 private fun MediaPlaceholder(
-    icon: @Composable () -> Unit,
+    icon: @Composable BoxScope.() -> Unit,
     text: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(ExtendedTheme.colors.chip)
-            .clickable(
-                enabled = onClick != null
-            ) { onClick?.invoke() }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ProvideContentColorTextStyle(
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        textStyle = MaterialTheme.typography.labelMedium
     ) {
-        ProvideContentColor(color = ExtendedTheme.colors.onChip) {
-            Box(
-                modifier = Modifier.size(16.dp),
-            ) {
-                icon()
-            }
-            ProvideTextStyle(
-                value = MaterialTheme.typography.subtitle2,
-                content = text
-            )
+        Row(
+            modifier = modifier
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .onNotNull(onClick) {
+                    clickable(onClick = it)
+                }
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(modifier = Modifier.size(16.dp), content = icon)
+            text()
         }
     }
 }
 
-private const val MAX_PHOTO_IN_ROW = 3
+const val MAX_PHOTO_IN_ROW = 3
+
+val singleMediaFraction: Float
+    @Composable @ReadOnlyComposable get() = if (isWindowWidthCompact()) 1f else 0.5f
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -375,7 +364,7 @@ private fun ThreadMedia(
     forumName: String,
     threadId: Long,
     modifier: Modifier = Modifier,
-    medias: ImmutableList<ImmutableHolder<Media>> = persistentListOf(),
+    medias: List<Media> = persistentListOf(),
     videoInfo: ImmutableHolder<VideoInfo>? = null,
 ) {
     val context = LocalContext.current
@@ -384,16 +373,11 @@ private fun ThreadMedia(
     val hasPhoto = mediaCount > 0
     val isSinglePhoto = mediaCount == 1
 
-    val hideMedia by context.dataStore.collectPreferenceAsState(
-        key = booleanPreferencesKey(KEY_POST_HIDE_MEDIA),
-        defaultValue = false
-    )
-
-    val singleMediaFraction = if (isWindowWidthCompat()) 1f else 0.5f
-
     val hasMedia = hasPhoto || videoInfo != null
 
     if (hasMedia) {
+        val hideMedia = context.appPreferences.hideMedia
+
         Box(modifier = modifier) {
             if (videoInfo != null) {
                 if (hideMedia) {
@@ -414,7 +398,7 @@ private fun ThreadMedia(
                         modifier = Modifier
                             .fillMaxWidth(singleMediaFraction)
                             .aspectRatio(ratio = max(videoInfo.item.aspectRatio(), 16f / 9))
-                            .clip(RoundedCornerShape(8.dp)),
+                            .clip(MaterialTheme.shapes.small),
                         thumbnailUrl = videoInfo.item.thumbnailUrl,
                         onClick = {
                             VideoViewActivity.launch(context, videoInfo.item)
@@ -442,7 +426,7 @@ private fun ThreadMedia(
                                 putExtra(
                                     PhotoViewActivity.EXTRA_PHOTO_VIEW_DATA,
                                     getPhotoViewData(
-                                        medias = medias.map { it.get() },
+                                        medias = medias,
                                         forumId = forumId,
                                         forumName = forumName,
                                         threadId = threadId,
@@ -459,7 +443,7 @@ private fun ThreadMedia(
                             modifier = Modifier
                                 .fillMaxWidth(mediaWidthFraction)
                                 .aspectRatio(mediaAspectRatio)
-                                .clip(RoundedCornerShape(8.dp)),
+                                .clip(MaterialTheme.shapes.small),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             for (index in 0 until min(medias.size, MAX_PHOTO_IN_ROW)) {
@@ -472,7 +456,7 @@ private fun ThreadMedia(
                                     contentScale = ContentScale.Crop,
                                     photoViewDataProvider = {
                                         getPhotoViewData(
-                                            medias = medias.map { it.get() },
+                                            medias = medias.toImmutableList(),
                                             forumId = forumId,
                                             forumName = forumName,
                                             threadId = threadId,
@@ -502,10 +486,20 @@ private fun ThreadMedia(
 fun OriginThreadCard(
     originThreadInfo: ImmutableHolder<OriginThreadInfo>,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
-    val contentRenders = remember(originThreadInfo) { originThreadInfo.get { content.renders } }
+    val contentRenders = remember(originThreadInfo.item.tid) {
+        originThreadInfo.get { content.renders }
+    }
+
     Column(
-        modifier = modifier,
+        modifier = modifier
+            .clip(MaterialTheme.shapes.small)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .onNotNull(onClick) {
+                clickable(onClick = it)
+            }
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Column {
@@ -517,111 +511,10 @@ fun OriginThreadCard(
             forumId = originThreadInfo.get { fid },
             forumName = originThreadInfo.get { fname },
             threadId = originThreadInfo.get { tid.toLong() },
-            medias = originThreadInfo.getImmutableList { media },
+            medias = originThreadInfo.item.media,
             videoInfo = originThreadInfo.get { video_info }?.wrapImmutable()
         )
     }
-}
-
-@NonRestartableComposable
-@Composable
-private fun ThreadForumInfo(
-    item: ImmutableHolder<ThreadInfo>,
-    onClick: (SimpleForum) -> Unit,
-) {
-    item.get { forumInfo }?.let { forumInfo ->
-        ForumInfoChip(
-            forumName = forumInfo.name,
-            avatarUrl = forumInfo.avatar,
-            transitionKey = item.get { threadId.toString() },
-            onClick = {
-                onClick(forumInfo)
-            }
-        )
-    }
-}
-
-@Composable
-fun ThreadReplyBtn(
-    replyNum: Int,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-) {
-    ActionBtn(
-        icon = {
-            Icon(
-                imageVector = ImageVector.vectorResource(id = R.drawable.ic_comment_new),
-                contentDescription = stringResource(id = R.string.desc_comment),
-            )
-        },
-        text = {
-            Text(
-                text = if (replyNum == 0)
-                    stringResource(id = R.string.title_reply)
-                else replyNum.getShortNumString()
-            )
-        },
-        modifier = modifier,
-        onClick = onClick,
-        color = ExtendedTheme.colors.textSecondary,
-    )
-}
-
-@Composable
-fun ThreadAgreeBtn(
-    hasAgree: Boolean,
-    agreeNum: Long,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-) {
-    val contentColor =
-        if (hasAgree) ExtendedTheme.colors.primary else ExtendedTheme.colors.textSecondary
-    val animatedColor by animateColorAsState(contentColor, label = "agreeBtnContentColor")
-
-    ActionBtn(
-        icon = {
-            Icon(
-                imageVector = if (hasAgree) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                contentDescription = stringResource(id = R.string.desc_like),
-            )
-        },
-        text = {
-            Text(
-                text = if (agreeNum == 0L)
-                    stringResource(id = R.string.title_agree)
-                else agreeNum.getShortNumString()
-            )
-        },
-        modifier = modifier,
-        color = animatedColor,
-        onClick = onClick
-    )
-}
-
-@Composable
-fun ThreadShareBtn(
-    shareNum: Long,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-) {
-    ActionBtn(
-        icon = {
-            Icon(
-                imageVector = Icons.Rounded.SwapCalls,
-                contentDescription = stringResource(id = R.string.desc_share),
-            )
-        },
-        text = {
-            Text(
-                text = if (shareNum == 0L)
-                    stringResource(id = R.string.title_share)
-                else shareNum.getShortNumString()
-            )
-        },
-        modifier = modifier,
-        onClick = onClick,
-        color = ExtendedTheme.colors.textSecondary,
-    )
 }
 
 enum class FeedType {
@@ -651,7 +544,7 @@ fun FeedCard(
                 portrait = author.portrait,
                 onClick = { onClickUser(author) },
                 desc = remember {
-                    DateTimeUtils.getRelativeTimeString(App.INSTANCE, thread.lastTimeInt.toString())
+                    DateTimeUtils.getRelativeTimeString(context, thread.lastTimeInt.toString())
                 },
                 content = dislikeAction
             )
@@ -664,7 +557,7 @@ fun FeedCard(
                     forumId = forumId,
                     forumName = forumInfo?.name ?: forumName, // Might be Empty
                     threadId = threadId,
-                    medias = media.wrapImmutable(),
+                    medias = media,
                     videoInfo = videoInfo?.wrapImmutable(),
                     modifier = modifier,
                 )
@@ -675,8 +568,8 @@ fun FeedCard(
                     OriginThreadCard(
                         originThreadInfo = it.wrapImmutable(),
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.floorCard)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                             .clickable {
                                 onClickOriginThread(it)
                             }
@@ -685,32 +578,29 @@ fun FeedCard(
                 }
 
             if (onClickForum != null) {
-                ThreadForumInfo(item = thread.wrapImmutable(), onClick = onClickForum)
+                thread.forumInfo?.let { forumInfo ->
+                    ForumInfoChip(
+                        forumName = forumInfo.name,
+                        avatarUrl = forumInfo.avatar,
+                        transitionKey = thread.threadId.toString(),
+                        onClick = { onClickForum(forumInfo) }
+                    )
+                }
             }
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                ThreadShareBtn(
-                    shareNum = thread.shareNum,
-                    onClick = {
-                        thread.also { TiebaUtil.shareThread(context, it.title, it.threadId) }
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-
-                ThreadReplyBtn(
-                    replyNum = thread.replyNum,
-                    onClick = { onClickReply(thread) },
-                    modifier = Modifier.weight(1f)
-                )
-
-                ThreadAgreeBtn(
-                    hasAgree = item.hasAgree,
-                    agreeNum = item.agreeNum,
-                    onClick = { onAgree(thread) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            ThreadActionButtonRow(
+                modifier = Modifier.fillMaxWidth(),
+                shareNum = thread.shareNum,
+                replyNum = thread.replyNum,
+                agreeNum = item.agreeNum,
+                agreed = item.hasAgree,
+                onShareClicked = {
+                    TiebaUtil.shareThread(context, thread.title, thread.threadId)
+                },
+                onReplyClicked = { onClickReply(thread) },
+                onAgreeClicked = { onAgree(thread) }
+            )
         },
         onClick = { onClick(thread) },
         modifier = modifier,
@@ -720,7 +610,7 @@ fun FeedCard(
 @Composable
 fun FeedCard(
     item: ImmutableHolder<PostInfoList>,
-    onClick: (PostInfoList) -> Unit,
+    onClick: () -> Unit,
     onAgree: (PostInfoList) -> Unit,
     modifier: Modifier = Modifier,
     onClickReply: (PostInfoList) -> Unit = {},
@@ -728,77 +618,64 @@ fun FeedCard(
     onClickForum: (name: String) -> Unit = {},
     onClickOriginThread: (OriginThreadInfo) -> Unit = {},
 ) {
+    val context = LocalContext.current
+    val info = item.get()
+
     Card(
         header = {
             UserHeader(
-                name = item.get { user_name },
-                nameShow = item.get { name_show },
-                portrait = item.get { user_portrait },
+                name = info.user_name,
+                nameShow = info.name_show,
+                portrait = info.user_portrait,
                 desc = remember {
-                    DateTimeUtils.getRelativeTimeString(App.INSTANCE, item.get { create_time }.toString())
+                    DateTimeUtils.getRelativeTimeString(context, info.create_time.toString())
                 },
-                onClick = {
-                    onClickUser(item.get { user_id })
-                },
+                onClick = { onClickUser(info.user_id) },
             )
         },
         content = {
             ThreadContent(
-                content = remember { with(item.item) {
-                    buildThreadContent(title = title, abstractText = abstractText)
-                } }
+                content = remember {
+                    buildThreadContent(title = info.title, abstractText = info.abstractText)
+                }
             )
 
             ThreadMedia(
-                forumId = item.get { forum_id },
-                forumName = item.get { forum_name },
-                threadId = item.get { thread_id },
-                medias = item.getImmutableList { media },
+                forumId = info.forum_id,
+                forumName = info.forum_name,
+                threadId = info.thread_id,
+                medias = item.get { media },
                 videoInfo = item.getNullableImmutable { video_info }
             )
 
             item.getNullableImmutable { origin_thread_info }
-                .takeIf { item.get { is_share_thread } == 1 }?.let {
+                .takeIf { info.is_share_thread == 1 }?.let { info ->
                     OriginThreadCard(
-                        originThreadInfo = it,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.floorCard)
-                            .clickable {
-                                onClickOriginThread(it.get())
-                            }
-                            .padding(16.dp)
+                        originThreadInfo = info,
+                        onClick = { onClickOriginThread(info.get()) }
                     )
                 }
 
             ForumInfoChip(
-                forumName = item.get { forum_name },
-                onClick = { onClickForum(item.get { forum_name }) }
+                forumName = info.forum_name,
+                onClick = { onClickForum(info.forum_name) }
             )
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                ThreadShareBtn(
-                    shareNum = item.get { share_num }.toLong(),
-                    onClick = {},
-                    modifier = Modifier.weight(1f)
-                )
-
-                ThreadReplyBtn(
-                    replyNum = item.get { reply_num },
-                    onClick = { onClickReply(item.get()) },
-                    modifier = Modifier.weight(1f)
-                )
-
-                ThreadAgreeBtn(
-                    hasAgree = item.get { agree?.hasAgree == 1 },
-                    agreeNum = item.get { agree_num }.toLong(),
-                    onClick = { onAgree(item.get()) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            ThreadActionButtonRow(
+                modifier = Modifier.fillMaxWidth(),
+                shareNum = info.share_num.toLong(),
+                replyNum = info.reply_num,
+                agreeNum = info.agree_num.toLong(),
+                agreed = info.agree?.hasAgree == 1,
+                onShareClicked = {
+                    TiebaUtil.shareThread(context, title = info.title, threadId = info.thread_id)
+                },
+                onReplyClicked = { onClickReply(info) },
+                onAgreeClicked = { onAgree(info) }
+            )
         },
-        onClick = { onClick(item.get()) },
+        onClick = onClick,
         modifier = modifier,
     )
 }
@@ -816,7 +693,7 @@ private fun ActionBtnPlaceholder(
     ) {
         Text(
             text = "Button",
-            style = MaterialTheme.typography.caption,
+            style = MaterialTheme.typography.bodySmall,
             modifier = Modifier
                 .placeholder(
                     visible = true,
@@ -826,47 +703,20 @@ private fun ActionBtnPlaceholder(
     }
 }
 
-@Composable
-private fun ActionBtn(
-    icon: @Composable () -> Unit,
-    text: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    color: Color = LocalContentColor.current,
-    onClick: (() -> Unit)? = null,
-) {
-    val clickableModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
-    Row(
-        modifier = clickableModifier
-            .padding(vertical = 16.dp)
-            .then(modifier),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        ProvideContentColor(color = color) {
-            Box(modifier = Modifier.size(18.dp)) {
-                icon()
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            ProvideTextStyle(value = MaterialTheme.typography.caption) {
-                text()
-            }
-        }
-    }
-}
-
 @Preview("FeedCardPreview")
 @Composable
-fun FeedCardPreview() {
-    FeedCard(
-        item = ThreadInfoItem(
-            ThreadInfo(
-                title = "预览",
-                author = User(),
-                lastTimeInt = (System.currentTimeMillis() / 1000).toInt()
-            )
-        ),
-        onClick = {},
-        onAgree = {},
-        modifier = Modifier.background(ExtendedTheme.colors.card)
-    )
+fun FeedCardPreview() = TiebaLiteTheme {
+    Surface {
+        FeedCard(
+            item = ThreadInfoItem(
+                ThreadInfo(
+                    title = "预览",
+                    author = User(),
+                    lastTimeInt = (System.currentTimeMillis() / 1000).toInt()
+                )
+            ),
+            onClick = {},
+            onAgree = {},
+        )
+    }
 }

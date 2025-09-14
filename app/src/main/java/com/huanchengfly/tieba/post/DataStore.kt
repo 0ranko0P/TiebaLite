@@ -2,7 +2,6 @@
 
 package com.huanchengfly.tieba.post
 
-import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -41,7 +40,6 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     scope = dataStoreScope
 )
 
-@SuppressLint("ProduceStateDoesNotAssignValue")
 @Composable
 fun <T> rememberPreferenceAsState(
     key: Preferences.Key<T>,
@@ -72,7 +70,7 @@ fun Flow<Preferences>.distinctUntilChangedByKeys(vararg keys: Preferences.Key<*>
 
     return this.distinctUntilChangedBy { data ->
         val values = arrayOfNulls<Any?>(keys.size)
-        keys.forEachIndexed { i, key -> values[i] = data[key] }
+        keys.forEachIndexed { i, key -> values[i] = data[key] ?: key }
         values.contentHashCode()
     }
 }
@@ -141,6 +139,23 @@ fun DataStore<Preferences>.getLong(key: String, defaultValue: Long): Long {
 
 fun Preferences.getColor(key: String): Color? = this[intPreferencesKey(key)]?.let { Color(it) }
 
-fun MutablePreferences.putColor(key: String, color: Color) {
-    this[intPreferencesKey(key)] = color.toArgb()
+/**
+ * Same with [MutablePreferences.setUnchecked]
+ * */
+private fun<T> MutablePreferences.putNullable(key: Preferences.Key<T>, value: T?) {
+    if (value != null) {
+        this[key] = value
+    } else {
+        this.remove(key)
+    }
 }
+
+fun MutablePreferences.putBoolean(key: String, value: Boolean?) = putNullable(booleanPreferencesKey(key), value)
+
+fun MutablePreferences.putInt(key: String, value: Int?) = putNullable(intPreferencesKey(key), value)
+
+fun MutablePreferences.putLong(key: String, value: Long?) = putNullable(longPreferencesKey(key), value)
+
+fun MutablePreferences.putString(key: String, value: String?) = putNullable(stringPreferencesKey(key), value)
+
+fun MutablePreferences.putColor(key: String, color: Color?) = putInt(key, color?.toArgb())

@@ -2,25 +2,29 @@ package com.huanchengfly.tieba.post.ui.page.history.list
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,8 +36,8 @@ import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.fromJson
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
 import com.huanchengfly.tieba.post.models.database.History
+import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
@@ -53,11 +57,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.HistoryUtil
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryListPage(
     type: Int,
-    contentPadding: PaddingValues = PaddingValues(Dp.Hairline),
     viewModel: HistoryListViewModel = if (type == HistoryUtil.TYPE_THREAD) pageViewModel<ThreadHistoryListViewModel>() else pageViewModel<ForumHistoryListViewModel>()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -121,7 +123,6 @@ fun HistoryListPage(
 
     SwipeUpLazyLoadColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = contentPadding,
         isLoading = isLoadingMore,
         onLazyLoad = {
             if (todayHistoryData.isEmpty() && beforeHistoryData.isEmpty()) return@SwipeUpLazyLoadColumn
@@ -169,19 +170,17 @@ fun HistoryListPage(
     }
 }
 
-@NonRestartableComposable
 @Composable
 private fun TimeHintHeaderItem(@StringRes timeHint: Int, invertColor: Boolean = false) =
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(ExtendedTheme.colors.background)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Chip(text = stringResource(id = timeHint), invertColor = invertColor)
     }
 
-@NonRestartableComposable
 @Composable
 private fun ThreadItem(
     modifier: Modifier = Modifier,
@@ -189,18 +188,30 @@ private fun ThreadItem(
     name: String,
     time: String,
     title: String
-) = Column(
-    modifier = modifier.padding(16.dp),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
 ) {
-    UserHeader(avatar = avatar, name = name) {
-        Text(text = time, fontSize = 15.sp, color = ExtendedTheme.colors.text)
+    Row(
+        modifier = modifier.padding(16.dp)
+    ) {
+        Avatar(data = avatar, size = Sizes.Small)
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row {
+                Text(name, style = MaterialTheme.typography.labelLarge)
+                Spacer(modifier = Modifier.weight(1.0f))
+                Text(time, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 15.sp)
+            }
+
+            Text(text = title)
+        }
     }
-    Text(text = title, fontSize = 15.sp)
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
-@NonRestartableComposable
 @Composable
 private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: String, time: String) {
     UserHeader(
@@ -216,7 +227,7 @@ private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: Stri
         name = {
             Text(
                 text = stringResource(R.string.title_forum, forum),
-                modifier = Modifier.localSharedBounds(key = ForumTitleSharedBoundsKey(forum, null))
+                modifier = Modifier.localSharedBounds(key = ForumTitleSharedBoundsKey(forum, null)),
             )
         },
     ) {
@@ -235,11 +246,8 @@ private fun HistoryItem(
     val menuState = rememberMenuState()
     LongClickMenu(
         menuContent = {
-            DropdownMenuItem(onClick = {
+            TextMenuItem(text = R.string.title_delete) {
                 onDelete(info)
-                menuState.expanded = false
-            }) {
-                Text(text = stringResource(id = R.string.title_delete))
             }
         },
         modifier = modifier,

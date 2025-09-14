@@ -2,7 +2,7 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -16,7 +16,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.asyncEdit
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
-import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
@@ -47,7 +47,7 @@ fun <T> ListPref(
     enabled: Boolean = true,
     leadingIcon: ImageVector? = null,
     options: Options<T>,
-    optionsIconSupplier: ((T) -> @Composable () -> Unit)? = null
+    optionsIconSupplier: (@Composable (T) -> Unit)? = null
 ) {
     val dialogState = rememberDialogState()
     val context = LocalContext.current
@@ -63,7 +63,9 @@ fun <T> ListPref(
         enabled = enabled
     )
 
-    Dialog(
+    if (!dialogState.show) return
+
+    AlertDialog(
         dialogState = dialogState,
         title = { Text(text = stringResource(title)) },
         buttons = {
@@ -80,7 +82,6 @@ fun <T> ListPref(
                 }
                 dismiss()
             },
-            modifier = Modifier.padding(bottom = 16.dp),
             itemIconSupplier = optionsIconSupplier
         )
     }

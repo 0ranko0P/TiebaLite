@@ -10,7 +10,6 @@ import android.os.Bundle
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -20,23 +19,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.AppBarDefaults
-import androidx.compose.material.Checkbox
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.FileOpen
 import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
@@ -45,15 +42,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.preferencesDataStore
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.STATE_ALLOW
+import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.STATE_DENY
+import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.STATE_UNSET
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.APP
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.CLIPBOARD
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.File
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.LOCATION
 import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.putInt
-import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogContentPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 
 class WebPermissionDialog<Result>(): ResultDialog<Result>() {
 
@@ -104,15 +105,13 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
 
     @Composable
     override fun BoxScope.ContentView(savedInstanceState: Bundle?) {
-        val theme = LocalExtendedColors.current
+        val colorScheme = MaterialTheme.colorScheme
         val hideRetainBox = permission is File || permission is APP
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(AppBarDefaults.TopAppBarElevation, RoundedCornerShape(16.dp))
-                .background(theme.windowBackground, RoundedCornerShape(16.dp))
-                .padding(16.dp)
+                .padding(DefaultDialogContentPadding)
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -120,11 +119,11 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
                 Icon(
                     painter = rememberVectorPainter(image = permission.getIcon()),
                     contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = theme.primary
+                    modifier = Modifier.size(Sizes.Small),
+                    tint = colorScheme.primary
                 )
 
-                Text(message, color = theme.text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(message, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
 
             Row(
@@ -139,7 +138,7 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
 
                     Text(
                         text = stringResource(R.string.title_not_ask),
-                        color = LocalExtendedColors.current.textSecondary.copy(0.8f)
+                        style = MaterialTheme.typography.labelLarge
                     )
                 }
 

@@ -16,9 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,10 +32,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastRoundToInt
+import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 
 @SuppressLint("ComposableLambdaParameterPosition", "ComposableLambdaParameterNaming")
@@ -51,7 +53,7 @@ fun SeekBar(
     onSeekStopped: (stoppedProgress: Long) -> Unit = {},
     seekerPopup: @Composable () -> Unit = {},
     showSeekerDuration: Boolean = true,
-    color: Color = MaterialTheme.colors.primary,
+    color: Color = ProgressIndicatorDefaults.linearColor,
     secondaryColor: Color = Color.White.copy(alpha = 0.6f)
 ) {
     // if there is an ongoing drag, only dragging progress is evaluated.
@@ -69,51 +71,39 @@ fun SeekBar(
 
         val boxWidth = constraints.maxWidth.toFloat()
 
-        val percentage = remember(progress, max) {
-            progress.coerceAtMost(max).toFloat() / max.toFloat()
-        }
-
-        val indicatorOffsetByPercentage = remember(percentage) {
-            Offset(percentage * boxWidth, 0f)
-        }
+        val percentage = progress.coerceAtMost(max).toFloat() / max.toFloat()
 
         // Indicator should be at "percentage" but dragging can change that.
         // This state keeps track of current dragging position.
         var indicatorOffsetByDragState by remember { mutableStateOf(Offset.Zero) }
 
-        val finalIndicatorOffset = remember(
-            indicatorOffsetByDragState,
-            indicatorOffsetByPercentage,
-            onGoingDrag
-        ) {
-            val finalIndicatorPosition = if (onGoingDrag) {
-                indicatorOffsetByDragState
+        val finalIndicatorOffset = remember(indicatorOffsetByDragState, percentage) {
+            val finalIndicatorPositionX = if (onGoingDrag) {
+                indicatorOffsetByDragState.x
             } else {
-                indicatorOffsetByPercentage
+                percentage * boxWidth
             }
-            finalIndicatorPosition.copy(
-                x = finalIndicatorPosition.x.coerceIn(0f, boxWidth)
-            )
+            Offset(x = finalIndicatorPositionX.coerceIn(0f, boxWidth), y = 0f)
         }
 
         Column {
             // SEEK POPUP
             if (onGoingDrag) {
-                var popupSize by remember { mutableStateOf(IntSize(0, 0)) }
-
-                // popup seeker must center the actual seeker position. Therefore, we offset
-                // it negatively to the left.
-                val popupSeekerOffsetXDp = with(LocalDensity.current) {
-                    (finalIndicatorOffset.x - popupSize.width / 2)
-                        .coerceIn(0f, (boxWidth - popupSize.width))
-                        .toDp()
-                }
+                var popupSize by remember { mutableStateOf(IntSize.Zero) }
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
-                        .offset(x = popupSeekerOffsetXDp)
+                        .offset {
+                            // popup seeker must center the actual seeker position. Therefore, we offset
+                            // it negatively to the left.
+                            IntOffset(
+                                x = (finalIndicatorOffset.x - popupSize.width / 2)
+                                    .coerceIn(0f, (boxWidth - popupSize.width)).fastRoundToInt(),
+                                y = 0
+                            )
+                        }
                         .alpha(if (popupSize == IntSize.Zero) 0f else 1f)
                         .onGloballyPositioned {
                             if (popupSize != it.size) {
@@ -121,16 +111,16 @@ fun SeekBar(
                             }
                         }
                 ) {
-                    val indicatorProgressDurationString = getDurationString(
-                        ((finalIndicatorOffset.x / boxWidth) * max).toLong(),
-                        false
-                    )
-
                     Box(modifier = Modifier.shadow(4.dp)) {
                         seekerPopup()
                     }
 
                     if (showSeekerDuration) {
+                        val indicatorProgressDurationString = getDurationString(
+                            ((finalIndicatorOffset.x / boxWidth) * max).toLong(),
+                            false
+                        )
+
                         Text(
                             text = indicatorProgressDurationString,
                             style = TextStyle(
@@ -152,21 +142,25 @@ fun SeekBar(
                 // SECONDARY PROGRESS
                 if (secondaryProgress != null) {
                     LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.Center),
-                        progress = secondaryProgress.coerceAtMost(max)
-                            .toFloat() / max.coerceAtLeast(1L).toFloat(),
-                        color = secondaryColor
+                        progress = {
+                            secondaryProgress.coerceAtMost(max) / max.coerceAtLeast(1L).toFloat()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = secondaryColor,
+                        trackColor = MaterialTheme.colorScheme.secondary,
                     )
                 }
 
+                // MAIN PROGRESS
+                LinearProgressIndicator(
+                    progress = { percentage },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = color,
+                    trackColor = Color.Transparent,
+                )
+
                 // SEEK INDICATOR
                 if (enabled) {
-                    val (offsetDpX, offsetDpY) = with(LocalDensity.current) {
-                        (finalIndicatorOffset.x).toDp() - indicatorSize / 2 to (finalIndicatorOffset.y).toDp()
-                    }
-
                     val draggableState = rememberDraggableState(onDelta = { dx ->
                         indicatorOffsetByDragState = Offset(
                             x = (indicatorOffsetByDragState.x + dx),
@@ -201,24 +195,19 @@ fun SeekBar(
                             }
                         )
                     ) {
-
                         Indicator(
                             modifier = Modifier
                                 .size(animatedIndicatorSize)
-                                .offset(x = offsetDpX, y = offsetDpY)
+                                .offset {
+                                    IntOffset(
+                                        x = (finalIndicatorOffset.x - indicatorSize.toPx() / 2).fastRoundToInt(),
+                                        y = finalIndicatorOffset.y.fastRoundToInt()
+                                    )
+                                }
                                 .align(Alignment.CenterVertically)
                         )
                     }
                 }
-
-                // MAIN PROGRESS
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.Center),
-                    progress = percentage,
-                    color = color
-                )
             }
         }
     }
@@ -227,7 +216,7 @@ fun SeekBar(
 @Composable
 fun Indicator(
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colors.primary,
+    color: Color = MaterialTheme.colorScheme.primary,
 ) {
     Canvas(modifier = modifier) {
         val radius = size.height / 2

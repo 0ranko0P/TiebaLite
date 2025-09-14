@@ -1,7 +1,12 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -10,41 +15,48 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Tab
-import androidx.compose.material.TabPosition
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabIndicatorScope
+import androidx.compose.material3.TabPosition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.round
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 
 private val DEFAULT_INDICATOR_WIDTH = 16.dp
+private val DEFAULT_INDICATOR_HEIGHT = 3.dp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -69,7 +81,11 @@ fun PagerTabIndicator(
         } else {
             currentTabLeft
         }
-        val animatedIndicatorOffset by animateDpAsState(targetValue = indicatorOffset)
+        val animatedIndicatorOffset by
+            animateDpAsState(
+                targetValue = indicatorOffset,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+            )
         Box(
             Modifier
                 .fillMaxWidth()
@@ -82,26 +98,100 @@ fun PagerTabIndicator(
     }
 }
 
+/**
+ * From androidx.compose.material3.samples.FancyAnimatedIndicatorWithModifier
+ *
+ * 0Ranko0P changes:
+ *   1. border indicator to line indicator
+ *   2. remove color animation
+ *   3. add vertical padding support
+ * */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TabIndicator(
-    selectedTabIndex: Int,
-    tabPositions: List<TabPosition>,
-    tabIndicatorWidth: Dp = DEFAULT_INDICATOR_WIDTH
+fun TabIndicatorScope.FancyAnimatedIndicatorWithModifier(
+    index: Int,
+    indicatorColor: Color = MaterialTheme.colorScheme.primary,
+    verticalPadding: Dp = Dp.Hairline
 ) {
-    if (tabPositions.isNotEmpty()) {
-        val currentTab = tabPositions[selectedTabIndex]
-        val currentTabLeft = currentTab.left + (currentTab.width / 2 - tabIndicatorWidth / 2)
-        val animatedIndicatorOffset by animateDpAsState(targetValue = currentTabLeft)
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .wrapContentSize(Alignment.BottomStart)
-                .offset(x = animatedIndicatorOffset, y = (-8).dp)
-                .width(tabIndicatorWidth)
-                .height(3.dp)
-                .background(color = LocalContentColor.current, CircleShape)
-        )
-    }
+    var startAnimatable by remember { mutableStateOf<Animatable<Dp, AnimationVector1D>?>(null) }
+    var endAnimatable by remember { mutableStateOf<Animatable<Dp, AnimationVector1D>?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+    val cornerRadius = CornerRadius(4.5f)
+
+    Box(
+        Modifier
+            .tabIndicatorLayout { measurable: Measurable,
+                                  constraints: Constraints,
+                                  tabPositions: List<TabPosition> ->
+                val newStart = tabPositions[index].left
+                val newEnd = tabPositions[index].right
+
+                val startAnim =
+                    startAnimatable
+                        ?: Animatable(newStart, Dp.VectorConverter).also { startAnimatable = it }
+
+                val endAnim =
+                    endAnimatable
+                        ?: Animatable(newEnd, Dp.VectorConverter).also { endAnimatable = it }
+
+                if (endAnim.targetValue != newEnd) {
+                    coroutineScope.launch {
+                        endAnim.animateTo(
+                            newEnd,
+                            animationSpec =
+                                if (endAnim.value < newEnd) {
+                                    spring(stiffness = Spring.StiffnessMedium)
+                                } else {
+                                    spring(stiffness = Spring.StiffnessVeryLow)
+                                }
+                        )
+                    }
+                }
+
+                if (startAnim.targetValue != newStart) {
+                    coroutineScope.launch {
+                        startAnim.animateTo(
+                            newStart,
+                            animationSpec =
+                                // Handle directionality here, if we are moving to the right, we
+                                // want the right side of the indicator to move faster, if we are
+                                // moving to the left, we want the left side to move faster.
+                                if (startAnim.value < newStart) {
+                                    spring(stiffness = Spring.StiffnessVeryLow)
+                                } else {
+                                    spring(stiffness = Spring.StiffnessMedium)
+                                }
+                        )
+                    }
+                }
+
+                val indicatorEnd = endAnim.value.roundToPx()
+                val indicatorStart = startAnim.value.roundToPx()
+
+                val indicatorWidth = indicatorEnd - indicatorStart
+                val indicatorHeight = DEFAULT_INDICATOR_HEIGHT.roundToPx()
+                val horizontalPadding = (tabPositions[index].width - tabPositions[index].contentWidth).times(0.5f).roundToPx()
+
+                // Apply an offset from the start to correctly position the indicator around the tab
+                val placeable =
+                    measurable.measure(
+                        Constraints.fixed(
+                            width = (indicatorWidth - horizontalPadding * 2).coerceIn(0, indicatorWidth),
+                            height = indicatorHeight
+                        )
+                    )
+                layout(constraints.maxWidth, constraints.maxHeight) {
+                    placeable.place(
+                        x = indicatorStart + horizontalPadding,
+                        y = constraints.maxHeight - indicatorHeight - verticalPadding.roundToPx()
+                    )
+                }
+            }
+            .fillMaxSize()
+            .drawWithContent {
+                drawRoundRect(color = indicatorColor, cornerRadius = cornerRadius)
+            }
+    )
 }
 
 @Composable
@@ -112,20 +202,20 @@ fun TabClickMenu(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     menuState: MenuState = rememberMenuState(),
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     selectedContentColor: Color = LocalContentColor.current,
-    unselectedContentColor: Color = selectedContentColor.copy(alpha = ContentAlpha.medium),
+    unselectedContentColor: Color = selectedContentColor.copy(alpha = 0.7f),
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    LaunchedEffect(Unit) {
-        launch {
-            interactionSource.interactions
-                .filterIsInstance<PressInteraction.Press>()
-                .collect {
-                    menuState.offset = it.pressPosition
-                }
-        }
+    val interactionSource = remember { MutableInteractionSource() }
+
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions
+            .filterIsInstance<PressInteraction.Press>()
+            .collect {
+                menuState.offset = it.pressPosition.round()
+            }
     }
+
     ClickMenu(
         menuContent = menuContent,
         menuState = menuState
@@ -158,9 +248,8 @@ fun TabClickMenu(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     menuState: MenuState = rememberMenuState(),
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     selectedContentColor: Color = LocalContentColor.current,
-    unselectedContentColor: Color = selectedContentColor.copy(alpha = ContentAlpha.medium),
+    unselectedContentColor: Color = selectedContentColor.copy(alpha = 0.7f),
 ) {
     TabClickMenu(
         selected = selected,
@@ -169,7 +258,6 @@ fun TabClickMenu(
         modifier = modifier,
         enabled = enabled,
         menuState = menuState,
-        interactionSource = interactionSource,
         selectedContentColor = selectedContentColor,
         unselectedContentColor = unselectedContentColor,
     ) {
@@ -182,9 +270,6 @@ fun TabClickMenu(
             label = "ArrowIndicatorAlpha"
         )
 
-        val tabTextStyle =
-            MaterialTheme.typography.button.copy(fontSize = 13.sp, letterSpacing = 0.sp)
-
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
@@ -192,16 +277,16 @@ fun TabClickMenu(
                 .height(48.dp)
                 .padding(start = 16.dp)
         ) {
-            ProvideTextStyle(value = tabTextStyle) {
-                text()
-            }
+            text()
+
             Icon(
                 imageVector = Icons.Rounded.ArrowDropDown,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(16.dp)
-                    .rotate(rotate)
-                    .alpha(alpha)
+                    .graphicsLayer {
+                        this.rotationZ = rotate
+                        this.alpha = alpha
+                    }
             )
         }
     }

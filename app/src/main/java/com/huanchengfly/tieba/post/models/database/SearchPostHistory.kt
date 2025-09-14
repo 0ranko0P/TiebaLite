@@ -8,6 +8,8 @@ class SearchPostHistory(
     val content: String,
     val forumName: String,
     val timestamp: Long = System.currentTimeMillis(),
-) : LitePalSupport() {
+) : LitePalSupport(), KeywordProvider {
     val id: Long = 0
+
+    override fun getKeyword(): String = content
 }

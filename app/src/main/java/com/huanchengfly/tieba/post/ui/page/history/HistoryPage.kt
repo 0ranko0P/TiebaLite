@@ -1,65 +1,62 @@
 package com.huanchengfly.tieba.post.ui.page.history
 
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.rememberScaffoldState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.history.list.HistoryListPage
 import com.huanchengfly.tieba.post.ui.page.history.list.HistoryListUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.HistoryUtil
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryPage(navigator: NavController) {
-    val tabs = persistentListOf(R.string.title_history_thread, R.string.title_history_forum)
+    val tabs = remember {
+        listOf(
+            R.string.title_history_thread to HistoryUtil.TYPE_THREAD,
+            R.string.title_history_forum to HistoryUtil.TYPE_FORUM
+        )
+    }
+
     val pagerState = rememberPagerState { tabs.size }
     val coroutineScope = rememberCoroutineScope()
-    val scaffoldState = rememberScaffoldState()
-
     val context = LocalContext.current
 
     MyScaffold(
-        backgroundColor = Color.Transparent,
-        scaffoldState = scaffoldState,
         topBar = {
-            TitleCentredToolbar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.title_history),
-                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
-                    )
-                },
-                elevation = Dp.Hairline,
+            val snackbarHostState = LocalSnackbarHostState.current
+
+            CenterAlignedTopAppBar(
+                titleRes = R.string.title_history,
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = navigator::navigateUp)
                 },
@@ -68,19 +65,14 @@ fun HistoryPage(navigator: NavController) {
                         coroutineScope.launch {
                             HistoryUtil.deleteAll()
                             emitGlobalEvent(HistoryListUiEvent.DeleteAll)
-                            launch {
-                                scaffoldState.snackbarHostState.showSnackbar(
-                                    context.getString(
-                                        R.string.toast_clear_success
-                                    )
-                                )
-                            }
+                            snackbarHostState.showSnackbar(
+                                message = context.getString(R.string.toast_clear_success)
+                            )
                         }
                     }) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
-                            contentDescription = stringResource(id = R.string.title_history_delete),
-                            tint = ExtendedTheme.colors.onTopBar
+                            contentDescription = stringResource(id = R.string.title_history_delete)
                         )
                     }
                 },
@@ -91,13 +83,10 @@ fun HistoryPage(navigator: NavController) {
                             PagerTabIndicator(pagerState = pagerState, tabPositions = tabPositions)
                         },
                         divider = {},
-                        backgroundColor = Color.Transparent,
-                        contentColor = ExtendedTheme.colors.primary,
-                        modifier = Modifier
-                            .width(100.dp * 2)
-                            .align(Alignment.CenterHorizontally)
+                        containerColor = Color.Transparent,
+                        modifier = Modifier.width(100.dp * 2)
                     ) {
-                        tabs.fastForEachIndexed { i, stringRes ->
+                        tabs.fastForEachIndexed { i, (stringRes, _) ->
                             Tab(
                                 text = {
                                     Text(text = stringResource(id = stringRes))
@@ -106,7 +95,7 @@ fun HistoryPage(navigator: NavController) {
                                 onClick = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(i) }
                                 },
-                                unselectedContentColor = ExtendedTheme.colors.textSecondary
+                                unselectedContentColor = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -117,16 +106,12 @@ fun HistoryPage(navigator: NavController) {
         ProvideNavigator(navigator = navigator) {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.padding(contentPadding),
                 key = { it },
                 verticalAlignment = Alignment.Top,
                 userScrollEnabled = true,
             ) {
-                if (it == 0) {
-                    HistoryListPage(type = HistoryUtil.TYPE_THREAD, contentPadding = contentPadding)
-                } else {
-                    HistoryListPage(type = HistoryUtil.TYPE_FORUM, contentPadding = contentPadding)
-                }
+                HistoryListPage(type = tabs[it].second)
             }
         }
     }

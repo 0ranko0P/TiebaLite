@@ -1,10 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -22,56 +18,97 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.AppBarDefaults
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.minimumInteractiveComponentSize
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
-import androidx.core.content.ContextCompat
-import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
+import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.TopBarColors
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.LocalAllAccounts
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 
 val AppBarHeight: Dp = 56.dp
 
+val accountNavIconIfCompact: @Composable () -> Unit = {
+    if (isWindowWidthCompact()) {
+        AccountNavIcon()
+    }
+}
+
 @Composable
-fun accountNavIconIfCompact(): (@Composable () -> Unit)? =
-    (@Composable { AccountNavIcon() }).takeIf { isWindowWidthCompat() }
+private fun AccountDropdownMenuItem(
+    onClick: () -> Unit,
+    account: Account,
+    currentAccount: Account,
+    modifier: Modifier = Modifier,
+) {
+    DropdownMenuItem(
+        text = { Text(text = account.nameShow ?: account.name) },
+        onClick = onClick,
+        modifier = modifier.semantics(mergeDescendants = true) {
+            role = Role.DropdownList
+            selected = currentAccount.id == account.id
+            contentDescription = account.nameShow ?: account.name
+        },
+        leadingIcon = {
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(Sizes.Small)
+            ) {
+                Avatar(
+                    data = remember { StringUtil.getAvatarUrl(account.portrait) },
+                    size = Sizes.Small
+                )
+                if (currentAccount.id == account.id) {
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(color = Color.Black.copy(0.35f))
+                            .padding(8.dp)
+                    )
+                }
+            }
+        }
+    )
+}
 
 @Composable
 fun AccountNavIcon(
@@ -81,76 +118,47 @@ fun AccountNavIcon(
 ) {
     val navigator = LocalNavController.current
     val currentAccount = LocalAccount.current
+
     if (spacer) Spacer(modifier = Modifier.width(12.dp))
     if (currentAccount == null) {
-        Image(
-            painter = rememberDrawablePainter(
-                drawable = ContextCompat.getDrawable(
-                    LocalContext.current,
-                    R.drawable.ic_launcher_new_round
-                )
-            ),
-            contentDescription = null,
-            modifier = Modifier
-                .clip(CircleShape)
-                .size(size)
-        )
+        Avatar(data = R.drawable.ic_launcher_new_round, size = size)
     } else {
         val menuState = rememberMenuState()
+        val addTitleText = stringResource(id = R.string.title_new_account)
+
         LongClickMenu(
             menuContent = {
-                val allAccounts = LocalAllAccounts.current
-                val iconDescription = stringResource(id = R.string.title_switch_account_long_press)
-
-                allAccounts.fastForEach {
-                    DropdownMenuItem(onClick = { AccountUtil.getInstance().switchAccount(it.id) }) {
-                        Box(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .size(Sizes.Small)
-                        ) {
-                            Avatar(
-                                data = StringUtil.getAvatarUrl(it.portrait),
-                                contentDescription = if (currentAccount.id != it.id) iconDescription else null,
-                                size = Sizes.Small,
-                            )
-                            if (currentAccount.id == it.id) {
-                                Icon(
-                                    imageVector = Icons.Rounded.CheckCircle,
-                                    contentDescription = stringResource(id = R.string.desc_current_account),
-                                    tint = Color.White,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(color = Color.Black.copy(0.35f))
-                                        .padding(8.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(text = it.nameShow ?: it.name)
-                    }
+                LocalAllAccounts.current.fastForEach {
+                    AccountDropdownMenuItem(
+                        onClick = { AccountUtil.getInstance().switchAccount(it.id) },
+                        account = it,
+                        currentAccount = currentAccount,
+                    )
                 }
-                VerticalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                 DropdownMenuItem(
+                    text = { Text(text = addTitleText) },
                     onClick = {
                         navigator.navigate(Destination.Login)
+                    },
+                    modifier = Modifier.semantics(mergeDescendants = true) {
+                        role = Role.DropdownList
+                        contentDescription = addTitleText
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.inverseOnSurface,
+                            modifier = Modifier
+                                .size(Sizes.Small)
+                                .background(color = LocalContentColor.current, shape = CircleShape)
+                                .padding(8.dp),
+                        )
                     }
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = stringResource(id = R.string.title_new_account),
-                        tint = ExtendedTheme.colors.onChip,
-                        modifier = Modifier
-                            .size(Sizes.Small)
-                            .clip(CircleShape)
-                            .background(color = ExtendedTheme.colors.chip)
-                            .padding(8.dp),
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Text(text = stringResource(id = R.string.title_new_account))
-                }
+                )
             },
             menuState = menuState,
             onClick = onClick,
@@ -182,41 +190,28 @@ fun BackNavigationIcon(onBackPressed: () -> Unit) {
     }
 }
 
-@ReadOnlyComposable
-@Composable
-private fun defaultAppBarElevation(): Dp {
-    // No Elevation shadow on TranslucentTheme
-    return if (ThemeUtil.isTranslucentTheme(LocalExtendedColors.current)) {
-        Dp.Hairline
-    } else {
-        AppBarDefaults.TopAppBarElevation
-    }
-}
-
+@NonRestartableComposable
 @Composable
 fun TitleCentredToolbar(
     title: String,
     modifier: Modifier = Modifier,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
-    elevation: Dp = defaultAppBarElevation(),
     content: (@Composable ColumnScope.() -> Unit)? = null,
-) = TitleCentredToolbar(
-    title = { Text(text = title) },
-    modifier = modifier,
-    elevation = elevation,
-    navigationIcon = navigationIcon,
-    actions = actions,
-    content = content
-)
+) =
+    TitleCentredToolbar(
+        title = { Text(text = title) },
+        modifier = modifier,
+        navigationIcon = navigationIcon,
+        actions = actions,
+        content = content
+    )
 
 @Composable
 fun TitleCentredToolbar(
     title: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    color: Color = ExtendedTheme.colors.topBar,
-    contentColor: Color = ExtendedTheme.colors.onTopBar,
-    elevation: Dp = defaultAppBarElevation(),
+    colors: TopBarColors = TiebaLiteTheme.extendedColorScheme.appBarColors,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     content: (@Composable ColumnScope.() -> Unit)? = null,
@@ -236,18 +231,10 @@ fun TitleCentredToolbar(
                     actions()
                 }
 
-                ProvideTextStyle(
-                    value = MaterialTheme.typography.h6.copy(
-                        color = LocalContentColor.current,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    content = title
-                )
+                ProvideTextStyle(MaterialTheme.typography.titleLarge, content = title)
             }
         },
-        color = color,
-        contentColor = contentColor,
-        elevation = elevation,
+        colors = colors,
         content = content
     )
 }
@@ -258,7 +245,6 @@ fun Toolbar(
     title: String,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
-    elevation: Dp = defaultAppBarElevation(),
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     Toolbar(
@@ -268,7 +254,6 @@ fun Toolbar(
         },
         navigationIcon = navigationIcon,
         actions = actions,
-        elevation = elevation,
         content = content
     )
 }
@@ -279,9 +264,7 @@ fun Toolbar(
     title: @Composable () -> Unit,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
-    backgroundColor: Color = ExtendedTheme.colors.topBar,
-    contentColor: Color = ExtendedTheme.colors.onTopBar,
-    elevation: Dp = defaultAppBarElevation(),
+    colors: TopBarColors = TiebaLiteTheme.extendedColorScheme.appBarColors,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     TopAppBarContainer(
@@ -298,57 +281,37 @@ fun Toolbar(
                     navigationIcon?.invoke()
                 }
 
-                ProvideTextStyle(
-                    value = MaterialTheme.typography.h6.copy(
-                        color = LocalContentColor.current,
-                        fontWeight = FontWeight.Bold
-                    )
-                ) {
+                ProvideTextStyle(MaterialTheme.typography.titleLarge) {
                     Box(Modifier.weight(1.0f)) { title() }
                 }
 
                 actions()
             }
         },
-        color = backgroundColor,
-        contentColor = contentColor,
-        elevation = elevation,
+        colors = colors,
         content = content
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TopAppBarContainer(
     modifier: Modifier = Modifier,
     topBar: @Composable BoxScope.() -> Unit,
-    color: Color = ExtendedTheme.colors.topBar,
-    contentColor: Color = ExtendedTheme.colors.onTopBar,
-    elevation: Dp = defaultAppBarElevation(),
+    colors: TopBarColors = TiebaLiteTheme.extendedColorScheme.appBarColors,
     content: (@Composable ColumnScope.() -> Unit)? = null
 ) {
-    val coroutineScope = rememberCoroutineScope()
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = color,
-        contentColor = contentColor,
-        elevation = elevation
+        color = colors.containerColor,
+        contentColor = colors.contentColor,
     ) {
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(AppBarDefaults.ContentPadding)
-                    .height(AppBarHeight)
-                    .combinedClickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onDoubleClick = {
-                            coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop)
-                        },
-                        onClick = {},
-                    ),
+                    .padding(horizontal = TopAppBarHorizontalPadding)
+                    .height(AppBarHeight),
                 content = topBar
             )
 

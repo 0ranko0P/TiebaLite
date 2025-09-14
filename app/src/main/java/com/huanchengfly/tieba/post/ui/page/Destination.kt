@@ -1,12 +1,13 @@
 package com.huanchengfly.tieba.post.ui.page
 
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Parcelable
 import androidx.navigation.NavType
 import com.huanchengfly.tieba.post.ui.page.forum.detail.ManagerData
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 sealed interface Destination {
@@ -41,8 +42,20 @@ sealed interface Destination {
     @Serializable
     data class Forum(val forumName: String, val avatar: String? = null, val transitionKey: String? = null): Destination
 
+    /**
+     * 因为ForumDetailFlow 未登录时返回的数据不全，需额外提供ForumInfo.
+     *
+     * @see com.huanchengfly.tieba.post.ui.page.forum.detail.navigateForumDetailPage
+     * */
     @Serializable
-    data class ForumDetail(val params: ForumDetailParams): Destination
+    data class ForumDetail(
+        val forumId: Long,
+        val forumName: String,
+        val avatar: String,
+        val threadCount: Int,
+        val postCount: Int,
+        val managers: ArrayList<ManagerData>
+    ): Destination
 
     @Serializable
     data class ForumSearchPost(val forumName: String, val forumId: Long): Destination
@@ -103,18 +116,6 @@ sealed interface Destination {
 
     companion object {
 
-        @Serializable
-        data class ForumDetailParams(
-            val forumId: Long,
-            val avatar: String,
-            val name: String,
-            val slogan: String,
-            val memberCount: Int,
-            val threadCount: Int,
-            val postCount: Int,
-            val managers: List<ManagerData>
-        )
-
         inline fun <reified T> navTypeOf(
             isNullableAllowed: Boolean = false,
             json: Json = Json
@@ -131,6 +132,27 @@ sealed interface Destination {
             override fun parseValue(value: String): T = json.decodeFromString(Uri.decode(value))
 
             override fun serializeAsValue(value: T): String = Uri.encode(json.encodeToString(value))
+        }
+        inline fun <reified T : Parcelable> parcelableListType(
+            isNullableAllowed: Boolean = false,
+            json: Json = Json,
+        ) = object : NavType<List<T>>(isNullableAllowed = isNullableAllowed) {
+            override fun get(bundle: Bundle, key: String): List<T>? {
+                return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    bundle.getParcelableArrayList(key, T::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    bundle.getParcelableArrayList(key)
+                }
+            }
+
+            override fun parseValue(value: String): List<T> = json.decodeFromString(Uri.decode(value))
+
+            override fun serializeAsValue(value: List<T>): String = Uri.encode(json.encodeToString(value))
+
+            override fun put(bundle: Bundle, key: String, value: List<T>) {
+                bundle.putParcelableArrayList(key, value as? ArrayList ?: ArrayList(value))
+            }
         }
     }
 }

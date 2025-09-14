@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.api.retrofit.interceptors
 
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -10,7 +9,7 @@ object CookieInterceptor : Interceptor {
         val response = chain.proceed(chain.request())
 
         if (ClientUtils.baiduId.isNullOrEmpty()) {
-            ClientUtils.saveBaiduId(App.INSTANCE, getBaiduID(response))
+            ClientUtils.saveBaiduId(getBaiduID(response))
         }
         return response
     }

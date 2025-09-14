@@ -1,8 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page.search.thread
 
 import androidx.compose.runtime.Stable
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.TiebaApi
+import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.PartialChange
@@ -11,9 +14,8 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadInfo.Companion.getSearchThreadInfoList
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -48,7 +50,11 @@ class SearchThreadViewModel @Inject constructor() :
         private fun SearchThreadUiIntent.Refresh.producePartialChange(): Flow<SearchThreadPartialChange.Refresh> =
             TiebaApi.getInstance().searchThreadFlow(keyword, 1, sortType)
                 .map<SearchThreadBean, SearchThreadPartialChange.Refresh> {
-                    val threadList = it.data.postList
+                    if (it.errorCode != 0) {
+                        throw TiebaApiException(CommonResponse(it.errorCode, it.errorMsg))
+                    }
+
+                    val threadList = it.data.postList.getSearchThreadInfoList(keyword, App.INSTANCE)
                     SearchThreadPartialChange.Refresh.Success(
                         keyword = keyword,
                         data = threadList,
@@ -62,7 +68,7 @@ class SearchThreadViewModel @Inject constructor() :
         private fun SearchThreadUiIntent.LoadMore.producePartialChange(): Flow<SearchThreadPartialChange.LoadMore> =
             TiebaApi.getInstance().searchThreadFlow(keyword, page + 1, sortType)
                 .map<SearchThreadBean, SearchThreadPartialChange.LoadMore> {
-                    val threadList = it.data.postList
+                    val threadList = it.data.postList.getSearchThreadInfoList(keyword, App.INSTANCE)
                     SearchThreadPartialChange.LoadMore.Success(
                         data = threadList,
                         page = page + 1,
@@ -89,7 +95,7 @@ sealed interface SearchThreadPartialChange : PartialChange<SearchThreadUiState> 
             is Success -> oldState.copy(
                 isRefreshing = false,
                 error = null,
-                data = data.toImmutableList(),
+                data = data,
                 currentPage = 1,
                 hasMore = hasMore,
                 keyword = keyword,
@@ -102,7 +108,7 @@ sealed interface SearchThreadPartialChange : PartialChange<SearchThreadUiState> 
         data object Start : Refresh()
         data class Success(
             val keyword: String,
-            val data: List<SearchThreadBean.ThreadInfoBean>,
+            val data: List<SearchThreadInfo>,
             val hasMore: Boolean,
             val sortType: Int,
         ) : Refresh()
@@ -126,7 +132,7 @@ sealed interface SearchThreadPartialChange : PartialChange<SearchThreadUiState> 
 
         data object Start : LoadMore()
         data class Success(
-            val data: List<SearchThreadBean.ThreadInfoBean>,
+            val data: List<SearchThreadInfo>,
             val page: Int,
             val hasMore: Boolean,
         ) : LoadMore()
@@ -142,7 +148,7 @@ data class SearchThreadUiState(
     val currentPage: Int = 1,
     val hasMore: Boolean = true,
     val keyword: String = "",
-    val data: ImmutableList<SearchThreadBean.ThreadInfoBean> = persistentListOf(),
+    val data: List<SearchThreadInfo> = emptyList(),
     val sortType: Int = SearchThreadSortType.SORT_TYPE_NEWEST,
 ) : UiState
 

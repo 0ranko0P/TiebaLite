@@ -4,10 +4,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 
 /**
@@ -20,7 +21,7 @@ fun PrefsScreen(
     modifier: Modifier = Modifier,
     dividerThickness: Dp = Dp.Hairline, // Default no divider
     dividerIndent: Dp = Dp.Hairline, // indents on both sides
-    contentPadding: PaddingValues = PaddingValues(0.dp),
+    contentPadding: PaddingValues = PaddingNone,
     content: PrefsScope.() -> Unit
 ) {
     val prefsScope = PrefsScopeImpl().apply(content)
@@ -34,9 +35,13 @@ fun PrefsScreen(
                 prefsScope.getPrefsItem(index)()
 
                 if (dividerThickness != Dp.Hairline) {
-                    Divider(
-                        thickness = dividerThickness,
-                        indent = dividerIndent
+                    HorizontalDivider(
+                        modifier = if (dividerIndent != Dp.Hairline) {
+                            Modifier.padding(horizontal = dividerIndent)
+                        } else {
+                            Modifier
+                        },
+                        thickness = dividerThickness
                     )
                 }
             }

@@ -17,16 +17,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,289 +40,237 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusEvent
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEach
-import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
-import com.huanchengfly.tieba.post.collectPreferenceAsState
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.localSharedElements
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
 import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_POST_HIDE_MEDIA
-import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.StringUtil.buildAnnotatedStringWithUser
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
+import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadInfo
+import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadInfo.Companion.SearchMedia
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
+import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlin.math.min
 
 @Composable
 fun QuotePostCard(
-    quotePostInfo: SearchThreadBean.PostInfo,
-    mainPost: SearchThreadBean.MainPost,
-    onMainPostClick: (SearchThreadBean.MainPost) -> Unit,
+    quoteContent: AnnotatedString,
+    mainPostTitle: AnnotatedString,
+    mainPostContent: AnnotatedString?,
+    onMainPostClick: () -> Unit,
     modifier: Modifier = Modifier,
-    medias: ImmutableList<SearchThreadBean.MediaInfo> = persistentListOf(),
-    keyword: String? = null,
+    medias: @Composable () -> Unit,
 ) {
-    val quoteContentString = remember(quotePostInfo) {
-        buildAnnotatedStringWithUser(
-            quotePostInfo.user.userId,
-            quotePostInfo.user.userName ?: "",
-            quotePostInfo.user.showNickname,
-            quotePostInfo.content
-        )
-    }
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        HighlightText(
-            text = quoteContentString,
-            style = MaterialTheme.typography.body2,
+        PbContentText(
+            text = quoteContent,
+            style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            highlightKeywords = (keyword?.split(" ") ?: emptyList()).toImmutableList()
         )
         MainPostCard(
-            mainPost = mainPost,
+            mainPostTitle = mainPostTitle,
+            mainPostContent = mainPostContent,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(6.dp))
-                .background(ExtendedTheme.colors.card)
-                .clickable {
-                    onMainPostClick(mainPost)
-                },
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .clickable(onClick = onMainPostClick),
             medias = medias,
-            keyword = keyword
         )
     }
 }
 
 @Composable
 fun MainPostCard(
-    mainPost: SearchThreadBean.MainPost,
     modifier: Modifier = Modifier,
-    medias: ImmutableList<SearchThreadBean.MediaInfo> = persistentListOf(),
-    keyword: String? = null,
+    mainPostTitle: AnnotatedString,
+    mainPostContent: AnnotatedString?,
+    medias: @Composable () -> Unit,
 ) {
-    val titleString = remember(mainPost) {
-        buildAnnotatedStringWithUser(
-            mainPost.user.userId,
-            mainPost.user.userName ?: "",
-            mainPost.user.showNickname,
-            mainPost.title
-        )
-    }
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        HighlightText(
-            text = titleString,
-            style = MaterialTheme.typography.subtitle2,
-            fontWeight = FontWeight.Bold,
+        PbContentText(
+            text = mainPostTitle,
+            style = MaterialTheme.typography.titleSmall,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            highlightKeywords = (keyword?.split(" ") ?: emptyList()).toImmutableList()
         )
-        if (mainPost.content.isNotBlank()) {
+
+        if (!mainPostContent.isNullOrBlank()) {
             PbContentText(
-                text = mainPost.content,
-                style = MaterialTheme.typography.body2,
+                text = mainPostContent,
+                style = MaterialTheme.typography.bodyMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        SearchMedia(medias = medias)
+        medias()
     }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SearchThreadItem(
-    item: SearchThreadBean.ThreadInfoBean,
-    onClick: (SearchThreadBean.ThreadInfoBean) -> Unit,
-    onUserClick: (SearchThreadBean.UserInfoBean) -> Unit,
+    item: SearchThreadInfo,
+    onClick: (SearchThreadInfo) -> Unit,
+    onValidUserClick: () -> Unit,
     onForumClick: ((SearchThreadBean.ForumInfo, transitionKey: String) -> Unit)?, // Null to hide Forum
     modifier: Modifier = Modifier,
-    onQuotePostClick: (SearchThreadBean.PostInfo) -> Unit = {},
-    onMainPostClick: (SearchThreadBean.MainPost) -> Unit = {},
-    searchKeyword: String? = null,
+    onQuotePostClick: () -> Unit = {},
+    onMainPostClick: () -> Unit = {},
 ) {
-    val context = LocalContext.current
-    val contentText = remember {
-        buildThreadContent(title = item.title.takeIf { item.mainPost == null } ?: "", item.content)
-    }
-
     Card(
         modifier = modifier,
         header = {
             UserHeader(
                 modifier = modifier,
-                name = item.user.userName.orEmpty(),
-                nameShow = item.user.showNickname,
-                portrait = item.user.portrait,
-                desc = remember { DateTimeUtils.getRelativeTimeString(context, item.time) },
-                onClick = { onUserClick(item.user) }
+                name = item.userName,
+                avatar = item.userAvatarUrl,
+                desc = item.timeDesc,
+                onClick = onValidUserClick.takeUnless { item.userId == -1L }
             )
         },
         content = {
-            ThreadContent(
-                content = contentText,
-                maxLines = 2,
-                highlightKeywords = (searchKeyword?.split(" ") ?: emptyList()).toImmutableList(),
+            PbContentText(
+                text = item.content,
+                modifier = Modifier.fillMaxWidth(),
+                lineSpacing = 0.5.sp,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 3,
+                style = MaterialTheme.typography.bodyMedium,
             )
-            if (item.mainPost != null) {
-                if (item.postInfo != null) {
+
+            val medias: @Composable () -> Unit = {
+                if (!LocalContext.current.appPreferences.hideMedia) {
+                    if (item.pictures != null) {
+                        SearchPhoto(pics = item.pictures)
+                    } else if (item.video != null) {
+                        SearchVideo(video = item.video)
+                    }
+                }
+            }
+
+            if (item.mainPostTitle != null) {
+                val cardModifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+
+                if (item.postInfoContent != null) {
                     QuotePostCard(
-                        quotePostInfo = item.postInfo,
-                        mainPost = item.mainPost,
+                        quoteContent = item.postInfoContent,
+                        mainPostTitle = item.mainPostTitle,
+                        mainPostContent = item.mainPostContent,
                         onMainPostClick = onMainPostClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.floorCard)
-                            .clickable {
-                                onQuotePostClick(item.postInfo)
-                            },
-                        medias = item.media.toImmutableList(),
-                        keyword = searchKeyword
+                        modifier = cardModifier.clickable(onClick = onQuotePostClick),
+                        medias = medias,
                     )
                 } else {
                     MainPostCard(
-                        mainPost = item.mainPost,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.floorCard)
-                            .clickable {
-                                onMainPostClick(item.mainPost)
-                            },
-                        medias = item.media.toImmutableList(),
-                        keyword = searchKeyword
+                        mainPostTitle = item.mainPostTitle,
+                        mainPostContent = item.mainPostContent,
+                        modifier = cardModifier.clickable(onClick = onMainPostClick),
+                        medias = medias,
                     )
                 }
             } else {
-                SearchMedia(medias = item.media.toImmutableList())
+                medias()
             }
-            if (onForumClick != null && item.forumName.isNotEmpty()) {
+            if (onForumClick != null && item.forumInfo.forumName.isNotEmpty()) {
                 ForumInfoChip(
-                    forumName = item.forumName,
+                    forumName = item.forumInfo.forumName,
                     avatarUrl = item.forumInfo.avatar,
                     transitionKey = item.pid
                 ) {
-                    onForumClick(item.forumInfo, item.pid)
+                    onForumClick(item.forumInfo, item.pid.toString())
                 }
             }
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                ThreadReplyBtn(
-                    replyNum = StringUtil.tiebaNumToLong(item.postNum).toInt(),
-                    modifier = Modifier.weight(1f)
-                )
-
-                ThreadAgreeBtn(
-                    hasAgree = false,
-                    agreeNum = StringUtil.tiebaNumToLong(item.likeNum),
-                    modifier = Modifier.weight(1f)
-                )
-
-                ThreadShareBtn(
-                    shareNum = StringUtil.tiebaNumToLong(item.shareNum),
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            ThreadActionButtonRow(
+                modifier = Modifier.fillMaxWidth(),
+                shareText = item.shareText,
+                replyText = item.postText,
+                agreeText = item.likeText,
+                agreed = false
+            )
         },
         onClick = { onClick(item) },
     )
 }
 
 @Composable
-fun SearchMedia(
-    medias: ImmutableList<SearchThreadBean.MediaInfo>,
-    modifier: Modifier = Modifier,
-) {
+private fun SearchVideo(modifier: Modifier = Modifier, video: SearchMedia.Video) {
     val context = LocalContext.current
-
-    val pics = medias.filter { it.type == "pic" }
-//    val video = medias.filter { it.type == "flash" }
-
-    val picCount = remember(pics) {
-        pics.size
-    }
-    val hasPhoto = remember(picCount) { picCount > 0 }
-    val isSinglePhoto = remember(picCount) { picCount == 1 }
-    val hideMedia by context.dataStore.collectPreferenceAsState(
-        key = booleanPreferencesKey(KEY_POST_HIDE_MEDIA),
-        defaultValue = false
+    VideoThumbnail(
+        modifier = modifier
+            .fillMaxWidth(singleMediaFraction)
+            .aspectRatio(ratio = 2.0f)
+            .clip(MaterialTheme.shapes.small),
+        thumbnailUrl = video.thumbnail,
+        onClick = {
+            VideoViewActivity.launch(context, videoUrl = video.url, thumbnailUrl = video.thumbnail)
+        }
     )
+}
 
-    val singleMediaFraction = if (isWindowWidthCompat()) 1f else 0.5f
+@Composable
+private fun SearchPhoto(modifier: Modifier = Modifier, pics: List<SearchMedia.Picture>) {
+    if (pics.isEmpty()) {
+        return
+    }
 
-    if (hasPhoto && !hideMedia) {
-        val mediaWidthFraction = remember(isSinglePhoto, singleMediaFraction) {
-            if (isSinglePhoto) singleMediaFraction else 1f
-        }
-        val mediaAspectRatio = remember(isSinglePhoto) {
-            if (isSinglePhoto) 2f else 3f
-        }
-        val showMediaCount = remember(pics) { min(pics.size, 3) }
-        val hasMoreMedia = remember(pics) { pics.size > 3 }
-        val showMedias = remember(pics) { pics.subList(0, showMediaCount) }
+    val picCount = pics.size
+    val isSinglePhoto = picCount == 1
+    val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
+    val mediaAspectRatio = if (isSinglePhoto) 2f else 3f
+    val hasMoreMedia = picCount > MAX_PHOTO_IN_ROW
+
+    Box(modifier = modifier) {
         Row(
-            modifier = modifier,
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .fillMaxWidth(mediaWidthFraction)
+                .aspectRatio(mediaAspectRatio)
+                .clip(MaterialTheme.shapes.small),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Box {
-                Row(
+            for (i in 0 until min(picCount, MAX_PHOTO_IN_ROW)) {
+                NetworkImage(
+                    imageUri = pics[i].url,
+                    contentDescription = null,
                     modifier = Modifier
-                        .fillMaxWidth(mediaWidthFraction)
-                        .aspectRatio(mediaAspectRatio)
-                        .clip(RoundedCornerShape(8.dp)),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    showMedias.fastForEach { pic ->
-                        NetworkImage(
-                            imageUri = pic.bigPic ?: pic.smallPic ?: pic.waterPic ?: "",
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .weight(1f),
-                            contentScale = ContentScale.Crop,
-                        )
-                    }
-                }
-                if (hasMoreMedia) {
-                    Badge(
-                        icon = Icons.Rounded.PhotoSizeSelectActual,
-                        text = "${medias.size}",
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(8.dp)
-                    )
-                }
+                        .fillMaxHeight()
+                        .weight(1f),
+                    contentScale = ContentScale.Crop,
+                )
             }
+        }
+
+        if (hasMoreMedia) {
+            Badge(
+                icon = Icons.Rounded.PhotoSizeSelectActual,
+                text = picCount.toString(),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+            )
         }
     }
 }
@@ -339,10 +286,6 @@ fun SearchBox(
     prependIcon: @Composable RowScope.() -> Unit = {},
     appendIcon: (@Composable RowScope.() -> Unit)? = null,
     focusRequester: FocusRequester = remember { FocusRequester() },
-    shape: Shape = RectangleShape,
-    color: Color = ExtendedTheme.colors.floorCard,
-    contentColor: Color = ExtendedTheme.colors.onTopBar,
-    elevation: Dp = Dp.Hairline,
 ) {
     var launchFocused by rememberSaveable { mutableStateOf(false) }
     val isKeywordNotEmpty = remember(keyword) { keyword.isNotEmpty() }
@@ -353,10 +296,9 @@ fun SearchBox(
 
     Surface(
         modifier = modifier,
-        shape = shape,
-        color = color,
-        contentColor = contentColor,
-        elevation = elevation
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -369,7 +311,8 @@ fun SearchBox(
                 onValueChange = {
                     onKeywordChange(it)
                 },
-                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium,
+                placeholder = placeholder,
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Search,
                 ),
@@ -379,7 +322,7 @@ fun SearchBox(
                         if (isKeywordNotEmpty) onKeywordSubmit(keyword)
                     }
                 ),
-                placeholder = placeholder,
+                singleLine = true,
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(1f)

@@ -4,8 +4,8 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.IconButton
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -70,7 +70,7 @@ fun PlayPauseButton(modifier: Modifier = Modifier) {
 
 // Same with Modifier.alpha() + Modifier.background(), but background is
 // animated, draw manually to avoid unnecessary recompositions
-private fun Modifier.buttonVisibility(controller: DefaultVideoPlayerController) = this then composed {
+private fun Modifier.buttonVisibility(controller: DefaultVideoPlayerController) = composed {
     // Dictates the direction of appear animation.
     // If controlsVisible is true, appear animation needs to be triggered.
     val controlsVisible by controller.collect { controlsVisible }

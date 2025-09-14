@@ -26,6 +26,8 @@ import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
+import com.huanchengfly.tieba.post.utils.ImageUtil.downloadForShare
+import com.huanchengfly.tieba.post.utils.ImageUtil.imageLoadSettings
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
@@ -235,6 +237,7 @@ object ImageUtil {
         }
     }
 
+    @Suppress("DEPRECATION")
     private suspend fun downloadBelowQ(context: Context, url: String, onProgress: ProgressListener?) {
         withContext(Dispatchers.IO) {
             var destFile: File? = null

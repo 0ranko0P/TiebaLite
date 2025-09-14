@@ -1,11 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="theme_blue_dark">静谧蓝</string>
-    <string name="theme_grey_dark">深邃灰</string>
-    <string name="theme_amoled_dark">纯黑</string>
     <string name="theme_blue">清新蓝</string>
-    <string name="theme_black">高级黑</string>
-    <string name="theme_pink">少女粉</string>
-    <string name="theme_red">新年红</string>
-    <string name="theme_purple">星空紫</string>
+    <string name="theme_green">翡翠绿</string>
+    <string name="theme_orange">落日橘</string>
+    <string name="theme_pink">梅洛粉</string>
+    <string name="theme_purple">紫罗兰</string>
+    <string name="theme_dynamic">动态</string>
+    <string name="theme_translucent">透明</string>
+
+    <string name="variant_expressive">表现力</string>
+    <string name="variant_fidelity">精确</string>
+    <string name="variant_fruit_salad">沙拉</string>
+    <string name="variant_monochrome">单色</string>
+    <string name="variant_neutral">暗淡</string>
+    <string name="variant_rainbow">缤纷</string>
+    <string name="variant_tonal_spot">平静</string>
+    <string name="variant_vibrant">高活力</string>
+
+    <string name="variant_title_expressive">高鲜艳度的主题，色调故意与挑选的颜色不同，将意想不到的、独特的强调色搭配在一起。</string>
+    <string name="variant_title_fidelity">调色板与挑选的颜色相匹配。</string>
+    <string name="variant_title_fruit_salad">水果沙拉主题提供两种色调，有更多情感表现。</string>
+    <string name="variant_title_monochrome">单色主题，所有颜色都是灰度，没有色彩。</string>
+    <string name="variant_title_neutral">比单色主题略带色彩，而不是纯粹的黑/白/灰。</string>
+    <string name="variant_title_rainbow">好玩的主题，同时使用强调色和中性色创造更微妙的色彩体验。</string>
+    <string name="variant_title_tonal_spot">平静的主题，低色度的柔和色彩。</string>
+    <string name="variant_title_vibrant">高活力的主题，主色调色彩饱和度最高，其他颜色则有所增强。</string>
 </resources>

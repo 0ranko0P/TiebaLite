@@ -2,19 +2,10 @@ package com.huanchengfly.tieba.post.ui.page.forum
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,44 +13,37 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.FloatingActionButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.VerticalAlignTop
-import androidx.compose.material.rememberScaffoldState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -71,14 +55,14 @@ import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.block
-import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.localSharedElements
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumSearchPost
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.forum.detail.navigateForumDetailPage
@@ -89,27 +73,26 @@ import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
-import com.huanchengfly.tieba.post.ui.widgets.compose.enableBlur
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapseConnection
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
+import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlin.math.max
 import kotlin.math.min
+
+private val ForumHeaderHeight = 90.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -123,7 +106,9 @@ private fun ForumHeader(
 ) {
     val (forum) = forumInfoImmutableHolder
     Column(
-        modifier = modifier.padding(16.dp),
+        modifier = modifier
+            .height(ForumHeaderHeight)
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(
@@ -151,51 +136,38 @@ private fun ForumHeader(
                 AnimatedVisibility(visible = forum.is_like == 1) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         LinearProgressIndicator(
-                            progress = max(
-                                0F,
-                                min(1F, forum.cur_score * 1.0F / (max(1.0F, forum.levelup_score * 1.0F)))
-                            ),
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .height(8.dp),
-                            color = ExtendedTheme.colors.primary,
-                            backgroundColor = ExtendedTheme.colors.primary.copy(alpha = 0.25f)
+                            progress = {
+                                max(0F, min(1F, forum.cur_score * 1.0F / (max(1.0F, forum.levelup_score * 1.0F))))
+                            },
+                            gapSize = Dp.Hairline,
+                            drawStopIndicator = {}
                         )
                         Text(
                             text = stringResource(
                                 id = R.string.tip_forum_header_liked,
-                                forum.user_level.toString(),
+                                forum.user_level,
                                 forum.level_name
                             ),
-                            style = MaterialTheme.typography.caption,
-                            color = ExtendedTheme.colors.textSecondary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 10.sp,
                         )
                     }
                 }
             }
-            val signed = forum.sign_in_info?.user_info?.is_sign_in == 1
-            val liked = forum.is_like == 1
+
             if (LocalAccount.current != null) {
-                Button(
+                val signUser = forum.sign_in_info?.user_info
+                val signed = signUser?.is_sign_in == 1
+                val liked = forum.is_like == 1
+                androidx.compose.material3.Button(
                     onClick = { if (!liked) onFollow() else onSignIn() },
-                    elevation = null,
-                    shape = RoundedCornerShape(100),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = ExtendedTheme.colors.primary,
-                        contentColor = ExtendedTheme.colors.onPrimary
-                    ),
-                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
                     enabled = !signed || !liked
                 ) {
                     val text = when {
-                        !liked -> stringResource(id = R.string.button_follow)
-                        forum.sign_in_info?.user_info?.is_sign_in == 1 -> stringResource(
-                            id = R.string.button_signed_in,
-                            forum.sign_in_info.user_info.cont_sign_num
-                        )
-
-                        else -> stringResource(id = R.string.button_sign_in)
+                        !liked -> stringResource(R.string.button_follow)
+                        signed -> stringResource(R.string.button_signed_in, signUser.cont_sign_num)
+                        else -> stringResource(R.string.button_sign_in)
                     }
                     Text(text = text, fontSize = 13.sp)
                 }
@@ -220,9 +192,7 @@ private fun ForumTitle(
     }
 
     Row(
-        modifier = modifier
-            .fillMaxSize()
-            .clip(MaterialTheme.shapes.small),
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -245,53 +215,7 @@ private fun ForumTitle(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-private fun ForumToolbar(
-    title: @Composable () -> Unit,
-    menuContent: @Composable (MenuScope.() -> Unit)? = null,
-    onBackAction: () -> Unit,
-    onSearchAction: () -> Unit,
-    content: (@Composable ColumnScope.() -> Unit)? = null
-) {
-    Toolbar(
-        title = title,
-        navigationIcon = { BackNavigationIcon(onBackPressed = onBackAction) },
-        actions = {
-            IconButton(onClick = onSearchAction) {
-                Icon(
-                    imageVector = Icons.Rounded.Search,
-                    contentDescription = stringResource(id = R.string.btn_search_in_forum),
-                    modifier = Modifier.localSharedElements(SearchIconSharedElementKey)
-                )
-            }
-            if (menuContent == null) return@Toolbar
-
-            Box {
-                val menuState = rememberMenuState()
-                ClickMenu(
-                    menuContent = menuContent,
-                    menuState = menuState,
-                    triggerShape = CircleShape
-                ) {
-                    Box(
-                        modifier = Modifier.size(48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.MoreVert,
-                            contentDescription = stringResource(id = R.string.btn_more)
-                        )
-                    }
-                }
-            }
-        },
-        elevation = Dp.Hairline,
-        content = content
-    )
-}
-
-@OptIn(ExperimentalHazeApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ForumPage(
     forumName: String,
@@ -301,8 +225,7 @@ fun ForumPage(
     viewModel: ForumViewModel = pageViewModel(),
 ) {
     val context = LocalContext.current
-    val scaffoldState = rememberScaffoldState()
-    val snackbarHostState = scaffoldState.snackbarHostState
+    val snackbarHostState = rememberSnackbarHostState()
     viewModel.onEvent<ForumUiEvent.SignIn.Success> {
         snackbarHostState.showSnackbar(
             message = context.getString(
@@ -353,14 +276,8 @@ fun ForumPage(
 
     val pagerState = rememberPagerState { 2 }
 
-    val listStates = remember{
-        mutableStateListOf(*arrayOfNulls<LazyListState?>(pagerState.pageCount))
-    }
-
     val isGood by remember { derivedStateOf { pagerState.currentPage == TAB_FORUM_GOOD } }
     var goodClassifyTabs: ClassifyTabsContent? by remember { mutableStateOf(null) }
-
-    val coroutineScope = rememberCoroutineScope()
 
     val unlikeDialogState = rememberDialogState()
 
@@ -382,89 +299,112 @@ fun ForumPage(
         )
     }
 
+    val topBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     // Listen scroll state changes to show/hide Fab
     val disableFab = viewModel.fab == ForumFabFunction.HIDE
     val scrollStateConnection = if (!disableFab) rememberScrollStateConnection() else null
 
-    val connection = rememberCollapseConnection(coroutineScope)
-    // Toolbar only collapsible if logged in
-    val collapsed by remember { derivedStateOf { loggedIn && connection.ratio == 0.0f } }
-
-    BlurScaffold(
-        scaffoldState = scaffoldState,
-        topHazeBlock = {
-            blurEnabled = pagerState.enableBlur(children = listStates)
-            inputScale = DefaultInputScale
-        },
-        backgroundColor = Color.Transparent,
+    MyScaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            ForumToolbar(
+            val collapsed by remember {
+                derivedStateOf { topBarScrollBehavior.state.collapsedFraction == 1.0f }
+            }
+
+            TwoRowsTopAppBar(
                 title = {
-                    AnimatedVisibility(
-                        visible = collapsed.not(),
-                        enter =  fadeIn() + expandVertically(expandFrom = Alignment.Top),
-                        exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
-                    ) {
-                        ForumTitle(
-                            modifier = Modifier.clickableNoIndication {
-                                forumInfo?.item?.let { navigator.navigateForumDetailPage(it) }
-                            },
-                            title = forumName,
-                            avatar = avatarUrl ?: forumInfo?.item?.avatar,
-                            // Disable when logged in, let ForumHeader() handle animation
-                            transitionEnabled = !loggedIn,
-                            transitionKey = transitionKey?.takeUnless { loggedIn }
-                        )
-                    }
-                },
-                menuContent = {
-                    TextMenuItem(text = stringResource(R.string.title_share)) {
-                        viewModel.shareForum(context)
-                    }
+                    val holder: ImmutableHolder<ForumInfo>? = forumInfo
+                    when {
+                        holder == null -> ForumHeaderPlaceholder(forumName, avatarUrl, transitionKey)
 
-                    TextMenuItem(text = stringResource(R.string.title_send_to_desktop)) {
-                        forumInfo?.item?.let { viewModel.sendToDesktop(context, forum = it) }
-                    }
+                        // remove from SharedBoundsNode when collapsed
+                        collapsed -> Box(Modifier.fillMaxWidth().height(ForumHeaderHeight))
 
-                    TextMenuItem(text = stringResource(R.string.title_refresh)) {
-                        viewModel.onRefreshClicked(isGood = isGood)
-                    }
-                    // Is followed & logged in
-                    if (forumInfo?.item?.is_like == 1 && tbs != null) {
-                        TextMenuItem(text = stringResource(R.string.title_unfollow)) {
-                            unlikeDialogState.show()
+                        else -> {
+                            ForumHeader(
+                                forumInfoImmutableHolder = holder,
+                                transitionKey = transitionKey,
+                                onOpenForumInfo = {
+                                    navigator.navigateForumDetailPage(holder.get(), context)
+                                },
+                                onFollow = {
+                                    viewModel.onFollow(holder.get(), tbs!!)
+                                },
+                                onSignIn = {
+                                    viewModel.onSignIn(holder.get(), tbs!!)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
                 },
-                onBackAction = navigator::navigateUp,
-                onSearchAction = {
-                    val forumId = forumInfo?.get { id } ?: return@ForumToolbar
-                    navigator.navigate(ForumSearchPost(forumName, forumId))
-                }
-            ) {
-                this@ForumToolbar.AnimatedVisibility(visible = collapsed) {
-                    val holder: ImmutableHolder<ForumInfo>? = forumInfo
-                    if (holder == null) {
-                        ForumHeaderPlaceholder(forumName, avatarUrl, transitionKey)
-                        return@AnimatedVisibility
+                smallTitle = {
+                    ForumTitle(
+                        modifier = Modifier
+                            .clickableNoIndication {
+                                forumInfo?.item?.let {
+                                    navigator.navigateForumDetailPage(forum = it, context)
+                                }
+                            },
+                        title = forumName,
+                        avatar = avatarUrl ?: forumInfo?.item?.avatar,
+                        transitionEnabled = collapsed,
+                        transitionKey = transitionKey
+                    )
+                },
+                navigationIcon = {
+                    BackNavigationIcon(onBackPressed = navigator::navigateUp)
+                },
+                actions = {
+                    forumInfo?.item?.id?.let { forumId ->
+                        IconButton(
+                            onClick = { navigator.navigate(ForumSearchPost(forumName, forumId)) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = stringResource(id = R.string.btn_search_in_forum),
+                                modifier = Modifier.localSharedElements(SearchIconSharedElementKey)
+                            )
+                        }
                     }
 
-                    ForumHeader(
-                        forumInfoImmutableHolder = holder,
-                        transitionKey = transitionKey,
-                        onOpenForumInfo = {
-                            navigator.navigateForumDetailPage(holder.get())
+                    ClickMenu(
+                        menuContent = {
+                            TextMenuItem(text = stringResource(R.string.title_share)) {
+                                viewModel.shareForum(context)
+                            }
+
+                            TextMenuItem(text = stringResource(R.string.title_send_to_desktop)) {
+                                forumInfo?.item?.let { viewModel.sendToDesktop(context, forum = it) }
+                            }
+
+                            TextMenuItem(text = stringResource(R.string.title_refresh)) {
+                                viewModel.onRefreshClicked(isGood = isGood)
+                            }
+                            // Is followed & logged in
+                            if (forumInfo?.item?.is_like == 1 && tbs != null) {
+                                TextMenuItem(text = stringResource(R.string.title_unfollow)) {
+                                    unlikeDialogState.show()
+                                }
+                            }
                         },
-                        onFollow = {
-                            viewModel.onFollow(holder.get(), tbs!!)
-                        },
-                        onSignIn = {
-                            viewModel.onSignIn(holder.get(), tbs!!)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                        triggerShape = CircleShape
+                    ) {
+                        Box(
+                            modifier = Modifier.size(48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.MoreVert,
+                                contentDescription = stringResource(id = R.string.btn_more)
+                            )
+                        }
+                    }
+                },
+                scrollBehavior = topBarScrollBehavior
+            )  {
+
                 ForumTab(
                     modifier = Modifier.fillMaxWidth(),
                     pagerState = pagerState,
@@ -477,20 +417,19 @@ fun ForumPage(
                 }
             }
         },
+        snackbarHostState = snackbarHostState,
+        snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            if (disableFab || forumInfo == null) return@BlurScaffold
+            if (scrollStateConnection == null || forumInfo == null) return@MyScaffold
 
-            // Not scrolling & Not top
-            val isFabVisible by remember { derivedStateOf {
-                !scrollStateConnection!!.isScrolling.value && (listStates[pagerState.currentPage]?.firstVisibleItemIndex ?: 0) > 0
-            } }
+            val isFabVisible by remember {
+                derivedStateOf { !scrollStateConnection.isScrolling && !pagerState.isScrolling }
+            }
 
             ForumFab(
                 visible = isFabVisible,
                 fab = viewModel.fab,
-                onClick = {
-                    viewModel.onFabClicked(context, isGood)
-                }
+                onClick = { viewModel.onFabClicked(context, isGood) }
             )
         }
     ) { contentPadding ->
@@ -501,21 +440,19 @@ fun ForumPage(
                     FeedCardPlaceholder()
                 }
             }
-            return@BlurScaffold
+            return@MyScaffold
         }
 
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
-                .nestedScroll(connection)
-                .block { scrollStateConnection?.let { Modifier.nestedScroll(it) } }
+                .nestedScroll(topBarScrollBehavior.nestedScrollConnection)
+                .block { scrollStateConnection?.let { nestedScroll(it) } }
                 .fillMaxSize(),
             flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f),
             key = { it },
             verticalAlignment = Alignment.Top,
-            userScrollEnabled = true,
         ) { page ->
-
             ProvideNavigator(navigator = navigator) {
                 if (page == TAB_FORUM_LATEST) {
                     NormalThreadListPage(
@@ -523,7 +460,6 @@ fun ForumPage(
                         forumId = info.id,
                         forumName = info.name,
                         sortType = { viewModel.sortType },
-                        onListStateCreated = { listStates[page] = it },
                         contentPadding = contentPadding
                     )
                 } else if (page == TAB_FORUM_GOOD) {
@@ -532,7 +468,6 @@ fun ForumPage(
                         forumId = info.id,
                         forumName = info.name,
                         sortType = { viewModel.sortType },
-                        onListStateCreated = { listStates[page] = it },
                         contentPadding = contentPadding,
                         onComposeClassifyTab = { goodClassifyTabs = it }
                     )
@@ -547,9 +482,7 @@ private fun ForumTitleText(modifier: Modifier = Modifier, name: String) =
     Text(
         text = stringResource(id = R.string.title_forum, name),
         modifier = modifier,
-        color = ExtendedTheme.colors.onTopBar,
-        fontWeight = FontWeight.Bold,
-        style = MaterialTheme.typography.h6,
+        style = MaterialTheme.typography.titleLarge,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
@@ -558,13 +491,11 @@ private fun ForumTitleText(modifier: Modifier = Modifier, name: String) =
 private fun ForumFab(@ForumFabFunction fab: String, visible: Boolean, onClick: () -> Unit) {
     AnimatedVisibility(
         visible = visible,
-        enter =  fadeIn() + scaleIn(animationSpec = tween()),
-        exit = scaleOut(animationSpec = tween()) + fadeOut()
+        enter = DefaultFabEnterTransition,
+        exit = DefaultFabExitTransition
     ) {
         FloatingActionButton(
             onClick = onClick,
-            backgroundColor = ExtendedTheme.colors.secondary,
-            contentColor = ExtendedTheme.colors.onSecondary,
             elevation = FloatingActionButtonDefaults.elevation(
                 defaultElevation = Dp.Hairline // Buggy shadow when visibility changes
             ),
@@ -619,8 +550,7 @@ fun ForumHeaderPlaceholder(
                 Spacer(modifier = Modifier.weight(1.0f))
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .placeholder(highlight = PlaceholderHighlight.fade())
+                        .placeholder(highlight = PlaceholderHighlight.fade(), shape = CircleShape)
                         .padding(horizontal = 18.dp, vertical = 6.dp)
                 ) {
                     Text(text = stringResource(id = R.string.button_sign_in), fontSize = 13.sp)

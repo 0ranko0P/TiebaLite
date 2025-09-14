@@ -9,16 +9,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,8 +37,9 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
+import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 
 @Composable
@@ -48,44 +49,35 @@ fun TipScreen(
     image: @Composable (ColumnScope.() -> Unit) = {},
     message: @Composable (ColumnScope.() -> Unit) = {},
     actions: @Composable (ColumnScope.() -> Unit) = {},
-    scrollable: Boolean = true,
+    scrollable: Boolean = false,
 ) {
-    val scrollableModifier =
-        if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier
-    val widthFraction = if (isWindowWidthCompat()) 0.9f else 0.5f
+    val typography = MaterialTheme.typography
+    val widthFraction = if (isWindowWidthCompact()) 0.9f else 0.5f
 
-    Box(
-        contentAlignment = Alignment.TopCenter,
+    Column(
         modifier = modifier
+            .block {
+                if (scrollable) fillMaxHeight().verticalScroll(rememberScrollState()) else null
+            }
+            .fillMaxWidth(fraction = widthFraction)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.CenterVertically)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(fraction = widthFraction)
-                .padding(16.dp)
-                .then(scrollableModifier),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.CenterVertically)
-        ) {
-            Box(modifier = Modifier.requiredWidthIn(max = 400.dp)) {
-                this@Column.image()
-            }
-            ProvideTextStyle(
-                value = MaterialTheme.typography.h6.copy(
-                    color = ExtendedTheme.colors.text,
-                    fontWeight = FontWeight.Bold
-                )
-            ) {
-                title()
-            }
-            ProvideTextStyle(
-                value = MaterialTheme.typography.body1.copy(
-                    color = ExtendedTheme.colors.textSecondary,
-                )
-            ) {
-                message()
-            }
-            actions()
+        Box(modifier = Modifier.requiredWidthIn(max = 400.dp)) {
+            this@Column.image()
         }
+        ProvideTextStyle(typography.titleLarge.copy(fontWeight = FontWeight.Bold)) {
+            title()
+        }
+        ProvideContentColorTextStyle(
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            textStyle = typography.bodyLarge
+        ) {
+            message()
+        }
+
+        actions()
     }
 }
 
@@ -95,27 +87,26 @@ data class ErrorType(
     @RawRes val lottieResId: Int,
 )
 
-@NonRestartableComposable
 @Composable
 fun StateScreenScope.ErrorScreen(
     error: Throwable?,
     modifier: Modifier = Modifier,
     showReload: Boolean = true,
     actions: @Composable (ColumnScope.() -> Unit) = {},
-) {
+) =
     ErrorTipScreen(
         error = error,
         modifier = modifier,
         actions = {
             if (showReload && canReload) {
-                Button(onClick = { reload() }) {
-                    Text(text = stringResource(id = R.string.btn_reload))
-                }
+                PositiveButton(
+                    textRes = R.string.btn_reload,
+                    onClick = this@ErrorScreen::reload
+                )
             }
             actions()
         }
     )
-}
 
 @Composable
 fun ErrorTipScreen(
@@ -153,16 +144,14 @@ fun ErrorTipScreen(
     )
 }
 
-@NonRestartableComposable
 @Composable
 fun ErrorStackTraceScreen(
     modifier: Modifier = Modifier,
     throwable: Throwable,
     actions: @Composable (ColumnScope.() -> Unit) = {}
 ) {
-    val context = LocalContext.current
-    val stackTrace = remember {
-        runCatching { throwable.stackTraceToString() }.getOrDefault(context.getString(R.string.message_unknown_error))
+    val stackTrace = remember(throwable) {
+        runCatching { throwable.stackTraceToString() }.getOrNull()
     }
 
     ErrorStackTraceScreen(modifier, stackTrace, actions)
@@ -171,7 +160,7 @@ fun ErrorStackTraceScreen(
 @Composable
 fun ErrorStackTraceScreen(
     modifier: Modifier = Modifier,
-    stackTrace: String,
+    stackTrace: String?,
     actions: @Composable (ColumnScope.() -> Unit) = {}
 ) {
     Column(
@@ -183,20 +172,19 @@ fun ErrorStackTraceScreen(
     ) {
         Text(
             text = stringResource(id = R.string.title_unknown_error),
-            color = ExtendedTheme.colors.text,
             fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.h6
+            style = MaterialTheme.typography.titleLarge
         )
 
         Text(
-            text = stackTrace,
+            text = stackTrace ?: stringResource(id = R.string.message_unknown_error),
             modifier = Modifier
                 .weight(1.0f)
                 .verticalScroll(rememberScrollState())
                 .horizontalScroll(rememberScrollState()),
-            color = ExtendedTheme.colors.textSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             softWrap = false,
-            style = MaterialTheme.typography.body1
+            style = MaterialTheme.typography.bodyLarge
         )
 
         actions()

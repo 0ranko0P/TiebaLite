@@ -1,16 +1,14 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
+import android.content.Context
 import android.util.Log
 import androidx.annotation.StringRes
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.Anti
@@ -18,26 +16,43 @@ import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.api.models.protos.SubPostList
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @Stable
 @HiltViewModel
-class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) : ViewModel() {
+class SubPostsViewModel @Inject constructor(
+    @ApplicationContext val context: Context,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
     val params = savedStateHandle.toRoute<Destination.SubPosts>()
 
     val threadId = params.threadId
@@ -45,84 +60,90 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
     val postId = params.postId
     val subPostId = params.subPostId
 
-    private val _state = mutableStateOf(SubPostsUiState())
-    val state: State<SubPostsUiState> get() = _state
-
-    val error: Throwable? get() = _state.value.error
-
-    val refreshing: Boolean get() = _state.value.isRefreshing
-    val loading: Boolean get() = _state.value.isLoading
+    private val _state = MutableStateFlow(SubPostsUiState())
+    val state: StateFlow<SubPostsUiState> = _state.asStateFlow()
 
     private val handler = CoroutineExceptionHandler { _, e ->
         Log.e(TAG, "onError: ", e)
-        _state.value = _state.value.copy(isLoading = false, isRefreshing = false, error = e)
+        _state.update { it.copy(isLoading = false, isRefreshing = false, error = e) }
     }
 
     /**
-     * One-off [UiEvent], but guaranteed to be received.
-     *
-     * @see onUiEventReceived
+     * One-off [UiEvent], but no guarantee to be received.
      * */
-    private val _uiEvent: MutableState<UiEvent?> = mutableStateOf(null)
-    val uiEvent: State<UiEvent?> = _uiEvent
+    private val _uiEvent: MutableSharedFlow<UiEvent?> = MutableSharedFlow()
+    val uiEvent: Flow<UiEvent?>
+        get() = _uiEvent
 
     init {
         requestLoad()
     }
 
     fun requestLoad(pageNum: Int = 1) {
-        if (refreshing) return
-        _state.value = _state.value.copy(isRefreshing = true)
+        // Check is refreshing
+        if (_state.value.isRefreshing) return else _state.set { copy(isRefreshing = true) }
 
         viewModelScope.launch(handler) {
-            TiebaApi.getInstance().pbFloorFlow(threadId, postId, forumId, pageNum, 0L)
-                .collect { response ->
-                    val post = checkNotNull(response.data_?.post)
-                    val page = checkNotNull(response.data_.page)
-                    val forum = checkNotNull(response.data_.forum)
-                    val lzId = response.data_.thread?.author?.id ?: -1L
-                    val anti = checkNotNull(response.data_.anti)
-                    val subPosts = response.data_.subpost_list
-                        .toItemDataList(lzId)
-                        .toImmutableList()
+            val response = TiebaApi.getInstance()
+                .pbFloorFlow(threadId, postId, forumId, pageNum, 0L)
+                .firstOrThrow()
 
-                    _state.value = _state.value.copy(
-                        isRefreshing = false,
-                        hasMore = page.current_page < page.total_page,
-                        currentPage = page.current_page,
-                        totalPage = page.total_page,
-                        totalCount = page.total_count,
-                        anti = anti.wrapImmutable(),
-                        forum = forum.wrapImmutable(),
-                        post = PostData.from(post = post, fromSubPost = true),
-                        subPosts = subPosts,
-                    )
-                    sendUiEvent(SubPostsUiEvent.ScrollToSubPosts)
-                }
+            val post = checkNotNull(response.data_?.post)
+            val page = checkNotNull(response.data_.page)
+            val forum = checkNotNull(response.data_.forum)
+            val lzId = response.data_.thread?.author?.id ?: -1L
+            val anti = checkNotNull(response.data_.anti)
+            val subPosts = response.data_.subpost_list
+                .toItemDataList(lzId)
+                .toImmutableList()
+
+            _state.update {
+                it.copy(
+                    isRefreshing = false,
+                    hasMore = page.current_page < page.total_page,
+                    currentPage = page.current_page,
+                    totalPage = page.total_page,
+                    totalCount = page.total_count,
+                    anti = anti.wrapImmutable(),
+                    forum = forum.wrapImmutable(),
+                    post = PostData.from(post = post, lzId = lzId, fromSubPost = true),
+                    subPosts = subPosts,
+                )
+            }
+            sendUiEvent(SubPostsUiEvent.ScrollToSubPosts)
         }
     }
 
     fun requestLoadMore(subPostId: Long = 0L) {
-        if (loading) return
-        _state.value = _state.value.copy(isLoading = true)
-        val loadPage = _state.value.currentPage + 1
-        viewModelScope.launch(handler) {
-            TiebaApi.getInstance()
-                .pbFloorFlow(threadId, postId, forumId, loadPage, subPostId)
-                .collect { response ->
-                    val page = checkNotNull(response.data_?.page)
-                    val lzId = response.data_.thread?.author?.id ?: -1L
-                    val subPosts = response.data_.subpost_list.toItemDataList(lzId)
+        // Check is loading
+        if (_state.value.isLoading) return else _state.set { copy(isLoading = true, isRefreshing = false) }
 
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        hasMore = page.current_page < page.total_page,
-                        currentPage = page.current_page,
-                        totalPage = page.total_page,
-                        totalCount = page.total_count,
-                        subPosts = (_state.value.subPosts + subPosts).toImmutableList()
-                    )
-                }
+        viewModelScope.launch(handler) {
+            val stateSnapshot = _state.first()
+            val loadPage = stateSnapshot.currentPage + 1
+            val response = TiebaApi.getInstance()
+                .pbFloorFlow(threadId, postId, forumId, loadPage, subPostId)
+                .firstOrThrow()
+
+            val page = checkNotNull(response.data_?.page)
+            val lzId = response.data_.thread?.author?.id ?: -1L
+
+            // Combine old and new SubPosts
+            val subPosts = withContext(Dispatchers.Default) {
+                val newSubPosts = response.data_.subpost_list.toItemDataList(lzId)
+                stateSnapshot.subPosts + newSubPosts
+            }
+
+            _state.update {
+                it.copy(
+                    isLoading = false,
+                    hasMore = page.current_page < page.total_page,
+                    currentPage = page.current_page,
+                    totalPage = page.total_page,
+                    totalCount = page.total_count,
+                    subPosts = subPosts
+                )
+            }
         }
     }
 
@@ -131,84 +152,107 @@ class SubPostsViewModel @Inject constructor(savedStateHandle: SavedStateHandle) 
         val tbs = _state.value.anti?.get { tbs }
         val deletePostID = subPostId ?: postId
 
-        viewModelScope.launch {
+        viewModelScope.launch(handler) {
             TiebaApi.getInstance()
                 .delPostFlow(forumId, forumName, threadId, deletePostID, tbs, false, deleteMyPost)
                 .catch {
                     sendMsg(R.string.toast_delete_failure, it.getErrorMessage())
                 }
-                .collect {
-                    val newSubPost = if (subPostId == null) {
-                        _state.value.subPosts
-                    } else {
-                        _state.value.subPosts.filter { it.id != subPostId }.toImmutableList()
-                    }
-                    _state.value = _state.value.copy(subPosts = newSubPost)
+                .firstOrNull() ?: return@launch
+
+            _state.update {
+                val newSubPost = if (subPostId == null) {
+                    it.subPosts
+                } else {
+                    it.subPosts.filter { s -> s.id != subPostId }
                 }
+                it.copy(subPosts = newSubPost)
+            }
         }
     }
 
-    fun onAgreePost(agree: Boolean) {
-        _state.value = _state.value.copy(
-            post = _state.value.post?.updateAgreeStatus(if (agree) 1 else 0)
-        )
-        viewModelScope.launch {
+    fun onPostLikeClicked(post: PostData) {
+        if (post.like.loading) {
+            sendMsg(R.string.toast_agree_loading); return
+        }
+
+        viewModelScope.launch(handler) {
+            val liked = post.like.liked
+            val opType = if (liked) 1 else 0 // 操作 0 = 点赞, 1 = 取消点赞
+
             TiebaApi.getInstance()
-                .opAgreeFlow(threadId.toString(), postId.toString(), if (agree) 0 else 1, objType = 1)
+                .opAgreeFlow(threadId.toString(), postId.toString(), opType, objType = 1)
                 .catch {
                     sendMsg(R.string.snackbar_agree_fail, it.getErrorCode(), it.getErrorMessage())
                     // Revert agree status
-                    _state.value = _state.value.copy(
-                        post = _state.value.post?.updateAgreeStatus(if (agree) 0 else 1)
-                    )
+                    _state.update { s -> s.copy(post = s.post!!.updateLikesCount(liked = liked, false)) }
                 }
-                .collect { /*** no-op ***/ }
+                .onStart {
+                    _state.update { it.copy(post = it.post!!.updateLikesCount(liked = !liked, true)) }
+                }
+                .firstOrNull() ?: return@launch
+
+            _state.update { it.copy(post = it.post!!.updateLikesCount(liked = !liked, false)) }
         }
     }
 
-    fun onAgreeSubPost(subPostId: Long, agree: Boolean) {
-        _state.value = _state.value.copy(
-            subPosts = _state.value.subPosts.updateAgreeStatus(subPostId, agree)
-        )
+    fun onSubPostLikeClicked(subPost: SubPostItemData) {
+        val pId = subPost.id
+        if (subPost.like.loading) {
+            sendMsg(R.string.toast_agree_loading); return
+        }
 
-        viewModelScope.launch {
+        viewModelScope.launch(handler) {
+            val liked = subPost.like.liked
+            val opType = if (liked) 1 else 0 // 操作 0 = 点赞, 1 = 取消点赞
+
             TiebaApi.getInstance()
-                .opAgreeFlow(threadId.toString(), subPostId.toString(), if (agree) 0 else 1, objType = 2)
+                .opAgreeFlow(threadId.toString(), pId.toString(), opType, objType = 2)
                 .catch {
                     sendMsg(R.string.snackbar_agree_fail, it.getErrorCode(), it.getErrorMessage())
                     // Revert agree status
-                    _state.value = _state.value.copy(
-                        subPosts = _state.value.subPosts.updateAgreeStatus(subPostId, !agree)
-                    )
+                    _state.update { s -> s.updateLikesById(pId, liked, loading = false) }
                 }
-                .collect { /*** no-op ***/ }
+                .onStart {
+                    _state.update { it.updateLikesById(pId, !liked, loading = true) }
+                }
+                .firstOrNull() ?: return@launch
+
+            _state.update { it.updateLikesById(pId, !liked, loading = false) }
         }
     }
 
-    private fun sendUiEvent(event: UiEvent) {
-        _uiEvent.value = event
-    }
+    private fun sendUiEvent(event: UiEvent?) = viewModelScope.launch { _uiEvent.emit(event) }
 
-    fun onUiEventReceived() {
-        _uiEvent.value = null
+    private fun sendMsg(@StringRes int: Int, vararg formatArgs: Any) {
+        sendMsg(context.getString(int, *formatArgs))
     }
-
-    private fun sendMsg(@StringRes int: Int, vararg formatArgs: Any) =
-        sendMsg(App.INSTANCE.getString(int, *formatArgs))
 
     private fun sendMsg(msg: String) {
-        App.INSTANCE.toastShort(msg)
+        if (viewModelScope.isActive) {
+            sendUiEvent(CommonUiEvent.Toast(msg))
+        } else {
+            context.toastShort(msg)
+        }
     }
 
     companion object {
         private const val TAG = "SubPostsViewModel"
 
-        private fun List<SubPostList>.toItemDataList(lzId: Long) = map { subPost ->
-            SubPostItemData(subPost, lzId).buildContent(fromSubPost = true)
+        private fun List<SubPostList>.toItemDataList(lzId: Long): List<SubPostItemData> {
+            return map { subPost -> SubPostItemData(subPost, lzId, fromSubPost = true) }
         }
 
-        private fun List<SubPostItemData>.updateAgreeStatus(subPostId: Long, agreed: Boolean): ImmutableList<SubPostItemData> =
-            this.map { if (it.id == subPostId) it.updateAgreeStatus(agreed) else it }.toImmutableList()
+        private fun SubPostsUiState.updateLikesById(
+            subPostId: Long,
+            liked: Boolean,
+            loading: Boolean
+        ) =
+            copy(
+                subPosts = subPosts.fastMap {
+                    if (it.id == subPostId) it.updateLikesCount(liked = liked, loading = loading) else it
+                }
+            )
     }
 }
 
@@ -225,7 +269,7 @@ data class SubPostsUiState(
     val anti: ImmutableHolder<Anti>? = null,
     val forum: ImmutableHolder<SimpleForum>? = null,
     val post: PostData? = null,
-    val subPosts: ImmutableList<SubPostItemData> = persistentListOf(),
+    val subPosts: List<SubPostItemData> = emptyList(),
 ) : UiState
 
 sealed interface SubPostsUiEvent : UiEvent {

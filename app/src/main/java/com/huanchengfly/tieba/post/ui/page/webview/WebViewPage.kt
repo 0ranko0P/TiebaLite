@@ -10,14 +10,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Icon
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.minimumInteractiveComponentSize
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
@@ -29,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,7 +39,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TbWebChromeClient
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
@@ -47,6 +46,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
+import com.huanchengfly.tieba.post.ui.widgets.compose.WebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
@@ -55,6 +55,28 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+
+@Composable
+fun WebViewProgressIndicator(modifier: Modifier =  Modifier, webViewState: WebViewState) {
+    val isLoading by remember {
+        derivedStateOf { webViewState.loadingState is LoadingState.Loading }
+    }
+
+    if (isLoading) {
+        val animatedProgress by animateFloatAsState(
+            targetValue = (webViewState.loadingState as? LoadingState.Loading)?.progress ?: 0f,
+            label = "progress"
+        )
+
+        LinearProgressIndicator(
+            progress = { animatedProgress },
+            gapSize = Dp.Hairline,
+            strokeCap = StrokeCap.Square,
+            drawStopIndicator = {},
+            modifier = modifier.fillMaxWidth()
+        )
+    }
+}
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -113,14 +135,6 @@ fun WebViewPage(initialUrl: String, navigator: NavController) {
         }
     }
 
-    val progress by remember {
-        derivedStateOf {
-            webViewState.loadingState.let { if (it is LoadingState.Loading) it.progress else 0f }
-        }
-    }
-
-    val animatedProgress by animateFloatAsState(targetValue = progress, label = "progress")
-
     MyScaffold(
         topBar = {
             Toolbar(
@@ -136,8 +150,7 @@ fun WebViewPage(initialUrl: String, navigator: NavController) {
                                 text = currentHost,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                color = ExtendedTheme.colors.onTopBar.copy(ContentAlpha.medium),
-                                style = MaterialTheme.typography.caption
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
@@ -171,16 +184,16 @@ fun WebViewPage(initialUrl: String, navigator: NavController) {
                         )
                     }
                 },
-                elevation = Dp.Hairline
+                content = { WebViewProgressIndicator(webViewState = webViewState) }
             )
         }
     ) { paddingValues ->
-        Box {
+        Box(
+            modifier = Modifier.padding(paddingValues),
+        ) {
             WebView(
                 state = webViewState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                modifier = Modifier.fillMaxSize(),
                 navigator = webViewNavigator,
                 onCreated = {
                     it.settings.apply {
@@ -205,13 +218,6 @@ fun WebViewPage(initialUrl: String, navigator: NavController) {
                     TiebaWebView(it.applicationContext)
                 }
             )
-
-            if (isLoading) {
-                LinearProgressIndicator(
-                    progress = animatedProgress,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
         }
     }
 }

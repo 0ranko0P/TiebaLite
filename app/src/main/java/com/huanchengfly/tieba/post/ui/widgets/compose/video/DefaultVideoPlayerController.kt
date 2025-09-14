@@ -1,8 +1,9 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose.video
 
 import android.annotation.SuppressLint
+import android.content.ContentResolver
 import android.content.Context
-import android.util.Log
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -16,7 +17,6 @@ import androidx.media3.common.Player.STATE_READY
 import androidx.media3.common.VideoSize
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.RawResourceDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
@@ -180,7 +180,6 @@ internal class DefaultVideoPlayerController(
     }
 
     fun initialize() {
-        Log.i("VideoPlayerController", "$this initialize")
         val currentState = _state.value
         exoPlayer.playWhenReady = currentState.isPlaying
         initialStateRunner = {
@@ -315,14 +314,13 @@ internal class DefaultVideoPlayerController(
 
             return when (val source = source) {
                 is VideoPlayerSource.Raw -> {
+                    val uri = Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+                        .path(source.resId.toString())
+                        .build()
+
                     ProgressiveMediaSource.Factory(dataSourceFactory)
-                        .createMediaSource(
-                            MediaItem.fromUri(
-                                RawResourceDataSource.buildRawResourceUri(
-                                    source.resId
-                                )
-                            )
-                        )
+                        .createMediaSource(MediaItem.fromUri(uri))
                 }
 
                 is VideoPlayerSource.Network -> {
@@ -369,7 +367,6 @@ internal class DefaultVideoPlayerController(
     }
 
     override fun release() {
-        Log.i("VideoPlayerController", "$this release")
         if (released.compareAndSet(false, true)) {
             exoPlayer.release()
             previewExoPlayer.release()

@@ -10,15 +10,16 @@ import android.view.WindowManager
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.huanchengfly.tieba.post.App
-import kotlin.math.roundToInt
 
 object DisplayUtil {
 
@@ -60,14 +61,14 @@ object DisplayUtil {
     /**
      * @return 屏幕宽高大小
      */
-    fun getScreenPixels(context: Context?): IntSize {
-        val manager: WindowManager? = if (context != null && context is Activity) {
+    fun getScreenPixels(context: Context, ignoreOrientation: Boolean = true): IntSize {
+        val manager: WindowManager? = if (context is Activity) {
             context.windowManager
         } else {
             ContextCompat.getSystemService(App.INSTANCE, WindowManager::class.java)
         }
 
-        return if (manager != null) {
+        val size = if (manager != null) {
             val point = Point()
             manager.defaultDisplay.getRealSize(point)
             IntSize(point.x, point.y)
@@ -75,17 +76,31 @@ object DisplayUtil {
             // Size without Navigation bar
             Resources.getSystem().displayMetrics.let { IntSize(it.widthPixels, it.heightPixels) }
         }
+        if (ignoreOrientation) {
+            if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                return IntSize(width = size.height, height = size.width)
+            }
+        }
+        return size
     }
 
-    fun IntSize.toDpSize(density: Density): DpSize = with(density) {
-        DpSize(width = width.toDp(), height = height.toDp())
+    fun IntSize.toDpSize(density: Density): DpSize = if (this != IntSize.Zero) {
+        with(density) { DpSize(width = width.toDp(), height = height.toDp()) }
+    } else {
+        DpSize.Zero
+    }
+
+    fun Offset.toDpOffset(density: Density): DpOffset = if (this != Offset.Zero) {
+        with(density) { DpOffset(x = x.toDp(), y = y.toDp()) }
+    } else {
+        DpOffset.Zero
     }
 
     fun WindowInsets.gestureType(density: Density): Int {
-        val height = with(density) { getBottom(density).toDp() }.value.roundToInt()
-        return if (height >= GESTURE_3BUTTON) {
+        val heightDp = with(density) { getBottom(density).toDp() }.value
+        return if (heightDp >= GESTURE_3BUTTON) {
             GESTURE_3BUTTON
-        } else if (height >= GESTURE_DEFAULT) {
+        } else if (heightDp >= GESTURE_DEFAULT) {
             GESTURE_DEFAULT
         } else {
             GESTURE_NONE

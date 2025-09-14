@@ -3,36 +3,33 @@ package com.huanchengfly.tieba.post.ui.page
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.material.ModalBottomSheetValue
-import androidx.compose.material.navigation.BottomSheetNavigator
-import androidx.compose.material.navigation.ModalBottomSheetLayout
-import androidx.compose.material.navigation.bottomSheet
-import androidx.compose.material.rememberModalBottomSheetState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.createGraph
 import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
-import com.huanchengfly.tieba.post.ui.page.Destination.Companion.ForumDetailParams
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
+import com.huanchengfly.tieba.post.ui.page.Destination.Companion.parcelableListType
 import com.huanchengfly.tieba.post.ui.page.dialogs.CopyTextDialogPage
 import com.huanchengfly.tieba.post.ui.page.forum.ForumPage
 import com.huanchengfly.tieba.post.ui.page.forum.detail.ForumDetailPage
+import com.huanchengfly.tieba.post.ui.page.forum.detail.ManagerData
 import com.huanchengfly.tieba.post.ui.page.forum.rule.ForumRuleDetailPage
 import com.huanchengfly.tieba.post.ui.page.forum.searchpost.ForumSearchPostPage
 import com.huanchengfly.tieba.post.ui.page.history.HistoryPage
@@ -40,7 +37,7 @@ import com.huanchengfly.tieba.post.ui.page.hottopic.list.HotTopicListPage
 import com.huanchengfly.tieba.post.ui.page.login.LoginPage
 import com.huanchengfly.tieba.post.ui.page.main.MainPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
-import com.huanchengfly.tieba.post.ui.page.reply.ReplyPage
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyPageBottomSheet
 import com.huanchengfly.tieba.post.ui.page.search.SearchPage
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.page.settings.settingsNestedGraphBuilder
@@ -54,16 +51,19 @@ import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
 import kotlin.reflect.typeOf
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RootNavGraph(
-    bottomSheetNavigator: BottomSheetNavigator,
+    // bottomSheetNavigator: BottomSheetNavigator,
     navController: NavHostController,
     startDestination: Destination = Destination.Main
 ) {
     SharedTransitionLayout {
         CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-            ModalBottomSheetLayout(bottomSheetNavigator) {
+            // ModalBottomSheetLayout(
+            //     bottomSheetNavigator = bottomSheetNavigator,
+            //     dragHandle = null
+            // ) {
                 NavHost(
                     navController = navController,
                     graph = remember(startDestination) {
@@ -88,7 +88,7 @@ fun RootNavGraph(
                     },
                     popExitTransition = { DefaultFadeOut },
                 )
-            }
+            // }
         }
     }
 }
@@ -129,19 +129,20 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
         }
 
         composable<Destination.ForumDetail>(
-            typeMap = mapOf(typeOf<ForumDetailParams>() to navTypeOf<ForumDetailParams>())
+            typeMap = mapOf(typeOf<ArrayList<ManagerData>>() to parcelableListType<ManagerData>())
         ) { backStackEntry ->
-            val params = backStackEntry.toRoute<Destination.ForumDetail>().params
-            params.run {
-                ForumDetailPage(forumId, avatar, name, slogan, memberCount, threadCount, postCount, managers, navController::navigateUp) { user ->
-                    navController.navigate(Destination.UserProfile(user.id))
-                }
-            }
+            val params = backStackEntry.toRoute<Destination.ForumDetail>()
+            ForumDetailPage(
+                avatar = params.avatar,
+                postCount = params.postCount,
+                managers = params.managers,
+                onBack = navController::navigateUp,
+                onManagerClicked = { navController.navigate(Destination.UserProfile(it.id)) }
+            )
         }
 
         composable<Destination.ForumRuleDetail> { backStackEntry ->
-            val params = backStackEntry.toRoute<Destination.ForumRuleDetail>()
-            ForumRuleDetailPage(params.forumId, navController)
+            ForumRuleDetailPage(navController)
         }
 
         composable<Destination.ForumSearchPost> { backStackEntry ->
@@ -214,9 +215,16 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             CopyTextDialogPage(params.text, navController)
         }
 
-        bottomSheet<Destination.Reply> { backStackEntry ->
+        // Bug: new MD3 ModalBottomSheet breaks our reply panel animation
+        // bottomSheet<Destination.Reply> { backStackEntry ->
+        dialog<Destination.Reply>(
+            dialogProperties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
+            )
+        ) { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.Reply>()
-            ReplyPage(params, navController::navigateUp)
+            ReplyPageBottomSheet(params, navController::navigateUp)
         }
 
         composable<Destination.Welcome> {
@@ -227,24 +235,6 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
 
 val DefaultFadeOut: ExitTransition by lazy {
     fadeOut(animationSpec = tween(100))
-}
-
-/**
- * Create and remember a [BottomSheetNavigator]
- */
-@Composable
-fun rememberBottomSheetNavigator(
-    animationSpec: AnimationSpec<Float> = SpringSpec(),
-    confirmValueChange: (ModalBottomSheetValue) -> Boolean = { true },
-    skipHalfExpanded: Boolean = false,
-): BottomSheetNavigator {
-    val sheetState = rememberModalBottomSheetState(
-        initialValue = ModalBottomSheetValue.Hidden,
-        animationSpec = animationSpec,
-        confirmValueChange = confirmValueChange,
-        skipHalfExpanded = skipHalfExpanded
-    )
-    return remember(sheetState) { BottomSheetNavigator(sheetState) }
 }
 
 private fun NavController.isLastOrEmptyRoute(): Boolean = visibleEntries.value.size <= 1

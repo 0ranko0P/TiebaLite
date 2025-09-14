@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Scaffold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DashboardCustomize
 import androidx.compose.material.icons.outlined.FormatPaint
@@ -9,6 +8,8 @@ import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.DoNotDisturbOff
 import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,8 +29,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 
-object Settings
-
 @Composable
 private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
     val navigator = LocalNavController.current
@@ -38,7 +37,9 @@ private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
             modifier = modifier,
             title = stringResource(id = R.string.title_account_manage),
             summary = stringResource(id = R.string.summary_now_account, account.nameShow ?: account.name),
-            onClick = {navigator.navigate(AccountManage) },
+            onClick = {
+                navigator.navigate(route = AccountManage)
+            },
             leadingIcon = {
                 Avatar(
                     data = StringUtil.getAvatarUrl(account.portrait),
@@ -53,7 +54,7 @@ private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
             title = stringResource(id = R.string.title_account_manage),
             summary = stringResource(id = R.string.summary_not_logged_in),
             onClick = {
-                navigator.navigate(Login)
+                navigator.navigate(route = Login)
             },
             leadingIcon = Icons.Rounded.AccountCircle
         )
@@ -64,13 +65,14 @@ private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
 fun SettingsPage(navigator: NavController) {
     ProvideNavigator(navigator = navigator) {
         Scaffold(
-            backgroundColor = Color.Transparent,
             topBar = {
                 TitleCentredToolbar(
                     title = stringResource(id = R.string.title_settings),
                     navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) }
                 )
-            }
+            },
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface
         ) { paddingValues ->
             PrefsScreen(contentPadding = paddingValues) {
                 prefsItem {

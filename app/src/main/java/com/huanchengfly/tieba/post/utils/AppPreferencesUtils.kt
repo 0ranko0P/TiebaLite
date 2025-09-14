@@ -21,13 +21,17 @@ import com.huanchengfly.tieba.post.putInt
 import com.huanchengfly.tieba.post.putLong
 import com.huanchengfly.tieba.post.putString
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
+import kotlin.random.Random
+import kotlin.reflect.KProperty
 
 class AppPreferencesUtils private constructor(context: Context) {
     companion object {
@@ -93,9 +97,10 @@ class AppPreferencesUtils private constructor(context: Context) {
         const val KEY_OKSIGN_SLOW = "sign_slow_mode"
         const val KEY_OKSIGN_OFFICIAL = "sign_using_official"
 
-        const val KEY_SETUP_FINISHED = "ui_setup"
-
         /***        END OF BOOLEAN OPTIONS      ***/
+
+        //private val KEY_OKSIGN_JOB_ID = intPreferencesKey("sign_job_id")
+        private val KEY_OKSIGN_JOB_ID = "sign_job_id"
 
         const val KEY_OKSIGN_LAST_TIME = "sign_day"
         const val KEY_OKSIGN_AUTO_TIME = "auto_sign_time"
@@ -128,6 +133,10 @@ class AppPreferencesUtils private constructor(context: Context) {
                 const val HIDE = "hide"
             }
         }
+
+        private operator fun <T> Preferences.Key<T>.getValue(thisObj: AppPreferencesUtils, property: KProperty<*>): T? {
+            return thisObj.cache[this]
+        }
     }
 
     private val dataStore: DataStore<Preferences> = context.dataStore
@@ -153,6 +162,16 @@ class AppPreferencesUtils private constructor(context: Context) {
     val autoSign: Boolean
         get() = dataStore.getBoolean(KEY_OKSIGN_AUTO, false)
 
+    val autoSignJobId: Int
+        get() {
+            var jobId = dataStore.getInt(KEY_OKSIGN_JOB_ID, -1)
+            if (jobId == -1) {
+                jobId = Random.Default.nextInt(12, Integer.MAX_VALUE)
+                dataStore.putInt(KEY_OKSIGN_JOB_ID, jobId)
+            }
+            return jobId
+        }
+
     var autoSignTime: String
         get() = dataStore.getString(KEY_OKSIGN_AUTO_TIME, "09:00")
         set(value) = dataStore.putString(KEY_OKSIGN_AUTO_TIME, value)
@@ -160,15 +179,14 @@ class AppPreferencesUtils private constructor(context: Context) {
     val blockVideo: Boolean
         get() = dataStore.getBoolean(KEY_POST_BLOCK_VIDEO, false)
 
-    var darkMode: Int
-        get() = dataStore.getInt(ThemeUtil.KEY_DARK_THEME_MODE, ThemeUtil.DARK_MODE_FOLLOW_SYSTEM)
-        set(value) = dataStore.putInt(ThemeUtil.KEY_DARK_THEME_MODE, value)
-
     val fontScale: Float
         get() = cache[floatPreferencesKey(KEY_FONT_SCALE)] ?:  1.0f
 
     val hideBlockedContent: Boolean
         get() = cache[booleanPreferencesKey(KEY_POST_HIDE_BLOCKED)] == true
+
+    val hideMedia: Boolean
+        get() = cache[booleanPreferencesKey(KEY_POST_HIDE_MEDIA)] == true
 
     val liftUpBottomBar: Boolean
         get() = cache[booleanPreferencesKey(KEY_LIFT_BOTTOM_BAR)] != false
@@ -207,24 +225,6 @@ class AppPreferencesUtils private constructor(context: Context) {
         get() = cache[longPreferencesKey(KEY_UPDATE_TIME)] ?: App.INSTANCE.packageInfo.lastUpdateTime.apply {
             dataStore.putLong(KEY_UPDATE_TIME, this)
         }
-
-    /**
-     * File of cropped background for Translucent Theme
-     *
-     * @see ThemeUtil.isTranslucentTheme
-     * */
-    val translucentThemeBackgroundFile: Flow<File?> by lazy {
-        dataStore.data
-            .map {
-                it[stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_BACKGROUND_FILE)]?.let { file ->
-                    File(context.filesDir, file)
-                }
-            }
-            .distinctUntilChanged()
-    }
-
-    val setupFinished: Boolean
-        get() = cache[booleanPreferencesKey(KEY_SETUP_FINISHED)] == true
 }
 
 val Context.appPreferences: AppPreferencesUtils

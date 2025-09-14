@@ -1,20 +1,21 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -27,16 +28,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.menuBackground
+import androidx.compose.ui.unit.round
+import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 class MenuScope(
     private val menuState: MenuState,
@@ -59,22 +59,72 @@ class MenuScope(
     @Composable
     fun TextMenuItem(modifier: Modifier = Modifier, text: String, onClick: () -> Unit) =
         DropdownMenuItem(
+            text = { Text(text = text) },
             onClick = {
                 onClick()
                 dismiss()
             },
             modifier = modifier,
-            content = { Text(text = text) }
         )
+
+    @Composable
+    fun ListPickerMenuItem(
+        @StringRes text: Int,
+        modifier: Modifier = Modifier,
+        picked: Boolean,
+        pickedIndicator: @Composable (() -> Unit)? = null,
+        onClick: () -> Unit
+    ) =
+        DropdownMenuItem(
+            text = {
+                Text(text = stringResource(text))
+            },
+            onClick = {
+                if (!picked) {
+                    onClick()
+                }
+                dismiss()
+            },
+            modifier = modifier,
+            trailingIcon = pickedIndicator,
+            colors = if (picked) {
+                val primary = MaterialTheme.colorScheme.primary
+                MenuDefaults.itemColors(textColor = primary, trailingIconColor = primary)
+            } else {
+                MenuDefaults.itemColors()
+            }
+        )
+
+    @Composable
+    fun <Option> ListPickerMenuItems(
+        items: Options<Option>,
+        picked: Option,
+        onItemPicked: (item: Option) -> Unit,
+        pickedIndicator: @Composable () -> Unit = {
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = stringResource(id = R.string.desc_checked),
+            )
+        }
+    ) {
+        items.forEach { (option, title) ->
+            ListPickerMenuItem(
+                text = title,
+                picked = option == picked,
+                onClick = {
+                    onItemPicked(option)
+                },
+                pickedIndicator = pickedIndicator.takeIf { option == picked }
+            )
+        }
+    }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ClickMenu(
     menuContent: @Composable MenuScope.() -> Unit,
     modifier: Modifier = Modifier,
     menuState: MenuState = rememberMenuState(),
-    menuShape: Shape = RoundedCornerShape(14.dp),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     indication: Indication? = LocalIndication.current,
     triggerShape: Shape? = null,
@@ -82,78 +132,67 @@ fun ClickMenu(
     content: @Composable () -> Unit,
 ) {
     val menuScope = MenuScope(menuState, onDismiss)
-    LaunchedEffect(key1 = null) {
-        launch {
-            interactionSource.interactions
-                .filterIsInstance<PressInteraction.Press>()
-                .collect {
-                    menuState.offset = it.pressPosition
-                }
-        }
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions
+            .filterIsInstance<PressInteraction.Press>()
+            .collect {
+                menuState.offset = it.pressPosition.round()
+            }
     }
-    Box {
-        val triggerModifier = if (triggerShape != null) Modifier.clip(triggerShape) else Modifier
-        Box(
-            modifier = triggerModifier
-                .combinedClickable(
-                    interactionSource = interactionSource,
-                    indication = indication,
-                    onClick = {
-                        menuState.expanded = true
-                    }
-                )
-        ) {
-            content()
-        }
-        Box(
-            modifier = Modifier
-                .clip(menuShape)
-                .offset {
-                    IntOffset(
-                        menuState.offset.x.roundToInt(),
-                        menuState.offset.y.roundToInt()
-                    )
+
+    Box(
+        modifier = Modifier
+            .block {
+                triggerShape?.let { clip(it) }
+            }
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = indication,
+                onClick = {
+                    menuState.expanded = true
                 }
+            )
+    ) {
+        content()
+
+        Box(
+            modifier = Modifier.offset { menuState.offset }
         ) {
             DropdownMenu(
                 expanded = menuState.expanded,
-                onDismissRequest = { menuScope.dismiss() },
-                modifier = modifier.background(color = MaterialTheme.colors.surface)
+                onDismissRequest = menuScope::dismiss,
+                modifier = modifier,
             ) {
-                ProvideContentColor(color = ExtendedTheme.colors.text) {
-                    menuScope.menuContent()
-                }
+                menuScope.menuContent()
             }
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LongClickMenu(
-    menuContent: @Composable (MenuScope.() -> Unit),
+    menuContent: @Composable MenuScope.() -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     menuState: MenuState = rememberMenuState(),
     onClick: (() -> Unit)? = null,
-    shape: Shape = RoundedCornerShape(0.dp),
+    shape: Shape? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     indication: Indication? = LocalIndication.current,
     content: @Composable () -> Unit,
 ) {
     val menuScope = MenuScope(menuState)
-    LaunchedEffect(Unit) {
-        launch {
-            interactionSource.interactions
-                .filterIsInstance<PressInteraction.Press>()
-                .collect {
-                    menuState.offset = it.pressPosition
-                }
-        }
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions
+            .filterIsInstance<PressInteraction.Press>()
+            .collect {
+                menuState.offset = it.pressPosition.round()
+            }
     }
+
     Box(
         modifier = modifier
-            .clip(shape)
+            .onNotNull(shape) { clip(shape = it) }
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = indication,
@@ -167,22 +206,13 @@ fun LongClickMenu(
     ) {
         content()
         Box(
-            modifier = Modifier
-                .offset {
-                    IntOffset(
-                        menuState.offset.x.roundToInt(),
-                        menuState.offset.y.roundToInt()
-                    )
-                }
+            modifier = Modifier.offset { menuState.offset }
         ) {
             DropdownMenu(
                 expanded = menuState.expanded,
-                onDismissRequest = { menuState.expanded = false },
-                modifier = Modifier.background(color = ExtendedTheme.colors.menuBackground)
+                onDismissRequest = menuState::dismiss,
             ) {
-                ProvideContentColor(color = ExtendedTheme.colors.text) {
-                    menuScope.menuContent()
-                }
+                menuScope.menuContent()
             }
         }
     }
@@ -220,9 +250,9 @@ class MenuState internal constructor() {
             }
         }
 
-    private var _offset by mutableStateOf(Offset(0f, 0f))
+    private var _offset by mutableStateOf(IntOffset.Zero)
 
-    var offset: Offset
+    var offset: IntOffset
         get() = _offset
         set(value) {
             if (value != _offset) {
@@ -235,14 +265,13 @@ class MenuState internal constructor() {
             save = {
                 listOf<Any>(
                     it.expanded,
-                    it.offset.x,
-                    it.offset.y
+                    it.offset.packedValue
                 )
             },
             restore = {
                 MenuState().apply {
                     expanded = it[0] as Boolean
-                    offset = Offset(it[1] as Float, it[2] as Float)
+                    offset = IntOffset(it[1] as Long)
                 }
             }
         )

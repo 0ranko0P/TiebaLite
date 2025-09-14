@@ -95,7 +95,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
 
     private fun buildNotification(title: String, text: String?): NotificationCompat.Builder {
         createNotificationChannel()
-        val theme by ThemeUtil.themeState
+        val colorExt by ThemeUtil.colorState
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setForegroundServiceBehavior(FOREGROUND_SERVICE_IMMEDIATE)
             .setContentText(text)
@@ -104,7 +104,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
             .setSmallIcon(R.drawable.ic_oksign)
             .setAutoCancel(true)
             .setStyle(NotificationCompat.BigTextStyle())
-            .setColor(theme.primary.toArgb())
+            .setColor(colorExt.colorScheme.primary.toArgb())
     }
 
     private fun updateNotification(title: String, text: String, intent: Intent?) {

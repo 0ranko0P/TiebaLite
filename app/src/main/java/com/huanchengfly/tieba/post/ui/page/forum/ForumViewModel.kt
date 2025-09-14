@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
@@ -36,6 +37,7 @@ import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.FrsPageRepository
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.forum.ForumViewModel.Companion.sortTypeKey
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumFabFunction
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
@@ -44,8 +46,7 @@ import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import com.huanchengfly.tieba.post.utils.requestPinShortcut
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -60,13 +61,15 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @Stable
 @HiltViewModel
-class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
+class ForumViewModel @Inject constructor(
+    @ApplicationContext val context: Context,
+    savedStateHandle: SavedStateHandle
+) :
     BaseViewModel<ForumUiIntent, ForumPartialChange, ForumUiState, ForumUiEvent>() {
 
     val param = savedStateHandle.toRoute<Destination.Forum>()
@@ -74,16 +77,14 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
     private var forumName: String = param.forumName
 
     @ForumFabFunction
-    val fab: String = App.INSTANCE.appPreferences.forumFabFunction
-
-    private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
+    val fab: String = context.appPreferences.forumFabFunction
 
     @get:ForumSortType
     var sortType by mutableIntStateOf(ForumSortType.BY_REPLY)
         private set
 
     init {
-        requestLoadForm(App.INSTANCE)
+        requestLoadForm(context)
     }
 
     override fun createInitialState(): ForumUiState = ForumUiState()
@@ -190,7 +191,7 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
             flowOf(ForumPartialChange.ToggleShowHeader(showHeader))
     }
 
-    fun saveHistory(forum: ForumInfo) = scope.launch(Dispatchers.IO) {
+    fun saveHistory(forum: ForumInfo) = viewModelScope.launch(Dispatchers.IO) {
         HistoryUtil.saveHistory(
             History(
                 timestamp = System.currentTimeMillis(),
@@ -202,21 +203,21 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
         )
     }
 
-    fun requestLoadForm(context: Context) = scope.launch {
+    private fun requestLoadForm(context: Context) = viewModelScope.launch {
         sortType = withContext(Dispatchers.IO) {
             getSortType(context, forumName).first()
         }
         send(ForumUiIntent.Load(forumName, sortType))
     }
 
-    fun onSortTypeChanged(@ForumSortType sortType: Int, isGood: Boolean) = scope.launch {
+    fun onSortTypeChanged(@ForumSortType sortType: Int, isGood: Boolean) = viewModelScope.launch {
         this@ForumViewModel.sortType = sortType
         emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
-        saveSortType(forumName, sortType)
+        saveSortType(context, forumName, sortType)
     }
 
     fun onRefreshClicked(isGood: Boolean) {
-        scope.launch {
+        viewModelScope.launch {
             emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood))
             emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood, sortType))
         }
@@ -228,7 +229,7 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
 
             ForumFabFunction.REFRESH -> onRefreshClicked(isGood)
 
-            ForumFabFunction.BACK_TO_TOP -> scope.launch {
+            ForumFabFunction.BACK_TO_TOP -> viewModelScope.launch {
                 emitGlobalEventSuspend(ForumThreadListUiEvent.BackToTop(isGood))
             }
 
@@ -248,7 +249,7 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
         }
     }
 
-    fun sendToDesktop(context: Context, forum: ForumInfo) = scope.launch {
+    fun sendToDesktop(context: Context, forum: ForumInfo) = viewModelScope.launch {
         val result = requestPinShortcut(
             context,
             "forum_${forum.id}",
@@ -295,8 +296,7 @@ class ForumViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
                 .distinctUntilChanged()
         }
 
-        private suspend fun saveSortType(forumName: String, @ForumSortType sortType: Int) {
-            val context = App.INSTANCE
+        private suspend fun saveSortType(context: Context, forumName: String, @ForumSortType sortType: Int) {
             // Default from app_preference
             val default = context.appPreferences.defaultSortType
             // Save to forum_preferences

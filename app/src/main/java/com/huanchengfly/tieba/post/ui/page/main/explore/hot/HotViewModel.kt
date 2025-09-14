@@ -112,7 +112,8 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
     sealed class Load : HotPartialChange {
         override fun reduce(oldState: HotUiState): HotUiState =
             when (this) {
-                Start -> oldState.copy(isRefreshing = true)
+                Start -> oldState.copy(isRefreshing = true, error = null)
+
                 is Success -> oldState.copy(
                     isRefreshing = false,
                     currentTabCode = "all",
@@ -121,7 +122,7 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
                     threadList = threadList.toImmutableList()
                 )
 
-                is Failure -> oldState.copy(isRefreshing = false)
+                is Failure -> oldState.copy(isRefreshing = false, error = error)
             }
 
         object Start : Load()
@@ -190,12 +191,13 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
 }
 
 data class HotUiState(
-    val isRefreshing: Boolean = true,
+    val isRefreshing: Boolean = false,
     val currentTabCode: String = "all",
     val isLoadingThreadList: Boolean = false,
     val topicList: ImmutableList<ImmutableHolder<RecommendTopicList>> = persistentListOf(),
     val tabList: ImmutableList<ImmutableHolder<FrsTabInfo>> = persistentListOf(),
     val threadList: List<ThreadItemData> = emptyList(),
+    val error: Throwable? = null,
 ) : UiState
 
 sealed interface HotUiEvent : UiEvent

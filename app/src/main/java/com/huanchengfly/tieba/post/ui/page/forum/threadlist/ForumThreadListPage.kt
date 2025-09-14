@@ -1,8 +1,10 @@
 package com.huanchengfly.tieba.post.ui.page.forum.threadlist
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,11 +18,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.SnackbarResult
-import androidx.compose.material.Text
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,8 +33,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.util.Consumer
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
@@ -55,16 +55,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
+import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
 typealias ClassifyTabsContent = @Composable () -> Unit
-
-// Passing the state to ForumThreadListPage will cause it reset on the second composition.
-// This is a temporary workaround to get the LazyListState that initialized inside the ListPage.
-typealias ListStateConsumer = Consumer<LazyListState>
 
 @Composable
 private fun GoodClassifyTabs(
@@ -103,19 +99,34 @@ private fun TopThreadItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Chip(
+
+        Text(
+            color = MaterialTheme.colorScheme.onSurface,
             text = type,
-            shape = RoundedCornerShape(3.dp)
+            modifier = Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = MaterialTheme.shapes.extraSmall
+                )
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall
         )
         Text(
             text = title,
-            style = MaterialTheme.typography.subtitle2,
+            style = MaterialTheme.typography.labelLarge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
-            fontSize = 15.sp
         )
     }
+}
+
+private val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
+    BlockTip(
+        text = {
+            Text(text = stringResource(id = R.string.tip_blocked_thread))
+        }
+    )
 }
 
 @Composable
@@ -124,7 +135,6 @@ fun GoodThreadListPage(
     forumId: Long,
     forumName: String,
     sortType: () -> Int,
-    onListStateCreated: ListStateConsumer,
     contentPadding: PaddingValues,
     onComposeClassifyTab: (ClassifyTabsContent) -> Unit, // Workaround to compose tab inside TopBar for background blur
     viewModel: GoodThreadListViewModel = pageViewModel<GoodThreadListViewModel>()
@@ -148,9 +158,6 @@ fun GoodThreadListPage(
     )
 
     val listState = rememberLazyListState()
-    LaunchedEffect(listState) {
-        onListStateCreated.accept(listState)
-    }
 
     ForumThreadListPage(modifier, forumId, true, sortType, listState, contentPadding, viewModel)
 
@@ -179,15 +186,9 @@ fun NormalThreadListPage(
     forumId: Long,
     forumName: String,
     sortType: () -> Int,
-    onListStateCreated: ListStateConsumer,
     contentPadding: PaddingValues,
     viewModel: LatestThreadListViewModel = pageViewModel<LatestThreadListViewModel>()
 ) {
-    val listState = rememberLazyListState()
-    LaunchedEffect(listState) {
-        onListStateCreated.accept(listState)
-    }
-
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.onFirstLoad(forumName, forumId, sortType())
         viewModel.initialized = true
@@ -197,23 +198,30 @@ fun NormalThreadListPage(
         viewModel.requestRefresh(it.sortType)
     }
 
-    ForumThreadListPage(modifier, forumId, false, sortType, listState, contentPadding, viewModel)
+    ForumThreadListPage(
+        modifier = modifier,
+        forumId = forumId,
+        isGood = false,
+        sortType = sortType,
+        contentPadding = contentPadding,
+        viewModel = viewModel
+    )
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun ForumThreadListPage(
     modifier: Modifier = Modifier,
     forumId: Long,
     isGood: Boolean = false,
     sortType: () -> Int,
-    listState: LazyListState,
+    listState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues,
     viewModel: ForumThreadListViewModel
 ) {
     val context = LocalContext.current
     val navigator = LocalNavController.current
     val snackbarHostState = LocalSnackbarHostState.current
+    val hideBlocked = context.appPreferences.hideBlockedContent
 
     onGlobalEvent<ForumThreadListUiEvent.BackToTop>(
         filter = { it.isGood == isGood },
@@ -227,7 +235,8 @@ private fun ForumThreadListPage(
                 it.errorCode,
                 it.errorMsg
             ),
-            actionLabel = context.getString(R.string.button_retry)
+            actionLabel = context.getString(R.string.button_retry),
+            duration = SnackbarDuration.Short
         )
 
         if (snackbarResult == SnackbarResult.ActionPerformed) {
@@ -322,10 +331,8 @@ private fun ForumThreadListPage(
                 ) { index, item ->
                     BlockableContent(
                         blocked = item.blocked,
-                        blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp, horizontal = 16.dp),
+                        blockedTip = ThreadBlockedTip,
+                        hideBlockedContent = hideBlocked
                     ) {
                         if (item.isTop) {
                             TopThreadItem(
@@ -342,7 +349,7 @@ private fun ForumThreadListPage(
                                     if (threadList[index - 1].isTop) {
                                         Spacer(modifier = Modifier.height(8.dp))
                                     }
-                                    VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                 }
                                 FeedCard(
                                     item = item.thread,

@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -20,30 +18,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.api.models.protos.hasAgree
-import com.huanchengfly.tieba.post.arch.CommonUiEvent.ScrollToTop.bindScrollToTopEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
-import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.persistentListOf
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConcernPage(
     navigator: NavController,
     contentPadding: PaddingValues,
-    listState: LazyListState = rememberLazyListState(),
-    viewModel: ConcernViewModel = pageViewModel()
+    modifier: Modifier = Modifier,
+    onHideFab: (Boolean) -> Unit,
+    viewModel: ConcernViewModel = pageViewModel(),
 ) {
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(ConcernUiIntent.Refresh)
@@ -69,18 +65,18 @@ fun ConcernPage(
         prop1 = ConcernUiState::data,
         initial = persistentListOf()
     )
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = { viewModel.send(ConcernUiIntent.Refresh) })
 
-    viewModel.bindScrollToTopEvent(lazyListState = listState)
+    val listState: LazyListState = rememberLazyListState()
 
-    Box(
-        modifier = Modifier.pullRefresh(pullRefreshState),
-        contentAlignment = Alignment.TopCenter
+    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, false)
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.send(ConcernUiIntent.Refresh) },
+        contentPadding = contentPadding
     ) {
         SwipeUpLazyLoadColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             state = listState,
             contentPadding = contentPadding,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -103,7 +99,7 @@ fun ConcernPage(
                 key = { _, item -> "${item.recommendType}_${item.threadList?.id}" },
                 contentType = { _, item -> item.recommendType }
             ) { index, item ->
-                Container {
+                Box {
                     if (item.recommendType == 1 && item.threadList != null) {
                         Column {
                             FeedCard(
@@ -125,11 +121,8 @@ fun ConcernPage(
                                 },
                                 onClickUser = { navigator.navigate(UserProfile(it.id)) },
                             )
-                            if (index < data.size - 1) {
-                                VerticalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    thickness = 2.dp
-                                )
+                            if (index < data.lastIndex) {
+                                HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 2.dp)
                             }
                         }
                     } else {
@@ -138,13 +131,5 @@ fun ConcernPage(
                 }
             }
         }
-
-        PullRefreshIndicator(
-            refreshing = isRefreshing,
-            state = pullRefreshState,
-            modifier = Modifier.padding(contentPadding),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
-        )
     }
 }

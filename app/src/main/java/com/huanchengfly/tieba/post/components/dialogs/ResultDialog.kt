@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,8 +32,8 @@ import androidx.fragment.app.FragmentActivity
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.enableBackgroundBlur
 import com.huanchengfly.tieba.post.findActivity
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogMargin
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -57,8 +60,8 @@ abstract class ResultDialog<T>() : DialogFragment() {
         return AlertDialog.Builder(context, theme)
             .setView(ComposeView(context).apply {
                 setContent {
-                    val theme: ExtendedColors by ThemeUtil.themeState
-                    TiebaLiteTheme(theme) {
+                    val colorSchemeExt by ThemeUtil.colorState
+                    TiebaLiteTheme(colorSchemeExt) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -67,7 +70,13 @@ abstract class ResultDialog<T>() : DialogFragment() {
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            ContentView(savedInstanceState)
+                            Surface(
+                                modifier = Modifier.padding(DefaultDialogMargin),
+                                shape = AlertDialogDefaults.shape,
+                                color = MaterialTheme.colorScheme.background,
+                                tonalElevation = 6.dp,
+                                content = { ContentView(savedInstanceState) }
+                            )
                         }
                     }
                 }
@@ -106,9 +115,9 @@ abstract class ResultDialog<T>() : DialogFragment() {
             height = WindowManager.LayoutParams.MATCH_PARENT
 
             backgroundColor = if (this.enableBackgroundBlur(window.context) != null) {
-                ThemeUtil.getRawTheme().windowBackground.copy(0.2f)
+                ThemeUtil.currentColorScheme().background.copy(0.2f)
             } else {
-                ThemeUtil.getRawTheme().windowBackground.copy(0.86f)
+                ThemeUtil.currentColorScheme().background.copy(0.86f)
             }
         }
     }

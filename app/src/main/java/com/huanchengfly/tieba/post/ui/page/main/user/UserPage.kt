@@ -1,45 +1,45 @@
 package com.huanchengfly.tieba.post.ui.page.main.user
 
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Icon
-import androidx.compose.material.Scaffold
-import androidx.compose.material.SnackbarHost
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.SnackbarResult
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.rounded.AccountCircle
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -47,79 +47,106 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.accompanist.placeholder.placeholder
+import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.material.fade
+import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.setNightMode
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.theme.isDarkScheme
+import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.launch
 
 @Composable
 private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .height(76.dp)
+            .fillMaxWidth()
+            .placeholder(
+                highlight = PlaceholderHighlight.fade(),
+                shape = MaterialTheme.shapes.small
+            )
+    )
+}
+
+/**
+ * User status card
+ *
+ * @param modifier the [Modifier] to be applied to this card
+ * @param account user account
+ * */
+@Composable
+fun StatCard(modifier: Modifier = Modifier, account: Account?) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .placeholder(visible = true, color = ExtendedTheme.colors.chip)
-            .padding(vertical = 18.dp),
+            .padding(vertical = 16.dp)
+            .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StatCardItem(
-            statNum = 0,
-            statText = stringResource(id = R.string.text_stat_follow)
+            statNum = account?.postNum,
+            statText = stringResource(id = R.string.title_stat_posts_num)
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
+        VerticalDivider(color = MaterialTheme.colorScheme.outline)
         StatCardItem(
-            statNum = 0,
+            statNum = account?.fansNum,
             statText = stringResource(id = R.string.text_stat_fans)
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
+        VerticalDivider(color = MaterialTheme.colorScheme.outline)
         StatCardItem(
-            statNum = 0,
-            statText = stringResource(id = R.string.title_stat_posts_num)
+            statNum = account?.concernNum,
+            statText = stringResource(id = R.string.text_stat_follow)
         )
     }
 }
 
 @Composable
-private fun StatCard(
-    account: Account,
-    modifier: Modifier = Modifier
-) {
-    val postNum by animateIntAsState(targetValue = account.postNum?.toIntOrNull() ?: 0)
-    val fansNum by animateIntAsState(targetValue = account.fansNum?.toIntOrNull() ?: 0)
-    val concernNum by animateIntAsState(targetValue = account.concernNum?.toIntOrNull() ?: 0)
+private fun InfoCardPlaceHolder(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Bottom
     ) {
-        StatCardItem(
-            statNum = concernNum,
-            statText = stringResource(id = R.string.text_stat_follow)
-        )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
-        StatCardItem(
-            statNum = fansNum,
-            statText = stringResource(id = R.string.text_stat_fans)
-        )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
-        StatCardItem(
-            statNum = postNum,
-            statText = stringResource(id = R.string.title_stat_posts_num)
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "",
+                fontSize = 20.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .placeholder(highlight = PlaceholderHighlight.fade()),
+            )
+            Text(
+                text = "",
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .placeholder(highlight = PlaceholderHighlight.fade()),
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Box(
+            modifier = Modifier
+                .size(Sizes.Large)
+                .placeholder(highlight = PlaceholderHighlight.fade(), shape = CircleShape),
         )
     }
 }
@@ -128,66 +155,49 @@ private fun StatCard(
 private fun InfoCard(
     modifier: Modifier = Modifier,
     userName: String = "",
-    userIntro: String = "",
+    userIntro: String? = null,
     avatar: String? = null,
-    isPlaceholder: Boolean = false
 ) {
     Row(
         modifier = modifier,
+        verticalAlignment = Alignment.Bottom
     ) {
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .align(Alignment.Bottom)
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            Text(text = userName, style = MaterialTheme.typography.titleLarge)
+
             Text(
-                text = userName,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = ExtendedTheme.colors.text,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .placeholder(visible = isPlaceholder, color = ExtendedTheme.colors.chip),
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = userIntro,
+                text = userIntro ?: stringResource(id = R.string.tip_no_intro),
                 fontSize = 12.sp,
-                color = ExtendedTheme.colors.textSecondary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .placeholder(visible = isPlaceholder, color = ExtendedTheme.colors.chip),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Spacer(modifier = Modifier.width(16.dp))
+
         if (avatar != null) {
+            Spacer(modifier = Modifier.width(16.dp))
             Avatar(
                 data = avatar,
                 size = Sizes.Large,
                 contentDescription = stringResource(id = R.string.desc_user_avatar),
-                modifier = Modifier
-                    .align(Alignment.Bottom)
-                    .placeholder(visible = isPlaceholder, color = ExtendedTheme.colors.chip),
             )
         }
     }
 }
 
 @Composable
-private fun RowScope.StatCardItem(
-    statNum: Int,
-    statText: String
-) {
+private fun RowScope.StatCardItem(statNum: String?, statText: String) {
     Column(
         modifier = Modifier.weight(1f),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = "$statNum", fontSize = 20.sp, fontFamily = BebasFamily)
+        Text(text = statNum ?: 0.toString(), fontSize = 20.sp, fontFamily = BebasFamily)
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = statText,
-            fontSize = 12.sp,
-            color = ExtendedTheme.colors.textSecondary
+            color = LocalContentColor.current.copy(0.84f),
+            style = MaterialTheme.typography.labelMedium,
         )
     }
 }
@@ -195,58 +205,55 @@ private fun RowScope.StatCardItem(
 @Composable
 private fun LoginTipCard(modifier: Modifier = Modifier) {
     Row(modifier = modifier) {
-        Column(
+        Text(
             modifier = Modifier
                 .weight(1f)
-                .align(Alignment.Bottom)
-        ) {
-            Text(
-                text = stringResource(id = R.string.tip_login),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = ExtendedTheme.colors.text,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+                .align(Alignment.Bottom),
+            text = stringResource(id = R.string.tip_login),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+        )
+
         Spacer(modifier = Modifier.width(16.dp))
         Icon(
             imageVector = Icons.Rounded.AccountCircle,
             contentDescription = null,
-            tint = ExtendedTheme.colors.onChip,
+            tint = MaterialTheme.colorScheme.onSecondaryContainer,
             modifier = Modifier
-                .clip(CircleShape)
                 .size(Sizes.Large)
-                .background(color = ExtendedTheme.colors.chip)
+                .background(color = MaterialTheme.colorScheme.secondaryContainer, CircleShape)
                 .padding(16.dp),
         )
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserPage(viewModel: UserViewModel = viewModel()) {
     val context = LocalContext.current
     val navigator = LocalNavController.current
-    val isLoading by viewModel.isLoading
+    val colorScheme = MaterialTheme.colorScheme
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val account = LocalAccount.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
 
-    Scaffold(
-        contentWindowInsets = WindowInsets.systemBars,
-        backgroundColor = Color.Transparent,
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        }
+    MyScaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = emptyBlurBottomNavigation, // MainPage workaround
     ) { contentPaddings ->
-        val pullRefreshState = rememberPullRefreshState(isLoading, viewModel::onRefresh)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPaddings)
-                .pullRefresh(pullRefreshState),
+        val snackbarHostState = LocalSnackbarHostState.current
+        val pullRefreshState = rememberPullToRefreshState()
+
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = viewModel::onRefresh,
+            contentPadding = contentPaddings,
+            state = pullRefreshState
         ) {
-            Column(modifier = Modifier.verticalScroll(state = rememberScrollState())) {
+            Column(
+                modifier = Modifier
+                    .padding(contentPaddings)
+                    .verticalScroll(state = rememberScrollState())
+            ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 if (account != null) {
                     InfoCard(
@@ -256,31 +263,22 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                             }
                             .padding(horizontal = 16.dp, vertical = 16.dp),
                         userName = account.nameShow ?: account.name,
-                        userIntro = account.intro ?: stringResource(id = R.string.tip_no_intro),
-                        avatar = StringUtil.getAvatarUrl(account.portrait),
+                        userIntro = account.intro?.takeUnless { it.isEmpty() },
+                        avatar = remember { StringUtil.getAvatarUrl(account.portrait) },
                     )
-                    StatCard(
-                        account = account,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(color = ExtendedTheme.colors.chip)
-                            .padding(vertical = 18.dp)
-                    )
+
+                    Surface(
+                        modifier = Modifier.padding(16.dp),
+                        shape = MaterialTheme.shapes.small,
+                        color = colorScheme.secondaryContainer,
+                    ) {
+                        StatCard(account = account)
+                    }
                 } else if (isLoading) {
-                    InfoCard(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                        isPlaceholder = true,
-                    )
-                    StatCardPlaceholder(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(color = ExtendedTheme.colors.chip)
-                            .padding(vertical = 18.dp)
-                    )
+                    InfoCardPlaceHolder(modifier = Modifier.padding(16.dp))
+                    StatCardPlaceholder(modifier = Modifier.padding(16.dp))
                 } else {
-                    LoginTipCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp))
+                    LoginTipCard(modifier = Modifier.padding(16.dp))
                 }
                 if (account != null) {
                     ListMenuItem(
@@ -298,33 +296,48 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                         navigator.navigate(Destination.History)
                     }
                 )
+
                 ListMenuItem(
                     icon = ImageVector.vectorResource(id = R.drawable.ic_brush_24),
                     text = stringResource(id = R.string.title_theme),
-                    onClick = {
-                        navigator.navigate(Destination.AppTheme)
-                    }
+                    onClick = { navigator.navigate(Destination.AppTheme) }
                 ) {
+                    if (colorScheme.isTranslucent) return@ListMenuItem // Translucent theme has no dark/light mode
+
+                    val coroutineScope = rememberCoroutineScope()
+                    val switchEnabled by remember {
+                        derivedStateOf { snackbarHostState.currentSnackbarData == null }
+                    }
+                    val isDarkMode = remember(colorScheme) { colorScheme.isDarkScheme }
+
                     Text(text = stringResource(id = R.string.my_info_night), fontSize = 12.sp)
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
                     Switch(
-                        checked = ExtendedTheme.colors.isNightMode,
+                        checked = isDarkMode,
                         onCheckedChange = { checked ->
                             // Override night mode temporary
-                            context.setNightMode(checked)
+                            ThemeUtil.overrideDarkMode(darkMode = checked)
                             // Show night mode settings tip
                             coroutineScope.launch {
                                 val result = snackbarHostState.showSnackbar(
-                                    context.getString(R.string.message_find_tip),
-                                    actionLabel = context.getString(R.string.title_settings_night_mode)
+                                    message = context.getString(R.string.message_find_tip),
+                                    actionLabel = context.getString(R.string.title_settings_night_mode),
+                                    duration = SnackbarDuration.Short
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
                                     navigator.navigate(SettingsDestination.Custom)
                                 }
                             }
-                        }
+                        },
+                        thumbContent = {
+                            if (isDarkMode) {
+                                Icon(Icons.Filled.DarkMode, contentDescription = null)
+                            }
+                        },
+                        enabled = switchEnabled
                     )
                 }
+
                 if (account != null) {
                     ListMenuItem(
                         icon = ImageVector.vectorResource(id = R.drawable.ic_help_outline_black_24),
@@ -338,7 +351,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                         },
                     )
                 }
-                VerticalDivider(
+                HorizontalDivider(
                     modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)
                 )
                 ListMenuItem(
@@ -352,14 +365,6 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     onClick = { navigator.navigate(SettingsDestination.About) },
                 )
             }
-
-            PullRefreshIndicator(
-                refreshing = isLoading,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
-            )
         }
     }
 }

@@ -13,41 +13,48 @@ import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
 /**
  * Represents [Post] in UI
  *
- * @param id            Post ID
- * @param subPosts      Loaded replies
- * @param subPostNumber Total number of replies
+ * This class caches PbContentRenders to avoid compiling regex patterns or build highlighted
+ * content during the compose.
+ *
+ * @param id [Post.id]
+ * @param author remapped [Post.author]
+ * @param floor post floor
+ * @param title post title, **null** when title is empty or [Post.is_ntitle]
+ * @param time fixed [Post.time]
+ * @param like remapped [Post.agree]
+ * @param blocked whether [author] blocked or [Post.content] contains blocked keyword
+ * @param plainText string text of [Post.content]
+ * @param contentRenders Composable [PbContentRender] built from [Post.content]
+ * @param subPosts      replies from [Post.sub_post_list]
+ * @param subPostNumber total number of replies
  * */
 @Immutable
-data class PostData(
+/*data */class PostData(
     val id: Long,
     val author: UserData,
     val floor: Int,
-    val title: String,
-    val isNTitle: Boolean,
+    val title: String?,
     val time: Long,
-    val hasAgree: Int,
-    val agreeNum: Long,
-    val diffAgreeNum: Long,
+    val like: Like,
     val blocked: Boolean,
     val plainText: String,
     val contentRenders: ImmutableList<PbContentRender>,
-    val subPosts: ImmutableList<SubPostItemData>,
+    val subPosts: List<SubPostItemData>?,
     val subPostNumber: Int
 ) {
-    fun updateAgreeStatus(hasAgree: Int): PostData {
-        return if (hasAgree != this.hasAgree) {
-            if (hasAgree == 1) {
-                copy(agreeNum = agreeNum + 1, diffAgreeNum = diffAgreeNum + 1, hasAgree = 1)
-            } else {
-                copy(agreeNum = agreeNum - 1, diffAgreeNum = diffAgreeNum - 1, hasAgree = 0)
-            }
-        } else this
+
+    /**
+     * Called when user clicked like button
+     *
+     * @return new [PostData] with updated like status
+     * */
+    fun updateLikesCount(liked: Boolean, loading: Boolean): PostData {
+        return copy(like = like.updateLikeStatus(liked).setLoading(loading))
     }
 
     /**
@@ -67,43 +74,66 @@ data class PostData(
         return if (texts.isEmpty()) "" else texts.joinToString(DESC_SEPARATOR)
     }
 
-    companion object {
-        fun from(post: Post, fromSubPost: Boolean = false): PostData {
-            val plainText = post.content.plainText
-            val lzId = post.origin_thread_info?.author?.id
+    fun copy(
+        author: UserData = this.author,
+        title: String? = this.title,
+        time: Long = this.time,
+        like: Like = this.like,
+        blocked: Boolean = this.blocked,
+        plainText: String = this.plainText,
+        contentRenders: ImmutableList<PbContentRender> = this.contentRenders,
+        subPosts: List<SubPostItemData>? = this.subPosts,
+        subPostNumber: Int = this.subPostNumber
+    ) = PostData(
+        id = this.id,
+        author = author,
+        floor = this.floor,
+        title = title,
+        time = time,
+        like = like,
+        blocked = blocked,
+        plainText = plainText,
+        contentRenders = contentRenders,
+        subPosts = subPosts,
+        subPostNumber = subPostNumber
+    )
 
-            val author = if (post.author != null) {
-                UserData(post.author, post.author_id == lzId)
-            } else {
-                UserData.Empty
-            }
+    companion object {
+        fun from(
+            post: Post,
+            lzId: Long = post.origin_thread_info?.author?.id ?: -1,
+            fromSubPost: Boolean = false
+        ): PostData {
+            val plainText = post.content.plainText
+            val like = if (post.agree == null) LikeZero else Like(post.agree)
+            val authorId = post.author?.id ?: post.author_id
+            val author = post.author?.let { UserData(post.author, authorId == lzId) }
 
             return PostData(
                 id = post.id,
-                author = author,
+                author = author ?: UserData.Empty,
                 floor = post.floor,
-                title = post.title,
-                isNTitle = post.is_ntitle == 1,
+                title = post.title.takeUnless {
+                    post.is_ntitle == 1 || post.title.isEmpty() || post.title.isBlank()
+                },
                 time = DateTimeUtils.fixTimestamp(post.time.toLong()),
-                hasAgree = post.agree?.hasAgree ?: 0,
-                agreeNum = post.agree?.agreeNum ?: 0L,
-                diffAgreeNum = post.agree?.diffAgreeNum ?: 0L,
+                like = like,
                 blocked = shouldBlock(post.author_id, plainText),
                 plainText = plainText,
                 contentRenders = post.contentRenders,
-                subPosts = post.getSubPosts(fromSubPost),
+                subPosts = if (fromSubPost) null else post.getSubPosts(),
                 subPostNumber = post.sub_post_number
             )
         }
 
         private const val DESC_SEPARATOR = " · "
 
-        private fun Post.getSubPosts(fromSubPost: Boolean): ImmutableList<SubPostItemData> {
+        private fun Post.getSubPosts(): List<SubPostItemData>? {
             val lzId = origin_thread_info?.author?.id?: 0L
             return sub_post_list?.sub_post_list
-                ?.fastMap { SubPostItemData(subPost = it, lzId = lzId).buildContent(fromSubPost) }
+                ?.fastMap { SubPostItemData(subPost = it, lzId = lzId, fromSubPost = false) }
                 ?.toImmutableList()
-                ?: persistentListOf()
+                ?.takeUnless { it.isEmpty() }
         }
     }
 }

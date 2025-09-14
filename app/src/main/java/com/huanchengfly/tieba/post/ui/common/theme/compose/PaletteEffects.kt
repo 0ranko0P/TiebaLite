@@ -9,7 +9,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.State
@@ -26,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.platform.LocalContext
@@ -67,7 +67,7 @@ fun rememberAnimatedGradientBrush(colors: List<Color> = genPaletteColors()): Sta
         label = "OffsetTransition"
     )
 
-    return remember { mutableStateOf(Brush.linearGradient(emptyList())) }.apply {
+    return remember { mutableStateOf<Brush>(SolidColor(Color.Transparent)) }.apply {
         value = Brush.linearGradient(
             colors = colors,
             start = Offset(offset, offset),
@@ -77,17 +77,15 @@ fun rememberAnimatedGradientBrush(colors: List<Color> = genPaletteColors()): Sta
     }
 }
 
-private fun Modifier.background(brush: Brush, shape: Shape = RectangleShape): Modifier =
-    this then drawWithCache {
-        onDrawBehind {
-            if (shape === RectangleShape) {
-                drawRect(brush)
-            } else {
-                val outline = shape.createOutline(size, layoutDirection, this)
-                drawOutline(outline, brush)
-            }
+private fun Modifier.background(brush: Brush, shape: Shape = RectangleShape) = drawWithCache {
+    onDrawBehind {
+        if (shape === RectangleShape) {
+            drawRect(brush)
+        } else {
+            drawOutline(shape.createOutline(size, layoutDirection, this), brush)
         }
     }
+}
 
 /**
  * Draw the given palette colors as a background with animated gradient effect.
@@ -107,22 +105,27 @@ fun PaletteBackground(
     blurRadius: Dp = 48.dp,
     content: (@Composable BoxScope.() -> Unit)? = null
 ) {
-    val blurMod = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && blurRadius > Dp.Hairline) {
+    val blurModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && blurRadius > Dp.Hairline) {
         Modifier.blur(radius = blurRadius, edgeTreatment = BlurredEdgeTreatment.Rectangle)
     } else {
-        null
+        Modifier
     }
 
-    val brush by rememberAnimatedGradientBrush(colors)
-    val backgroundMod = (blurMod ?: Modifier).background(brush)
-    val clipModifier = if (shape != RectangleShape) Modifier.clip(shape) else Modifier
-
-    Box(modifier = modifier then clipModifier) {
+    Box(
+        modifier = modifier.block {
+            if (shape != RectangleShape) Modifier.clip(shape) else null
+        }
+    ) {
+        val brush by rememberAnimatedGradientBrush(colors)
         // Avoid blurring the content
-        Box(modifier = Modifier.fillMaxSize() then backgroundMod)
+        Box(
+            modifier = blurModifier
+                .matchParentSize()
+                .background(brush)
+        )
 
         if (content != null) {
-            Box(modifier = Modifier.fillMaxSize(), content = content)
+            Box(modifier = Modifier.matchParentSize(), content = content)
         }
     }
 }

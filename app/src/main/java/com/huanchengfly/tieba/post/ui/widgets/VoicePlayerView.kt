@@ -19,7 +19,6 @@ import android.widget.TextView
 import androidx.annotation.IntDef
 import androidx.annotation.OptIn
 import androidx.appcompat.widget.PopupMenu
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
@@ -108,8 +107,8 @@ class VoicePlayerView @JvmOverloads constructor(
     }
 
     private fun initView() {
-        val theme by ThemeUtil.themeState
-        backgroundTintList = ColorStateList.valueOf(theme.primary.toArgb())
+        val colorScheme = ThemeUtil.currentColorScheme()
+        backgroundTintList = ColorStateList.valueOf(colorScheme.primary.toArgb())
         setBackgroundResource(R.drawable.bg_audio)
         setOnClickListener(this)
         setOnLongClickListener(this)

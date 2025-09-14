@@ -1,6 +1,6 @@
 package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue

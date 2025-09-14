@@ -5,18 +5,15 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,26 +22,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -52,20 +51,20 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.PaddingNone
@@ -73,30 +72,30 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.arch.sealedValues
+import com.huanchengfly.tieba.post.models.database.KeywordProvider
 import com.huanchengfly.tieba.post.models.database.SearchHistory
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumPage
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadPage
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadSortType
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadUiEvent
 import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
-import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarContainer
-import com.huanchengfly.tieba.post.ui.widgets.compose.enableBlur
-import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
+import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -104,22 +103,21 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 object SearchToolbarSharedBoundsKey
 
 object SearchIconSharedElementKey
 
-@Immutable
-data class SearchPageItem(
-    val id: String,
-    @StringRes
-    val text: Int,
-    val sortTypes: Options<Int>? = null, // SupportSort: Non-Null
-    val selectedSortType: () -> Int = { -1 },
-    val onSelectedSortTypeChange: (Int) -> Unit = {},
-)
+sealed class SearchPages(@StringRes val titleRes: Int) {
+    object Forum : SearchPages(titleRes = R.string.title_search_forum)
 
-@OptIn(FlowPreview::class, ExperimentalSharedTransitionApi::class)
+    object Thread : SearchPages(titleRes = R.string.title_search_thread)
+
+    object User : SearchPages(titleRes = R.string.title_search_user)
+}
+
+@OptIn(FlowPreview::class, ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SearchPage(
     navigator: NavController,
@@ -171,10 +169,16 @@ fun SearchPage(
         viewModel.send(SearchUiIntent.SubmitKeyword(""))
     }
 
-    var expanded by remember { mutableStateOf(false) }
-
-    val initialSortType = remember { SearchThreadSortType.SORT_TYPE_NEWEST }
+    val sortTypes = remember {
+        persistentMapOf(
+            SearchThreadSortType.SORT_TYPE_NEWEST to R.string.title_search_order_new,
+            SearchThreadSortType.SORT_TYPE_OLDEST to R.string.title_search_order_old,
+            SearchThreadSortType.SORT_TYPE_RELATIVE to R.string.title_search_order_relevant
+        )
+    }
+    val initialSortType = SearchThreadSortType.SORT_TYPE_NEWEST
     var searchThreadSortType by remember { mutableIntStateOf(initialSortType) }
+
     LaunchedEffect(searchThreadSortType) {
         emitGlobalEvent(SearchThreadUiEvent.SwitchSortType(searchThreadSortType))
     }
@@ -192,43 +196,27 @@ fun SearchPage(
         keyboardController?.hide()
     }
 
-    val pages by remember {
-        derivedStateOf {
-            persistentListOf(
-                SearchPageItem(id = "forum", text = R.string.title_search_forum),
-
-                SearchPageItem(
-                    id = "thread",
-                    text = R.string.title_search_thread,
-                    sortTypes = persistentMapOf(
-                        SearchThreadSortType.SORT_TYPE_NEWEST to R.string.title_search_order_new,
-                        SearchThreadSortType.SORT_TYPE_OLDEST to R.string.title_search_order_old,
-                        SearchThreadSortType.SORT_TYPE_RELATIVE to R.string.title_search_order_relevant
-                    ),
-                    selectedSortType = { searchThreadSortType },
-                    onSelectedSortTypeChange = { searchThreadSortType = it }
-                ),
-
-                SearchPageItem(id = "user", text = R.string.title_search_user),
-            )
-        }
+    val pages = remember { sealedValues<SearchPages>() }
+    val pagerState = rememberPagerState(0) { pages.size }
+    val scrollBehaviors = rememberTopAppBarScrollBehaviors(pages.size) {
+        TopAppBarDefaults.pinnedScrollBehavior(state = it)
     }
-    val pagerState = rememberPagerState { pages.size }
-    val listStates = rememberPagerListStates(size = pagerState.pageCount)
 
     BlurScaffold(
         topHazeBlock = {
-            blurEnabled = !isKeywordEmpty && pagerState.enableBlur(children = listStates)
+            blurEnabled = !isKeywordEmpty && scrollBehaviors.isOverlapping(pagerState)
         },
         bottomHazeBlock = {
             blurEnabled = !isKeywordEmpty
         },
         topBar = {
-            TopAppBarContainer(
-                modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
-                topBar = {
+            TopAppBar(
+                modifier = Modifier,
+                title = {
                     SearchTopBar(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier
+                            .padding(start = Dp.Hairline, top = 8.dp, end = 18.dp, bottom = 8.dp)
+                            .localSharedBounds(key = SearchToolbarSharedBoundsKey),
                         keyword = inputKeyword,
                         onKeywordChange = { inputKeyword = it },
                         onKeywordSubmit = onKeywordSubmit,
@@ -241,32 +229,46 @@ fun SearchPage(
                         }
                     )
                 },
-                elevation = Dp.Hairline
+                scrollBehavior = scrollBehaviors[pagerState.currentPage]
             ) {
                 AnimatedVisibility(
                     visible = !isKeywordEmpty,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
-                    SearchTabRow(pagerState = pagerState, pages = pages)
+                    SearchTabRow(
+                        pagerState = pagerState,
+                        pages = pages,
+                        sortTypes = sortTypes,
+                        selectedSortType = searchThreadSortType,
+                        onSelectSortType = {
+                            searchThreadSortType = it
+                        }
+                    )
                 }
             }
         }
     ) { contentPadding ->
+        var isSearchHistoryExpanded by rememberSaveable { mutableStateOf(false) }
+
         if (!isKeywordEmpty) {
             ProvideNavigator(navigator = navigator) {
                 LazyLoadHorizontalPager(
                     state = pagerState,
-                    key = { pages[it].id },
+                    key = { pages[it].titleRes },
                     modifier = Modifier.fillMaxSize(),
+                    flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
                 ) {
-                    val listState = listStates[it]
+                    // Attach ScrollBehaviors connection on each page
+                    val pageModifier = Modifier.nestedScroll(scrollBehaviors[it].nestedScrollConnection)
 
-                    when(pages[it].text) {
-                        R.string.title_search_forum -> SearchForumPage(keyword, contentPadding, listState)
+                    when(pages[it]) {
+                        SearchPages.Forum -> SearchForumPage(pageModifier, keyword, contentPadding)
 
-                        R.string.title_search_thread -> SearchThreadPage(keyword, initialSortType, contentPadding, listState)
+                        SearchPages.Thread -> {
+                            SearchThreadPage(pageModifier, keyword, initialSortType, contentPadding)
+                        }
 
-                        R.string.title_search_user -> SearchUserPage(keyword, contentPadding, listState)
+                        SearchPages.User -> SearchUserPage(pageModifier, keyword, contentPadding)
                     }
                 }
             }
@@ -274,22 +276,23 @@ fun SearchPage(
             if (showSuggestions) {
                 SearchSuggestionList(contentPadding, suggestions, onItemClick = onKeywordSubmit)
             } else {
-                Column(
+                Container(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxHeight()
                         .padding(contentPadding)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    Container {
-                        SearchHistoryList(
-                            searchHistories = searchHistories,
-                            onSearchHistoryClick = onKeywordSubmit,
-                            expanded = expanded,
-                            onToggleExpand = { expanded = !expanded },
-                            onDelete = { viewModel.send(SearchUiIntent.DeleteSearchHistory(it.id)) },
-                            onClear = { viewModel.send(SearchUiIntent.ClearSearchHistory) }
-                        )
-                    }
+                    SearchHistoryList(
+                        searchHistories = searchHistories,
+                        onSearchHistoryClick = onKeywordSubmit,
+                        expanded = { isSearchHistoryExpanded },
+                        onToggleExpand = { isSearchHistoryExpanded = !isSearchHistoryExpanded },
+                        onDelete = {
+                            val id = (it as SearchHistory).id
+                            viewModel.send(SearchUiIntent.DeleteSearchHistory(id))
+                        },
+                        onClear = { viewModel.send(SearchUiIntent.ClearSearchHistory) }
+                    )
                 }
             }
         }
@@ -303,38 +306,31 @@ private fun SearchSuggestionList(
     onItemClick: (String) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .padding(horizontal = 16.dp) // Align with search bar
+            .fillMaxWidth(),
         contentPadding = contentPadding
     ) {
-        items(
-            items = suggestions,
-            key = { it }
-        ) {
-            Container(
-                modifier = Modifier.animateItem()
+        items(items = suggestions, key = { it }) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .animateItem()
+                    .clickable {
+                        onItemClick(it)
+                    }
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .clickable {
-                            onItemClick(it)
-                        }
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = stringResource(id = R.string.desc_search_sug, it),
-                        tint = ExtendedTheme.colors.text
-                    )
+                Icon(
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = stringResource(id = R.string.desc_search_sug, it),
+                )
 
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.subtitle2,
-                        modifier = Modifier.weight(1f),
-                        color = ExtendedTheme.colors.text
-                    )
-                }
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
@@ -344,9 +340,7 @@ private fun SearchSuggestionList(
 @Composable
 private fun SearchSuggestionListPreview() {
     TiebaLiteTheme {
-        Box(
-            modifier = Modifier.background(ExtendedTheme.colors.topBar)
-        ) {
+        Surface {
             SearchSuggestionList(
                 suggestions = persistentListOf("1", "2", "3"),
                 onItemClick = {}
@@ -355,169 +349,154 @@ private fun SearchSuggestionListPreview() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ColumnScope.SearchTabRow(
+private fun SearchTabRow(
+    modifier: Modifier = Modifier,
     pagerState: PagerState,
-    pages: ImmutableList<SearchPageItem>,
+    pages: List<SearchPages>,
+    sortTypes: Options<Int>,
+    selectedSortType: Int,
+    onSelectSortType: (Int) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    TabRow(
+    val tabTextStyle = MaterialTheme.typography.labelLarge.copy(letterSpacing = 2.sp)
+
+    val onTabClicked: (index: Int) -> Unit = remember { { index ->
+        coroutineScope.launch {
+            if (abs(pagerState.currentPage - index) > 1) {
+                pagerState.scrollToPage(index)
+            } else {
+                pagerState.animateScrollToPage(index)
+            }
+        }
+    } }
+
+    SecondaryTabRow(
         selectedTabIndex = pagerState.currentPage,
-        indicator = { tabPositions ->
-            PagerTabIndicator(
-                pagerState = pagerState,
-                tabPositions = tabPositions
-            )
+        indicator = {
+            FancyAnimatedIndicatorWithModifier(pagerState.currentPage, verticalPadding = 6.dp)
         },
         divider = {},
-        backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.onTopBar,
-        modifier = Modifier.width(76.dp * pages.size),
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.primary,
+        modifier = modifier.width(75.dp * pages.size),
     ) {
-        var selected: Boolean
         pages.fastForEachIndexed { index, item ->
-            selected = pagerState.currentPage == index
+            val selected = pagerState.currentPage == index
 
-            if (item.sortTypes != null) { // Check item supports sort
+            if (item == SearchPages.Thread) {
                 TabClickMenu(
                     selected = selected,
-                    onClick = {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    },
+                    onClick = { onTabClicked(index) },
                     text = {
-                        Text(
-                            text = stringResource(item.text),
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                        )
+                        Text(text = stringResource(item.titleRes), style = tabTextStyle)
                     },
                     menuContent = {
-                        ListSinglePicker(
-                            items = item.sortTypes,
-                            selected = item.selectedSortType(),
-                            onItemSelected = { value, changed ->
-                                if (changed) item.onSelectedSortTypeChange(value)
-                                dismiss()
-                            }
+                        ListPickerMenuItems(
+                            items = sortTypes,
+                            picked = selectedSortType,
+                            onItemPicked = onSelectSortType
                         )
-                    }
+                    },
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
                 Tab(
                     text = {
-                        Text(
-                            text = stringResource(item.text),
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                        )
+                        Text(text = stringResource(item.titleRes), style = tabTextStyle)
                     },
                     selected = selected,
-                    onClick = {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    },
+                    onClick = { onTabClicked(index) },
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun SearchHistoryList(
-    searchHistories: ImmutableList<SearchHistory>,
+fun SearchHistoryList(
+    modifier: Modifier = Modifier,
+    searchHistories: ImmutableList<KeywordProvider>,
     onSearchHistoryClick: (String) -> Unit,
-    expanded: Boolean = false,
+    expanded: () -> Boolean,
     onToggleExpand: () -> Unit = {},
-    onDelete: (SearchHistory) -> Unit = {},
+    onDelete: (KeywordProvider) -> Unit = {},
     onClear: () -> Unit = {},
 ) {
-    val hasItem = remember(searchHistories) {
-        searchHistories.isNotEmpty()
-    }
-    val hasMore = remember(searchHistories) {
-        searchHistories.size > 6
-    }
-    val showItem = remember(expanded, hasMore, searchHistories) {
-        if (!expanded && hasMore) searchHistories.take(6) else searchHistories
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-    ) {
+    val hasItem = searchHistories.isNotEmpty()
+    val hasMore = searchHistories.size > 6
+
+    Column(modifier = modifier) {
         Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = stringResource(id = R.string.title_search_history),
-                modifier = Modifier
-                    .weight(1f),
-                style = MaterialTheme.typography.subtitle1
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.labelLarge
             )
             if (hasItem) {
                 Text(
                     text = stringResource(id = R.string.button_clear_all),
-                    modifier = Modifier.clickable(onClick = onClear),
-                    style = MaterialTheme.typography.button
+                    modifier = Modifier.clickableNoIndication(onClick = onClear),
+                    color = MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.labelMedium
                 )
             }
         }
+
         FlowRow(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .animateContentSize(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            showItem.fastForEach { searchHistory ->
-                Box(
-                    modifier = Modifier
-                        .padding(bottom = 8.dp)
-                        .clip(RoundedCornerShape(100))
-                        .combinedClickable(
-                            onClick = { onSearchHistoryClick(searchHistory.content) },
-                            onLongClick = { onDelete(searchHistory) }
-                        )
-                        .background(ExtendedTheme.colors.chip)
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+            val maxItemViewSize = if (!expanded() && hasMore) 6 else searchHistories.size
+            val historyBackground = MaterialTheme.colorScheme.secondaryContainer
+
+            for (i in 0 until maxItemViewSize) {
+                val searchHistory = searchHistories[i]
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = historyBackground,
                 ) {
                     Text(
-                        text = searchHistory.content
+                        text = searchHistory.getKeyword(),
+                        modifier = Modifier
+                            .combinedClickable(
+                                onClick = { onSearchHistoryClick(searchHistory.getKeyword()) },
+                                onLongClick = { onDelete(searchHistory) }
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
         }
+
         if (hasMore) {
-            Button(
+            TextButton(
                 onClick = onToggleExpand,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = Color.Transparent,
-                    contentColor = ExtendedTheme.colors.text
-                )
+                contentPadding = ButtonDefaults.TextButtonWithIconContentPadding
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = stringResource(
-                            id = if (expanded) R.string.button_expand_less_history else R.string.button_expand_more_history
-                        ),
-                        style = MaterialTheme.typography.button,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                Icon(
+                    imageVector = if (expanded()) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = if (expanded()) {
+                        stringResource(id = R.string.button_expand_less_history)
+                    } else {
+                        stringResource(id = R.string.button_expand_more_history)
+                    }
+                )
             }
-        }
-        if (!hasItem) {
+        } else if (!hasItem) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -526,7 +505,6 @@ private fun SearchHistoryList(
             ) {
                 Text(
                     text = stringResource(id = R.string.tip_empty),
-                    color = ExtendedTheme.colors.text.copy(ContentAlpha.disabled),
                     fontSize = 16.sp
                 )
             }
@@ -550,7 +528,8 @@ private fun SearchTopBar(
         placeholder = {
             Text(
                 text = stringResource(id = R.string.hint_search),
-                color = ExtendedTheme.colors.textSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium
             )
         },
         prependIcon = {
@@ -561,20 +540,19 @@ private fun SearchTopBar(
                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                 contentDescription = stringResource(id = R.string.button_back)
             )
-        },
-        shape = RoundedCornerShape(6.dp)
+        }
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview("SearchBox")
 @Composable
-fun PreviewSearchBox() {
+private fun PreviewSearchBox() {
     var keyword by remember { mutableStateOf("") }
     TiebaLiteTheme {
-        Box(
+        Surface(
             modifier = Modifier
-                .height(64.dp)
-                .background(ExtendedTheme.colors.topBar)
+                .height(TopAppBarDefaults.TopAppBarExpandedHeight)
                 .padding(vertical = 8.dp, horizontal = 16.dp)
         ) {
             SearchTopBar(
@@ -587,16 +565,16 @@ fun PreviewSearchBox() {
 
 @Preview("SearchHistoryList")
 @Composable
-fun PreviewSearchHistoryList() {
+private fun PreviewSearchHistoryList() {
     TiebaLiteTheme {
         var expanded by remember { mutableStateOf(false) }
-        Box(modifier = Modifier.background(ExtendedTheme.colors.background)) {
+        Surface {
             SearchHistoryList(
                 searchHistories = (0..20).map {
                     SearchHistory(content = if (it % 2 == 0) "记录$it" else "搜索记录$it")
                 }.toImmutableList(),
                 onSearchHistoryClick = {},
-                expanded = expanded,
+                expanded = { expanded },
                 onToggleExpand = { expanded = !expanded },
             )
         }

@@ -27,9 +27,8 @@ sealed interface GlobalEvent : UiEvent {
     ) : GlobalEvent
 }
 
-private val globalEventSharedFlow: MutableSharedFlow<UiEvent> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
+private val globalEventSharedFlow: MutableSharedFlow<UiEvent> =
     MutableSharedFlow(0, 2, BufferOverflow.DROP_OLDEST)
-}
 
 val GlobalEventFlow = globalEventSharedFlow.asSharedFlow()
 

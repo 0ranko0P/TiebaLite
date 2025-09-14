@@ -1,14 +1,15 @@
 package com.huanchengfly.tieba.post.ui.page.reply
 
+import android.content.Context
 import android.net.Uri
 import android.text.Editable
 import android.text.SpannableString
 import android.text.TextWatcher
 import android.util.Log
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.UploadPictureResultBean
@@ -18,6 +19,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.arch.PartialChange
 import com.huanchengfly.tieba.post.arch.PartialChangeProducer
 import com.huanchengfly.tieba.post.arch.UiEvent
@@ -27,17 +29,23 @@ import com.huanchengfly.tieba.post.components.ImageUploader
 import com.huanchengfly.tieba.post.models.database.Draft
 import com.huanchengfly.tieba.post.repository.AddPostRepository
 import com.huanchengfly.tieba.post.toMD5
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.utils.Emoticon
+import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.FileUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
@@ -45,6 +53,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.litepal.LitePal
@@ -52,20 +61,30 @@ import org.litepal.extension.deleteAllAsync
 import org.litepal.extension.findFirst
 import javax.inject.Inject
 
-enum class ReplyPanelType {
-    NONE,
-    EMOJI,
-    IMAGE,
-    VOICE
-}
-
 @Stable
 @HiltViewModel
-class ReplyViewModel @Inject constructor() :
-    BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>(), TextWatcher {
+class ReplyViewModel @Inject constructor(
+    @ApplicationContext val context: Context,
+    savedStateHandle: SavedStateHandle
+) : BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>(), TextWatcher {
 
-    private val _text = mutableStateOf(SpannableString(""))
-    val text: State<SpannableString> get() = _text
+    private val params = savedStateHandle.toRoute<Destination.Reply>()
+
+    val forumId = params.forumId
+    val forumName = params.forumName
+    val threadId = params.threadId
+    val postId = params.postId
+    val subPostId = params.subPostId
+    val replyUserId = params.replyUserId
+    val replyUserName = params.replyUserName
+    val replyUserPortrait = params.replyUserPortrait
+    val tbs = params.tbs
+
+    var emoticons: List<Emoticon> = emptyList()
+        private set
+
+    private val _text = MutableStateFlow(SpannableString(""))
+    val text: StateFlow<SpannableString> = _text.asStateFlow()
 
     /**
      * Draft to save, will be cleared after a successful reply.
@@ -77,7 +96,7 @@ class ReplyViewModel @Inject constructor() :
 
     private var hash: String? = null
 
-    private var emoticonJob: Job = Job()
+    private val emoticonContentRunner = ControlledRunner<Unit>()
 
     private var emoticonSize = -1
 
@@ -92,6 +111,7 @@ class ReplyViewModel @Inject constructor() :
 
             onTextChanged(draft.content, 0, 0, draft.content.length)
         }
+        emoticons = EmoticonManager.getAllEmoticon()
         super.initialized = true
     }
 
@@ -110,19 +130,18 @@ class ReplyViewModel @Inject constructor() :
         is ReplyPartialChange.UploadImages.Success -> ReplyUiEvent.UploadSuccess(partialChange.resultList)
 
         is ReplyPartialChange.Send.Failure -> CommonUiEvent.Toast(
-            App.INSTANCE.getString(
+            context.getString(
                 R.string.toast_reply_failed,
                 partialChange.errorCode,
                 partialChange.errorMessage
             )
         )
 
-        is ReplyPartialChange.UploadImages.Failure -> CommonUiEvent.Toast(
-            App.INSTANCE.getString(
-                R.string.toast_upload_image_failed,
-                partialChange.errorMessage
+        is ReplyPartialChange.UploadImages.Failure -> {
+            CommonUiEvent.Toast(
+                context.getString(R.string.toast_upload_image_failed, partialChange.errorMessage)
             )
-        )
+        }
 
         else -> null
     }
@@ -135,8 +154,6 @@ class ReplyViewModel @Inject constructor() :
                 intentFlow.filterIsInstance<ReplyUiIntent.UploadImages>()
                     .flatMapConcat { it.producePartialChange() },
                 intentFlow.filterIsInstance<ReplyUiIntent.Send>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ReplyUiIntent.SwitchPanel>()
                     .flatMapConcat { it.producePartialChange() },
                 intentFlow.filterIsInstance<ReplyUiIntent.AddImage>()
                     .flatMapConcat { it.producePartialChange() },
@@ -198,9 +215,6 @@ class ReplyViewModel @Inject constructor() :
                     )
                 }
 
-        private fun ReplyUiIntent.SwitchPanel.producePartialChange() =
-            flowOf(ReplyPartialChange.SwitchPanel(panelType))
-
         private fun ReplyUiIntent.AddImage.producePartialChange() =
             flowOf(ReplyPartialChange.AddImage(imageUris))
 
@@ -211,13 +225,54 @@ class ReplyViewModel @Inject constructor() :
             flowOf(ReplyPartialChange.ToggleIsOriginImage(isOriginImage))
     }
 
-    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        emoticonJob.apply {
-            if (isActive) cancel()
+    fun onSendReply(curTbs: String) {
+        val text = userDraft ?: return
+        val replyContent = if (subPostId == null || subPostId == 0L) {
+            text
+        } else {
+            "回复 #(reply, ${replyUserPortrait}, ${replyUserName}) :${text}"
         }
-        emoticonJob = viewModelScope.launch(Dispatchers.Main.immediate) {
-            userDraft = s?.toString()?: ""
-            _text.value = StringUtil.getEmoticonContent(emoticonSize, userDraft)
+        send(
+            ReplyUiIntent.Send(
+                content = replyContent.toString(),
+                forumId = forumId,
+                forumName = forumName,
+                threadId = threadId,
+                tbs = curTbs,
+                postId = postId,
+                subPostId = subPostId,
+                replyUserId = replyUserId
+            )
+        )
+    }
+
+    fun onSendReplyWithImage(resultList: List<UploadPictureResultBean>, curTbs: String) {
+        val imageContent = resultList.joinToString("\n") { image ->
+            "#(pic,${image.picId},${image.picInfo.originPic.width},${image.picInfo.originPic.height})"
+        }
+
+        send(
+            ReplyUiIntent.Send(
+                content = "${userDraft}\n$imageContent",
+                forumId = forumId,
+                forumName = forumName,
+                threadId = threadId,
+                tbs = curTbs,
+                postId = postId,
+                subPostId = subPostId,
+                replyUserId = replyUserId,
+            )
+        )
+    }
+
+    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+        val input = s?.toString()?: ""
+        userDraft = input
+        viewModelScope.launch {
+            emoticonContentRunner.cancelPreviousThenRun {
+                val newText = StringUtil.getEmoticonContent(context, emoticonSize, source = input)
+                _text.update { newText }
+            }
         }
     }
 
@@ -234,17 +289,17 @@ class ReplyViewModel @Inject constructor() :
 
     override fun onCleared() {
         super.onCleared()
-        if (emoticonJob.isActive) emoticonJob.cancel()
-        if (!userDraft.isNullOrEmpty() && hash != null) {
+        emoticonContentRunner.cancelCurrent()
+        val draft = userDraft?.toString()?.trim().orEmpty()
+        if (draft.isNotEmpty() && hash != null) {
             MainScope().launch(Dispatchers.IO) {
-                val rec = Draft(hash, userDraft.toString()).saveOrUpdate("hash = ?", hash)
+                val rec = Draft(hash, draft).saveOrUpdate("hash = ?", hash)
                 if (!rec) {
-                    Log.w(TAG, "onCleared: Save draft $userDraft failed, hash=$hash")
+                    Log.w(TAG, "onCleared: Save draft $draft failed, hash=$hash")
                 }
             }
         }
     }
-
 
     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { /*** NO-OP ***/ }
 
@@ -274,8 +329,6 @@ sealed interface ReplyUiIntent : UiIntent {
         val subPostId: Long? = null,
         val replyUserId: Long? = null,
     ) : ReplyUiIntent
-
-    data class SwitchPanel(val panelType: ReplyPanelType) : ReplyUiIntent
 
     data class AddImage(val imageUris: List<String>) : ReplyUiIntent
 
@@ -329,11 +382,6 @@ sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
         ) : Send()
     }
 
-    data class SwitchPanel(val panelType: ReplyPanelType) : ReplyPartialChange {
-        override fun reduce(oldState: ReplyUiState): ReplyUiState =
-            oldState.copy(replyPanelType = panelType)
-    }
-
     data class AddImage(val imageUris: List<String>) : ReplyPartialChange {
         override fun reduce(oldState: ReplyUiState): ReplyUiState {
             // On device that don't support limited photo picker
@@ -360,7 +408,6 @@ sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
 data class ReplyUiState(
     val isSending: Boolean = false,
     val replySuccess: Boolean = false,
-    val replyPanelType: ReplyPanelType = ReplyPanelType.NONE,
 
     val isUploading: Boolean = false,
     val isOriginImage: Boolean = false,

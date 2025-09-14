@@ -2,13 +2,10 @@ package com.huanchengfly.tieba.post.ui.page.thread
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,17 +22,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ModalBottomSheetLayout
-import androidx.compose.material.ModalBottomSheetValue
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarResult
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ChromeReaderMode
 import androidx.compose.material.icons.automirrored.rounded.ChromeReaderMode
@@ -50,50 +36,70 @@ import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
-import androidx.compose.material.rememberModalBottomSheetState
-import androidx.compose.material.rememberScaffoldState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastFirstOrNull
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.block
+import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.copy
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipBackground
-import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipContent
-import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.ui.models.Like
+import com.huanchengfly.tieba.post.ui.models.LikeZero
 import com.huanchengfly.tieba.post.ui.models.PostData
+import com.huanchengfly.tieba.post.ui.models.ThreadUiState
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
-import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
@@ -101,13 +107,14 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import dev.chrisbanes.haze.ExperimentalHazeApi
@@ -115,68 +122,51 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun ToggleButton(
     text: String,
     checked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
-    backgroundColor: Color = ExtendedTheme.colors.chip,
-    contentColor: Color = ExtendedTheme.colors.text,
-    selectedBackgroundColor: Color = ExtendedTheme.colors.invertChipBackground,
-    selectedContentColor: Color = ExtendedTheme.colors.invertChipContent,
+    icon: ImageVector,
 ) {
-    val animatedColor by animateColorAsState(
-        if (checked) selectedContentColor else contentColor,
-        label = "toggleBtnColor"
-    )
-    val animatedBackgroundColor by animateColorAsState(
-        if (checked) selectedBackgroundColor else backgroundColor,
-        label = "toggleBtnBackgroundColor"
-    )
+    val colorScheme = MaterialTheme.colorScheme
 
     Surface(
         onClick = onClick,
         modifier = modifier,
-        enabled = true,
-        shape = RoundedCornerShape(6.dp),
-        color = animatedBackgroundColor,
-        contentColor = animatedColor
+        shape = MaterialTheme.shapes.small,
+        color = if (checked) colorScheme.secondaryContainer else colorScheme.surfaceContainer,
+        contentColor = if (checked) colorScheme.onSecondaryContainer else colorScheme.onSurface,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (icon != null) {
-                    Icon(imageVector = icon, contentDescription = text)
-                }
-                ProvideTextStyle(
-                    value = MaterialTheme.typography.subtitle1.copy(
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center,
-                    )
-                ) {
-                    Text(text = text)
-                }
+                Icon(imageVector = icon, contentDescription = text)
+                Text(
+                    text = text,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }
 }
 
-private fun LazyListState.lastVisiblePost(viewModel: ThreadViewModel): PostData? {
+private fun LazyListState.lastVisiblePost(uiState: ThreadUiState): PostData? {
     val lastPostItem = layoutInfo.visibleItemsInfo.lastOrNull { item ->
         item.key is String && (item.key as String).startsWith(ITEM_POST_KEY_PREFIX)
-    }?: return viewModel.threadUiState.firstPost
+    }?: return uiState.firstPost
 
-    return viewModel.data.firstOrNull { post ->
-        (lastPostItem.key as String).endsWith(post.id.toString())
-    } ?: viewModel.threadUiState.firstPost
+    val lastPostItemKey = lastPostItem.key as String
+    return uiState.data
+        .fastFirstOrNull { post -> lastPostItemKey.endsWith(post.id.toString()) }
+        ?: uiState.firstPost
 }
 
-@OptIn(ExperimentalHazeApi::class)
+@OptIn(ExperimentalHazeApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ThreadPage(
     threadId: Long,
@@ -186,66 +176,68 @@ fun ThreadPage(
     navigator: NavController,
     viewModel: ThreadViewModel = hiltViewModel(),
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val snackbarHostState = rememberSnackbarHostState()
 
-    val scaffoldState = rememberScaffoldState()
-    val state = viewModel.threadUiState
-
-    val forum = state.forum
-    val user = state.user
-
-    val currentPageMax = state.currentPageMax
-    val curSortType = state.sortType
+    val state by viewModel.threadUiState.collectAsStateWithLifecycle()
+    val isRefreshing by remember { derivedStateOf { state.isRefreshing } }
+    val isError by remember {derivedStateOf { state.error != null } }
+    val isEmpty by remember {
+        derivedStateOf { state.data.isEmpty() && state.firstPost == null }
+    }
 
     var waitLoadSuccessAndScrollToFirstReply by remember { mutableStateOf(scrollToReply) }
 
     val lazyListState = rememberLazyListState()
-    val bottomSheetState = rememberModalBottomSheetState(
-        initialValue = ModalBottomSheetValue.Hidden,
-        skipHalfExpanded = true
-    )
+    val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
+    var showBottomSheet by rememberSaveable { mutableStateOf(false) }
+    val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val openBottomSheet = {
-        coroutineScope.launch { bottomSheetState.show() }
+        coroutineScope.launch {
+            showBottomSheet = true
+            bottomSheetState.show()
+        }
     }
     val closeBottomSheet = {
-        coroutineScope.launch { bottomSheetState.hide() }
+        coroutineScope
+            .launch { bottomSheetState.hide() }
+            .invokeOnCompletion { showBottomSheet = false }
     }
 
-    val uiEvent by viewModel.uiEvent
-
-    LaunchedEffect(uiEvent) {
-        val unhandledEvent = uiEvent?: return@LaunchedEffect
-        when(unhandledEvent) {
-            is CommonUiEvent.Toast -> {
-                scaffoldState.snackbarHostState.showSnackbar(unhandledEvent.message.toString())
-            }
-
-            is ThreadUiEvent.ScrollToFirstReply -> {
-                lazyListState.animateScrollToItem(1)
-            }
-
-            is ThreadUiEvent.ScrollToLatestReply -> {
-                if (curSortType != ThreadSortType.BY_DESC) {
-                    lazyListState.animateScrollToItem(2 + viewModel.data.size)
-                } else {
-                    lazyListState.animateScrollToItem(1)
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect {
+            val unhandledEvent = it?: return@collect
+            when(unhandledEvent) {
+                is CommonUiEvent.Toast -> {
+                    snackbarHostState.showSnackbar(unhandledEvent.message.toString())
                 }
-            }
 
-            is ThreadUiEvent.LoadSuccess -> {
-                if (unhandledEvent.page > 1 || waitLoadSuccessAndScrollToFirstReply) {
-                    waitLoadSuccessAndScrollToFirstReply = false
-                    lazyListState.animateScrollToItem(1)
+                is ThreadUiEvent.ScrollToFirstReply -> lazyListState.animateScrollToItem(1)
+
+                is ThreadUiEvent.ScrollToLatestReply -> {
+                    if (state.sortType != ThreadSortType.BY_DESC) {
+                        lazyListState.animateScrollToItem(2 + state.data.size)
+                    } else {
+                        lazyListState.animateScrollToItem(1)
+                    }
                 }
+
+                is ThreadUiEvent.LoadSuccess -> {
+                    if (unhandledEvent.page > 1 || waitLoadSuccessAndScrollToFirstReply) {
+                        waitLoadSuccessAndScrollToFirstReply = false
+                        lazyListState.animateScrollToItem(1)
+                    }
+                }
+
+                is ThreadUiEvent.ToReplyDestination -> navigator.navigate(unhandledEvent.direction)
+
+                is ThreadUiEvent.ToSubPostsDestination -> navigator.navigate(unhandledEvent.direction)
             }
 
-            is ThreadUiEvent.ToReplyDestination -> navigator.navigate(unhandledEvent.direction)
-
-            is ThreadUiEvent.ToSubPostsDestination -> navigator.navigate(unhandledEvent.direction)
+            viewModel.onUiEventReceived()
         }
-        viewModel.onUiEventReceived()
     }
 
     onGlobalEvent<GlobalEvent.ReplySuccess>(filter = { it.threadId == threadId }) { event ->
@@ -257,21 +249,21 @@ fun ThreadPage(
     ConfirmDialog(
         dialogState = updateCollectMarkDialogState,
         onConfirm = {
-            lazyListState.lastVisiblePost(viewModel)?.let { post ->
+            lazyListState.lastVisiblePost(state)?.let { post ->
                 if (post.id != 0L) viewModel.requestAddFavorite(post)
             }
             navigator.navigateUp()
         },
         onCancel = { navigator.navigateUp() }
     ) {
-        val lastVisibleFloor = lazyListState.lastVisiblePost(viewModel)?.floor ?: 0
+        val lastVisibleFloor = lazyListState.lastVisiblePost(state)?.floor ?: 0
         Text(stringResource(R.string.message_update_collect_mark, lastVisibleFloor))
     }
 
     val confirmDeleteState = rememberDialogState()
     ConfirmDialog(dialogState = confirmDeleteState, onConfirm = viewModel::onDeleteConfirmed) {
         val deletePost = viewModel.deletePost ?: return@ConfirmDialog
-        val deleteType = if (deletePost != viewModel.threadUiState.firstPost) {
+        val deleteType = if (deletePost != state.firstPost) {
             stringResource(R.string.tip_post_floor, deletePost.floor) // post
         } else {
             stringResource(id = R.string.this_thread) // thread
@@ -293,15 +285,18 @@ fun ThreadPage(
         onValueChange = { newVal, _ -> "^[0-9]*$".toRegex().matches(newVal) },
         title = { Text(text = stringResource(id = R.string.title_jump_page)) },
         content = {
-            Text(text = stringResource(R.string.tip_jump_page, currentPageMax, state.totalPage))
+            with(state) {
+                Text(text = stringResource(R.string.tip_jump_page, currentPageMax, totalPage))
+            }
         }
     )
 
     LaunchedEffect(Unit) {
         if (extra is ThreadFrom.Store && extra.maxPid != postId) {
-            val result = scaffoldState.snackbarHostState.showSnackbar(
+            val result = snackbarHostState.showSnackbar(
                 context.getString(R.string.message_store_thread_update, extra.maxFloor),
                 context.getString(R.string.button_load_new),
+                true,
                 SnackbarDuration.Long
             )
             if (result == SnackbarResult.ActionPerformed) {
@@ -315,7 +310,7 @@ fun ThreadPage(
             closeBottomSheet(); return@BackHandler
         }
 
-        val lastVisiblePost = lazyListState.lastVisiblePost(viewModel)?.apply {
+        val lastVisiblePost = lazyListState.lastVisiblePost(state)?.apply {
             if (id == 0L) return@apply
             viewModel.onLastPostVisibilityChanged(pid = id, floor = floor)
         }
@@ -329,14 +324,15 @@ fun ThreadPage(
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
-        isEmpty =  viewModel.data.isEmpty() && viewModel.threadUiState.firstPost == null,
-        isError = viewModel.error != null,
-        isLoading = viewModel.isRefreshing,
+        isEmpty =  isEmpty,
+        isError = isError,
+        isLoading = isRefreshing,
         errorScreen = {
             ErrorScreen(error = viewModel.error, modifier = Modifier.safeContentPadding())
         },
         onReload = { viewModel.requestLoad(0, postId) }
     ) {
+
         // Workaround to make StickyHeader respect content padding
         var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
 
@@ -345,37 +341,31 @@ fun ThreadPage(
                 blurEnabled = lazyListState.canScrollBackward
                 inputScale = DefaultInputScale
             },
-            scaffoldState = scaffoldState,
             attachHazeContentState = false, // Attach manually since we're blurring the BottomSheet
             topBar = {
-                TopBar(
-                    name = forum?.item?.name,
-                    avatar = forum?.item?.avatar,
-                    onBack = navigator::navigateUp,
-                    onForumClick = {
-                        forum?.item?.name?.let { navigator.navigate(Forum(it)) }
-                    }
+                CenterAlignedTopAppBar(
+                    title = {
+                        val forum = state.forum ?: return@CenterAlignedTopAppBar // Initializing
+                        ForumTitleChip(forumItem = forum) {
+                            navigator.navigate(route = Forum(forum.item.name))
+                        }
+                    },
+                    navigationIcon = { BackNavigationIcon(navigator::navigateUp) },
+                    scrollBehavior = topAppBarScrollBehavior
                 ) {
                     if (useStickyHeaderWorkaround) {
-                        StickyHeaderOverlay(state = lazyListState) {
-                            ThreadHeader(viewModel = viewModel)
+                        Container {
+                            StickyHeaderOverlay(state = lazyListState) {
+                                ThreadHeader(viewModel = viewModel)
+                            }
                         }
                     }
                 }
             },
             bottomBar = {
                 BottomBar(
-                    user = user,
-                    onClickReply = {
-                        navigator.navigate(
-                            Reply(
-                                forumId = viewModel.curForumId ?: 0,
-                                forumName = forum?.get { name }.orEmpty(),
-                                threadId = threadId,
-                            )
-                        )
-                    }.takeUnless { viewModel.hideReply },
-                    onAgree = viewModel::onAgreeThreadClicked,
+                    user = state.user,
+                    onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
                     onClickMore = {
                         if (bottomSheetState.isVisible) {
                             closeBottomSheet()
@@ -383,10 +373,14 @@ fun ThreadPage(
                             openBottomSheet()
                         }
                     },
-                    agreed = viewModel.info?.hasAgree == true,
-                    agreeNum = viewModel.info?.diffAgreeNum ?: 0L
+                    like = viewModel.info?.like ?: LikeZero,
+                    onLiked = viewModel::onThreadLikeClicked
                 )
             },
+            bottomHazeBlock = {
+                inputScale = DefaultInputScale
+            },
+            snackbarHostState = snackbarHostState
         ) { padding ->
             val hazeState: HazeState? = LocalHazeState.current
 
@@ -396,28 +390,58 @@ fun ThreadPage(
             val direction = LocalLayoutDirection.current
             val contentPadding = if (useStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
 
-            ModalBottomSheetLayout(
-                sheetState = bottomSheetState,
-                sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-                sheetBackgroundColor = Color.Unspecified, // Set background on SheetContent for blurring
-                sheetContentColor = ExtendedTheme.colors.text,
-                sheetContent = {
+            val enablePullRefresh by remember {
+                derivedStateOf { state.hasPrevious || state.sortType == ThreadSortType.BY_DESC }
+            }
+
+            ProvideNavigator(navigator = navigator) {
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = viewModel::requestLoadFirstPage,
+                    modifier = Modifier
+                        .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
+                        .hazeSource(hazeState),
+                    enabled = enablePullRefresh,
+                    contentPadding = contentPadding
+                ) {
+                    ThreadContent(
+                        viewModel = viewModel,
+                        lazyListState = lazyListState,
+                        contentPadding = contentPadding,
+                        useStickyHeader = !useStickyHeaderWorkaround
+                    )
+                }
+            }
+
+            if (showBottomSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showBottomSheet = false },
+                    sheetState = bottomSheetState,
+                    shape = MaterialTheme.shapes.large,
+                    containerColor = Color.Transparent, // Set background for blurring
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    scrimColor = Color.Transparent,
+                    dragHandle = null
+                ) {
+                    val localUid by remember { derivedStateOf { state.user?.id } }
+                    val isDesc by remember { derivedStateOf { state.sortType == ThreadSortType.BY_DESC } }
+
                     ThreadMenu(
                         isSeeLz = viewModel.seeLz,
                         isCollected = viewModel.info!!.collected,
                         isImmersiveMode = viewModel.isImmersiveMode,
-                        isDesc = state.sortType == ThreadSortType.BY_DESC,
+                        isDesc = isDesc,
                         onSeeLzClick = {
                             viewModel.requestLoadFirstPage(seeLz = !viewModel.seeLz)
                             closeBottomSheet()
                         },
                         onCollectClick = {
-                            if (user == null) {
+                            if (localUid == null) {
                                 context.toastShort(R.string.title_not_logged_in)
                             } else if (viewModel.info!!.collected) {
                                 viewModel.requestRemoveFavorite()
                             } else {
-                                lazyListState.lastVisiblePost(viewModel)?.let { post ->
+                                lazyListState.lastVisiblePost(state)?.let { post ->
                                     viewModel.requestAddFavorite(markedPost = post)
                                 }
                             }
@@ -431,6 +455,7 @@ fun ThreadPage(
                             closeBottomSheet()
                         },
                         onDescClick = {
+                            val curSortType = state.sortType
                             viewModel.requestLoadFirstPage(
                                 sortType = if (curSortType != ThreadSortType.BY_DESC) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT
                             )
@@ -443,30 +468,15 @@ fun ThreadPage(
                         onShareClick = viewModel::onShareThread,
                         onCopyLinkClick = viewModel::onCopyThreadLink,
                         onReportClick = { viewModel.onReportThread(context, navigator) },
-                        onDeleteClick = viewModel::onDeleteThread.takeIf { viewModel.lz?.id == user?.id },
+                        onDeleteClick = viewModel::onDeleteThread.takeIf { state.lz?.id == localUid },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .block {
-                                hazeState?.let { hazeEffect(it, defaultHazeStyle, null) }
+                            .onNotNull(hazeState) {
+                                hazeEffect(state = it, style = defaultHazeStyle)
                             }
-                            .background(color = ExtendedTheme.colors.threadBottomBar)
-                            .padding(vertical = 16.dp)
-                            .padding(bottom = contentPadding.calculateBottomPadding())
+                            .background(TiebaLiteTheme.extendedColorScheme.sheetContainerColor)
+                            .padding(top = 16.dp)
                     )
-                },
-                scrimColor = Color.Transparent,
-            ) {
-                ProvideNavigator(navigator = navigator) {
-                    Box(
-                        modifier = Modifier.hazeSource(hazeState),
-                    ) {
-                        ThreadContent(
-                            viewModel = viewModel,
-                            lazyListState = lazyListState,
-                            contentPadding = contentPadding,
-                            useStickyHeader = !useStickyHeaderWorkaround
-                        )
-                    }
                 }
             }
         }
@@ -474,64 +484,55 @@ fun ThreadPage(
 }
 
 @Composable
-private fun TopBar(
-    name: String?,
-    avatar: String?,
-    onBack: () -> Unit,
-    onForumClick: () -> Unit,
-    content: (@Composable ColumnScope.() -> Unit)? = null
-) =
-    TitleCentredToolbar(
-        title = {
-            if (avatar == null || name == null) return@TitleCentredToolbar // Initializing
-            Row(
+private fun ForumTitleChip(forumItem: ImmutableHolder<SimpleForum>, onForumClick: () -> Unit) {
+    val forum = forumItem.get()
+    Surface(
+        onClick = onForumClick,
+        modifier = Modifier
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = forum.name
+            },
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.secondaryContainer
+    ) {
+        Row(
+            modifier = Modifier
+                .height(intrinsicSize = IntrinsicSize.Min)
+                .padding(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Avatar(
+                data = forum.avatar,
+                contentDescription = null,
                 modifier = Modifier
-                    .padding(horizontal = 48.dp)
-                    .height(IntrinsicSize.Min)
-                    .clip(CircleShape)
-                    .background(ExtendedTheme.colors.chip)
-                    .clickable(onClick = onForumClick)
-                    .padding(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Avatar(
-                    data = avatar,
-                    contentDescription = name,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .aspectRatio(1f)
-                )
+                    .fillMaxHeight()
+                    .aspectRatio(1f)
+            )
 
-                Text(
-                    text = stringResource(id = R.string.title_forum, name),
-                    fontSize = 14.sp,
-                    color = ExtendedTheme.colors.text,
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        },
-        elevation = Dp.Hairline,
-        navigationIcon = {
-            BackNavigationIcon(onBack)
-        },
-        content = content
-    )
+            Text(
+                text = stringResource(id = R.string.title_forum, forum.name),
+                modifier = Modifier.padding(horizontal = 8.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+    }
+}
 
 @Composable
 private fun BottomBar(
+    modifier: Modifier = Modifier,
     user: UserData?,
     onClickReply: (() -> Unit)?,
-    onAgree: () -> Unit,
     onClickMore: () -> Unit,
-    modifier: Modifier = Modifier,
-    agreed: Boolean = false,
-    agreeNum: Long = 0,
+    like: Like,
+    onLiked: () -> Unit,
 ) {
     Column(
         modifier = modifier
-            .background(ExtendedTheme.colors.threadBottomBar)
+            .background(TiebaLiteTheme.extendedColorScheme.navigationContainer)
             .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         Row(
@@ -549,19 +550,19 @@ private fun BottomBar(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
 
-                Row(
+                Surface(
                     modifier = Modifier
                         .padding(vertical = 8.dp)
-                        .weight(1f)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(ExtendedTheme.colors.floorCard)
-                        .clickable(onClick = onClickReply)
-                        .padding(8.dp),
+                        .weight(1f),
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    tonalElevation = 2.dp,
+                    onClick = onClickReply
                 ) {
                     Text(
                         text = stringResource(id = R.string.tip_reply_thread),
-                        style = MaterialTheme.typography.caption,
-                        color = ExtendedTheme.colors.textSecondary,
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
             } else {
@@ -570,30 +571,24 @@ private fun BottomBar(
                     .height(40.dp))
             }
 
-            FavoriteButton(Modifier.fillMaxHeight(), favorite = agreed, onClick = onAgree) { color ->
-                AnimatedVisibility(visible = agreeNum > 0) {
+            FavoriteButton(
+                modifier = Modifier.minimumInteractiveComponentSize(),
+                favorite = like.liked,
+                onClick = onLiked
+            ) {
+                AnimatedVisibility(visible = like.count > 0) {
                     Text(
-                        text = agreeNum.getShortNumString(),
+                        text = like.count.getShortNumString(),
                         modifier = Modifier.align(Alignment.Top),
-                        color = color,
-                        style = MaterialTheme.typography.caption,
-                        fontSize = 12.sp
+                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .clip(MaterialTheme.shapes.small)
-                    .clickable(onClick = onClickMore)
-                    .padding(horizontal = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
+            IconButton(onClick = onClickMore) {
                 Icon(
                     imageVector = Icons.Rounded.MoreVert,
                     contentDescription = stringResource(id = R.string.btn_more),
-                    tint = ExtendedTheme.colors.textSecondary,
                 )
             }
         }
@@ -624,13 +619,11 @@ private fun ThreadMenu(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Spacer(
+        Box(
             modifier = Modifier
-                .padding(horizontal = 16.dp)
                 .height(4.dp)
-                .fillMaxWidth(0.25f)
-                .clip(CircleShape)
-                .background(ExtendedTheme.colors.chip)
+                .fillMaxWidth(0.2f)
+                .background(color = MaterialTheme.colorScheme.outlineVariant, shape = CircleShape)
         )
         VerticalGrid(
             column = 2,
@@ -680,28 +673,24 @@ private fun ThreadMenu(
             ListMenuItem(
                 icon = Icons.Rounded.RocketLaunch,
                 text = stringResource(id = R.string.title_jump_page),
-                iconColor = ExtendedTheme.colors.text,
                 onClick = onJumpPageClick,
                 modifier = Modifier.fillMaxWidth(),
             )
             ListMenuItem(
                 icon = Icons.Rounded.Share,
                 text = stringResource(id = R.string.title_share),
-                iconColor = ExtendedTheme.colors.text,
                 onClick = onShareClick,
                 modifier = Modifier.fillMaxWidth(),
             )
             ListMenuItem(
                 icon = Icons.Rounded.ContentCopy,
                 text = stringResource(id = R.string.title_copy_link),
-                iconColor = ExtendedTheme.colors.text,
                 onClick = onCopyLinkClick,
                 modifier = Modifier.fillMaxWidth(),
             )
             ListMenuItem(
                 icon = Icons.Rounded.Report,
                 text = stringResource(id = R.string.title_report),
-                iconColor = ExtendedTheme.colors.text,
                 onClick = onReportClick,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -709,7 +698,6 @@ private fun ThreadMenu(
                 ListMenuItem(
                     icon = Icons.Rounded.Delete,
                     text = stringResource(id = R.string.title_delete),
-                    iconColor = ExtendedTheme.colors.text,
                     onClick = onDeleteClick,
                     modifier = Modifier.fillMaxWidth(),
                 )

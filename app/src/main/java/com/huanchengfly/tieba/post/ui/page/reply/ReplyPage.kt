@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.reply
 
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -10,6 +11,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,18 +22,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.imeAnimationTarget
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -39,45 +41,47 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Badge
-import androidx.compose.material.BadgedBox
-import androidx.compose.material.Checkbox
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.InsertPhoto
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,95 +90,93 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.block
-import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.pxToDpFloat
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.EMOJI
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.IMAGE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.NONE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyViewModel.Companion.MAX_SELECTABLE_IMAGE
 import com.huanchengfly.tieba.post.ui.utils.imeNestedScroll
-import com.huanchengfly.tieba.post.ui.widgets.compose.BaseDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogContentPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
+import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_WARNING
 import com.huanchengfly.tieba.post.utils.DisplayUtil.toDpSize
 import com.huanchengfly.tieba.post.utils.Emoticon
-import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
+import com.huanchengfly.tieba.post.utils.EmoticonUtil
+import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.hideKeyboard
+import com.huanchengfly.tieba.post.utils.keyboardAnimationHeight
+import com.huanchengfly.tieba.post.utils.keyboardAsState
+import com.huanchengfly.tieba.post.utils.keyboardMaxHeight
 import com.huanchengfly.tieba.post.utils.showKeyboard
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlin.math.max
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+private enum class ReplyPanelType {
+    NONE,
+    EMOJI,
+    IMAGE,
+    VOICE
+}
+
 @Composable
-fun ReplyDialog(
-    args: Reply,
-    state: DialogState = rememberDialogState(),
+fun ReplyPageBottomSheet(
+    params: Reply,
+    onBack: () -> Unit,
+    viewModel: ReplyViewModel = pageViewModel(),
 ) {
-    BaseDialog(
-        dialogState = state,
-        imePadding = false,
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomStart
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-            color = ExtendedTheme.colors.windowBackground,
-            elevation = 0.dp,
+            color = MaterialTheme.colorScheme.surfaceContainer
         ) {
-            ReplyPageContent(
-                viewModel = pageViewModel(),
-                onBack = { dismiss() },
-                forumId = args.forumId,
-                forumName = args.forumName,
-                threadId = args.threadId,
-                postId = args.postId,
-                subPostId = args.subPostId,
-                replyUserId = args.replyUserId,
-                replyUserName = args.replyUserName,
-                replyUserPortrait = args.replyUserPortrait,
-                tbs = args.tbs,
-                isDialog = true
-            )
+            Box(
+                modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+            ) {
+                ReplyPageContent(
+                    viewModel = viewModel,
+                    onBack = onBack,
+                    forumName = params.forumName,
+                    threadId = params.threadId,
+                    postId = params.postId,
+                    subPostId = params.subPostId,
+                    replyUserName = params.replyUserName,
+                    tbs = params.tbs
+                )
+            }
         }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun ReplyPageContent(
+private fun ReplyPageContent(
     viewModel: ReplyViewModel,
     onBack: () -> Unit,
-    forumId: Long,
     forumName: String,
     threadId: Long,
     postId: Long? = null,
     subPostId: Long? = null,
-    replyUserId: Long? = null,
     replyUserName: String? = null,
-    replyUserPortrait: String? = null,
     tbs: String? = null,
-    isDialog: Boolean = false,
 ) {
     viewModel.initialize(threadId, postId, subPostId)
     val pickMediasLauncher = rememberLauncherForActivityResult(PickMultipleVisualMedia(MAX_SELECTABLE_IMAGE)) { uris ->
@@ -183,8 +185,10 @@ internal fun ReplyPageContent(
     }
 
     val context = LocalContext.current
-    val curTbs = remember(tbs) { tbs ?: AccountUtil.getAccountInfo { this.tbs }.orEmpty() }
-    val colors = ExtendedTheme.colors
+    val coroutineScope = rememberCoroutineScope()
+    val account = LocalAccount.current
+    val curTbs = tbs ?: account?.tbs.orEmpty()
+    val colors = MaterialTheme.colorScheme
 
     val isUploading by viewModel.uiState.collectPartialAsState(
         prop1 = ReplyUiState::isUploading,
@@ -195,10 +199,6 @@ internal fun ReplyPageContent(
         initial = false
     )
     val isReplying by remember { derivedStateOf { isUploading || isSending } }
-    val curKeyboardType by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::replyPanelType,
-        initial = NONE
-    )
     val selectedImageList by viewModel.uiState.collectPartialAsState(
         prop1 = ReplyUiState::selectedImageList,
         initial = persistentListOf()
@@ -208,25 +208,22 @@ internal fun ReplyPageContent(
         initial = false
     )
 
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val text by viewModel.text
+    var inputLength by remember { mutableIntStateOf(0) }
     var editTextView by remember { mutableStateOf<UndoableEditText?>(null) }
-    fun getText(): String {
-        return editTextView?.text?.toString().orEmpty()
-    }
 
-    LaunchedEffect(key1 = text, key2 = editTextView) {
-        editTextView?.apply {
-            val start = selectionStart
-            removeTextChangedListener(viewModel) // Avoid onTextChanged loop
-            setText(text)
-            setSelection(start)
-            addTextChangedListener(viewModel)
+    LaunchedEffect(Unit) {
+        viewModel.text.collect { t ->
+            editTextView?.apply {
+                val start = selectionStart
+                removeTextChangedListener(viewModel) // Avoid onTextChanged loop
+                setSelection(0)
+                setText(t)
+                setSelection(start.coerceIn(0, t.length))
+                addTextChangedListener(viewModel)
+                inputLength = t.length
+            }
         }
     }
-
-    val textLength by remember { derivedStateOf { text.length } }
-    val isTextEmpty by remember { derivedStateOf { text.isEmpty() } }
 
     viewModel.onEvent<ReplyUiEvent.ReplySuccess> {
         if (it.expInc.isEmpty()) {
@@ -242,55 +239,40 @@ internal fun ReplyPageContent(
     viewModel.onEvent<ReplyUiEvent.UploadSuccess> {
         if (waitUploadSuccessToSend) {
             waitUploadSuccessToSend = false
-            val imageContent = it.resultList
-                .joinToString("\n") { image ->
-                    "#(pic,${image.picId},${image.picInfo.originPic.width},${image.picInfo.originPic.height})"
-                }
-            viewModel.send(
-                ReplyUiIntent.Send(
-                    "${getText()}\n$imageContent",
-                    forumId,
-                    forumName,
-                    threadId,
-                    curTbs,
-                    postId,
-                    subPostId,
-                    replyUserId,
-                )
-            )
+            viewModel.onSendReplyWithImage(it.resultList, curTbs)
         }
     }
 
-    var closingPanel by remember { mutableStateOf(false) }
-    var startClosingAnimation by remember { mutableStateOf(false) }
-
     fun showKeyboard() {
         editTextView?.apply {
-            showKeyboard(context, this)
+            showKeyboard(this)
             requestFocus()
         }
-        keyboardController?.show()
     }
 
     fun hideKeyboard() {
         editTextView?.apply {
-            hideKeyboard(context, this)
+            hideKeyboard(this)
             clearFocus()
         }
-        keyboardController?.hide()
     }
+
+    var curKeyboardType by remember { mutableStateOf(NONE) }
 
     fun switchToPanel(type: ReplyPanelType) {
         if (curKeyboardType == type || type == NONE) {
             if (curKeyboardType != NONE) {
-                showKeyboard()
-                closingPanel = true
-                startClosingAnimation = false
+                coroutineScope.launch {
+                    showKeyboard()
+                    delay(AnimationConstants.DefaultDurationMillis.toLong()) // Wait ime animation
+                    curKeyboardType = NONE
+                }
+            } else {
+                curKeyboardType = NONE
             }
-            viewModel.send(ReplyUiIntent.SwitchPanel(NONE))
         } else {
             hideKeyboard()
-            viewModel.send(ReplyUiIntent.SwitchPanel(type))
+            curKeyboardType = type
         }
     }
 
@@ -299,41 +281,6 @@ internal fun ReplyPageContent(
     }
 
     val density = LocalDensity.current
-    val imeInset = WindowInsets.ime
-    val imeAnimationTargetInset = WindowInsets.imeAnimationTarget
-
-    val imeCurrentHeight by produceState(initialValue = 0, imeInset, density) {
-        snapshotFlow { imeInset.getBottom(density) }
-            .distinctUntilChanged()
-            .collect { value = it }
-    }
-    val imeAnimationTargetHeight by produceState(
-        initialValue = 0,
-        imeAnimationTargetInset,
-        density
-    ) {
-        snapshotFlow { imeAnimationTargetInset.getBottom(density) }
-            .distinctUntilChanged()
-            .collect { value = it }
-    }
-    val imeAnimationEnd by remember { derivedStateOf { imeCurrentHeight == imeAnimationTargetHeight } }
-    val imeVisibleHeightPx by produceState(
-        initialValue = 800,
-        imeAnimationTargetInset,
-        density
-    ) {
-        snapshotFlow { imeAnimationTargetInset.getBottom(density) }
-            .filter { it > 0 }
-            .distinctUntilChanged()
-            .collect {
-                value = it
-            }
-    }
-
-    val panelHeight by remember {
-        derivedStateOf { max(imeVisibleHeightPx.pxToDpFloat(), 150f).dp }
-    }
-
     val textStyle = LocalTextStyle.current
     val textMeasurer = rememberTextMeasurer()
 
@@ -346,29 +293,15 @@ internal fun ReplyPageContent(
     }
     val maxHeight: Dp = minHeight * 3
 
-    LaunchedEffect(closingPanel, imeAnimationEnd) {
-        if (closingPanel) {
-            if (!startClosingAnimation && !imeAnimationEnd) {
-                startClosingAnimation = true
-            } else if (startClosingAnimation && imeAnimationEnd) {
-                closingPanel = false
-                startClosingAnimation = false
-            }
-        }
-    }
-
-    val canSend by remember { derivedStateOf { !isTextEmpty || selectedImageList.isNotEmpty() } }
+    var focused by remember { mutableStateOf(false) }
+    val panelHeight by keyboardMaxHeight()
 
     val textFieldScrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.threadBottomBar)
-            .navigationBarsPadding()
-            .block {
-                if (curKeyboardType != NONE || closingPanel) consumeWindowInsets(WindowInsets.ime) else null
-            },
+            .background(TiebaLiteTheme.extendedColorScheme.navigationContainer)
+            .navigationBarsPadding(),
         verticalArrangement = Arrangement.Bottom
     ) {
         Row(
@@ -381,16 +314,15 @@ internal fun ReplyPageContent(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "$textLength",
-                style = MaterialTheme.typography.caption,
-                color = colors.textSecondary
+                text = inputLength.toString(),
+                color = colors.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
             )
         }
-        VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
         Box(
             modifier = Modifier
                 .wrapContentHeight()
-                .fillMaxWidth()
                 .imeNestedScroll(textFieldScrollState),
         ) {
             Box(
@@ -412,6 +344,7 @@ internal fun ReplyPageContent(
                                 hint = ctx.getString(R.string.hint_reply, replyUserName)
                             }
                             setOnFocusChangeListener { _, hasFocus ->
+                                focused = hasFocus
                                 if (hasFocus) {
                                     switchToPanel(NONE)
                                 }
@@ -427,10 +360,13 @@ internal fun ReplyPageContent(
                         .fillMaxWidth()
                         .wrapContentHeight(align = Alignment.Top),
                     update = {
-                        it.setTextColor(colors.text.toArgb())
+                        it.setTextColor(colors.onSurface.toArgb())
                     }
                 )
             }
+
+//            b/135556699 Support for text editing with AnnotatedString (multi style text editing / sometimes rich text editing)
+//
 //            BaseTextField(
 //                value = text,
 //                onValueChange = { text = it },
@@ -449,48 +385,120 @@ internal fun ReplyPageContent(
 //                placeholder = { Text(text = stringResource(id = R.string.tip_reply)) },
 //            )
         }
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            IconButton(
-                onClick = { switchToPanel(EMOJI) },
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.EmojiEmotions,
-                    contentDescription = stringResource(id = R.string.insert_emotions),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            if (postId == null || postId == 0L) {
-                IconButton(
-                    onClick = { switchToPanel(IMAGE) },
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    BadgedBox(
-                        badge = {
-                            if (selectedImageList.isNotEmpty()) {
-                                Badge(
-                                    backgroundColor = ExtendedTheme.colors.primary,
-                                    contentColor = ExtendedTheme.colors.background,
-                                ) {
-                                    Text(
-                                        text = "${selectedImageList.size}",
-                                        style = MaterialTheme.typography.caption
-                                    )
-                                }
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.InsertPhoto,
-                            contentDescription = stringResource(id = R.string.insert_photo),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+
+        ImeActionRow(
+            onPanelClicked = ::switchToPanel,
+            selectedImageProvider = { selectedImageList }.takeIf { postId == null || postId == 0L }, // Not reply post
+            isReplying = { isReplying },
+            canReply = {
+                inputLength > 0 || selectedImageList.isNotEmpty()
+            },
+            onReplyClicked = {
+                if (selectedImageList.isEmpty()) {
+                    viewModel.onSendReply(curTbs = curTbs)
+                } else {
+                    waitUploadSuccessToSend = true
+                    viewModel.send(ReplyUiIntent.UploadImages(forumName, selectedImageList, isOriginImage))
                 }
             }
+        )
+
+        when (curKeyboardType) {
+            NONE -> {
+                ImeSpacerPanel(panelHeight = panelHeight, focused = { focused }, onHideIme = ::hideKeyboard)
+            }
+
+            EMOJI -> {
+                EmoticonPanel(
+                    modifier = Modifier.height(panelHeight),
+                    emoticons = viewModel.emoticons,
+                    onEmoticonClick = { emoticon ->
+                        editTextView?.let {
+                            val start = it.selectionStart
+                            val emoText = EmoticonUtil.inlineTextFormat(name = emoticon.name)
+                            it.text?.insert(start, emoText)
+                            it.setSelection(start + emoText.length)
+                        }
+                    }
+                )
+            }
+
+            IMAGE -> {
+                ImagePanel(
+                    selectedImages = selectedImageList,
+                    onAddImageClicked = {
+                        pickMediasLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                    },
+                    onRemoveImage = {
+                        viewModel.send(ReplyUiIntent.RemoveImage(it))
+                    },
+                    isOriginImage = isOriginImage,
+                    onIsOriginImageChange = {
+                        viewModel.send(ReplyUiIntent.ToggleIsOriginImage(it))
+                    },
+                    modifier = Modifier
+                        .height(panelHeight)
+                        .padding(16.dp),
+                )
+            }
+
+            else -> {}
+        }
+    }
+
+    ReplyWaringDialog(threadId = threadId, postId = postId, onBack = onBack)
+}
+
+@Composable
+private fun ImeActionRow(
+    modifier: Modifier = Modifier,
+    onPanelClicked: (ReplyPanelType) -> Unit = {},
+    selectedImageProvider: (() -> List<String>)?, // Null to disable ImagePanel
+    isReplying: () -> Boolean = { false },
+    canReply: () -> Boolean = { true },
+    onReplyClicked: () -> Unit = {}
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Row(
+        modifier = modifier.padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        IconButton(
+            onClick = { onPanelClicked(EMOJI) },
+            modifier = Modifier.size(size = Sizes.Tiny)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.EmojiEmotions,
+                contentDescription = stringResource(id = R.string.insert_emotions),
+            )
+        }
+
+        if (selectedImageProvider != null) {
+            Box (
+                modifier = Modifier
+                    .size(size = Sizes.Tiny)
+                    .clickableNoIndication(onClick = { onPanelClicked(IMAGE) })
+            ) {
+                BadgedBox(
+                    badge = {
+                        val selectedImageList = selectedImageProvider()
+                        if (selectedImageList.isNotEmpty()) {
+                            Badge(
+                                containerColor = colorScheme.primary,
+                                contentColor = colorScheme.onPrimary,
+                                content = { Text(text = selectedImageList.size.toString()) }
+                            )
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.InsertPhoto,
+                        contentDescription = stringResource(id = R.string.insert_photo),
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
 //            IconButton(
 //                onClick = { switchToPanel(VOICE) },
 //                modifier = Modifier.size(24.dp)
@@ -501,229 +509,51 @@ internal fun ReplyPageContent(
 //                    modifier = Modifier.size(24.dp)
 //                )
 //            }
-            Spacer(modifier = Modifier.weight(1f))
-            if (isReplying) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp,
-                    color = ExtendedTheme.colors.primary
-                )
-            } else {
-                IconButton(
-                    onClick = {
-                        val replyContent = if (subPostId == null || subPostId == 0L) {
-                            getText()
-                        } else {
-                            "回复 #(reply, ${replyUserPortrait}, ${replyUserName}) :${getText()}"
-                        }
-                        if (selectedImageList.isEmpty()) {
-                            viewModel.send(
-                                ReplyUiIntent.Send(
-                                    content = replyContent,
-                                    forumId = forumId,
-                                    forumName = forumName,
-                                    threadId = threadId,
-                                    tbs = curTbs,
-                                    postId = postId,
-                                    subPostId = subPostId,
-                                    replyUserId = replyUserId
-                                )
-                            )
-                        } else {
-                            waitUploadSuccessToSend = true
-                            viewModel.send(
-                                ReplyUiIntent.UploadImages(
-                                    forumName,
-                                    selectedImageList,
-                                    isOriginImage
-                                )
-                            )
-                        }
-                    },
-                    enabled = canSend,
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.Send,
-                        contentDescription = stringResource(id = R.string.send_reply),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        }
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .windowInsetsBottomHeight(WindowInsets.ime)
-        )
-        if (curKeyboardType != NONE) {
-            Column(modifier = Modifier.height(panelHeight)) {
-                when (curKeyboardType) {
-                    EMOJI -> {
-                        EmoticonPanel(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp),
-                            onEmoticonClick = { emoticon ->
-                                editTextView?.let {
-                                    val start = it.selectionStart
-                                    val emoText = "#(${emoticon.name})"
-                                    it.text?.insert(start, emoText)
-                                    it.setSelection(start + emoText.length)
-                                }
-                            }
-                        )
-                    }
-
-                    IMAGE -> {
-                        ImagePanel(
-                            selectedImages = selectedImageList,
-                            onAddImageClicked = {
-                                pickMediasLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
-                            },
-                            onRemoveImage = {
-                                viewModel.send(ReplyUiIntent.RemoveImage(it))
-                            },
-                            isOriginImage = isOriginImage,
-                            onIsOriginImageChange = {
-                                viewModel.send(ReplyUiIntent.ToggleIsOriginImage(it))
-                            },
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                        )
-                    }
-
-                    else -> {}
-                }
-            }
-        } else if (closingPanel) {
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(panelHeight)
+        Spacer(modifier = Modifier.weight(1f))
+        if (isReplying()) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(Sizes.Tiny),
+                strokeWidth = 2.dp,
+                color = colorScheme.primary
             )
-        }
-    }
-
-    fun getDispatchUri(): Uri {
-        return if (postId != null) {
-            Uri.parse("com.baidu.tieba://unidispatch/pb?obj_locate=comment_lzl_cut_guide&obj_source=wise&obj_name=index&obj_param2=chrome&has_token=0&qd=scheme&refer=tieba.baidu.com&wise_sample_id=3000232_2&hightlight_anchor_pid=${postId}&is_anchor_to_comment=1&comment_sort_type=0&fr=bpush&tid=${threadId}")
         } else {
-            Uri.parse("com.baidu.tieba://unidispatch/pb?obj_locate=pb_reply&obj_source=wise&obj_name=index&obj_param2=chrome&has_token=0&qd=scheme&refer=tieba.baidu.com&wise_sample_id=3000232_2-99999_9&fr=bpush&tid=${threadId}")
-        }
-    }
-
-    fun launchOfficialApp() {
-        val intent = Intent(Intent.ACTION_VIEW).setData(getDispatchUri())
-        val resolveInfos =
-            context.packageManager.queryIntentActivities(
-                intent,
-                PackageManager.MATCH_DEFAULT_ONLY
-            ).filter { it.activityInfo.packageName != context.packageName }
-        try {
-            if (resolveInfos.isNotEmpty()) {
-                context.startActivity(intent)
-            } else {
-                context.toastShort(R.string.toast_official_client_not_install)
-            }
-        } catch (e: ActivityNotFoundException) {
-            context.toastShort(R.string.toast_official_client_not_install)
-        }
-    }
-
-    val warning by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_WARNING), true)
-    val warningDialogState = rememberDialogState()
-    Dialog(
-        dialogState = warningDialogState,
-        title = { Text(text = stringResource(id = R.string.title_dialog_reply_warning)) },
-        buttons = {
-            DialogPositiveButton(
-                text = stringResource(id = R.string.button_official_client_reply),
-                onClick = { launchOfficialApp() }
-            )
-            DialogNegativeButton(
-                text = stringResource(id = R.string.btn_continue_reply),
-                onClick = ::showKeyboard
-            )
-            DialogNegativeButton(
-                text = stringResource(id = R.string.btn_cancel_reply),
-                onClick = onBack
-            )
-        },
-    ) {
-        Text(
-            text = stringResource(id = R.string.message_dialog_reply_warning),
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
-    }
-
-    LaunchedEffect(Unit) {
-        if (warning) {
-            delay(300) // Wait BottomSheet animation
-            warningDialogState.show()
-        }
-    }
-
-    DisposableEffect(editTextView) {
-        if (!warning && editTextView != null) {
-            showKeyboard()
-        }
-
-        onDispose {
-            if (editTextView != null) {
-                hideKeyboard()
+            IconButton(
+                onClick = onReplyClicked,
+                enabled = canReply(),
+                modifier = Modifier.size(Sizes.Tiny)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.Send,
+                    contentDescription = stringResource(id = R.string.send_reply)
+                )
             }
         }
     }
-}
-
-// TODO: 将软键盘状态相关逻辑抽离出来
-@Composable
-fun ReplyPage(
-    params: Reply,
-    onBack: () -> Unit,
-    viewModel: ReplyViewModel = pageViewModel(),
-) {
-    ReplyPageContent(
-        viewModel = viewModel,
-        onBack = onBack,
-        forumId = params.forumId,
-        forumName = params.forumName,
-        threadId = params.threadId,
-        postId = params.postId,
-        subPostId = params.subPostId,
-        replyUserId = params.replyUserId,
-        replyUserName = params.replyUserName,
-        replyUserPortrait = params.replyUserPortrait,
-        tbs = params.tbs
-    )
 }
 
 @Composable
 private fun EmoticonPanel(
     modifier: Modifier = Modifier,
+    emoticons: List<Emoticon>,
     onEmoticonClick: (Emoticon) -> Unit,
 ) {
-    val emoticons = remember {
-        EmoticonManager.getAllEmoticon().filter { it.name.isNotEmpty() }
-    }
+    val emoSize = Sizes.Medium
 
     Column(
-        modifier = modifier
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(48.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp)
+            columns = GridCells.Adaptive(minSize = emoSize),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(emoticons) { emoticon ->
                 EmoticonInlineImage(
                     id = emoticon.id,
                     description = emoticon.name,
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(size = emoSize)
                         .padding(8.dp)
                         .clickable { onEmoticonClick(emoticon) }
                 )
@@ -735,7 +565,7 @@ private fun EmoticonPanel(
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun ImagePanel(
-    selectedImages: ImmutableList<String>,
+    selectedImages: List<String>,
     onAddImageClicked: () -> Unit,
     onRemoveImage: (Int) -> Unit,
     isOriginImage: Boolean,
@@ -748,6 +578,7 @@ private fun ImagePanel(
     ) {
         LazyRow(
             modifier = Modifier
+                .fillMaxWidth()
                 .fillMaxHeight(0.5f),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -767,7 +598,8 @@ private fun ImagePanel(
                     )
                     IconButton(
                         onClick = { onRemoveImage(index) },
-                        modifier = Modifier.align(Alignment.TopEnd)
+                        modifier = Modifier.align(Alignment.TopEnd),
+                        colors = IconButtonDefaults.iconButtonColors(MaterialTheme.colorScheme.tertiary)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
@@ -782,14 +614,15 @@ private fun ImagePanel(
                         modifier = Modifier
                             .fillMaxHeight()
                             .aspectRatio(1f)
-                            .background(ExtendedTheme.colors.chip)
+                            .background(MaterialTheme.colorScheme.secondary)
                             .clickable(onClick = onAddImageClicked),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Add,
                             contentDescription = stringResource(id = R.string.desc_add_image),
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.minimumInteractiveComponentSize(),
+                            tint = MaterialTheme.colorScheme.onSecondary
                         )
                     }
                 }
@@ -807,5 +640,142 @@ private fun ImagePanel(
             Checkbox(checked = isOriginImage, onCheckedChange = onIsOriginImageChange)
             Text(text = stringResource(id = R.string.origin_image))
         }
+    }
+}
+
+@Composable
+private fun ImeSpacerPanel(
+    modifier: Modifier = Modifier,
+    panelHeight: Dp,
+    focused: () -> Boolean,
+    onHideIme: () -> Unit
+) {
+    val imeCurrentHeight by keyboardAnimationHeight()
+    val imeVisible by keyboardAsState()
+
+    LaunchedEffect(imeVisible) {
+        if (!imeVisible) onHideIme()
+    }
+
+    val showPanelSpacer = focused() && imeCurrentHeight < panelHeight
+    if (showPanelSpacer) {
+        Spacer(modifier = modifier.height(panelHeight))
+    } else {
+        Spacer(modifier = modifier.windowInsetsBottomHeight(WindowInsets.ime))
+    }
+}
+
+private fun getDispatchUri(threadId: Long, postId: Long?): Uri {
+    return if (postId != null) {
+        Uri.parse("com.baidu.tieba://unidispatch/pb?obj_locate=comment_lzl_cut_guide&obj_source=wise&obj_name=index&obj_param2=chrome&has_token=0&qd=scheme&refer=tieba.baidu.com&wise_sample_id=3000232_2&hightlight_anchor_pid=${postId}&is_anchor_to_comment=1&comment_sort_type=0&fr=bpush&tid=${threadId}")
+    } else {
+        Uri.parse("com.baidu.tieba://unidispatch/pb?obj_locate=pb_reply&obj_source=wise&obj_name=index&obj_param2=chrome&has_token=0&qd=scheme&refer=tieba.baidu.com&wise_sample_id=3000232_2-99999_9&fr=bpush&tid=${threadId}")
+    }
+}
+
+private fun Context.launchOfficialApp(threadId: Long, postId: Long?) {
+    val intent = Intent(Intent.ACTION_VIEW).setData(getDispatchUri(threadId, postId))
+    val resolveInfos = packageManager
+        .queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        .filter { it.activityInfo.packageName != packageName }
+
+    try {
+        if (resolveInfos.isNotEmpty()) {
+            startActivity(intent)
+        } else {
+            toastShort(R.string.toast_official_client_not_install)
+        }
+    } catch (_: ActivityNotFoundException) {
+        toastShort(R.string.toast_official_client_not_install)
+    }
+}
+
+@Composable
+private fun ReplyWaringDialog(threadId: Long, postId: Long?, onBack: () -> Unit) {
+    val warning by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_WARNING), true)
+    var showed by rememberSaveable { mutableStateOf(false) }
+    val warningDialogState = rememberDialogState()
+
+    if (warningDialogState.show) {
+        val context = LocalContext.current
+        ReplyWaringDialog(
+            dialogState = warningDialogState,
+            onLaunchOfficialApp = { context.launchOfficialApp(threadId, postId) },
+            onBack = onBack
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        if (warning && !showed) {
+            delay(AnimationConstants.DefaultDurationMillis.toLong()) // Wait BottomSheet animation
+            warningDialogState.show()
+            showed = true
+        }
+    }
+}
+
+@Composable
+private fun ReplyWaringDialog(
+    modifier: Modifier = Modifier,
+    dialogState: DialogState,
+    onLaunchOfficialApp: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Dialog(
+        modifier = modifier,
+        dialogState = dialogState,
+        title = { Text(text = stringResource(id = R.string.title_dialog_reply_warning)) },
+        buttons = {
+            Column(
+                modifier = Modifier.padding(horizontal = DefaultDialogContentPadding),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                DialogPositiveButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(id = R.string.button_official_client_reply),
+                    onClick = onLaunchOfficialApp
+                )
+                DialogNegativeButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(id = R.string.btn_continue_reply),
+                )
+                DialogNegativeButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(id = R.string.btn_cancel_reply),
+                    onClick = onBack
+                )
+            }
+        },
+    ) {
+        Text(
+            text = stringResource(id = R.string.message_dialog_reply_warning),
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
+    }
+}
+
+@Preview("ImeActionRow")
+@Composable
+private fun ImeActionRowPreview() = TiebaLiteTheme {
+    Surface(modifier = Modifier.padding(12.dp)) {
+        ImeActionRow(
+            onPanelClicked = {},
+            selectedImageProvider = null,
+            isReplying = { true },
+        )
+    }
+}
+
+@Preview("ImagePanel")
+@Composable
+private fun ImagePanelPreview() = TiebaLiteTheme {
+    Surface(modifier = Modifier.height(260.dp)) { // Normal keyboard height
+        ImagePanel(
+            selectedImages = listOf("null.jpg"),
+            onAddImageClicked = {},
+            onRemoveImage = {},
+            isOriginImage = false,
+            onIsOriginImageChange = {}
+        )
     }
 }

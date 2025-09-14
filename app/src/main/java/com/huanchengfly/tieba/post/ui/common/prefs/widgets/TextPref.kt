@@ -10,23 +10,23 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.minimumInteractiveComponentSize
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 
 private val ContentPadding: Dp = 16.dp
+private const val DisabledTextOpacity = 0.38f
 
 //TODO add single line title?
 
@@ -34,14 +34,14 @@ private val ContentPadding: Dp = 16.dp
  * Simple Text with title and summary.
  * Used to show some information to the user and is the basis of all other preferences.
  *
- * @param title Main text which describes the Pref
- * @param modifier Modifier applied to the Text aspect of this Pref
- * @param summary Used to give some more information about what this Pref is for
- * Mostly for internal use with custom Prefs
- * @param onClick Will be called when user clicks on the Pref. Parse null to disable this Pref
- * @param enabled If false, this Pref cannot be checked/unchecked
- * @param leadingIcon Icon which is positioned at the start of the Pref
- * @param trailingContent Composable content which is positioned at the end of the Pref
+ * @param title Main text which describes this preference
+ * @param modifier the [Modifier] to be applied on this preference
+ * @param summary Used to give some more information about what this preference is for
+ * Mostly for internal use with custom Prefs.
+ * @param onClick called when this preference is clicked. Parse null to disable this Pref
+ * @param enabled controls the enabled state of this preference
+ * @param leadingIcon icon will be drawn at the start of the preference
+ * @param trailingContent content will be drawn at the end of the preference
  */
 @Composable
 fun TextPref(
@@ -53,15 +53,18 @@ fun TextPref(
     enabled: Boolean = onClick != null,
     trailingContent: @Composable (RowScope.() -> Unit)? = null
 ) {
-    val alpha = if (enabled) 0.9f else ContentAlpha.disabled
+    val colors = MaterialTheme.colorScheme
+    val titleColor = if (enabled) colors.onSurface else colors.onSurface.copy(DisabledTextOpacity)
+    val summaryColor = if (enabled) colors.onSurfaceVariant else colors.onSurfaceVariant.copy(DisabledTextOpacity)
 
-    CompositionLocalProvider(LocalContentAlpha provides alpha) {
-        val textColor = LocalContentColor.current.copy(LocalContentAlpha.current)
-
+    Surface(
+        modifier = modifier,
+        color = Color.Transparent,
+        contentColor = titleColor,
+    ) {
         Row(
-            modifier = modifier
-                .minimumInteractiveComponentSize()
-                .then(if (onClick != null && enabled) Modifier.clickable(onClick = onClick) else Modifier)
+            modifier = Modifier
+                .block { onClick?.let { clickable(enabled, onClick = it) } }
                 .padding(ContentPadding),
             horizontalArrangement = Arrangement.spacedBy(ContentPadding),
             verticalAlignment = Alignment.CenterVertically
@@ -75,14 +78,10 @@ fun TextPref(
             )
 
             Column(modifier = Modifier.weight(1.0f)) {
-                Text(title, color = textColor, style = MaterialTheme.typography.subtitle1)
+                Text(title, style = MaterialTheme.typography.titleMedium)
 
                 if (summary != null) {
-                    Text(
-                        text = summary,
-                        color = textColor.copy(ContentAlpha.medium),
-                        style = MaterialTheme.typography.body2
-                    )
+                    Text(summary, color = summaryColor, style = MaterialTheme.typography.bodyMedium)
                 }
             }
 
@@ -93,6 +92,7 @@ fun TextPref(
     }
 }
 
+@NonRestartableComposable
 @Composable
 fun TextPref(
     modifier: Modifier = Modifier,
@@ -102,14 +102,31 @@ fun TextPref(
     leadingIcon: ImageVector?,
     enabled: Boolean = onClick != null,
     trailingContent: @Composable (RowScope.() -> Unit)? = null
-) = TextPref(
-    modifier = modifier,
-    title = title,
-    summary = summary,
-    onClick = onClick,
-    leadingIcon = {
-        leadingIcon?.let { Icon(it, title, Modifier.fillMaxSize()) }
-    },
-    enabled = enabled,
-    trailingContent = trailingContent
-)
+) =
+    TextPref(
+        modifier = modifier,
+        title = title,
+        summary = summary,
+        onClick = onClick,
+        leadingIcon = {
+            leadingIcon?.let { Icon(it, title, Modifier.fillMaxSize()) }
+        },
+        enabled = enabled,
+        trailingContent = trailingContent
+    )
+
+@Composable
+fun TipPref(
+    modifier: Modifier = Modifier,
+    text: @Composable BoxScope.() -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .padding(ContentPadding)
+            .padding(start = 8.dp),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.secondaryContainer
+    ) {
+        Box(modifier = Modifier.padding(12.dp), content = text)
+    }
+}

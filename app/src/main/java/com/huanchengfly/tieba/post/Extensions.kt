@@ -148,7 +148,7 @@ fun <T> ImmutableList<T>.removeAt(index: Int): ImmutableList<T> {
  * @see [Window.setBackgroundBlurRadius]
  * */
 @SuppressLint("NewApi")
-fun WindowManager.LayoutParams.enableBackgroundBlur(context: Context, radius: Int = 64): WindowManager.LayoutParams? {
+fun WindowManager.LayoutParams.enableBackgroundBlur(context: Context, radius: Int = 56): WindowManager.LayoutParams? {
     return if (context.appPreferences.useRenderEffect) {
         flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
         blurBehindRadius = radius

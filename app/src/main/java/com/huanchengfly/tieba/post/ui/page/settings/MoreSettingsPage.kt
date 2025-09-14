@@ -160,7 +160,7 @@ private suspend fun sizeProgress(context: Context, cache: Long, onUpdate: (Strin
     while (cacheSize > 0) {
         onUpdate("$tipMessage ${cacheSize / 1024} KiB")
         cacheSize = max(0, cacheSize - 10240)
-        delay(30)
+        delay(10)
     }
     yield()
     onUpdate(context.getString(R.string.tip_cache, "0 B"))

@@ -18,20 +18,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.NavigationRail
-import androidx.compose.material.NavigationRailItem
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material3.DrawerDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.PermanentDrawerSheet
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -40,40 +39,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.Measurable
-import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.DrawerWindowInsets
-import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarWindowInsets
-import com.huanchengfly.tieba.post.ui.widgets.compose.RailWindowInsets
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.LocalAccount
-
-enum class LayoutType {
-    HEADER, CONTENT
-}
 
 private val ActiveIndicatorHeight = 56.dp
 private val ActiveIndicatorWidth = 240.dp
 
-// androidx.compose.material.BottomNavigationHeight
-val BottomNavigationHeight = 56.dp
+// androidx.compose.material3.tokens.NavigationBarTokens.ContainerHeight
+val BottomNavigationHeight = 80.dp
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NavigationDrawerItem(
     label: @Composable () -> Unit,
@@ -84,9 +73,9 @@ fun NavigationDrawerItem(
     badge: (@Composable () -> Unit)? = null,
     shape: Shape = MaterialTheme.shapes.medium,
     backgroundColor: Color = Color.Transparent,
-    selectedBackgroundColor: Color = MaterialTheme.colors.primary.copy(0.25f),
-    itemColor: Color = MaterialTheme.colors.onSurface,
-    selectedItemColor: Color = MaterialTheme.colors.primary,
+    selectedBackgroundColor: Color = MaterialTheme.colorScheme.primary.copy(0.25f),
+    itemColor: Color = MaterialTheme.colorScheme.onSurface,
+    selectedItemColor: Color = MaterialTheme.colorScheme.primary,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
     Surface(
@@ -123,150 +112,99 @@ fun NavigationDrawerItem(
 
 @Composable
 fun NavigationDrawerContent(
+    modifier: Modifier = Modifier,
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
     navigationItems: List<NavigationItem>,
-    navigationContentPosition: MainNavigationContentPosition
+    navigationContentPosition: MainNavigationContentPosition,
+    drawerShape: Shape = RectangleShape,
+    drawerContainerColor: Color = DrawerDefaults.standardContainerColor,
+    drawerContentColor: Color = contentColorFor(drawerContainerColor),
 ) {
-    PositionLayout(
-        modifier = Modifier
-            .width(ActiveIndicatorWidth)
-            .background(ExtendedTheme.colors.bottomBar)
-            .padding(16.dp)
-            .windowInsetsPadding(DrawerWindowInsets),
-        content = {
-            Column(
-                modifier = Modifier.layoutId(LayoutType.HEADER),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp) // NavigationRailVerticalPadding
-            ) {
-                val account = LocalAccount.current
-                if (account != null) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                    ) {
-                        AccountNavIcon(spacer = false, size = Sizes.Large)
-                        Text(
-                            text = account.nameShow ?: account.name,
-                            style = MaterialTheme.typography.subtitle1,
-                            color = ExtendedTheme.colors.text
-                        )
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Avatar(
-                            data = R.drawable.ic_launcher_new_round,
-                            size = Sizes.Small,
-                            contentDescription = stringResource(id = R.string.app_name)
-                        )
-                        Text(
-                            text = stringResource(id = R.string.app_name).uppercase(),
-                            style = MaterialTheme.typography.h6,
-                            color = ExtendedTheme.colors.primary
-                        )
-                    }
+    PermanentDrawerSheet(
+        modifier = modifier.width(ActiveIndicatorWidth),
+        drawerShape = drawerShape,
+        drawerContainerColor = drawerContainerColor,
+        drawerContentColor = drawerContentColor
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+        ) {
+            val account = LocalAccount.current
+            if (account != null) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(vertical = 16.dp)
+                ) {
+                    AccountNavIcon(spacer = false, size = Sizes.Large)
+                    Text(
+                        text = account.nameShow ?: account.name,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                 }
-            }
-            Column(
-                modifier = Modifier
-                    .layoutId(LayoutType.CONTENT)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                navigationItems.fastForEachIndexed { index, navigationItem ->
-                    NavigationDrawerItem(
-                        selected = index == currentPosition,
-                        onClick = {
-                            if (index != currentPosition) {
-                                onChangePosition(index)
-                            }
-                        },
-                        label = { Text(text = stringResource(navigationItem.title)) },
-                        icon = {
-                            NavIcon(
-                                modifier = Modifier.size(24.dp),
-                                item = navigationItem,
-                                atEnd = index == currentPosition
-                            )
-                        }
+            } else {
+                val context = LocalContext.current
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Avatar(data = R.drawable.ic_launcher_new_round, size = Sizes.Small)
+                    Text(
+                        text = remember { context.getString(R.string.app_name).uppercase() },
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
-        },
-        navigationContentPosition = navigationContentPosition
-    )
-}
 
-
-@Composable
-private fun PositionLayout(
-    navigationContentPosition: MainNavigationContentPosition,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Layout(
-        modifier = modifier,
-        content = content,
-        measurePolicy = { measurables, constraints ->
-            lateinit var headerMeasurable: Measurable
-            lateinit var contentMeasurable: Measurable
-            measurables.forEach {
-                when (it.layoutId) {
-                    LayoutType.HEADER -> headerMeasurable = it
-                    LayoutType.CONTENT -> contentMeasurable = it
-                    else -> error("Unknown layoutId encountered!")
-                }
+            if (navigationContentPosition == MainNavigationContentPosition.CENTER) {
+                Spacer(Modifier.weight(1.0f))
             }
 
-            val headerPlaceable = headerMeasurable.measure(constraints)
-            val contentPlaceable = contentMeasurable.measure(
-                constraints.offset(vertical = -headerPlaceable.height)
-            )
-            layout(constraints.maxWidth, constraints.maxHeight) {
-                // Place the header, this goes at the top
-                headerPlaceable.placeRelative(0, 0)
+            navigationItems.fastForEachIndexed { index, navigationItem ->
+                NavigationDrawerItem(
+                    selected = index == currentPosition,
+                    onClick = {
+                        if (index != currentPosition) {
+                            onChangePosition(index)
+                        }
+                    },
+                    label = { Text(text = stringResource(navigationItem.title)) },
+                    icon = {
+                        NavIcon(
+                            modifier = Modifier.size(Sizes.Tiny),
+                            item = navigationItem,
+                            atEnd = index == currentPosition
+                        )
+                    }
+                )
+            }
 
-                // Determine how much space is not taken up by the content
-                val nonContentVerticalSpace = constraints.maxHeight - contentPlaceable.height
-
-                val contentPlaceableY = when (navigationContentPosition) {
-                    // Figure out the place we want to place the content, with respect to the
-                    // parent (ignoring the header for now)
-                    MainNavigationContentPosition.TOP -> 0
-                    MainNavigationContentPosition.CENTER -> nonContentVerticalSpace / 2
-                }
-                    // And finally, make sure we don't overlap with the header.
-                    .coerceAtLeast(headerPlaceable.height)
-
-                contentPlaceable.placeRelative(0, contentPlaceableY)
+            if (navigationContentPosition == MainNavigationContentPosition.CENTER) {
+                Spacer(Modifier.weight(1.0f))
             }
         }
-    )
+    }
 }
 
 @Composable
 fun NavigationRail(
+    modifier: Modifier = Modifier,
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
     navigationItems: List<NavigationItem>,
     navigationContentPosition: MainNavigationContentPosition
 ) {
     NavigationRail(
-        backgroundColor = ExtendedTheme.colors.bottomBar,
-        contentColor = ExtendedTheme.colors.primary,
-        modifier = Modifier.windowInsetsPadding(RailWindowInsets),
-        elevation = Dp.Hairline,
+        modifier = modifier,
+        containerColor = TiebaLiteTheme.extendedColorScheme.navigationContainer,
+        contentColor = TiebaLiteTheme.colorScheme.onSurface,
         header = {
+            // TODO: Align with new TopAppbar
             AccountNavIcon(spacer = false)
         }
     ) {
@@ -296,58 +234,40 @@ fun NavigationRail(
 }
 
 @Composable
-fun BottomNavigationDivider(
-    themeColors: ExtendedColors = ExtendedTheme.colors
-) {
-    if (!themeColors.isNightMode) {
-        Spacer(
-            modifier = Modifier
-                .height(1.5.dp)
-                .background(themeColors.divider)
-        )
-    }
-}
-
-@Composable
 fun BottomNavigation(
     modifier: Modifier = Modifier,
     currentPosition: Int,
     onChangePosition: (position: Int) -> Unit,
     navigationItems: List<NavigationItem>,
-    themeColors: ExtendedColors = ExtendedTheme.colors
+    containerColor: Color = TiebaLiteTheme.extendedColorScheme.navigationContainer,
+    contentColor: Color = TiebaLiteTheme.colorScheme.contentColorFor(containerColor),
 ) {
-    Column(modifier = modifier.background(themeColors.bottomBar)) {
-        BottomNavigationDivider(themeColors)
-        BottomNavigation(
-            modifier = Modifier.windowInsetsPadding(NavigationBarWindowInsets),
-            backgroundColor = Color.Transparent,
-            contentColor = themeColors.primary,
-            elevation = 0.dp,
-        ) {
-            navigationItems.fastForEachIndexed { index, navigationItem ->
-                BottomNavigationItem(
-                    selected = index == currentPosition,
-                    onClick = {
-                        if (index != currentPosition) {
-                            onChangePosition(index)
-                        }
-                        navigationItem.onClick?.invoke()
-                    },
-                    icon = {
-                        NavIcon(
-                            modifier = Modifier.size(24.dp),
-                            item = navigationItem,
-                            atEnd = index == currentPosition
-                        )
-                    },
-                    alwaysShowLabel = false
-                )
-            }
+    NavigationBar(
+        modifier = modifier,
+        containerColor = containerColor,
+        contentColor = contentColor,
+    ) {
+        navigationItems.fastForEachIndexed { index, navigationItem ->
+            NavigationBarItem(
+                selected = index == currentPosition,
+                onClick = {
+                    if (index != currentPosition) {
+                        onChangePosition(index)
+                    }
+                },
+                icon = {
+                    NavIcon(
+                        modifier = Modifier.size(24.dp),
+                        item = navigationItem,
+                        atEnd = index == currentPosition
+                    )
+                },
+                alwaysShowLabel = false
+            )
         }
     }
 }
 
-@OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 private fun NavIcon(modifier: Modifier = Modifier, item: NavigationItem, atEnd: Boolean) {
     Box(modifier = modifier) {
@@ -368,7 +288,7 @@ private fun NavIcon(modifier: Modifier = Modifier, item: NavigationItem, atEnd: 
                 modifier = Modifier
                     .size(14.dp)
                     .align(Alignment.TopEnd)
-                    .background(color = MaterialTheme.colors.secondary)
+                    .background(color = TiebaLiteTheme.colorScheme.tertiary)
                     .clip(shape = CircleShape)
             )
         }
@@ -377,10 +297,31 @@ private fun NavIcon(modifier: Modifier = Modifier, item: NavigationItem, atEnd: 
 
 @Immutable
 data class NavigationItem @OptIn(ExperimentalAnimationGraphicsApi::class) constructor(
-    val id: String,
-    val icon: @Composable () -> AnimatedImageVector,
     @StringRes val title: Int,
+    val icon: @Composable () -> AnimatedImageVector,
     val badgeText: () -> String? = { null },
-    val onClick: (() -> Unit)? = null,
-    val content: @Composable () -> Unit = {},
 )
+
+@Preview("NavigationDrawerContent", device = Devices.PIXEL_TABLET)
+@Composable
+private fun NavigationDrawerContentPreview() = TiebaLiteTheme {
+    val navItems = rememberNavigationItems(account = null, messageCount = { 0 })
+    CompositionLocalProvider(LocalAccount provides null) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            NavigationDrawerContent(
+                currentPosition = 0,
+                onChangePosition = {},
+                navigationItems = navItems,
+                navigationContentPosition = MainNavigationContentPosition.TOP
+            )
+            NavigationDrawerContent(
+                currentPosition = 0,
+                onChangePosition = {},
+                navigationItems = navItems,
+                navigationContentPosition = MainNavigationContentPosition.CENTER
+            )
+        }
+    }
+}

@@ -1,9 +1,9 @@
 package com.huanchengfly.tieba.post.ui.models
 
+import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.hasAgree
-
 
 /**
  * Represents [ThreadInfo] in UI
@@ -11,14 +11,13 @@ import com.huanchengfly.tieba.post.api.models.protos.hasAgree
  * @param collected         True when [ThreadInfo.collectStatus] not 0
  * @param isShareThread     True when [ThreadInfo.is_share_thread] is 1
  * */
+@Immutable
 data class ThreadInfoData(
     val title: String,
     val collectMarkPid: Long,
     val collected: Boolean,
     val firstPostId: Long,
-    val hasAgree: Boolean,
-    val agreeNum: Int,
-    val diffAgreeNum: Long,
+    val like: Like,
     val isShareThread: Boolean,
     val originThreadInfo: OriginThreadInfo?,
     val replyNum: Int,
@@ -28,9 +27,7 @@ data class ThreadInfoData(
         collectMarkPid = info.collectMarkPid.toLongOrNull()?: 0L,
         collected = info.collectStatus != 0,
         firstPostId = info.firstPostId,
-        hasAgree = info.hasAgree == 1,
-        agreeNum = info.agreeNum,
-        diffAgreeNum = info.agree?.diffAgreeNum?: info.agreeNum.toLong(),
+        like = Like(info.hasAgree == 1, info.agree?.diffAgreeNum?: info.agreeNum.toLong()),
         isShareThread = info.is_share_thread == 1,
         originThreadInfo = info.origin_thread_info,
         replyNum = info.replyNum
@@ -40,14 +37,12 @@ data class ThreadInfoData(
         return this.copy(collected = collected, collectMarkPid = markPostId)
     }
 
-    fun updateAgreeStatus(hasAgree: Boolean): ThreadInfoData {
-        return if (hasAgree != this.hasAgree) {
-            val offset = if (hasAgree) 1 else -1
-            copy(
-                hasAgree = hasAgree,
-                agreeNum = agreeNum + offset,
-                diffAgreeNum = diffAgreeNum + offset
-            )
-        } else this
-    }
+    /**
+     * Called when user clicked like button
+     *
+     * @return new [ThreadInfoData] with like status updated
+     * */
+    fun updateLikeStatus(liked: Boolean, loading: Boolean): ThreadInfoData = copy(
+        like = like.updateLikeStatus(liked).setLoading(loading)
+    )
 }

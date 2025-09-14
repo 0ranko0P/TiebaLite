@@ -3,10 +3,9 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,7 +27,7 @@ import kotlinx.collections.immutable.ImmutableMap
  *
  * @param key Key used to identify this Pref in the [DataStore], null when it's not a DataStore pref
  * @param title Main text which describes the Pref
- * @param modifier Modifier applied to the Text aspect of this Pref
+ * @param modifier the [Modifier] to be applied on this preference
  * @param summary Used to give some more information about what this Pref is for
  * @param defaultValue Value to use if this Pref does not exist in [DataStore].
  * @param onValueChange Callback to be invoked when user selected new option in [options]
@@ -71,6 +70,9 @@ fun <T> DropDownPref(
             ) {
                 options.forEach { item ->
                     DropdownMenuItem(
+                        text = {
+                            Text(text = item.value)
+                        },
                         onClick = {
                             expanded = false
                             if (item.key != defaultValue) {
@@ -81,12 +83,7 @@ fun <T> DropDownPref(
                                 onValueChange?.invoke(item.key)
                             }
                         }
-                    ) {
-                        Text(
-                            text = item.value,
-                            style = MaterialTheme.typography.body1
-                        )
-                    }
+                    )
                 }
             }
         }

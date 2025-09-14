@@ -73,14 +73,14 @@ class TiebaWebView(context: Context): WebView(context) {
         }
 
         fun launchCustomTab(context: Context, url: Uri): Result<Unit> = runCatching {
-            val theme = ThemeUtil.getRawTheme()
+            val colorScheme = ThemeUtil.currentColorScheme()
             CustomTabsIntent.Builder()
                 .setShowTitle(true)
                 .setDefaultColorSchemeParams(
                     CustomTabColorSchemeParams.Builder()
-                        .setToolbarColor(theme.topBar.toArgb())
-                        .setNavigationBarColor(theme.bottomBar.toArgb())
-                        .setNavigationBarDividerColor(theme.divider.toArgb())
+                        .setToolbarColor(colorScheme.surfaceContainer.toArgb())
+                        .setNavigationBarColor(colorScheme.surfaceContainer.toArgb())
+                        .setNavigationBarDividerColor(colorScheme.outline.toArgb())
                         .build()
                 )
                 .build()

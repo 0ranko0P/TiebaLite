@@ -16,10 +16,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -41,7 +43,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastRoundToInt
 import com.huanchengfly.tieba.post.R
 import kotlinx.coroutines.CoroutineScope
@@ -96,21 +97,9 @@ fun SwipeUpLazyLoadColumn(
 ) {
     val refreshState = rememberSwipeUpRefreshConnection(isLoading, onLoad)
 
-    if (onLazyLoad != null) {
-        val isAtBottom: Boolean by remember {
-            derivedStateOf {
-                !state.canScrollForward && state.firstVisibleItemIndex != 0
-                        // Bug: empty visible items even FirstVisibleItem exists
-                        && state.layoutInfo.visibleItemsInfo.isNotEmpty()
-            }
-        }
-
-        LaunchedEffect(isAtBottom) {
-            if (isAtBottom && !isLoading) onLazyLoad()
-        }
-    }
-
-    Box(modifier = modifier.nestedScroll(refreshState)) {
+    Box(
+        modifier = Modifier.nestedScroll(refreshState) then modifier
+    ) {
         LazyColumn(
             modifier = Modifier.offset {
                 IntOffset(x = 0, y = refreshState.position.fastRoundToInt())
@@ -135,6 +124,10 @@ fun SwipeUpLazyLoadColumn(
             ) {
                 val onThreshold by remember { derivedStateOf { refreshState.progress >= 1.0f } }
                 bottomIndicator(onThreshold)
+
+                if (onLazyLoad != null) {
+                    LazyLoadAtBottom(state, isLoading, onLazyLoad)
+                }
             }
 
             LaunchedEffect(size) { // set indicator's height as threshold
@@ -142,6 +135,22 @@ fun SwipeUpLazyLoadColumn(
                 refreshState.setThreshold(size.height.toFloat())
             }
         }
+    }
+}
+
+@Composable
+@NonRestartableComposable
+private fun LazyLoadAtBottom(state: LazyListState, isLoading: Boolean, onLazyLoad: () -> Unit)  {
+    val isAtBottom by remember {
+        derivedStateOf {
+            !state.canScrollForward && state.firstVisibleItemIndex != 0
+                    // Bug: empty visible items even FirstVisibleItem exists
+                    && state.layoutInfo.visibleItemsInfo.isNotEmpty()
+        }
+    }
+
+    LaunchedEffect(isAtBottom) {
+        if (isAtBottom && !isLoading) onLazyLoad()
     }
 }
 
@@ -296,7 +305,7 @@ fun LoadMoreIndicator(
     noMore: Boolean,
     onThreshold: Boolean
 ) = Box(modifier) {
-    VerticalDivider(modifier = Modifier.align(Alignment.TopStart))
+    HorizontalDivider(modifier = Modifier.align(Alignment.TopStart))
 
     Row(
         modifier = Modifier
@@ -304,7 +313,7 @@ fun LoadMoreIndicator(
             .align(Alignment.Center),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        VerticalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
+        HorizontalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
 
         Text(
             text = when {
@@ -316,9 +325,9 @@ fun LoadMoreIndicator(
             modifier = Modifier
                 .padding(horizontal = 4.dp)
                 .animateContentSize(animationSpec = TweenSpec()),
-            style = MaterialTheme.typography.body2.copy(fontSize = 16.sp)
+            style = MaterialTheme.typography.bodyLarge
         )
 
-        VerticalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
+        HorizontalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
     }
 }

@@ -17,15 +17,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.packInts
-import androidx.compose.ui.util.unpackInt1
-import androidx.compose.ui.util.unpackInt2
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 
@@ -97,38 +91,9 @@ fun MyLazyVerticalGrid(
  * Compose this overlay in TopBar when fist item becomes invisible
  * */
 @Composable
-inline fun StickyHeaderOverlay(state: LazyListState, header: @Composable () -> Unit) {
+fun StickyHeaderOverlay(state: LazyListState, header: @Composable () -> Unit) {
     val shouldPinOnTopBar by remember { derivedStateOf { state.firstVisibleItemIndex > 0 } }
     if (shouldPinOnTopBar) {
         header()
     }
 }
-
-/**
- * Creates a list of [LazyListState] that is remembered across compositions.
- *
- * Changes to the provided initial values will **not** result in the state being recreated or
- * changed in any way if it has already been created.
- */
-@Composable
-fun rememberPagerListStates(size: Int): List<LazyListState> {
-    return rememberSaveable(saver = Saver) {
-        MutableList(size) { LazyListState() }
-    }
-}
-
-private val Saver: Saver<List<LazyListState>, *> = listSaver(
-    save = {
-        it.map { state ->
-            packInts(state.firstVisibleItemIndex, state.firstVisibleItemScrollOffset)
-        }
-    },
-    restore = { packedStates ->
-        packedStates.map {
-            LazyListState(
-                firstVisibleItemIndex = unpackInt1(it),
-                firstVisibleItemScrollOffset = unpackInt2(it)
-            )
-        }
-    }
-)

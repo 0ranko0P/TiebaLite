@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -8,26 +9,24 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Text
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -37,15 +36,15 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.fade
 import com.google.accompanist.placeholder.material.placeholder
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.block
-import com.huanchengfly.tieba.post.arch.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.UserData
-import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ColorUtils.getIconColorByLevel
+import com.huanchengfly.tieba.post.utils.StringUtil
 
 @Composable
 fun UserHeaderPlaceholder(
@@ -91,19 +90,14 @@ fun UserHeader(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            ProvideTextStyle(value = MaterialTheme.typography.subtitle2) {
-                name()
-            }
+            ProvideTextStyle(value = MaterialTheme.typography.labelLarge, content = name)
 
             if (desc != null) {
-                ProvideTextStyle(
-                    value = MaterialTheme.typography.caption.copy(
-                        color = ExtendedTheme.colors.textSecondary,
-                        fontSize = 11.sp
-                    )
-                ) {
-                    desc()
-                }
+                ProvideContentColorTextStyle(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    content = desc
+                )
             }
         }
         content?.invoke(this)
@@ -119,14 +113,17 @@ fun UserHeader(
     onClick: (() -> Unit)? = null,
     desc: String? = null,
     content: (@Composable RowScope.() -> Unit)? = null
-) = UserHeader(
-    modifier = modifier,
-    name = remember { StringUtil.getUserNameString(App.INSTANCE, name, nameShow) },
-    avatar = remember { StringUtil.getAvatarUrl(portrait) },
-    onClick = onClick,
-    desc = desc,
-    content = content
-)
+) {
+    val context = LocalContext.current
+    UserHeader(
+        modifier = modifier,
+        name = remember { StringUtil.getUserNameString(context, name, nameShow) },
+        avatar = remember { StringUtil.getAvatarUrl(portrait) },
+        onClick = onClick,
+        desc = desc,
+        content = content
+    )
+}
 
 @Composable
 fun UserHeader(
@@ -153,6 +150,7 @@ fun UserHeader(
     content = content
 )
 
+@NonRestartableComposable
 @Composable
 fun UserDataHeader(
     modifier: Modifier = Modifier,
@@ -166,7 +164,7 @@ fun UserDataHeader(
         Avatar(
             data = author.avatarUrl,
             size = Sizes.Small,
-            modifier = Modifier.block { onClick?.let { clickableNoIndication(onClick = it) } },
+            modifier = Modifier.onNotNull(onClick) { clickable(onClick = it) },
             contentDescription = author.name
         )
     },
@@ -195,7 +193,7 @@ fun UserNameText(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(text = userName, color = LocalContentColor.current)
+        Text(text = userName)
 
         val levelColor = Color(getIconColorByLevel(userLevel))
 
@@ -203,58 +201,53 @@ fun UserNameText(
             text = userLevel.toString(),
             fontSize = 11.sp,
             color = levelColor,
-            backgroundColor = levelColor.copy(0.25f)
+            backgroundColor = levelColor.copy(0.25f),
         )
 
         if (isLz) {
-            TextChip(text = stringResource(id = R.string.tip_lz), fontSize = 9.sp)
+            TextChip(text = stringResource(id = R.string.tip_lz))
         }
 
         if (!bawuType.isNullOrBlank()) {
             TextChip(
                 text = bawuType,
-                fontSize = 9.sp,
-                color = ExtendedTheme.colors.primary,
-                backgroundColor = ExtendedTheme.colors.primary.copy(0.1f)
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                backgroundColor = MaterialTheme.colorScheme.primaryContainer
             )
         }
     }
 }
 
+private val DefaultChipTextStyle = TextStyle(
+    fontSize = 10.sp,
+    fontWeight = FontWeight.Bold,
+    letterSpacing = 0.5.sp,
+    lineHeight = 12.sp,
+)
+
+@NonRestartableComposable
 @Composable
 private fun TextChip(
     text: String,
     modifier: Modifier = Modifier,
     fontSize: TextUnit = TextUnit.Unspecified,
-    style: TextStyle = LocalTextStyle.current,
-    color: Color = ExtendedTheme.colors.onChip,
-    backgroundColor: Color = ExtendedTheme.colors.chip,
-    shape: Shape = RoundedCornerShape(100),
+    backgroundColor: Color = MaterialTheme.colorScheme.tertiary,
+    color: Color = MaterialTheme.colorScheme.onTertiary,
 ) = Text(
     text = text,
     modifier = modifier
-        .clip(shape)
-        .background(color = backgroundColor)
-        .padding(horizontal = 8.dp, vertical = 1.dp),
+        .background(color = backgroundColor, CircleShape)
+        .padding(horizontal = 8.dp, vertical = 1.5.dp),
     color = color,
     fontSize = fontSize,
     textAlign = TextAlign.Center,
-    style = style
+    style = LocalTextStyle.current.merge(DefaultChipTextStyle)
 )
-
-@Preview("UserDataHeader")
-@Composable
-fun UserDataHeaderPreview() = TiebaLiteTheme {
-    UserDataHeader(
-        author = UserData.Empty.copy(name = "我是谁", levelId = 99, bawuType = "小吧主"),
-        desc = "一分钟前 · 第 10 楼 · 来自中国)"
-    )
-}
 
 @Preview("UserNameText")
 @Composable
 fun UserNameTextPreview() = TiebaLiteTheme {
-    ProvideTextStyle(MaterialTheme.typography.subtitle2) {
+    ProvideTextStyle(MaterialTheme.typography.labelLarge) {
         UserNameText(Modifier.padding(10.dp), userName = "我是谁", userLevel = 5, isLz = true)
     }
 }

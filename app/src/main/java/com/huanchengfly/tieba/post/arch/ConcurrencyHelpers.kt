@@ -19,13 +19,12 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.DeprecationLevel.ERROR
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * A helper class to execute tasks sequentially in coroutines.
@@ -126,7 +125,7 @@ class ControlledRunner<T> {
      * @return the result of block, if this call was not cancelled prior to returning.
      */
     suspend fun cancelPreviousThenRun(
-        context: CoroutineContext = EmptyCoroutineContext,
+        context: CoroutineContext? = null,
         block: suspend() -> T
     ): T {
         // fast path: if we already know about an active task, just cancel it right away.
@@ -136,7 +135,7 @@ class ControlledRunner<T> {
             // Create a new coroutine, but don't start it until it's decided that this block should
             // execute. In the code below, calling await() on newTask will cause this coroutine to
             // start.
-            val newTask = async(context, start = LAZY) {
+            val newTask = async(context ?: currentCoroutineContext(), start = LAZY) {
                 block()
             }
 

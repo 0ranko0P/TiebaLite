@@ -9,16 +9,17 @@ import com.huanchengfly.tieba.post.api.models.MessageListBean
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.models.database.Block
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import org.litepal.LitePal
 import org.litepal.extension.delete
-import org.litepal.extension.findAll
 import org.litepal.extension.findFirst
 
 object BlockManager {
@@ -26,9 +27,12 @@ object BlockManager {
     val blockList: StateFlow<ImmutableList<Block>>
         get() = _blockList
 
-    suspend fun init() = withContext(Dispatchers.IO) {
-        val blocks = LitePal.findAll<Block>()
-        _blockList.value = blocks.toPersistentList()
+    fun init() {
+        LitePal.findAllAsync(Block::class.java).listen { list ->
+            if (list.isNotEmpty()) {
+                _blockList.update { list.toPersistentList() }
+            }
+        }
     }
 
     fun addBlockAsync(
@@ -40,7 +44,7 @@ object BlockManager {
                 callback?.invoke(it)
                 val list = blockList.value.toMutableList()
                 list.add(block)
-                _blockList.value = list.toPersistentList()
+                _blockList.update { list.toPersistentList() }
             }
     }
 
@@ -48,7 +52,7 @@ object BlockManager {
         LitePal.delete<Block>(id)
         val list = blockList.value.toMutableList()
         list.removeAll { it.id == id }
-        _blockList.value = list.toPersistentList()
+        _blockList.set { list.toPersistentList() }
     }
 
     suspend fun saveOrUpdateBlock(block: Block): Block = withContext(Dispatchers.IO) {
@@ -67,12 +71,12 @@ object BlockManager {
         } else {
             newList[index] = block
         }
-        _blockList.value = newList.toPersistentList()
+        _blockList.update { newList.toPersistentList() }
         return@withContext block
     }
 
     fun hasKeyword(keyword: String): Boolean {
-        return blockList.value.find { it.type == Block.TYPE_KEYWORD && it.keyword == keyword } != null
+        return blockList.value.fastFirstOrNull { it.type == Block.TYPE_KEYWORD && it.keyword == keyword } != null
     }
 
     suspend fun findUserById(userId: Long): Block? = withContext(Dispatchers.IO) {

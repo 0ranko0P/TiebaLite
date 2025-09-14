@@ -1,20 +1,19 @@
 package com.huanchengfly.tieba.post.ui.models
 
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.api.models.protos.Anti
 import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
-@Stable
+@Immutable
 data class ThreadUiState(
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val isLoadingLatestReply: Boolean = false,
-    val error: ImmutableHolder<Throwable>? = null,
+    val error: Throwable? = null,
 
     val hasMore: Boolean = true,
     val nextPagePostId: Long = 0,
@@ -28,6 +27,6 @@ data class ThreadUiState(
     val firstPost: PostData? = null,
     val forum: ImmutableHolder<SimpleForum>? = null,
     val anti: ImmutableHolder<Anti>? = null,
-    val data: ImmutableList<PostData> = persistentListOf(),
-    val latestPosts: ImmutableList<PostData> = persistentListOf(),
+    val data: List<PostData> = persistentListOf(),
+    val latestPosts: List<PostData> = persistentListOf(),
 ) : UiState

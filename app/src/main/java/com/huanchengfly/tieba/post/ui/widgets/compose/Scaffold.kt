@@ -1,95 +1,437 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.MutableWindowInsets
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material.DismissValue
-import androidx.compose.material.DrawerDefaults
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.FabPosition
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
-import androidx.compose.material.ScaffoldState
-import androidx.compose.material.SnackbarHost
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.SwipeToDismiss
-import androidx.compose.material.contentColorFor
-import androidx.compose.material.rememberDismissState
-import androidx.compose.material.rememberScaffoldState
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.exclude
+import androidx.compose.foundation.layout.onConsumedWindowInsetsChanged
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.contentColorFor
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
-    val dismissState = rememberDismissState(
-        confirmStateChange = { value ->
-            if (value != DismissValue.Default) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value != SwipeToDismissBoxValue.Settled) {
                 hostState.currentSnackbarData?.dismiss()
-                true
-            } else {
-                false
             }
+            true
         }
     )
+
     LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue != DismissValue.Default) {
+        if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
             dismissState.reset()
         }
     }
-    SwipeToDismiss(state = dismissState, background = {}) {
+    SwipeToDismissBox(state = dismissState, backgroundContent = {}) {
         SnackbarHost(hostState = hostState)
     }
 }
 
-val LocalSnackbarHostState = compositionLocalOf<SnackbarHostState> { error("no scaffold here!") }
+@Composable
+@NonRestartableComposable
+fun rememberSnackbarHostState(): SnackbarHostState = remember { SnackbarHostState() }
+
+val LocalSnackbarHostState = staticCompositionLocalOf<SnackbarHostState> { error("no scaffold here!") }
+
+val DefaultFabEnterTransition: EnterTransition = fadeIn() + scaleIn(animationSpec = tween())
+
+val DefaultFabExitTransition: ExitTransition = scaleOut(animationSpec = tween()) + fadeOut()
 
 @Composable
 fun MyScaffold(
     modifier: Modifier = Modifier,
-    scaffoldState: ScaffoldState = rememberScaffoldState(),
     topBar: @Composable () -> Unit = {},
-    bottomBar: @Composable () -> Unit = BlurNavigationBarPlaceHolder,
-    snackbarHost: @Composable (SnackbarHostState) -> Unit = { SwipeToDismissSnackbarHost(it) },
+    bottomBar: @Composable () -> Unit = {},
+    snackbarHostState: SnackbarHostState = rememberSnackbarHostState(),
+    snackbarHost: @Composable () -> Unit = { SwipeToDismissSnackbarHost(LocalSnackbarHostState.current) },
     floatingActionButton: @Composable () -> Unit = {},
     floatingActionButtonPosition: FabPosition = FabPosition.End,
-    isFloatingActionButtonDocked: Boolean = false,
-    drawerContent: @Composable (ColumnScope.() -> Unit)? = null,
-    drawerGesturesEnabled: Boolean = true,
-    drawerShape: Shape = MaterialTheme.shapes.large,
-    drawerElevation: Dp = DrawerDefaults.Elevation,
-    drawerBackgroundColor: Color = MaterialTheme.colors.surface,
-    drawerContentColor: Color = contentColorFor(drawerBackgroundColor),
-    drawerScrimColor: Color = DrawerDefaults.scrimColor,
-    backgroundColor: Color = MaterialTheme.colors.background,
-    contentColor: Color = contentColorFor(backgroundColor),
+    backgroundColor: Color = Color.Transparent,
+    contentColor: Color = MaterialTheme.colorScheme.onBackground,
+    contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    CompositionLocalProvider(LocalSnackbarHostState provides scaffoldState.snackbarHostState) {
+    CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
         Scaffold(
             modifier,
-            scaffoldState,
             topBar,
             bottomBar,
-            snackbarHost,
+            snackbarHost = snackbarHost,
             floatingActionButton,
             floatingActionButtonPosition,
-            isFloatingActionButtonDocked,
-            drawerContent,
-            drawerGesturesEnabled,
-            drawerShape,
-            drawerElevation,
-            drawerBackgroundColor,
-            drawerContentColor,
-            drawerScrimColor,
             backgroundColor,
             contentColor,
+            contentWindowInsets,
             content
         )
     }
+}
+
+/**
+ * compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Scaffold.kt
+ *
+ * commit 576eeec 'Bump the version number for Material3 to 1.4.0-rc01'.
+ * on branch androidx-compose-material3-release
+ *
+ * 0Ranko0p changes:
+ *   1. Revert MD3 layout (lays out content behind both the TopBar and BottomBar) to MD2 layout
+ */
+
+/**
+ * [Material Design layout](https://m3.material.io/foundations/layout/understanding-layout/)
+ *
+ * Scaffold implements the basic Material Design visual layout structure.
+ *
+ * This component provides API to put together several Material components to construct your screen,
+ * by ensuring proper layout strategy for them and collecting necessary data so these components
+ * will work together correctly.
+ *
+ * To show a [Snackbar], use [SnackbarHostState.showSnackbar].
+ *
+ * @param modifier the [Modifier] to be applied to this scaffold
+ * @param topBar top app bar of the screen, typically a [TopAppBar]
+ * @param bottomBar bottom bar of the screen, typically a [NavigationBar]
+ * @param snackbarHost component to host [Snackbar]s that are pushed to be shown via
+ *   [SnackbarHostState.showSnackbar], typically a [SnackbarHost]
+ * @param floatingActionButton Main action button of the screen, typically a [FloatingActionButton]
+ * @param floatingActionButtonPosition position of the FAB on the screen. See [FabPosition].
+ * @param containerColor the color used for the background of this scaffold. Use [Color.Transparent]
+ *   to have no color.
+ * @param contentColor the preferred color for content inside this scaffold. Defaults to either the
+ *   matching content color for [containerColor], or to the current [LocalContentColor] if
+ *   [containerColor] is not a color from the theme.
+ * @param contentWindowInsets window insets to be passed to [content] slot via [PaddingValues]
+ *   params. Scaffold will take the insets into account from the top/bottom only if the [topBar]/
+ *   [bottomBar] are not present, as the scaffold expect [topBar]/[bottomBar] to handle insets
+ *   instead. Any insets consumed by other insets padding modifiers or [consumeWindowInsets] on a
+ *   parent layout will be excluded from [contentWindowInsets].
+ * @param content content of the screen. The lambda receives a [PaddingValues] that should be
+ *   applied to the content root via [Modifier.padding] and [Modifier.consumeWindowInsets] to
+ *   properly offset top and bottom bars. If using [Modifier.verticalScroll], apply this modifier to
+ *   the child of the scroll, and not on the scroll itself.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun Scaffold(
+    modifier: Modifier = Modifier,
+    topBar: @Composable () -> Unit = {},
+    bottomBar: @Composable () -> Unit = {},
+    snackbarHost: @Composable () -> Unit = {},
+    floatingActionButton: @Composable () -> Unit = {},
+    floatingActionButtonPosition: FabPosition = FabPosition.End,
+    containerColor: Color = MaterialTheme.colorScheme.background,
+    contentColor: Color = contentColorFor(containerColor),
+    contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
+    content: @Composable (PaddingValues) -> Unit,
+) {
+    val safeInsets = remember(contentWindowInsets) { MutableWindowInsets(contentWindowInsets) }
+    Surface(
+        modifier =
+            modifier.onConsumedWindowInsetsChanged { consumedWindowInsets ->
+                // Exclude currently consumed window insets from user provided contentWindowInsets
+                safeInsets.insets = contentWindowInsets.exclude(consumedWindowInsets)
+            },
+        color = containerColor,
+        contentColor = contentColor,
+    ) {
+        ScaffoldLayout(
+            fabPosition = floatingActionButtonPosition,
+            topBar = topBar,
+            bottomBar = bottomBar,
+            content = content,
+            snackbar = snackbarHost,
+            contentWindowInsets = safeInsets,
+            fab = floatingActionButton,
+        )
+    }
+}
+
+/**
+ * Layout for a [Scaffold]'s content.
+ *
+ * @param fabPosition [FabPosition] for the FAB (if present)
+ * @param topBar the content to place at the top of the [Scaffold], typically a [SmallTopAppBar]
+ * @param content the main 'body' of the [Scaffold]
+ * @param snackbar the [Snackbar] displayed on top of the [content]
+ * @param fab the [FloatingActionButton] displayed on top of the [content], below the [snackbar] and
+ *   above the [bottomBar]
+ * @param bottomBar the content to place at the bottom of the [Scaffold], on top of the [content],
+ *   typically a [NavigationBar].
+ */
+@Composable
+private fun ScaffoldLayout(
+    fabPosition: FabPosition,
+    topBar: @Composable () -> Unit,
+    content: @Composable (PaddingValues) -> Unit,
+    snackbar: @Composable () -> Unit,
+    fab: @Composable () -> Unit,
+    contentWindowInsets: WindowInsets,
+    bottomBar: @Composable () -> Unit,
+) {
+    // Create the backing value for the content padding
+    // These values will be updated during measurement, but before subcomposing the body content
+    // Remembering and updating a single PaddingValues avoids needing to recompose when the values
+    // change
+    val contentPadding = remember {
+        object : PaddingValues {
+            var paddingHolder by mutableStateOf(PaddingValues(0.dp))
+
+            override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
+                paddingHolder.calculateLeftPadding(layoutDirection)
+
+            override fun calculateTopPadding(): Dp = paddingHolder.calculateTopPadding()
+
+            override fun calculateRightPadding(layoutDirection: LayoutDirection): Dp =
+                paddingHolder.calculateRightPadding(layoutDirection)
+
+            override fun calculateBottomPadding(): Dp = paddingHolder.calculateBottomPadding()
+        }
+    }
+
+    val topBarContent: @Composable () -> Unit = remember(topBar) { { Box { topBar() } } }
+    val snackbarContent: @Composable () -> Unit = remember(snackbar) { { Box { snackbar() } } }
+    val fabContent: @Composable () -> Unit = remember(fab) { { Box { fab() } } }
+    val bodyContent: @Composable () -> Unit =
+        remember(content, contentPadding) { { Box { content(contentPadding) } } }
+    val bottomBarContent: @Composable () -> Unit = remember(bottomBar) { { Box { bottomBar() } } }
+    SubcomposeLayout { constraints ->
+        val layoutWidth = constraints.maxWidth
+        val layoutHeight = constraints.maxHeight
+
+        val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+
+        // respect only bottom and horizontal for snackbar and fab
+        val leftInset = contentWindowInsets.getLeft(this@SubcomposeLayout, layoutDirection)
+        val rightInset = contentWindowInsets.getRight(this@SubcomposeLayout, layoutDirection)
+        val bottomInset = contentWindowInsets.getBottom(this@SubcomposeLayout)
+
+        val topBarPlaceable =
+            subcompose(ScaffoldLayoutContent.TopBar, topBarContent)
+                .first()
+                .measure(looseConstraints)
+
+        val snackbarPlaceable =
+            subcompose(ScaffoldLayoutContent.Snackbar, snackbarContent)
+                .first()
+                .measure(looseConstraints.offset(-leftInset - rightInset, -bottomInset))
+
+        val fabPlaceable =
+            subcompose(ScaffoldLayoutContent.Fab, fabContent)
+                .first()
+                .measure(looseConstraints.offset(-leftInset - rightInset, -bottomInset))
+
+        val isFabEmpty = fabPlaceable.width == 0 && fabPlaceable.height == 0
+        val fabPlacement =
+            if (!isFabEmpty) {
+                val fabWidth = fabPlaceable.width
+                val fabHeight = fabPlaceable.height
+                // FAB distance from the left of the layout, taking into account LTR / RTL
+                val fabLeftOffset =
+                    when (fabPosition) {
+                        FabPosition.Start -> {
+                            if (layoutDirection == LayoutDirection.Ltr) {
+                                FabSpacing.roundToPx() + leftInset
+                            } else {
+                                layoutWidth - FabSpacing.roundToPx() - fabWidth - rightInset
+                            }
+                        }
+                        FabPosition.End,
+                        FabPosition.EndOverlay -> {
+                            if (layoutDirection == LayoutDirection.Ltr) {
+                                layoutWidth - FabSpacing.roundToPx() - fabWidth - rightInset
+                            } else {
+                                FabSpacing.roundToPx() + leftInset
+                            }
+                        }
+                        else -> (layoutWidth - fabWidth + leftInset - rightInset) / 2
+                    }
+
+                FabPlacement(left = fabLeftOffset, width = fabWidth, height = fabHeight)
+            } else {
+                null
+            }
+
+        val bottomBarPlaceable =
+            subcompose(ScaffoldLayoutContent.BottomBar, bottomBarContent)
+                .first()
+                .measure(looseConstraints)
+
+        val isBottomBarEmpty = bottomBarPlaceable.width == 0 && bottomBarPlaceable.height == 0
+
+        val fabOffsetFromBottom =
+            fabPlacement?.let {
+                if (isBottomBarEmpty || fabPosition == FabPosition.EndOverlay) {
+                    it.height +
+                        FabSpacing.roundToPx() +
+                        contentWindowInsets.getBottom(this@SubcomposeLayout)
+                } else {
+                    // Total height is the bottom bar height + the FAB height + the padding
+                    // between the FAB and bottom bar
+                    bottomBarPlaceable.height + it.height + FabSpacing.roundToPx()
+                }
+            }
+
+        val snackbarHeight = snackbarPlaceable.height
+        val snackbarOffsetFromBottom =
+            if (snackbarHeight != 0) {
+                snackbarHeight +
+                    (fabOffsetFromBottom
+                        ?: bottomBarPlaceable.height.takeIf { !isBottomBarEmpty }
+                        ?: contentWindowInsets.getBottom(this@SubcomposeLayout))
+            } else {
+                0
+            }
+
+        // Update the backing state for the content padding before subcomposing the body
+        val insets = contentWindowInsets.asPaddingValues(this)
+        contentPadding.paddingHolder =
+            PaddingValues(
+                top =
+                    if (topBarPlaceable.width == 0 && topBarPlaceable.height == 0) {
+                        insets.calculateTopPadding()
+                    } else {
+                        Dp.Hairline
+                    },
+                bottom =
+                    if (isBottomBarEmpty) {
+                        insets.calculateBottomPadding()
+                    } else {
+                        Dp.Hairline
+                    },
+                start = insets.calculateStartPadding(layoutDirection),
+                end = insets.calculateEndPadding(layoutDirection),
+            )
+
+        val bodyContentPlaceable =
+            subcompose(ScaffoldLayoutContent.MainContent, bodyContent)
+                .first()
+                .measure(
+                    looseConstraints.copy(
+                        minHeight = layoutHeight - topBarPlaceable.height - bottomBarPlaceable.height,
+                        maxHeight = layoutHeight - topBarPlaceable.height - bottomBarPlaceable.height
+                    )
+                )
+
+        layout(layoutWidth, layoutHeight) {
+            // Placing to control drawing order to match default elevation of each placeable
+            bodyContentPlaceable.place(0, topBarPlaceable.height)
+            topBarPlaceable.place(0, 0)
+            snackbarPlaceable.place(
+                (layoutWidth - snackbarPlaceable.width +
+                    contentWindowInsets.getLeft(this@SubcomposeLayout, layoutDirection) -
+                    contentWindowInsets.getRight(this@SubcomposeLayout, layoutDirection)) / 2,
+                layoutHeight - snackbarOffsetFromBottom,
+            )
+            // The bottom bar is always at the bottom of the layout
+            bottomBarPlaceable.place(0, layoutHeight - (bottomBarPlaceable.height))
+            // Explicitly not using placeRelative here as `leftOffset` already accounts for RTL
+            fabPlacement?.let { placement ->
+                fabPlaceable.place(placement.left, layoutHeight - fabOffsetFromBottom!!)
+            }
+        }
+    }
+}
+
+/** The possible positions for a [FloatingActionButton] attached to a [Scaffold]. */
+@JvmInline
+value class FabPosition internal constructor(@Suppress("unused") private val value: Int) {
+    companion object {
+        /**
+         * Position FAB at the bottom of the screen at the start, above the [NavigationBar] (if it
+         * exists)
+         */
+        val Start = FabPosition(0)
+
+        /**
+         * Position FAB at the bottom of the screen in the center, above the [NavigationBar] (if it
+         * exists)
+         */
+        val Center = FabPosition(1)
+
+        /**
+         * Position FAB at the bottom of the screen at the end, above the [NavigationBar] (if it
+         * exists)
+         */
+        val End = FabPosition(2)
+
+        /**
+         * Position FAB at the bottom of the screen at the end, overlaying the [NavigationBar] (if
+         * it exists)
+         */
+        val EndOverlay = FabPosition(3)
+    }
+
+    override fun toString(): String {
+        return when (this) {
+            Start -> "FabPosition.Start"
+            Center -> "FabPosition.Center"
+            End -> "FabPosition.End"
+            else -> "FabPosition.EndOverlay"
+        }
+    }
+}
+
+/**
+ * Placement information for a [FloatingActionButton] inside a [Scaffold].
+ *
+ * @property left the FAB's offset from the left edge of the bottom bar, already adjusted for RTL
+ *   support
+ * @property width the width of the FAB
+ * @property height the height of the FAB
+ */
+@Immutable private class FabPlacement(val left: Int, val width: Int, val height: Int)
+
+// FAB spacing above the bottom bar / bottom of the Scaffold
+private val FabSpacing = 16.dp
+
+private enum class ScaffoldLayoutContent {
+    TopBar,
+    MainContent,
+    Snackbar,
+    Fab,
+    BottomBar,
 }

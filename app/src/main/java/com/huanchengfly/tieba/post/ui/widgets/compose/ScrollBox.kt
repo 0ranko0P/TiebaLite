@@ -7,7 +7,7 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +32,7 @@ private fun TwoFloats(width: Float, height: Float) = androidx.compose.ui.geometr
 fun UniversalScrollBox(
     modifier: Modifier = Modifier,
     scrollBarStroke: Dp = 2.dp,
-    scrollBarColor: Color = MaterialTheme.colors.secondary.copy(alpha = 0.5F),
+    scrollBarColor: Color = MaterialTheme.colorScheme.outline,
     content: @Composable () -> Unit
 ) {
     Box(

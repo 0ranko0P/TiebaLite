@@ -10,13 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -28,10 +25,9 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInExcept
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.user.post.TipScreenPostEmpty
 import com.huanchengfly.tieba.post.ui.page.user.post.TipScreenPostHide
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -43,6 +39,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentListOf
 
+@NonRestartableComposable
 @Composable
 fun UserLikeForumPageHide() {
     Box(
@@ -53,12 +50,21 @@ fun UserLikeForumPageHide() {
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@NonRestartableComposable
+@Composable
+fun UserLikeForumPageEmpty() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        TipScreenPostEmpty()
+    }
+}
+
 @Composable
 fun UserLikeForumPage(
     uid: Long,
     fluid: Boolean = false,
-    enablePullRefresh: Boolean = false,
     viewModel: UserLikeForumViewModel = pageViewModel(),
 ) {
     val navigator = LocalNavController.current
@@ -113,17 +119,9 @@ fun UserLikeForumPage(
             ErrorScreen(error = throwable, showReload = throwable !is TiebaNotLoggedInException)
         },
     ) {
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = isRefreshing,
-            onRefresh = ::reload
-        )
-
         val lazyListState = rememberLazyListState()
 
-        val pullRefreshModifier =
-            if (enablePullRefresh) Modifier.pullRefresh(pullRefreshState) else Modifier
-
-        Container(modifier = pullRefreshModifier, fluid = fluid) {
+        Container(fluid = fluid) {
             SwipeUpLazyLoadColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = lazyListState,
@@ -154,14 +152,6 @@ fun UserLikeForumPage(
                     }
                 }
             }
-
-            PullRefreshIndicator(
-                refreshing = isRefreshing,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
-            )
         }
     }
 }
@@ -185,12 +175,12 @@ private fun UserLikeForumItem(
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(text = item.name.orEmpty(), style = MaterialTheme.typography.subtitle1)
+            Text(text = item.name.orEmpty(), style = MaterialTheme.typography.titleMedium)
             item.slogan.takeUnless { it.isNullOrEmpty() }?.let {
                 Text(
                     text = it,
-                    style = MaterialTheme.typography.body2,
-                    color = ExtendedTheme.colors.textSecondary
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

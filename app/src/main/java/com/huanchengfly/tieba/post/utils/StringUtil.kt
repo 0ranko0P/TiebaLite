@@ -1,40 +1,31 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.text.Spannable
 import android.text.SpannableString
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ExperimentalTextApi
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withAnnotation
-import androidx.compose.ui.text.withStyle
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 
 object StringUtil {
 
     suspend fun getEmoticonContent(
+        context: Context,
         size: Int,
         source: CharSequence?,
         emoticonType: Int = EmoticonUtil.EMOTICON_ALL_TYPE
     ): SpannableString = withContext(Dispatchers.IO) {
-        if (source == null) {
-            return@withContext SpannableString("")
+        val spannableString = source as? SpannableString ?: SpannableString(source ?: "")
+        if (spannableString.length < 4) { // minimum length of emotion text
+            return@withContext spannableString
         }
-        return@withContext try {
-            val spannableString: SpannableString = if (source is SpannableString) {
-                source
-            } else {
-                SpannableString(source)
-            }
+
+        try {
             val patternEmoticon = EmoticonUtil.getRegexPattern(emoticonType)
             val matcherEmoticon = patternEmoticon.matcher(spannableString)
             while (matcherEmoticon.find()) {
@@ -42,51 +33,27 @@ object StringUtil {
                 val start = matcherEmoticon.start()
                 val end = start + key.length
                 val group1 = matcherEmoticon.group(1) ?: ""
-                val id = getEmoticonIdByName(group1)
-
-                val bitmap = EmoticonManager.getEmoticonBitmap(id, size).await()
-                val emoticonDrawable = BitmapDrawable(App.INSTANCE.resources, bitmap)
+                val id = getEmoticonIdByName(group1) ?: continue
+                val glideBitmapRec = runCatching { EmoticonManager.getEmoticonBitmap(id, size).get() }
+                val bitmap: Bitmap = glideBitmapRec.getOrNull() ?: continue
+                val emoticonDrawable = BitmapDrawable(context.resources, bitmap)
                 val span = EmoticonSpanV2(emoticonDrawable, size)
+                ensureActive()
                 spannableString.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                yield()
             }
-            spannableString
         } catch (e: Exception) {
             e.printStackTrace()
-            if (source is SpannableString) source else SpannableString(source)
         }
+
+        return@withContext spannableString
     }
 
     fun getUserNameString(context: Context, username: String, nickname: String?): String {
-        val showBoth = context.appPreferences.showBothUsernameAndNickname
-        return if (showBoth && !nickname.isNullOrBlank() && username != nickname && username.isNotBlank()) {
+        val canShowBoth = !nickname.isNullOrBlank() && username != nickname && username.isNotBlank()
+        return if (canShowBoth && context.appPreferences.showBothUsernameAndNickname) {
             "$nickname $username"
         } else {
             nickname ?: username
-        }
-    }
-
-    @OptIn(ExperimentalTextApi::class)
-    @Stable
-    fun buildAnnotatedStringWithUser(
-        userId: String,
-        username: String,
-        nickname: String?,
-        content: String,
-        context: Context = App.INSTANCE,
-    ): AnnotatedString {
-        return buildAnnotatedString {
-            val theme by ThemeUtil.themeState
-            withAnnotation(tag = "user", annotation = userId) {
-                withStyle(
-                    SpanStyle(color = theme.primary)
-                ) {
-                    append("@")
-                    append(getUserNameString(context, username, nickname))
-                }
-            }
-            append(": ")
-            append(content)
         }
     }
 

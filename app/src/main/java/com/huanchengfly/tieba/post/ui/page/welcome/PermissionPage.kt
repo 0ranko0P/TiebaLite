@@ -1,12 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.welcome
 
 import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,104 +10,102 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import com.huanchengfly.tieba.post.App
+import androidx.compose.ui.util.fastForEach
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.icons.EncryptedMinusCircle
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
+import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
+import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
+import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
 import kotlinx.coroutines.launch
 
-fun shouldRequestPermissions(context: Context): Boolean {
-    return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_DENIED
-    } else false
-}
+@Immutable
+private class PermissionInfo(
+    val icon: ImageVector,
+    val name: Int,
+    val description: Int,
+    val permission: String
+)
 
 @Composable
-private fun PermissionInfo(
-    modifier: Modifier = Modifier,
-    icon: Painter,
-    name: Int,
-    description: Int,
-    onClick: () -> Unit
-) {
+private fun Permission(modifier: Modifier = Modifier, info: PermissionInfo, onClick: () -> Unit) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.small)
+            .clip(MaterialTheme.shapes.extraSmall)
             .clickable(onClick = onClick)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(painter = icon, contentDescription = null, modifier = Modifier.size(30.dp))
+        Icon(painter = rememberVectorPainter(info.icon), contentDescription = null, modifier = Modifier.size(30.dp))
         Spacer(modifier = Modifier.width(16.dp))
 
         Column(
             modifier = Modifier.weight(1.0f),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(stringResource(name), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(info.name), style = MaterialTheme.typography.labelLarge)
 
-            Text(stringResource(description), color = LocalExtendedColors.current.textSecondary, fontSize = 13.sp)
+            Text(
+                text = stringResource(info.description),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
 
 @Composable
-fun PermissionPage(modifier: Modifier = Modifier, onProceedStateChanged: (Boolean) -> Unit) {
+fun PermissionPage(modifier: Modifier = Modifier, permissions: List<String>, onPermissionResult: (String, Boolean) -> Unit) {
     val context = LocalContext.current
-    var requestPhone by rememberSaveable { mutableStateOf(shouldRequestPermissions(context)) }
+    val coroutineScope = rememberCoroutineScope()
+
+    val permissionInfoList = remember(permissions) { permissions.mapToPermissionInfo() }
+    val granted = permissions.isEmpty()
 
     DualTitleContent(
         modifier = modifier,
         icon = rememberVectorPainter(Icons.Rounded.EncryptedMinusCircle),
         title = R.string.welcome_permission,
-        subtitle = if (requestPhone) R.string.welcome_permission_subtitle else R.string.welcome_permission_done,
+        subtitle = if (granted) R.string.welcome_permission_done else R.string.welcome_permission_subtitle
     ) {
-        AnimatedVisibility(visible = requestPhone) {
-            val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-                requestPhone = !granted
-                if (granted) {
-                    MainScope().launch(Dispatchers.IO) {
-                        App.Config.inited = false
-                        App.Config.init(context)
-                    }
+        permissionInfoList.fastForEach { info ->
+            Permission(info = info) {
+                coroutineScope.launch {
+                    context.askPermission(desc = info.description, info.permission)
+                        .onGranted { onPermissionResult(info.permission, true) }
+                        .onDenied { onPermissionResult(info.permission, false) }
                 }
             }
-
-            PermissionInfo(
-                icon = rememberVectorPainter(Icons.Rounded.PhoneAndroid),
-                name = R.string.common_permission_phone,
-                description = R.string.tip_permission_phone,
-                onClick = { launcher.launch(Manifest.permission.READ_PHONE_STATE) }
-            )
         }
     }
+}
 
-    LaunchedEffect(requestPhone) {
-        onProceedStateChanged(!requestPhone)
+private fun List<String>.mapToPermissionInfo(): List<PermissionInfo> = map {
+    when(it) {
+        Manifest.permission.READ_PHONE_STATE -> PermissionInfo(
+            icon = Icons.Rounded.PhoneAndroid,
+            name = R.string.common_permission_phone,
+            description = R.string.tip_permission_phone,
+            permission = it
+        )
+
+        else -> throw RuntimeException()
     }
 }

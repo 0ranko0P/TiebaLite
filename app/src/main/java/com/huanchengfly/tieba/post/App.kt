@@ -5,26 +5,25 @@ import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import android.os.PowerManager
 import android.os.Process
-import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.annotation.Keep
 import androidx.appcompat.app.AppCompatDelegate
-import com.github.gzuliyujiang.oaid.DeviceID
 import com.huanchengfly.tieba.post.activities.CrashActivity
-import com.huanchengfly.tieba.post.components.OAIDGetter
+import com.huanchengfly.tieba.post.components.ConfigInitializer
 import com.huanchengfly.tieba.post.utils.BlockManager
-import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.appPreferences
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.litepal.LitePal
+import javax.inject.Inject
 
 @HiltAndroidApp
 class App : Application() {
@@ -33,6 +32,8 @@ class App : Application() {
     val powerManager by lazy {
         getSystemService(POWER_SERVICE) as PowerManager
     }
+
+    @Inject lateinit var configInit : ConfigInitializer
 
     private fun getProcessName(context: Context): String? {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) return getProcessName()
@@ -53,19 +54,16 @@ class App : Application() {
         if (processName?.endsWith("error_handler") == true) return
 
         setupUncaughtExceptionHandler(this)
-        ClientUtils.init(this)
+        configInit.init()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             if (processName != null && packageName != processName) { //判断不等于默认进程名称
                 WebView.setDataDirectorySuffix(processName)
             }
         }
         LitePal.initialize(this)
-        Config.init(this)
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        MainScope().launch {
-            BlockManager.init()
-            EmoticonManager.init(this@App)
-        }
+        BlockManager.init()
+        EmoticonManager.init(this)
     }
 
     //解决魅族 Flyme 系统夜间模式强制反色
@@ -128,24 +126,6 @@ class App : Application() {
         var userAgent: String? = null
         var appFirstInstallTime: Long = 0L
         var appLastUpdateTime: Long = 0L
-
-        fun init(context: Context) {
-            if (!inited) {
-                isOAIDSupported = DeviceID.supportedOAID(context)
-                if (isOAIDSupported) {
-                    DeviceID.getOAID(context, OAIDGetter)
-                } else {
-                    statusCode = -200
-                    isTrackLimited = false
-                }
-                userAgent = WebSettings.getDefaultUserAgent(context)
-                context.appPreferences.run {
-                    appFirstInstallTime = installTime
-                    appLastUpdateTime = updateTime
-                }
-                inited = true
-            }
-        }
     }
 
     object ScreenInfo {
@@ -166,17 +146,10 @@ class App : Application() {
     }
 
     companion object {
-        const val TAG = "App"
 
         @JvmStatic
         lateinit var INSTANCE: App
             private set
-
-        val isSystemNight: Boolean
-            get() = nightMode == Configuration.UI_MODE_NIGHT_YES
-
-        private val nightMode: Int
-            get() = INSTANCE.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
 
         private fun setupUncaughtExceptionHandler(context: Context) {
             val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -190,5 +163,7 @@ class App : Application() {
                 defaultHandler?.uncaughtException(t, e)
             }
         }
+
+        val AppBackgroundScope = CoroutineScope(Dispatchers.IO + CoroutineName("AppBackground") + SupervisorJob())
     }
 }

@@ -8,17 +8,16 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.Text
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -42,8 +41,9 @@ import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.pxToSpFloat
 import com.huanchengfly.tieba.post.spToPxFloat
+import com.huanchengfly.tieba.post.theme.tokens.ColorSchemeKeyTokens
+import com.huanchengfly.tieba.post.theme.tokens.value
 import com.huanchengfly.tieba.post.ui.common.PbContentText
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager.calcLineHeightPx
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
@@ -55,7 +55,7 @@ const val EMOTICON_SIZE_SCALE = 0.9f
 fun EmoticonText(
     text: String,
     modifier: Modifier = Modifier,
-    color: Color = Color.Unspecified,
+    color: Color = LocalContentColor.current,
     fontSize: TextUnit = TextUnit.Unspecified,
     fontStyle: FontStyle? = null,
     fontWeight: FontWeight? = null,
@@ -101,7 +101,7 @@ fun EmoticonText(
 fun EmoticonText(
     text: AnnotatedString,
     modifier: Modifier = Modifier,
-    color: Color = Color.Unspecified,
+    color: Color = LocalContentColor.current,
     fontSize: TextUnit = TextUnit.Unspecified,
     fontStyle: FontStyle? = null,
     fontWeight: FontWeight? = null,
@@ -119,14 +119,9 @@ fun EmoticonText(
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current
 ) {
-    val textColor = color.takeOrElse {
-        style.color.takeOrElse {
-            LocalContentColor.current.copy(alpha = LocalContentAlpha.current)
-        }
-    }
     val mergedStyle = style.merge(
         TextStyle(
-            color = textColor,
+            color = color.takeOrElse { style.color },
             fontSize = fontSize,
             fontWeight = fontWeight,
             textAlign = textAlign ?: TextAlign.Unspecified,
@@ -169,8 +164,8 @@ fun buildChipInlineContent(
     padding: PaddingValues = PaddingValues(vertical = 2.dp, horizontal = 4.dp),
     textStyle: TextStyle = LocalTextStyle.current,
     chipTextStyle: TextStyle = LocalTextStyle.current,
-    backgroundColor: Color = ExtendedTheme.colors.chip,
-    color: Color = ExtendedTheme.colors.onChip
+    containerColor: ColorSchemeKeyTokens = ColorSchemeKeyTokens.Tertiary,
+    color: ColorSchemeKeyTokens = ColorSchemeKeyTokens.OnTertiary
 ): InlineTextContent {
     val textMeasurer = rememberTextMeasurer()
     val textSize = remember(text, textStyle) { textMeasurer.measure(text, textStyle).size }
@@ -207,12 +202,11 @@ fun buildChipInlineContent(
                         )
                     ),
                     textAlign = TextAlign.Center,
-                    color = color,
+                    color = color.value,
                     modifier = Modifier
                         .padding(horizontal = 1.dp)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(100))
-                        .background(backgroundColor)
+                        .background(containerColor.value, CircleShape)
                         .padding(padding)
                 )
             }
@@ -241,7 +235,7 @@ fun HighlightText(
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
     highlightKeywords: List<String> = emptyList(),
-    highlightColor: Color = ExtendedTheme.colors.primary,
+    highlightColor: Color = MaterialTheme.colorScheme.primary,
     highlightStyle: TextStyle = style,
 ) {
     HighlightText(
@@ -291,16 +285,16 @@ fun HighlightText(
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
     highlightKeywords: List<String> = emptyList(),
-    highlightColor: Color = ExtendedTheme.colors.primary,
+    highlightColor: Color = MaterialTheme.colorScheme.primary,
     highlightStyle: TextStyle = style,
 ) {
-    val mergedHighlightStyle = remember(highlightStyle, highlightColor) {
-        highlightStyle.copy(color = highlightColor)
-    }
-    val highlightText = remember(text, highlightKeywords) {
-        if (highlightKeywords.isEmpty()) {
-            text
-        } else {
+    val highlightText = if (highlightKeywords.isEmpty()) {
+        text
+    } else {
+        val mergedHighlightStyle = remember(highlightStyle, highlightColor) {
+            highlightStyle.copy(color = highlightColor).toSpanStyle()
+        }
+        remember(text, highlightKeywords) {
             buildAnnotatedString {
                 append(text)
                 highlightKeywords.forEach { keyword ->
@@ -309,16 +303,13 @@ fun HighlightText(
                     while (matcher.find()) {
                         val start = matcher.start()
                         val end = matcher.end()
-                        addStyle(
-                            mergedHighlightStyle.toSpanStyle(),
-                            start,
-                            end
-                        )
+                        addStyle(mergedHighlightStyle, start, end)
                     }
                 }
             }
         }
     }
+
     PbContentText(
         text = highlightText,
         modifier = modifier,

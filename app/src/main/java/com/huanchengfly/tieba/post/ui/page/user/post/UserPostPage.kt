@@ -3,29 +3,19 @@ package com.huanchengfly.tieba.post.ui.page.user.post
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -36,24 +26,21 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
@@ -79,17 +66,36 @@ fun TipScreenPostHide(modifier: Modifier = Modifier) {
                     .aspectRatio(2.5f)
             )
         },
-        scrollable = false,
+        scrollable = true,
     )
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun TipScreenPostEmpty(modifier: Modifier = Modifier)  {
+    TipScreen(
+        title = { Text(text = stringResource(id = R.string.title_empty)) },
+        modifier = modifier,
+        image = {
+            val composition by rememberLottieComposition(
+                LottieCompositionSpec.RawRes(R.raw.lottie_empty_box)
+            )
+            LottieAnimation(
+                composition = composition,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2f)
+            )
+        },
+        scrollable = true
+    )
+}
+
 @Composable
 fun UserPostPage(
     uid: Long,
     isThread: Boolean = true,
     fluid: Boolean = false,
-    enablePullRefresh: Boolean = false,
     viewModel: UserPostViewModel = pageViewModel(key = if (isThread) "user_thread_$uid" else "user_post_$uid"),
 ) {
     val navigator = LocalNavController.current
@@ -143,63 +149,16 @@ fun UserPostPage(
         onReload = {
             viewModel.send(UserPostUiIntent.Refresh(uid, isThread))
         },
-        loadingScreen = {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                Column {
-                    repeat(4) {
-                        FeedCardPlaceholder()
-                    }
-                }
-            }
-        },
         errorScreen = { ErrorScreen(error = error.getOrNull()) },
         emptyScreen = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(vertical = 16.dp),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                if (hidePost) {
-                    TipScreenPostHide()
-                } else {
-                    TipScreen(
-                        title = { Text(text = stringResource(id = R.string.title_empty)) },
-                        image = {
-                            val composition by rememberLottieComposition(
-                                LottieCompositionSpec.RawRes(R.raw.lottie_empty_box)
-                            )
-                            LottieAnimation(
-                                composition = composition,
-                                iterations = LottieConstants.IterateForever,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(2f)
-                            )
-                        },
-                        actions = {
-                            if (canReload) {
-                                Button(onClick = this@StateScreen::reload) {
-                                    Text(text = stringResource(id = R.string.btn_refresh))
-                                }
-                            }
-                        },
-                        scrollable = false,
-                    )
-                }
+            if (hidePost) {
+                TipScreenPostHide()
+            } else {
+                TipScreenPostEmpty()
             }
         },
     ) {
-        val pullRefreshState = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = ::reload)
-
         val lazyListState = rememberLazyListState()
-
-        val pullRefreshModifier =
-            if (enablePullRefresh) Modifier.pullRefresh(pullRefreshState) else Modifier
 
         val onPostClickListener : (Long, Long?, Boolean) -> Unit = { threadId, postId, isSubPost ->
             if (postId == null) {
@@ -211,7 +170,7 @@ fun UserPostPage(
             }
         }
 
-        Container(modifier = pullRefreshModifier, fluid = fluid) {
+        Container(fluid = fluid) {
             SwipeUpLazyLoadColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = lazyListState,
@@ -255,20 +214,12 @@ fun UserPostPage(
                     )
                 }
             }
-
-            PullRefreshIndicator(
-                refreshing = isRefreshing,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
-            )
         }
     }
 }
 
 @Composable
-fun UserPostItem(
+private fun UserPostItem(
     post: PostListItemData,
     onAgree: (PostInfoList) -> Unit,
     modifier: Modifier = Modifier,
@@ -282,7 +233,7 @@ fun UserPostItem(
     if (post.isThread) {
         FeedCard(
             item = item,
-            onClick = { onClick(it.thread_id, null, false) },
+            onClick = { onClick(item.get { thread_id }, null, false) },
             onAgree = onAgree,
             modifier = modifier,
             onClickReply = onClickReply,
@@ -291,6 +242,7 @@ fun UserPostItem(
             onClickOriginThread = { onClickOriginThread(it.tid.toLong()) },
         )
     } else {
+        val context = LocalContext.current
         Card(
             header = {
                 UserHeader(
@@ -314,17 +266,15 @@ fun UserPostItem(
                         ) {
                             Text(
                                 text = it.contentText,
-                                style = MaterialTheme.typography.body1,
-                                color = ExtendedTheme.colors.text,
+                                style = MaterialTheme.typography.bodyLarge,
                             )
 
                             Text(
-                                text = DateTimeUtils.getRelativeTimeString(
-                                    LocalContext.current,
-                                    it.createTime
-                                ),
-                                style = MaterialTheme.typography.caption,
-                                color = ExtendedTheme.colors.textSecondary,
+                                text = remember {
+                                    DateTimeUtils.getRelativeTimeString(context, it.createTime)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -335,17 +285,17 @@ fun UserPostItem(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(ExtendedTheme.colors.floorCard)
+                        .clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         .clickable {
                             onClickOriginThread(item.get { thread_id })
                         }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.body2,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             },
             modifier = modifier,
-            contentPadding = PaddingValues(0.dp),
+            contentPadding = PaddingNone,
         )
     }
 }

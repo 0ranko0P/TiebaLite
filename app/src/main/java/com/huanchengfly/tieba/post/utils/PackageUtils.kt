@@ -24,10 +24,11 @@ val Context.applicationMetaData: Bundle
         return packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData
     }
 
-fun buildAppSettingsIntent(packageName: String): Intent  = Intent().apply {
-    action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-    addCategory(Intent.CATEGORY_DEFAULT)
-    data = Uri.parse("package:$packageName")
+fun buildAppSettingsIntent(packageName: String): Intent {
+    return Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        addCategory(Intent.CATEGORY_DEFAULT)
+        data = Uri.fromParts("package", packageName, null)
+    }
 }
 
 fun List<ResolveInfo>.loadPackageLabel(context: Context): CharSequence? {

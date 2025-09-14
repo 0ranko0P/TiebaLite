@@ -1,14 +1,16 @@
 package com.huanchengfly.tieba.post.utils
 
+import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Report
 import androidx.compose.material.icons.rounded.SlowMotionVideo
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -22,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.bumptech.glide.Glide
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.placeholder
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
@@ -30,21 +33,19 @@ import com.huanchengfly.tieba.post.fromJson
 import com.huanchengfly.tieba.post.models.EmoticonCache
 import com.huanchengfly.tieba.post.pxToDp
 import com.huanchengfly.tieba.post.pxToSp
-import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Future
 
 data class Emoticon(
     val id: String,
@@ -53,6 +54,8 @@ data class Emoticon(
 
 object EmoticonManager {
     private const val TAG = "EmoticonManager"
+
+    private const val EMOTICON_ID_PREFIX = "image_emoticon"
 
     private const val EMOTICON_ASSET_NAME = "emoticon"
     private val DEFAULT_EMOTICON_MAPPING: Map<String, String> by lazy {
@@ -78,7 +81,8 @@ object EmoticonManager {
 
     private val emoticonMapping: MutableMap<String, String> = ConcurrentHashMap()
 
-    private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG))
+    private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG) + SupervisorJob())
+
     private val cacheUpdateRunner = ControlledRunner<Unit>()
 
     fun getEmoticonInlineContent(sizePx: Int, emoticonScale: Float): Map<String, InlineTextContent> {
@@ -110,7 +114,7 @@ object EmoticonManager {
                     imageVector = Icons.Rounded.Link,
                     contentDescription = stringResource(id = R.string.link),
                     modifier = Modifier.size(sizeDp),
-                    tint = ExtendedTheme.colors.primary,
+                    tint = MaterialTheme.colorScheme.primaryContainer,
                 )
             },
             PbContentRender.INLINE_LINK_MALICIOUS to InlineTextContent(placeholder = placeholder) {
@@ -118,7 +122,7 @@ object EmoticonManager {
                     imageVector = Icons.Rounded.Report,
                     contentDescription = stringResource(id = R.string.link),
                     modifier = Modifier.size(sizeDp),
-                    tint = RedA700,
+                    tint = MaterialTheme.colorScheme.error,
                 )
             },
             PbContentRender.INLINE_VIDEO to InlineTextContent(placeholder = placeholder) {
@@ -126,7 +130,7 @@ object EmoticonManager {
                     imageVector = Icons.Rounded.SlowMotionVideo,
                     contentDescription = stringResource(id = R.string.desc_video),
                     modifier = Modifier.size(sizeDp),
-                    tint = ExtendedTheme.colors.primary,
+                    tint = MaterialTheme.colorScheme.primaryContainer,
                 )
             }
         )
@@ -136,25 +140,30 @@ object EmoticonManager {
     @Composable
     fun EmoticonInlineImage(modifier: Modifier = Modifier, id: String, description: String = id) {
         val uri = remember { getEmoticonUri(id) }
-        GlideImage(model = uri, contentDescription = description, modifier = modifier) {
+        GlideImage(
+            model = uri,
+            contentDescription = description,
+            modifier = modifier,
+            failure = placeholder(R.drawable.ic_error)
+        ) {
             // Disable disk cache for asset emoticon
             if (uri.startsWith("file")) it.diskCacheStrategy(DiskCacheStrategy.NONE) else it
         }
     }
 
-    suspend fun init(context: Context) {
+    fun init(context: Application) = scope.launch {
         contextRef = WeakReference(context)
         val emoticonCache = getEmoticonDataCache()
         val firstInit = emoticonCache.mapping.isEmpty()
         if (emoticonCache.ids.isEmpty()) {
             for (i in 1..50) {
-                emoticonIds.add("image_emoticon$i")
+                emoticonIds.add("$EMOTICON_ID_PREFIX$i")
             }
             for (i in 61..101) {
-                emoticonIds.add("image_emoticon$i")
+                emoticonIds.add("$EMOTICON_ID_PREFIX$i")
             }
             for (i in 125..137) {
-                emoticonIds.add("image_emoticon$i")
+                emoticonIds.add("$EMOTICON_ID_PREFIX$i")
             }
         } else {
             emoticonIds.addAll(emoticonCache.ids)
@@ -191,18 +200,12 @@ object EmoticonManager {
     }
 
     fun getAllEmoticon(): List<Emoticon> {
-        return emoticonIds.map { id ->
-            Emoticon(id = id, name = getEmoticonNameById(id) ?: "")
+        return emoticonMapping.mapNotNull { (name, id) ->
+            if (name.isEmpty()) null else Emoticon(id = id, name = name)
         }
     }
 
     fun getEmoticonIdByName(name: String): String? = emoticonMapping[name]
-
-    private fun getEmoticonNameById(id: String): String? {
-        return emoticonMapping.firstNotNullOfOrNull { (name, emoticonId) ->
-            if (emoticonId == id) name else null
-        }
-    }
 
     private fun getEmoticonUri(id: String): String {
         return if (DEFAULT_EMOTICON_MAPPING.containsValue(id)) {
@@ -212,21 +215,24 @@ object EmoticonManager {
         }
     }
 
-    fun getEmoticonBitmap(id: String?, size: Int): Deferred<Bitmap> = scope.async(Dispatchers.IO) {
-        var builder = Glide.with(getContext()).asBitmap()
-        val uri = if (id != null) getEmoticonUri(id) else null
-        // Disable disk cache for asset emoticon
-        if (uri?.startsWith("file") == true) {
-            builder = builder.diskCacheStrategy(DiskCacheStrategy.NONE)
-        }
-        return@async builder.load(uri)
+    fun getEmoticonBitmap(id: String, size: Int): Future<Bitmap> {
+        val uri = getEmoticonUri(id)
+
+        return Glide.with(getContext())
+            .asBitmap()
+            .diskCacheStrategy(
+                // Disable disk cache for asset emoticon
+                if (uri.startsWith("file")) DiskCacheStrategy.NONE else DiskCacheStrategy.AUTOMATIC
+            )
+            .load(uri)
             .fallback(R.drawable.ic_chrome) // Null ID
             .submit(size, size)
-            .get()
     }
 
     fun registerEmoticon(id: String, name: String) {
-        val realId = if (id == "image_emoticon") "image_emoticon1" else id
+        if (!id.startsWith(EMOTICON_ID_PREFIX)) return
+
+        val realId = if (id == EMOTICON_ID_PREFIX) "image_emoticon1" else id
         var changed = false
         if (!emoticonIds.contains(realId)) {
             emoticonIds.add(realId)

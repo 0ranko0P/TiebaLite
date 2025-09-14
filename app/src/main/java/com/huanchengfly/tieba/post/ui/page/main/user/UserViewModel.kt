@@ -1,49 +1,50 @@
 package com.huanchengfly.tieba.post.ui.page.main.user
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class UserViewModel : ViewModel() {
 
-    private val scope = MainScope()
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _isLoading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _isLoading
+    private val accountUtil = AccountUtil.getInstance()
 
     init {
         onRefresh()
     }
 
-    fun onRefresh() = scope.launch {
+    fun onRefresh() = viewModelScope.launch {
         if (_isLoading.value) return@launch
-        val accountUtil = AccountUtil.getInstance()
-        val account = accountUtil.currentAccount.value ?: return@launch
-        _isLoading.value = true
-        TiebaApi.getInstance()
+        val account = accountUtil.currentAccount.firstOrNull() ?: return@launch
+
+        _isLoading.update { true }
+        val updatedAccount = TiebaApi.getInstance()
             .userProfileFlow(account.uid.toLong())
+            .cancellable()
             .catch {
-                _isLoading.value = false
-                it.printStackTrace()
+                _isLoading.update { false }
                 CommonUiEvent.Toast(it.getErrorMessage())
             }
-            .cancellable()
-            .collect { profile ->
+            .map { profile ->
                 val user = checkNotNull(profile.data_?.user) { "Empty user profile" }
-                val updatedAccount = account.copy(
+                account.copy(
                     nameShow = user.nameShow,
                     portrait = user.portrait,
-                    intro = user.intro,
+                    intro = user.intro.takeUnless { it.isEmpty() },
                     sex = user.sex.toString(),
                     fansNum = user.fans_num.toString(),
                     postNum = user.post_num.toString(),
@@ -58,16 +59,12 @@ class UserViewModel : ViewModel() {
                     tiebaUid = user.tieba_uid,
                     loadSuccess = true,
                 )
-                ensureActive()
-                if (account != updatedAccount) {
-                    accountUtil.saveNewAccount(account.uid, updatedAccount)
-                }
-                _isLoading.value = false
             }
-    }
+            .firstOrNull() // Ignore network errors, display old account
 
-    override fun onCleared() {
-        super.onCleared()
-        scope.cancel()
+        if (updatedAccount != null && account != updatedAccount) {
+            accountUtil.saveNewAccount(account.uid, updatedAccount)
+        }
+        _isLoading.update { false }
     }
 }

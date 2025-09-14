@@ -6,14 +6,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.Text
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.NonSkippableComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 @Composable
 fun BaseTextField(
@@ -168,30 +167,21 @@ private fun String.count(countWhitespace: Boolean = true): Int {
 }
 
 @Composable
+@NonSkippableComposable
 fun PlaceholderDecoration(
     show: Boolean,
     placeholderColor: Color,
     placeholder: @Composable (() -> Unit)? = null,
 ) {
     if (placeholder != null && show) {
-        ProvideContentColor(color = placeholderColor) {
-            placeholder()
-        }
+        CompositionLocalProvider(LocalContentColor provides placeholderColor, placeholder)
     }
 }
 
 @Composable
-fun ProvideContentColor(
-    color: Color,
-    alpha: Float = color.alpha,
-    content: @Composable () -> Unit
-) {
-    CompositionLocalProvider(
-        LocalContentColor provides color,
-        LocalContentAlpha provides alpha
-    ) {
-        content()
-    }
+@NonSkippableComposable
+fun ProvideContentColor(color: Color, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalContentColor provides color, content)
 }
 
 @Stable
@@ -268,12 +258,12 @@ private class DefaultCounterTextFieldColors(
 object TextFieldDefaults {
     @Composable
     fun textFieldColors(
-        textColor: Color = ExtendedTheme.colors.text,
-        disabledTextColor: Color = textColor.copy(alpha = ContentAlpha.disabled),
+        textColor: Color = MaterialTheme.colorScheme.onSurface,
+        disabledTextColor: Color = MaterialTheme.colorScheme.outline,
         backgroundColor: Color = Color.Transparent,
-        cursorColor: Color = ExtendedTheme.colors.primary,
-        placeholderColor: Color = ExtendedTheme.colors.textSecondary.copy(alpha = ContentAlpha.medium),
-        disabledPlaceholderColor: Color = placeholderColor.copy(alpha = ContentAlpha.disabled),
+        cursorColor: Color = MaterialTheme.colorScheme.primary,
+        placeholderColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+        disabledPlaceholderColor: Color = MaterialTheme.colorScheme.outline,
     ): TextFieldColors =
         DefaultTextFieldColors(
             textColor = textColor,
@@ -286,14 +276,14 @@ object TextFieldDefaults {
 
     @Composable
     fun counterTextFieldColors(
-        textColor: Color = ExtendedTheme.colors.text,
-        disabledTextColor: Color = textColor.copy(alpha = ContentAlpha.disabled),
+        textColor: Color = MaterialTheme.colorScheme.onSurface,
+        disabledTextColor: Color = MaterialTheme.colorScheme.outline,
         backgroundColor: Color = Color.Transparent,
-        cursorColor: Color = ExtendedTheme.colors.primary,
-        placeholderColor: Color = ExtendedTheme.colors.text.copy(alpha = ContentAlpha.medium),
-        disabledPlaceholderColor: Color = placeholderColor.copy(alpha = ContentAlpha.disabled),
-        counterColor: Color = ExtendedTheme.colors.text.copy(alpha = ContentAlpha.medium),
-        disabledCounterColor: Color = counterColor.copy(alpha = ContentAlpha.disabled)
+        cursorColor: Color = MaterialTheme.colorScheme.primary,
+        placeholderColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+        disabledPlaceholderColor: Color = MaterialTheme.colorScheme.outline,
+        counterColor: Color = MaterialTheme.colorScheme.secondary,
+        disabledCounterColor: Color = MaterialTheme.colorScheme.secondaryContainer
     ): CounterTextFieldColors =
         DefaultCounterTextFieldColors(
             textColor = textColor,

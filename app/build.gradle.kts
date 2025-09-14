@@ -159,9 +159,9 @@ dependencies {
 
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.animation.graphics)
+
+    // Material compose
     implementation(libs.bundles.compose.md3)
-    implementation(libs.androidx.compose.material)
-    implementation(libs.androidx.compose.material.navigation)
     implementation(libs.androidx.compose.material.iconsCore)
     // Optional - Add full set of material icons
     implementation(libs.androidx.compose.material.iconsExtended)
@@ -173,8 +173,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewModel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+    implementation(project(":material-color-utilities"))
 
     //AndroidX
+    implementation(libs.androidx.annotation)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.browser)

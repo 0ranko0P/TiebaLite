@@ -1,11 +1,12 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.material3.DrawerDefaults
+import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.NavigationRailDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
@@ -99,20 +100,6 @@ fun NavigationSuiteScaffoldLayout(
     }
 }
 
-/** Default window insets to be used and consumed by navigation bar */
-val NavigationBarWindowInsets: WindowInsets
-    @Composable
-    get() = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
-
-/** Default window insets for navigation rail. */
-val RailWindowInsets: WindowInsets
-    @Composable
-    get() = WindowInsets.systemBars.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start)
-
-val DrawerWindowInsets: WindowInsets
-    @Composable
-    get() = WindowInsets.systemBars.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start)
-
 @Composable
 fun NavigationSuiteScaffold(
     modifier: Modifier = Modifier,
@@ -158,7 +145,7 @@ fun NavigationSuiteScaffold(
         navigationBarAtop = navigationBarAtop,
         layoutType = layoutType,
         content = {
-            // Skip consume NavBar WindowInsets if navigationBarAtop enabled
+            // Skip consume WindowInsets if navigationBarAtop enabled
             if (navigationBarAtop && layoutType == MainNavigationType.BOTTOM_NAVIGATION) {
                 content()
             } else {
@@ -166,11 +153,11 @@ fun NavigationSuiteScaffold(
                     Modifier.consumeWindowInsets(
                         when (layoutType) {
                             MainNavigationType.BOTTOM_NAVIGATION ->
-                                NavigationBarWindowInsets.only(WindowInsetsSides.Bottom)
+                                NavigationBarDefaults.windowInsets.only(WindowInsetsSides.Bottom)
                             MainNavigationType.NAVIGATION_RAIL ->
-                                RailWindowInsets.only(WindowInsetsSides.Start)
+                                NavigationRailDefaults.windowInsets.only(WindowInsetsSides.Start)
                             MainNavigationType.PERMANENT_NAVIGATION_DRAWER ->
-                                DrawerWindowInsets.only(WindowInsetsSides.Start)
+                                DrawerDefaults.windowInsets.only(WindowInsetsSides.Start)
                         }
                     )
                 ) {

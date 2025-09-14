@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,20 +29,18 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -50,20 +49,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -74,20 +72,18 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.accompanist.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.arch.block
-import com.huanchengfly.tieba.post.arch.clickableNoIndication
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
-import com.huanchengfly.tieba.post.theme.DarkAmoledColors
-import com.huanchengfly.tieba.post.theme.DefaultColors
+import com.huanchengfly.tieba.post.theme.DefaultDarkColors
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
@@ -95,18 +91,19 @@ import com.huanchengfly.tieba.post.ui.page.search.SearchToolbarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
+import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
@@ -115,20 +112,20 @@ import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_HOME_
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_HOME_SINGLE_FORUM_LIST
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlinx.collections.immutable.persistentListOf
-import java.util.Objects
 
 private val FORUM_AVATAR_SIZE = 40.dp
 
-@Preview("SearchBoxPreview")
+@Preview("DummySearchBox")
 @Composable
-fun SearchBoxPreview() {
+private fun DummySearchBoxPreview() {
     Column {
-        TiebaLiteTheme(DefaultColors) {
-            SearchBox(onClick =  {})
+        TiebaLiteTheme {
+            SearchBox(onClick = {})
         }
 
-        TiebaLiteTheme(DarkAmoledColors) {
+        TiebaLiteTheme(colorSchemeExt = DefaultDarkColors) {
             SearchBox(onClick =  {})
         }
     }
@@ -137,13 +134,13 @@ fun SearchBoxPreview() {
 @Composable
 private fun SearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
-        color = ExtendedTheme.colors.floorCard,
-        contentColor = LocalContentColor.current,
-        shape = RoundedCornerShape(6.dp),
+        onClick = onClick,
         modifier = modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Row(
             verticalAlignment = CenterVertically,
@@ -155,7 +152,7 @@ private fun SearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
                 modifier = Modifier.size(Sizes.Tiny),
             )
             Spacer(modifier = Modifier.width(16.dp))
-            Text(text = stringResource(id = R.string.hint_search), fontSize = 14.sp)
+            Text(text = stringResource(id = R.string.hint_search), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -175,11 +172,13 @@ private fun ForumItemPlaceholder(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = CenterVertically
     ) {
+        val placeholderColor = MaterialTheme.colorScheme.surfaceContainerHigh
+
         if (showAvatar) {
             Box(
                 modifier = Modifier
                     .size(FORUM_AVATAR_SIZE)
-                    .placeholder(color = ExtendedTheme.colors.chip, shape = CircleShape),
+                    .placeholder(color = placeholderColor, shape = CircleShape),
             )
             Spacer(modifier = Modifier.width(14.dp))
         }
@@ -188,7 +187,7 @@ private fun ForumItemPlaceholder(
             text = "",
             modifier = Modifier
                 .weight(1.0f)
-                .placeholder(visible = true, color = ExtendedTheme.colors.chip),
+                .placeholder(color = placeholderColor),
             fontSize = 15.sp,
         )
 
@@ -197,10 +196,34 @@ private fun ForumItemPlaceholder(
             modifier = Modifier
                 .width(54.dp)
                 .padding(vertical = 4.dp)
-                .placeholder(color = ExtendedTheme.colors.chip, shape = RoundedCornerShape(3.dp))
+                .placeholder(color = placeholderColor, shape = MaterialTheme.shapes.extraSmall)
         ) {
             Text(text = "0", fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+@Composable
+fun HistoryItem(
+    modifier: Modifier = Modifier,
+    title: String,
+    avatar: @Composable RowScope.() -> Unit,
+    color: Color,
+    contentColor: Color,
+    onClick: () -> Unit = {}
+) {
+    Row(
+        modifier = modifier
+            .height(IntrinsicSize.Min)
+            .clip(shape = CircleShape)
+            .background(color = color)
+            .clickable(onClick = onClick)
+            .padding(start = 4.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
+        verticalAlignment = CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        avatar()
+        Text(text = title, color = contentColor, style = MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -216,6 +239,8 @@ private fun HistoryForums(
         targetValue = if (expandHistoryForum) 90f else 0f,
         label = "ExpandRotateAnim"
     )
+    val colorScheme = MaterialTheme.colorScheme
+
     Column(modifier = modifier) {
         Row(
             verticalAlignment = CenterVertically,
@@ -240,33 +265,18 @@ private fun HistoryForums(
         AnimatedVisibility(visible = expandHistoryForum) {
             LazyRow(
                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 items(items = forums, key = { it.timestamp }) {
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .height(IntrinsicSize.Min)
-                            .clip(CircleShape)
-                            .background(color = ExtendedTheme.colors.chip)
-                            .clickable {
-                                onHistoryClicked(it)
-                            }
-                            .padding(4.dp),
-                        verticalAlignment = CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Avatar(
-                            data = it.avatar,
-                            contentDescription = null,
-                            size = Sizes.Tiny
-                        )
-                        Text(
-                            text = it.data,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
-                    }
+                    HistoryItem(
+                        title = it.data,
+                        avatar = { Avatar(data = it.avatar, size = Sizes.Tiny) },
+                        color = colorScheme.surfaceContainer,
+                        contentColor = colorScheme.onSurface,
+                        onClick = {
+                            onHistoryClicked(it)
+                        }
+                    )
                 }
             }
         }
@@ -299,17 +309,15 @@ private fun ForumItemContent(
         }
 
         Text(
-            color = ExtendedTheme.colors.text,
             text = item.forumName,
             modifier = Modifier.block { // Enable transition on List Mode (showAvatar) only
                 if (showAvatar) {
                     localSharedBounds(key = ForumTitleSharedBoundsKey(item.forumName, null))
                 } else {
-                    this
+                    null
                 }
             },
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleSmall,
             maxLines = 1,
         )
 
@@ -318,13 +326,16 @@ private fun ForumItemContent(
             modifier = Modifier
                 .padding(start = 8.dp)
                 .width(54.dp)
-                .background(color = ExtendedTheme.colors.chip, shape = RoundedCornerShape(3.dp))
+                .background(
+                    color = MaterialTheme.colorScheme.secondary,
+                    shape = RoundedCornerShape(3.dp)
+                )
                 .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
                 text = item.level,
-                color = ExtendedTheme.colors.onChip,
+                color = MaterialTheme.colorScheme.onSecondary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
             )
@@ -335,7 +346,7 @@ private fun ForumItemContent(
                     imageVector = Icons.Rounded.Check,
                     contentDescription = stringResource(id = R.string.tip_signed),
                     modifier = Modifier.size(12.dp),
-                    tint = ExtendedTheme.colors.onChip
+                    tint = MaterialTheme.colorScheme.secondary
                 )
             }
         }
@@ -379,12 +390,13 @@ private val DefaultGridSpan: LazyGridItemSpanScope.() -> GridItemSpan = {
 }
 
 private sealed interface ForumType {
+    object Header: ForumType
     object History: ForumType
     object ListItem: ForumType
     object GridItem: ForumType
 }
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalHazeApi::class)
 @Composable
 fun HomePage(
     viewModel: HomeViewModel = pageViewModel<HomeUiIntent, HomeViewModel>(listOf(HomeUiIntent.Refresh)),
@@ -392,9 +404,11 @@ fun HomePage(
     onOpenExplore: () -> Unit = {},
 ) {
     val account = LocalAccount.current
+    val loggedIn by remember { derivedStateOf { account != null } }
     val context = LocalContext.current
     val navigator = LocalNavController.current
     val gridState = rememberLazyGridState()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     val isLoading by viewModel.uiState.collectPartialAsState(
         prop1 = HomeUiState::isLoading,
@@ -431,21 +445,17 @@ fun HomePage(
 
     var unfollowForum by remember { mutableStateOf<HomeUiState.Forum?>(null) }
     val confirmUnfollowDialog = rememberDialogState()
-    ConfirmDialog(
-        dialogState = confirmUnfollowDialog,
-        onConfirm = {
-            unfollowForum?.let {
+    unfollowForum?.let {
+        ConfirmDialog(
+            dialogState = confirmUnfollowDialog,
+            onConfirm = {
                 viewModel.send(HomeUiIntent.Unfollow(it.forumId, it.forumName))
-            }
-        },
-        onDismiss = { unfollowForum = null }
-    ) {
-        Text(
-            text = stringResource(
-                id = R.string.title_dialog_unfollow_forum,
-                unfollowForum?.forumName.orEmpty()
-            )
-        )
+            },
+            onDismiss = { unfollowForum = null },
+            title = { Text(text = stringResource(R.string.button_unfollow)) }
+        ) {
+            Text(text = stringResource(R.string.title_dialog_unfollow_forum, it.forumName))
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -453,20 +463,12 @@ fun HomePage(
     }
 
     BlurScaffold(
-        backgroundColor = Color.Transparent,
-        topHazeBlock = {
-            blurEnabled = !isEmpty && gridState.canScrollBackward
-        },
-        bottomHazeBlock = {
-            blurEnabled = !isEmpty
-        },
         topBar = {
-            Toolbar(
-                modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
-                title = stringResource(id = R.string.title_main),
-                navigationIcon = accountNavIconIfCompact(),
+            TopAppBar(
+                titleRes = R.string.title_main,
+                navigationIcon = accountNavIconIfCompact,
                 actions = {
-                    if (account != null) {
+                    if (loggedIn) {
                         ActionItem(
                             icon = ImageVector.vectorResource(id = R.drawable.ic_oksign),
                             contentDescription = stringResource(id = R.string.title_oksign)
@@ -482,71 +484,83 @@ fun HomePage(
                         context.dataStore.putBoolean(KEY_HOME_SINGLE_FORUM_LIST, !listSingle)
                     }
                 },
-                elevation = Dp.Hairline
+                scrollBehavior = scrollBehavior
             ) {
                 SearchBox(
-                    modifier = Modifier.padding(bottom = 4.dp),
+                    modifier = Modifier
+                        .padding(bottom = 4.dp)
+                        .localSharedBounds(key = SearchToolbarSharedBoundsKey)
+                    ,
                     onClick = { navigator.navigate(Destination.Search) }
                 )
             }
         },
-        bottomBar = emptyBlurBottomNavigation,
-        modifier = Modifier.fillMaxSize(),
+        topHazeBlock = {
+            blurEnabled = !isEmpty && scrollBehavior.isOverlapping
+            inputScale = DefaultInputScale
+        },
+        bottomBar = emptyBlurBottomNavigation, // MainPage workaround when enabling BottomBar blurring
+        bottomHazeBlock = {
+            blurEnabled = !isEmpty && gridState.canScrollForward
+            inputScale = DefaultInputScale
+        },
     ) { contentPaddings ->
-
+        // Initialize click listeners now
         val onRefreshClick: () -> Unit = remember { { viewModel.send(HomeUiIntent.Refresh) } }
-        val onForumClick: (HomeUiState.Forum) -> Unit = remember { {
+        val onForumClick: (HomeUiState.Forum) -> Unit = {
             navigator.navigate(route = Destination.Forum(it.forumName, it.avatar))
-        } }
+        }
 
-        val onUnfollow: (HomeUiState.Forum) -> Unit = remember { {
+        val onUnfollow: (HomeUiState.Forum) -> Unit = {
             unfollowForum = it
             confirmUnfollowDialog.show()
-        } }
+        }
 
-        val pullRefreshState = rememberPullRefreshState(refreshing = isLoading, onRefreshClick)
-
-        Box(
-            modifier = Modifier.pullRefresh(pullRefreshState)
+        StateScreen(
+            isEmpty = isEmpty,
+            isError = isError,
+            isLoading = isLoading,
+            modifier = Modifier.fillMaxSize(),
+            onReload = onRefreshClick,
+            emptyScreen = {
+                EmptyScreen(
+                    modifier = Modifier.padding(contentPaddings),
+                    loggedIn = loggedIn,
+                    canOpenExplore = canOpenExplore,
+                    onOpenExplore = onOpenExplore
+                )
+            },
+            loadingScreen = {
+                HomePageSkeletonScreen(Modifier.padding(contentPaddings), listSingle, gridCells)
+            },
+            errorScreen = {
+                ErrorScreen(error = error, Modifier.padding(contentPaddings))
+            }
         ) {
-            StateScreen(
-                isEmpty = isEmpty,
-                isError = isError,
-                isLoading = isLoading,
-                modifier = Modifier.fillMaxSize(),
-                onReload = onRefreshClick,
-                emptyScreen = {
-                    EmptyScreen(
-                        modifier = Modifier.padding(contentPaddings),
-                        loggedIn = account != null,
-                        canOpenExplore = canOpenExplore,
-                        onOpenExplore = onOpenExplore
-                    )
-                },
-                loadingScreen = {
-                    HomePageSkeletonScreen(Modifier.padding(contentPaddings), listSingle, gridCells)
-                },
-                errorScreen = {
-                    ErrorScreen(error = error, Modifier.padding(contentPaddings))
-                }
+            val showHistoryOnHome by rememberPreferenceAsState(booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY), true)
+            val showHistoryForum by remember { derivedStateOf {
+                showHistoryOnHome && historyForums.isNotEmpty()
+            } }
+
+            val contentType: (item: HomeUiState.Forum) -> ForumType = remember {
+                { if (listSingle) ForumType.ListItem else ForumType.GridItem }
+            }
+
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = onRefreshClick,
+                contentPadding = contentPaddings
             ) {
-                val showHistoryOnHome by rememberPreferenceAsState(booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY), true)
-                val showHistoryForum by remember { derivedStateOf {
-                    showHistoryOnHome && historyForums.isNotEmpty()
-                } }
-
-                val contentType: (item: HomeUiState.Forum) -> ForumType = remember {
-                    { if (listSingle) ForumType.ListItem else ForumType.GridItem }
-                }
-
                 MyLazyVerticalGrid(
                     columns = gridCells,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
                     state = gridState,
                     contentPadding = contentPaddings,
                 ) {
                     if (showHistoryForum) {
-                        item(key = Objects.hashCode(ForumType.History), DefaultGridSpan, { ForumType.History }) {
+                        item(key = ForumType.History.hashCode(), DefaultGridSpan, { ForumType.History }) {
                             HistoryForums(forums = historyForums) {
                                 navigator.navigate(Destination.Forum(forumName = it.data))
                             }
@@ -554,7 +568,7 @@ fun HomePage(
                     }
 
                     if (hasTopForum) {
-                        item(key = "TopForumHeader", span = DefaultGridSpan) {
+                        item(key = "TopForumHeader", span = DefaultGridSpan, { ForumType.Header }) {
                             Header(
                                 text = stringResource(id = R.string.title_top_forum),
                                 modifier = Modifier.padding(vertical = 8.dp),
@@ -574,7 +588,7 @@ fun HomePage(
                         }
                     }
                     if (showHistoryForum || hasTopForum) {
-                        item(key = "ForumHeader", span = DefaultGridSpan) {
+                        item(key = "ForumHeader", span = DefaultGridSpan, { ForumType.Header }) {
                             Header(text = stringResource(id = R.string.forum_list_title))
                         }
                     }
@@ -591,16 +605,6 @@ fun HomePage(
                     }
                 }
             }
-
-            PullRefreshIndicator(
-                refreshing = isLoading,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(contentPaddings),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
-            )
         }
     }
 }
@@ -627,7 +631,7 @@ private fun HomePageSkeletonScreen(
             Column {
                 Header(
                     text = stringResource(id = R.string.forum_list_title),
-                    modifier = Modifier.placeholder(color = ExtendedTheme.colors.chip),
+                    modifier = Modifier.placeholder(color = MaterialTheme.colorScheme.surfaceContainerHigh),
                     invert = true
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -646,7 +650,6 @@ fun EmptyScreen(
     canOpenExplore: Boolean,
     onOpenExplore: () -> Unit
 ) {
-    val navigator = LocalNavController.current
     TipScreen(
         title = {
             if (!loggedIn) {
@@ -668,31 +671,25 @@ fun EmptyScreen(
         },
         message = {
             if (!loggedIn) {
-                Text(
-                    text = stringResource(id = R.string.home_empty_login),
-                    style = MaterialTheme.typography.body1,
-                    color = ExtendedTheme.colors.textSecondary,
-                    textAlign = TextAlign.Center
-                )
+                Text(text = stringResource(R.string.home_empty_login), textAlign = TextAlign.Center)
             }
         },
         actions = {
             if (!loggedIn) {
-                Button(
+                val navigator = LocalNavController.current
+                PositiveButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    textRes = R.string.button_login,
                     onClick = { navigator.navigate(Destination.Login) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = stringResource(id = R.string.button_login))
-                }
+                )
             }
             if (canOpenExplore) {
-                TextButton(
+                PositiveButton(
                     onClick = onOpenExplore,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    Text(text = stringResource(id = R.string.button_go_to_explore))
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.filledTonalButtonColors(),
+                    textRes = R.string.button_go_to_explore
+                )
             }
         },
     )

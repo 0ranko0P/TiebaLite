@@ -1,28 +1,40 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.EditCalendar
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerState
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -38,19 +50,30 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import androidx.window.core.layout.WindowSizeClass
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompat
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
-import com.huanchengfly.tieba.post.ui.widgets.compose.picker.TimePicker
+
+val DefaultDialogContentPadding = 20.dp
+val DefaultDialogMargin = 16.dp
+
+val DefaultDialogProperties = AnyPopDialogProperties(
+    direction = DirectionState.CENTER,
+    dismissOnBackPress = true,
+    dismissOnClickOutside = true,
+    imePadding = true
+)
+
+val dialogAdaptiveFraction: Float
+    @ReadOnlyComposable @Composable get() = if (isWindowWidthCompact()) 1.0f else 0.6f
 
 @Composable
 fun DialogScope.DialogPositiveButton(
@@ -59,25 +82,15 @@ fun DialogScope.DialogPositiveButton(
     enabled: Boolean = true,
     onClick: () -> Unit = {}
 ) {
-    TextButton(
+    Button(
         onClick = {
             onClick()
             dismiss()
         },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         enabled = enabled,
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(
-            disabledBackgroundColor = MaterialTheme.colors.primary.copy(ContentAlpha.disabled),
-            disabledContentColor = MaterialTheme.colors.onPrimary.copy(ContentAlpha.disabled)
-        ),
-    ) {
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(vertical = 4.dp),
-        )
-    }
+        content = { Text(text = text) }
+    )
 }
 
 @Composable
@@ -91,116 +104,103 @@ fun DialogScope.DialogNegativeButton(
             dismiss()
             onClick?.invoke()
         },
-        modifier = modifier.fillMaxWidth(),
-        shape = CircleShape,
-        colors = ButtonDefaults.textButtonColors(
-            backgroundColor = ExtendedTheme.colors.text.copy(
-                alpha = 0.1f
-            ),
-            contentColor = ExtendedTheme.colors.text
-        ),
-    ) {
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(vertical = 4.dp),
-        )
-    }
+        modifier = modifier,
+        content = { Text(text = text) }
+    )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimePickerDialog(
-    title: @Composable (DialogScope.() -> Unit),
-    currentTime: String,
-    onConfirm: (String) -> Unit,
     modifier: Modifier = Modifier,
+    initialHour: Int,
+    initialMinute: Int,
+    title: @Composable (() -> Unit)? = null,
+    onConfirm: (TimePickerState) -> Unit,
     dialogState: DialogState = rememberDialogState(),
-    onValueChange: ((String) -> Unit)? = null,
     onCancel: (() -> Unit)? = null,
-    is24TimeFormat: Boolean = true,
     confirmText: String = stringResource(id = R.string.button_sure_default),
     cancelText: String = stringResource(id = R.string.button_cancel),
-    content: @Composable (DialogScope.() -> Unit) = {},
 ) {
-    var timeVal by remember { mutableStateOf(currentTime) }
+    val isWindowHeightCompact = isWindowHeightCompact()
+    var pickerStyle by remember { mutableStateOf(!isWindowHeightCompact) }
+    val timePickerState = rememberTimePickerState(initialHour, initialMinute)
+
     Dialog(
         modifier = modifier,
         dialogState = dialogState,
         onDismiss = onCancel,
-        title = title,
+        title = title.takeUnless { isWindowHeightCompact },
         buttons = {
-            DialogPositiveButton(text = confirmText, onClick = { onConfirm.invoke(timeVal) })
+            IconButton(onClick = { pickerStyle = !pickerStyle }) {
+                Icon(
+                    imageVector = if (pickerStyle) Icons.Filled.EditCalendar else Icons.Filled.AccessTime,
+                    contentDescription = "Time picker type",
+                )
+            }
+
+            with(it)  { Spacer(modifier = Modifier.weight(1.0f)) }
+
             DialogNegativeButton(text = cancelText, onClick = onCancel)
+            DialogPositiveButton(text = confirmText) {
+                onConfirm(timePickerState)
+            }
         },
     ) {
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            ProvideTextStyle(value = MaterialTheme.typography.body1) {
-                ProvideContentColor(color = ExtendedTheme.colors.text) {
-                    content()
-                }
-            }
-            TimePicker(
-                currentTime = timeVal,
-                onTimeChanged = {
-                    timeVal = it
-                    onValueChange?.invoke(it)
-                },
-                is24TimeFormat = is24TimeFormat,
-                modifier = Modifier.height(150.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+        if (pickerStyle) {
+            TimePicker(state = timePickerState)
+        } else {
+            TimeInput(state = timePickerState)
+        }
+
+        LaunchedEffect(isWindowHeightCompact) {
+            pickerStyle = !isWindowHeightCompact
         }
     }
 }
 
 @Composable
 fun AlertDialog(
-    dialogState: DialogState,
     modifier: Modifier = Modifier,
+    dialogState: DialogState,
+    dialogProperties: AnyPopDialogProperties = DefaultDialogProperties,
     onDismiss: (() -> Unit)? = null,
-    confirmText: String = stringResource(id = R.string.button_ok),
-    title: @Composable (DialogScope.() -> Unit) = {},
-    content: @Composable (DialogScope.() -> Unit) = {},
+    title: @Composable () -> Unit = {},
+    buttons: @Composable (DialogScope.(RowScope) -> Unit) = {},
+    content: @Composable (DialogScope.(ColumnScope) -> Unit) = {},
 ) {
-    Dialog(
+    BaseDialog(
         modifier = modifier,
         dialogState = dialogState,
+        dialogProperties = dialogProperties,
         onDismiss = onDismiss,
-        title = title,
-        buttons = {
-            DialogPositiveButton(text = confirmText)
-        },
     ) {
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            ProvideTextStyle(value = MaterialTheme.typography.body1) {
-                ProvideContentColor(color = ExtendedTheme.colors.text) {
-                    content()
-                }
-            }
-        }
-    }
-}
+        Surface(
+            shape = AlertDialogDefaults.shape,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .fillMaxWidth(fraction = dialogAdaptiveFraction)
+                .padding(DefaultDialogMargin),
+        ) {
+            Column(
+                modifier = Modifier.padding(vertical = DefaultDialogContentPadding),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ProvideTextStyle(MaterialTheme.typography.headlineSmall, title)
+                Spacer(modifier = Modifier.height(DefaultDialogContentPadding))
 
-@Composable
-fun AlertDialog(
-    dialogState: DialogState,
-    modifier: Modifier = Modifier,
-    onDismiss: (() -> Unit)? = null,
-    title: @Composable (DialogScope.() -> Unit) = {},
-    content: @Composable (DialogScope.() -> Unit) = {},
-    buttons: @Composable (DialogScope.() -> Unit) = {},
-) {
-    Dialog(
-        modifier = modifier,
-        dialogState = dialogState,
-        onDismiss = onDismiss,
-        title = title,
-        buttons = buttons,
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            ProvideTextStyle(value = MaterialTheme.typography.body1) {
-                ProvideContentColor(color = ExtendedTheme.colors.text) {
-                    content()
+                ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
+                    content(this)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = DefaultDialogContentPadding),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.End)
+                ) {
+                    buttons(this)
                 }
             }
         }
@@ -216,8 +216,8 @@ fun ConfirmDialog(
     onDismiss: (() -> Unit)? = null,
     confirmText: String = stringResource(id = R.string.button_sure_default),
     cancelText: String = stringResource(id = R.string.button_cancel),
-    title: @Composable (DialogScope.() -> Unit)? = null,
-    content: @Composable (DialogScope.() -> Unit) = {},
+    title: @Composable (() -> Unit)? = null,
+    content: @Composable (DialogScope.() -> Unit)? = null,
 ) {
     Dialog(
         modifier = modifier,
@@ -225,16 +225,12 @@ fun ConfirmDialog(
         onDismiss = onDismiss,
         title = title,
         buttons = {
-            DialogPositiveButton(text = confirmText, onClick = onConfirm)
             DialogNegativeButton(text = cancelText, onClick = onCancel)
+            DialogPositiveButton(text = confirmText, onClick = onConfirm)
         },
     ) {
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            ProvideTextStyle(value = MaterialTheme.typography.body1) {
-                ProvideContentColor(color = ExtendedTheme.colors.text) {
-                    content()
-                }
-            }
+        if (content != null)  {
+            content()
         }
     }
 }
@@ -255,7 +251,7 @@ fun PromptDialog(
     onCancel: (() -> Unit)? = null,
     confirmText: String = stringResource(id = R.string.button_sure_default),
     cancelText: String = stringResource(id = R.string.button_cancel),
-    title: @Composable (DialogScope.() -> Unit)? = null,
+    title: @Composable (() -> Unit)? = null,
     content: @Composable (DialogScope.() -> Unit) = {},
 ) {
     var textVal by remember { mutableStateOf(initialValue) }
@@ -273,11 +269,10 @@ fun PromptDialog(
         title = title,
         buttons = {
             val padding = Modifier.padding(horizontal = 12.dp)
+            DialogNegativeButton(modifier = padding, text = cancelText, onClick = onCancel)
             DialogPositiveButton(modifier = padding, text = confirmText, enabled = !isErrorState) {
                 onConfirm(textVal)
             }
-            Spacer(Modifier.fillMaxWidth().height(10.dp))
-            DialogNegativeButton(modifier = padding, text = cancelText, onClick = onCancel)
         },
     ) {
         val focusRequester = remember { FocusRequester() }
@@ -289,11 +284,8 @@ fun PromptDialog(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            ProvideTextStyle(value = MaterialTheme.typography.body1) {
-                ProvideContentColor(color = ExtendedTheme.colors.text) {
-                    content()
-                }
-            }
+            content()
+
             OutlinedTextField(
                 value = textVal,
                 onValueChange = {
@@ -308,11 +300,7 @@ fun PromptDialog(
                 modifier = Modifier
                     .focusRequester(focusRequester)
                     .fillMaxWidth(),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    cursorColor = ExtendedTheme.colors.primary,
-                    focusedBorderColor = ExtendedTheme.colors.primary,
-                    focusedLabelColor = ExtendedTheme.colors.primary
-                )
+                colors = TextFieldDefaults.colors()
             )
             LaunchedEffect(focusRequester) {
                 focusRequester.requestFocus()
@@ -325,12 +313,9 @@ fun PromptDialog(
 fun BaseDialog(
     modifier: Modifier = Modifier,
     dialogState: DialogState = rememberDialogState(),
+    dialogProperties: AnyPopDialogProperties = DefaultDialogProperties,
     onDismiss: (() -> Unit)? = null,
-    direction: DirectionState = DirectionState.BOTTOM,
-    cancelable: Boolean = true,
-    cancelableOnTouchOutside: Boolean = true,
-    imePadding: Boolean = true,
-    content: @Composable (DialogScope.() -> Unit),
+    content: @Composable DialogScope.() -> Unit,
 ) {
     var showDialog by remember {
         mutableStateOf(false)
@@ -353,22 +338,16 @@ fun BaseDialog(
             },
         )
         AnyPopDialog(
-            isActiveClose = isActiveClose,
             onDismiss = {
                 onDismiss?.invoke()
                 dialogState.show = false
                 showDialog = false
             },
-            properties = AnyPopDialogProperties(
-                direction = direction,
-                dismissOnBackPress = cancelable,
-                dismissOnClickOutside = cancelableOnTouchOutside,
-                imePadding = imePadding
-            )
+            modifier = modifier,
+            isActiveClose = isActiveClose,
+            properties = dialogProperties
         ) {
-            ProvideContentColor(color = ExtendedTheme.colors.text) {
-                dialogScope.content()
-            }
+            dialogScope.content()
         }
     }
 }
@@ -377,74 +356,72 @@ fun BaseDialog(
 fun Dialog(
     modifier: Modifier = Modifier,
     dialogState: DialogState = rememberDialogState(),
+    dialogProperties: AnyPopDialogProperties = DefaultDialogProperties,
     onDismiss: (() -> Unit)? = null,
-    direction: DirectionState = DirectionState.CENTER,
-    cancelable: Boolean = true,
-    cancelableOnTouchOutside: Boolean = true,
-    title: @Composable (DialogScope.() -> Unit)? = null,
-    buttons: @Composable (DialogScope.() -> Unit) = {},
-    content: @Composable (DialogScope.() -> Unit),
+    title: @Composable (() -> Unit)? = null,
+    buttons: @Composable (DialogScope.(RowScope) -> Unit) = {},
+    content: @Composable (DialogScope.(ColumnScope) -> Unit),
 ) {
     BaseDialog(
         modifier = modifier,
         dialogState = dialogState,
+        dialogProperties = dialogProperties,
         onDismiss = onDismiss,
-        direction = direction,
-        cancelable = cancelable,
-        cancelableOnTouchOutside = cancelableOnTouchOutside,
     ) {
-        ConstraintLayout(
-            modifier = modifier
-                .fillMaxWidth(
-                    fraction = if (isWindowWidthCompat()) 1f else 0.6f
-                )
-                .padding(16.dp)
-                .background(
-                    color = ExtendedTheme.colors.windowBackground,
-                    shape = RoundedCornerShape(24.dp)
-                )
-                .padding(vertical = 12.dp)
-                .animateContentSize(),
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(fraction = dialogAdaptiveFraction)
+                .padding(DefaultDialogMargin),
+            shape = AlertDialogDefaults.shape,
+            color = MaterialTheme.colorScheme.background,
+            tonalElevation = 6.dp
         ) {
-            val (titleRef, buttonsRef) = createRefs()
-            // Apply content padding separately
-            val paddingModifier = Modifier.padding(horizontal = 12.dp)
-
-            Column (
+            ConstraintLayout(
                 modifier = Modifier
-                    .constrainAs(titleRef) {
-                        top.linkTo(parent.top)
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                        bottom.linkTo(buttonsRef.top)
-                        width = Dimension.fillToConstraints
-                    },
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(vertical = DefaultDialogContentPadding)
+                    .animateContentSize(),
             ) {
-                if (title != null) {
-                    ProvideTextStyle(MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)) {
-                        Box(modifier = paddingModifier.align(Alignment.CenterHorizontally)) {
-                            title()
-                        }
+                val (titleRef, buttonsRef) = createRefs()
+
+                // To make buttons visually aligned, apply horizontal paddings separately
+                Column(
+                    modifier = Modifier
+                        .constrainAs(titleRef) {
+                            top.linkTo(parent.top)
+                            start.linkTo(parent.start, margin = DefaultDialogContentPadding)
+                            end.linkTo(parent.end, margin = DefaultDialogContentPadding)
+                            bottom.linkTo(buttonsRef.top)
+                            width = Dimension.fillToConstraints
+                        },
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    val typography = MaterialTheme.typography
+
+                    if (title != null) {
+                        ProvideTextStyle(typography.titleLarge, content = title)
+                    }
+
+                    ProvideTextStyle(typography.bodyLarge) {
+                        content(this)
                     }
                 }
 
-                content()
-            }
-
-            Column(
-                modifier = paddingModifier
-                    .padding(top = 8.dp)
-                    .constrainAs(buttonsRef) {
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                        bottom.linkTo(parent.bottom)
-                        top.linkTo(titleRef.bottom)
-                        width = Dimension.fillToConstraints
-                    },
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                buttons()
+                Row (
+                    modifier = Modifier
+                        // Apply custom margin to align buttons with content (visually)
+                        .constrainAs(buttonsRef) {
+                            start.linkTo(parent.start, margin = 18.dp)
+                            end.linkTo(parent.end, margin = DefaultDialogContentPadding)
+                            bottom.linkTo(parent.bottom)
+                            top.linkTo(titleRef.bottom, margin = 12.dp)
+                            width = Dimension.fillToConstraints
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.End)
+                ) {
+                    buttons(this)
+                }
             }
         }
     }

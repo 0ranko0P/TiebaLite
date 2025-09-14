@@ -4,24 +4,19 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.webkit.CookieManager
 import android.webkit.WebView
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Icon
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
@@ -43,11 +38,11 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.components.TbWebViewClient
+import com.huanchengfly.tieba.post.ui.page.webview.WebViewProgressIndicator
 import com.huanchengfly.tieba.post.ui.page.webview.isInternalHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
@@ -113,26 +108,6 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
         loaded = true
     }
 
-    val isLoading by remember {
-        derivedStateOf {
-            webViewState.loadingState is LoadingState.Loading
-        }
-    }
-
-    val progress by remember {
-        derivedStateOf {
-            webViewState.loadingState.let {
-                if (it is LoadingState.Loading) {
-                    it.progress
-                } else {
-                    0f
-                }
-            }
-        }
-    }
-
-    val animatedProgress by animateFloatAsState(targetValue = progress, label = "progress")
-
     MyScaffold(
         topBar = {
             Toolbar(
@@ -148,8 +123,7 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                                 text = currentHost,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                color = LocalContentColor.current,
-                                style = MaterialTheme.typography.caption
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
@@ -159,14 +133,10 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                     val menuState = rememberMenuState()
                     ClickMenu(
                         menuContent = {
-                            DropdownMenuItem(
-                                onClick = {
-                                    webViewNavigator.reload()
-                                    dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_refresh))
-                            }
+                            TextMenuItem(
+                                text = R.string.title_refresh,
+                                onClick = webViewNavigator::reload
+                            )
                         },
                         menuState = menuState,
                         triggerShape = CircleShape
@@ -182,6 +152,7 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                         }
                     }
                 },
+                content = { WebViewProgressIndicator(webViewState = webViewState) }
             )
         }
     ) { paddingValues ->
@@ -206,13 +177,6 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                     LoginWebViewClient(context, coroutineScope, snackbarHostState, onBack)
                 },
             )
-
-            if (isLoading) {
-                LinearProgressIndicator(
-                    progress = animatedProgress,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
         }
     }
 }
@@ -245,7 +209,7 @@ private class LoginWebViewClient(
                 return
             }
             if (ClientUtils.baiduId.isNullOrEmpty()) {
-                ClientUtils.saveBaiduId(context, baiduId)
+                ClientUtils.saveBaiduId(baiduId)
             }
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(

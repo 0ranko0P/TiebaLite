@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 
+private const val TAG = "SearchUserViewModel"
+
 @Stable
 @HiltViewModel
 class SearchUserViewModel @Inject constructor() :
@@ -43,8 +45,8 @@ class SearchUserViewModel @Inject constructor() :
                     .flatMapConcat { it.producePartialChange() },
             )
 
-        private fun SearchUserUiIntent.Refresh.producePartialChange(): Flow<SearchUserPartialChange.Refresh> =
-            TiebaApi.getInstance()
+        private fun SearchUserUiIntent.Refresh.producePartialChange(): Flow<SearchUserPartialChange.Refresh> {
+            return TiebaApi.getInstance()
                 .searchUserFlow(keyword)
                 .map<SearchUserBean, SearchUserPartialChange.Refresh> {
                     val fuzzyForumList = it.data?.fuzzyMatch ?: emptyList()
@@ -56,6 +58,7 @@ class SearchUserViewModel @Inject constructor() :
                 }
                 .onStart { emit(SearchUserPartialChange.Refresh.Start) }
                 .catch { emit(SearchUserPartialChange.Refresh.Failure(it)) }
+        }
     }
 }
 

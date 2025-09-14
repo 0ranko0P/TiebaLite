@@ -45,6 +45,7 @@ class ThreadItemData(
 /**
  * Wrapper class to cache [content] AnnotatedString
  * */
+@Immutable
 class ThreadInfoItem(val info: ThreadInfo) {
     val hasAgree: Boolean = info.agree?.hasAgree == 1 // Like button
     val agreeNum: Long = info.agree?.agreeNum?: 0

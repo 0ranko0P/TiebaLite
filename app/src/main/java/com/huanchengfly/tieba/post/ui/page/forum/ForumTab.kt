@@ -1,31 +1,27 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
-import androidx.compose.material.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
+import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
+import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.ForumSortType
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.launch
@@ -33,33 +29,37 @@ import kotlinx.coroutines.launch
 const val TAB_FORUM_LATEST = 0
 const val TAB_FORUM_GOOD = 1
 
+private val TabSortTypes: Options<Int> by unsafeLazy {
+    persistentMapOf(
+        ForumSortType.BY_REPLY to R.string.title_sort_by_reply,
+        ForumSortType.BY_SEND to R.string.title_sort_by_send
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForumTab(
     modifier: Modifier = Modifier,
     pagerState: PagerState,
     sortType: Int,
-    onSortTypeChanged: (Int, Boolean) -> Unit
+    onSortTypeChanged: (sortType: Int, isGood: Boolean) -> Unit
 ) {
-    val currentPage by remember { derivedStateOf { pagerState.currentPage } }
+    val currentPage = pagerState.currentPage
     val coroutineScope = rememberCoroutineScope()
 
-    val tabTextStyle = MaterialTheme.typography.button.copy(
-        fontWeight = FontWeight.Bold,
-        fontSize = 13.sp,
+    val unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val tabTextStyle = MaterialTheme.typography.labelLarge.copy(
         letterSpacing = 2.sp
     )
 
-    TabRow(
+    SecondaryTabRow(
         selectedTabIndex = currentPage,
-        indicator = { tabPositions ->
-            PagerTabIndicator(
-                pagerState = pagerState,
-                tabPositions = tabPositions
-            )
+        indicator = {
+            FancyAnimatedIndicatorWithModifier(currentPage, verticalPadding = 6.dp)
         },
         divider = {},
-        backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.onTopBar,
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.primary,
         modifier = modifier
     ) {
         TabClickMenu(
@@ -76,23 +76,17 @@ fun ForumTab(
                 )
             },
             menuContent = {
-                ListSinglePicker(
-                    items = persistentMapOf(
-                        ForumSortType.BY_REPLY to R.string.title_sort_by_reply,
-                        ForumSortType.BY_SEND to R.string.title_sort_by_send
-                    ),
-                    selected = sortType,
-                    onItemSelected = { value, changed ->
-                        if (changed) {
-                            onSortTypeChanged(value, currentPage == TAB_FORUM_GOOD)
-                        }
-                        dismiss()
+                ListPickerMenuItems(
+                    items = TabSortTypes,
+                    picked = sortType,
+                    onItemPicked = {
+                        onSortTypeChanged(it, currentPage == TAB_FORUM_GOOD)
                     }
                 )
             },
-            selectedContentColor = ExtendedTheme.colors.onTopBar,
-            unselectedContentColor = ExtendedTheme.colors.onTopBar.copy(ContentAlpha.medium)
+            unselectedContentColor = unselectedContentColor
         )
+
         Tab(
             selected = currentPage == TAB_FORUM_GOOD,
             onClick = {
@@ -100,19 +94,15 @@ fun ForumTab(
                     pagerState.animateScrollToPage(TAB_FORUM_GOOD)
                 }
             },
-            selectedContentColor = ExtendedTheme.colors.onTopBar,
-            unselectedContentColor = ExtendedTheme.colors.onTopBar.copy(ContentAlpha.medium)
+            unselectedContentColor = unselectedContentColor
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
                 modifier = Modifier
                     .height(48.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = stringResource(id = R.string.tab_forum_good),
-                    style = tabTextStyle
-                )
+                Text(text = stringResource(id = R.string.tab_forum_good), style = tabTextStyle)
             }
         }
     }

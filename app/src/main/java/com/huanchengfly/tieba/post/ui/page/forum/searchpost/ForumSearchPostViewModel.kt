@@ -3,7 +3,9 @@ package com.huanchengfly.tieba.post.ui.page.forum.searchpost
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
+import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -15,6 +17,8 @@ import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
+import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadInfo
+import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadInfo.Companion.getSearchThreadInfoList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -31,7 +35,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import org.litepal.LitePal
 import org.litepal.extension.delete
@@ -101,17 +104,16 @@ class ForumSearchPostViewModel @Inject constructor() :
         private fun ForumSearchPostUiIntent.Refresh.producePartialChange(): Flow<ForumSearchPostPartialChange.Refresh> =
             flowOf(keyword.trim())
                 .filter { it.isNotBlank() }
-                .onEach {
-                    runCatching {
-                        SearchPostHistory(it, forumName).saveOrUpdate("content = ?", it)
-                    }
-                }
                 .flatMapConcat {
                     TiebaApi.getInstance()
                         .searchPostFlow(it, forumName, forumId, sortType, filterType)
                 }
                 .map<SearchThreadBean, ForumSearchPostPartialChange.Refresh> {
-                    val postList = it.data.postList.toImmutableList()
+                    if (it.errorCode != 0) {
+                        throw TiebaApiException(CommonResponse(it.errorCode, it.errorMsg))
+                    }
+
+                    val postList = it.data.postList.getSearchThreadInfoList(keyword, App.INSTANCE)
                     ForumSearchPostPartialChange.Refresh.Success(
                         keyword = keyword,
                         data = postList,
@@ -121,14 +123,10 @@ class ForumSearchPostViewModel @Inject constructor() :
                     )
                 }
                 .onStart {
-                    emit(
-                        ForumSearchPostPartialChange.Refresh.Start(
-                            keyword,
-                            forumName,
-                            sortType,
-                            filterType
-                        )
-                    )
+                    emit(ForumSearchPostPartialChange.Refresh.Start(keyword, forumName, sortType, filterType))
+                    runCatching {
+                        SearchPostHistory(keyword, forumName).saveOrUpdate("content = ?", keyword)
+                    }
                 }
                 .catch { emit(ForumSearchPostPartialChange.Refresh.Failure(it)) }
                 .flowOn(Dispatchers.IO)
@@ -137,7 +135,7 @@ class ForumSearchPostViewModel @Inject constructor() :
             TiebaApi.getInstance()
                 .searchPostFlow(keyword, forumName, forumId, sortType, filterType, page + 1)
                 .map<SearchThreadBean, ForumSearchPostPartialChange.LoadMore> {
-                    val postList = it.data.postList.toImmutableList()
+                    val postList = it.data.postList.getSearchThreadInfoList(keyword, App.INSTANCE)
                     ForumSearchPostPartialChange.LoadMore.Success(
                         keyword = keyword,
                         data = postList,
@@ -262,7 +260,7 @@ sealed interface ForumSearchPostPartialChange : PartialChange<ForumSearchPostUiS
 
         data class Success(
             val keyword: String,
-            val data: ImmutableList<SearchThreadBean.ThreadInfoBean>,
+            val data: List<SearchThreadInfo>,
             val hasMore: Boolean,
             val sortType: Int,
             val filterType: Int,
@@ -302,7 +300,7 @@ sealed interface ForumSearchPostPartialChange : PartialChange<ForumSearchPostUiS
 
         data class Success(
             val keyword: String,
-            val data: ImmutableList<SearchThreadBean.ThreadInfoBean>,
+            val data: List<SearchThreadInfo>,
             val hasMore: Boolean,
             val page: Int,
             val sortType: Int,
@@ -358,7 +356,7 @@ data class ForumSearchPostUiState(
     val currentPage: Int = 1,
     val hasMore: Boolean = true,
     val keyword: String = "",
-    val data: ImmutableList<SearchThreadBean.ThreadInfoBean> = persistentListOf(),
+    val data: List<SearchThreadInfo> = emptyList(),
     val sortType: Int = ForumSearchPostSortType.NEWEST,
     val filterType: Int = ForumSearchPostFilterType.ALL,
 ) : UiState

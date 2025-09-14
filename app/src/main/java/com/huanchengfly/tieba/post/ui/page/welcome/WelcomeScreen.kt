@@ -1,13 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page.welcome
 
-import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
@@ -31,23 +29,19 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Icon
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FormatPaint
 import androidx.compose.material.icons.rounded.PsychologyAlt
 import androidx.compose.material.icons.rounded.SentimentVerySatisfied
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -58,33 +52,31 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.arch.isFirstPage
+import com.huanchengfly.tieba.post.arch.isLastPage
 import com.huanchengfly.tieba.post.findActivity
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.settings.CollectSeeLzPreference
 import com.huanchengfly.tieba.post.ui.page.settings.DarkThemeModePreference
-import com.huanchengfly.tieba.post.ui.page.settings.DarkThemePreference
 import com.huanchengfly.tieba.post.ui.page.settings.DefaultSortPreference
 import com.huanchengfly.tieba.post.ui.page.settings.ForumListPreference
 import com.huanchengfly.tieba.post.ui.page.settings.HideReplyPreference
 import com.huanchengfly.tieba.post.ui.page.settings.ImageLoadPreference
 import com.huanchengfly.tieba.post.ui.page.settings.ReduceEffectPreference
-import com.huanchengfly.tieba.post.ui.page.welcome.PagerOffset.Companion.LocalPagerOffset
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_SETUP_FINISHED
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -93,89 +85,83 @@ import kotlin.math.abs
 
 private fun PagerState.nextPage(scope: CoroutineScope) {
     scope.launch {
-        animateScrollToPage(currentPage + 1, animationSpec = tween(easing = LinearOutSlowInEasing))
+        animateScrollToPage(currentPage + 1)
     }
 }
 
 private fun PagerState.previousPage(scope: CoroutineScope) {
     scope.launch {
-        animateScrollToPage(currentPage - 1, animationSpec = tween(easing = LinearOutSlowInEasing))
+        animateScrollToPage(currentPage - 1)
     }
 }
 
 // Pager offset animation helper class
 private class PagerOffset(val state: PagerState, val page: Int) {
-
-    fun offsetX(fraction: Float = 1.0f, easing: Easing = FastOutSlowInEasing): Modifier =
-        Modifier.graphicsLayer {
-            val offset = easing.transform(abs(calculateCurrentOffsetForPage()))
-            translationX = lerp(0f, size.width * fraction, offset)
-            if (offset >= 0.9f) {
-                alpha = 1 - lerp(1f, 0f, (1 - offset) * 10)
-            }
-        }
-
-    private fun calculateCurrentOffsetForPage(): Float {
+    fun calculateCurrentOffsetForPage(): Float {
         return (state.currentPage - page) + state.currentPageOffsetFraction
     }
-
-    companion object {
-        val LocalPagerOffset = staticCompositionLocalOf<PagerOffset> { error("No PagerOffset provided") }
-    }
 }
 
-private fun NavController.finishSetup(context: Context, scope: CoroutineScope, login: Boolean) {
-    this.navigate(route = if (login) Destination.Login else Destination.Main) {
-        popUpTo(graph.id) { inclusive = true }
+private fun Modifier.offsetX(
+    pagerOffset: PagerOffset,
+    fraction: Float = 1.0f,
+    easing: Easing = FastOutSlowInEasing
+): Modifier =
+    this then Modifier.graphicsLayer {
+        val offset = easing.transform(abs(pagerOffset.calculateCurrentOffsetForPage()))
+        translationX = lerp(0f, size.width * fraction, offset)
+        if (offset >= 0.9f) {
+            alpha = 1 - lerp(1f, 0f, (1 - offset) * 10)
+        }
     }
-    scope.launch {
-        context.dataStore.edit { it[booleanPreferencesKey(KEY_SETUP_FINISHED)] = true }
-    }
-}
+
+private val LocalPagerOffset = staticCompositionLocalOf<PagerOffset> { error("No PagerOffset provided") }
 
 @Composable
-fun WelcomeScreen(navController: NavController) {
+fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     val disclaimerDialog = rememberDialogState()
-    var disclaimerConfirmed by rememberSaveable { mutableStateOf(false) }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     val pages = remember {
         listOfNotNull(
             R.string.welcome_intro,
-            R.string.welcome_permission.takeIf { shouldRequestPermissions(context) },
+            R.string.welcome_permission.takeUnless { state.permissionGranted },
             R.string.welcome_habit,
             R.string.title_settings_custom,
             R.string.welcome_completed,
         ).toImmutableList()
     }
     val pagerState = rememberPagerState { pages.size }
-    val isFirstPage by remember { derivedStateOf { pagerState.currentPage == 0 } }
-    val isLastPage by remember { derivedStateOf { pagerState.currentPage == pagerState.pageCount - 1 } }
 
-    // Setup button click listeners
-    var proceedBtnEnabled by remember { mutableStateOf(true) }
-    val onProceedClicked: () -> Unit = remember { {
-        if (isFirstPage && !disclaimerConfirmed) {
+    fun finishSetup(login: Boolean) {
+        viewModel.onSetupFinished()
+        navController.navigate(route = if (login) Destination.Login else Destination.Main) {
+            popUpTo(navController.graph.id) { inclusive = true }
+        }
+    }
+
+    // Setup nullable button click listeners
+    val proceedBtnEnabled by remember {
+        derivedStateOf { state.permissionGranted || pagerState.currentPage < 1 }
+    }
+
+    val onProceedClicked: () -> Unit = {
+        if (pagerState.isFirstPage && !state.disclaimerConfirmed) {
             disclaimerDialog.show()
-        } else if (isLastPage) {
-            navController.finishSetup(context, scope, login = true)
+        } else if (pagerState.isLastPage) {
+            finishSetup(login = true)
         } else {
             pagerState.nextPage(scope)
         }
-    } }
+    }
 
-    val onBackClicked: () -> Unit = remember { {
-        proceedBtnEnabled = true
-        pagerState.previousPage(scope)
-    } }
+    val onBackClicked: () -> Unit = { pagerState.previousPage(scope) }
+    val onFinishClicked: () -> Unit = { finishSetup(login = false) }
 
-    val onFinishClicked: () -> Unit = remember { {
-        navController.finishSetup(context, scope, login = false)
-    } }
-
-    Scaffold (
+    MyScaffold(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.statusBars),
@@ -184,8 +170,8 @@ fun WelcomeScreen(navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 30.dp, top = 8.dp, end = 30.dp, bottom = 30.dp),
-                onBack = onBackClicked.takeUnless { isFirstPage },
-                onFinish = onFinishClicked.takeIf { isLastPage },
+                onBack = onBackClicked.takeUnless { pagerState.isFirstPage },
+                onFinish = onFinishClicked.takeIf { pagerState.isLastPage },
                 onProceed = onProceedClicked.takeIf { proceedBtnEnabled }
             )
         }
@@ -203,8 +189,9 @@ fun WelcomeScreen(navController: NavController) {
                     when (pages[i]) {
                         R.string.welcome_intro -> IntroPage()
 
-                        R.string.welcome_permission -> PermissionPage { enabled ->
-                            proceedBtnEnabled = enabled
+                        R.string.welcome_permission -> PermissionPage(permissions = state.permissionRequest) { it, granted ->
+                            viewModel.onPermissionResult(permission = it)
+                            if (!granted) context.toastShort(R.string.tip_no_permission)
                         }
 
                         R.string.welcome_habit -> HabitPage()
@@ -223,8 +210,8 @@ fun WelcomeScreen(navController: NavController) {
     ConfirmDialog(
         dialogState = disclaimerDialog,
         onConfirm = {
+            viewModel.onDisclaimerConfirmed()
             scope.launch {
-                disclaimerConfirmed = true
                 // Wait dialog close animation
                 delay(AnimationConstants.DefaultDurationMillis.toLong())
                 pagerState.nextPage(scope)
@@ -285,36 +272,48 @@ fun DualTitleContent(
     modifier = modifier.fillMaxSize(),
 ) {
     val pagerOffset = LocalPagerOffset.current
-    val colors = LocalExtendedColors.current
+    val colors = MaterialTheme.colorScheme
 
     if (icon != null) {
-        Icon(icon, null, modifier = pagerOffset.offsetX().size(36.dp), tint = colors.primary)
+        Icon(
+            painter = icon,
+            contentDescription = null,
+            modifier = Modifier
+                .offsetX(pagerOffset = pagerOffset)
+                .size(size = Sizes.Small),
+            tint = colors.primary
+        )
     }
 
     Spacer(modifier = Modifier.height(16.dp))
-    Text(text = stringResource(title), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    Text(
+        text = stringResource(title),
+        style = MaterialTheme.typography.headlineSmall
+    )
 
     Spacer(modifier = Modifier.height(4.dp))
-    Text(text = stringResource(subtitle), color = colors.textSecondary, fontSize = 16.sp)
+    Text(
+        text = stringResource(subtitle),
+        color = colors.onSurfaceVariant,
+        style = MaterialTheme.typography.titleMedium
+    )
 
     if (content != null) {
-        Spacer(modifier = Modifier.height(16.dp))
-
+        Spacer(modifier = Modifier.weight(0.2f))
         Column (
-            modifier = pagerOffset
-                .offsetX(fraction = 0.2f, easing = LinearOutSlowInEasing)
-                .verticalScroll(state = rememberScrollState())
-        ) {
-            content()
-        }
+            modifier = Modifier
+                .offsetX(pagerOffset = pagerOffset, fraction = 0.2f, easing = LinearOutSlowInEasing)
+                .verticalScroll(state = rememberScrollState()),
+            content = content
+        )
+        Spacer(modifier = Modifier.weight(0.5f))
     }
 }
 
-@NonRestartableComposable
 @Composable
 private fun IntroPage(modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
-        Image(painterResource(R.drawable.ic_splash), null, modifier = Modifier.size(36.dp))
+        Image(painterResource(R.drawable.ic_splash), null, modifier = Modifier.size(Sizes.Small))
 
         DualTitleContent(
             icon = null,
@@ -324,7 +323,6 @@ private fun IntroPage(modifier: Modifier = Modifier) {
     }
 }
 
-@NonRestartableComposable
 @Composable
 private fun HabitPage(modifier: Modifier = Modifier) {
     DualTitleContent(
@@ -340,7 +338,6 @@ private fun HabitPage(modifier: Modifier = Modifier) {
     }
 }
 
-@NonRestartableComposable
 @Composable
 private fun CustomPage(modifier: Modifier = Modifier, onThemeClicked: () -> Unit) {
     DualTitleContent(
@@ -356,13 +353,11 @@ private fun CustomPage(modifier: Modifier = Modifier, onThemeClicked: () -> Unit
         )
 
         DarkThemeModePreference()
-        DarkThemePreference()
         ForumListPreference()
         ReduceEffectPreference()
     }
 }
 
-@NonRestartableComposable
 @Composable
 fun CompletePage(modifier: Modifier = Modifier) {
     DualTitleContent(

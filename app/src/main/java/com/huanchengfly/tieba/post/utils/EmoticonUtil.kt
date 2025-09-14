@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.utils
 
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withAnnotation
 import org.intellij.lang.annotations.RegExp
@@ -21,10 +20,10 @@ object EmoticonUtil {
     private val ALL_WEB_TYPE_REGEX_PATTERN: Pattern by lazy { Pattern.compile(REGEX_WEB) }
 
     @RegExp
-    private val REGEX_WEB = "\\(#(([\u4e00-\u9fa5\\w\u007e])+)\\)"
+    private const val REGEX_WEB = "\\(#(([\u4e00-\u9fa5\\w\u007e])+)\\)"
 
     @RegExp
-    private val REGEX = "#\\((([一-龥\\w~])+)\\)"
+    private const val REGEX = "#\\((([一-龥\\w~])+)\\)"
 
     fun getRegexPattern(type: Int): Pattern = when (type) {
         EMOTICON_ALL_TYPE, EMOTICON_CLASSIC_TYPE, EMOTICON_EMOJI_TYPE -> ALL_TYPE_REGEX_PATTERN
@@ -32,7 +31,6 @@ object EmoticonUtil {
         else -> ALL_TYPE_REGEX_PATTERN
     }
 
-    @OptIn(ExperimentalTextApi::class)
     val String.emoticonString: AnnotatedString
         get() {
             val regexPattern = getRegexPattern(EMOTICON_ALL_TYPE)
@@ -57,7 +55,6 @@ object EmoticonUtil {
             }
         }
 
-    @OptIn(ExperimentalTextApi::class)
     val AnnotatedString.emoticonString: AnnotatedString
         get() {
             if (hasStringAnnotations("Emoticon", 0, length)) {
@@ -84,4 +81,6 @@ object EmoticonUtil {
                 }
             }
         }
+
+    fun inlineTextFormat(name: String) = "#($name)"
 }

@@ -1,10 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -16,19 +13,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.OpenInBrowser
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,26 +37,27 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
-import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.UserData
@@ -66,12 +67,14 @@ import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.PostCard
+import com.huanchengfly.tieba.post.ui.page.thread.SubPostBlockedTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
@@ -81,11 +84,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_HIDE
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
@@ -93,23 +93,25 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@NonRestartableComposable
 @Composable
 fun SubPostsSheetPage(
     params: SubPosts,
     navigator: NavController,
     viewModel: SubPostsViewModel = hiltViewModel()
 ) {
-    CompositionLocalProvider(LocalNavController provides navigator) {
+    ProvideNavigator(navigator) {
         with(params) {
             SubPostsContent(viewModel, forumId, threadId, postId, subPostId, true, navigator::navigateUp)
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SubPostsContent(
     viewModel: SubPostsViewModel,
@@ -124,24 +126,25 @@ internal fun SubPostsContent(
     val account = LocalAccount.current
     val context = LocalContext.current
 
-    val isRefreshing = viewModel.refreshing
-
-    val isLoading = viewModel.loading
-
-    val state by viewModel.state
-
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val forum = state.forum
 
     val lazyListState = rememberLazyListState()
 
-    val uiEvent by viewModel.uiEvent
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect {
+            val unhandledEvent = it?: return@collect
+            when(unhandledEvent) {
+                is CommonUiEvent.Toast -> {
+                    context.toastShort(unhandledEvent.message.toString())
+                }
 
-    LaunchedEffect(uiEvent) {
-        val unhandledEvent = uiEvent?: return@LaunchedEffect
-        if (unhandledEvent is SubPostsUiEvent.ScrollToSubPosts) {
-            delay(20)
-            lazyListState.scrollToItem(2 + state.subPosts.indexOfFirst { it.id == subPostId })
-            viewModel.onUiEventReceived()
+                is SubPostsUiEvent.ScrollToSubPosts -> {
+                    val targetIndex = 2 + state.subPosts.indexOfFirst { s -> s.id == subPostId }
+                    delay(20)
+                    lazyListState.scrollToItem(targetIndex.coerceIn(1, state.subPosts.lastIndex))
+                }
+            }
         }
     }
 
@@ -186,19 +189,45 @@ internal fun SubPostsContent(
         isError = state.error != null,
         onReload = viewModel::requestLoad,
         errorScreen = {
-            viewModel.error?.let { err -> ErrorScreen(error = err) }
+            state.error?.let { err -> ErrorScreen(error = err) }
         },
-        isLoading = isRefreshing
+        isLoading = state.isRefreshing
     ) {
+        val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         val hideReply by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_HIDE), false)
         val canReply by remember { derivedStateOf { !(hideReply || account == null) } }
 
         // Workaround to make StickyHeader respect content padding
         var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
 
+        // Initialize nullable click listeners:
+        val onReplySubPost: ((SubPostItemData) -> Unit)? = { item: SubPostItemData ->
+            navigator.navigate(
+                Reply(
+                    forumId = forumId,
+                    forumName = forum?.get { name } ?: "",
+                    threadId = threadId,
+                    postId = postId,
+                    subPostId = item.id,
+                    replyUserId = item.author.id,
+                    replyUserName = item.author.getDisplayName(context),
+                    replyUserPortrait = item.author.portrait,
+                )
+            )
+        }.takeIf { canReply }
+
+        // Null when not my SubPost
+        val onDeleteSubPost: (SubPostItemData) -> Unit = { item: SubPostItemData ->
+            deleteSubPost = item
+            confirmDeleteDialogState.show()
+        }
+
+        // This is non-nullable, initialize here just for convenience
+        val onCopyClick: (String) -> Unit = { navigator.navigate(CopyText(it)) }
+
         BlurScaffold(
             topHazeBlock = {
-                blurEnabled = lazyListState.canScrollBackward
+                blurEnabled = topAppBarScrollBehavior.isOverlapping
             },
             topBar = {
                 TitleBar(
@@ -207,7 +236,8 @@ internal fun SubPostsContent(
                     onBack = onNavigateUp,
                     onAction = {
                         navigator.navigate(Thread(forumId = forumId, threadId = threadId, postId = postId))
-                    }
+                    },
+                    scrollBehavior = topAppBarScrollBehavior
                 ) {
                     if (useStickyHeaderWorkaround) {
                         StickyHeaderOverlay(state = lazyListState) {
@@ -233,15 +263,18 @@ internal fun SubPostsContent(
                 )
             }
         ) { padding ->
-
             useStickyHeaderWorkaround = padding.calculateTopPadding() != Dp.Hairline
 
             // Ignore Scaffold padding changes if workaround enabled
             val direction = LocalLayoutDirection.current
             val contentPadding = if (useStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
+            val hideBlockedContent: Boolean = context.appPreferences.hideBlockedContent
+            val isLoading by remember { derivedStateOf { state.isLoading } }
 
             SwipeUpLazyLoadColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                 state = lazyListState,
                 contentPadding = contentPadding,
                 isLoading = isLoading,
@@ -265,15 +298,10 @@ internal fun SubPostsContent(
                     Column {
                         PostCard(
                             post = postItem,
-                            contentRenders = postItem.contentRenders,
-                            isCollected = false,
                             onUserClick = {
                                 navigator.navigate(UserProfile(postItem.author.id))
                             },
-                            onAgree = {
-                                val hasAgreed = postItem.hasAgree != 0
-                                viewModel.onAgreePost(!hasAgreed)
-                            },
+                            onLikeClick = viewModel::onPostLikeClicked,
                             onReplyClick = { it: PostData ->
                                 navigator.navigate(
                                     Reply(
@@ -287,16 +315,14 @@ internal fun SubPostsContent(
                                     )
                                 )
                             }.takeIf { canReply },
-                            onMenuCopyClick = {
-                                navigator.navigate(CopyText(it))
-                            },
+                            onMenuCopyClick = onCopyClick,
                             onMenuDeleteClick = {
                                 deleteSubPost = null
                                 confirmDeleteDialogState.show()
                             }
                             .takeIf { postItem.author.id == account?.uid?.toLongOrNull() } // Check is my Post
                         )
-                        VerticalDivider(thickness = 2.dp)
+                        HorizontalDivider(thickness = 2.dp)
                     }
                 } // End of post card
 
@@ -307,7 +333,7 @@ internal fun SubPostsContent(
                 } else {
                     stickyHeader(key = "SubPostsHeader", contentType = Unit) {
                         SubPostsHeader(
-                            modifier = Modifier.background(LocalExtendedColors.current.topBar),
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
                             postNum = state.totalCount
                         )
                     }
@@ -316,33 +342,16 @@ internal fun SubPostsContent(
                 items(items = state.subPosts, key = { subPost -> subPost.id }) { item ->
                     SubPostItem(
                         item = item,
+                        hideBlockedContent = hideBlockedContent,
                         onUserClick = {
                             navigator.navigate(UserProfile(it.id))
                         },
-                        onAgree = {
-                            viewModel.onAgreeSubPost(subPostId = it.id, !it.hasAgree)
-                        },
-                        onMenuReplyClick = { it: SubPostItemData ->
-                            navigator.navigate(
-                                Reply(
-                                    forumId = forumId,
-                                    forumName = forum?.get { name } ?: "",
-                                    threadId = threadId,
-                                    postId = postId,
-                                    subPostId = it.id,
-                                    replyUserId = it.author.id,
-                                    replyUserName = it.author.getDisplayName(context),
-                                    replyUserPortrait = it.author.portrait,
-                                )
-                            )
-                        }.takeIf { canReply },
-                        onMenuCopyClick = {
-                            navigator.navigate(CopyText(it))
-                        },
-                        onMenuDeleteClick = { it: SubPostItemData ->
-                            deleteSubPost = it
-                            confirmDeleteDialogState.show()
-                        }.takeIf { item.authorId == account?.uid?.toLongOrNull() } // Check is my SubPost
+                        onAgree = viewModel::onSubPostLikeClicked,
+                        onMenuReplyClick = onReplySubPost,
+                        onMenuCopyClick = onCopyClick,
+                        onMenuDeleteClick = onDeleteSubPost.takeIf {
+                            item.authorId == account?.uid?.toLongOrNull() // Check is my SubPost
+                        }
                     )
                 }
             }
@@ -350,20 +359,25 @@ internal fun SubPostsContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@NonRestartableComposable
 @Composable
 private fun TitleBar(
     isSheet: Boolean,
     post: PostData?,
     onBack: () -> Unit,
     onAction: () -> Unit,
+    scrollBehavior: TopAppBarScrollBehavior?,
     content: (@Composable ColumnScope.() -> Unit)? = null
 ) {
-    TitleCentredToolbar(
+    CenterAlignedTopAppBar(
         title = {
-            Text(text = post?.let {
-                stringResource(id = R.string.title_sub_posts, it.floor)
-            } ?: stringResource(id = R.string.title_sub_posts_default),
-                fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
+            Text(
+                text = if (post != null) {
+                    stringResource(id = R.string.title_sub_posts, post.floor)
+                } else {
+                    stringResource(id = R.string.title_sub_posts_default)
+                }
             )
         },
         navigationIcon = {
@@ -384,7 +398,7 @@ private fun TitleBar(
                 }
             }
         },
-        elevation = Dp.Hairline,
+        scrollBehavior = scrollBehavior,
         content = content
     )
 }
@@ -393,7 +407,7 @@ private fun TitleBar(
 private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: () -> Unit) =
     Column(
         modifier = modifier
-            .background(ExtendedTheme.colors.threadBottomBar)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         Row(
@@ -408,19 +422,19 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
                 size = Sizes.Tiny,
                 contentDescription = account.name,
             )
-            Box(
+            Surface(
                 modifier = Modifier
                     .padding(vertical = 8.dp)
-                    .weight(1f)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(ExtendedTheme.colors.floorCard)
-                    .clickable(onClick = onReply)
-                    .padding(8.dp),
+                    .weight(1f),
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                tonalElevation = 2.dp,
+                onClick = onReply
             ) {
                 Text(
                     text = stringResource(id = R.string.tip_reply_thread),
-                    style = MaterialTheme.typography.caption,
-                    color = ExtendedTheme.colors.textSecondary,
+                    modifier = Modifier.padding(8.dp),
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
         }
@@ -431,26 +445,24 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
 @Composable
 private fun SubPostItem(
     item: SubPostItemData,
+    hideBlockedContent: Boolean = false,
     onUserClick: (UserData) -> Unit = {},
     onAgree: (SubPostItemData) -> Unit = {},
     onMenuReplyClick: ((SubPostItemData) -> Unit)?,
     onMenuCopyClick: ((String) -> Unit)? = null,
     onMenuDeleteClick: ((SubPostItemData) -> Unit)? = null,
-) = BlockableContent(
-    blocked = item.blocked,
-    blockedTip = { BlockTip() },
-    modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 8.dp),
+) =
+    BlockableContent(
+        blocked = item.blocked,
+        blockedTip = SubPostBlockedTip,
+        hideBlockedContent = hideBlockedContent,
     )
 {
     val context = LocalContext.current
     val navigator = LocalNavController.current
     val coroutineScope = rememberCoroutineScope()
-    val menuState = rememberMenuState()
 
     LongClickMenu(
-        menuState = menuState,
         indication = null,
         menuContent = {
             if (onMenuReplyClick != null) {
@@ -486,9 +498,7 @@ private fun SubPostItem(
                 desc = remember { getRelativeTimeString(context, item.time) },
                 onClick = { onUserClick(item.author) }
             ) {
-                PostAgreeBtn(agreed = item.hasAgree, agreeNum = item.agreeNum) {
-                    onAgree(item)
-                }
+                PostLikeButton(like = item.like, onClick = { onAgree(item) })
             }
 
             Column(
@@ -512,32 +522,26 @@ private fun SubPostsHeader(modifier: Modifier = Modifier, postNum: Int) {
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        style = MaterialTheme.typography.subtitle1
+        style = MaterialTheme.typography.titleMedium
     )
 }
 
-@Preview("PostAgreeBtn")
+@NonRestartableComposable
 @Composable
-private fun PostAgreeBtnPreview() {
-    TiebaLiteTheme {
-        Surface(Modifier.padding(12.dp)) {
-            PostAgreeBtn(agreed = true, agreeNum = 999) { /*** NO-OP ***/ }
+fun PostLikeButton(like: Like, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    FavoriteButton(modifier, iconSize = 18.dp, favorite = like.liked, onClick = onClick) {
+        if (like.count > 0) {
+            Text(
+                text = remember(like.count) { like.count.getShortNumString() },
+                modifier = Modifier.padding(horizontal = 4.dp),
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
 
+@Preview("PostFavoriteButton")
 @Composable
-fun PostAgreeBtn(modifier: Modifier = Modifier, agreed: Boolean, agreeNum: Long, onClick: () -> Unit) {
-    FavoriteButton(modifier, iconSize = 18.dp, favorite = agreed, onClick = onClick) { color ->
-        if (agreeNum > 0) {
-            Text(
-                text = agreeNum.getShortNumString(),
-                modifier = Modifier
-                    .align(Alignment.CenterVertically)
-                    .padding(horizontal = 4.dp),
-                color = color,
-                style = MaterialTheme.typography.caption
-            )
-        }
-    }
+private fun PostAgreeBtnPreview() = TiebaLiteTheme {
+    PostLikeButton(like = Like(true, 99999), onClick = {})
 }
