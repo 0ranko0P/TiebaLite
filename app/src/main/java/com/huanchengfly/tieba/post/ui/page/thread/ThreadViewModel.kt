@@ -36,6 +36,8 @@ import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.EmptyDataException
+import com.huanchengfly.tieba.post.repository.HistoryRepository
+import com.huanchengfly.tieba.post.repository.HistoryType
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.toastShort
@@ -52,7 +54,6 @@ import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_HIDE
-import com.huanchengfly.tieba.post.utils.HistoryUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -87,6 +88,7 @@ import kotlin.reflect.typeOf
 @HiltViewModel
 class ThreadViewModel @Inject constructor(
     @ApplicationContext val context: Context,
+    private val historyRepo: HistoryRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -589,7 +591,7 @@ class ThreadViewModel @Inject constructor(
             History(
                 title = title,
                 data = threadId.toString(),
-                type = HistoryUtil.TYPE_THREAD,
+                type = HistoryType.THREAD,
                 extras = bean.toJson(),
                 avatar =  StringUtil.getAvatarUrl(author.portrait),
                 username = author.nameShow
@@ -680,7 +682,7 @@ class ThreadViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         history?.let {
-            MainScope().launch(Dispatchers.IO) { HistoryUtil.saveHistory(it) }
+            MainScope().launch { historyRepo.save(it) }
         }
     }
 

@@ -20,6 +20,8 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.models.ForumHistoryExtra
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.ForumRepository
+import com.huanchengfly.tieba.post.repository.HistoryRepository
+import com.huanchengfly.tieba.post.repository.HistoryType
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
@@ -28,7 +30,6 @@ import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
-import com.huanchengfly.tieba.post.utils.HistoryUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.requestPinShortcut
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -60,6 +61,7 @@ import javax.inject.Inject
 class ForumViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val forumRepo: ForumRepository,
+    private val historyRepo: HistoryRepository,
     settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -97,17 +99,15 @@ class ForumViewModel @Inject constructor(
         requestLoadForm()
     }
 
-    private fun saveHistory(forum: ForumData) {
-        HistoryUtil.saveHistory(
-            history = History(
-                timestamp = System.currentTimeMillis(),
-                avatar = forum.avatar,
-                type = HistoryUtil.TYPE_FORUM,
-                data = forum.name,
-                extras = Json.encodeToString(ForumHistoryExtra(forum.id))
-            )
+    private suspend fun saveHistory(forum: ForumData): Boolean = historyRepo.save(
+        history = History(
+            timestamp = System.currentTimeMillis(),
+            avatar = forum.avatar,
+            type = HistoryType.FORUM,
+            data = forum.name,
+            extras = Json.encodeToString(ForumHistoryExtra(forum.id))
         )
-    }
+    )
 
     private fun requestLoadForm() = viewModelScope.launch(handler) {
         _uiState.set { copy(forum = null, error = null) }

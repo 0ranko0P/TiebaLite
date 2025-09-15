@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,38 +14,34 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.fromJson
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
 import com.huanchengfly.tieba.post.models.database.History
-import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.repository.HistoryType
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.history.list.HistoryListViewModel.Companion.HistoryVmFactory
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
@@ -55,59 +50,45 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import com.huanchengfly.tieba.post.utils.HistoryUtil
 
 @Composable
 fun HistoryListPage(
-    type: Int,
-    viewModel: HistoryListViewModel = if (type == HistoryUtil.TYPE_THREAD) pageViewModel<ThreadHistoryListViewModel>() else pageViewModel<ForumHistoryListViewModel>()
+    @HistoryType type: Int,
+    viewModel: HistoryListViewModel = hiltViewModel<HistoryListViewModel, HistoryVmFactory>(key = type.toString()) {
+        it.create(type)
+    }
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(HistoryListUiIntent.Refresh)
-        viewModel.initialized = true
-    }
     onGlobalEvent<HistoryListUiEvent.DeleteAll> {
-        viewModel.send(HistoryListUiIntent.DeleteAll)
+        viewModel.deleteAll()
     }
-    val isLoadingMore by viewModel.uiState.collectPartialAsState(
-        prop1 = HistoryListUiState::isLoadingMore,
-        initial = false
-    )
-    val hasMore by viewModel.uiState.collectPartialAsState(
-        prop1 = HistoryListUiState::hasMore,
-        initial = true
-    )
-    val currentPage by viewModel.uiState.collectPartialAsState(
-        prop1 = HistoryListUiState::currentPage,
-        initial = 0
-    )
-    val todayHistoryData by viewModel.uiState.collectPartialAsState(
-        prop1 = HistoryListUiState::todayHistoryData,
-        initial = emptyList()
-    )
-    val beforeHistoryData by viewModel.uiState.collectPartialAsState(
-        prop1 = HistoryListUiState::beforeHistoryData,
-        initial = emptyList()
-    )
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoadingMore = uiState.isLoadingMore
+    val hasMore = uiState.hasMore
+    val todayHistoryData = uiState.todayHistoryData
+    val beforeHistoryData = uiState.beforeHistoryData
 
     val context = LocalContext.current
     val navigator = LocalNavController.current
     val snackbarHostState = LocalSnackbarHostState.current
 
-    viewModel.onEvent<HistoryListUiEvent.Delete.Failure> {
-        snackbarHostState.showSnackbar(context.getString(R.string.delete_history_failure, it.errorMsg))
-    }
-    viewModel.onEvent<HistoryListUiEvent.Delete.Success> {
-        snackbarHostState.showSnackbar(context.getString(R.string.delete_history_success))
+    LaunchedEffect(viewModel) {
+        viewModel.uiEvent.collect {
+            when(it) {
+                is HistoryListUiEvent.Failure -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.delete_history_failure, it.errorMsg))
+                }
+            }
+        }
     }
 
     val historyClickListener: (History) -> Unit = {
         when (it.type) {
-            HistoryUtil.TYPE_FORUM -> {
+            HistoryType.FORUM -> {
                 navigator.navigate(route = Forum(forumName = it.data, avatar = it.avatar))
             }
 
-            HistoryUtil.TYPE_THREAD -> {
+            HistoryType.THREAD -> {
                 val extra = it.extras?.fromJson<ThreadHistoryInfoBean>()
                 navigator.navigate(
                     Thread(
@@ -125,15 +106,11 @@ fun HistoryListPage(
         modifier = Modifier.fillMaxSize(),
         isLoading = isLoadingMore,
         onLazyLoad = {
-            if (todayHistoryData.isEmpty() && beforeHistoryData.isEmpty()) return@SwipeUpLazyLoadColumn
-            if (hasMore) {
-                viewModel.send(HistoryListUiIntent.LoadMore(currentPage + 1))
-            }
+            if (hasMore) viewModel.loadMore()
         },
         onLoad = null, // Refuse manual reload
         bottomIndicator = {
             LoadMoreIndicator(
-                modifier = Modifier.fillMaxWidth(),
                 isLoading = isLoadingMore,
                 noMore = !hasMore,
                 onThreshold = false
@@ -146,11 +123,7 @@ fun HistoryListPage(
             }
 
             items(items = todayHistoryData, key = { it.id }) { info ->
-                HistoryItem(
-                    info = info,
-                    onDelete = { viewModel.send(HistoryListUiIntent.Delete(it.id)) },
-                    onClick = historyClickListener
-                )
+                HistoryItem(info, onDelete = viewModel::delete, onClick = historyClickListener)
             }
         }
 
@@ -160,11 +133,7 @@ fun HistoryListPage(
             }
 
             items(items = beforeHistoryData, key = { it.id }) { info ->
-                HistoryItem(
-                    info = info,
-                    onDelete = { viewModel.send(HistoryListUiIntent.Delete(it.id)) },
-                    onClick = historyClickListener
-                )
+                HistoryItem(info, onDelete = viewModel::delete, onClick = historyClickListener)
             }
         }
     }
@@ -256,7 +225,7 @@ private fun HistoryItem(
     ) {
         val timestamp = remember { DateTimeUtils.getRelativeTimeString(context, info.timestamp) }
 
-        if (info.type == HistoryUtil.TYPE_THREAD) {
+        if (info.type == HistoryType.THREAD) {
             ThreadItem(
                 avatar = info.avatar!!,
                 name = info.username.orEmpty(),

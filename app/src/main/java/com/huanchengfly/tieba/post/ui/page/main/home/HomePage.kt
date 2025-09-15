@@ -49,7 +49,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -84,6 +84,7 @@ import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
@@ -145,7 +146,7 @@ private fun SearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Row(
-            verticalAlignment = CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Icon(
@@ -170,7 +171,7 @@ private fun Header(text: String, modifier: Modifier = Modifier, invert: Boolean 
 private fun ForumItemPlaceholder(showAvatar: Boolean) {
     Row(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         val placeholderColor = PlaceholderDefaults.color()
 
@@ -219,7 +220,7 @@ fun HistoryItem(
             .background(color = color)
             .clickable(onClick = onClick)
             .padding(start = 4.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
-        verticalAlignment = CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         avatar()
@@ -243,7 +244,7 @@ private fun HistoryForums(
 
     Column(modifier = modifier) {
         Row(
-            verticalAlignment = CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .clickableNoIndication { expandHistoryForum = !expandHistoryForum }
                 .padding(vertical = 8.dp)
@@ -293,7 +294,7 @@ private fun ForumItemContent(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         if (showAvatar) {
             Avatar(
@@ -309,12 +310,8 @@ private fun ForumItemContent(
 
         Text(
             text = item.forumName,
-            modifier = Modifier.block { // Enable transition on List Mode (showAvatar) only
-                if (showAvatar) {
-                    localSharedBounds(key = ForumTitleSharedBoundsKey(item.forumName, null))
-                } else {
-                    null
-                }
+            modifier = Modifier.onCase(showAvatar) { // Enable transition on List Mode (showAvatar)
+                localSharedBounds(key = ForumTitleSharedBoundsKey(item.forumName, null))
             },
             style = MaterialTheme.typography.titleSmall,
             maxLines = 1,
@@ -327,10 +324,11 @@ private fun ForumItemContent(
                 .width(54.dp)
                 .background(
                     color = MaterialTheme.colorScheme.secondary,
-                    shape = RoundedCornerShape(3.dp)
+                    shape = MaterialTheme.shapes.extraSmall
                 )
                 .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = item.level,
@@ -345,7 +343,7 @@ private fun ForumItemContent(
                     imageVector = Icons.Rounded.Check,
                     contentDescription = stringResource(id = R.string.tip_signed),
                     modifier = Modifier.size(12.dp),
-                    tint = MaterialTheme.colorScheme.secondary
+                    tint = MaterialTheme.colorScheme.onSecondary
                 )
             }
         }

@@ -26,6 +26,7 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.repository.HistoryType
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.history.list.HistoryListPage
 import com.huanchengfly.tieba.post.ui.page.history.list.HistoryListUiEvent
@@ -34,7 +35,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
-import com.huanchengfly.tieba.post.utils.HistoryUtil
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,8 +42,8 @@ import kotlinx.coroutines.launch
 fun HistoryPage(navigator: NavController) {
     val tabs = remember {
         listOf(
-            R.string.title_history_thread to HistoryUtil.TYPE_THREAD,
-            R.string.title_history_forum to HistoryUtil.TYPE_FORUM
+            R.string.title_history_thread to HistoryType.THREAD,
+            R.string.title_history_forum to HistoryType.FORUM
         )
     }
 
@@ -63,7 +63,6 @@ fun HistoryPage(navigator: NavController) {
                 actions = {
                     IconButton(onClick = {
                         coroutineScope.launch {
-                            HistoryUtil.deleteAll()
                             emitGlobalEvent(HistoryListUiEvent.DeleteAll)
                             snackbarHostState.showSnackbar(
                                 message = context.getString(R.string.toast_clear_success)

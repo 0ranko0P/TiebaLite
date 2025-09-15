@@ -71,10 +71,9 @@ object DateTimeUtils {
         set(Calendar.SECOND, 0)
     }
 
-    @JvmStatic
-    fun isToday(timestamp: Long): Boolean {
-        val date = DateFormat.getDateInstance().format(timestamp)
-        val todayDate = DateFormat.getDateInstance().format(System.currentTimeMillis())
+    fun isToday(formatter: DateFormat, timestamp: Long): Boolean {
+        val date = formatter.format(timestamp)
+        val todayDate = formatter.format(System.currentTimeMillis())
         return date == todayDate
     }
 
