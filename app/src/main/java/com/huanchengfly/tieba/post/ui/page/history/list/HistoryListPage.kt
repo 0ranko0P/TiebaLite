@@ -93,7 +93,7 @@ fun HistoryListPage(
                 navigator.navigate(
                     Thread(
                         it.data.toLong(),
-                        postId = extra?.pid?.toLongOrNull() ?: 0L,
+                        postId = extra?.pid ?: 0L,
                         seeLz = extra?.isSeeLz == true,
                         from = ThreadFrom.History
                     )

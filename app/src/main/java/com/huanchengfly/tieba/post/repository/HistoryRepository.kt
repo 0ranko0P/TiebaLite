@@ -1,11 +1,15 @@
 package com.huanchengfly.tieba.post.repository
 
 import androidx.annotation.IntDef
+import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.source.local.HistoryDao
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -44,8 +48,8 @@ class HistoryRepository @Inject constructor(private val localDataSource: History
         localDataSource.get(type, page, limit = PAGE_SIZE)
     }
 
-    suspend fun save(history: History): Boolean {
-        return runCatching {
+    fun save(history: History): Deferred<Boolean> = AppBackgroundScope.async {
+        runCatching {
             localDataSource.saveOrUpdateAsync(history).also { notifyDataChanged(it) }
         }
         .onFailure { it.printStackTrace() }

@@ -99,6 +99,8 @@ class ThreadViewModel @Inject constructor(
     val threadId: Long = params.threadId
     val postId: Long = params.postId
 
+    private val historyTimeStamp = System.currentTimeMillis()
+
     private var _seeLz: Boolean by mutableStateOf(params.seeLz)
     /**
      * 只看楼主模式
@@ -231,7 +233,7 @@ class ThreadViewModel @Inject constructor(
             withContext(Dispatchers.Main) {
                 _info = ThreadInfoData(response.data_.thread)
             }
-            val newData = concatNewPostList(old = state.data, new = response.data_.post_list)
+            val newData = concatNewPostList(old = state.data, new = response.data_.post_list, desc = false)
 
             _threadUiState.update {
                 it.copy(
@@ -579,19 +581,18 @@ class ThreadViewModel @Inject constructor(
     }
 
     fun onLastPostVisibilityChanged(pid: Long, floor: Int?) = viewModelScope.launch {
-        val author = _threadUiState.first().lz ?: return@launch
+        val thread = threadUiState.value
+        val author = thread.lz ?: return@launch
         val title = info?.title ?: return@launch
+
         history = withContext(Dispatchers.IO) {
-            val bean = ThreadHistoryInfoBean(
-                isSeeLz = seeLz,
-                pid = pid.toString(),
-                forumName = _threadUiState.first().forum?.get { name },
-                floor = floor?.toString()
-            )
+            val forumName = thread.forum?.item?.name
+            val bean = ThreadHistoryInfoBean(seeLz, pid, forumName, floor = floor?.toString())
             History(
                 title = title,
                 data = threadId.toString(),
                 type = HistoryType.THREAD,
+                timestamp = historyTimeStamp,
                 extras = bean.toJson(),
                 avatar =  StringUtil.getAvatarUrl(author.portrait),
                 username = author.nameShow
@@ -681,9 +682,7 @@ class ThreadViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        history?.let {
-            MainScope().launch { historyRepo.save(it) }
-        }
+        history?.let { historyRepo.save(it) }
     }
 
     private fun sendMsg(@StringRes int: Int, vararg formatArgs: Any) {
@@ -772,11 +771,17 @@ class ThreadViewModel @Inject constructor(
         private val Post.isUnwanted
             get() = floor <= 1
 
-        private suspend fun concatNewPostList(old: List<PostData>, new: List<Post>): List<PostData> = withContext(Dispatchers.Default) {
+        private suspend fun concatNewPostList(
+            old: List<PostData>,
+            new: List<Post>,
+            desc: Boolean = true
+        ): List<PostData> = withContext(Dispatchers.Default) {
             val postIds = old.mapTo(HashSet()) { it.id }
             new.filterNot { it.isUnwanted || postIds.contains(it.id) } // filter out old post
                 .map { PostData.from(it) } // map new posts
-                .let { old + it }
+                .let { new ->
+                    if (desc) old + new else new + old
+                }
         }
 
         private fun ThreadInfo.getNextPagePostId(postIds: Set<Long>, sortType: Int): Long {

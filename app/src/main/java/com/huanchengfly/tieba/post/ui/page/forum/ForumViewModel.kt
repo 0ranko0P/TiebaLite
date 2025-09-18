@@ -96,7 +96,7 @@ class ForumViewModel @Inject constructor(
         requestLoadForm()
     }
 
-    private suspend fun saveHistory(forum: ForumData): Boolean = historyRepo.save(
+    private fun saveHistory(forum: ForumData) = historyRepo.save(
         history = History(
             timestamp = System.currentTimeMillis(),
             avatar = forum.avatar,
