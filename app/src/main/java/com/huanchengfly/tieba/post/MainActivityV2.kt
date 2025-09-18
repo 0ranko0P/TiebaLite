@@ -166,9 +166,18 @@ class MainActivityV2 : BaseComposeActivity() {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 val okSignAlertDialogState = rememberDialogState()
 
-                uiState.setupFinished?.let {
-                    val entryRoute = if (it) Destination.Main else Destination.Welcome
+                uiState.setupFinished?.let { setupFinished ->
+                    val entryRoute = if (setupFinished) Destination.Main else Destination.Welcome
                     RootNavGraph(/* bottomSheetNavigator, */navController, startDestination = entryRoute)
+
+                    if (setupFinished) {
+                        LaunchedEffect(pendingRoute) {
+                            pendingRoute?.let {
+                                navController.navigate(route = it)
+                                pendingRoute = null
+                            }
+                        }
+                    }
                 }
 
                 ClipBoardDetectDialog(uiState.preview, viewModel::onClipBoardDetectDialogDismiss) {
@@ -191,13 +200,6 @@ class MainActivityV2 : BaseComposeActivity() {
                         okSignAlertDialogState.show()
                     }
                 }
-            }
-        }
-
-        pendingRoute?.let {
-            LaunchedEffect(it) {
-                navController.navigate(route = it)
-                pendingRoute = null
             }
         }
     }

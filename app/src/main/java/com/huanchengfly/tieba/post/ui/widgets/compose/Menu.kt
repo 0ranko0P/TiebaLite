@@ -33,7 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.round
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import kotlinx.coroutines.flow.filterIsInstance
@@ -142,9 +142,7 @@ fun ClickMenu(
 
     Box(
         modifier = Modifier
-            .block {
-                triggerShape?.let { clip(it) }
-            }
+            .onNotNull(triggerShape) { clip(shape = it) }
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = indication,
@@ -162,6 +160,7 @@ fun ClickMenu(
                 expanded = menuState.expanded,
                 onDismissRequest = menuScope::dismiss,
                 modifier = modifier,
+                containerColor = TiebaLiteTheme.extendedColorScheme.sheetContainerColor,
             ) {
                 menuScope.menuContent()
             }
@@ -199,10 +198,9 @@ fun LongClickMenu(
                 enabled = enabled,
                 onLongClick = {
                     menuState.expanded = true
-                }
-            ) {
-                onClick?.invoke()
-            }
+                },
+                onClick = onClick ?: {}
+            )
     ) {
         content()
         Box(
@@ -211,6 +209,7 @@ fun LongClickMenu(
             DropdownMenu(
                 expanded = menuState.expanded,
                 onDismissRequest = menuState::dismiss,
+                containerColor = TiebaLiteTheme.extendedColorScheme.sheetContainerColor,
             ) {
                 menuScope.menuContent()
             }

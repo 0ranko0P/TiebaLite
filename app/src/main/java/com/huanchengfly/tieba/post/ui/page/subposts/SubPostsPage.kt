@@ -142,7 +142,7 @@ internal fun SubPostsContent(
                 is SubPostsUiEvent.ScrollToSubPosts -> {
                     val targetIndex = 2 + state.subPosts.indexOfFirst { s -> s.id == subPostId }
                     delay(20)
-                    lazyListState.scrollToItem(targetIndex.coerceIn(1, state.subPosts.lastIndex))
+                    lazyListState.scrollToItem(targetIndex.coerceIn(0, state.subPosts.lastIndex))
                 }
             }
         }
