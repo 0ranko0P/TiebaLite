@@ -39,6 +39,7 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -56,6 +57,7 @@ object EmoticonManager {
     private const val TAG = "EmoticonManager"
 
     private const val EMOTICON_ID_PREFIX = "image_emoticon"
+    private const val EMOTICON_ID_PREFIX2 = "shoubai_emoji"
 
     private const val EMOTICON_ASSET_NAME = "emoticon"
     private val DEFAULT_EMOTICON_MAPPING: Map<String, String> by lazy {
@@ -181,11 +183,16 @@ object EmoticonManager {
 
     private fun updateCache() {
         scope.launch {
-            val emoticonJson = EmoticonCache(emoticonIds, emoticonMapping).toJson()
-            cacheUpdateRunner.cancelPreviousThenRun(Dispatchers.IO) {
+            inlineTextCache.clear()
+            cacheUpdateRunner.cancelPreviousThenRun {
+                // Limit update rate to 1/min to avoid unnecessary disk writes
+                delay(60000L)
+                val emoticonJson = EmoticonCache(emoticonIds, emoticonMapping).toJson()
                 val emoticonDataCacheFile = File(EMOTICON_CACHE_DIR, "emoticon_data_cache")
                 ensureActive()
-                FileUtil.writeFile(emoticonDataCacheFile, emoticonJson, false)
+                withContext(Dispatchers.IO) {
+                    FileUtil.writeFile(emoticonDataCacheFile, emoticonJson, false)
+                }
             }
         }
     }
@@ -230,7 +237,9 @@ object EmoticonManager {
     }
 
     fun registerEmoticon(id: String, name: String) {
-        if (!id.startsWith(EMOTICON_ID_PREFIX)) return
+        if (!(id.startsWith(EMOTICON_ID_PREFIX) || id.startsWith(EMOTICON_ID_PREFIX2))) {
+            return
+        }
 
         val realId = if (id == EMOTICON_ID_PREFIX) "image_emoticon1" else id
         var changed = false
