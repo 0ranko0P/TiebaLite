@@ -31,10 +31,12 @@ annotation class ForumSortType {
  *
  * @param forumSortType 吧页面默认排序方式, default: [ForumSortType.BY_REPLY]
  * @param forumFAB 吧页面悬浮按钮功能, default: [ForumFAB.BACK_TO_TOP]
- * @param showBothName 同时显示用户名和昵称
+ * @param showBothName 同时显示用户名和昵称, default: false
+ * @param showHistoryInHome 首页显示最近逛的吧, default: true
  * */
 class HabitSettings(
     @ForumSortType val forumSortType: Int,
     @ForumFAB val forumFAB: Int,
     val showBothName: Boolean,
+    val showHistoryInHome: Boolean
 )

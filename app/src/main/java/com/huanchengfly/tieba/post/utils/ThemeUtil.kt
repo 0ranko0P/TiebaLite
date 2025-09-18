@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -205,17 +206,17 @@ object ThemeUtil {
     fun getExtendedColorFlow(settingsRepository: SettingsRepository, context: Context): Flow<ExtendedColorScheme> {
         return combine(
             flow = savedColorSchemeFlow(settingsRepository.themeSettings, context),
-            flow2 = settingsRepository.uiSettings.flow,
+            flow2 = settingsRepository.uiSettings.flow.map { it.darkPreference to it.reduceEffect }.distinctUntilChanged(),
             flow3 = _darkModeState,
             flow4 = _darkModeOverride,
-            transform = { colorSchemeDayNight, uiSettings, isAppDark, overrideDark ->
+            transform = { colorSchemeDayNight, (darkPreference, reduceEffect), isAppDark, overrideDark ->
                 // override has highest priority
-                val darkMode = overrideDark ?: (isAppDark && shouldUseNightMode(uiSettings.darkPreference))
+                val darkMode = overrideDark ?: (isAppDark && shouldUseNightMode(darkPreference))
                 val colorScheme = colorSchemeDayNight.getColorScheme(isDark = darkMode, isAmoled = false)
                 when {
                     colorScheme.isTranslucent -> ExtendedColorScheme(colorScheme, navigationContainer = Color.Transparent)
 
-                    !uiSettings.reduceEffect -> createBlurColorScheme(colorScheme)
+                    !reduceEffect -> createBlurColorScheme(colorScheme)
 
                     else -> ExtendedColorScheme(colorScheme)
                 }

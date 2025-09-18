@@ -54,8 +54,10 @@ private data class ForumCache(
 class ForumRepository @Inject constructor(
     @ApplicationContext context: Context,
     private val settingsRepository: SettingsRepository,
-    private val networkDataSource: ForumNetworkDataSource
+    private val homeRepository: HomeRepository
 ) {
+
+    private val networkDataSource = ForumNetworkDataSource
 
     private val blockedSettings: Flow<BlockSettings>
         get() = settingsRepository.blockSettings.flow
@@ -201,6 +203,28 @@ class ForumRepository @Inject constructor(
                 }
             )
         }
+    }
+
+    suspend fun likeForum(forum: ForumData): ForumData {
+        require(!forum.liked)
+        val info = networkDataSource.like(forum.id, forum.name, forum.tbs!!)
+
+        // Notify forum changes to home
+        homeRepository.onLikeForum()
+        return forum.copy(
+            liked = true,
+            level = info.levelId.toInt(),
+            levelName = info.levelName,
+            score = info.curScore.toInt(),
+            scoreLevelUp = info.levelUpScore.toInt(),
+            members = info.memberSum.toInt()
+        )
+    }
+
+    suspend fun dislikeForum(forum: ForumData) {
+        networkDataSource.dislike(forum.id, forum.name, forum.tbs!!)
+        // Notify forum changes to home
+        homeRepository.onDislikeForum(forumId = forum.id)
     }
 
     suspend fun forumSignIn(forumId: Long, forumName: String, tbs: String): SignResultBean.UserInfo {

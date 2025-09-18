@@ -176,7 +176,7 @@ fun MainPage(
                 userScrollEnabled = false
             ) {
                 when(navigationItems[it].title) {
-                    R.string.title_main -> HomePage(canOpenExplore = true, onOpenExplore = { onItemClicked(1) })
+                    R.string.title_main -> HomePage(onOpenExplore = { onItemClicked(1) })
 
                     R.string.title_explore -> ExplorePage()
 

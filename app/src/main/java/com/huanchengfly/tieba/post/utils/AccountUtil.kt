@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.litepal.LitePal.findAll
 import org.litepal.LitePal.where
@@ -78,7 +79,7 @@ class AccountUtil private constructor(context: Context) {
 
         fun <T> getAccountInfo(getter: Account.() -> T): T? = getLoginInfo()?.getter()
 
-        fun getLoginInfo(): Account? = getInstance().currentAccount.value
+        fun getLoginInfo(): Account? = runBlocking { getInstance().currentAccount.first() }
 
         fun isLoggedIn(): Boolean = getLoginInfo() != null
 

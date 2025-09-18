@@ -98,7 +98,8 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
         HabitSettings(
             forumSortType = it[intPreferencesKey(KEY_FORUM_SORT_DEFAULT)] ?: ForumSortType.BY_REPLY,
             forumFAB = it[intPreferencesKey(KEY_FORUM_FAB_FUNCTION)] ?: ForumFAB.BACK_TO_TOP,
-            showBothName = it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true
+            showBothName = it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true,
+            showHistoryInHome = it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] ?: true,
         )
     }
 
@@ -106,11 +107,13 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
         it[intPreferencesKey(KEY_FORUM_SORT_DEFAULT)] = habit.forumSortType
         it[intPreferencesKey(KEY_FORUM_FAB_FUNCTION)] = habit.forumFAB
         it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] = habit.showBothName
+        it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] = habit.showHistoryInHome
     }
 
     private const val KEY_FORUM_FAB_FUNCTION = "forum_fab"
     private const val KEY_FORUM_SORT_DEFAULT = "forum_sort_type"
     private const val KEY_SHOW_NICKNAME = "ui_show_both_name"
+    private const val KEY_HOME_PAGE_SHOW_HISTORY = "ui_history_in_home"
 }
 
 private object ThemeSettingsTransformer : PreferenceTransformer<ThemeSettings> {
@@ -156,7 +159,8 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
         UISettings(
             darkPreference = darkPrefOrdinal?.let { i -> DarkPreference.entries[i] } ?: DarkPreference.FOLLOW_SYSTEM,
             reduceEffect = it[booleanPreferencesKey(KEY_REDUCE_EFFECT)] ?: (Build.VERSION.SDK_INT < Build.VERSION_CODES.S),
-            setupFinished = it[booleanPreferencesKey(KEY_SETUP_FINISHED)] == true
+            setupFinished = it[booleanPreferencesKey(KEY_SETUP_FINISHED)] == true,
+            homeForumList = it[booleanPreferencesKey(KEY_HOME_SINGLE_FORUM_LIST)] == true
         )
     }
 
@@ -164,6 +168,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
         it[intPreferencesKey(KEY_DARK_THEME_MODE)] = ui.darkPreference.ordinal
         it[booleanPreferencesKey(KEY_REDUCE_EFFECT)] = ui.reduceEffect
         it[booleanPreferencesKey(KEY_SETUP_FINISHED)] = ui.setupFinished
+        it[booleanPreferencesKey(KEY_HOME_SINGLE_FORUM_LIST)] = ui.homeForumList
     }
 
     /**
@@ -174,6 +179,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
     private const val KEY_DARK_THEME_MODE = "dark_mode"
     private const val KEY_SETUP_FINISHED = "ui_setup"
     private const val KEY_REDUCE_EFFECT = "ui_reduce_effect"
+    private const val KEY_HOME_SINGLE_FORUM_LIST = "ui_forum_list_in_home"
 }
 
 private object BlockTransformer: PreferenceTransformer<BlockSettings> {

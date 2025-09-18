@@ -26,7 +26,7 @@ class HistoryRepository @Inject constructor(private val localDataSource: History
         const val PAGE_SIZE = 100
     }
 
-    private val refresh = Channel<Unit>(capacity = Channel.CONFLATED)
+    private val refresh by lazy { Channel<Unit>(capacity = Channel.CONFLATED) }
 
     // TODO: Migrate to Room DataBase for native Flow support
     fun getHistoryFlow(@HistoryType type: Int, page: Int = 0): Flow<List<History>> {

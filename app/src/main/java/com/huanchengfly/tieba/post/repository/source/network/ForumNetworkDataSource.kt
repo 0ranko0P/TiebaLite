@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.repository.source.network
 
 import com.huanchengfly.tieba.post.api.TiebaApi
+import com.huanchengfly.tieba.post.api.models.LikeForumResultBean
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.models.protos.RecommendForumInfo
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
@@ -9,15 +10,15 @@ import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDe
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponseData
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponseData
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterceptor
 import com.huanchengfly.tieba.post.arch.firstOrThrow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
-class ForumNetworkDataSource @Inject constructor() {
+object ForumNetworkDataSource {
 
     /**
      * Note: ForumDetailFlow 未登录时返回的数据不全/为空, 需额外提供 ForumData
@@ -94,10 +95,27 @@ class ForumNetworkDataSource @Inject constructor() {
     }
 
     @Throws(NoConnectivityException::class, TiebaException::class)
+    suspend fun dislike(forumId: Long, forumName: String, tbs: String) {
+        TiebaApi.getInstance()
+            .unlikeForumFlow(forumId = forumId.toString(), forumName = forumName, tbs = tbs)
+            .firstOrThrow()
+            .let {
+                if (it.errorCode != 0) throw TiebaApiException(it)
+            }
+    }
+
+    @Throws(NoConnectivityException::class, TiebaException::class)
+    suspend fun like(forumId: Long, forumName: String, tbs: String): LikeForumResultBean.Info {
+        return TiebaApi.getInstance()
+            .likeForumFlow(forumId = forumId.toString(), forumName, tbs = tbs)
+            .firstOrThrow()
+            .info
+    }
+
+    @Throws(NoConnectivityException::class, TiebaException::class)
     suspend fun forumSignIn(forumId: Long, forumName: String, tbs: String): SignResultBean.UserInfo {
         val response = TiebaApi.getInstance()
             .signFlow(forumId = forumId.toString(), forumName, tbs = tbs)
-            .catch { throw ConnectivityInterceptor.wrapException(it) }
             .firstOrThrow()
 
         val info = response.userInfo ?: throw TiebaException(message = response.errorMsg)

@@ -10,7 +10,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
@@ -35,7 +34,6 @@ import com.huanchengfly.tieba.post.utils.requestPinShortcut
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -45,9 +43,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -94,6 +90,7 @@ class ForumViewModel @Inject constructor(
     val uiState: StateFlow<ForumUiState> = _uiState.asStateFlow()
 
     private var singleJob: Job? = null
+    private var forumLikeJob: Job? = null
 
     init {
         requestLoadForm()
@@ -174,43 +171,35 @@ class ForumViewModel @Inject constructor(
 
     fun onLikeForum() {
         val currentForum = _uiState.value.forum
-        if (currentForum == null || currentForum.liked) return
+        if (currentForum == null || currentForum.liked || forumLikeJob?.isActive == true) return
 
-        singleJob = viewModelScope.launch(Dispatchers.IO + handler) {
-            val rec = TiebaApi.getInstance()
-                .likeForumFlow(forumId = currentForum.id.toString(), forumName, tbs = currentForum.tbs!!)
-                .catch {
-                    sendUiEvent(ForumUiEvent.Like.Failure(it.getErrorMessage()))
-                }
-                .firstOrNull() ?: return@launch
-
-            val info = rec.info
-            val newForum = currentForum.copy(
-                liked = true,
-                level = info.levelId.toInt(),
-                levelName = info.levelName,
-                score = info.curScore.toInt(),
-                scoreLevelUp = info.levelUpScore.toInt(),
-                members = info.memberSum.toInt()
-            )
-            _uiState.update { it.copy(forum = newForum) }
-            sendUiEvent(ForumUiEvent.Like.Success(info.memberSum))
+        forumLikeJob = viewModelScope.launch(handler) {
+            runCatching {
+                forumRepo.likeForum(currentForum)
+            }
+            .onFailure { sendUiEvent(ForumUiEvent.Like.Failure(it.getErrorMessage())) }
+            .onSuccess { newForum ->
+                _uiState.update { it.copy(forum = newForum) }
+                sendUiEvent(ForumUiEvent.Like.Success(newForum.members.toString()))
+            }
         }
     }
 
     fun onDislikeForum() {
         val currentForum = _uiState.value.forum
-        if (currentForum == null || !currentForum.liked) return
+        if (currentForum == null || !currentForum.liked || forumLikeJob?.isActive == true) return
 
-        singleJob = viewModelScope.launch(Dispatchers.IO + handler) {
-            TiebaApi.getInstance()
-                .unlikeForumFlow(forumId = currentForum.id.toString(), forumName, currentForum.tbs!!)
-                .catch {
-                    sendUiEvent(ForumUiEvent.Dislike.Failure(it.getErrorMessage()))
-                }
-                .firstOrNull() ?: return@launch
-            _uiState.update { it.copy(forum = it.forum!!.copy(liked = false)) }
-            sendUiEvent(ForumUiEvent.Dislike.Success)
+        forumLikeJob = viewModelScope.launch(handler) {
+            runCatching {
+                forumRepo.dislikeForum(currentForum)
+            }
+            .onFailure {
+                sendUiEvent(ForumUiEvent.Dislike.Failure(it.getErrorMessage()))
+            }
+            .onSuccess {
+                _uiState.update { it.copy(forum = it.forum!!.copy(liked = false)) }
+                sendUiEvent(ForumUiEvent.Dislike.Success)
+            }
         }
     }
 
