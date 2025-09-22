@@ -39,6 +39,7 @@ import com.huanchengfly.tieba.post.repository.EmptyDataException
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.repository.HistoryType
 import com.huanchengfly.tieba.post.repository.PbPageRepository
+import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_LZ
@@ -89,6 +90,7 @@ import kotlin.reflect.typeOf
 class ThreadViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val historyRepo: HistoryRepository,
+    private val storeRepo: ThreadStoreRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -432,16 +434,13 @@ class ThreadViewModel @Inject constructor(
     fun requestAddFavorite(markedPost: PostData) {
         favoriteJob?.let { if (it.isActive) it.cancel() }
         favoriteJob = MainScope().launch {
-            TiebaApi.getInstance()
-                .addStoreFlow(threadId, markedPost.id)
-                .catch { sendMsg(R.string.message_update_collect_mark_failed, it.getErrorMessage()) }
-                .collect { response ->
-                    if (response.errorCode == 0) {  // update local status
-                        _info = info!!.updateCollectStatus(collected = true, markedPost.id)
-                        sendMsg(R.string.message_add_favorite_success, markedPost.floor)
-                    } else {
-                        sendMsg("${response.errorMsg}, Code ${response.errorCode}")
-                    }
+            storeRepo.add(threadId, postId = markedPost.id)
+                .onFailure { e ->
+                    sendMsg(R.string.message_update_collect_mark_failed, e.getErrorMessage())
+                }
+                .onSuccess {
+                    _info = info!!.updateCollectStatus(collected = true, markedPost.id)
+                    sendMsg(R.string.message_add_favorite_success, markedPost.floor)
                 }
         }
     }
@@ -452,19 +451,14 @@ class ThreadViewModel @Inject constructor(
         if (forumId == null) {
             sendMsg(R.string.delete_store_failure, "Null ForumId"); return
         }
-        favoriteJob?.let { if (it.isActive) it.cancel() }
+
+        if (favoriteJob?.isActive == true) return
         favoriteJob = viewModelScope.launch(handler) {
-            TiebaApi.getInstance().removeStoreFlow(threadId, forumId, tbs = state.anti?.get { tbs })
-                .catch {
-                    sendMsg(R.string.delete_store_failure, it.getErrorMessage())
-                }
-                .collect { response ->
-                    if (response.errorCode == 0) { // clear local status
-                        _info = info!!.updateCollectStatus(collected = false, markPostId = 0)
-                        sendMsg(R.string.delete_store_success)
-                    } else {
-                        sendMsg(R.string.delete_store_failure, response.errorMsg)
-                    }
+            storeRepo.remove(threadId, forumId, tbs = state.anti?.get { tbs })
+                .onFailure { e -> sendMsg(R.string.delete_store_failure, e.getErrorMessage()) }
+                .onSuccess {
+                    _info = info!!.updateCollectStatus(collected = false, markPostId = 0)
+                    sendMsg(R.string.delete_store_success)
                 }
         }
     }

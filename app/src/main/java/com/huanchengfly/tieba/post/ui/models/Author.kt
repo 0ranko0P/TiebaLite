@@ -1,9 +1,9 @@
-package com.huanchengfly.tieba.post.ui.models.forum
+package com.huanchengfly.tieba.post.ui.models
 
 import androidx.compose.runtime.Immutable
 
 @Immutable
-class ForumManager(
+class Author(
     val id: Long,
     val name: String,
     val avatarUrl: String

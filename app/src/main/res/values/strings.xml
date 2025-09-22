@@ -198,7 +198,7 @@
     <string name="toast_sign_failed">签到失败 %s</string>
     <string name="toast_like_failed">关注失败 %s</string>
     <string name="hint_reply">回复 %1$s</string>
-    <string name="tip_thread_store_update">更新到 %1$s 楼</string>
+    <string name="tip_thread_store_update">更新到 %1$d 楼</string>
     <string name="title_switch_list_single">切换至单列</string>
     <string name="text_load_failed">加载失败</string>
     <string name="title_search_forum">搜吧</string>

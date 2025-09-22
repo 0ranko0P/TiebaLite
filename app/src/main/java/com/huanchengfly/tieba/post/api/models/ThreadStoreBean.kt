@@ -14,7 +14,7 @@ data class ThreadStoreBean(
     @Immutable
     data class ThreadStoreInfo(
         @SerializedName("thread_id")
-        val threadId: String,
+        val threadId: Long,
         val title: String,
         @SerializedName("forum_name")
         val forumName: String,
@@ -53,7 +53,7 @@ data class ThreadStoreBean(
 
     data class AuthorInfo(
         @SerializedName("lz_uid")
-        val lzUid: String? = null,
+        val lzUid: Long? = null,
         val name: String? = null,
         @SerializedName("name_show")
         val nameShow: String? = null,

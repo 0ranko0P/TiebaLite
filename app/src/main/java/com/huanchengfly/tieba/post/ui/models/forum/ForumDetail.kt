@@ -1,6 +1,9 @@
 package com.huanchengfly.tieba.post.ui.models.forum
 
 import androidx.compose.runtime.Immutable
+import com.huanchengfly.tieba.post.ui.models.Author
+
+typealias ForumManager = Author
 
 @Immutable
 class ForumDetail(

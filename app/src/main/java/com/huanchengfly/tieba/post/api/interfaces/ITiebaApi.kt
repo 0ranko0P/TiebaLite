@@ -601,8 +601,8 @@ interface ITiebaApi {
      */
     fun removeStoreFlow(
         threadId: Long,
-        forumId: Long,
-        tbs: String?
+        forumId: Long?,
+        tbs: String
     ): Flow<CommonResponse>
 
     /**
