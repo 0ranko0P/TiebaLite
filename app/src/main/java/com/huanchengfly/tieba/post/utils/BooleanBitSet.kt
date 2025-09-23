@@ -18,7 +18,7 @@ value class BooleanBitSet(val bits: Int = 0) {
      * @param  index the bit index
      * @return the value of the bit with the specified index
      */
-    fun get(index: Int): Boolean {
+    operator fun get(index: Int): Boolean {
         if (index !in 0..Int.SIZE_BITS) { "Index $index out of bounds" }
         return bits and (1 shl index) != 0
     }

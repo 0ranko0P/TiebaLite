@@ -7,7 +7,6 @@ import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
-import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.components.ClipBoardLink
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
@@ -43,11 +42,12 @@ object QuickPreviewUtil {
         return null
     }
 
-    private suspend fun loadThreadPreview(context: Context, link: ClipBoardLink.Thread): PreviewInfo {
-        val response = PbPageRepository
-            .pbPage(link.threadId)
-            .firstOrThrow()
-        val data = response.data_ ?: throw TiebaException(response.error?.error_msg)
+    private suspend fun loadThreadPreview(
+        context: Context,
+        link: ClipBoardLink.Thread,
+        threadRepo: PbPageRepository
+    ): PreviewInfo {
+        val data = threadRepo.loadPreview(threadId = link.threadId)
         val forumName = data.forum?.name ?: "?"
         val replies = data.thread?.replyNum ?: 0
 
@@ -77,11 +77,12 @@ object QuickPreviewUtil {
     suspend fun loadPreviewInfo(
         context: Context,
         clipBoardLink: ClipBoardLink,
-        forumRepo: ForumRepository
+        forumRepo: ForumRepository,
+        threadRepo: PbPageRepository
     ): PreviewInfo {
         return when (clipBoardLink) {
             is ClipBoardLink.Forum -> loadForumPreview(context, clipBoardLink, forumRepo)
-            is ClipBoardLink.Thread -> loadThreadPreview(context, clipBoardLink)
+            is ClipBoardLink.Thread -> loadThreadPreview(context, clipBoardLink, threadRepo)
         }
     }
 

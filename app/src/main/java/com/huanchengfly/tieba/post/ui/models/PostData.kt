@@ -2,7 +2,7 @@ package com.huanchengfly.tieba.post.ui.models
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.util.fastMap
+import androidx.compose.ui.util.fastMapNotNull
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.Post
 import com.huanchengfly.tieba.post.api.models.protos.User
@@ -13,7 +13,6 @@ import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 
 /**
  * Represents [Post] in UI
@@ -101,13 +100,14 @@ import kotlinx.collections.immutable.toImmutableList
     companion object {
         fun from(
             post: Post,
-            lzId: Long = post.origin_thread_info?.author?.id ?: -1,
-            fromSubPost: Boolean = false
+            lzId: Long,
+            hideBlocked: Boolean = false,
         ): PostData {
             val plainText = post.content.plainText
             val like = if (post.agree == null) LikeZero else Like(post.agree)
             val authorId = post.author?.id ?: post.author_id
             val author = post.author?.let { UserData(post.author, authorId == lzId) }
+            val subPostsList = post.getSubPostUiModels(lzId, hideBlocked)
 
             return PostData(
                 id = post.id,
@@ -121,18 +121,23 @@ import kotlinx.collections.immutable.toImmutableList
                 blocked = shouldBlock(post.author_id, plainText),
                 plainText = plainText,
                 contentRenders = post.contentRenders,
-                subPosts = if (fromSubPost) null else post.getSubPosts(),
+                subPosts = subPostsList,
                 subPostNumber = post.sub_post_number
             )
         }
 
         private const val DESC_SEPARATOR = " · "
 
-        private fun Post.getSubPosts(): List<SubPostItemData>? {
-            val lzId = origin_thread_info?.author?.id?: 0L
+        /**
+         * @return list of [SubPostItemData] and size of blocked items
+         * */
+        private fun Post.getSubPostUiModels(lzId: Long, hideBlocked: Boolean): List<SubPostItemData>? {
             return sub_post_list?.sub_post_list
-                ?.fastMap { SubPostItemData(subPost = it, lzId = lzId, fromSubPost = false) }
-                ?.toImmutableList()
+                ?.fastMapNotNull {
+                    val item = SubPostItemData(subPost = it, lzId = lzId, fromSubPost = false)
+                    // remove if blocked and hide
+                    if (item.blocked && hideBlocked) null else item
+                }
                 ?.takeUnless { it.isEmpty() }
         }
     }

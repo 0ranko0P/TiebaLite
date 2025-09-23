@@ -100,6 +100,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
             favoriteSeeLz = it[booleanPreferencesKey(KEY_FAVORITE_SEE_LZ)] ?: true,
             forumSortType = it[intPreferencesKey(KEY_FORUM_SORT_DEFAULT)] ?: ForumSortType.BY_REPLY,
             forumFAB = it[intPreferencesKey(KEY_FORUM_FAB_FUNCTION)] ?: ForumFAB.BACK_TO_TOP,
+            hideReply = it[booleanPreferencesKey(KEY_REPLY_HIDE)] == true,
             showBothName = it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true,
             showHistoryInHome = it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] ?: true,
         )
@@ -110,6 +111,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
         it[booleanPreferencesKey(KEY_FAVORITE_SEE_LZ)] = habit.favoriteSeeLz
         it[intPreferencesKey(KEY_FORUM_SORT_DEFAULT)] = habit.forumSortType
         it[intPreferencesKey(KEY_FORUM_FAB_FUNCTION)] = habit.forumFAB
+        it[booleanPreferencesKey(KEY_REPLY_HIDE)] = habit.hideReply
         it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] = habit.showBothName
         it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] = habit.showHistoryInHome
     }
@@ -118,6 +120,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
     private const val KEY_FAVORITE_DESC = "ui_fav_desc_sort"
     private const val KEY_FORUM_FAB_FUNCTION = "forum_fab"
     private const val KEY_FORUM_SORT_DEFAULT = "forum_sort_type"
+    private const val KEY_REPLY_HIDE = "ui_reply_hide"
     private const val KEY_SHOW_NICKNAME = "ui_show_both_name"
     private const val KEY_HOME_PAGE_SHOW_HISTORY = "ui_history_in_home"
 }

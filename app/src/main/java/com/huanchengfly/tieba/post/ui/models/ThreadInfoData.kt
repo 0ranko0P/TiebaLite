@@ -5,6 +5,9 @@ import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 
+// ForumID, name, avatar
+typealias SimpleForum = Triple<Long, String, String>
+
 /**
  * Represents [ThreadInfo] in UI
  *
@@ -13,6 +16,7 @@ import com.huanchengfly.tieba.post.api.models.protos.hasAgree
  * */
 @Immutable
 data class ThreadInfoData(
+    val id: Long,
     val title: String,
     val collectMarkPid: Long,
     val collected: Boolean,
@@ -21,16 +25,19 @@ data class ThreadInfoData(
     val isShareThread: Boolean,
     val originThreadInfo: OriginThreadInfo?,
     val replyNum: Int,
+    val simpleForum: SimpleForum,
 ) {
     constructor(info: ThreadInfo): this(
+        id = info.threadId,
         title = info.title,
         collectMarkPid = info.collectMarkPid.toLongOrNull()?: 0L,
         collected = info.collectStatus != 0,
         firstPostId = info.firstPostId,
         like = Like(info.hasAgree == 1, info.agree?.diffAgreeNum?: info.agreeNum.toLong()),
         isShareThread = info.is_share_thread == 1,
-        originThreadInfo = info.origin_thread_info,
-        replyNum = info.replyNum
+        originThreadInfo = info.origin_thread_info?.takeIf { info.is_share_thread == 1 },
+        replyNum = info.replyNum,
+        simpleForum = info.forumInfo!!.let { SimpleForum(it.id, it.name, it.avatar) }
     )
 
     fun updateCollectStatus(collected: Boolean = true, markPostId: Long = 0): ThreadInfoData {

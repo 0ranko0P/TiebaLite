@@ -22,11 +22,13 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
@@ -35,12 +37,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -51,6 +57,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SubPostsViewModel @Inject constructor(
     @ApplicationContext val context: Context,
+    settingsRepo: SettingsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     val params = savedStateHandle.toRoute<Destination.SubPosts>()
@@ -59,6 +66,8 @@ class SubPostsViewModel @Inject constructor(
     val forumId = params.forumId
     val postId = params.postId
     val subPostId = params.subPostId
+
+    private val accountRepo = AccountUtil.getInstance()
 
     private val _state = MutableStateFlow(SubPostsUiState())
     val state: StateFlow<SubPostsUiState> = _state.asStateFlow()
@@ -74,6 +83,14 @@ class SubPostsViewModel @Inject constructor(
     private val _uiEvent: MutableSharedFlow<UiEvent?> = MutableSharedFlow()
     val uiEvent: Flow<UiEvent?>
         get() = _uiEvent
+
+    val canReply: StateFlow<Boolean> = combine(
+        flow = accountRepo.currentAccount,
+        flow2 = settingsRepo.habitSettings.flow,
+        transform = { account, habit -> account != null && !habit.hideReply }
+    )
+    .distinctUntilChanged()
+    .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = false)
 
     init {
         requestLoad()
@@ -106,7 +123,7 @@ class SubPostsViewModel @Inject constructor(
                     totalCount = page.total_count,
                     anti = anti.wrapImmutable(),
                     forum = forum.wrapImmutable(),
-                    post = PostData.from(post = post, lzId = lzId, fromSubPost = true),
+                    post = PostData.from(post = post.copy(sub_post_list = null), lzId = lzId),
                     subPosts = subPosts,
                 )
             }
@@ -173,7 +190,7 @@ class SubPostsViewModel @Inject constructor(
 
     fun onPostLikeClicked(post: PostData) {
         if (post.like.loading) {
-            sendMsg(R.string.toast_agree_loading); return
+            sendMsg(R.string.toast_connecting); return
         }
 
         viewModelScope.launch(handler) {
@@ -199,7 +216,7 @@ class SubPostsViewModel @Inject constructor(
     fun onSubPostLikeClicked(subPost: SubPostItemData) {
         val pId = subPost.id
         if (subPost.like.loading) {
-            sendMsg(R.string.toast_agree_loading); return
+            sendMsg(R.string.toast_connecting); return
         }
 
         viewModelScope.launch(handler) {

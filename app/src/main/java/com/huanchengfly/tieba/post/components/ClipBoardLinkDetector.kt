@@ -12,6 +12,7 @@ import com.huanchengfly.tieba.post.api.urlDecode
 import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.checkClipBoard
 import com.huanchengfly.tieba.post.repository.ForumRepository
+import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.Icon
@@ -106,7 +107,7 @@ object ClipBoardLinkDetector {
         }
     }
 
-    suspend fun checkClipBoard(context: Context, forumRepo: ForumRepository) {
+    suspend fun checkClipBoard(context: Context, forumRepo: ForumRepository, threadRepo: PbPageRepository) {
         val clipBoardText = getClipBoardText()
         if (clipBoardText == null || lastClipBoardHash == clipBoardText.hashCode()) return
 
@@ -134,7 +135,7 @@ object ClipBoardLinkDetector {
                 )
             }
             runCatching {
-                QuickPreviewUtil.loadPreviewInfo(context, clipBoardLink, forumRepo)
+                QuickPreviewUtil.loadPreviewInfo(context, clipBoardLink, forumRepo, threadRepo)
             }
             .onSuccess { preview ->
                 yield()

@@ -20,48 +20,39 @@ import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.booleanToString
-import com.huanchengfly.tieba.post.api.models.protos.Post
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.firstOrThrow
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
-import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.EmptyDataException
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.repository.HistoryType
+import com.huanchengfly.tieba.post.repository.PageData
 import com.huanchengfly.tieba.post.repository.PbPageRepository
+import com.huanchengfly.tieba.post.repository.PbPageUiResponse
 import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_LZ
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
-import com.huanchengfly.tieba.post.ui.models.ThreadUiState
-import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
 import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_HIDE
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -69,20 +60,20 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 import javax.inject.Inject
-import kotlin.math.max
 import kotlin.reflect.typeOf
 
 @Stable
@@ -91,53 +82,43 @@ class ThreadViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val historyRepo: HistoryRepository,
     private val storeRepo: ThreadStoreRepository,
+    private val threadRepo: PbPageRepository,
+    settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    val params = savedStateHandle.toRoute<Destination.Thread>(
+    private val params = savedStateHandle.toRoute<Destination.Thread>(
         typeMap = mapOf(typeOf<ThreadFrom?>() to navTypeOf<ThreadFrom?>(isNullableAllowed = true))
     )
 
-    val threadId: Long = params.threadId
-    val postId: Long = params.postId
-
+    private val threadId: Long = params.threadId
+    private val postId: Long = params.postId
     private val historyTimeStamp = System.currentTimeMillis()
-
-    private var _seeLz: Boolean by mutableStateOf(params.seeLz)
-    /**
-     * 只看楼主模式
-     * */
-    val seeLz: Boolean get() = _seeLz
 
     private var from: String = params.from?.tag ?: ""
 
     private var history: History? = null
 
-    private var _threadUiState: MutableStateFlow<ThreadUiState> = MutableStateFlow(
-        value = ThreadUiState(sortType = params.sortType)
+    private var _threadUiState = MutableStateFlow(
+        ThreadUiState(seeLz = params.seeLz, sortType = params.sortType)
     )
     val threadUiState: StateFlow<ThreadUiState> = _threadUiState.asStateFlow()
 
-    private var _info: ThreadInfoData? by mutableStateOf(null)
-    val info: ThreadInfoData? get() = _info
+    val info: ThreadInfoData?
+        get() = _threadUiState.value.thread
 
     /**
-     * Post that have been marked for deletion, or delete thread if post id
-     * is [firstPostId]
+     * Post or Thread(FirstPost) marked for deletion.
      *
      * @see onDeletePost
      * @see onDeleteThread
-     * @see onDeleteConfirmed
      * */
-    private var _deletePost: PostData? by mutableStateOf(null)
-    val deletePost: PostData? get() = _deletePost
+    private val _deletePost: MutableStateFlow<PostData?> = MutableStateFlow(null)
+    val deletePost: StateFlow<PostData?> = _deletePost.asStateFlow()
 
     var isImmersiveMode by mutableStateOf(false)
         private set
 
-    /**
-     * @see KEY_REPLY_HIDE
-     * */
     var hideReply = false
 
     private val isRefreshing: Boolean
@@ -147,12 +128,12 @@ class ThreadViewModel @Inject constructor(
         get() = _threadUiState.value.isLoadingMore
 
     /**
-     * Job of Add/Update/Remove favorite, cancelable.
+     * Job of Add/Update/Remove thread collections, cancelable.
      *
-     * @see requestAddFavorite
-     * @see requestRemoveFavorite
+     * @see updateCollections
+     * @see removeFromCollections
      * */
-    private var favoriteJob: Job? = null
+    private var collectionsJob: Job? = null
 
     private val handler = CoroutineExceptionHandler { _, e ->
         Log.e(TAG, "onError: ", e)
@@ -161,132 +142,95 @@ class ThreadViewModel @Inject constructor(
         }
     }
 
-    val error: Throwable?
-        get() = _threadUiState.value.error
+    private val firstPostId: Long
+        get() = threadUiState.value.firstPost?.id ?: 0L
 
-    var curForumId: Long? = params.forumId
+    private val forumId: Long?
+        get() = params.forumId ?: _threadUiState.value.forum?.first
 
-    val firstPostId: Long
-        get() = _info?.firstPostId.takeIf { it != 0L } ?: threadUiState.value.firstPost?.id ?: 0L
+    private val forumName: String?
+        get() = threadUiState.value.forum?.second
 
     /**
      * One-off [UiEvent], but no guarantee to be received.
      * */
-    private val _uiEvent: MutableStateFlow<UiEvent?> = MutableStateFlow(null)
-    val uiEvent: Flow<UiEvent?> = _uiEvent.asSharedFlow()
+    private val _uiEvent: MutableSharedFlow<UiEvent?> = MutableSharedFlow()
+    val uiEvent: Flow<UiEvent?>
+        get() = _uiEvent
 
     init {
         requestLoad(page = 0, postId)
-        hideReply = context.dataStore.getBoolean(KEY_REPLY_HIDE, false)
+        viewModelScope.launch {
+            val habitSettings = settingsRepository.habitSettings.flow
+            hideReply = habitSettings.first().hideReply
+        }
+        sendMsg(R.string.toast_connecting)
     }
 
     fun requestLoad(page: Int = 1, postId: Long) {
-        // Check refreshing
-        if (isRefreshing) return else _threadUiState.set { copy(isRefreshing = true, error = null) }
+        if (isRefreshing) return // Check refreshing
 
+        val oldState = _threadUiState.updateAndGet { it.copy(isRefreshing = true, error = null) }
         viewModelScope.launch(handler) {
-            val sortType = _threadUiState.value.sortType
+            val sortType = oldState.sortType
             val fromType = from.takeIf { it == FROM_STORE }.orEmpty()
-
-            val response = PbPageRepository
-                .pbPage(threadId, page, postId, curForumId, seeLz, sortType, from = fromType)
-                .firstOrThrow()
-
-            updateStateFrom(response)
-            curForumId = _threadUiState.value.forum?.item?.id ?: curForumId
-            sendUiEvent(ThreadUiEvent.LoadSuccess(response.data_!!.page!!.current_page))
+            val response = threadRepo
+                .pbPage(threadId, page, postId, forumId, oldState.seeLz, sortType, from = fromType)
+            _threadUiState.update { it.updateStateFrom(response) }
+            sendUiEvent(ThreadUiEvent.LoadSuccess(page = response.page.current))
         }
     }
 
-    fun requestLoadFirstPage(seeLz: Boolean = _seeLz, sortType: Int = threadUiState.value.sortType) {
-        // Check refreshing
-        if (isRefreshing) return else _threadUiState.set { copy(isRefreshing = true, error = null) }
+    fun requestLoadFirstPage() {
+        if (isRefreshing) return // Check refreshing
 
-        _seeLz = seeLz
+        val oldState = _threadUiState.updateAndGet { it.copy(isRefreshing = true, error = null) }
         viewModelScope.launch(handler) {
-            val response = PbPageRepository
-                .pbPage(threadId, 0, 0, curForumId, seeLz, sortType)
-                .firstOrThrow()
+            val sortType = oldState.sortType
+            val response = threadRepo.pbPage(threadId, 0, 0, forumId, oldState.seeLz, sortType)
+            val page = if (sortType != ThreadSortType.BY_DESC) {
+                response.page
+            } else {
+                response.page.copy(current = response.page.total, nextPagePostId = response.posts.lastOrNull()?.id ?: 0)
+            }
 
-            val firstPost = threadUiState.first().firstPost
-            updateStateFrom(response)
-            _threadUiState.update { it.copy(firstPost = firstPost, sortType = sortType) }
+            _threadUiState.update {
+                it.updateStateFrom(response).copy(firstPost = it.firstPost, page = page)
+            }
         }
     }
 
     fun requestLoadPrevious() {
-        // Check refreshing
-        if (isRefreshing) return else _threadUiState.set { copy(isRefreshing = true, error = null) }
+        if (isLoadingMore) return else _threadUiState.set { copy(isLoadingMore = true, error = null) }
 
         viewModelScope.launch(handler) {
-            val state = _threadUiState.first()
-            val page = max(state.currentPageMax - 1, 1)
+            val state = _threadUiState.value
+            val sortType = state.sortType
+            val page = state.page.previousPage(sortType)
             val postId = state.data.first().id
-
-            val response = PbPageRepository
-                .pbPage(threadId, page, postId, curForumId, seeLz, state.sortType, back = true)
-                .firstOrThrow()
-
-            val pageData = response.data_?.page ?: throw TiebaException("Null page")
-            val author = response.data_.thread?.author ?: throw TiebaException("Null author")
-            if (response.data_.forum == null) throw TiebaException("Null forum")
-            if (response.data_.anti == null) throw TiebaException("Null anti")
-
-            withContext(Dispatchers.Main) {
-                _info = ThreadInfoData(response.data_.thread)
-            }
-            val newData = concatNewPostList(old = state.data, new = response.data_.post_list, desc = false)
+            val response = threadRepo
+                .pbPage(threadId, page, postId, forumId, state.seeLz, sortType, back = true)
+            val newData = concatNewPostList(old = state.data, new = response.posts, asc = false)
 
             _threadUiState.update {
-                it.copy(
-                    isRefreshing = false,
-                    lz = UserData(author, true),
-                    data = newData,
-                    currentPageMin = pageData.current_page,
-                    totalPage = pageData.new_total_page,
-                    hasPrevious = pageData.has_prev != 0,
-                )
+                it.copy(isLoadingMore = false, thread = response.thread, data = newData, page = response.page)
             }
         }
     }
 
     fun requestLoadMore() {
-        // Check loadingMore
-        if (isRefreshing) return else _threadUiState.set { copy(isLoadingMore = true, error = null) }
+        if (isLoadingMore) return else _threadUiState.set { copy(isLoadingMore = true, error = null) }
 
         viewModelScope.launch(handler) {
-            val state = _threadUiState.first()
+            val state = _threadUiState.value
             val sortType = state.sortType
-            val page = state.run {
-                if (sortType == ThreadSortType.BY_DESC) totalPage - currentPageMax else currentPageMax + 1
-            }
+            val nextPage = state.page.nextPage(sortType)
+            val response = threadRepo
+                .pbPage(threadId, nextPage, state.page.nextPagePostId, forumId, state.seeLz, sortType)
+            val data = concatNewPostList(old = state.data, new = response.posts)
 
-            val response = PbPageRepository
-                .pbPage(threadId, page, state.nextPagePostId, curForumId, seeLz, sortType)
-                .firstOrThrow()
-
-            val pageData = response.data_?.page ?: throw TiebaException("Null page")
-            val author = response.data_.thread?.author ?: throw TiebaException("Null author")
-            val forum = response.data_.forum?: throw TiebaException("Null forum")
-            withContext(Dispatchers.Main) { _info = ThreadInfoData(response.data_.thread) }
-
-            val newData = concatNewPostList(state.data, response.data_.post_list)
-            val nextPagePostId = withContext(Dispatchers.Default) {
-                val postIds = newData.mapTo(HashSet()) { it.id }
-                response.data_.thread.getNextPagePostId(postIds, sortType)
-            }
             _threadUiState.update {
-                it.copy(
-                    isLoadingMore = false,
-                    lz = UserData(author, true),
-                    data = newData,
-                    forum = wrapImmutable(forum),
-                    currentPageMax = pageData.current_page,
-                    totalPage = pageData.new_total_page,
-                    hasMore = pageData.has_more != 0,
-                    nextPagePostId = nextPagePostId,
-                    latestPosts = persistentListOf()
-                )
+                it.updateStateFrom(response).copy(data = data)
             }
         }
     }
@@ -295,62 +239,39 @@ class ThreadViewModel @Inject constructor(
      * 加载当前贴子的最新回复
      */
     fun requestLoadLatestPosts() = viewModelScope.launch(handler) {
-        // Check loadingMore
-        if (isLoadingMore) return@launch else _threadUiState.update { it.copy(isLoadingMore = true, error = null) }
+        if (isLoadingMore) return@launch // Check loading status
 
-        val state = _threadUiState.first()
+        val state = _threadUiState.updateAndGet { it.copy(isLoadingMore = true, error = null) }
         val curLatestPostId = state.data.last().id
-        val sortType = state.sortType
-
-        PbPageRepository.pbPage(
-            threadId = threadId,
-            page = 0,
-            postId = curLatestPostId,
-            forumId = curForumId,
-            seeLz = seeLz,
-            sortType = sortType,
-            lastPostId = curLatestPostId
-        ).catch {
-            if (it is EmptyDataException) {
+        runCatching {
+            threadRepo.pbPage(
+                threadId = threadId,
+                page = 0,
+                postId = curLatestPostId,
+                forumId = forumId,
+                seeLz = state.seeLz,
+                sortType = state.sortType,
+                lastPostId = curLatestPostId
+            )
+        }
+        .onFailure { e ->
+            if (e is EmptyDataException) {
                 sendMsg(R.string.no_more)
                 _threadUiState.update { s -> s.copy(isLoadingMore = false, error = null) }
             } else {
-                throw it
+                throw e
             }
-        }.collect { response ->
-            checkNotNull(response.data_)
-            checkNotNull(response.data_.thread)
-            val author = response.data_.thread.author?: throw TiebaException("Null Author")
-            val page = response.data_.page ?: throw TiebaException("Null page")
-
-            val newThreadUiState = withContext(Dispatchers.Default) {
-                val postList = response.data_.post_list.filterNot { it.isUnwanted }
-                if (postList.isEmpty()) {
-                    return@withContext null
-                }
-
-                val postIds = postList.mapTo(HashSet()) { it.id }
-                val newData = concatNewPostList(state.data, response.data_.post_list)
-
-                ensureActive()
-                _info = ThreadInfoData(response.data_.thread)
-                state.copy(
+        }
+        .onSuccess { response ->
+            val data = concatNewPostList(state.data, response.posts)
+            _threadUiState.update {
+                it.copy(
                     isLoadingMore = false,
-                    lz = UserData(author, true),
-                    data = newData,
-                    currentPageMax = page.current_page,
-                    totalPage = page.new_total_page,
-                    hasMore = page.has_more != 0,
-                    nextPagePostId = response.data_.thread.getNextPagePostId(postIds, sortType),
-                    latestPosts = persistentListOf(),
+                    data = data,
+                    thread = response.thread,
+                    latestPosts = null,
+                    page = response.page
                 )
-            }
-
-            if (newThreadUiState == null) {
-                sendMsg(R.string.no_more)
-                _threadUiState.update { it.copy(isLoadingMore = false) }
-            } else {
-                _threadUiState.update { newThreadUiState }
             }
         }
     }
@@ -359,14 +280,10 @@ class ThreadViewModel @Inject constructor(
      * 当前用户发送新的回复时，加载用户发送的回复
      */
     fun requestLoadMyLatestReply(newPostId: Long) {
-        if (_threadUiState.value.isLoadingLatestReply) {
-            return
-        } else {
-            _threadUiState.update { it.copy(isLoadingLatestReply = true, error = null) }
-        }
+        if (_threadUiState.value.isLoadingLatestReply) return
 
         viewModelScope.launch(handler) {
-            val state = _threadUiState.first()
+            val state = _threadUiState.updateAndGet { it.copy(isLoadingLatestReply = true, error = null) }
             val isDesc = state.sortType == ThreadSortType.BY_DESC
             val curLatestPostFloor = if (isDesc) {
                 state.data.firstOrNull()?.floor ?: 1 // DESC -> first
@@ -374,23 +291,16 @@ class ThreadViewModel @Inject constructor(
                 state.data.lastOrNull()?.floor ?: 1  // ASC  -> last
             }
 
-            val response = PbPageRepository
-                .pbPage(threadId, page = 0, postId = newPostId, forumId = curForumId)
-                .firstOrThrow()
-
-            val page = response.data_?.page?.current_page ?: throw TiebaException("Null page")
-            val anti = response.data_.anti ?: throw TiebaException("Null ant")
+            val response = threadRepo.pbPage(threadId, page = 0, postId = newPostId, forumId = forumId)
             val hasNewPost: Boolean
-
             val newState = withContext(Dispatchers.Default) {
-                val postData = response.data_.post_list.map { PostData.from(it) }
+                val postData = response.posts
                 val oldPostData = state.data
                 val oldPostIds = oldPostData.mapTo(HashSet()) { it.id }
-                hasNewPost = response.data_.post_list.any { !oldPostIds.contains(it.id) }
-                val firstLatestPost = response.data_.post_list.first()
-
+                hasNewPost = postData.any { !oldPostIds.contains(it.id) }
+                val firstLatestPost = postData.first()
                 val isContinuous = firstLatestPost.floor == curLatestPostFloor + 1
-                val continuous = isContinuous || page == state.currentPageMax
+                val continuous = isContinuous || response.page.current == state.page.current
 
                 val replacePostIndexes = oldPostData.mapIndexedNotNull { index, old ->
                     val replaceItemIndex = postData.indexOfFirst { it.id == old.id }
@@ -408,19 +318,19 @@ class ThreadViewModel @Inject constructor(
                 when {
                     hasNewPost && continuous -> state.copy(
                         data = if (isDesc) addPosts.reversed() + newPost else newPost + addPosts,
-                        latestPosts = emptyList()
+                        latestPosts = null
                     )
 
                     hasNewPost -> state.copy(data = newPost, latestPosts = postData)
 
-                    !hasNewPost -> state.copy(data = newPost, latestPosts = emptyList())
+                    !hasNewPost -> state.copy(data = newPost, latestPosts = null)
 
                     else -> state
                 }
             }
 
             _threadUiState.update {
-                it.copy(isLoadingLatestReply = false, error = null, anti = anti.wrapImmutable(), data = newState.data, latestPosts = newState.latestPosts)
+                it.copy(isLoadingLatestReply = false, error = null, tbs = response.tbs, data = newState.data, latestPosts = newState.latestPosts)
             }
             if (hasNewPost) {
                 sendUiEvent(ThreadUiEvent.ScrollToLatestReply)
@@ -429,43 +339,55 @@ class ThreadViewModel @Inject constructor(
     }
 
     /**
-     * Add or update bookmark thread
+     * 收藏/更新这个帖子到 [markedPost] 楼
      * */
-    fun requestAddFavorite(markedPost: PostData) {
-        favoriteJob?.let { if (it.isActive) it.cancel() }
-        favoriteJob = MainScope().launch {
+    fun updateCollections(markedPost: PostData) {
+        collectionsJob?.let { if (it.isActive) it.cancel() }
+        // Launch in different CoroutineScope
+        collectionsJob = MainScope().launch {
             storeRepo.add(threadId, postId = markedPost.id)
                 .onFailure { e ->
                     sendMsg(R.string.message_update_collect_mark_failed, e.getErrorMessage())
                 }
                 .onSuccess {
-                    _info = info!!.updateCollectStatus(collected = true, markedPost.id)
+                    _threadUiState.update {
+                        it.copy(thread = it.thread!!.updateCollectStatus(collected = true, markPostId = markedPost.id))
+                    }
                     sendMsg(R.string.message_add_favorite_success, markedPost.floor)
                 }
         }
     }
 
-    fun requestRemoveFavorite() {
-        val state = _threadUiState.value
-        val forumId = state.forum?.get { id } ?: curForumId
-        if (forumId == null) {
-            sendMsg(R.string.delete_store_failure, "Null ForumId"); return
+    /**
+     * 取消收藏这个帖子
+     * */
+    fun removeFromCollections() {
+        if (collectionsJob?.isActive == true) {
+            sendMsg(R.string.toast_connecting)
+            return
         }
 
-        if (favoriteJob?.isActive == true) return
-        favoriteJob = viewModelScope.launch(handler) {
-            storeRepo.remove(threadId, forumId, tbs = state.anti?.get { tbs })
-                .onFailure { e -> sendMsg(R.string.delete_store_failure, e.getErrorMessage()) }
-                .onSuccess {
-                    _info = info!!.updateCollectStatus(collected = false, markPostId = 0)
-                    sendMsg(R.string.delete_store_success)
+        collectionsJob = viewModelScope.launch(handler) {
+            val state = _threadUiState.first()
+            runCatching {
+                if (state.thread?.collected == false) throw IllegalStateException()
+                storeRepo.remove(threadId, forumId = forumId, tbs = state.tbs)
+            }
+            .onFailure { e ->
+                sendMsg(R.string.delete_store_failure, e.getErrorMessage())
+            }
+            .onSuccess {
+                _threadUiState.update {
+                    it.copy(thread = it.thread!!.updateCollectStatus(collected = false, markPostId = 0))
                 }
+                sendMsg(R.string.delete_store_success)
+            }
         }
     }
 
     fun onPostLikeClicked(post: PostData) {
         if (post.like.loading) {
-            sendMsg(R.string.toast_agree_loading); return
+            sendMsg(R.string.toast_connecting); return
         } else if (threadUiState.value.user == null) {
             sendMsg(R.string.title_not_logged_in); return
         }
@@ -493,59 +415,67 @@ class ThreadViewModel @Inject constructor(
         }
     }
 
-    fun onThreadLikeClicked() {
-        when {
-            firstPostId == 0L -> return
-            threadUiState.value.user == null -> {
-                sendMsg(R.string.title_not_logged_in); return
-            }
-            info!!.like.loading -> {
-                sendMsg(R.string.toast_agree_loading); return
-            }
+    fun onThreadLikeClicked() = viewModelScope.launch(handler) {
+        val stateSnapshot = _threadUiState.first()
+        val oldThread = stateSnapshot.thread ?: throw NullPointerException()
+        val like = oldThread.like
+        if (!like.loading) {
+            _threadUiState.update { it.copy(thread = oldThread.updateLikeStatus(liked = !like.liked, loading = true)) }
+        } else {
+            sendMsg(R.string.toast_connecting)
+            return@launch
         }
 
-        viewModelScope.launch {
-            val liked = info!!.like.liked
-            TiebaApi.getInstance().opAgreeFlow(
-                threadId = threadId.toString(),
-                postId = firstPostId.toString(),
-                opType = if (liked) 1 else 0, // 操作 0 = 点赞, 1 = 取消点赞
-                objType = 3
-            )
-            .onStart {
-                _info = info!!.updateLikeStatus(liked = !liked, loading = true)
-            }
-            .catch {
-                sendMsg(context.getString(R.string.error_tip) + it.getErrorMessage())
-                _info = info!!.updateLikeStatus(liked = liked, loading = false)
-            }
-            .collect {
-                _info = info!!.updateLikeStatus(liked = !liked, loading = false)
+        runCatching {
+            if (stateSnapshot.user == null) throw TiebaNotLoggedInException()
+            threadRepo.requestLikeThread(oldThread)
+        }
+        .onFailure { e ->
+            sendMsg(context.getString(R.string.toast_agree_failed, e.getErrorMessage()))
+            _threadUiState.update { it.copy(thread = oldThread) } // Reset to old thread
+        }
+        .onSuccess { _ ->
+            _threadUiState.update { // Update like loading status
+                it.copy(thread = oldThread.updateLikeStatus(liked = !like.liked, loading = false))
             }
         }
     }
 
     fun onDeleteConfirmed() {
-        val forumId = curForumId
-        val post = _deletePost
-        if (forumId == null || post == null) { // Won't happen
+        val curForumId = forumId
+        val post = _deletePost.value
+        if (curForumId == null || post == null) { // Won't happen
             sendMsg(R.string.message_unknown_error); return
         }
-        if (post == threadUiState.value.firstPost) {
-            requestDeleteThread(forumId)
+        if (post.id == threadUiState.value.firstPost!!.id) {
+            requestDeleteThread()
         } else {
-            requestDeletePost(forumId, post)
+            requestDeletePost(forumId = curForumId, post)
         }
-        _deletePost = null
+        _deletePost.update { null }
     }
 
-    private fun requestDeletePost(forumId: Long, post: PostData) = viewModelScope.launch {
+    /**
+     * Mark my post for deletion
+     *
+     * @see onDeleteConfirmed
+     * */
+    fun onDeletePost(post: PostData) = _deletePost.update { post }
+
+    /**
+     * Mark my thread for deletion
+     *
+     * @see onDeleteConfirmed
+     * */
+    fun onDeleteThread() = _deletePost.update { threadUiState.value.firstPost }
+
+    fun onDeleteCancelled() = _deletePost.update { null }
+
+    private fun requestDeletePost(forumId: Long, post: PostData) = viewModelScope.launch(handler) {
         val state = _threadUiState.first()
-        val forumName = state.forum?.item?.name.orEmpty()
-        val tbs = state.anti?.item?.tbs
         val isSelfPost = post.author.id == state.user?.id
         TiebaApi.getInstance()
-            .delPostFlow(forumId, forumName, threadId, post.id, tbs, false, isSelfPost)
+            .delPostFlow(forumId, forumName!!, threadId, post.id, state.tbs, false, isSelfPost)
             .catch {
                 sendMsg(R.string.toast_delete_failure, it.getErrorMessage())
             }
@@ -559,29 +489,37 @@ class ThreadViewModel @Inject constructor(
             }
     }
 
-    private fun requestDeleteThread(forumId: Long) = viewModelScope.launch {
-        val state = _threadUiState.first()
-        val forumName = state.forum?.item?.name.orEmpty()
-        val tbs = state.anti?.item?.tbs
-        val isSelfThread = state.lz?.id == state.user?.id
-        TiebaApi.getInstance()
-            .delThreadFlow(forumId, forumName, threadId, tbs, isSelfThread, false)
-            .catch {
-                sendMsg(R.string.toast_delete_failure, it.getErrorMessage())
-            }
-            .collect {
-                sendUiEvent(CommonUiEvent.NavigateUp)
-            }
+    private fun requestDeleteThread() = viewModelScope.launch(handler) {
+        val state = _threadUiState.value
+        runCatching {
+            val isSelfThread = state.lz!!.id == state.user?.id
+            threadRepo.deleteThread(state.thread!!, state.tbs, isSelfThread)
+        }
+        .onFailure {
+            sendMsg(R.string.toast_delete_failure, it.getErrorMessage())
+        }
+        .onSuccess {
+            sendUiEvent(CommonUiEvent.NavigateUp)
+        }
+    }
+
+    fun onSeeLzChanged() {
+        _threadUiState.update { it.copy(seeLz = !it.seeLz) }
+        requestLoadFirstPage()
+    }
+
+    fun onSortChanged(sortType: Int) {
+        _threadUiState.update { it.copy(sortType = sortType) }
+        requestLoadFirstPage()
     }
 
     fun onLastPostVisibilityChanged(pid: Long, floor: Int?) = viewModelScope.launch {
-        val thread = threadUiState.value
-        val author = thread.lz ?: return@launch
-        val title = info?.title ?: return@launch
+        val state = threadUiState.value
+        val author = state.lz ?: return@launch
+        val title = state.thread?.title ?: return@launch
 
         history = withContext(Dispatchers.IO) {
-            val forumName = thread.forum?.item?.name
-            val bean = ThreadHistoryInfoBean(seeLz, pid, forumName, floor = floor?.toString())
+            val bean = ThreadHistoryInfoBean(state.seeLz, pid, forumName, floor = floor?.toString())
             History(
                 title = title,
                 data = threadId.toString(),
@@ -597,6 +535,7 @@ class ThreadViewModel @Inject constructor(
     fun onShareThread() = TiebaUtil.shareThread(context, info?.title?: "", threadId)
 
     fun onCopyThreadLink() {
+        val seeLz = _threadUiState.value.seeLz
         val link = "https://tieba.baidu.com/p/$threadId?see_lz=${seeLz.booleanToString()}"
         TiebaUtil.copyText(context = context, text = link)
         ClipBoardLinkDetector.onCopyTiebaLink(link)
@@ -611,20 +550,16 @@ class ThreadViewModel @Inject constructor(
     }
 
     fun onReplyThread() = sendUiEvent(
-        ThreadUiEvent.ToReplyDestination(
-            Reply(
-                forumId = curForumId ?: 0,
-                forumName = threadUiState.value.forum?.get { name } ?: "",
-                threadId = threadId,
-            )
+        event = ThreadUiEvent.ToReplyDestination(
+            Reply(forumId = forumId ?: 0, forumName = forumName ?: "", threadId = threadId)
         )
     )
 
     fun onReplyPost(post: PostData) = sendUiEvent(
-        ThreadUiEvent.ToReplyDestination(
+        event = ThreadUiEvent.ToReplyDestination(
             Reply(
-                forumId = curForumId ?: 0,
-                forumName = threadUiState.value.forum?.get { name } ?: "",
+                forumId = forumId ?: 0,
+                forumName = forumName.orEmpty(),
                 threadId = threadId,
                 postId = post.id,
                 replyUserId = post.author.id,
@@ -645,8 +580,8 @@ class ThreadViewModel @Inject constructor(
     fun onReplySubPost(post: PostData, subPost: SubPostItemData) = sendUiEvent(
         ThreadUiEvent.ToReplyDestination(
             Reply(
-                forumId = curForumId ?: 0,
-                forumName = threadUiState.value.forum?.get { name } ?: "",
+                forumId = forumId ?: 0,
+                forumName = forumName.orEmpty(),
                 threadId = threadId,
                 postId = post.id,
                 subPostId = subPost.id,
@@ -659,19 +594,10 @@ class ThreadViewModel @Inject constructor(
     )
 
     fun onOpenSubPost(post: PostData, subPostId: Long) {
-        val forumId = curForumId?: return
+        val forumId = forumId ?: return
         sendUiEvent(
             ThreadUiEvent.ToSubPostsDestination(SubPosts(threadId, forumId, post.id, subPostId))
         )
-    }
-
-    fun onDeletePost(post: PostData) {
-        require(post.author.id == _threadUiState.value.user?.id)
-        _deletePost = post
-    }
-
-    fun onDeleteThread() {
-        _deletePost = threadUiState.value.firstPost
     }
 
     override fun onCleared() {
@@ -693,54 +619,45 @@ class ThreadViewModel @Inject constructor(
         }
     }
 
-    private fun sendUiEvent(event: UiEvent) = _uiEvent.update { event }
+    private fun sendUiEvent(event: UiEvent) {
+        viewModelScope.launch { _uiEvent.emit(event) }
+    }
 
-    fun onUiEventReceived() = _uiEvent.update { null }
-
-    @Throws(TiebaException::class)
-    private fun updateStateFrom(response: PbPageResponse) {
-        val pageData = response.data_?.page ?: throw TiebaException("Null page")
-        val author = response.data_.thread?.author ?: throw TiebaException("Null author")
-        val forum = response.data_.forum?: throw TiebaException("Null forum")
-        val anti = response.data_.anti?: throw TiebaException("Null anti")
-        val thread = response.data_.thread
-        val postList = response.data_.post_list
-        val postIds = postList.mapTo(HashSet()) { it.id }
-        val firstPost = response.data_.first_floor_post?.let { PostData.from(it, lzId = author.id) }
-        val nonFirstPosts = postList.filterNot { it.floor <= 1 } // 0楼: 伪装的广告, 1楼: 楼主
-
-        val user = response.data_.user?.run {
-            if (is_login == 1) UserData(user = this, isLz = id == author.id) else null
-        }
-        if (user == null) {
-            hideReply = true
+    private suspend fun ThreadUiState.updateStateFrom(response: PbPageUiResponse): ThreadUiState {
+        withContext(Dispatchers.Main) {
+            if (response.user == null) {
+                hideReply = true
+            }
         }
 
-        _info = ThreadInfoData(thread)
-        _threadUiState.update {
-            it.copy(
-                isRefreshing = false,
-                error = null,
-                lz = UserData(author, true),
-                user = user,
-                data = nonFirstPosts.map { post -> PostData.from(post) }.toImmutableList(),
-                firstPost = firstPost ?: it.firstPost,
-                forum = wrapImmutable(forum),
-                anti = wrapImmutable(anti),
-                currentPageMin = pageData.current_page,
-                currentPageMax = pageData.current_page,
-                totalPage = pageData.new_total_page,
-                hasMore = pageData.has_more != 0,
-                nextPagePostId = thread.getNextPagePostId(postIds, sortType = it.sortType),
-                hasPrevious = pageData.has_prev != 0,
-                latestPosts = persistentListOf()
-            )
-        }
+        return this.copy(
+            isRefreshing = false,
+            isLoadingMore = false,
+            isLoadingLatestReply = false,
+            error = null,
+            user = response.user,
+            data = response.posts,
+            firstPost = response.firstPost ?: this.firstPost,
+            tbs = response.tbs,
+            thread = response.thread,
+            latestPosts = null,
+            page = response.page
+        )
     }
 
     companion object {
 
         private const val TAG = "ThreadViewModel"
+
+        private fun PageData.nextPage(sortType: Int): Int {
+            val page = if (sortType == ThreadSortType.BY_DESC) current - 1 else current + 1
+            return page.coerceIn(1, total)
+        }
+
+        private fun PageData.previousPage(sortType: Int): Int {
+            val page = if (sortType == ThreadSortType.BY_DESC) current + 1 else current - 1
+            return page.coerceIn(1, total)
+        }
 
         @Volatile
         private var LzInlineContentMap: WeakReference<Map<String, InlineTextContent>?> = WeakReference(null)
@@ -761,33 +678,16 @@ class ThreadViewModel @Inject constructor(
             }
         )
 
-        // 0楼: 伪装的广告, 1楼: 楼主
-        private val Post.isUnwanted
-            get() = floor <= 1
-
         private suspend fun concatNewPostList(
             old: List<PostData>,
-            new: List<Post>,
-            desc: Boolean = true
+            new: List<PostData>,
+            asc: Boolean = true
         ): List<PostData> = withContext(Dispatchers.Default) {
             val postIds = old.mapTo(HashSet()) { it.id }
-            new.filterNot { it.isUnwanted || postIds.contains(it.id) } // filter out old post
-                .map { PostData.from(it) } // map new posts
+            new.filterNot { postIds.contains(it.id) } // filter out old post
                 .let { new ->
-                    if (desc) old + new else new + old
+                    if (asc) old + new else new + old
                 }
-        }
-
-        private fun ThreadInfo.getNextPagePostId(postIds: Set<Long>, sortType: Int): Long {
-            val fetchedPostIds = pids
-                .split(",")
-                .filterNot { it.isBlank() }
-                .map { it.toLong() }
-            if (sortType == ThreadSortType.BY_DESC) {
-                return fetchedPostIds.firstOrNull() ?: 0
-            }
-            val nextPostIds = fetchedPostIds.filterNot { pid -> postIds.contains(pid) }
-            return if (nextPostIds.isNotEmpty()) nextPostIds.last() else 0
         }
     }
 }

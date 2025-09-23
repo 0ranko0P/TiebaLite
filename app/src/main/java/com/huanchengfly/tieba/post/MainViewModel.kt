@@ -7,6 +7,7 @@ import com.huanchengfly.tieba.post.activities.TranslucentThemeViewModel.Companio
 import com.huanchengfly.tieba.post.arch.shareInBackground
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.repository.ForumRepository
+import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
@@ -41,7 +42,8 @@ data class MainUiState(
 class MainViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val settingsRepository: SettingsRepository,
-    private val forumRepo: ForumRepository
+    private val forumRepo: ForumRepository,
+    private val threadRepo: PbPageRepository
 ) : ViewModel() {
 
     private val _uiState: MutableStateFlow<MainUiState> = MutableStateFlow(MainUiState())
@@ -99,7 +101,7 @@ class MainViewModel @Inject constructor(
 
     fun onCheckClipBoard() {
         viewModelScope.launch {
-            ClipBoardLinkDetector.checkClipBoard(context, forumRepo)
+            ClipBoardLinkDetector.checkClipBoard(context, forumRepo, threadRepo)
         }
     }
 

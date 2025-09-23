@@ -171,7 +171,7 @@ class ForumThreadListViewModel @AssistedInject constructor(
 
     fun onAgree(thread: ThreadInfoItem) {
         if (thread.like.loading) {
-            context.toastShort(R.string.toast_agree_loading)
+            context.toastShort(R.string.toast_connecting)
             return
         }
 

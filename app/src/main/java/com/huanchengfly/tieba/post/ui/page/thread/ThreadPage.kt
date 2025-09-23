@@ -71,17 +71,14 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -90,7 +87,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.LikeZero
 import com.huanchengfly.tieba.post.ui.models.PostData
-import com.huanchengfly.tieba.post.ui.models.ThreadUiState
+import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -110,6 +107,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
+import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
@@ -166,6 +164,9 @@ private fun LazyListState.lastVisiblePost(uiState: ThreadUiState): PostData? {
         ?: uiState.firstPost
 }
 
+// Workaround to make StickyHeader respect content padding
+private const val UseStickyHeaderWorkaround = true
+
 @OptIn(ExperimentalHazeApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ThreadPage(
@@ -181,8 +182,6 @@ fun ThreadPage(
     val snackbarHostState = rememberSnackbarHostState()
 
     val state by viewModel.threadUiState.collectAsStateWithLifecycle()
-    val isRefreshing by remember { derivedStateOf { state.isRefreshing } }
-    val isError by remember {derivedStateOf { state.error != null } }
     val isEmpty by remember {
         derivedStateOf { state.data.isEmpty() && state.firstPost == null }
     }
@@ -235,8 +234,6 @@ fun ThreadPage(
 
                 is ThreadUiEvent.ToSubPostsDestination -> navigator.navigate(unhandledEvent.direction)
             }
-
-            viewModel.onUiEventReceived()
         }
     }
 
@@ -244,37 +241,22 @@ fun ThreadPage(
         viewModel.requestLoadMyLatestReply(event.newPostId)
     }
 
-    val updateCollectMarkDialogState = rememberDialogState()
-
-    ConfirmDialog(
-        dialogState = updateCollectMarkDialogState,
-        onConfirm = {
-            lazyListState.lastVisiblePost(state)?.let { post ->
-                if (post.id != 0L) viewModel.requestAddFavorite(post)
-            }
-            navigator.navigateUp()
-        },
-        onCancel = { navigator.navigateUp() }
-    ) {
-        val lastVisibleFloor = lazyListState.lastVisiblePost(state)?.floor ?: 0
-        Text(stringResource(R.string.message_update_collect_mark, lastVisibleFloor))
+    var newMarkedCollectionPost: PostData? by remember { mutableStateOf(null) }
+    newMarkedCollectionPost?.let {
+        CollectionsUpdateDialog(
+            markedPost = it,
+            onUpdate = viewModel::updateCollections,
+            onBack = navigator::navigateUp
+        )
     }
 
-    val confirmDeleteState = rememberDialogState()
-    ConfirmDialog(dialogState = confirmDeleteState, onConfirm = viewModel::onDeleteConfirmed) {
-        val deletePost = viewModel.deletePost ?: return@ConfirmDialog
-        val deleteType = if (deletePost != state.firstPost) {
-            stringResource(R.string.tip_post_floor, deletePost.floor) // post
-        } else {
-            stringResource(id = R.string.this_thread) // thread
-        }
-        Text(text = stringResource(id = R.string.message_confirm_delete, deleteType))
-    }
-
-    LaunchedEffect(viewModel.deletePost) {
-        if (viewModel.deletePost == null) return@LaunchedEffect
-        confirmDeleteState.show()
-    }
+    val markedDeletionPost: PostData? by viewModel.deletePost.collectAsStateWithLifecycle()
+    ThreadOrPostDeleteDialog(
+        deletePost = markedDeletionPost,
+        firstPost = state.firstPost,
+        onConfirm = viewModel::onDeleteConfirmed,
+        onCancel = viewModel::onDeleteCancelled
+    )
 
     val jumpToPageDialogState = rememberDialogState()
     PromptDialog(
@@ -285,8 +267,8 @@ fun ThreadPage(
         onValueChange = { newVal, _ -> "^[0-9]*$".toRegex().matches(newVal) },
         title = { Text(text = stringResource(id = R.string.title_jump_page)) },
         content = {
-            with(state) {
-                Text(text = stringResource(R.string.tip_jump_page, currentPageMax, totalPage))
+            with(state.page) {
+                Text(text = stringResource(R.string.tip_jump_page, current, total))
             }
         }
     )
@@ -311,12 +293,14 @@ fun ThreadPage(
         }
 
         val lastVisiblePost = lazyListState.lastVisiblePost(state)?.apply {
-            if (id == 0L) return@apply
-            viewModel.onLastPostVisibilityChanged(pid = id, floor = floor)
+            if (id != 0L) {
+                viewModel.onLastPostVisibilityChanged(pid = id, floor = floor)
+            }
         }
 
         if (viewModel.info?.collected == true && lastVisiblePost?.floor != 0) {
-            updateCollectMarkDialogState.show()
+            // Show CollectionsUpdateDialog now
+            newMarkedCollectionPost = lastVisiblePost
         } else {
             navigator.navigateUp()
         }
@@ -325,16 +309,13 @@ fun ThreadPage(
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty =  isEmpty,
-        isError = isError,
-        isLoading = isRefreshing,
+        isError = state.error != null,
+        isLoading = state.isRefreshing,
         errorScreen = {
-            ErrorScreen(error = viewModel.error, modifier = Modifier.safeContentPadding())
+            ErrorScreen(error = state.error, modifier = Modifier.safeContentPadding())
         },
         onReload = { viewModel.requestLoad(0, postId) }
     ) {
-
-        // Workaround to make StickyHeader respect content padding
-        var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
 
         BlurScaffold(
             topHazeBlock = {
@@ -345,18 +326,20 @@ fun ThreadPage(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
-                        val forum = state.forum ?: return@CenterAlignedTopAppBar // Initializing
-                        ForumTitleChip(forumItem = forum) {
-                            navigator.navigate(route = Forum(forum.item.name))
+                        state.forum?.let { forum ->
+                            ForumTitleChip(forum = forum) {
+                                navigator.navigate(route = Forum(forumName = forum.second))
+                            }
                         }
                     },
                     navigationIcon = { BackNavigationIcon(navigator::navigateUp) },
                     scrollBehavior = topAppBarScrollBehavior
                 ) {
-                    if (useStickyHeaderWorkaround) {
+                    val replyNum = state.thread?.replyNum
+                    if (UseStickyHeaderWorkaround && replyNum != null) {
                         Container {
                             StickyHeaderOverlay(state = lazyListState) {
-                                ThreadHeader(viewModel = viewModel)
+                                ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged)
                             }
                         }
                     }
@@ -367,11 +350,7 @@ fun ThreadPage(
                     user = state.user,
                     onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
                     onClickMore = {
-                        if (bottomSheetState.isVisible) {
-                            closeBottomSheet()
-                        } else {
-                            openBottomSheet()
-                        }
+                        if (bottomSheetState.isVisible) closeBottomSheet() else openBottomSheet()
                     },
                     like = viewModel.info?.like ?: LikeZero,
                     onLiked = viewModel::onThreadLikeClicked
@@ -380,23 +359,22 @@ fun ThreadPage(
             bottomHazeBlock = {
                 inputScale = DefaultInputScale
             },
-            snackbarHostState = snackbarHostState
+            snackbarHostState = snackbarHostState,
+            snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
         ) { padding ->
             val hazeState: HazeState? = LocalHazeState.current
 
-            useStickyHeaderWorkaround = padding.calculateTopPadding() != Dp.Hairline
-
             // Ignore Scaffold padding changes if workaround enabled
             val direction = LocalLayoutDirection.current
-            val contentPadding = if (useStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
+            val contentPadding = if (UseStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
 
             val enablePullRefresh by remember {
-                derivedStateOf { state.hasPrevious || state.sortType == ThreadSortType.BY_DESC }
+                derivedStateOf { state.page.hasPrevious || state.sortType == ThreadSortType.BY_DESC }
             }
 
             ProvideNavigator(navigator = navigator) {
                 PullToRefreshBox(
-                    isRefreshing = isRefreshing,
+                    isRefreshing = state.isRefreshing,
                     onRefresh = viewModel::requestLoadFirstPage,
                     modifier = Modifier.hazeSource(hazeState),
                     enabled = enablePullRefresh,
@@ -407,7 +385,7 @@ fun ThreadPage(
                         viewModel = viewModel,
                         lazyListState = lazyListState,
                         contentPadding = contentPadding,
-                        useStickyHeader = !useStickyHeaderWorkaround
+                        // useStickyHeader = !useStickyHeaderWorkaround
                     )
                 }
             }
@@ -422,41 +400,43 @@ fun ThreadPage(
                     scrimColor = Color.Transparent,
                     dragHandle = null
                 ) {
-                    val localUid by remember { derivedStateOf { state.user?.id } }
+                    val isMyThread by remember(state.lz) {
+                        derivedStateOf { state.user != null && state.lz?.id == state.user?.id }
+                    }
                     val isDesc by remember { derivedStateOf { state.sortType == ThreadSortType.BY_DESC } }
 
                     ThreadMenu(
-                        isSeeLz = viewModel.seeLz,
-                        isCollected = viewModel.info!!.collected,
+                        isSeeLz = state.seeLz,
+                        isCollected = viewModel.info?.collected == true,
                         isImmersiveMode = viewModel.isImmersiveMode,
                         isDesc = isDesc,
                         onSeeLzClick = {
-                            viewModel.requestLoadFirstPage(seeLz = !viewModel.seeLz)
+                            viewModel.onSeeLzChanged()
                             closeBottomSheet()
                         },
                         onCollectClick = {
-                            if (localUid == null) {
+                            if (state.user == null) {
                                 context.toastShort(R.string.title_not_logged_in)
                             } else if (viewModel.info!!.collected) {
-                                viewModel.requestRemoveFavorite()
+                                viewModel.removeFromCollections()
                             } else {
                                 lazyListState.lastVisiblePost(state)?.let { post ->
-                                    viewModel.requestAddFavorite(markedPost = post)
+                                    viewModel.updateCollections(markedPost = post)
                                 }
                             }
                             closeBottomSheet()
                         },
                         onImmersiveModeClick = {
-                            if (!viewModel.isImmersiveMode && !viewModel.seeLz) {
-                                viewModel.requestLoadFirstPage(seeLz = true)
+                            if (!viewModel.isImmersiveMode && !state.seeLz) {
+                                viewModel.onSeeLzChanged()
                             }
                             viewModel.onImmersiveModeChanged()
                             closeBottomSheet()
                         },
                         onDescClick = {
-                            val curSortType = state.sortType
-                            viewModel.requestLoadFirstPage(
-                                sortType = if (curSortType != ThreadSortType.BY_DESC) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT
+                            val notDesc = state.sortType != ThreadSortType.BY_DESC
+                            viewModel.onSortChanged(
+                                if (notDesc) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT
                             )
                             closeBottomSheet()
                         },
@@ -467,7 +447,7 @@ fun ThreadPage(
                         onShareClick = viewModel::onShareThread,
                         onCopyLinkClick = viewModel::onCopyThreadLink,
                         onReportClick = { viewModel.onReportThread(context, navigator) },
-                        onDeleteClick = viewModel::onDeleteThread.takeIf { state.lz?.id == localUid },
+                        onDeleteClick = viewModel::onDeleteThread.takeIf { isMyThread },
                         modifier = Modifier
                             .fillMaxWidth()
                             .onNotNull(hazeState) {
@@ -483,14 +463,13 @@ fun ThreadPage(
 }
 
 @Composable
-private fun ForumTitleChip(forumItem: ImmutableHolder<SimpleForum>, onForumClick: () -> Unit) {
-    val forum = forumItem.get()
+private fun ForumTitleChip(forum: SimpleForum, onForumClick: () -> Unit) {
     Surface(
         onClick = onForumClick,
         modifier = Modifier
             .semantics(mergeDescendants = true) {
                 role = Role.Button
-                contentDescription = forum.name
+                contentDescription = forum.second
             },
         shape = CircleShape,
         color = MaterialTheme.colorScheme.secondaryContainer
@@ -502,7 +481,7 @@ private fun ForumTitleChip(forumItem: ImmutableHolder<SimpleForum>, onForumClick
             verticalAlignment = Alignment.CenterVertically
         ) {
             Avatar(
-                data = forum.avatar,
+                data = forum.third,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxHeight()
@@ -510,7 +489,7 @@ private fun ForumTitleChip(forumItem: ImmutableHolder<SimpleForum>, onForumClick
             )
 
             Text(
-                text = stringResource(id = R.string.title_forum, forum.name),
+                text = stringResource(id = R.string.title_forum, forum.second),
                 modifier = Modifier.padding(horizontal = 8.dp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -702,5 +681,48 @@ private fun ThreadMenu(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CollectionsUpdateDialog(markedPost: PostData, onUpdate: (PostData) -> Unit, onBack: () -> Unit) {
+    val updateCollectMarkDialogState = rememberDialogState()
+    LaunchedEffect(markedPost) {
+        updateCollectMarkDialogState.show()
+    }
+
+    if (!updateCollectMarkDialogState.show) return
+    ConfirmDialog(
+        dialogState = updateCollectMarkDialogState,
+        onConfirm = {
+            onUpdate(markedPost)
+        },
+        onDismiss = onBack,
+    ) {
+        Text(stringResource(R.string.message_update_collect_mark, markedPost.floor))
+    }
+}
+
+@Composable
+private fun ThreadOrPostDeleteDialog(
+    deletePost: PostData?,
+    firstPost: PostData?,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    if (deletePost == null || firstPost == null) return
+
+    val deleteDialogState = rememberDialogState()
+    LaunchedEffect(deletePost) {
+        deleteDialogState.show()
+    }
+
+    ConfirmDialog(dialogState = deleteDialogState, onConfirm = onConfirm, onDismiss = onCancel) {
+        val deleteType = if (deletePost.id == firstPost.id) {
+            stringResource(id = R.string.this_thread) // thread
+        } else {
+            stringResource(R.string.tip_post_floor, deletePost.floor) // post
+        }
+        Text(text = stringResource(id = R.string.message_confirm_delete, deleteType))
     }
 }

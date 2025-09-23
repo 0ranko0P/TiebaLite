@@ -54,7 +54,7 @@ class ThreadStoreRepository @Inject constructor(
     /**
      * 取消收藏这个帖子
      * */
-    suspend fun remove(threadId: Long, forumId: Long, tbs: String?) = runCatching {
+    suspend fun remove(threadId: Long, forumId: Long?, tbs: String?) {
         val validTbs = tbs ?: currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
         networkDataSource.remove(threadId, forumId, validTbs)
     }

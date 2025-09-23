@@ -45,7 +45,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -54,7 +53,6 @@ import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.models.database.Account
-import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.Like
@@ -87,7 +85,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_HIDE
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -194,8 +191,7 @@ internal fun SubPostsContent(
         isLoading = state.isRefreshing
     ) {
         val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-        val hideReply by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_HIDE), false)
-        val canReply by remember { derivedStateOf { !(hideReply || account == null) } }
+        val canReply by viewModel.canReply.collectAsStateWithLifecycle()
 
         // Workaround to make StickyHeader respect content padding
         var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
@@ -247,7 +243,7 @@ internal fun SubPostsContent(
                 }
             },
             bottomBar = {
-                if (account == null || hideReply) {
+                if (account == null || !canReply) {
                     BlurNavigationBarPlaceHolder()
                     return@BlurScaffold
                 }

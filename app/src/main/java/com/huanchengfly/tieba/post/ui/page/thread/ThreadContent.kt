@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
@@ -22,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AlignVerticalTop
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -78,7 +78,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.coroutines.launch
 
 const val ITEM_POST_KEY_PREFIX = "Post_"
@@ -96,10 +95,11 @@ fun StateScreenScope.ThreadContent(
     viewModel: ThreadViewModel,
     lazyListState: LazyListState,
     contentPadding: PaddingValues = PaddingNone,
-    useStickyHeader: Boolean // Bug: StickyHeader doesn't respect content padding
+    // useStickyHeader: Boolean // Bug: StickyHeader doesn't respect content padding
 ) {
     val navigator = LocalNavController.current
     val state by viewModel.threadUiState.collectAsStateWithLifecycle()
+    val collectPid = state.thread?.collectMarkPid ?: -1
     val latestPosts = state.latestPosts
     val isLoadingMore = state.isLoadingMore
     val localUid = state.user?.id
@@ -117,12 +117,12 @@ fun StateScreenScope.ThreadContent(
             onLoad = onSwipeUpRefresh.takeIf {  // Enable it conditionally
                 state.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC
             },
-            onLazyLoad = { if (state.hasMore) viewModel.requestLoadMore() },
+            onLazyLoad = { if (state.page.hasMore) viewModel.requestLoadMore() },
             bottomIndicator = { onThreshold ->
                 LoadMoreIndicator(
                     modifier = Modifier.fillMaxWidth(),
                     isLoading = isLoadingMore,
-                    noMore = state.hasMore.not(),
+                    noMore = !state.page.hasMore,
                     onThreshold = onThreshold
                 )
             }
@@ -130,10 +130,10 @@ fun StateScreenScope.ThreadContent(
             item(key = Type.FirstPost.key, contentType = Type.FirstPost) {
                 val firstPost = state.firstPost ?: return@item
                 Column {
-                    PostCardItem(viewModel, firstPost, localUid)
+                    PostCardItem(viewModel, firstPost, localUid, collectPid)
 
-                    val info = viewModel.info?.originThreadInfo
-                    if (info != null && viewModel.info?.isShareThread == true) {
+                    val info = state.thread?.originThreadInfo
+                    if (info != null && state.thread?.isShareThread == true) {
                         OriginThreadCard(
                             originThreadInfo = info.wrapImmutable(),
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
@@ -151,26 +151,22 @@ fun StateScreenScope.ThreadContent(
                 }
             }
 
-            if (useStickyHeader) {
-                stickyHeader(key = Type.Header.key, contentType = Type.Header) {
-                    ThreadHeader(Modifier.background(MaterialTheme.colorScheme.surfaceContainer), viewModel)
-                }
-            } else {
+            state.thread?.replyNum?.let { replyNum ->
                 item(key = Type.Header.key, contentType = Type.Header) {
-                    ThreadHeader(viewModel = viewModel)
+                    ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged)
                 }
             }
 
-            if (state.sortType == ThreadSortType.BY_DESC && latestPosts.isNotEmpty()) {
+            if (state.sortType == ThreadSortType.BY_DESC && !latestPosts.isNullOrEmpty()) {
                 items(items = latestPosts, key = { post -> "LatestPost_${post.id}" }) { post ->
-                    PostCardItem(viewModel, post, localUid)
+                    PostCardItem(viewModel, post, localUid, collectPid)
                 }
                 postTipItem(isDesc = true)    // DESC tip on bottom
             }
 
-            if (state.hasPrevious) {
+            if (state.page.hasPrevious) {
                 item(key = Type.LoadPrevious.key, contentType = Type.LoadPrevious) {
-                    LoadPreviousButton(onClick = viewModel::requestLoadPrevious)
+                    LoadPreviousButton(state.isLoadingMore, viewModel::requestLoadPrevious)
                 }
             }
 
@@ -181,14 +177,14 @@ fun StateScreenScope.ThreadContent(
                 }
             } else {
                 items(data, key = { "$ITEM_POST_KEY_PREFIX${it.id}" }) { item ->
-                    PostCardItem(viewModel, item, localUid)
+                    PostCardItem(viewModel, item, localUid, collectPid)
                 }
             }
 
-            if (state.sortType != ThreadSortType.BY_DESC && latestPosts.isNotEmpty()) {
+            if (state.sortType != ThreadSortType.BY_DESC && !latestPosts.isNullOrEmpty()) {
                 postTipItem(isDesc = false)  // ASC Tip on top
                 items(items = latestPosts, key = { post -> "LatestPost_${post.id}" }) { post ->
-                    PostCardItem(viewModel, post, localUid)
+                    PostCardItem(viewModel, post, localUid, collectPid)
                 }
             }
         }
@@ -196,9 +192,10 @@ fun StateScreenScope.ThreadContent(
 }
 
 @Composable
-private fun LoadPreviousButton(onClick: () -> Unit) {
+private fun LoadPreviousButton(isLoading: Boolean, onClick: () -> Unit) {
     TextButton(
         onClick = onClick,
+        enabled = !isLoading,
         shape = MaterialTheme.shapes.extraSmall
     ) {
         Row(
@@ -206,11 +203,18 @@ private fun LoadPreviousButton(onClick: () -> Unit) {
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Rounded.AlignVerticalTop,
-                contentDescription = stringResource(id = R.string.btn_load_previous),
-                modifier = Modifier.size(16.dp)
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.5.dp
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Rounded.AlignVerticalTop,
+                    contentDescription = stringResource(id = R.string.btn_load_previous),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Text(text = stringResource(id = R.string.btn_load_previous))
         }
@@ -237,7 +241,7 @@ private fun LazyListScope.postTipItem(isDesc: Boolean) = this.item("LatestPostsT
 }
 
 @Composable
-private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: Long?) {
+private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: Long?, collectPid: Long) {
     val navigator = LocalNavController.current
     val loggedIn = localUid != null
 
@@ -245,7 +249,7 @@ private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: L
         PostCard(
             post = post,
             immersiveMode = viewModel.isImmersiveMode,
-            isCollected = post.id == viewModel.info?.collectMarkPid,
+            isCollected = post.id == collectPid,
             onUserClick = {
                 navigator.navigate(UserProfile(post.author.id))
             },
@@ -259,11 +263,11 @@ private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: L
                 navigator.navigate(CopyText(it))
             },
             onMenuFavoriteClick = {
-                val isPostCollected = post.id == viewModel.info?.collectMarkPid
+                val isPostCollected = post.id == collectPid
                 if (isPostCollected) {
-                    viewModel.requestRemoveFavorite()
+                    viewModel.removeFromCollections()
                 } else {
-                    viewModel.requestAddFavorite(post)
+                    viewModel.updateCollections(markedPost = post)
                 }
             },
             onMenuDeleteClick = { viewModel.onDeletePost(post) }.takeIf { post.author.id == localUid }
@@ -285,21 +289,11 @@ private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: L
 }
 
 @Composable
-fun ThreadHeader(modifier: Modifier = Modifier, viewModel: ThreadViewModel) {
-    StickyHeader(
-        modifier = modifier,
-        replyNum = viewModel.info!!.replyNum - 1,
-        isSeeLz = viewModel.seeLz,
-        onSeeLzChanged = { seeLz -> viewModel.requestLoadFirstPage(seeLz) }
-    )
-}
-
-@Composable
-private fun StickyHeader(
-    modifier: Modifier = Modifier,
+fun ThreadHeader(
     replyNum: Int,
     isSeeLz: Boolean,
-    onSeeLzChanged: (Boolean) -> Unit
+    onSeeLzChanged: () -> Unit,
+    modifier: Modifier = Modifier,
 ) = Row(
         modifier = modifier
             .height(IntrinsicSize.Min)
@@ -317,11 +311,7 @@ private fun StickyHeader(
 
         Text(
             text = stringResource(R.string.text_all),
-            modifier = Modifier
-                .clickableNoIndication(
-                    enabled = isSeeLz,
-                    onClick = { onSeeLzChanged(false) }
-                ),
+            modifier = Modifier.clickableNoIndication(enabled = isSeeLz, onClick = onSeeLzChanged),
             fontSize = 13.sp,
             fontWeight = if (!isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
             color = if (!isSeeLz) colors.onSurface else colors.onSurfaceVariant,
@@ -331,11 +321,7 @@ private fun StickyHeader(
 
         Text(
             text = stringResource(R.string.title_see_lz),
-            modifier = Modifier
-                .clickableNoIndication(
-                    enabled = !isSeeLz,
-                    onClick = { onSeeLzChanged(true) }
-                ),
+            modifier = Modifier.clickableNoIndication(enabled = !isSeeLz, onClick = onSeeLzChanged),
             fontSize = 13.sp,
             fontWeight = if (isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
             color = if (isSeeLz) colors.onSurface else colors.onSurfaceVariant,
@@ -364,7 +350,6 @@ fun PostCard(
     onMenuDeleteClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val preferences = context.appPreferences
     val navigator = LocalNavController.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -381,7 +366,7 @@ fun PostCard(
                 Text(stringResource(id = R.string.tip_blocked_post, post.floor))
             }
         },
-        hideBlockedContent = preferences.hideBlockedContent || immersiveMode,
+        hideBlockedContent = immersiveMode,
     ) {
         LongClickMenu(
             shape = MaterialTheme.shapes.medium,
@@ -464,12 +449,11 @@ fun PostCard(
                             modifier = Modifier.padding(vertical = 10.dp),
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            val hideBlockedContent = preferences.hideBlockedContent
                             post.subPosts.fastForEach { item ->
                                 BlockableContent(
                                     blocked = item.blocked,
                                     blockedTip = SubPostBlockedTip,
-                                    hideBlockedContent = hideBlockedContent
+                                    hideBlockedContent = false // filtered in repository
                                 ) {
                                     SubPostItem(
                                         subPost = item,
@@ -571,7 +555,8 @@ private fun EmptyScreen(canReload: Boolean, onReload: () -> Unit) =
 private fun LoadPreviousButtonPreview() {
     TiebaLiteTheme {
         Column {
-            LoadPreviousButton(onClick = {})
+            LoadPreviousButton(isLoading = false, onClick = {})
+            LoadPreviousButton(isLoading = true, onClick = {})
         }
     }
 }
@@ -586,10 +571,10 @@ private fun PostTipItemPreview() {
     }
 }
 
-@Preview("StickyHeader")
+@Preview("ThreadHeader")
 @Composable
-private fun StickyHeaderPreview() {
+private fun ThreadHeaderPreview() {
     TiebaLiteTheme {
-        StickyHeader(replyNum = 999, isSeeLz = true, onSeeLzChanged = {})
+        ThreadHeader(replyNum = 999, isSeeLz = true, onSeeLzChanged = {})
     }
 }

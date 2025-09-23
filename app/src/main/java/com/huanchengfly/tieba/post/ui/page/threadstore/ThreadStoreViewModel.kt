@@ -109,11 +109,11 @@ class ThreadStoreViewModel @Inject constructor(
 
             threadStoreRepo.remove(thread)
                 .onFailure { e ->
-                    _uiEvent.tryEmit(ThreadStoreUiEvent.Delete.Failure(e))
+                    _uiEvent.emit(ThreadStoreUiEvent.Delete.Failure(e))
                     // Revert changes now
                     _uiState.update { it.copy(data = oldThreads) }
                 }
-                .onSuccess { _uiEvent.tryEmit(ThreadStoreUiEvent.Delete.Success) }
+                .onSuccess { _uiEvent.emit(ThreadStoreUiEvent.Delete.Success) }
         }
     }
 }

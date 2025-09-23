@@ -37,7 +37,7 @@ object ThreadStoreNetworkDataSource {
 
     @Throws(NoConnectivityException::class, TiebaException::class)
     suspend fun remove(threadId: Long, forumId: Long? = null, tbs: String) {
-        require(threadId > 0)
+        require(threadId > 0) { "Illegal Thread ID: $threadId" }
         TiebaApi.getInstance()
             .removeStoreFlow(threadId = threadId, forumId = forumId, tbs = tbs)
             .firstOrThrow()
