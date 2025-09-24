@@ -3,6 +3,8 @@ package com.huanchengfly.tieba.post.utils
 import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.icons.Icons
@@ -13,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.Placeholder
@@ -95,7 +98,11 @@ object EmoticonManager {
             return emoticonIds.associate { id ->
                 "Emoticon#$id" to InlineTextContent(
                     placeholder = placeholder,
-                    children = { EmoticonInlineImage(Modifier.size(sizePx.pxToDp().dp), id) }
+                    children = {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            EmoticonInlineImage(Modifier.size(sizePx.pxToDp().dp), id)
+                        }
+                    }
                 )
             }
             .plus(map = getIconInlineContent(sizePx))
