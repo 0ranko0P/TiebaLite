@@ -61,6 +61,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
+import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
@@ -225,6 +226,7 @@ class MainActivityV2 : BaseComposeActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        EmoticonManager.clear()
         mNewMessageReceiver?.let { unregisterReceiver(it) }
     }
 

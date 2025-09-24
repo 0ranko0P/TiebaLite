@@ -24,6 +24,8 @@ interface SettingsRepository {
 
     val blockSettings: Settings<BlockSettings>
 
+    val fontScale: Settings<Float>
+
     val habitSettings: Settings<HabitSettings>
 
     val themeSettings: Settings<ThemeSettings>

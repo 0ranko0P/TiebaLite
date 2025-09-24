@@ -1,7 +1,7 @@
 package com.huanchengfly.tieba.post.activities
 
+import android.content.Context
 import android.content.res.Configuration
-import android.content.res.Resources
 import android.os.Bundle
 import android.util.DisplayMetrics
 import androidx.appcompat.app.AppCompatActivity
@@ -9,10 +9,15 @@ import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.components.NetworkObserver
+import com.huanchengfly.tieba.post.components.modules.SettingsRepositoryEntryPoint
 import com.huanchengfly.tieba.post.ui.widgets.VoicePlayerView
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlin.coroutines.CoroutineContext
+import kotlin.math.abs
 
 abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
     override val coroutineContext: CoroutineContext = lifecycleScope.coroutineContext
@@ -21,21 +26,16 @@ abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
 
     val appPreferences: AppPreferencesUtils by lazy { AppPreferencesUtils.getInstance(INSTANCE) }
 
+    override fun attachBaseContext(newBase: Context?) {
+        super.attachBaseContext(newBase)
+        if (newBase != null) {
+            overrideFontScaleOneShot(newBase)
+        }
+    }
+
     override fun onPause() {
         super.onPause()
         isActivityRunning = false
-    }
-
-    //禁止app字体大小跟随系统字体大小调节
-    override fun getResources(): Resources {
-        val fontScale = appPreferences.fontScale
-        val resources = super.getResources()
-        if (resources.configuration.fontScale != fontScale) {
-            val configuration = resources.configuration
-            configuration.fontScale = fontScale
-            resources.updateConfiguration(configuration, resources.displayMetrics)
-        }
-        return resources
     }
 
     override fun onStop() {
@@ -76,5 +76,21 @@ abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
         App.ScreenInfo.DENSITY = metrics.density
         App.ScreenInfo.SCREEN_HEIGHT = (height / density).toInt()
         App.ScreenInfo.SCREEN_WIDTH = (width / density).toInt()
+    }
+
+    private fun overrideFontScaleOneShot(baseContext: Context) {
+        val settingsEntryPoint = EntryPointAccessors.fromApplication<SettingsRepositoryEntryPoint>(baseContext.applicationContext)
+        val fontScaleFlow = settingsEntryPoint.settingsRepository().fontScale.flow
+        runCatching {
+            // Block the Main thread to avoid IllegalStateException in ContextThemeWrapper
+            val fontScale = runBlocking { fontScaleFlow.first() }
+            val currentFontScale = baseContext.resources.configuration.fontScale
+            if (abs(currentFontScale - fontScale) > 0.01f) {
+                val fontConfig = Configuration()
+                fontConfig.fontScale = fontScale
+                applyOverrideConfiguration(fontConfig)
+            }
+        }
+        .onFailure { it.printStackTrace() }
     }
 }

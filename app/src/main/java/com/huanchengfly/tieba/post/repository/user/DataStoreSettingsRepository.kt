@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -63,25 +64,33 @@ class DataStoreSettingsRepository @Inject constructor(
 
         override val flow: Flow<T> = dataStore.data.map(transform = transformer.get).distinctUntilChanged()
 
-        override fun set(new: T) {
-            queue.submit(Dispatchers.IO) {
-                dataStore.edit { transformer.set(it, new) }
-            }
+        override fun set(new: T) = queue.submit(Dispatchers.IO) {
+            dataStore.edit { transformer.set(it, new) }
         }
 
-        override fun save(transform: (old: T) -> T) {
-            queue.submit(Dispatchers.IO) {
-                dataStore.edit {
-                    val new = transform(transformer.get(it))
-                    transformer.set(it, new)
-                }
+        override fun save(transform: (old: T) -> T) = queue.submit(Dispatchers.IO) {
+            dataStore.edit {
+                val new = transform(transformer.get(it))
+                transformer.set(it, new)
             }
+        }
+    }
+
+    private inner class SimpleSettings<T>(val key: Preferences.Key<T>, val default: T): Settings<T> {
+        override val flow: Flow<T> = dataStore.data.map { it[key] ?: default }.distinctUntilChanged()
+
+        override fun set(new: T) = queue.submit(Dispatchers.IO) { dataStore.edit { it[key] = new } }
+
+        override fun save(transform: (T) -> T) = queue.submit(Dispatchers.IO) {
+            dataStore.edit { it[key] = transform(it[key] ?: default) }
         }
     }
 
     override val clientConfig: Settings<ClientConfig> = ComplexSettings(ClientConfigTransformer)
 
     override val blockSettings: Settings<BlockSettings> = ComplexSettings(BlockTransformer)
+
+    override val fontScale: Settings<Float> = SimpleSettings(floatPreferencesKey("fontScale"), 1.0f)
 
     override val habitSettings: Settings<HabitSettings> = ComplexSettings(HabitSettingsTransformer)
 
@@ -91,7 +100,6 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override val signConfig: Settings<SignConfig> = ComplexSettings(SignConfigTransformer)
 }
-
 
 private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
     override val get: (Preferences) -> HabitSettings = {

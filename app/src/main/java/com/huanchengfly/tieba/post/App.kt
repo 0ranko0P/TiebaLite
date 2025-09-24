@@ -5,7 +5,6 @@ import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import android.content.Intent
-import android.content.res.Resources
 import android.os.Build
 import android.os.PowerManager
 import android.os.Process
@@ -16,7 +15,6 @@ import com.huanchengfly.tieba.post.activities.CrashActivity
 import com.huanchengfly.tieba.post.components.ConfigInitializer
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager
-import com.huanchengfly.tieba.post.utils.appPreferences
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -69,19 +67,6 @@ class App : Application() {
     //解决魅族 Flyme 系统夜间模式强制反色
     @Keep
     fun mzNightModeUseOf(): Int = 2
-
-    //禁止app字体大小跟随系统字体大小调节
-    override fun getResources(): Resources {
-        //INSTANCE = this
-        val fontScale = appPreferences.fontScale
-        val resources = super.getResources()
-        if (resources.configuration.fontScale != fontScale) {
-            val configuration = resources.configuration
-            configuration.fontScale = fontScale
-            resources.updateConfiguration(configuration, resources.displayMetrics)
-        }
-        return resources
-    }
 
     /**
      * 添加Activity
