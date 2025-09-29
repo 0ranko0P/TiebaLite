@@ -1,16 +1,16 @@
 package com.huanchengfly.tieba.post.utils
 
+import android.util.Log
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 
 object ClientUtils {
 
@@ -30,16 +30,12 @@ object ClientUtils {
 
     fun init(settingsRepository: SettingsRepository) {
         clientConfigSettings = settingsRepository.clientConfig
-        AppBackgroundScope.launch {
-            val config = settingsRepository.clientConfig.flow.first()
-            withContext(Dispatchers.Main.immediate) {
-                clientId = config.clientId
-                sampleId = config.sampleId
-                baiduId = config.baiduId
-                activeTimestamp = config.activeTimestamp
-            }
-            sync()
-        }
+        val config = runBlocking { settingsRepository.clientConfig.flow.first() }
+        clientId = config.clientId
+        sampleId = config.sampleId
+        baiduId = config.baiduId
+        activeTimestamp = config.activeTimestamp
+        sync()
     }
 
     fun saveBaiduId(id: String?) {
@@ -57,16 +53,18 @@ object ClientUtils {
         }
     }
 
-    private suspend fun sync() {
+    private fun sync() = AppBackgroundScope.launch {
         val rec = TiebaApi.getInstance()
             .syncFlow(clientId)
-            .catch { it.printStackTrace() }
-            .firstOrNull() ?: return
+            .catch {
+                Log.e("Client", "onSync: Failed: ${it.message}")
+            }
+            .firstOrNull() ?: return@launch
 
         val client = rec.client
         val wlConfig = rec.wlConfig
         if (clientId == client.clientId && sampleId == wlConfig.sampleId) {
-            return
+            return@launch
         }
         clientId = client.clientId
         sampleId = wlConfig.sampleId

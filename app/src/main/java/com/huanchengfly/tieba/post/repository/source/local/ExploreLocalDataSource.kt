@@ -152,7 +152,7 @@ class ExploreLocalDataSource @Inject constructor(@ApplicationContext context: Co
 
 }
 
-private fun deleteWithPrefixSafe(dir: File, prefix: String): Int {
+fun deleteWithPrefixSafe(dir: File, prefix: String): Int {
     val start = System.currentTimeMillis()
     var deleted = 0
     // list all files safely

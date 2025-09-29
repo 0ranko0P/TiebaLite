@@ -79,6 +79,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
 import com.huanchengfly.tieba.post.utils.LocalAccount
@@ -191,6 +192,7 @@ fun ExplorePage() {
         )
     }
     val pagerState = rememberPagerState(initialPage = if (loggedIn) 1 else 0) { pages.size }
+    val listStates = rememberPagerListStates(pages.size)
 
     val scrollBehaviors = rememberTopAppBarScrollBehaviors(pages.size) {
         if (windowSize.isHeightAtLeastBreakpoint(HEIGHT_DP_MEDIUM_LOWER_BOUND)) {
@@ -210,19 +212,20 @@ fun ExplorePage() {
         context.toastShort(it.toMessage(context))
     }
     val explorePages = remember(pages.size, account?.uid) {
-        pages.map { page: ExplorePageItem ->
+        pages.mapIndexed { index, page: ExplorePageItem ->
             movableContentOf<Modifier, PaddingValues, (Boolean) -> Unit> { modifier, contentPadding, onHideFab ->
+                val listState = listStates[index]
                 when (page) {
                     ExplorePageItem.Concern -> {
-                        ConcernPage(modifier, contentPadding, navigator, onHideFab)
+                        ConcernPage(modifier, contentPadding, listState, navigator, onHideFab)
                     }
 
                     ExplorePageItem.Personalized -> {
-                        PersonalizedPage(modifier, contentPadding, navigator, onHideFab)
+                        PersonalizedPage(modifier, contentPadding, listState, navigator, onHideFab)
                     }
 
                     ExplorePageItem.Hot -> {
-                        HotPage(modifier, contentPadding, navigator, onHideFab)
+                        HotPage(modifier, contentPadding, listState, navigator, onHideFab)
                     }
                 }
             }

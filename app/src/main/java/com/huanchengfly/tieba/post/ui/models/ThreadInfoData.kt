@@ -5,7 +5,7 @@ import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 
 // ForumID, name, avatar
-typealias SimpleForum = Triple<Long, String, String>
+typealias SimpleForum = Triple<Long, String, String?>
 
 /**
  * Represents [ThreadInfo] in UI

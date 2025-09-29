@@ -81,13 +81,13 @@ private val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
 fun PersonalizedPage(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
+    listState: LazyListState = rememberLazyListState(),
     navigator: NavController,
     onHideFab: (Boolean) -> Unit,
     viewModel: PersonalizedViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val listState: LazyListState = rememberLazyListState()
 
     var refreshCount by remember { mutableIntStateOf(0) }
     val showRefreshTip = refreshCount > 0

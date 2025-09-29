@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
@@ -98,6 +99,7 @@ fun ForumThreadList(
     type: ForumType,
     forumRuleTitle: String?,
     contentPadding: PaddingValues,
+    listState: LazyListState = rememberLazyListState(),
     viewModel: ForumThreadListViewModel = hiltViewModel<ForumThreadListViewModel, ForumVMFactory>(
         key = Objects.hash(forumId, forumName, type).toString()
     ) {
@@ -106,7 +108,6 @@ fun ForumThreadList(
 ) {
     val isGood = type == ForumType.Good
     val navigator = LocalNavController.current
-    val listState = rememberLazyListState()
 
     onGlobalEvent<ForumThreadListUiEvent.BackToTop>(
         filter = { it.isGood == isGood },

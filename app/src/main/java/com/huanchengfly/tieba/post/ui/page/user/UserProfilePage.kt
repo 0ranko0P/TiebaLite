@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.user
 
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,7 +9,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,7 +44,6 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
@@ -53,7 +53,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -67,27 +66,29 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.BazhuSign
-import com.huanchengfly.tieba.post.api.models.protos.NewGodInfo
-import com.huanchengfly.tieba.post.api.models.protos.User
-import com.huanchengfly.tieba.post.arch.getOrNull
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
+import com.huanchengfly.tieba.post.ui.models.user.UserProfile
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
-import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPageEmpty
-import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPageHide
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
+import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
@@ -96,24 +97,31 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-private sealed class Tab(val text: String) {
-    class POSTS(text: String): Tab(text)
+private enum class Tab(val titleRes: Int) {
+    THREADS(R.string.title_profile_threads),
 
-    class THREADS(text: String): Tab(text)
+    POSTS(R.string.title_profile_posts),
 
-    class FORUMS(text: String): Tab(text)
+    FORUMS(R.string.title_profile_forums);
+
+    fun formatTitle(number: Int, context: Context): String {
+        return context.getString(titleRes, if (number > 0) number.getShortNumString() else " ")
+    }
 }
+
+private typealias TabWithTitle = Pair<Tab, String>
 
 private val UserProfileExpandHeight = 206.dp
 
@@ -166,41 +174,89 @@ fun UserProfilePage(
     viewModel: UserProfileViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val snackbarHostState = rememberSnackbarHostState()
 
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isError by remember { derivedStateOf { uiState.error != null } }
-    val isRefreshing by remember { derivedStateOf { uiState.isRefreshing } }
+    val isRefreshing by viewModel.uiState.collectPartialAsState(
+        prop1 = UserProfileUiState::isRefreshing,
+        initial = true
+    )
+    val error by viewModel.uiState.collectPartialAsState(
+        prop1 = UserProfileUiState::error,
+        initial = null
+    )
+
+    onGlobalEvent<UserProfileUiEvent> {
+        val uiMessage = when (it) {
+            is UserProfileUiEvent.FollowSuccess -> it.message
+
+            is UserProfileUiEvent.FollowFailed -> context.getString(R.string.toast_like_failed, it.e.getErrorMessage())
+
+            is UserProfileUiEvent.UnfollowFailed -> context.getString(R.string.toast_unlike_failed, it.e.getErrorMessage())
+        }
+        uiMessage?.let { m -> snackbarHostState.showSnackbar(m) }
+    }
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
-        isError = isError,
+        isError = error != null,
         isLoading = isRefreshing,
-        onReload = viewModel::refresh,
-        errorScreen = { ErrorScreen(error = uiState.error.getOrNull()) }
+        onReload = viewModel::onRefresh,
+        errorScreen = { ErrorScreen(error = error) }
     ) {
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val userProfile = uiState.profile?: return@StateScreen
         val account = LocalAccount.current
-        val isSelf = remember(account) { account?.uid == uid.toString() }
+        val isSelf = remember(account?.uid) { account?.uid == uid.toString() }
 
-        val tabs = remember {
-            with(userProfile) {
-                listOfNotNull(
-                    Tab.THREADS(
-                        text = context.getString(R.string.title_profile_threads, threadNum.getShortNumString())
-                    ),
+        val tabs: List<TabWithTitle> = remember {
+            Tab.entries.mapNotNull {
+                when(it) {
+                    Tab.THREADS -> it to it.formatTitle(userProfile.threadNum, context)
 
-                    Tab.POSTS(
-                        text = context.getString(R.string.title_profile_posts, postNum.getShortNumString())
-                    ).takeIf { isSelf },
+                    Tab.POSTS -> (it to it.formatTitle(userProfile.postNum, context)).takeIf { isSelf }
 
-                    Tab.FORUMS(
-                        text = context.getString(R.string.title_profile_forums, forumNum.getShortNumString())
-                    )
-                ).toImmutableList()
+                    Tab.FORUMS -> it to it.formatTitle(userProfile.forumNum, context)
+                }
             }
         }
 
         val pagerState = rememberPagerState { tabs.size }
+        val lazyListStates = rememberPagerListStates(tabs.size)
+        val pagerContents = remember(tabs.size) {
+            tabs.mapIndexed { i, (tab, _) ->
+                movableContentOf<Boolean> { fluid ->
+                    val lazyListState = lazyListStates[i]
+                    when (tab) {
+                        Tab.THREADS -> UserThreadPage(uid, fluid, lazyListState)
+
+                        Tab.POSTS -> UserPostPage(uid, fluid, lazyListState)
+
+                        Tab.FORUMS -> when {
+                            userProfile.privateForum -> UserPageHide(hiddenTab = tab)
+
+                            userProfile.forumNum == 0 -> UserPageEmpty()
+
+                            else -> UserLikeForumPage(uid, fluid, lazyListState)
+                        }
+                    }
+                }
+            }
+        }
+
+        val pagerMovableContent = remember(tabs.size) {
+            movableContentOf<Modifier, Boolean> { modifier, fluid ->
+                HorizontalPager(pagerState, Modifier.fillMaxSize() then modifier, key = { it }) {
+                    pagerContents[it](fluid)
+                }
+            }
+        }
+
+        val contentRowLayout = isLooseWindowWidth()
+
+        val userProfileDetail: @Composable () -> Unit = {
+            UserProfileDetail(profile = userProfile, columnLayout = contentRowLayout)
+        }
+
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
         val collapseFraction = FloatProducer { scrollBehavior.state.collapsedFraction }
 
@@ -214,43 +270,10 @@ fun UserProfilePage(
         }
         // ?: power saver is on, do noting
 
-        val pagerContent = remember(pagerState) {
-            movableContentOf<Pair<Boolean, NestedScrollConnection?>> { (fluid, scrollConnection) ->
-                HorizontalPager(
-                    state = pagerState,
-                    key = { it },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .onNotNull(scrollConnection) { nestedScroll(connection = it) },
-                ) {
-                    when(tabs[it]) {
-                        is Tab.THREADS -> UserPostPage(uid = uid, isThread = true, fluid = fluid)
-
-                        is Tab.POSTS -> UserPostPage(uid = uid, isThread = false, fluid = fluid)
-
-                        is Tab.FORUMS -> {
-                            when {
-                                userProfile.privateForum -> UserLikeForumPageHide()
-
-                                userProfile.forumNum == 0 -> UserLikeForumPageEmpty()
-
-                                else -> UserLikeForumPage(uid = uid, fluid = fluid)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        val userProfileDetail: @Composable () -> Unit = {
-            UserProfileDetail(profile = userProfile)
-        }
-
-        val isLooseWindowWidth = isLooseWindowWidth()
-
         MyScaffold(
             topBar = {
                 UserProfileToolbar(
-                    title = userProfileDetail.takeUnless { isLooseWindowWidth },
+                    title = userProfileDetail.takeUnless { contentRowLayout },
                     collapsedTitle = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -263,32 +286,31 @@ fun UserProfilePage(
                     isSelf = isSelf,
                     isFollowing = userProfile.following,
                     onActionClicked = {
-                        if (isSelf) {
-                            context.goToActivity<EditProfileActivity>()
-                        } else if (userProfile.following) {
-                            viewModel.onUnFollowClicked(tbs = account!!.tbs)
-                        } else {
-                            viewModel.onFollowClicked(tbs = account!!.tbs)
+                        when {
+                            isSelf -> context.goToActivity<EditProfileActivity>()
+
+                            userProfile.following -> viewModel.onUnFollowClicked()
+
+                            else -> viewModel.onFollowClicked()
                         }
-                    }.takeUnless { uiState.disableButton || account == null },
+                    }.takeUnless { uiState.isRequestingFollow || account == null },
                     block = uiState.block,
                     onBlackListClicked = viewModel::onBlackListClicked,
                     onWhiteListClicked = viewModel::onWhiteListClicked,
                     onBack = navigator::navigateUp,
                     scrollBehavior = scrollBehavior
                 ) {
-                    if (isLooseWindowWidth) return@UserProfileToolbar
+                    if (contentRowLayout) return@UserProfileToolbar
                     UserProfileTabRow(tabs, pagerState, collapseFraction)
                 }
             },
+            snackbarHostState = snackbarHostState,
             backgroundColor = backgroundColor
         ) { paddingValues ->
             ProvideNavigator(navigator = navigator) {
-                if (isLooseWindowWidth) {
+                if (contentRowLayout) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(paddingValues),
+                        modifier = Modifier.padding(paddingValues),
                     ) {
                         Box(
                             modifier = Modifier
@@ -300,13 +322,17 @@ fun UserProfilePage(
                             userProfileDetail()
                         }
 
-                        Column {
+                        Column(modifier = Modifier.weight(1.0f)) {
                             UserProfileTabRow(tabs, pagerState, collapseFraction)
-                            pagerContent(true to null) // fluid and set ScrollBehavior to null
+                            // Make TopAppBar non-scrollable on row layout
+                            pagerMovableContent(Modifier, true/* fluid */)
                         }
                     }
                 } else {
-                    pagerContent(false to scrollBehavior.nestedScrollConnection)
+                    pagerMovableContent(
+                        Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                        false // fluid
+                    )
                 }
             }
         }
@@ -395,7 +421,7 @@ private fun UserProfileToolbar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UserProfileTabRow(
-    tabs: ImmutableList<Tab>,
+    tabs: List<TabWithTitle>,
     pagerState: PagerState,
     collapseFraction: FloatProducer,
     modifier: Modifier = Modifier,
@@ -415,7 +441,7 @@ private fun UserProfileTabRow(
         contentColor = colorScheme.primary,
         modifier = modifier,
     ) {
-        tabs.fastForEachIndexed { i, tab ->
+        tabs.fastForEachIndexed { i, (_, title) ->
             Tab(
                 selected = pagerState.currentPage == i,
                 onClick = {
@@ -427,9 +453,7 @@ private fun UserProfileTabRow(
                         }
                     }
                 },
-                text = {
-                    Text(text = tab.text)
-                },
+                text = { Text(text = title) },
                 unselectedContentColor = colorScheme.onSurface
             )
         }
@@ -475,24 +499,14 @@ private fun VerifiedText(modifier: Modifier = Modifier, verify: String) {
 }
 
 @Composable
-private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfile) {
+private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfile, columnLayout: Boolean) {
     val context = LocalContext.current
     val avatarUrl: String = remember { StringUtil.getBigAvatarUrl(profile.portrait) }
     val flowArrangement = Arrangement.spacedBy(8.dp)
 
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = flowArrangement
-    ) {
-        FlowRow(
-            modifier = Modifier
-                .padding(bottom = 10.dp)
-                .align(Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Avatar(data = avatarUrl, size = 96.dp, contentDescription = null)
-
-            Spacer(Modifier.size(16.dp))
+    val portraitMovableContent = remember {
+        movableContentOf {
+            Avatar(data = avatarUrl, size = 96.dp)
 
             Column {
                 Text(
@@ -545,11 +559,32 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
                 }
             }
         }
+    }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = flowArrangement
+    ) {
+        if (columnLayout) {
+            Column(
+                modifier = Modifier.padding(bottom = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                content = { portraitMovableContent() }
+            )
+        } else {
+            Row(
+                modifier = Modifier.padding(bottom = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                content = { portraitMovableContent() }
+            )
+        }
 
         Text(
             text = profile.intro ?: stringResource(id = R.string.tip_no_intro),
             style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
+            maxLines = if (columnLayout) Int.MAX_VALUE else 1,
             overflow = TextOverflow.Ellipsis
         )
 
@@ -592,23 +627,66 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
     }
 }
 
+@Composable
+private fun UserPageHide(hiddenTab: Tab) {
+    val context = LocalContext.current
+    TipScreen(
+        title = {
+            val hiddenText = remember {
+                context.getString(R.string.profile_title_hidden, hiddenTab.formatTitle(0, context))
+            }
+            Text(text = hiddenText)
+        },
+        modifier = Modifier.fillMaxSize(),
+        image = {
+            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_hide))
+            LottieAnimation(
+                composition = composition,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(2.5f)
+            )
+        },
+        scrollable = true,
+    )
+}
+
+@Composable
+private fun UserPageEmpty() {
+    TipScreen(
+        title = { Text(text = stringResource(id = R.string.title_empty)) },
+        modifier = Modifier.fillMaxSize(),
+        image = {
+            val composition by rememberLottieComposition(
+                LottieCompositionSpec.RawRes(R.raw.lottie_empty_box)
+            )
+            LottieAnimation(
+                composition = composition,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2.0f)
+            )
+        },
+        scrollable = true
+    )
+}
+
 @Preview("UserProfileDetail", showBackground = true, backgroundColor = 0xFFFFFFFF)
 @Composable
-private fun UserProfileDetailPreview() {
-    TiebaLiteTheme {
-        UserProfileDetail(
-            modifier = Modifier.padding(16.dp),
-            profile = UserProfileViewModel.parseUserProfile(
-                User(
-                    name = "(tieba#0812)",
-                    nameShow = "我是谁",
-                    tieba_uid = "114514",
-                    tb_age = "10",
-                    ip_address = "第二经济开发区",
-                    bazhu_grade = BazhuSign("吃瓜吧吧主"),
-                    new_god_data = NewGodInfo(999, field_name = "吃瓜")
-                )
-            )
-        )
-    }
+private fun UserProfileDetailPreview() = TiebaLiteTheme {
+    UserProfileDetail(
+        modifier = Modifier.padding(16.dp),
+        profile = UserProfile(
+            name = "我是谁",
+            userName = "(我是0812)",
+            tbAge = 12.4f,
+            address = "第二经济开发区",
+            bazuDesc = "吃瓜吧吧主",
+            newGod = "吃瓜"
+        ),
+        columnLayout = false
+    )
 }

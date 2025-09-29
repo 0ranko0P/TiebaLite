@@ -1,106 +1,98 @@
-package com.huanchengfly.tieba.post.ui.page.main.explore.concern
+package com.huanchengfly.tieba.post.ui.page.user.thread
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
-import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
+import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadViewModel.Companion.UserThreadVmFactory
+import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConcernPage(
-    modifier: Modifier = Modifier,
-    contentPadding: PaddingValues,
-    listState: LazyListState = rememberLazyListState(),
-    navigator: NavController,
-    onHideFab: (Boolean) -> Unit,
-    viewModel: ConcernViewModel = hiltViewModel(),
+fun UserThreadPage(
+    uid: Long,
+    fluid: Boolean = false,
+    lazyListState: LazyListState = rememberLazyListState(),
+    viewModel: UserThreadViewModel = hiltViewModel<UserThreadViewModel, UserThreadVmFactory> { it.create(uid) },
 ) {
+    val context = LocalContext.current
+    val navigator = LocalNavController.current
+
     val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = ConcernUiState::isRefreshing,
+        prop1 = UserThreadUiState::isRefreshing,
+        initial = true
+    )
+    val isLoadingMore by viewModel.uiState.collectPartialAsState(
+        prop1 = UserThreadUiState::isLoadingMore,
         initial = false
     )
     val isEmpty by viewModel.uiState.collectPartialAsState(
-        prop1 = ConcernUiState::isEmpty,
+        prop1 = UserThreadUiState::isEmpty,
         initial = false
     )
     val error by viewModel.uiState.collectPartialAsState(
-        prop1 = ConcernUiState::error,
+        prop1 = UserThreadUiState::error,
         initial = null
     )
-    val isError = error != null
 
-    LaunchedFabStateEffect(ExplorePageItem.Concern, listState, onHideFab, isRefreshing, isError)
-
-    val threadClickListeners = remember(navigator) {
-        createThreadClickListeners(onNavigate = navigator::navigate)
+    onGlobalEvent<ThreadLikeUiEvent> {
+        context.toastShort(it.toMessage(context))
     }
-
-    // result from ThreadPage
-    ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
-        isError = isError,
+        isError = error != null,
         isLoading = isRefreshing,
         onReload = viewModel::onRefresh,
-        errorScreen = {
-            ErrorScreen(error = error, modifier = Modifier.padding(contentPadding))
-        }
+        errorScreen = { ErrorScreen(error = error) },
     ) {
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = viewModel::onRefresh,
-            contentPadding = contentPadding
-        ) {
+        val threadClickListeners = remember(navigator) {
+            createThreadClickListeners(onNavigate = navigator::navigate)
+        }
+
+        Container(fluid = fluid) {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-            val isLoadingMore = uiState.isLoadingMore
-            val hasMore = uiState.hasMore
             val data = uiState.data
+            val hasMore = uiState.hasMore
 
             SwipeUpLazyLoadColumn(
-                modifier = modifier.fillMaxSize(),
-                state = listState,
-                contentPadding = contentPadding,
-                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxSize(),
+                state = lazyListState,
                 isLoading = isLoadingMore,
                 onLazyLoad = {
                     if (hasMore) viewModel.onLoadMore()
                 },
-                onLoad = null, // Disable manual load more
-                bottomIndicator = { onThreshold ->
+                onLoad = null,
+                bottomIndicator = {
                     LoadMoreIndicator(
                         modifier = Modifier.fillMaxWidth(),
                         isLoading = isLoadingMore,
                         noMore = !hasMore,
-                        onThreshold = onThreshold
+                        onThreshold = false
                     )
                 }
             ) {
@@ -114,8 +106,9 @@ fun ConcernPage(
                             onClickUser = threadClickListeners.onAuthorClicked,
                             onClickForum = threadClickListeners.onForumClicked,
                         )
+
                         if (i < data.lastIndex) {
-                            HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 2.dp)
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                         }
                     }
                 }

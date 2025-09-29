@@ -17,7 +17,7 @@ import com.huanchengfly.tieba.post.ui.models.explore.Dislike
     val firstPostId: Long = -1,
     val author: Author,
     val blocked: Boolean = false,
-    val content: AnnotatedString = AnnotatedString(""),
+    val content: AnnotatedString? = null,
     val title: String,
     val isTop: Boolean = false,
     val lastTimeMill: Long,
@@ -38,7 +38,7 @@ import com.huanchengfly.tieba.post.ui.models.explore.Dislike
     fun copy(
         author: Author = this.author,
         blocked: Boolean = this.blocked,
-        content: AnnotatedString = this.content,
+        content: AnnotatedString? = this.content,
         title: String = this.title,
         lastTimeMill: Long = this.lastTimeMill,
         like: Like = this.like,

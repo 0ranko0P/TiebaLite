@@ -91,6 +91,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -257,6 +258,7 @@ fun ForumPage(
     val forumData = uiState.forum
 
     val pagerState = rememberPagerState { ForumType.entries.size }
+    val listStates = rememberPagerListStates(pagerState.pageCount)
 
     val unlikeDialogState = rememberDialogState()
     if (loggedIn && forumData != null) {
@@ -287,7 +289,8 @@ fun ForumPage(
                     forumName = forum.name,
                     forumRuleTitle = forum.forumRuleTitle.takeUnless { forumType == ForumType.Good },
                     type = forumType,
-                    contentPadding = contentPadding
+                    contentPadding = contentPadding,
+                    listState = listStates[forumType.ordinal]
                 )
             }
         }

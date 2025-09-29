@@ -453,12 +453,11 @@
     <string name="desc_forum_rule">吧规</string>
     <string name="text_stat_agrees">获赞</string>
     <string name="text_profile_ip_location">IP 属地：%s</string>
-    <string name="text_profile_tb_age">%s 年</string>
+    <string name="text_profile_tb_age">%1$.1f 年</string>
     <string name="text_profile_user_id">ID: %s</string>
     <string name="title_profile_threads">贴子 %s</string>
     <string name="title_profile_posts">回复 %s</string>
     <string name="title_profile_forums">关注吧 %s</string>
-    <string name="title_user_hide_post">该用户已隐藏动态</string>
     <string name="btn_block">屏蔽选项</string>
     <string name="text_official_account">官方账号</string>
     <string name="text_god_verify">%s领域大神</string>
@@ -474,6 +473,7 @@
     <string name="desc_show">显示</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
     <string name="brightness">亮度</string>
+    <string name="profile_title_hidden">该用户已隐藏%s</string>
     <string name="theme_dialog_unsave">主题未保存</string>
     <string name="theme_dialog_unsave_msg">保存或放弃更改?</string>
     <string name="theme_dialog_saving">应用主题中</string>

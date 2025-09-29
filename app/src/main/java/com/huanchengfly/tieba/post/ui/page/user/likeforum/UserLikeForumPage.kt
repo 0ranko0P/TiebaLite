@@ -2,18 +2,17 @@ package com.huanchengfly.tieba.post.ui.page.user.likeforum
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -27,8 +26,6 @@ import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.user.post.TipScreenPostEmpty
-import com.huanchengfly.tieba.post.ui.page.user.post.TipScreenPostHide
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -39,32 +36,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentListOf
 
-@NonRestartableComposable
-@Composable
-fun UserLikeForumPageHide() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        TipScreenPostHide()
-    }
-}
-
-@NonRestartableComposable
-@Composable
-fun UserLikeForumPageEmpty() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        TipScreenPostEmpty()
-    }
-}
-
 @Composable
 fun UserLikeForumPage(
     uid: Long,
     fluid: Boolean = false,
+    lazyListState: LazyListState = rememberLazyListState(),
     viewModel: UserLikeForumViewModel = pageViewModel(),
 ) {
     val navigator = LocalNavController.current
@@ -102,14 +78,11 @@ fun UserLikeForumPage(
     val isEmpty by remember {
         derivedStateOf { forums.isEmpty() }
     }
-    val isError by remember {
-        derivedStateOf { error != null }
-    }
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
-        isError = isError,
+        isError = error != null,
         isLoading = isRefreshing,
         onReload = {
             viewModel.send(UserLikeForumUiIntent.Refresh(uid))
@@ -119,7 +92,6 @@ fun UserLikeForumPage(
             ErrorScreen(error = throwable, showReload = throwable !is TiebaNotLoggedInException)
         },
     ) {
-        val lazyListState = rememberLazyListState()
 
         Container(fluid = fluid) {
             SwipeUpLazyLoadColumn(
@@ -142,12 +114,7 @@ fun UserLikeForumPage(
                 }
             ) {
                 items(items = forums, key = { it.id }) { forumBean ->
-                    UserLikeForumItem(
-                        item = forumBean,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
+                    UserLikeForumItem(Modifier.fillMaxWidth(), item = forumBean) {
                         forumBean.name?.let { navigator.navigate(Forum(forumName = it)) }
                     }
                 }
@@ -158,12 +125,14 @@ fun UserLikeForumPage(
 
 @Composable
 private fun UserLikeForumItem(
-    item: UserLikeForumBean.ForumBean,
     modifier: Modifier = Modifier,
+    item: UserLikeForumBean.ForumBean,
     onClick: () -> Unit
 ) {
     Row(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {

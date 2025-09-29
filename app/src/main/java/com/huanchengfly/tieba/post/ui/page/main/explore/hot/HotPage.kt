@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -71,6 +72,7 @@ private enum class HotType {
 fun HotPage(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
+    listState: LazyListState = rememberLazyListState(),
     navigator: NavController,
     onHideFab: (Boolean) -> Unit,
     viewModel: HotViewModel = hiltViewModel()
@@ -86,7 +88,6 @@ fun HotPage(
     )
     val isError = error != null
 
-    val listState = rememberLazyListState()
     LaunchedFabStateEffect(ExplorePageItem.Hot, listState, onHideFab, isRefreshing, isError)
 
     val threadClickListeners = remember(navigator) {

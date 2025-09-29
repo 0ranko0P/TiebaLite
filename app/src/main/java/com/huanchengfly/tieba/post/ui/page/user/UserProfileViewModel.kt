@@ -8,41 +8,49 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
+import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.arch.firstOrThrow
-import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderEffectImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImageProcessor
 import com.huanchengfly.tieba.post.models.database.Block
-import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.repository.UserProfileRepository
+import com.huanchengfly.tieba.post.ui.models.user.UserProfile
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.BlockManager
-import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed interface UserProfileUiEvent : UiEvent {
+    class FollowSuccess(val message: String?): UserProfileUiEvent
+
+    class FollowFailed(val e: Throwable) : UserProfileUiEvent
+
+    class UnfollowFailed(val e: Throwable) : UserProfileUiEvent
+}
+
+data class UserProfileUiState(
+    val isRefreshing: Boolean = false,
+    val isRequestingFollow: Boolean = false,
+    val error: Throwable? = null,
+    val block: Block? = null,
+    val profile: UserProfile? = null,
+) : UiState
+
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
     @ApplicationContext val context: Context,
+    private val userProfileRepo: UserProfileRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -53,7 +61,7 @@ class UserProfileViewModel @Inject constructor(
             Log.e(TAG, "onError: ", e)
         }
         _uiState.update {
-            it.copy(isRefreshing = false, disableButton = false, error = e.wrapImmutable())
+            it.copy(isRefreshing = false, error = e)
         }
     }
 
@@ -71,27 +79,21 @@ class UserProfileViewModel @Inject constructor(
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
 
     init {
-        refresh()
+        refreshInternal(cached = true)
     }
 
-    fun refresh() {
-        if (_uiState.value.isRefreshing) return
-        _uiState.set { copy(isRefreshing = true, error = null) }
+    private fun refreshInternal(cached: Boolean) = viewModelScope.launch {
+        _uiState.set { UserProfileUiState(isRefreshing = true) }
 
         viewModelScope.launch(handler) {
-            val newState = TiebaApi.getInstance()
-                .userProfileFlow(uid)
-                .map {
-                    val user = it.data_?.user ?: throw TiebaException("Null user data: ${it.error}")
-                    UserProfileUiState(
-                        block = BlockManager.findUserById(uid),
-                        profile = parseUserProfile(user)
-                    )
-                }
-                .firstOrThrow()
-
-            _uiState.update { newState }
+            val profile = userProfileRepo.loadUserProfile(uid, cached)
+            val block = BlockManager.findUserById(uid)
+            _uiState.update { UserProfileUiState(block = block, profile = profile) }
         }
+    }
+
+    fun onRefresh() {
+        if (!_uiState.value.isRefreshing) refreshInternal(cached = false)
     }
 
     private fun updateBlockCategory(category: Int) = viewModelScope.launch(handler) {
@@ -114,49 +116,57 @@ class UserProfileViewModel @Inject constructor(
 
     fun onWhiteListClicked() = updateBlockCategory(Block.CATEGORY_WHITE_LIST)
 
-    private fun setupFollowState(following: Boolean) {
-        val state = _uiState.value
-        val profile = state.profile
-
-        // Adjust fans num if needed
-        var fansChanges = 0
-        if (profile?.following != following) fansChanges = if (following) 1 else -1
-        val newProfile = profile?.copy(following = following, fans = profile.fans + fansChanges)
-
-        _uiState.update { it.copy(disableButton = !state.disableButton, profile = newProfile) }
-    }
-
-    fun onFollowClicked(tbs: String) {
-        if (_uiState.value.disableButton) return
-        setupFollowState(following = true)
-        viewModelScope.launch(handler) {
-            val portrait = _uiState.value.profile?.portrait ?: throw NullPointerException("Uninitialized user")
-            TiebaApi.getInstance()
-                .followFlow(portrait, tbs)
-                .catch {
-                    setupFollowState(following = false)
-                    context.toastShort(R.string.toast_like_failed, it.getErrorMessage())
-                }
-                .firstOrNull() ?: return@launch
-
-            setupFollowState(following = true)
+    private fun updateRequestingFollowState(following: Boolean, requesting: Boolean) {
+        _uiState.update {
+            val profile = it.profile
+            val newProfile = if (profile?.following != following) { // adjust fans num
+                profile?.copy(following = following, fans = profile.fans + if (following) 1 else -1)
+            } else {
+                profile
+            }
+            it.copy(isRequestingFollow = requesting, profile = newProfile)
         }
     }
 
-    fun onUnFollowClicked(tbs: String) {
-        if (_uiState.value.disableButton) return
-        setupFollowState(following = false)
-        viewModelScope.launch(handler) {
-            val portrait = _uiState.value.profile?.portrait ?: throw NullPointerException("Uninitialized user")
-            TiebaApi.getInstance()
-                .unfollowFlow(portrait, tbs)
-                .catch {
-                    setupFollowState(following = true)
-                    context.toastShort(R.string.toast_unlike_failed, it.getErrorMessage())
-                }
-                .firstOrNull() ?: return@launch
+    fun onFollowClicked() {
+        val oldUiState = _uiState.value
+        val profile = oldUiState.profile ?: return
+        if (oldUiState.isRequestingFollow || profile.following) return
 
-            setupFollowState(following = false)
+        updateRequestingFollowState(following = true, requesting = true)
+        viewModelScope.launch(handler) {
+            runCatching {
+                userProfileRepo.requestFollowUser(profile)
+            }
+            .onFailure { e ->
+                emitGlobalEvent(UserProfileUiEvent.FollowFailed(e))
+                updateRequestingFollowState(following = false, requesting = false) // reset unfollowed
+            }
+           .onSuccess {
+               val message = it.toastText.takeUnless { toast -> toast.isEmpty() }
+               emitGlobalEvent(UserProfileUiEvent.FollowSuccess(message))
+               updateRequestingFollowState(following = true, requesting = false)
+           }
+        }
+    }
+
+    fun onUnFollowClicked() {
+        val oldUiState = _uiState.value
+        val profile = oldUiState.profile ?: return
+        if (oldUiState.isRequestingFollow || !profile.following) return
+
+        updateRequestingFollowState(following = false, requesting = true)
+        viewModelScope.launch(handler) {
+            runCatching {
+                userProfileRepo.requestUnfollowUser(profile)
+            }
+            .onFailure { e ->
+                emitGlobalEvent(UserProfileUiEvent.UnfollowFailed(e))
+                updateRequestingFollowState(following = true, requesting = false) // reset followed
+            }
+            .onSuccess {
+                updateRequestingFollowState(following = false, requesting = false)
+            }
         }
     }
 
@@ -167,73 +177,5 @@ class UserProfileViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "UserProfileViewModel"
-
-        fun parseUserProfile(user: User): UserProfile =
-            UserProfile(
-                uid = user.id,
-                portrait = user.portrait,
-                name = user.nameShow.trim(),
-                userName = user.name.takeUnless { it == user.nameShow || it.length <= 1 }?.trim()?.let { "($it)" },
-                tiebaUid = user.tieba_uid,
-                intro = user.intro.takeUnless { it.isEmpty() },
-                sex = when (user.sex) {
-                    1 -> "♂"
-                    2 -> "♀"
-                    else -> "?"
-                },
-                tbAge = user.tb_age,
-                address = user.ip_address.takeUnless { it.isEmpty() },
-                following = user.has_concerned != 0,
-                threadNum = user.thread_num,
-                postNum = user.post_num,
-                forumNum = user.my_like_num,
-                followNum = user.concern_num.getShortNumString(),
-                fans = user.fans_num,
-                agreeNum = user.total_agree_num.getShortNumString(),
-                bazuDesc = user.bazhu_grade?.desc?.takeUnless { it.isEmpty() },
-                newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name,
-                privateForum = user.privSets?.like != 1,
-                isOfficial = user.is_guanfang == 1
-            )
     }
 }
-
-/**
- * Data class that represents [User] in UserProfilePage
- *
- * @param following [User.has_concerned] to Boolean
- * @param followNum formatted [User.concern_num]
- * @param agreeNum formatted [User.total_agree_num]
- * @param privateForum 隐藏关注的吧
- * */
-data class UserProfile(
-    val uid: Long,
-    val portrait: String,
-    val name: String,
-    val userName: String?,
-    val tiebaUid: String,
-    val intro: String?,
-    val sex: String,
-    val tbAge: String,
-    val address: String?,
-    val following: Boolean,
-    val threadNum: Int,
-    val postNum: Int,
-    val forumNum: Int,
-    val followNum: String,
-    val fans: Int,
-    val agreeNum: String,
-    val bazuDesc: String?,
-    val newGod: String?,
-    val privateForum: Boolean,
-    val isOfficial: Boolean
-)
-
-data class UserProfileUiState(
-    val isRefreshing: Boolean = false,
-    val error: ImmutableHolder<Throwable>? = null,
-
-    val block: Block? = null,
-    val disableButton: Boolean = false,
-    val profile: UserProfile? = null,
-) : UiState

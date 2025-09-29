@@ -58,9 +58,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
-import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.aspectRatio
 import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
@@ -551,7 +549,7 @@ fun FeedCard(
             )
         },
         content = {
-            if (thread.content.isNotEmpty()) {
+            if (!thread.content.isNullOrEmpty()) {
                 ThreadContent(content = thread.content)
             }
 
@@ -598,79 +596,6 @@ fun FeedCard(
             )
         },
         onClick = { onClick(thread) },
-        modifier = modifier,
-    )
-}
-
-@Composable
-fun FeedCard(
-    item: ImmutableHolder<PostInfoList>,
-    onClick: () -> Unit,
-    onAgree: (PostInfoList) -> Unit,
-    modifier: Modifier = Modifier,
-    onClickReply: (PostInfoList) -> Unit = {},
-    onClickUser: (id: Long) -> Unit = {},
-    onClickForum: (name: String) -> Unit = {},
-    onClickOriginThread: (OriginThreadInfo) -> Unit = {},
-) {
-    val context = LocalContext.current
-    val info = item.get()
-
-    Card(
-        header = {
-            UserHeader(
-                name = info.user_name,
-                nameShow = info.name_show,
-                portrait = info.user_portrait,
-                desc = remember {
-                    DateTimeUtils.getRelativeTimeString(context, info.create_time.toString())
-                },
-                onClick = { onClickUser(info.user_id) },
-            )
-        },
-        content = {
-            ThreadContent(
-                content = remember {
-                    buildThreadContent(title = info.title, abstractText = info.abstractText)
-                }
-            )
-
-            ThreadMedia(
-                forumId = info.forum_id,
-                forumName = info.forum_name,
-                threadId = info.thread_id,
-                medias = item.get { media },
-                videoInfo = item.getNullableImmutable { video_info }
-            )
-
-            item.getNullableImmutable { origin_thread_info }
-                .takeIf { info.is_share_thread == 1 }?.let { info ->
-                    OriginThreadCard(
-                        originThreadInfo = info,
-                        onClick = { onClickOriginThread(info.get()) }
-                    )
-                }
-
-            ForumInfoChip(
-                forumName = info.forum_name,
-                onClick = { onClickForum(info.forum_name) }
-            )
-        },
-        action = {
-            ThreadActionButtonRow(
-                modifier = Modifier.fillMaxWidth(),
-                shareNum = info.share_num.toLong(),
-                replyNum = info.reply_num,
-                agreeNum = info.agree_num.toLong(),
-                agreed = info.agree?.hasAgree == 1,
-                onShareClicked = {
-                    TiebaUtil.shareThread(context, title = info.title, threadId = info.thread_id)
-                },
-                onReplyClicked = { onClickReply(info) },
-                onAgreeClicked = { onAgree(info) }
-            )
-        },
-        onClick = onClick,
         modifier = modifier,
     )
 }
