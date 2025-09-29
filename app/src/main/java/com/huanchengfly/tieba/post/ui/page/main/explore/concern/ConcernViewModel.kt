@@ -1,235 +1,209 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 
+import android.util.Log
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.AgreeBean
-import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
-import com.huanchengfly.tieba.post.api.models.protos.userLike.ConcernData
-import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.CommonUiEvent
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
+import androidx.compose.ui.util.fastMap
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
-import com.huanchengfly.tieba.post.utils.appPreferences
+import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
+import com.huanchengfly.tieba.post.ui.models.Like
+import com.huanchengfly.tieba.post.ui.models.ThreadItem
+import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-@Stable
-@HiltViewModel
-class ConcernViewModel @Inject constructor() :
-    BaseViewModel<ConcernUiIntent, ConcernPartialChange, ConcernUiState, ConcernUiEvent>() {
-    override fun createInitialState(): ConcernUiState = ConcernUiState()
-
-    override fun createPartialChangeProducer(): PartialChangeProducer<ConcernUiIntent, ConcernPartialChange, ConcernUiState> =
-        ExplorePartialChangeProducer
-
-    override fun dispatchEvent(partialChange: ConcernPartialChange): UiEvent? =
-        when (partialChange) {
-            is ConcernPartialChange.Refresh.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
-            is ConcernPartialChange.LoadMore.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
-            else -> null
-        }
-
-    private object ExplorePartialChangeProducer : PartialChangeProducer<ConcernUiIntent, ConcernPartialChange, ConcernUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<ConcernUiIntent>): Flow<ConcernPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<ConcernUiIntent.Refresh>().flatMapConcat { produceRefreshPartialChange() },
-                intentFlow.filterIsInstance<ConcernUiIntent.LoadMore>().flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ConcernUiIntent.Agree>().flatMapConcat { it.producePartialChange() },
-            )
-
-        private fun produceRefreshPartialChange(): Flow<ConcernPartialChange.Refresh> =
-            TiebaApi.getInstance().userLikeFlow("", App.INSTANCE.appPreferences.userLikeLastRequestUnix, 1)
-                .map<UserLikeResponse, ConcernPartialChange.Refresh> {
-                    App.INSTANCE.appPreferences.userLikeLastRequestUnix = it.data_?.requestUnix ?: 0L
-                    ConcernPartialChange.Refresh.Success(
-                        data = it.toData(),
-                        hasMore = it.data_?.hasMore == 1,
-                        nextPageTag = it.data_?.pageTag ?: ""
-                    )
-                }
-                .onStart { emit(ConcernPartialChange.Refresh.Start) }
-                .catch { emit(ConcernPartialChange.Refresh.Failure(it)) }
-
-        private fun ConcernUiIntent.LoadMore.producePartialChange(): Flow<ConcernPartialChange.LoadMore> =
-            TiebaApi.getInstance().userLikeFlow(pageTag, App.INSTANCE.appPreferences.userLikeLastRequestUnix, 2)
-                .map<UserLikeResponse, ConcernPartialChange.LoadMore> {
-                    ConcernPartialChange.LoadMore.Success(
-                        data = it.toData(),
-                        hasMore = it.data_?.hasMore == 1,
-                        nextPageTag = it.data_?.pageTag ?: ""
-                    )
-                }
-                .onStart { emit(ConcernPartialChange.LoadMore.Start) }
-                .catch { emit(ConcernPartialChange.LoadMore.Failure(error = it)) }
-
-        private fun ConcernUiIntent.Agree.producePartialChange(): Flow<ConcernPartialChange.Agree> =
-            TiebaApi.getInstance().opAgreeFlow(
-                threadId.toString(), postId.toString(), hasAgree, objType = 3
-            ).map<AgreeBean, ConcernPartialChange.Agree> { ConcernPartialChange.Agree.Success(threadId, hasAgree xor 1) }
-                .catch { emit(ConcernPartialChange.Agree.Failure(threadId, hasAgree, it)) }
-                .onStart { emit(ConcernPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
-
-        private fun UserLikeResponse.toData(): List<ConcernData> {
-            return data_?.threadInfo ?: emptyList()
-        }
-    }
-
-    fun onAgreeClicked(thread: ThreadInfoItem) {
-        send(
-            ConcernUiIntent.Agree(
-                threadId = thread.info.threadId,
-                postId = thread.info.firstPostId,
-                hasAgree = if (thread.like.liked) 1 else 0
-            )
-        )
-    }
-}
-
-sealed interface ConcernUiIntent : UiIntent {
-    data object Refresh : ConcernUiIntent
-
-    data class LoadMore(val pageTag: String) : ConcernUiIntent
-
-    data class Agree(
-        val threadId: Long,
-        val postId: Long,
-        val hasAgree: Int,
-    ) : ConcernUiIntent
-}
-
-internal fun List<ConcernData>.distinctById(): ImmutableList<ConcernData> {
-    return distinctBy {
-        it.threadList?.id
-    }.toImmutableList()
-}
-
-sealed interface ConcernPartialChange : PartialChange<ConcernUiState> {
-    sealed class Agree() : ConcernPartialChange {
-        private fun List<ConcernData>.updateAgreeStatus(
-            threadId: Long,
-            hasAgree: Int,
-        ): ImmutableList<ConcernData> {
-            return map {
-                val threadInfo = it.threadList
-                if (threadInfo == null) it
-                else it.copy(
-                    threadList = if (threadInfo.threadId == threadId) {
-                        threadInfo.updateAgreeStatus(hasAgree)
-                    } else {
-                        threadInfo
-                    }
-                )
-            }.toImmutableList()
-        }
-
-        override fun reduce(oldState: ConcernUiState): ConcernUiState =
-            when (this) {
-                is Start -> {
-                    oldState.copy(data = oldState.data.updateAgreeStatus(threadId, hasAgree))
-                }
-                is Success -> {
-                    oldState.copy(data = oldState.data.updateAgreeStatus(threadId, hasAgree))
-                }
-                is Failure -> {
-                    oldState.copy(data = oldState.data.updateAgreeStatus(threadId, hasAgree))
-                }
-            }
-
-        data class Start(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
-
-        data class Success(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
-
-        data class Failure(
-            val threadId: Long,
-            val hasAgree: Int,
-            val error: Throwable
-        ) : Agree()
-    }
-
-    sealed class Refresh() : ConcernPartialChange {
-        override fun reduce(oldState: ConcernUiState): ConcernUiState =
-            when (this) {
-                Start -> oldState.copy(isRefreshing = true)
-                is Success -> oldState.copy(
-                    isRefreshing = false,
-                    data = data.distinctById(),
-                    hasMore = hasMore,
-                    nextPageTag = nextPageTag,
-                )
-                is Failure -> oldState.copy(isRefreshing = false)
-            }
-
-        data object Start : Refresh()
-
-        data class Success(
-            val data: List<ConcernData>,
-            val hasMore: Boolean,
-            val nextPageTag: String,
-        ) : Refresh()
-
-        data class Failure(
-            val error: Throwable,
-        ) : Refresh()
-    }
-
-    sealed class LoadMore() : ConcernPartialChange {
-        override fun reduce(oldState: ConcernUiState): ConcernUiState =
-            when (this) {
-                Start -> oldState.copy(isLoadingMore = true)
-                is Success -> oldState.copy(
-                    isLoadingMore = false,
-                    data = (oldState.data + data).distinctById(),
-                    hasMore = hasMore,
-                    nextPageTag = nextPageTag,
-                )
-                is Failure -> oldState.copy(isLoadingMore = false)
-            }
-
-        data object Start : LoadMore()
-
-        data class Success(
-            val data: List<ConcernData>,
-            val hasMore: Boolean,
-            val nextPageTag: String,
-        ) : LoadMore()
-
-        data class Failure(
-            val error: Throwable,
-        ) : LoadMore()
-    }
-}
-
+@Immutable
 data class ConcernUiState(
     val isRefreshing: Boolean = true,
     val isLoadingMore: Boolean = false,
     val hasMore: Boolean = true,
+    val lastRequestUnix: Long = 0,
     val nextPageTag: String = "",
-    val data: ImmutableList<ConcernData> = persistentListOf(),
-): UiState
+    val data: List<ThreadItem> = emptyList(),
+    val error: Throwable? = null
+): UiState {
 
-sealed interface ConcernUiEvent : UiEvent
+    val isEmpty: Boolean
+        get() = data.isEmpty()
+}
+
+@Stable
+@HiltViewModel
+class ConcernViewModel @Inject constructor(
+    private val exploreRepo: ExploreRepository
+) : ViewModel() {
+
+    private val handler = CoroutineExceptionHandler { _, e ->
+        Log.e(TAG, "onError: ", e)
+        _uiState.update { it.copy(isRefreshing = false, error = e) }
+    }
+
+    private val _uiState = MutableStateFlow(ConcernUiState(isRefreshing = true))
+    val uiState: StateFlow<ConcernUiState> = _uiState.asStateFlow()
+
+    init {
+        refreshInternal(cached = true)
+    }
+
+    private fun refreshInternal(cached: Boolean) = viewModelScope.launch(handler) {
+        var lastRequestUnix: Long? = null
+        _uiState.set {
+            lastRequestUnix = this.lastRequestUnix.takeUnless { it == 0L }
+            ConcernUiState(isRefreshing = true)
+        }
+        val rec = exploreRepo.refreshUserLike(lastRequestUnix, cached)
+        val data = rec.threads.distinctById()
+        _uiState.set {
+            copy(isRefreshing = false, hasMore = rec.hasMore, lastRequestUnix = rec.requestUnix, nextPageTag = rec.pageTag, data = data)
+        }
+    }
+
+    fun onRefresh() {
+        if (!_uiState.value.isRefreshing) refreshInternal(cached = false)
+    }
+
+    fun onLoadMore() {
+        val oldState = _uiState.value
+        if (!oldState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
+
+        viewModelScope.launch(handler) {
+            val rec = exploreRepo.loadUserLike(oldState.nextPageTag, oldState.lastRequestUnix)
+            val data = (oldState.data + rec.threads).distinctById()
+            _uiState.update {
+                it.copy(isLoadingMore = false, hasMore = rec.hasMore, lastRequestUnix = rec.requestUnix, nextPageTag = rec.pageTag, data = data)
+            }
+        }
+    }
+
+    /**
+     * Called when user clicked like button on target [ThreadItem]
+     * */
+    fun onThreadLikeClicked(thread: ThreadItem) = viewModelScope.launch(handler) {
+        updateLikeStatusUiStateCommon(
+            thread = thread,
+            onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Concern) },
+            onEvent = ::emitGlobalEventSuspend
+        ) { threadId, liked, loading ->
+            _uiState.update { it.copy(data = it.data.updateLikeStatus(threadId, liked, loading)) }
+        }
+    }
+
+    /**
+     * Called when navigate back from thread page with latest [Like] status
+     *
+     * @param threadId target thread ID
+     * @param like latest like status of target thread
+     * */
+    fun onThreadResult(threadId: Long, like: Like) {
+        viewModelScope.launch(handler) {
+            // compare and update with latest like status
+            val newData = _uiState.value.data.updateLikeStatus(threadId, like)
+            if (newData != null) {
+                _uiState.update { it.copy(data = newData) }
+                exploreRepo.purgeCache(ExplorePageItem.Concern)
+            }
+            // else: empty or no status changes
+        }
+    }
+
+    companion object {
+        private const val TAG = "ConcernViewModel"
+
+        /**
+         * Update Like status of target [ThreadItem] in this list
+         *
+         * @param threadId id of target [ThreadItem]
+         * @param liked new like status
+         * @param loading is requesting like status update to server
+         *
+         * @return new thread list with like status updated
+         * */
+        suspend fun List<ThreadItem>.updateLikeStatus(
+            threadId: Long,
+            liked: Boolean,
+            loading: Boolean
+        ): List<ThreadItem> = withContext(Dispatchers.Default) {
+            fastMap {
+                if (it.id != threadId) return@fastMap it
+
+                it.copy(like = it.like.updateLikeStatus(liked).setLoading(loading))
+            }
+        }
+
+        /**
+         * Update Like status of target [ThreadItem] in this list
+         *
+         * @param threadId id of target [ThreadItem]
+         * @param like new like status
+         *
+         * @return new thread list with like status updated or **null** if no status changes
+         * */
+        suspend fun List<ThreadItem>.updateLikeStatus(threadId: Long, like: Like) = if (this.isNotEmpty()) {
+            withContext(Dispatchers.Default) {
+                var changed = false
+                fastMap {
+                    if (it.id == threadId) {
+                        // no status changes, return null directly
+                        if (it.liked == like.liked && it.like.count == like.count) return@withContext null
+                        changed = true
+                        it.copy(like = like)
+                    } else {
+                        it
+                    }
+                }.takeIf { changed } // else target thread not found
+            }
+        } else {
+            null
+        }
+
+        suspend fun updateLikeStatusUiStateCommon(
+            thread: ThreadItem,
+            onRequestLikeThread: suspend (ThreadItem) -> Unit,
+            onEvent: suspend (ThreadLikeUiEvent) -> Unit,
+            onUpdateThreadList: suspend (threadId: Long, liked: Boolean, loading: Boolean) -> Unit
+        ): Boolean = withContext(Dispatchers.Main) {
+            if (thread.like.loading) {
+                onEvent(ThreadLikeUiEvent.Connecting)
+                return@withContext false
+            }
+            val threadId = thread.id
+            val liked = !thread.liked
+
+            // set loading to true
+            onUpdateThreadList(threadId, liked, true)
+            // request like status update to server
+            runCatching {
+                onRequestLikeThread(thread)
+            }
+            .onFailure {
+                if (it is TiebaNotLoggedInException) {
+                    onEvent(ThreadLikeUiEvent.NotLoggedIn)
+                } else {
+                    onEvent(ThreadLikeUiEvent.Failed(e = it))
+                }
+                // revert like status changes on this ThreadItem, set loading to false
+                onUpdateThreadList(threadId, !liked, false)
+            }
+            .onSuccess {
+                // set loading to false
+                onUpdateThreadList(threadId, liked, false)
+            }
+            .isSuccess
+        }
+    }
+}

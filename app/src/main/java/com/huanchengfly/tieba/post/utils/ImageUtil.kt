@@ -288,11 +288,22 @@ object ImageUtil {
         return if (loadWorst()) smallPicUrl else originUrl
     }
 
+    fun getThumbnail(loadType: Int, originUrl: String, smallPicUrl: String): String {
+        return if (loadWorst(loadType)) smallPicUrl else originUrl
+    }
+
     private fun loadWorst(): Boolean {
         return if (imageLoadSettings == SETTINGS_SMART_ORIGIN &&
             NetworkObserver.isNetworkUnMetered
         ) false
         else imageLoadSettings != SETTINGS_ALL_ORIGIN
+    }
+
+    private fun loadWorst(loadType: Int): Boolean {
+        if (loadType == SETTINGS_SMART_ORIGIN && NetworkObserver.isNetworkUnMetered) {
+            return false
+        }
+        return loadType != SETTINGS_ALL_ORIGIN
     }
 
     // Check is long image with given width x height size

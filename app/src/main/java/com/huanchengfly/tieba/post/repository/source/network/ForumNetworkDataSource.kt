@@ -14,6 +14,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterceptor
 import com.huanchengfly.tieba.post.arch.firstOrThrow
+import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataSource.commonResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.withContext
@@ -30,7 +31,7 @@ object ForumNetworkDataSource {
             .catch { throw ConnectivityInterceptor.wrapException(it) }
             .firstOrThrow()
             .run {
-                data_?.forum_info ?: throw TiebaException(this.error?.error_msg)
+                data_?.forum_info ?: throw TiebaApiException(this.error.commonResponse)
             }
     }
 
@@ -46,7 +47,7 @@ object ForumNetworkDataSource {
             .frsPage(forumName, page, loadType, sortType, goodClassifyId)
             .catch { throw ConnectivityInterceptor.wrapException(it) }
             .firstOrThrow()
-        if (response.data_?.forum == null) throw TiebaException(response.error?.error_msg)
+        if (response.data_?.forum == null) throw TiebaApiException(response.error.commonResponse)
 
         return withContext(Dispatchers.Default) {
             response.data_.thread_list
@@ -71,7 +72,7 @@ object ForumNetworkDataSource {
             .threadList(forumId, forumName, page, sortType, threadId)
             .catch { throw ConnectivityInterceptor.wrapException(it) }
             .firstOrThrow()
-        if (response.data_?.thread_list == null) throw TiebaException(response.error?.error_msg)
+        if (response.data_?.thread_list == null) throw TiebaApiException(response.error.commonResponse)
 
         return withContext(Dispatchers.Default) {
             response.data_.thread_list
@@ -90,7 +91,7 @@ object ForumNetworkDataSource {
             .catch { throw ConnectivityInterceptor.wrapException(it) }
             .firstOrThrow()
             .run {
-                data_ ?: throw TiebaException(message = this.error?.error_msg)
+                data_ ?: throw TiebaApiException(commonResponse = error.commonResponse)
             }
     }
 
@@ -100,7 +101,7 @@ object ForumNetworkDataSource {
             .unlikeForumFlow(forumId = forumId.toString(), forumName = forumName, tbs = tbs)
             .firstOrThrow()
             .let {
-                if (it.errorCode != 0) throw TiebaApiException(it)
+                if (it.errorCode != 0) throw TiebaApiException(commonResponse = it)
             }
     }
 

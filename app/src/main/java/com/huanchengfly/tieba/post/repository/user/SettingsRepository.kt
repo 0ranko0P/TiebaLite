@@ -24,11 +24,15 @@ interface SettingsRepository {
 
     val blockSettings: Settings<BlockSettings>
 
+    /**
+     * Settings of the scaling factor for fonts
+     * */
     val fontScale: Settings<Float>
 
     val habitSettings: Settings<HabitSettings>
 
     val themeSettings: Settings<ThemeSettings>
+
     val uiSettings: Settings<UISettings>
 
     val signConfig: Settings<SignConfig>

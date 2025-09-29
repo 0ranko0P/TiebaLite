@@ -7,6 +7,7 @@ import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.HistoryRepository
@@ -83,7 +84,7 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val handler = CoroutineExceptionHandler { _, e ->
-        if (e !is NoConnectivityException) {
+        if (e !is NoConnectivityException && e !is TiebaNotLoggedInException) {
             Log.e(TAG, "onError: ", e)
         }
         _uiState.update { it.copy(isLoading = false, error = e) }

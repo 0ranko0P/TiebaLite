@@ -16,3 +16,13 @@ fun ProvideNavigator(
 ) {
     CompositionLocalProvider(LocalNavController provides navigator, content = content)
 }
+
+fun <T> NavController.navigateBackWithResult(key: String, value: T) {
+    previousBackStackEntry?.savedStateHandle?.set(key, value)
+    navigateUp()
+}
+
+fun <T> NavController.consumeResult(key: String): T? {
+    val savedStateHandle = currentBackStackEntry?.savedStateHandle ?: return null
+    return savedStateHandle.remove(key)
+}

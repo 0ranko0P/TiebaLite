@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
@@ -43,6 +44,8 @@ import com.huanchengfly.tieba.post.ui.page.settings.theme.AppThemePage
 import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsSheetPage
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPage
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadResultKey
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadViewModel
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStorePage
 import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
@@ -148,7 +151,14 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             typeMap = threadTypeMap
         ) { backStackEntry ->
             with(backStackEntry.toRoute<Destination.Thread>()) {
-                ThreadPage(threadId, postId, from, scrollToReply, navController)
+                val vm: ThreadViewModel = hiltViewModel()
+                ThreadPage(threadId, postId, from, scrollToReply, navController, vm) { result ->
+                    if (result != null) {
+                        navController.navigateBackWithResult(ThreadResultKey, result)
+                    } else {
+                        navController.navigateUp()
+                    }
+                }
             }
         }
 

@@ -9,6 +9,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
 import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.repository.EmptyDataException
+import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataSource.commonResponse
 import com.huanchengfly.tieba.post.ui.page.thread.FROM_STORE
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -63,8 +64,8 @@ object ThreadNetworkDataSource {
                 lastPostId = lastPostId
             )
             .firstOrThrow()
-            .let { response ->
-                response.data_ ?: throw TiebaException(message = response.error?.error_msg)
+            .run {
+                data_ ?: throw TiebaApiException(commonResponse = this.error.commonResponse)
             }
     }
 
@@ -134,7 +135,7 @@ object ThreadNetworkDataSource {
             .delThreadFlow(forumId, forumName, threadId, tbs, isSelfThread, false)
             .firstOrThrow()
             .let {
-                if (it.errorCode != 0) throw TiebaApiException(it)
+                if (it.errorCode != 0) throw TiebaApiException(commonResponse = it)
             }
     }
 

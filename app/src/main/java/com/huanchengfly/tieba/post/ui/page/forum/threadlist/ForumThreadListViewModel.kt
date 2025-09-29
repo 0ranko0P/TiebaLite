@@ -5,21 +5,19 @@ import android.util.Log
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
 import com.huanchengfly.tieba.post.repository.ForumRepository
+import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
-import com.huanchengfly.tieba.post.ui.models.ThreadItemData
-import com.huanchengfly.tieba.post.ui.models.distinctById
+import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
-import com.huanchengfly.tieba.post.ui.models.updateAgreeStatus
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListViewModel.Companion.ForumVMFactory
+import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
+import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -31,11 +29,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
@@ -50,6 +45,7 @@ class ForumThreadListViewModel @AssistedInject constructor(
     @Assisted val type: ForumType,
     @ApplicationContext val context: Context,
     private val forumRepo: ForumRepository,
+    private val threadRepo: PbPageRepository,
     settingsRepo: SettingsRepository,
 ) : ViewModel() {
 
@@ -169,32 +165,13 @@ class ForumThreadListViewModel @AssistedInject constructor(
         }
     }
 
-    fun onAgree(thread: ThreadInfoItem) {
-        if (thread.like.loading) {
-            context.toastShort(R.string.toast_connecting)
-            return
-        }
-
-        viewModelScope.launch(handler) {
-            val liked = thread.like.liked
-            val threadId = thread.info.threadId
-            TiebaApi.getInstance()
-                .opAgreeFlow(
-                    threadId = threadId.toString(),
-                    postId = thread.info.firstPostId.toString(),
-                    opType = if (liked) 1 else 0, // 操作 0 = 点赞, 1 = 取消点赞
-                    objType = 3
-                )
-                .catch {
-                    _uiState.update { u -> u.copy(threads = u.threads.updateAgreeStatus(threadId)) }
-                    context.toastShort(R.string.snackbar_agree_fail, it.getErrorMessage())
-                }
-                .onStart {
-                    _uiState.update { it.copy(threads = it.threads.updateAgreeStatus(threadId, loading = true)) }
-                }
-                .firstOrNull() ?: return@launch
-
-            _uiState.update { it.copy(threads = it.threads.updateAgreeStatus(threadId)) }
+    fun onThreadLikeClicked(thread: ThreadItem) = viewModelScope.launch(handler) {
+        updateLikeStatusUiStateCommon(
+            thread = thread,
+            onRequestLikeThread = threadRepo::requestLikeThread,
+            onEvent = ::emitGlobalEventSuspend
+        ) { threadId, liked, loading ->
+            _uiState.update { it.copy(threads = it.threads.updateLikeStatus(threadId, liked, loading)) }
         }
     }
 
@@ -216,7 +193,7 @@ data class ForumThreadListUiState(
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val goodClassifyId: Int? = null,
-    val threads: List<ThreadItemData> = emptyList(),
+    val threads: List<ThreadItem> = emptyList(),
     val threadIds: List<Long> = emptyList(),
     val currentPage: Int = 1,
     val hasMore: Boolean = true,

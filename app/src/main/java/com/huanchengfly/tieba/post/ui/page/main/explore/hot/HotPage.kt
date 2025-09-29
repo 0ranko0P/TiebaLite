@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,24 +36,25 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.FrsTabInfo
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.YellowA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
-import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.Destination.HotTopicList
+import com.huanchengfly.tieba.post.ui.models.explore.HotTab
+import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
+import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
+import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
+import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
@@ -63,70 +63,57 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 
 private enum class HotType {
-    TopicHeader, TopicList, ThreadTabs, ThreadListTip, Thread
+    TopicHeader, TopicList, ThreadTabs, ThreadListTip, Thread, PlaceHolder
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HotPage(
-    navigator: NavController,
-    contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues,
+    navigator: NavController,
     onHideFab: (Boolean) -> Unit,
-    viewModel: HotViewModel = pageViewModel()
+    viewModel: HotViewModel = hiltViewModel()
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(HotUiIntent.Load)
-        viewModel.initialized = true
-    }
-
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = HotUiState::isRefreshing,
-        initial = false
-    )
-    val topicList by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::topicList,
-        initial = emptyList()
-    )
-    val threadList by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::threadList,
-        initial = emptyList()
-    )
-    val tabList by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::tabList,
-        initial = emptyList()
-    )
-    val currentTabCode by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::currentTabCode,
-        initial = "all"
+        initial = true
     )
 
     val error by viewModel.uiState.collectPartialAsState(
         prop1 = HotUiState::error,
         initial = null
     )
-
-    val isError by remember { derivedStateOf { error != null } }
-    val onReload: () -> Unit = { viewModel.send(HotUiIntent.Load) }
+    val isError = error != null
 
     val listState = rememberLazyListState()
-    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
+    LaunchedFabStateEffect(ExplorePageItem.Hot, listState, onHideFab, isRefreshing, isError)
+
+    val threadClickListeners = remember(navigator) {
+        createThreadClickListeners(onNavigate = navigator::navigate)
+    }
+
+    // result from ThreadPage
+    ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isError = isError,
         isLoading = isRefreshing,
-        onReload = onReload,
+        onReload = viewModel::onRefresh,
         errorScreen = {
             ErrorScreen(error = error, modifier = Modifier.padding(contentPadding))
         }
     ) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = onReload,
+            onRefresh = viewModel::onRefresh,
             contentPadding = contentPadding
         ) {
             val colorScheme = MaterialTheme.colorScheme
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val topicList = uiState.topics
+            val threadList = uiState.threads
 
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
@@ -147,16 +134,14 @@ fun HotPage(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            itemsIndexed(
-                                items = topicList,
-                            ) { index, item ->
+                            itemsIndexed(items = topicList) { index, (topicName, topicTag) ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier.padding(vertical = 8.dp)
                                 ) {
                                     Text(
-                                        text = "${index + 1}",
+                                        text = (index + 1).toString(),
                                         fontWeight = FontWeight.Bold,
                                         color = when (index) {
                                             0 -> RedA700
@@ -168,12 +153,12 @@ fun HotPage(
                                         modifier = Modifier.padding(bottom = 2.dp)
                                     )
                                     Text(
-                                        text = item.get { topicName },
+                                        text = topicName,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f)
                                     )
-                                    when (item.get { tag }) {
+                                    when (topicTag) {
                                         2 -> TopicTag(isHot = true)
 
                                         1 -> TopicTag(isHot = false)
@@ -189,7 +174,7 @@ fun HotPage(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable { navigator.navigate(HotTopicList) }
+                                            .clickable(onClick = threadClickListeners.onNavigateHotTopicList)
                                             .padding(bottom = 8.dp)
                                     ) {
                                         Text(
@@ -213,51 +198,46 @@ fun HotPage(
                         )
                     }
                 }
-                if (threadList.isNotEmpty()) {
-                    if (tabList.isNotEmpty()) {
-                        item(key = HotType.ThreadTabs, contentType = HotType.ThreadTabs) {
-                            ThreadTabs(tabs = tabList, selectedTabCode = currentTabCode) {
-                                viewModel.send(HotUiIntent.RefreshThreadList(it))
-                            }
-                        }
-                    }
 
-                    item(key = HotType.ThreadListTip, contentType = HotType.ThreadListTip) {
-                        Box(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                        ) {
-                            Text(
-                                text = stringResource(id = R.string.hot_thread_rank_rule),
-                                color = colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+                if (uiState.tabs.isNotEmpty()) {
+                    item(key = HotType.ThreadTabs, contentType = HotType.ThreadTabs) {
+                        ThreadTabs(uiState.tabs, uiState.selectedTab, viewModel::onTabSelected)
                     }
-
                 }
+
+                if (threadList.isNullOrEmpty()) {
+                    items(4, contentType = { HotType.PlaceHolder }) {
+                        FeedCardPlaceholder()
+                    }
+                    return@LazyColumn
+                }
+
+                item(key = HotType.ThreadListTip, contentType = HotType.ThreadListTip) {
+                    Box(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.hot_thread_rank_rule),
+                            color = colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
                 itemsIndexed(
                     items = threadList,
-                    key = { _, item -> item.threadId },
+                    key = { _, thread -> thread.id },
                     contentType = { _,_ -> HotType.Thread }
-                ) { index, item ->
+                ) { index, thread ->
                     FeedCard(
-                        item = item.thread,
-                        onClick = {
-                            navigator.navigate(Destination.Thread(threadId = it.id))
-                        },
-                        onClickReply = {
-                            navigator.navigate(Destination.Thread(threadId = it.id, scrollToReply = true))
-                        },
-                        onAgree = viewModel::onAgreeClicked,
-                        onClickForum = {
-                            val extraKey = item.threadId.toString()
-                            navigator.navigate(
-                                route = Destination.Forum(it.name, it.avatar, extraKey)
-                            )
-                        },
-                        onClickUser = { navigator.navigate(Destination.UserProfile(it.id)) },
+                        thread = thread,
+                        onClick = threadClickListeners.onClicked,
+                        onLike = viewModel::onThreadLikeClicked,
+                        onClickReply = threadClickListeners.onReplyClicked,
+                        onClickUser = threadClickListeners.onAuthorClicked,
+                        onClickForum = threadClickListeners.onForumClicked,
                     ) {
-                        HotRankText(rank = index + 1, hotNum = item.thread.info.hotNum)
+                        HotRankText(rank = index + 1, hotNum = thread.hotNum)
                     }
                 }
             }
@@ -282,10 +262,10 @@ fun TopicTag(modifier: Modifier = Modifier, isHot: Boolean) {
 
 @Composable
 private fun ThreadTabs(
+    tabs: List<HotTab>,
+    selected: HotTab,
+    onTabSelected: (HotTab) -> Unit,
     modifier: Modifier = Modifier,
-    tabs: List<ImmutableHolder<FrsTabInfo>>,
-    selectedTabCode: String,
-    onSelected: (String) -> Unit
 ) {
     LazyRow(
         modifier = modifier
@@ -293,18 +273,12 @@ private fun ThreadTabs(
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        item {
+        items(items = tabs, key = { it.tabCode }) {
             Chip(
-                text = stringResource(id = R.string.tab_all_hot_thread),
-                invertColor = selectedTabCode == "all",
-                onClick = { onSelected("all") }
-            )
-        }
-        items(items  = tabs, key = { it.item.tabName } ) {
-            Chip(
-                text = it.item.tabName,
-                invertColor = selectedTabCode == it.item.tabCode,
-                onClick = { onSelected(it.get { tabCode }) }
+                // Default TAB has empty name, get name from resource
+                text = it.name.ifEmpty { stringResource(id = R.string.tab_all_hot_thread) },
+                invertColor = selected.tabCode == it.tabCode,
+                onClick = { onTabSelected(it) }
             )
         }
     }

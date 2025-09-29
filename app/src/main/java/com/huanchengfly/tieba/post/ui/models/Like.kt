@@ -1,6 +1,6 @@
 package com.huanchengfly.tieba.post.ui.models
 
-import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.huanchengfly.tieba.post.api.models.protos.Agree
 
 /**
@@ -9,7 +9,7 @@ import com.huanchengfly.tieba.post.api.models.protos.Agree
  * @param liked remapped [Agree.hasAgree] from Int to Boolean
  * @param count [Agree.agreeNum]
  * */
-@Immutable
+@Stable
 data class Like(val liked: Boolean, val count: Long) {
 
     @Volatile

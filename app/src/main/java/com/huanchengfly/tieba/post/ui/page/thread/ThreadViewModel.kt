@@ -20,8 +20,6 @@ import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.booleanToString
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
@@ -386,10 +384,10 @@ class ThreadViewModel @Inject constructor(
     }
 
     fun onPostLikeClicked(post: PostData) {
-        if (post.like.loading) {
-            sendMsg(R.string.toast_connecting); return
-        } else if (threadUiState.value.user == null) {
-            sendMsg(R.string.title_not_logged_in); return
+        if (threadUiState.value.user == null) {
+            sendUiEvent(ThreadLikeUiEvent.NotLoggedIn); return
+        } else if (post.like.loading) {
+            sendUiEvent(ThreadLikeUiEvent.Connecting); return
         }
 
         viewModelScope.launch {
@@ -402,9 +400,9 @@ class ThreadViewModel @Inject constructor(
                 .onStart {
                     _threadUiState.update { it.updateLikedPost(post.id, !liked, loading = true) }
                 }
-                .catch {
-                    _threadUiState.update { s -> s.updateLikedPost(post.id, liked, loading = false) }
-                    sendMsg(R.string.snackbar_agree_fail, it.getErrorCode(), it.getErrorMessage())
+                .catch { e ->
+                    sendUiEvent(ThreadLikeUiEvent.Failed(e))
+                    _threadUiState.update { it.updateLikedPost(post.id, liked, loading = false) }
                 }
                 .collect {
                     if (System.currentTimeMillis() - start < 400) { // Wait for button animation
@@ -416,22 +414,23 @@ class ThreadViewModel @Inject constructor(
     }
 
     fun onThreadLikeClicked() = viewModelScope.launch(handler) {
-        val stateSnapshot = _threadUiState.first()
+        val stateSnapshot = _threadUiState.value
         val oldThread = stateSnapshot.thread ?: throw NullPointerException()
         val like = oldThread.like
-        if (!like.loading) {
-            _threadUiState.update { it.copy(thread = oldThread.updateLikeStatus(liked = !like.liked, loading = true)) }
-        } else {
-            sendMsg(R.string.toast_connecting)
-            return@launch
+
+        // check user logged in & requesting like status update
+        if (stateSnapshot.user == null) {
+            sendUiEvent(ThreadLikeUiEvent.NotLoggedIn); return@launch
+        } else if (like.loading) {
+            sendUiEvent(ThreadLikeUiEvent.Connecting); return@launch
         }
 
+        _threadUiState.update { it.copy(thread = oldThread.updateLikeStatus(liked = !like.liked, loading = true)) }
         runCatching {
-            if (stateSnapshot.user == null) throw TiebaNotLoggedInException()
             threadRepo.requestLikeThread(oldThread)
         }
         .onFailure { e ->
-            sendMsg(context.getString(R.string.toast_agree_failed, e.getErrorMessage()))
+            sendUiEvent(ThreadLikeUiEvent.Failed(e))
             _threadUiState.update { it.copy(thread = oldThread) } // Reset to old thread
         }
         .onSuccess { _ ->

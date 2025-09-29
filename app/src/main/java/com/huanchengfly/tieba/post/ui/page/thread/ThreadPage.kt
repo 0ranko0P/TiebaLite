@@ -73,7 +73,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFirstOrNull
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
@@ -119,6 +118,16 @@ import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
+
+const val ThreadResultKey = "THREAD_PAGE"
+
+private fun createResult(threadId: Long, like: Like?, markedPost: PostData?): ThreadResult? {
+    return if (like != null) {
+        ThreadResult(threadId, like.liked, like.count, markedPostId = markedPost?.id)
+    } else {
+        null
+    }
+}
 
 @Composable
 private fun ToggleButton(
@@ -175,7 +184,8 @@ fun ThreadPage(
     extra: ThreadFrom? = null,
     scrollToReply: Boolean = false,
     navigator: NavController,
-    viewModel: ThreadViewModel = hiltViewModel(),
+    viewModel: ThreadViewModel,
+    onBackWithResult: (ThreadResult?) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -207,10 +217,10 @@ fun ThreadPage(
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect {
-            val unhandledEvent = it?: return@collect
-            when(unhandledEvent) {
+            if (it == null) return@collect
+            when(it) {
                 is CommonUiEvent.Toast -> {
-                    snackbarHostState.showSnackbar(unhandledEvent.message.toString())
+                    snackbarHostState.showSnackbar(it.message.toString())
                 }
 
                 is ThreadUiEvent.ScrollToFirstReply -> lazyListState.animateScrollToItem(1)
@@ -224,15 +234,17 @@ fun ThreadPage(
                 }
 
                 is ThreadUiEvent.LoadSuccess -> {
-                    if (unhandledEvent.page > 1 || waitLoadSuccessAndScrollToFirstReply) {
+                    if (it.page > 1 || waitLoadSuccessAndScrollToFirstReply) {
                         waitLoadSuccessAndScrollToFirstReply = false
                         lazyListState.animateScrollToItem(1)
                     }
                 }
 
-                is ThreadUiEvent.ToReplyDestination -> navigator.navigate(unhandledEvent.direction)
+                is ThreadUiEvent.ToReplyDestination -> navigator.navigate(it.direction)
 
-                is ThreadUiEvent.ToSubPostsDestination -> navigator.navigate(unhandledEvent.direction)
+                is ThreadUiEvent.ToSubPostsDestination -> navigator.navigate(it.direction)
+
+                is ThreadLikeUiEvent -> snackbarHostState.showSnackbar(it.toMessage(context))
             }
         }
     }
@@ -241,12 +253,19 @@ fun ThreadPage(
         viewModel.requestLoadMyLatestReply(event.newPostId)
     }
 
+
     var newMarkedCollectionPost: PostData? by remember { mutableStateOf(null) }
+
+    val navigateUpWithResult: () -> Unit = {
+        val threadLike = state.thread?.like
+        onBackWithResult(createResult(threadId, threadLike, newMarkedCollectionPost))
+    }
+
     newMarkedCollectionPost?.let {
         CollectionsUpdateDialog(
             markedPost = it,
             onUpdate = viewModel::updateCollections,
-            onBack = navigator::navigateUp
+            onBack = navigateUpWithResult
         )
     }
 
@@ -302,7 +321,7 @@ fun ThreadPage(
             // Show CollectionsUpdateDialog now
             newMarkedCollectionPost = lastVisiblePost
         } else {
-            navigator.navigateUp()
+            navigateUpWithResult()
         }
     }
 
@@ -332,7 +351,7 @@ fun ThreadPage(
                             }
                         }
                     },
-                    navigationIcon = { BackNavigationIcon(navigator::navigateUp) },
+                    navigationIcon = { BackNavigationIcon(onBackPressed = navigateUpWithResult) },
                     scrollBehavior = topAppBarScrollBehavior
                 ) {
                     val replyNum = state.thread?.replyNum

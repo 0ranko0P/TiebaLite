@@ -3,30 +3,20 @@ package com.huanchengfly.tieba.post.repository.source.local
 import android.content.Context
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
-import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
-import com.squareup.wire.ProtoReader
-import com.squareup.wire.ReverseProtoWriter
-import com.squareup.wire.internal.ProtocolException
+import com.huanchengfly.tieba.post.utils.FileUtil.isCacheExpired
+import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.decodeListCache
+import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.encodeListCache
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okio.buffer
-import okio.sink
-import okio.source
 import java.io.File
-import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val PROTO_CODEC_TAG: Int = 114514
-
 private const val CACHE_DIR_NAME = "likedForum"
 private const val CACHE_EXPIRE_MILL= 0xA4CB800 // 2 Days
-
-private val File.isCacheExpired: Boolean
-    get() = lastModified() + CACHE_EXPIRE_MILL < System.currentTimeMillis()
 
 /**
  * Local data source to cache liked forums in file.
@@ -41,38 +31,16 @@ class HomeLocalDataSource @Inject constructor(@ApplicationContext context: Conte
     /**
      * @param uid account uid of current user
      *
-     * @return cached, cleaned [LikeForum] list from, **null** if not exists or expired.
+     * @return list of cleaned [LikeForum], **null** if not exists or expired.
      *
      * @see isCacheExpired
      * @see clean
      * */
     suspend fun get(uid: Long): List<LikeForum>? = withContext(Dispatchers.IO) {
+        val cacheFile = cacheFile(uid)
         mutex.withLock {
-            val cacheFile = cacheFile(uid)
             runCatching {
-                if (cacheFile.exists() && cacheFile.length() > 0) {
-                    if (cacheFile.isCacheExpired) {
-                        cacheFile.deleteQuietly()
-                        return@runCatching null
-                    }
-
-                    cacheFile.source().buffer().use { source ->
-                        val reader = ProtoReader(source)
-                        mutableListOf<LikeForum>().also {
-                            reader.forEachTag { tag ->
-                                if (tag == PROTO_CODEC_TAG) {
-                                    it.add(LikeForum.ADAPTER.decode(reader))
-                                } else {
-                                    throw ProtocolException("Decode LikeForum failed: unknown tag:$tag.")
-                                }
-                            }
-                        }
-                    }
-                } else throw IOException("Empty proto file ${cacheFile.name}.")
-            }
-            .onFailure {
-                it.printStackTrace()
-                cacheFile.deleteQuietly()
+                LikeForum.ADAPTER.decodeListCache(cacheFile, CACHE_EXPIRE_MILL.toLong())
             }
             .getOrNull()
         }
@@ -87,20 +55,13 @@ class HomeLocalDataSource @Inject constructor(@ApplicationContext context: Conte
      * @param forums liked forums
      * */
     suspend fun saveOrUpdate(uid: Long, forums: List<LikeForum>): Boolean = withContext(Dispatchers.IO) {
+        val data = forums.clean()
+        val cacheFile = cacheFile(uid)
         mutex.withLock {
-            val cacheFile = cacheFile(uid)
-            val forumList = forums.clean()
             runCatching {
-                val writer = ReverseProtoWriter()
-                LikeForum.ADAPTER.asRepeated().encodeWithTag(writer, PROTO_CODEC_TAG, forumList)
-                cacheFile.sink().buffer().use { sink -> writer.writeTo(sink) }
-                true
+                LikeForum.ADAPTER.encodeListCache(cacheFile, data)
             }
-            .onFailure {
-                it.printStackTrace()
-                cacheFile.deleteQuietly()
-            }
-            .getOrNull() == true
+            .isSuccess
         }
     }
 
@@ -110,14 +71,13 @@ class HomeLocalDataSource @Inject constructor(@ApplicationContext context: Conte
         }
     }
 
-    @Throws(IOException::class)
     private fun cacheFile(uid: Long): File {
-        require(uid > 0)
-        return File(cacheDir, uid.toString()).also { it.ensureParents() }
+        require(uid > 0) { "Illegal User ID: $uid" }
+        return File(cacheDir, uid.toString())
     }
 }
 
-// Erase unused content for smaller file size, this reduces the size by 70%
+// Erase unused content for smaller file size, this reduces the size by ~70%
 private suspend fun List<LikeForum>.clean(): List<LikeForum> = if (isNotEmpty()) {
     withContext(Dispatchers.Default) {
         map { it.copy(content = "", theme_color = null, private_forum_info = null, tab_info = emptyList()) }

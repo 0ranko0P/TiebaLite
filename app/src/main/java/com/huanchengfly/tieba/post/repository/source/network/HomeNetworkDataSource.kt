@@ -4,9 +4,11 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterceptor
 import com.huanchengfly.tieba.post.arch.firstOrThrow
+import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataSource.commonResponse
 import kotlinx.coroutines.flow.catch
 import javax.inject.Inject
 
@@ -24,7 +26,7 @@ class HomeNetworkDataSource @Inject constructor() {
             .catch { throw ConnectivityInterceptor.wrapException(it) }
             .firstOrThrow()
             .run {
-                this.data_?.like_forum ?: throw TiebaException(this.error?.error_msg)
+                this.data_?.like_forum ?: throw TiebaApiException(error.commonResponse)
             }
     }
 }

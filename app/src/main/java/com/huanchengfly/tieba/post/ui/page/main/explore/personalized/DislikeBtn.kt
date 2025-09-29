@@ -19,13 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateSetOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,36 +29,25 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.personalized.DislikeReason
-import com.huanchengfly.tieba.post.api.models.protos.personalized.ThreadPersonalized
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
+import com.huanchengfly.tieba.post.ui.models.explore.Dislike
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 
 @Composable
 fun Dislike(
-    personalized: ImmutableHolder<ThreadPersonalized>,
-    onDislike: (clickTime: Long, reasons: ImmutableList<ImmutableHolder<DislikeReason>>) -> Unit,
+    dislikeResource: List<Dislike>,
+    selectedReasons: Set<Dislike>,
+    onDismiss: () -> Unit,
+    onDislikeSelected: (Dislike) -> Unit,
+    onDislikeClicked: () -> Unit
 ) {
-    var clickTime by remember { mutableLongStateOf(0L) }
-    val selectedReasons = remember { mutableStateSetOf<ImmutableHolder<DislikeReason>>() }
     val menuState = rememberMenuState()
-    val dislikeResource = personalized.getImmutableList { dislikeResource }
     ClickMenu(
         menuContent = {
             val colorScheme = MaterialTheme.colorScheme
-
-            DisposableEffect(personalized) {
-                clickTime = System.currentTimeMillis()
-                onDispose {
-                    selectedReasons.clear()
-                }
-            }
 
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -81,13 +64,13 @@ fun Dislike(
                     )
                     Spacer(modifier = Modifier.width(32.dp))
                     Text(
-                        text = stringResource(id = R.string.button_submit_dislike),
+                        text = stringResource(id = R.string.button_submit),
                         modifier = Modifier
                             .clip(MaterialTheme.shapes.small)
                             .background(color = colorScheme.tertiary)
                             .clickable {
+                                onDislikeClicked()
                                 dismiss()
-                                onDislike(clickTime, selectedReasons.toImmutableList())
                             }
                             .padding(vertical = 4.dp, horizontal = 8.dp),
                         color = colorScheme.onTertiary,
@@ -105,24 +88,20 @@ fun Dislike(
                 ) {
                     items(
                         items = dislikeResource,
-                        span = { if (it.get { dislikeId } == 7) 2 else 1 }
+                        span = { if (it.id == 7) 2 else 1 }
                     ) {
-                        val selected by remember { derivedStateOf { selectedReasons.contains(it) } }
+                        val selected = it in selectedReasons
                         val backgroundColor by animateColorAsState(
                             targetValue = if (selected) colorScheme.primary else colorScheme.outlineVariant
                         )
 
                         Text(
-                            text = it.get { dislikeReason },
+                            text = it.reason,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(backgroundColor, shape = MaterialTheme.shapes.small)
                                 .clickable {
-                                    if (selectedReasons.contains(it)) {
-                                        selectedReasons.remove(it)
-                                    } else {
-                                        selectedReasons.add(it)
-                                    }
+                                    onDislikeSelected(it)
                                 }
                                 .padding(vertical = 8.dp, horizontal = 16.dp),
                             color = colorScheme.contentColorFor(backgroundColor),
@@ -136,6 +115,7 @@ fun Dislike(
             }
         },
         menuState = menuState,
+        onDismiss = onDismiss
     ) {
         IconButton(
             onClick = { menuState.expanded = true },
@@ -143,7 +123,7 @@ fun Dislike(
         ) {
             Icon(
                 imageVector = Icons.Rounded.KeyboardArrowDown,
-                contentDescription = stringResource(id = R.string.button_submit_dislike)
+                contentDescription = stringResource(id = R.string.btn_more)
             )
         }
     }

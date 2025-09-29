@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +57,7 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
@@ -67,7 +70,9 @@ import com.huanchengfly.tieba.post.ui.page.Destination.ForumSearchPost
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadList
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
+import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -244,6 +249,10 @@ fun ForumPage(
         }
     }
 
+    onGlobalEvent<ThreadLikeUiEvent> {
+        snackbarHostState.showSnackbar(it.toMessage(context))
+    }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val forumData = uiState.forum
 
@@ -264,6 +273,25 @@ fun ForumPage(
 
     // Listen scroll state changes to show/hide Fab
     val scrollStateConnection = rememberScrollStateConnection()
+
+    val threadClickListeners = remember(navigator) {
+        createThreadClickListeners(onNavigate = navigator::navigate)
+    }
+    val forumThreadPages = remember(threadClickListeners) {
+        ForumType.entries.map { forumType ->
+            movableContentOf<Modifier, PaddingValues, ForumData> { modifier, contentPadding, forum ->
+                ForumThreadList(
+                    modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
+                    threadClickListeners = threadClickListeners,
+                    forumId = forum.id,
+                    forumName = forum.name,
+                    forumRuleTitle = forum.forumRuleTitle.takeUnless { forumType == ForumType.Good },
+                    type = forumType,
+                    contentPadding = contentPadding
+                )
+            }
+        }
+    }
 
     MyScaffold(
         modifier = Modifier.fillMaxSize(),
@@ -403,6 +431,7 @@ fun ForumPage(
             errorScreen = { ErrorScreen(uiState.error, Modifier.padding(contentPadding)) }
         ) {
             if (forumData == null) return@StateScreen
+            val pageModifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection)
 
             HorizontalPager(
                 state = pagerState,
@@ -414,16 +443,7 @@ fun ForumPage(
                 verticalAlignment = Alignment.Top,
             ) { page ->
                 ProvideNavigator(navigator = navigator) {
-                    val forumType = ForumType.entries[page]
-
-                    ForumThreadList(
-                        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
-                        forumId = forumData.id,
-                        forumName = forumData.name,
-                        forumRuleTitle = forumData.forumRuleTitle.takeUnless { forumType == ForumType.Good },
-                        type = forumType,
-                        contentPadding = contentPadding
-                    )
+                    forumThreadPages[page](pageModifier, contentPadding, forumData)
                 }
             }
         }

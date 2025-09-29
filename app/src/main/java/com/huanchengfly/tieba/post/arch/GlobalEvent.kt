@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 sealed interface GlobalEvent : UiEvent {
 
-    data object ScrollToTop : GlobalEvent
+    class ScrollToTop(val tag: Any) : GlobalEvent
 
     data class ReplySuccess(
         val threadId: Long,

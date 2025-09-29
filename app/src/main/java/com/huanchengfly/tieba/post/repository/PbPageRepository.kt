@@ -10,6 +10,7 @@ import com.huanchengfly.tieba.post.repository.source.network.ThreadNetworkDataSo
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
+import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
 import kotlinx.coroutines.Dispatchers
@@ -61,8 +62,13 @@ class PbPageRepository @Inject constructor(
      * @param thread 帖子
      * */
     suspend fun requestLikeThread(thread: ThreadInfoData) {
-        val liked = thread.like.liked
-        networkDataSource.requestLikeThread(thread.id, postId = thread.firstPostId, !liked)
+        val liked = !thread.like.liked // reverse like status
+        networkDataSource.requestLikeThread(thread.id, postId = thread.firstPostId, liked)
+    }
+
+    suspend fun requestLikeThread(thread: ThreadItem) {
+        val like = !thread.like.liked // reverse like status
+        networkDataSource.requestLikeThread(thread.id, thread.firstPostId, like)
     }
 
     suspend fun pbPage(

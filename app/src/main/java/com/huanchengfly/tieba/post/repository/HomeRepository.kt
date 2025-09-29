@@ -37,7 +37,7 @@ class HomeRepository @Inject constructor(
 
     private val localTopForumDataSource = TopForumDao
 
-    private val currentAccount: Flow<Account?> = AccountUtil.getInstance().currentAccount
+    val currentAccount: Flow<Account?> = AccountUtil.getInstance().currentAccount
 
     private val refresh by lazy { Channel<Unit>(capacity = Channel.CONFLATED) }
 

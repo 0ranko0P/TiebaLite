@@ -11,12 +11,12 @@ import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponseData
 import com.huanchengfly.tieba.post.api.models.protos.plainText
+import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
+import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.mapUiModel
 import com.huanchengfly.tieba.post.repository.source.network.ForumNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
-import com.huanchengfly.tieba.post.ui.models.ThreadItemData
+import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.ThreadItemList
-import com.huanchengfly.tieba.post.ui.models.distinctById
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.forum.ForumDetail
 import com.huanchengfly.tieba.post.ui.models.forum.ForumManager
@@ -26,7 +26,6 @@ import com.huanchengfly.tieba.post.ui.models.forum.Rule
 import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
-import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
 import com.huanchengfly.tieba.post.utils.StringUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -98,8 +97,9 @@ class ForumRepository @Inject constructor(
         val data = networkDataSource.frsPage(forumName, page, loadType, sortType, goodClassifyId)
         val forumData = data.toData()
         var forumManagers: List<ForumManager>? = null
+        val showBothName = habitSettings.first().showBothName
         val typedThreads = ThreadItemList(
-            threads = data.thread_list.toDataList(blockedSetting = blockedSettings.first()),
+            threads = data.thread_list.mapUiModel(blockedSettings.first(), showBothName),
             threadIds = data.thread_id_list,
             hasMore = data.page!!.has_more == 1
         )
@@ -175,11 +175,11 @@ class ForumRepository @Inject constructor(
         forceNew = false
     ).second
 
-    suspend fun threadList(forumId: Long, forumName: String, page: Int, sortType: Int, threadIds: List<Long>): List<ThreadItemData> {
+    suspend fun threadList(forumId: Long, forumName: String, page: Int, sortType: Int, threadIds: List<Long>): List<ThreadItem> {
         return networkDataSource
             .loadThread(forumId, forumName, page, sortType, threadIds)
             .thread_list
-            .toDataList(blockedSetting = blockedSettings.first())
+            .mapUiModel(blockedSetting = blockedSettings.first(), showBothName = habitSettings.first().showBothName)
     }
 
     suspend fun loadForumRule(forumId: Long): ForumRule {
@@ -258,14 +258,21 @@ class ForumRepository @Inject constructor(
         get() = intPreferencesKey("${hashCode()}_sort")
 }
 
-private suspend fun List<ThreadInfo>.toDataList(blockedSetting: BlockSettings) = withContext(Dispatchers.Default) {
-    filter { !blockedSetting.blockVideo || it.videoInfo == null }
-        .map {
-            val blocked = it.shouldBlock()
-            val hidden = blocked && blockedSetting.hideBlocked
-            ThreadItemData(thread = ThreadInfoItem(it), blocked, hidden = hidden)
+private suspend fun List<ThreadInfo>.mapUiModel(
+    blockedSetting: BlockSettings,
+    showBothName: Boolean,
+): List<ThreadItem> {
+    return if (isNotEmpty()) {
+        withContext(Dispatchers.Default) {
+            mapNotNull {
+                val notBlocked = !blockedSetting.blockVideo || it.videoInfo == null
+                if (notBlocked) it.mapUiModel(showBothName, threadDislikeMap = null) else null
+            }
+            .distinctById()
         }
-        .distinctById()
+    } else {
+        emptyList()
+    }
 }
 
 // Map FrsPageResponseData.ForumInfo to UI Model

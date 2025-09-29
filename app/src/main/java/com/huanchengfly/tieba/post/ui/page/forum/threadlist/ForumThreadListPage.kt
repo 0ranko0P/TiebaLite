@@ -27,23 +27,21 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumRuleDetail
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
-import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListViewModel.Companion.ForumVMFactory
+import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.FeedType
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import java.util.Objects
 
@@ -94,6 +92,7 @@ private val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
 @Composable
 fun ForumThreadList(
     modifier: Modifier = Modifier,
+    threadClickListeners: ThreadClickListeners,
     forumId: Long,
     forumName: String,
     type: ForumType,
@@ -107,7 +106,6 @@ fun ForumThreadList(
 ) {
     val isGood = type == ForumType.Good
     val navigator = LocalNavController.current
-    val snackbarHostState = LocalSnackbarHostState.current
     val listState = rememberLazyListState()
 
     onGlobalEvent<ForumThreadListUiEvent.BackToTop>(
@@ -196,35 +194,19 @@ fun ForumThreadList(
                     }
                 }
 
-                itemsIndexed(
-                    items = threadList,
-                    key = { _, item -> item.threadId },
-                    contentType = { _, holder ->
-                        val item: ThreadInfo = holder.thread.info
-                        when {
-                            item.isTop == 1 -> FeedType.Top
-                            item.media.size == 1 -> FeedType.SingleMedia
-                            item.media.size > 1 -> FeedType.MultiMedia
-                            item.videoInfo != null -> FeedType.Video
-                            else -> FeedType.PlainText
-                        }
-                    }
-                ) { index, item ->
-                    BlockableContent(
-                        blocked = item.blocked,
-                        blockedTip = ThreadBlockedTip,
-                        hideBlockedContent = hideBlocked
-                    ) {
-                        if (item.isTop) {
-                            TopThreadItem(
-                                title = item.title,
-                                onClick = {
-                                    navigator.navigate(
-                                        Thread(item.threadId, forumId = item.forumId)
-                                    )
-                                }
-                            )
-                        } else {
+                itemsIndexed(threadList, key = { _, it -> it.id }, ThreadContentType) { index, thread ->
+                    // Top thread are non-blockable
+                    if (thread.isTop) {
+                        TopThreadItem(
+                            title = thread.title,
+                            onClick = { threadClickListeners.onClicked(thread) }
+                        )
+                    } else {
+                        BlockableContent(
+                            blocked = thread.blocked,
+                            blockedTip = ThreadBlockedTip,
+                            hideBlockedContent = hideBlocked
+                        ) {
                             Column {
                                 if (index > 0) {
                                     if (threadList[index - 1].isTop) {
@@ -233,26 +215,16 @@ fun ForumThreadList(
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                 }
                                 FeedCard(
-                                    item = item.thread,
-                                    onClick = {
-                                        navigator.navigate(
-                                            Thread(item.threadId, forumId = item.forumId)
-                                        )
-                                    },
-                                    onClickReply = {
-                                        navigator.navigate(
-                                            Thread(it.threadId, forumId = it.forumId, scrollToReply = true)
-                                        )
-                                    },
-                                    onAgree = viewModel::onAgree,
+                                    thread = thread,
+                                    onClick = threadClickListeners.onClicked,
+                                    onLike = viewModel::onThreadLikeClicked,
+                                    onClickReply = threadClickListeners.onReplyClicked,
+                                    onClickUser = threadClickListeners.onAuthorClicked,
                                     onClickOriginThread = {
                                         navigator.navigate(
                                             Thread(threadId = it.tid.toLong(), forumId = it.fid)
                                         )
                                     },
-                                    onClickUser = {
-                                        navigator.navigate(UserProfile(it.id))
-                                    }
                                 )
                             }
                         }

@@ -59,14 +59,12 @@ import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
-import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.aspectRatio
 import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
+import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
@@ -75,7 +73,8 @@ import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
-import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
+import com.huanchengfly.tieba.post.ui.models.Author
+import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
@@ -85,7 +84,6 @@ import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlin.math.max
@@ -97,6 +95,22 @@ private val Media.url: String
         bigPic,
         originPic  // Worst quality in [Media]
     )
+
+enum class FeedType {
+    Top, PlainText, SingleMedia, MultiMedia, Video
+}
+
+val ThreadContentType: (index: Int, item: ThreadItem) -> FeedType by unsafeLazy {
+    { _, item ->
+        when {
+            item.isTop -> FeedType.Top
+            item.video != null -> FeedType.Video
+            item.medias?.size == 1 -> FeedType.SingleMedia
+            (item.medias?.size ?: 0) > 1 -> FeedType.MultiMedia
+            else -> FeedType.PlainText
+        }
+    }
+}
 
 @Composable
 fun Card(
@@ -160,7 +174,6 @@ fun ThreadContent(
     modifier: Modifier = Modifier,
     content: AnnotatedString,
     maxLines: Int = 5,
-    highlightKeywords: ImmutableList<String> = persistentListOf(),
 ) {
     HighlightText(
         text = content,
@@ -171,8 +184,7 @@ fun ThreadContent(
         lineSpacing = 0.8.sp,
         overflow = TextOverflow.Ellipsis,
         maxLines = maxLines,
-        style = MaterialTheme.typography.bodyLarge,
-        highlightKeywords = highlightKeywords
+        style = MaterialTheme.typography.bodyLarge
     )
 }
 
@@ -189,7 +201,7 @@ fun buildThreadContent(
     if (showTitle) {
         withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
             if (isGood) {
-                withStyle(style = SpanStyle(color = colorScheme.tertiaryContainer)) {
+                withStyle(style = SpanStyle(color = colorScheme.tertiary)) {
                     append(App.INSTANCE.getString(R.string.tip_good))
                 }
                 append(" ")
@@ -357,121 +369,120 @@ val singleMediaFraction: Float
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun ThreadMedia(
+    modifier: Modifier = Modifier,
     forumId: Long,
     forumName: String,
     threadId: Long,
-    modifier: Modifier = Modifier,
     medias: List<Media> = persistentListOf(),
     videoInfo: ImmutableHolder<VideoInfo>? = null,
 ) {
     val context = LocalContext.current
 
     val mediaCount = medias.size
-    val hasPhoto = mediaCount > 0
     val isSinglePhoto = mediaCount == 1
 
-    val hasMedia = hasPhoto || videoInfo != null
+    Box(modifier = modifier) {
+        if (medias.isEmpty() && videoInfo == null) return@Box
 
-    if (hasMedia) {
-        val hideMedia = context.appPreferences.hideMedia
+        val hideMedia: Boolean = LocalContext.current.appPreferences.hideMedia
 
-        Box(modifier = modifier) {
-            if (videoInfo != null) {
-                if (hideMedia) {
-                    MediaPlaceholder(
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Rounded.OndemandVideo,
-                                contentDescription = stringResource(id = R.string.desc_video)
-                            )
-                        },
-                        text = {
-                            Text(text = stringResource(id = R.string.desc_video))
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    VideoThumbnail(
-                        modifier = Modifier
-                            .fillMaxWidth(singleMediaFraction)
-                            .aspectRatio(ratio = max(videoInfo.item.aspectRatio(), 16f / 9))
-                            .clip(MaterialTheme.shapes.small),
-                        thumbnailUrl = videoInfo.item.thumbnailUrl,
-                        onClick = {
-                            VideoViewActivity.launch(context, videoInfo.item)
-                        }
-                    )
-                }
+        if (videoInfo != null) {
+            if (hideMedia) {
+                MediaPlaceholder(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.OndemandVideo,
+                            contentDescription = stringResource(id = R.string.desc_video)
+                        )
+                    },
+                    text = {
+                        Text(text = stringResource(id = R.string.desc_video))
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
             } else {
-                val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
-                val mediaAspectRatio = if (isSinglePhoto) 2f else 3f
+                VideoThumbnail(
+                    modifier = Modifier
+                        .fillMaxWidth(singleMediaFraction)
+                        .aspectRatio(ratio = max(videoInfo.item.aspectRatio(), 16f / 9))
+                        .clip(MaterialTheme.shapes.small),
+                    thumbnailUrl = videoInfo.item.thumbnailUrl,
+                    onClick = {
+                        VideoViewActivity.launch(context, videoInfo.item)
+                    }
+                )
+            }
+        } else {
+            val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
+            val mediaAspectRatio = if (isSinglePhoto) 2f else 3f
 
-                if (hideMedia) {
-                    MediaPlaceholder(
-                        icon = {
-                            Icon(
-                                imageVector = if (isSinglePhoto) Icons.Rounded.Photo else Icons.Rounded.PhotoLibrary,
-                                contentDescription = stringResource(id = R.string.desc_photo)
+            if (hideMedia) {
+                MediaPlaceholder(
+                    icon = {
+                        Icon(
+                            imageVector = if (isSinglePhoto) Icons.Rounded.Photo else Icons.Rounded.PhotoLibrary,
+                            contentDescription = stringResource(id = R.string.desc_photo)
+                        )
+                    },
+                    text = {
+                        Text(text = stringResource(id = R.string.btn_open_photos, mediaCount))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        context.goToActivity<PhotoViewActivity> {
+                            putExtra(
+                                PhotoViewActivity.EXTRA_PHOTO_VIEW_DATA,
+                                getPhotoViewData(
+                                    medias = medias,
+                                    forumId = forumId,
+                                    forumName = forumName,
+                                    threadId = threadId,
+                                    index = 0
+                                )
                             )
-                        },
-                        text = {
-                            Text(text = stringResource(id = R.string.btn_open_photos, mediaCount))
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            context.goToActivity<PhotoViewActivity> {
-                                putExtra(
-                                    PhotoViewActivity.EXTRA_PHOTO_VIEW_DATA,
+                        }
+                    }
+                )
+            } else {
+                val hasMoreMedia = medias.size > MAX_PHOTO_IN_ROW
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(mediaWidthFraction)
+                        .aspectRatio(mediaAspectRatio)
+                ) {
+                    Row(
+                        modifier = Modifier.matchParentSize()
+                            .clip(MaterialTheme.shapes.small),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        for (index in 0 until min(medias.size, MAX_PHOTO_IN_ROW)) {
+                            NetworkImage(
+                                imageUri = medias[index].url,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .weight(1f),
+                                contentScale = ContentScale.Crop,
+                                photoViewDataProvider = {
                                     getPhotoViewData(
-                                        medias = medias,
+                                        medias = medias.toImmutableList(),
                                         forumId = forumId,
                                         forumName = forumName,
                                         threadId = threadId,
-                                        index = 0
+                                        index = index
                                     )
-                                )
-                            }
-                        }
-                    )
-                } else {
-                    val hasMoreMedia = medias.size > MAX_PHOTO_IN_ROW
-                    Box {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth(mediaWidthFraction)
-                                .aspectRatio(mediaAspectRatio)
-                                .clip(MaterialTheme.shapes.small),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            for (index in 0 until min(medias.size, MAX_PHOTO_IN_ROW)) {
-                                NetworkImage(
-                                    imageUri = medias[index].url,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .weight(1f),
-                                    contentScale = ContentScale.Crop,
-                                    photoViewDataProvider = {
-                                        getPhotoViewData(
-                                            medias = medias.toImmutableList(),
-                                            forumId = forumId,
-                                            forumName = forumName,
-                                            threadId = threadId,
-                                            index = index
-                                        )
-                                    },
-                                )
-                            }
-                        }
-                        if (hasMoreMedia) {
-                            Badge(
-                                icon = Icons.Rounded.PhotoSizeSelectActual,
-                                text = medias.size.toString(),
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(8.dp)
+                                },
                             )
                         }
+                    }
+                    if (hasMoreMedia) {
+                        Badge(
+                            icon = Icons.Rounded.PhotoSizeSelectActual,
+                            text = medias.size.toString(),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(8.dp)
+                        )
                     }
                 }
             }
@@ -514,75 +525,62 @@ fun OriginThreadCard(
     }
 }
 
-enum class FeedType {
-    Top, PlainText, SingleMedia, MultiMedia, Video
-}
-
 @Composable
 fun FeedCard(
-    item: ThreadInfoItem,
-    onClick: (ThreadInfo) -> Unit,
-    onAgree: (ThreadInfoItem) -> Unit,
+    thread: ThreadItem,
+    onClick: (ThreadItem) -> Unit,
+    onLike: (ThreadItem) -> Unit,
     modifier: Modifier = Modifier,
-    onClickReply: (ThreadInfo) -> Unit = {},
-    onClickUser: (User) -> Unit = {},
-    onClickForum: ((SimpleForum) -> Unit)? = null, // Parse Null to Hide ForumInfo
+    onClickReply: (ThreadItem) -> Unit = onClick,
+    onClickUser: (Author) -> Unit = {},
+    onClickForum: ((ThreadItem) -> Unit)? = null, // Parse Null to Hide ForumInfo
     onClickOriginThread: (OriginThreadInfo) -> Unit = {},
     dislikeAction: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val thread = item.info
+    val (forumId, forumName, forumAvatar) = thread.simpleForum
+
     Card(
         header = {
-            val author = thread.author?: return@Card
             UserHeader(
-                name = author.name,
-                nameShow = author.nameShow,
-                portrait = author.portrait,
-                onClick = { onClickUser(author) },
-                desc = remember {
-                    DateTimeUtils.getRelativeTimeString(context, thread.lastTimeInt.toString())
-                },
+                name = thread.author.name,
+                avatar = thread.author.avatarUrl,
+                onClick = { onClickUser(thread.author) },
+                desc = remember { DateTimeUtils.getRelativeTimeString(context, thread.lastTimeMill) },
                 content = dislikeAction
             )
         },
         content = {
-            ThreadContent(content = item.content)
+            if (thread.content.isNotEmpty()) {
+                ThreadContent(content = thread.content)
+            }
 
-            with(thread) {
-                ThreadMedia(
-                    forumId = forumId,
-                    forumName = forumInfo?.name ?: forumName, // Might be Empty
-                    threadId = threadId,
-                    medias = media,
-                    videoInfo = videoInfo?.wrapImmutable(),
-                    modifier = modifier,
+            ThreadMedia(
+                forumId = forumId,
+                forumName = forumName,
+                threadId = thread.id,
+                medias = thread.medias ?: emptyList(),
+                videoInfo = thread.video,
+            )
+
+            thread.originThreadInfo?.let {
+                OriginThreadCard(
+                    originThreadInfo = it,
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .clickable { onClickOriginThread(it.item) }
+                        .padding(16.dp)
                 )
             }
 
-            thread.origin_thread_info
-                .takeIf { thread.is_share_thread == 1 }?.let {
-                    OriginThreadCard(
-                        originThreadInfo = it.wrapImmutable(),
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.small)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                            .clickable {
-                                onClickOriginThread(it)
-                            }
-                            .padding(16.dp)
-                    )
-                }
-
             if (onClickForum != null) {
-                thread.forumInfo?.let { forumInfo ->
-                    ForumInfoChip(
-                        forumName = forumInfo.name,
-                        avatarUrl = forumInfo.avatar,
-                        transitionKey = thread.threadId.toString(),
-                        onClick = { onClickForum(forumInfo) }
-                    )
-                }
+                ForumInfoChip(
+                    forumName = forumName,
+                    avatarUrl = forumAvatar,
+                    transitionKey = thread.id.toString(),
+                    onClick = { onClickForum(thread) }
+                )
             }
         },
         action = {
@@ -590,13 +588,13 @@ fun FeedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shareNum = thread.shareNum,
                 replyNum = thread.replyNum,
-                agreeNum = item.like.count,
-                agreed = item.like.liked,
+                agreeNum = thread.like.count,
+                agreed = thread.like.liked,
                 onShareClicked = {
-                    TiebaUtil.shareThread(context, thread.title, thread.threadId)
+                    TiebaUtil.shareThread(context, thread.title, thread.id)
                 },
                 onReplyClicked = { onClickReply(thread) },
-                onAgreeClicked = { onAgree(item) }
+                onAgreeClicked = { onLike(thread) }
             )
         },
         onClick = { onClick(thread) },
@@ -690,12 +688,8 @@ private fun ActionBtnPlaceholder(
     ) {
         Text(
             text = "Button",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier
-                .placeholder(
-                    visible = true,
-                    highlight = PlaceholderHighlight.fade(),
-                ),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.placeholder(highlight = PlaceholderHighlight.fade())
         )
     }
 }
@@ -705,15 +699,16 @@ private fun ActionBtnPlaceholder(
 fun FeedCardPreview() = TiebaLiteTheme {
     Surface {
         FeedCard(
-            item = ThreadInfoItem(
-                ThreadInfo(
-                    title = "预览",
-                    author = User(),
-                    lastTimeInt = (System.currentTimeMillis() / 1000).toInt()
-                )
+            thread = ThreadItem(
+                author = Author(0, name = "FeedCardPreview", avatarUrl = ""),
+                title = "预览",
+                lastTimeMill = System.currentTimeMillis(),
+                replyNum = 99999,
+                shareNum = 20,
+                simpleForum = com.huanchengfly.tieba.post.ui.models.SimpleForum(-1, "Test", "")
             ),
             onClick = {},
-            onAgree = {},
+            onLike = {},
         )
     }
 }

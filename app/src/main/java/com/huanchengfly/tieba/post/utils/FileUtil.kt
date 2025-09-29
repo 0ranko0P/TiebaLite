@@ -165,6 +165,10 @@ object FileUtil {
 
     fun Context.createFileInCacheDir(file: String) = File(cacheDir, "misc/$file")
 
+    fun File.isCacheExpired(expireMill: Long): Boolean {
+        return lastModified() + expireMill < System.currentTimeMillis()
+    }
+
     //修改文件扩展名
     fun changeFileExtension(fileName: String, newExtension: String): String {
         if (TextUtils.isEmpty(fileName)) {

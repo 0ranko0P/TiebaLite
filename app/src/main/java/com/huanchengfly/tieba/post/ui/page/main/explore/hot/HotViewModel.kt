@@ -1,215 +1,188 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.hot
 
+import android.util.Log
+import android.util.SparseArray
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.AgreeBean
-import com.huanchengfly.tieba.post.api.models.protos.FrsTabInfo
-import com.huanchengfly.tieba.post.api.models.protos.RecommendTopicList
-import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponse
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
+import androidx.core.util.forEach
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
-import com.huanchengfly.tieba.post.ui.models.ThreadItemData
-import com.huanchengfly.tieba.post.ui.models.updateAgreeStatus
+import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.HOT_THREAD_TAB_ALL
+import com.huanchengfly.tieba.post.ui.models.Like
+import com.huanchengfly.tieba.post.ui.models.ThreadItem
+import com.huanchengfly.tieba.post.ui.models.explore.HotTab
+import com.huanchengfly.tieba.post.ui.models.explore.RecommendTopic
+import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
+import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
+import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.lang.ref.WeakReference
 import javax.inject.Inject
+
+private const val TAG = "HotViewModel"
+
+@Immutable
+data class HotUiState(
+    val isRefreshing: Boolean = false,
+    val selectedTab: HotTab,
+    val topics: List<RecommendTopic> = emptyList(),
+    val tabs: List<HotTab> = emptyList(),
+    val threads: List<ThreadItem>? = null, // Loading
+    val error: Throwable? = null,
+) : UiState {
+
+    fun isTabSelected(tab: HotTab): Boolean = selectedTab.tabCode == tab.tabCode
+}
 
 @Stable
 @HiltViewModel
-class HotViewModel @Inject constructor() :
-    BaseViewModel<HotUiIntent, HotPartialChange, HotUiState, HotUiEvent>() {
-    override fun createInitialState(): HotUiState = HotUiState()
+class HotViewModel @Inject constructor(private val exploreRepo: ExploreRepository) : ViewModel() {
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<HotUiIntent, HotPartialChange, HotUiState> =
-        HotPartialChangeProducer
+    private val defaultTab = HotTab(name = "", tabCode = HOT_THREAD_TAB_ALL, isLoading = false)
 
-    private object HotPartialChangeProducer :
-        PartialChangeProducer<HotUiIntent, HotPartialChange, HotUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<HotUiIntent>): Flow<HotPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<HotUiIntent.Load>()
-                    .flatMapConcat { produceLoadPartialChange() },
-                intentFlow.filterIsInstance<HotUiIntent.RefreshThreadList>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<HotUiIntent.Agree>()
-                    .flatMapConcat { it.producePartialChange() },
-            )
+    private val _uiState = MutableStateFlow(HotUiState(isRefreshing = true, selectedTab = defaultTab))
+    val uiState: StateFlow<HotUiState> = _uiState.asStateFlow()
 
-        private fun produceLoadPartialChange(): Flow<HotPartialChange.Load> =
-            TiebaApi.getInstance().hotThreadListFlow("all")
-                .map<HotThreadListResponse, HotPartialChange.Load> {
-                    HotPartialChange.Load.Success(
-                        it.data_?.topicList ?: emptyList(),
-                        it.data_?.hotThreadTabInfo ?: emptyList(),
-                        it.data_?.threadInfo?.map { info -> ThreadItemData(info) } ?: emptyList()
-                    )
-                }
-                .onStart { emit(HotPartialChange.Load.Start) }
-                .catch { emit(HotPartialChange.Load.Failure(it)) }
+    private val memCache = SparseArray<WeakReference<List<ThreadItem>>>()
+    private val memCacheMutex = Mutex()
 
-        private fun HotUiIntent.RefreshThreadList.producePartialChange(): Flow<HotPartialChange.RefreshThreadList> =
-            TiebaApi.getInstance().hotThreadListFlow(tabCode)
-                .map<HotThreadListResponse, HotPartialChange.RefreshThreadList> {
-                    HotPartialChange.RefreshThreadList.Success(
-                        tabCode,
-                        it.data_?.threadInfo?.map { info -> ThreadItemData(info) } ?: emptyList()
-                    )
-                }
-                .onStart {
-                    emit(HotPartialChange.RefreshThreadList.Start(tabCode))
-                }
-                .catch {
-                    emit(HotPartialChange.RefreshThreadList.Failure(tabCode, it))
-                }
-
-        private fun HotUiIntent.Agree.producePartialChange(): Flow<HotPartialChange.Agree> =
-            TiebaApi.getInstance()
-                .opAgreeFlow(
-                    threadId.toString(), postId.toString(), if (hasAgree) 1 else 0, objType = 3
-                )
-                .map<AgreeBean, HotPartialChange.Agree> {
-                    HotPartialChange.Agree.Success
-                }
-                .onStart {
-                    emit(HotPartialChange.Agree.Start(threadId))
-                }
-                .catch {
-                    emit(HotPartialChange.Agree.Failure(threadId, it))
-                }
+    private val handler = CoroutineExceptionHandler { _, e ->
+        Log.e(TAG, "onError: ", e)
+        _uiState.update { it.copy(isRefreshing = false, error = e) }
     }
 
-
-    fun onAgreeClicked(thread: ThreadInfoItem) {
-        send(
-            HotUiIntent.Agree(
-                threadId = thread.info.threadId,
-                postId = thread.info.firstPostId,
-                hasAgree = thread.like.liked
-            )
-        )
+    init {
+        refreshInternal(cached = true)
     }
-}
 
-sealed interface HotUiIntent : UiIntent {
-    object Load : HotUiIntent
+    // Save or update In-Memory cache
+    private suspend fun updateCache(tab: HotTab, threads: List<ThreadItem>) = memCacheMutex.withLock {
+        memCache.set(tab.tabCode.hashCode(), WeakReference(threads))
+    }
 
-    data class RefreshThreadList(val tabCode: String) : HotUiIntent
+    // Get from In-Memory cache
+    private suspend fun getCached(tab: HotTab): List<ThreadItem>? = memCacheMutex.withLock {
+        memCache[tab.tabCode.hashCode()]?.get()
+    }
 
-    data class Agree(
-        val threadId: Long,
-        val postId: Long,
-        val hasAgree: Boolean
-    ) : HotUiIntent
-}
+    private suspend fun clearCached() = memCacheMutex.withLock {
+        memCache.forEach { k, v -> v.clear() }
+        memCache.clear()
+    }
 
-sealed interface HotPartialChange : PartialChange<HotUiState> {
-    sealed class Load : HotPartialChange {
-        override fun reduce(oldState: HotUiState): HotUiState =
-            when (this) {
-                Start -> oldState.copy(isRefreshing = true, error = null)
+    private fun refreshInternal(cached: Boolean) = viewModelScope.launch(handler) {
+        _uiState.update { it.copy(isRefreshing = true, selectedTab = defaultTab, error = null) }
+        if (!cached) {
+            memCache.clear() // force-refresh, clear in-memory cache
+        }
+        val data = exploreRepo.loadHotTopic(cached)
+        updateCache(defaultTab, data.threads)
+        // defaultTab + tabs
+        val tabs = listOf(defaultTab, *data.tabs.toTypedArray())
+        defaultTab.isLoading = false
+        _uiState.update {
+            it.copy(isRefreshing = false, topics = data.topics, tabs = tabs, threads = data.threads)
+        }
+    }
 
-                is Success -> oldState.copy(
-                    isRefreshing = false,
-                    currentTabCode = "all",
-                    topicList = topicList.wrapImmutable(),
-                    tabList = tabList.wrapImmutable(),
-                    threadList = threadList.toImmutableList()
-                )
+    fun onRefresh() {
+        if (!_uiState.value.isRefreshing) refreshInternal(cached = false)
+    }
 
-                is Failure -> oldState.copy(isRefreshing = false, error = error)
+    fun onTabSelected(tab: HotTab) {
+        // Check/update tab selected, loading state
+        if (!_uiState.value.isTabSelected(tab)) _uiState.set { copy(selectedTab = tab, threads = null) } else return
+        if (!tab.isLoading) tab.isLoading = true else return
+
+        viewModelScope.launch(handler) {
+            var topics: List<RecommendTopic>? = null
+            var threads: List<ThreadItem>? = getCached(tab) // get from memory cache
+            try {
+                if (threads == null) {
+                    val data = exploreRepo.loadHotThreads(tab.tabCode, cached = true)
+                    threads = data.threads
+                    topics = data.topics
+                    updateCache(tab, threads)
+                }
+            } finally {
+                withContext(Dispatchers.Main.immediate) { tab.isLoading = false }
             }
 
-        object Start : Load()
-
-        data class Success(
-            val topicList: List<RecommendTopicList>,
-            val tabList: List<FrsTabInfo>,
-            val threadList: List<ThreadItemData>,
-        ) : Load()
-
-        data class Failure(
-            val error: Throwable
-        ) : Load()
+            _uiState.update {
+                // Update threads if tab not switched
+                threads = if (it.isTabSelected(tab)) threads else it.threads
+                it.copy(topics = topics ?: it.topics, threads = threads)
+            }
+        }
     }
 
-    sealed class RefreshThreadList : HotPartialChange {
-        override fun reduce(oldState: HotUiState): HotUiState =
-            when (this) {
-                is Start -> oldState.copy(isLoadingThreadList = true, currentTabCode = tabCode)
-                is Success -> oldState.copy(
-                    isLoadingThreadList = false,
-                    currentTabCode = tabCode,
-                    threadList = threadList.toImmutableList()
-                )
-
-                is Failure -> oldState.copy(isLoadingThreadList = false)
+    fun onThreadLikeClicked(thread: ThreadItem) {
+        viewModelScope.launch(handler) {
+            val stateSnapshot = _uiState.value
+            val selectedTab = stateSnapshot.selectedTab
+            val success = updateLikeStatusUiStateCommon(
+                thread = thread,
+                onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Hot) },
+                onEvent = ::emitGlobalEventSuspend
+            ) { threadId, liked, loading ->
+                _uiState.update {
+                    // update if tab not switched
+                    if (it.isTabSelected(selectedTab) && it.threads != null) {
+                        it.copy(threads = it.threads.updateLikeStatus(threadId, liked, loading))
+                    } else {
+                        it // tab switched, do not update UI state
+                    }
+                }
             }
 
-        data class Start(val tabCode: String) : RefreshThreadList()
-
-        data class Success(
-            val tabCode: String,
-            val threadList: List<ThreadItemData>
-        ) : RefreshThreadList()
-
-        data class Failure(
-            val tabCode: String,
-            val error: Throwable
-        ) : RefreshThreadList()
+            if (success) { // update in-memery cache too
+                val cached = getCached(selectedTab)
+                if (cached != null) {
+                    updateCache(selectedTab, cached.updateLikeStatus(thread.id, !thread.liked, loading = false))
+                }
+            }
+        }
     }
 
-    sealed class Agree() : HotPartialChange {
-
-        override fun reduce(oldState: HotUiState): HotUiState =
-            when (this) {
-                is Start -> oldState.copy(
-                    threadList = oldState.threadList.updateAgreeStatus(threadId)
-                )
-
-                is Success -> oldState
-
-                is Failure -> oldState.copy(
-                    threadList = oldState.threadList.updateAgreeStatus(threadId)
-                )
+    /**
+     * Called when navigate back from thread page with latest [Like] status
+     *
+     * @param threadId target thread ID
+     * @param like like status of target thread
+     * */
+    fun onThreadResult(threadId: Long, like: Like) {
+        viewModelScope.launch(handler) {
+            val stateSnapshot = _uiState.value
+            // compare and update with latest like status
+            val newThreads = stateSnapshot.threads?.updateLikeStatus(threadId, like)
+            if (newThreads != null) {
+                _uiState.update { it.copy(threads = newThreads) }
+                // update in-memory cache too
+                updateCache(stateSnapshot.selectedTab, newThreads)
+                // purge local cache
+                exploreRepo.purgeCache(ExplorePageItem.Hot)
             }
+            // else: empty or no status changes
+        }
+    }
 
-        data class Start(val threadId: Long) : Agree()
-
-        object Success: Agree()
-
-        data class Failure(
-            val threadId: Long,
-            val error: Throwable
-        ) : Agree()
+    override fun onCleared() {
+        runBlocking(handler) { clearCached() }
+        super.onCleared()
     }
 }
-
-data class HotUiState(
-    val isRefreshing: Boolean = false,
-    val currentTabCode: String = "all",
-    val isLoadingThreadList: Boolean = false,
-    val topicList: ImmutableList<ImmutableHolder<RecommendTopicList>> = persistentListOf(),
-    val tabList: ImmutableList<ImmutableHolder<FrsTabInfo>> = persistentListOf(),
-    val threadList: List<ThreadItemData> = emptyList(),
-    val error: Throwable? = null,
-) : UiState
-
-sealed interface HotUiEvent : UiEvent

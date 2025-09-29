@@ -1,14 +1,13 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.personalized
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -31,10 +30,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -44,127 +42,123 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.page.Destination.Forum
-import com.huanchengfly.tieba.post.ui.page.Destination.Thread
-import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
+import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.models.explore.Dislike
+import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
+import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
+import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.FeedType
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.appPreferences
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+private val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
+    BlockTip {
+        Text(
+            text = stringResource(id = R.string.tip_blocked_thread),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonalizedPage(
-    navigator: NavController,
-    contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues,
+    navigator: NavController,
     onHideFab: (Boolean) -> Unit,
-    viewModel: PersonalizedViewModel = pageViewModel(),
+    viewModel: PersonalizedViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val listState: LazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    val listState: LazyListState = rememberLazyListState()
 
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(PersonalizedUiIntent.Refresh)
-        viewModel.initialized = true
+    var refreshCount by remember { mutableIntStateOf(0) }
+    val showRefreshTip = refreshCount > 0
+
+    LaunchedEffect(viewModel.uiEvent) {
+        viewModel.uiEvent.collect {
+            when(it) {
+                is PersonalizedUiEvent.RefreshSuccess -> {
+                    coroutineScope.launch {
+                        listState.scrollToItem(0, 0)
+                        delay(300)
+                        refreshCount = it.count
+                        delay(2000)
+                        refreshCount = 0
+                    }
+                }
+
+                is PersonalizedUiEvent.DislikeFailed -> {
+                    context.toastShort(R.string.toast_exception, it.e.getErrorMessage())
+                }
+
+                else -> {}
+            }
+        }
     }
+
+    val threadClickListeners = remember(navigator) {
+        createThreadClickListeners(onNavigate = navigator::navigate)
+    }
+
+    // result from ThreadPage
+    ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
+
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = PersonalizedUiState::isRefreshing,
+        initial = true
+    )
+    val isEmpty by viewModel.uiState.collectPartialAsState(
+        prop1 = PersonalizedUiState::isEmpty,
         initial = false
-    )
-    val isLoadingMore by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::isLoadingMore,
-        initial = false
-    )
-    val currentPage by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::currentPage,
-        initial = 1
-    )
-    val data by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::data,
-        initial = persistentListOf()
     )
     val error by viewModel.uiState.collectPartialAsState(
         prop1 = PersonalizedUiState::error,
         initial = null
     )
-    val refreshPosition by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::refreshPosition,
-        initial = 0
-    )
+    val isError = error != null
 
-    val hideBlockedContent = context.appPreferences.hideBlockedContent
-
-    val isEmpty by remember {
-        derivedStateOf {
-            data.isEmpty()
-        }
-    }
-
-    val isError by remember {
-        derivedStateOf {
-            error != null
-        }
-    }
-    var refreshCount by remember {
-        mutableIntStateOf(0)
-    }
-    var showRefreshTip by remember {
-        mutableStateOf(false)
-    }
-
-    viewModel.onEvent<PersonalizedUiEvent.RefreshSuccess> {
-        refreshCount = it.count
-        showRefreshTip = true
-    }
-
-    if (showRefreshTip) {
-        LaunchedEffect(Unit) {
-            coroutineScope.launch {
-                delay(20)
-                listState.scrollToItem(0, 0)
-            }
-            delay(2000)
-            showRefreshTip = false
-        }
-    }
-    val onRefresh: () -> Unit = { viewModel.send(PersonalizedUiIntent.Refresh) }
-
-    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
+    LaunchedFabStateEffect(ExplorePageItem.Personalized, listState, onHideFab, isRefreshing, isError)
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
         isError = isError,
         isLoading = isRefreshing,
-        onReload = onRefresh,
+        onReload = viewModel::onRefresh,
         errorScreen = {
-            ErrorScreen(error = error?.item, modifier = Modifier.padding(contentPadding))
+            ErrorScreen(error = error, modifier = Modifier.padding(contentPadding))
         }
     ) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = onRefresh,
+            onRefresh = viewModel::onRefresh,
             contentPadding = contentPadding
         ) {
+            val hideBlockedContent by viewModel.hideBlockedContent.collectAsStateWithLifecycle()
+
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val data = uiState.data
+            val isLoadingMore = uiState.isLoadingMore
+            val dislikeReasons = remember { mutableStateSetOf<Dislike>() }
+
             SwipeUpLazyLoadColumn(
                 modifier = modifier.fillMaxSize(),
                 state = listState,
@@ -172,9 +166,7 @@ fun PersonalizedPage(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 isLoading = isLoadingMore,
                 onLazyLoad = {
-                    if (data.isNotEmpty()) {
-                        viewModel.send(PersonalizedUiIntent.LoadMore(currentPage + 1))
-                    }
+                    if (data.isNotEmpty()) viewModel.onLoadMore()
                 },
                 onLoad = null, // Disable manual load
                 bottomIndicator = {
@@ -186,88 +178,53 @@ fun PersonalizedPage(
                     )
                 }
             ) {
-                itemsIndexed(
-                    items = data,
-                    key = { _, it -> it.thread.info.id.toString() },
-                    contentType = { _, it ->
-                        when {
-                            it.thread.info.videoInfo != null -> FeedType.Video
-                            it.thread.info.media.size == 1 -> FeedType.SingleMedia
-                            it.thread.info.media.size > 1 -> FeedType.MultiMedia
-                            else -> FeedType.PlainText
-                        }
-                    }
-                ) { index, item ->
-                    val personalized = item.personalized
+                itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { index, thread ->
+                    val isHidden = thread.blocked && hideBlockedContent
 
-                    val isHidden = item.hidden
-                    // TODO: Do filtering in ViewModel
-                    /* remember(hiddenThreadIds, item, hidden) {
-                        hiddenThreadIds.contains(item.threadId) || hidden
-                    }*/
-
-                    val isRefreshPosition by remember { derivedStateOf { index + 1 == refreshPosition } }
-
-                    AnimatedVisibility(
-                        visible = !isHidden,
-                        enter = EnterTransition.None,
-                        exit = shrinkVertically() + fadeOut()
+                    Column(
+                        modifier = Modifier.animateItem()
                     ) {
-                        Column {
-                            BlockableContent(
-                                blocked = item.blocked,
-                                blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
-                                modifier = Modifier.fillMaxWidth(),
-                                hideBlockedContent = hideBlockedContent
-                            ) {
-                                Column {
-                                    FeedCard(
-                                        item = item.thread,
-                                        onClick = {
-                                            navigator.navigate(Thread(it.id, it.forumId))
-                                        },
-                                        onClickReply = {
-                                            navigator.navigate(Thread(it.id, it.forumId, scrollToReply = true))
-                                        },
-                                        onAgree = viewModel::onAgreeClicked,
-                                        onClickForum = {
-                                            val extraKey = item.threadId.toString()
-                                            navigator.navigate(Forum(it.name, it.avatar, extraKey))
-                                        },
-                                        onClickUser = {
-                                            navigator.navigate(UserProfile(it.id))
-                                        },
-                                        dislikeAction = {
-                                            if (personalized == null) return@FeedCard
-                                            Dislike(personalized = personalized) { clickTime, reasons ->
-                                                viewModel.send(
-                                                    PersonalizedUiIntent.Dislike(
-                                                        forumId = item.thread.info.forumInfo?.id ?: 0,
-                                                        threadId = item.threadId,
-                                                        reasons = reasons,
-                                                        clickTime = clickTime
-                                                    )
-                                                )
-                                            }
+                        BlockableContent(
+                            blocked = thread.blocked,
+                            blockedTip = ThreadBlockedTip,
+                            modifier = Modifier.fillMaxWidth(),
+                            hideBlockedContent = hideBlockedContent
+                        ) {
+                            Column {
+                                FeedCard(
+                                    thread = thread,
+                                    onClick = threadClickListeners.onClicked,
+                                    onLike = viewModel::onThreadLikeClicked,
+                                    onClickReply = threadClickListeners.onReplyClicked,
+                                    onClickUser = threadClickListeners.onAuthorClicked,
+                                    onClickForum = threadClickListeners.onForumClicked,
+                                    dislikeAction = {
+                                        if (thread.dislikeResource.isNullOrEmpty()) return@FeedCard
+                                        Dislike(
+                                            dislikeResource = thread.dislikeResource,
+                                            selectedReasons = dislikeReasons,
+                                            onDismiss = dislikeReasons::clear,
+                                            onDislikeSelected = {
+                                                if (it in dislikeReasons) {
+                                                    dislikeReasons.remove(it)
+                                                } else {
+                                                    dislikeReasons.add(it)
+                                                }
+                                            },
+                                        ) {
+                                            viewModel.onThreadDislike(
+                                                thread,
+                                                dislikeReasons.toList()
+                                            )
                                         }
-                                    )
+                                    }
+                                )
 
-                                    val showDivider by remember {
-                                        derivedStateOf {
-                                            !isHidden && !isRefreshPosition && index < data.lastIndex
-                                        }
-                                    }
-                                    if (showDivider) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 16.dp),
-                                            thickness = 2.dp
-                                        )
-                                    }
-                                }
-                            }
-                            if (isRefreshPosition) {
-                                RefreshTip {
-                                    viewModel.send(PersonalizedUiIntent.Refresh)
+                                if (!isHidden && index < data.lastIndex) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        thickness = 2.dp
+                                    )
                                 }
                             }
                         }

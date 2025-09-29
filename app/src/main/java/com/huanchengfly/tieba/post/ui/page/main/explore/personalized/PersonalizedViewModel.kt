@@ -1,306 +1,177 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.personalized
 
+import android.util.Log
+import androidx.collection.ArraySet
+import androidx.collection.MutableScatterSet
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.AgreeBean
-import com.huanchengfly.tieba.post.api.models.CommonResponse
-import com.huanchengfly.tieba.post.api.models.protos.personalized.DislikeReason
-import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponse
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.CommonUiEvent
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
+import androidx.compose.ui.util.fastForEach
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.models.DislikeBean
-import com.huanchengfly.tieba.post.repository.PersonalizedRepository
-import com.huanchengfly.tieba.post.ui.models.ThreadInfoItem
-import com.huanchengfly.tieba.post.ui.models.ThreadItemData
-import com.huanchengfly.tieba.post.ui.models.distinctById
-import com.huanchengfly.tieba.post.ui.models.updateAgreeStatus
-import com.huanchengfly.tieba.post.utils.BlockManager.shouldBlock
-import com.huanchengfly.tieba.post.utils.appPreferences
+import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.ui.models.Like
+import com.huanchengfly.tieba.post.ui.models.ThreadItem
+import com.huanchengfly.tieba.post.ui.models.explore.Dislike
+import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
+import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
+import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.Collections
 import javax.inject.Inject
 
-@Stable
-@HiltViewModel
-class PersonalizedViewModel @Inject constructor() :
-    BaseViewModel<PersonalizedUiIntent, PersonalizedPartialChange, PersonalizedUiState, PersonalizedUiEvent>() {
-    override fun createInitialState(): PersonalizedUiState = PersonalizedUiState()
-
-    override fun createPartialChangeProducer(): PartialChangeProducer<PersonalizedUiIntent, PersonalizedPartialChange, PersonalizedUiState> =
-        ExplorePartialChangeProducer
-
-    override fun dispatchEvent(partialChange: PersonalizedPartialChange): UiEvent? =
-        when (partialChange) {
-            is PersonalizedPartialChange.Refresh.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
-            is PersonalizedPartialChange.LoadMore.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
-            is PersonalizedPartialChange.Refresh.Success -> PersonalizedUiEvent.RefreshSuccess(
-                partialChange.data.size
-            )
-
-            else -> null
-        }
-
-    private object ExplorePartialChangeProducer : PartialChangeProducer<PersonalizedUiIntent, PersonalizedPartialChange, PersonalizedUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<PersonalizedUiIntent>): Flow<PersonalizedPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<PersonalizedUiIntent.Refresh>().flatMapConcat { produceRefreshPartialChange() },
-                intentFlow.filterIsInstance<PersonalizedUiIntent.LoadMore>().flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<PersonalizedUiIntent.Dislike>().flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<PersonalizedUiIntent.Agree>().flatMapConcat { it.producePartialChange() },
-            )
-
-        private fun produceRefreshPartialChange(): Flow<PersonalizedPartialChange.Refresh> =
-            PersonalizedRepository
-                .personalizedFlow(1, 1)
-                .map<PersonalizedResponse, PersonalizedPartialChange.Refresh> { response ->
-                    PersonalizedPartialChange.Refresh.Success(
-                        data = response.toData()
-                    )
-                }
-                .onStart { emit(PersonalizedPartialChange.Refresh.Start) }
-                .catch { emit(PersonalizedPartialChange.Refresh.Failure(it)) }
-
-        private fun PersonalizedUiIntent.LoadMore.producePartialChange(): Flow<PersonalizedPartialChange.LoadMore> =
-            PersonalizedRepository
-                .personalizedFlow(2, page)
-                .map<PersonalizedResponse, PersonalizedPartialChange.LoadMore> { response ->
-                    PersonalizedPartialChange.LoadMore.Success(
-                        currentPage = page,
-                        data = response.toData(),
-                    )
-                }
-                .onStart { emit(PersonalizedPartialChange.LoadMore.Start) }
-                .catch { emit(PersonalizedPartialChange.LoadMore.Failure(currentPage = page, error = it)) }
-
-        private fun PersonalizedUiIntent.Dislike.producePartialChange(): Flow<PersonalizedPartialChange.Dislike> =
-            TiebaApi.getInstance().submitDislikeFlow(
-                DislikeBean(
-                    threadId.toString(),
-                    reasons.joinToString(",") { it.get { dislikeId }.toString() },
-                    forumId?.toString(),
-                    clickTime,
-                    reasons.joinToString(",") { it.get { extra } },
-                )
-            ).map<CommonResponse, PersonalizedPartialChange.Dislike> { PersonalizedPartialChange.Dislike.Success(threadId) }
-                .catch { emit(PersonalizedPartialChange.Dislike.Failure(threadId, it)) }
-                .onStart { emit(PersonalizedPartialChange.Dislike.Start(threadId)) }
-
-        private fun PersonalizedUiIntent.Agree.producePartialChange(): Flow<PersonalizedPartialChange.Agree> =
-            TiebaApi.getInstance()
-                .opAgreeFlow(
-                    threadId.toString(), postId.toString(), if (hasAgree) 1 else 0, objType = 3
-                )
-                .map<AgreeBean, PersonalizedPartialChange.Agree> {
-                    PersonalizedPartialChange.Agree.Success
-                }
-                .catch {
-                    emit(PersonalizedPartialChange.Agree.Failure(threadId, it))
-                }
-                .onStart {
-                    emit(PersonalizedPartialChange.Agree.Start(threadId))
-                }
-
-        private fun PersonalizedResponse.toData(): ImmutableList<ThreadItemData> {
-            val threadPersonalizedData = data_?.thread_personalized
-            val threadList = data_?.thread_list ?: return persistentListOf()
-            val hideBlocked = App.INSTANCE.appPreferences.hideBlockedContent
-            val videoBlocked = App.INSTANCE.appPreferences.blockVideo
-
-            return threadList
-                .filter { !videoBlocked || it.videoInfo == null }
-                .filter { it.ala_info == null }
-                .map { thread ->
-                    val personalized = threadPersonalizedData?.firstOrNull { it.tid == thread.id }
-                    ThreadItemData(
-                        thread = ThreadInfoItem(thread),
-                        personalized = personalized?.wrapImmutable(),
-                        hidden = thread.shouldBlock() && hideBlocked
-                    )
-                }
-                .toImmutableList()
-        }
-    }
-
-    fun onAgreeClicked(thread: ThreadInfoItem) {
-        send(
-            PersonalizedUiIntent.Agree(
-                threadId = thread.info.threadId,
-                postId = thread.info.firstPostId,
-                hasAgree = thread.like.liked
-            )
-        )
-    }
-}
-
-sealed interface PersonalizedUiIntent : UiIntent {
-    data object Refresh : PersonalizedUiIntent
-
-    data class LoadMore(val page: Int) : PersonalizedUiIntent
-
-    data class Agree(
-        val threadId: Long,
-        val postId: Long,
-        val hasAgree: Boolean
-    ) : PersonalizedUiIntent
-
-    data class Dislike(
-        val forumId: Long?,
-        val threadId: Long,
-        val reasons: List<ImmutableHolder<DislikeReason>>,
-        val clickTime: Long
-    ) : PersonalizedUiIntent
-}
-
-sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> {
-    sealed class Agree() : PersonalizedPartialChange {
-
-        override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
-            when (this) {
-                is Start -> oldState.copy(data = oldState.data.updateAgreeStatus(threadId))
-
-                is Success -> oldState
-
-                is Failure -> oldState.copy(data = oldState.data.updateAgreeStatus(threadId))
-            }
-
-        data class Start(val threadId: Long) : Agree()
-
-        object Success: Agree()
-
-        data class Failure(
-            val threadId: Long,
-            val error: Throwable
-        ) : Agree()
-    }
-
-    sealed class Dislike() : PersonalizedPartialChange {
-        override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
-            when (this) {
-                is Start -> {
-                    if (!oldState.hiddenThreadIds.contains(threadId)) {
-                        oldState.copy(hiddenThreadIds = (oldState.hiddenThreadIds + threadId).toImmutableList())
-                    } else {
-                        oldState
-                    }
-                }
-                is Success -> {
-                    if (!oldState.hiddenThreadIds.contains(threadId)) {
-                        oldState.copy(hiddenThreadIds = (oldState.hiddenThreadIds + threadId).toImmutableList())
-                    } else {
-                        oldState
-                    }
-                }
-                is Failure -> oldState
-            }
-
-        data class Start(
-            val threadId: Long,
-        ) : Dislike()
-
-        data class Success(
-            val threadId: Long,
-        ) : Dislike()
-
-        data class Failure(
-            val threadId: Long,
-            val error: Throwable,
-        ) : Dislike()
-    }
-
-    sealed class Refresh() : PersonalizedPartialChange {
-        override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
-            when (this) {
-                Start -> oldState.copy(isRefreshing = true, error = null)
-                is Success -> {
-                    val oldSize = oldState.data.size
-                    val newData = (data + oldState.data).distinctById()
-                    oldState.copy(
-                        isRefreshing = false,
-                        error = null,
-                        currentPage = 1,
-                        data = newData,
-                        refreshPosition = if (oldState.data.isEmpty()) 0 else (newData.size - oldSize),
-                    )
-                }
-
-                is Failure -> oldState.copy(
-                    isRefreshing = false,
-                    error = error.wrapImmutable()
-                )
-            }
-
-        data object Start : Refresh()
-
-        data class Success(
-            val data: List<ThreadItemData>,
-        ) : Refresh()
-
-        data class Failure(
-            val error: Throwable,
-        ) : Refresh()
-    }
-
-    sealed class LoadMore : PersonalizedPartialChange {
-        override fun reduce(oldState: PersonalizedUiState): PersonalizedUiState =
-            when (this) {
-                Start -> oldState.copy(isLoadingMore = true, error = null)
-                is Success -> oldState.copy(
-                    isLoadingMore = false,
-                    error = null,
-                    currentPage = currentPage,
-                    data = (oldState.data + data).distinctById(),
-                )
-
-                is Failure -> oldState.copy(
-                    isLoadingMore = false,
-                    error = error.wrapImmutable()
-                )
-            }
-
-        data object Start : LoadMore()
-
-        data class Success(
-            val currentPage: Int,
-            val data: List<ThreadItemData>,
-        ) : LoadMore()
-
-        data class Failure(
-            val currentPage: Int,
-            val error: Throwable,
-        ) : LoadMore()
-    }
-}
-
+@Immutable
 data class PersonalizedUiState(
     val isRefreshing: Boolean = true,
     val isLoadingMore: Boolean = false,
-    val error: ImmutableHolder<Throwable>? = null,
+    val error: Throwable? = null,
     val currentPage: Int = 1,
-    val data: ImmutableList<ThreadItemData> = persistentListOf(),
-    val hiddenThreadIds: ImmutableList<Long> = persistentListOf(),
-    val refreshPosition: Int = 0,
-): UiState
+    val data: List<ThreadItem> = emptyList(),
+): UiState {
+
+    val isEmpty: Boolean
+        get() = data.isEmpty()
+}
+
+@Stable
+@HiltViewModel
+class PersonalizedViewModel @Inject constructor(
+    private val exploreRepo: ExploreRepository,
+    settingsRepository: SettingsRepository
+) : ViewModel() {
+
+    companion object {
+        private const val TAG = "PersonalizedViewModel"
+
+        private suspend fun List<ThreadItem>.distinctById(blockedIds: Set<Long>): List<ThreadItem> {
+            return withContext(Dispatchers.Default) {
+                val set = MutableScatterSet<Long>(size)
+                val result = mutableListOf<ThreadItem>()
+                fastForEach {
+                    // Check blocked and distinct
+                    if (it.id !in blockedIds && set.add(it.id)) result += it
+                }
+                return@withContext result
+            }
+        }
+    }
+
+    private val handler = CoroutineExceptionHandler { _, e ->
+        Log.e(TAG, "onError: ", e)
+        _uiState.update { it.copy(isRefreshing = false, error = e) }
+    }
+
+    private val _uiState = MutableStateFlow(PersonalizedUiState())
+    val uiState: StateFlow<PersonalizedUiState> = _uiState.asStateFlow()
+
+    /**
+     * One-off [UiEvent], but no guarantee to be received.
+     * */
+    private val _uiEvent: MutableSharedFlow<UiEvent?> = MutableSharedFlow()
+    val uiEvent: Flow<UiEvent?>
+        get() = _uiEvent
+
+    private val blockedIds: MutableSet<Long> = Collections.synchronizedSet(ArraySet())
+
+    val hideBlockedContent: StateFlow<Boolean> = settingsRepository.blockSettings.flow
+        .map { it.hideBlocked }
+        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), false)
+
+    init {
+        refreshInternal(cached = true)
+    }
+
+    private fun refreshInternal(cached: Boolean) = viewModelScope.launch(handler) {
+        var showTip = false
+        _uiState.set {
+            showTip = !this.isEmpty
+            PersonalizedUiState(isRefreshing = true)
+        }
+        val data = exploreRepo.loadPersonalized(1, cached).distinctById(blockedIds)
+        _uiState.set { copy(isRefreshing = false, data = data) }
+        if (showTip) {
+            _uiEvent.emit(PersonalizedUiEvent.RefreshSuccess(data.size))
+        }
+    }
+
+    fun onRefresh() {
+        if (!_uiState.value.isRefreshing) refreshInternal(cached = false)
+    }
+
+    fun onLoadMore() {
+        val oldState = _uiState.value
+        if (!oldState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
+
+        viewModelScope.launch(handler) {
+            val page = oldState.currentPage + 1
+            val data = exploreRepo.loadPersonalized(page, cached = true)
+            val newData = (oldState.data + data).distinctById(blockedIds)
+            _uiState.update { it.copy(isLoadingMore = false, currentPage = page, data = newData) }
+        }
+    }
+
+    fun onThreadLikeClicked(thread: ThreadItem) = viewModelScope.launch(handler) {
+        updateLikeStatusUiStateCommon(
+            thread = thread,
+            onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Personalized) },
+            onEvent = ::emitGlobalEventSuspend
+        ) { threadId, liked, loading ->
+            _uiState.update { it.copy(data = it.data.updateLikeStatus(threadId, liked, loading)) }
+        }
+    }
+
+    fun onThreadDislike(thread: ThreadItem, reasons: List<Dislike>) {
+        if (!blockedIds.add(thread.id)) return
+
+        viewModelScope.launch(handler) {
+            _uiState.update { it.copy(data = it.data.distinctById(blockedIds)) }
+            runCatching {
+                exploreRepo.onDislikeThread(thread, reasons)
+            }
+            .onFailure { // ignore errors and keep data changes
+                _uiEvent.emit(PersonalizedUiEvent.DislikeFailed(it))
+            }
+        }
+    }
+
+    /**
+     * Called when navigate back from thread page with latest [Like] status
+     *
+     * @param threadId target thread ID
+     * @param like like status of target thread
+     * */
+    fun onThreadResult(threadId: Long, like: Like) {
+        viewModelScope.launch(handler) {
+            // compare and update with latest like status
+            val newData = _uiState.value.data.updateLikeStatus(threadId, like)
+            if (newData != null) {
+                _uiState.update { it.copy(data = newData) }
+                exploreRepo.purgeCache(ExplorePageItem.Personalized)
+            }
+            // else: empty or no status changes
+        }
+    }
+}
 
 sealed interface PersonalizedUiEvent : UiEvent {
-    data class RefreshSuccess(val count: Int) : PersonalizedUiEvent
+    class RefreshSuccess(val count: Int) : PersonalizedUiEvent
+
+    class DislikeFailed(val e: Throwable): PersonalizedUiEvent
 }

@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.models
 import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 
 // ForumID, name, avatar
 typealias SimpleForum = Triple<Long, String, String>
@@ -33,7 +32,7 @@ data class ThreadInfoData(
         collectMarkPid = info.collectMarkPid.toLongOrNull()?: 0L,
         collected = info.collectStatus != 0,
         firstPostId = info.firstPostId,
-        like = Like(info.hasAgree == 1, info.agree?.diffAgreeNum?: info.agreeNum.toLong()),
+        like = info.agree?.let { Like(it) } ?: LikeZero,
         isShareThread = info.is_share_thread == 1,
         originThreadInfo = info.origin_thread_info?.takeIf { info.is_share_thread == 1 },
         replyNum = info.replyNum,
