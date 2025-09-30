@@ -7,7 +7,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,17 +36,17 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInExcept
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
-import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 
 @Composable
 fun TipScreen(
-    title: @Composable (ColumnScope.() -> Unit),
+    title: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    image: @Composable (ColumnScope.() -> Unit) = {},
-    message: @Composable (ColumnScope.() -> Unit) = {},
-    actions: @Composable (ColumnScope.() -> Unit) = {},
+    image: @Composable () -> Unit = {},
+    message: (@Composable () -> Unit)? = null,
+    actions: (@Composable () -> Unit)? = null,
     scrollable: Boolean = false,
 ) {
     val typography = MaterialTheme.typography
@@ -56,28 +54,33 @@ fun TipScreen(
 
     Column(
         modifier = modifier
-            .block {
-                if (scrollable) fillMaxHeight().verticalScroll(rememberScrollState()) else null
-            }
+            .fillMaxHeight()
+            .onCase(scrollable) { verticalScroll(rememberScrollState()) }
             .fillMaxWidth(fraction = widthFraction)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.CenterVertically)
     ) {
         Box(modifier = Modifier.requiredWidthIn(max = 400.dp)) {
-            this@Column.image()
-        }
-        ProvideTextStyle(typography.titleLarge.copy(fontWeight = FontWeight.Bold)) {
-            title()
+            image()
         }
         ProvideContentColorTextStyle(
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            textStyle = typography.bodyLarge
-        ) {
-            message()
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            textStyle = typography.titleLarge,
+            content = title
+        )
+
+        if (message != null) {
+            ProvideContentColorTextStyle(
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                textStyle = typography.bodyLarge,
+                content = message
+            )
         }
 
-        actions()
+        if (actions != null) {
+            actions()
+        }
     }
 }
 
@@ -92,7 +95,7 @@ fun StateScreenScope.ErrorScreen(
     error: Throwable?,
     modifier: Modifier = Modifier,
     showReload: Boolean = true,
-    actions: @Composable (ColumnScope.() -> Unit) = {},
+    actions: (@Composable () -> Unit)? = null,
 ) =
     ErrorTipScreen(
         error = error,
@@ -104,7 +107,7 @@ fun StateScreenScope.ErrorScreen(
                     onClick = this@ErrorScreen::reload
                 )
             }
-            actions()
+            actions?.invoke()
         }
     )
 
@@ -112,7 +115,7 @@ fun StateScreenScope.ErrorScreen(
 fun ErrorTipScreen(
     modifier: Modifier = Modifier,
     error: Throwable?,
-    actions: @Composable (ColumnScope.() -> Unit) = {},
+    actions: (@Composable () -> Unit)?,
 ) {
     val context = LocalContext.current
     val errorType = remember { toKnownErrorType(context, error) }
@@ -148,7 +151,7 @@ fun ErrorTipScreen(
 fun ErrorStackTraceScreen(
     modifier: Modifier = Modifier,
     throwable: Throwable,
-    actions: @Composable (ColumnScope.() -> Unit) = {}
+    actions: (@Composable () -> Unit)? = null
 ) {
     val stackTrace = remember(throwable) {
         runCatching { throwable.stackTraceToString() }.getOrNull()
@@ -161,7 +164,7 @@ fun ErrorStackTraceScreen(
 fun ErrorStackTraceScreen(
     modifier: Modifier = Modifier,
     stackTrace: String?,
-    actions: @Composable (ColumnScope.() -> Unit) = {}
+    actions: (@Composable () -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -172,6 +175,7 @@ fun ErrorStackTraceScreen(
     ) {
         Text(
             text = stringResource(id = R.string.title_unknown_error),
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.titleLarge
         )
@@ -187,7 +191,7 @@ fun ErrorStackTraceScreen(
             style = MaterialTheme.typography.bodyLarge
         )
 
-        actions()
+        actions?.invoke()
     }
 }
 
