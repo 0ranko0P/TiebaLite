@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
@@ -29,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -75,6 +78,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.containerColorNoAni
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -95,7 +99,8 @@ fun StateScreenScope.ThreadContent(
     viewModel: ThreadViewModel,
     lazyListState: LazyListState,
     contentPadding: PaddingValues = PaddingNone,
-    // useStickyHeader: Boolean // Bug: StickyHeader doesn't respect content padding
+    topAppBarScrollBehavior: TopAppBarScrollBehavior,
+    useStickyHeader: Boolean // Bug: StickyHeader doesn't respect content padding
 ) {
     val navigator = LocalNavController.current
     val state by viewModel.threadUiState.collectAsStateWithLifecycle()
@@ -110,7 +115,9 @@ fun StateScreenScope.ThreadContent(
 
     Container {
         SwipeUpLazyLoadColumn(
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier
+                .fillMaxSize()
+                .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
             state = lazyListState,
             contentPadding = contentPadding,
             isLoading = isLoadingMore,
@@ -152,8 +159,16 @@ fun StateScreenScope.ThreadContent(
             }
 
             state.thread?.replyNum?.let { replyNum ->
-                item(key = Type.Header.key, contentType = Type.Header) {
-                    ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged)
+                if (useStickyHeader) {
+                    stickyHeader(key = Type.Header.key, contentType = Type.Header) {
+                        val color by containerColorNoAni(topAppBarScrollBehavior.state, lazyListState)
+                        val headerMod = Modifier.background(color)
+                        ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged, headerMod)
+                    }
+                } else {
+                    item(key = Type.Header.key, contentType = Type.Header) {
+                        ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged)
+                    }
                 }
             }
 

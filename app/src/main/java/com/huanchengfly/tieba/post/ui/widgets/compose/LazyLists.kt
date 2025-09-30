@@ -14,9 +14,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -119,16 +116,3 @@ private val Saver: Saver<List<LazyListState>, *> = listSaver(
         }
     }
 )
-
-/**
- * Workaround to make [LazyListScope.stickyHeader] respect content padding.
- *
- * Compose this overlay in TopBar when fist item becomes invisible
- * */
-@Composable
-fun StickyHeaderOverlay(state: LazyListState, header: @Composable () -> Unit) {
-    val shouldPinOnTopBar by remember { derivedStateOf { state.firstVisibleItemIndex > 0 } }
-    if (shouldPinOnTopBar) {
-        header()
-    }
-}

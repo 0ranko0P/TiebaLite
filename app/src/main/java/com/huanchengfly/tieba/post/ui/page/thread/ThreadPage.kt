@@ -61,7 +61,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -107,6 +106,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
+import com.huanchengfly.tieba.post.ui.widgets.compose.UseStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
@@ -172,9 +172,6 @@ private fun LazyListState.lastVisiblePost(uiState: ThreadUiState): PostData? {
         .fastFirstOrNull { post -> lastPostItemKey.endsWith(post.id.toString()) }
         ?: uiState.firstPost
 }
-
-// Workaround to make StickyHeader respect content padding
-private const val UseStickyHeaderWorkaround = true
 
 @OptIn(ExperimentalHazeApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -335,7 +332,6 @@ fun ThreadPage(
         },
         onReload = { viewModel.requestLoad(0, postId) }
     ) {
-
         BlurScaffold(
             topHazeBlock = {
                 blurEnabled = lazyListState.canScrollBackward
@@ -382,10 +378,11 @@ fun ThreadPage(
             snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
         ) { padding ->
             val hazeState: HazeState? = LocalHazeState.current
+            val useStickyHeaderWorkaround = hazeState != null
 
             // Ignore Scaffold padding changes if workaround enabled
             val direction = LocalLayoutDirection.current
-            val contentPadding = if (UseStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
+            val contentPadding = if (useStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
 
             val enablePullRefresh by remember {
                 derivedStateOf { state.page.hasPrevious || state.sortType == ThreadSortType.BY_DESC }
@@ -400,11 +397,11 @@ fun ThreadPage(
                     contentPadding = contentPadding
                 ) {
                     ThreadContent(
-                        modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                         viewModel = viewModel,
                         lazyListState = lazyListState,
                         contentPadding = contentPadding,
-                        // useStickyHeader = !useStickyHeaderWorkaround
+                        topAppBarScrollBehavior = topAppBarScrollBehavior,
+                        useStickyHeader = !useStickyHeaderWorkaround
                     )
                 }
             }

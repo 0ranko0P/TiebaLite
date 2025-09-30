@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
+import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,7 +43,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,7 +50,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
-import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -82,7 +81,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.UseStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.containerColorNoAni
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
@@ -122,6 +123,7 @@ internal fun SubPostsContent(
     val navigator = LocalNavController.current
     val account = LocalAccount.current
     val context = LocalContext.current
+    val direction = LocalLayoutDirection.current
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val forum = state.forum
@@ -138,8 +140,8 @@ internal fun SubPostsContent(
 
                 is SubPostsUiEvent.ScrollToSubPosts -> {
                     val targetIndex = 2 + state.subPosts.indexOfFirst { s -> s.id == subPostId }
-                    delay(20)
-                    lazyListState.scrollToItem(targetIndex.coerceIn(0, state.subPosts.lastIndex))
+                    delay(AnimationConstants.DefaultDurationMillis.toLong())
+                    lazyListState.animateScrollToItem(targetIndex.coerceIn(0, state.subPosts.lastIndex))
                 }
             }
         }
@@ -193,9 +195,6 @@ internal fun SubPostsContent(
         val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         val canReply by viewModel.canReply.collectAsStateWithLifecycle()
 
-        // Workaround to make StickyHeader respect content padding
-        var useStickyHeaderWorkaround by remember { mutableStateOf(false) }
-
         // Initialize nullable click listeners:
         val onReplySubPost: ((SubPostItemData) -> Unit)? = { item: SubPostItemData ->
             navigator.navigate(
@@ -223,7 +222,7 @@ internal fun SubPostsContent(
 
         BlurScaffold(
             topHazeBlock = {
-                blurEnabled = topAppBarScrollBehavior.isOverlapping
+                blurEnabled = lazyListState.canScrollBackward
             },
             topBar = {
                 TitleBar(
@@ -235,7 +234,7 @@ internal fun SubPostsContent(
                     },
                     scrollBehavior = topAppBarScrollBehavior
                 ) {
-                    if (useStickyHeaderWorkaround) {
+                    if (UseStickyHeaderWorkaround) {
                         StickyHeaderOverlay(state = lazyListState) {
                             SubPostsHeader(postNum = state.totalCount)
                         }
@@ -259,11 +258,14 @@ internal fun SubPostsContent(
                 )
             }
         ) { padding ->
-            useStickyHeaderWorkaround = padding.calculateTopPadding() != Dp.Hairline
-
             // Ignore Scaffold padding changes if workaround enabled
-            val direction = LocalLayoutDirection.current
-            val contentPadding = if (useStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
+            val useStickyHeaderWorkaround = UseStickyHeaderWorkaround
+            val contentPadding = if (useStickyHeaderWorkaround) {
+                remember(padding.calculateBottomPadding()) { padding.copy(direction) }
+            } else {
+                padding
+            }
+
             val hideBlockedContent: Boolean = context.appPreferences.hideBlockedContent
             val isLoading by remember { derivedStateOf { state.isLoading } }
 
@@ -328,10 +330,8 @@ internal fun SubPostsContent(
                     }
                 } else {
                     stickyHeader(key = "SubPostsHeader", contentType = Unit) {
-                        SubPostsHeader(
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
-                            postNum = state.totalCount
-                        )
+                        val color by containerColorNoAni(topAppBarScrollBehavior.state, lazyListState)
+                        SubPostsHeader(Modifier.background(color), postNum = state.totalCount)
                     }
                 }
 
@@ -356,7 +356,6 @@ internal fun SubPostsContent(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@NonRestartableComposable
 @Composable
 private fun TitleBar(
     isSheet: Boolean,
