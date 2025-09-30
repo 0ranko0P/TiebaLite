@@ -30,7 +30,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -67,6 +66,7 @@ import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
@@ -164,26 +164,6 @@ fun Badge(
         )
         Text(text = text, fontSize = 12.sp, color = contentColor)
     }
-}
-
-@NonRestartableComposable
-@Composable
-fun ThreadContent(
-    modifier: Modifier = Modifier,
-    content: AnnotatedString,
-    maxLines: Int = 5,
-) {
-    HighlightText(
-        text = content,
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(modifier),
-        fontSize = 15.sp,
-        lineSpacing = 0.8.sp,
-        overflow = TextOverflow.Ellipsis,
-        maxLines = maxLines,
-        style = MaterialTheme.typography.bodyLarge
-    )
 }
 
 fun buildThreadContent(
@@ -550,7 +530,17 @@ fun FeedCard(
         },
         content = {
             if (!thread.content.isNullOrEmpty()) {
-                ThreadContent(content = thread.content)
+                PbContentText(
+                    text = thread.content,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(modifier),
+                    fontSize = 15.sp,
+                    lineSpacing = 0.8.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 5,
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
 
             ThreadMedia(

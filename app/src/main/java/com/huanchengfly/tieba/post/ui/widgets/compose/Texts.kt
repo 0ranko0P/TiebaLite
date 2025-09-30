@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -26,7 +25,6 @@ import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -43,11 +41,9 @@ import com.huanchengfly.tieba.post.pxToSpFloat
 import com.huanchengfly.tieba.post.spToPxFloat
 import com.huanchengfly.tieba.post.theme.tokens.ColorSchemeKeyTokens
 import com.huanchengfly.tieba.post.theme.tokens.value
-import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager.calcLineHeightPx
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
-import java.util.regex.Pattern
 
 const val EMOTICON_SIZE_SCALE = 0.9f
 
@@ -211,124 +207,5 @@ fun buildChipInlineContent(
                 )
             }
         }
-    )
-}
-
-@Composable
-fun HighlightText(
-    text: String,
-    modifier: Modifier = Modifier,
-    color: Color = Color.Unspecified,
-    fontSize: TextUnit = TextUnit.Unspecified,
-    fontStyle: FontStyle? = null,
-    fontWeight: FontWeight? = null,
-    fontFamily: FontFamily? = null,
-    letterSpacing: TextUnit = TextUnit.Unspecified,
-    textDecoration: TextDecoration? = null,
-    textAlign: TextAlign? = null,
-    lineHeight: TextUnit = TextUnit.Unspecified,
-    lineSpacing: TextUnit = 0.sp,
-    overflow: TextOverflow = TextOverflow.Clip,
-    softWrap: Boolean = true,
-    maxLines: Int = Int.MAX_VALUE,
-    minLines: Int = 1,
-    onTextLayout: (TextLayoutResult) -> Unit = {},
-    style: TextStyle = LocalTextStyle.current,
-    highlightKeywords: List<String> = emptyList(),
-    highlightColor: Color = MaterialTheme.colorScheme.primary,
-    highlightStyle: TextStyle = style,
-) {
-    HighlightText(
-        text = AnnotatedString(text),
-        modifier = modifier,
-        color = color,
-        fontSize = fontSize,
-        fontStyle = fontStyle,
-        fontWeight = fontWeight,
-        fontFamily = fontFamily,
-        letterSpacing = letterSpacing,
-        textDecoration = textDecoration,
-        textAlign = textAlign,
-        lineHeight = lineHeight,
-        lineSpacing = lineSpacing,
-        overflow = overflow,
-        softWrap = softWrap,
-        maxLines = maxLines,
-        minLines = minLines,
-        onTextLayout = onTextLayout,
-        style = style,
-        highlightKeywords = highlightKeywords,
-        highlightColor = highlightColor,
-        highlightStyle = highlightStyle,
-    )
-}
-
-@Composable
-fun HighlightText(
-    text: AnnotatedString,
-    modifier: Modifier = Modifier,
-    color: Color = Color.Unspecified,
-    fontSize: TextUnit = TextUnit.Unspecified,
-    fontStyle: FontStyle? = null,
-    fontWeight: FontWeight? = null,
-    fontFamily: FontFamily? = null,
-    letterSpacing: TextUnit = TextUnit.Unspecified,
-    textDecoration: TextDecoration? = null,
-    textAlign: TextAlign? = null,
-    lineHeight: TextUnit = TextUnit.Unspecified,
-    lineSpacing: TextUnit = 0.sp,
-    overflow: TextOverflow = TextOverflow.Clip,
-    softWrap: Boolean = true,
-    maxLines: Int = Int.MAX_VALUE,
-    minLines: Int = 1,
-    inlineContent: Map<String, InlineTextContent>? = null,
-    onTextLayout: (TextLayoutResult) -> Unit = {},
-    style: TextStyle = LocalTextStyle.current,
-    highlightKeywords: List<String> = emptyList(),
-    highlightColor: Color = MaterialTheme.colorScheme.primary,
-    highlightStyle: TextStyle = style,
-) {
-    val highlightText = if (highlightKeywords.isEmpty()) {
-        text
-    } else {
-        val mergedHighlightStyle = remember(highlightStyle, highlightColor) {
-            highlightStyle.copy(color = highlightColor).toSpanStyle()
-        }
-        remember(text, highlightKeywords) {
-            buildAnnotatedString {
-                append(text)
-                highlightKeywords.forEach { keyword ->
-                    val regexPattern = keyword.toPattern(Pattern.CASE_INSENSITIVE)
-                    val matcher = regexPattern.matcher(text.text)
-                    while (matcher.find()) {
-                        val start = matcher.start()
-                        val end = matcher.end()
-                        addStyle(mergedHighlightStyle, start, end)
-                    }
-                }
-            }
-        }
-    }
-
-    PbContentText(
-        text = highlightText,
-        modifier = modifier,
-        color = color,
-        fontSize = fontSize,
-        fontStyle = fontStyle,
-        fontWeight = fontWeight,
-        fontFamily = fontFamily,
-        letterSpacing = letterSpacing,
-        textDecoration = textDecoration,
-        textAlign = textAlign,
-        lineHeight = lineHeight,
-        lineSpacing = lineSpacing,
-        overflow = overflow,
-        softWrap = softWrap,
-        maxLines = maxLines,
-        minLines = minLines,
-        inlineContent = inlineContent,
-        onTextLayout = onTextLayout,
-        style = style,
     )
 }

@@ -95,7 +95,6 @@
     <string name="button_no">否</string>
     <string name="button_yes">是</string>
     <string name="title_agree">点赞</string>
-    <string name="toast_agree_failed">点赞失败 %1$s</string>
     <string name="title_copy_forum_name">复制吧名</string>
     <string name="title_clear_picture_cache">清除图片缓存</string>
     <string name="toast_clear_picture_cache_success">成功清除图片缓存</string>
