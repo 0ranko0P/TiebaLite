@@ -4,7 +4,6 @@ import android.util.Log
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
@@ -28,9 +27,9 @@ object ClientUtils {
     var activeTimestamp: Long = System.currentTimeMillis()
         private set
 
-    fun init(settingsRepository: SettingsRepository) {
-        clientConfigSettings = settingsRepository.clientConfig
-        val config = runBlocking { settingsRepository.clientConfig.flow.first() }
+    fun init(settings: Settings<ClientConfig>, configSnapshot: ClientConfig?) {
+        clientConfigSettings = settings
+        val config = configSnapshot ?: runBlocking { settings.flow.first() }
         clientId = config.clientId
         sampleId = config.sampleId
         baiduId = config.baiduId

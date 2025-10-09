@@ -250,9 +250,11 @@ private object ClientConfigTransformer: PreferenceTransformer<ClientConfig> {
     override val get: (Preferences) -> ClientConfig = {
         ClientConfig(
             clientId = it[stringPreferencesKey(KEY_CLIENT_ID)],
-            sampleId = it [stringPreferencesKey(KEY_SAMPLE_ID)],
-            baiduId = it [stringPreferencesKey(KEY_BAIDU_ID)],
-            activeTimestamp = it[longPreferencesKey(KEY_ACTIVE_TIMESTAMP)] ?: System.currentTimeMillis()
+            sampleId = it[stringPreferencesKey(KEY_SAMPLE_ID)],
+            baiduId = it[stringPreferencesKey(KEY_BAIDU_ID)],
+            activeTimestamp = it[longPreferencesKey(KEY_ACTIVE_TIMESTAMP)] ?: System.currentTimeMillis(),
+            firstInstallTime = it[longPreferencesKey(KEY_INSTALL_TIME)],
+            lastUpdateTime = it[longPreferencesKey(KEY_UPDATE_TIME)]
         )
     }
 
@@ -260,11 +262,15 @@ private object ClientConfigTransformer: PreferenceTransformer<ClientConfig> {
         it.putString(KEY_CLIENT_ID, config.clientId)
         it.putString(KEY_SAMPLE_ID, config.sampleId)
         it.putString(KEY_BAIDU_ID, config.baiduId)
-        it.putLong(KEY_ACTIVE_TIMESTAMP, config.activeTimestamp)
+        it[longPreferencesKey(KEY_ACTIVE_TIMESTAMP)] = config.activeTimestamp
+        it[longPreferencesKey(KEY_INSTALL_TIME)] = config.firstInstallTime!!
+        it[longPreferencesKey(KEY_UPDATE_TIME)] = config.lastUpdateTime!!
     }
 
     private const val KEY_CLIENT_ID = "client_id"
     private const val KEY_SAMPLE_ID = "sample_id"
     private const val KEY_BAIDU_ID = "baidu_id"
     private const val KEY_ACTIVE_TIMESTAMP = "active_timestamp"
+    private const val KEY_INSTALL_TIME = "se_install_time"
+    private const val KEY_UPDATE_TIME = "se_update_time"
 }

@@ -11,6 +11,8 @@ import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.packageInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,8 +20,10 @@ import javax.inject.Singleton
 @Singleton
 class ConfigInitializer @Inject constructor(
     @ApplicationContext val context: Context,
-    private val settingsRepository: SettingsRepository
+    settingsRepository: SettingsRepository
 ) {
+
+    val clientSettings = settingsRepository.clientConfig
 
     fun init(reload: Boolean = false) = with(App.Config) {
         if (reload || !inited) {
@@ -31,13 +35,19 @@ class ConfigInitializer @Inject constructor(
                 isTrackLimited = false
             }
             userAgent = WebSettings.getDefaultUserAgent(context)
-            appFirstInstallTime = context.packageInfo.firstInstallTime
-            // Keep app update time private
-            appLastUpdateTime = appFirstInstallTime
+            var config = runBlocking { clientSettings.flow.first() }
+            appFirstInstallTime = config.firstInstallTime ?: context.packageInfo.firstInstallTime
+            appLastUpdateTime = config.lastUpdateTime ?: context.packageInfo.lastUpdateTime
+
+            // Make app install time constant, save to settings
+            if (config.firstInstallTime == null) {
+                config = config.copy(firstInstallTime = appFirstInstallTime, lastUpdateTime = appLastUpdateTime)
+                clientSettings.set(config)
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
                 context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PERMISSION_GRANTED
             ) {
-                ClientUtils.init(settingsRepository)
+                ClientUtils.init(clientSettings, configSnapshot = config)
             }
             inited = true
         }
