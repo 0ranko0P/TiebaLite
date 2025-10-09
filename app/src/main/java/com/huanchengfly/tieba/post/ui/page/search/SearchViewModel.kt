@@ -1,230 +1,174 @@
 package com.huanchengfly.tieba.post.ui.page.search
 
-import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugResponse
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
+import android.util.Log
+import androidx.collection.LruCache
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.CommonUiEvent
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
+import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.models.database.KeywordProvider
 import com.huanchengfly.tieba.post.models.database.SearchHistory
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.huanchengfly.tieba.post.repository.SearchRepository
+import com.huanchengfly.tieba.post.ui.models.search.SearchSuggestion
+import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadSortType
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onEach
-import org.litepal.LitePal
-import org.litepal.extension.delete
-import org.litepal.extension.deleteAll
-import org.litepal.extension.find
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class SearchViewModel :
-    BaseViewModel<SearchUiIntent, SearchPartialChange, SearchUiState, SearchUiEvent>() {
-    override fun createInitialState() = SearchUiState()
+@Immutable
+data class SearchUiState(
+    val submittedKeyword: String = "",
+    val sortType: Int = SearchThreadSortType.SORT_TYPE_NEWEST,
+    val suggestion: SearchSuggestion? = null,
+) : UiState {
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<SearchUiIntent, SearchPartialChange, SearchUiState> =
-        SearchPartialChangeProducer
+    val isKeywordNotEmpty: Boolean = submittedKeyword.isNotEmpty()
+}
 
-    override fun dispatchEvent(partialChange: SearchPartialChange): UiEvent? =
-        when (partialChange) {
-            is SearchPartialChange.ClearSearchHistory.Success -> CommonUiEvent.Toast(
-                App.INSTANCE.getString(R.string.toast_clear_success)
-            )
+private const val TAG = "SearchViewModel"
 
-            is SearchPartialChange.ClearSearchHistory.Failure -> CommonUiEvent.Toast(
-                App.INSTANCE.getString(R.string.toast_clear_failure, partialChange.errorMessage)
-            )
+@Stable
+@HiltViewModel
+class SearchViewModel @Inject constructor(
+    private val searchRepo: SearchRepository
+): ViewModel() {
 
-            is SearchPartialChange.DeleteSearchHistory.Failure -> CommonUiEvent.Toast(
-                App.INSTANCE.getString(R.string.toast_delete_failure, partialChange.errorMessage)
-            )
+    /**
+     * In-Memory cache of recent search suggestion
+     * */
+    private val cache: LruCache<String, SearchSuggestion> = LruCache(10)
 
-            is SearchPartialChange.SubmitKeyword -> SearchUiEvent.KeywordChanged(partialChange.keyword)
+    private var searchSuggestionRunner = ControlledRunner<Unit>()
 
-            else -> null
+    private val emptySuggestion = SearchSuggestion(null, emptyList())
+
+    /**
+     * One-off [SearchUiEvent], but no guarantee to be received.
+     * */
+    private val _uiEvent: MutableSharedFlow<SearchUiEvent?> = MutableSharedFlow()
+    val uiEvent: Flow<SearchUiEvent?>
+        get() = _uiEvent
+
+    private var _uiState = MutableStateFlow(SearchUiState())
+    val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+
+    private val handler = CoroutineExceptionHandler { _, e ->
+        Log.e(TAG, "onError: ", e)
+        if (viewModelScope.isActive) {
+            viewModelScope.launch { _uiEvent.emit(SearchUiEvent.Error(e)) }
         }
+    }
 
-    private object SearchPartialChangeProducer :
-        PartialChangeProducer<SearchUiIntent, SearchPartialChange, SearchUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<SearchUiIntent>): Flow<SearchPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<SearchUiIntent.Init>()
-                    .flatMapConcat { produceInitPartialChange() },
-                intentFlow.filterIsInstance<SearchUiIntent.ClearSearchHistory>()
-                    .flatMapConcat { produceClearHistoryPartialChange() },
-                intentFlow.filterIsInstance<SearchUiIntent.DeleteSearchHistory>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<SearchUiIntent.SubmitKeyword>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<SearchUiIntent.KeywordInputChanged>()
-                    .flatMapConcat { it.producePartialChange() },
-            )
-
-        private fun produceInitPartialChange() = flow<SearchPartialChange.Init> {
-            emit(
-                SearchPartialChange.Init.Success(
-                    LitePal.order("timestamp DESC").find<SearchHistory>()
-                )
-            )
-        }.catch {
-            emit(SearchPartialChange.Init.Failure(it.getErrorCode(), it.getErrorMessage()))
+    val searchHistories: StateFlow<List<SearchHistory>> = searchRepo.getHistoryFlow()
+        .catch { e ->
+            handler.handleException(currentCoroutineContext(), e)
         }
+        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), emptyList())
 
-        private fun produceClearHistoryPartialChange() =
-            flow<SearchPartialChange.ClearSearchHistory> {
-                LitePal.deleteAll<SearchHistory>()
-                emit(SearchPartialChange.ClearSearchHistory.Success)
-            }.catch {
-                emit(SearchPartialChange.ClearSearchHistory.Failure(it.getErrorMessage()))
-            }.flowOn(Dispatchers.IO)
+    fun onClearHistory() {
+        viewModelScope.launch(handler) {
+            runCatching {
+                require(searchHistories.value.isNotEmpty()) { "Empty History" }
+                searchRepo.clearHistory()
+            }
+            .onFailure { e ->
+                _uiEvent.emit(SearchUiEvent.ClearHistoryFailed(e))
+            }
+            .onSuccess { _uiEvent.emit(SearchUiEvent.ClearHistorySucceed) }
+        }
+    }
 
-        private fun SearchUiIntent.DeleteSearchHistory.producePartialChange() =
-            flow<SearchPartialChange.DeleteSearchHistory> {
-                LitePal.delete<SearchHistory>(id)
-                emit(SearchPartialChange.DeleteSearchHistory.Success(id))
-            }.catch {
-                emit(SearchPartialChange.DeleteSearchHistory.Failure(it.getErrorMessage()))
-            }.flowOn(Dispatchers.IO)
+    fun onDeleteHistory(history: KeywordProvider) {
+        viewModelScope.launch(handler) {
+            runCatching {
+                searchRepo.deleteHistory(history as SearchHistory)
+            }
+            .onFailure { e -> _uiEvent.emit(SearchUiEvent.DeleteHistoryFailed(e)) }
+        }
+    }
 
-        private fun SearchUiIntent.SubmitKeyword.producePartialChange() =
-            flowOf(keyword.trim())
-                .onEach {
-                    if (it.isNotBlank()) {
+    /**
+     * Called when the input text in search box has been changed
+     * */
+    fun onKeywordInputChanged(keyword: String) {
+        viewModelScope.launch(handler) {
+            searchSuggestionRunner.cancelPreviousThenRun {
+                val keywordSnapshot = _uiState.value.submittedKeyword
+                when {
+                    // on clear
+                    keyword.isEmpty() || keyword.isBlank() || keyword == keywordSnapshot -> {
+                        _uiState.update { it.copy(suggestion = null) }
+                    }
+
+                    // on cache hit
+                    cache[keyword] != null -> _uiState.update { it.copy(suggestion = cache[keyword]!!) }
+
+                    // fetch search suggestion from network now
+                    else -> {
+                        delay(200) // user might type real fast, wait 200ms here
+
                         runCatching {
-                            SearchHistory(it).saveOrUpdate("content = ?", it)
+                            searchRepo.searchSuggestions(keyword)
+                        }
+                        .onFailure { e ->
+                            if (e !is CancellationException) {
+                                Log.w(TAG, "onKeywordInputChanged: ${e.getErrorMessage()}")
+                            }
+                        }
+                        .onSuccess { suggestion ->
+                            if (isActive) {
+                                cacheSuggestion(keyword, suggestion)
+                                _uiState.update {
+                                    // check new keyword submitted
+                                    if (it.submittedKeyword == keywordSnapshot) it.copy(suggestion = suggestion) else it
+                                }
+                            }
                         }
                     }
                 }
-                .map { SearchPartialChange.SubmitKeyword(it) }
-
-        private fun SearchUiIntent.KeywordInputChanged.producePartialChange() =
-            if (keyword.isNotBlank()) {
-                TiebaApi.getInstance().searchSuggestionsFlow(keyword)
-                    .map<SearchSugResponse, SearchPartialChange.KeywordInputChanged> {
-                        SearchPartialChange.KeywordInputChanged.Success(
-                            it.data_?.list ?: listOf()
-                        )
-                    }
-                    .catch {
-                        emit(SearchPartialChange.KeywordInputChanged.Failure(it.getErrorMessage()))
-                    }
-            } else {
-                flowOf(SearchPartialChange.KeywordInputChanged.Success(emptyList()))
             }
-    }
-}
-
-sealed interface SearchUiIntent : UiIntent {
-    data object Init : SearchUiIntent
-
-    data object ClearSearchHistory : SearchUiIntent
-
-    data class DeleteSearchHistory(val id: Long) : SearchUiIntent
-
-    data class SubmitKeyword(val keyword: String) : SearchUiIntent
-
-    data class KeywordInputChanged(val keyword: String) : SearchUiIntent
-}
-
-sealed interface SearchPartialChange : PartialChange<SearchUiState> {
-    sealed class Init : SearchPartialChange {
-        override fun reduce(oldState: SearchUiState): SearchUiState = when (this) {
-            is Success -> oldState.copy(searchHistories = searchHistories.toImmutableList())
-            is Failure -> oldState
         }
-
-        data class Success(val searchHistories: List<SearchHistory>) : Init()
-
-        data class Failure(val errorCode: Int, val errorMessage: String) : Init()
     }
 
-    sealed class ClearSearchHistory : SearchPartialChange {
-        override fun reduce(oldState: SearchUiState): SearchUiState = when (this) {
-            Success -> oldState.copy(searchHistories = persistentListOf())
-            is Failure -> oldState
-        }
+    fun onSubmitKeyword(keyword: String) {
+        if (keyword == _uiState.value.submittedKeyword) return
 
-        data object Success : ClearSearchHistory()
-
-        data class Failure(
-            val errorMessage: String,
-        ) : ClearSearchHistory()
-    }
-
-    sealed class DeleteSearchHistory : SearchPartialChange {
-        override fun reduce(oldState: SearchUiState): SearchUiState = when (this) {
-            is Success -> oldState.copy(
-                searchHistories = oldState.searchHistories.filterNot { it.id == id }
-                    .toImmutableList()
-            )
-
-            is Failure -> oldState
-        }
-
-        data class Success(val id: Long) : DeleteSearchHistory()
-
-        data class Failure(
-            val errorMessage: String,
-        ) : DeleteSearchHistory()
-    }
-
-    data class SubmitKeyword(val keyword: String) : SearchPartialChange {
-        override fun reduce(oldState: SearchUiState): SearchUiState {
-            if (keyword.isEmpty()) {
-                return oldState.copy(
-                    isKeywordEmpty = true,
-                    suggestions = persistentListOf()
-                )
+        searchSuggestionRunner.cancelCurrent()
+        viewModelScope.launch(handler) {
+            val newState = _uiState.updateAndGet { it.copy(submittedKeyword = keyword, suggestion = null) }
+            if (newState.isKeywordNotEmpty) {
+                searchRepo.addHistory(keyword)
             }
-            val newSearchHistories = (oldState.searchHistories
-                .filterNot { it.content == keyword } + SearchHistory(content = keyword))
-                .sortedByDescending { it.timestamp }
-            return oldState.copy(
-                keyword = keyword,
-                isKeywordEmpty = false,
-                searchHistories = newSearchHistories.toImmutableList()
-            )
         }
     }
 
-    sealed class KeywordInputChanged : SearchPartialChange {
-        override fun reduce(oldState: SearchUiState): SearchUiState = when (this) {
-            is Success -> oldState.copy(suggestions = suggestions.toImmutableList())
-            is Failure -> oldState
+    fun onSortTypeChanged(sortType: Int) {
+        viewModelScope.launch(handler) {
+            _uiState.update { it.copy(sortType = sortType) }
         }
-
-        data class Success(val suggestions: List<String>) : KeywordInputChanged()
-
-        data class Failure(
-            val errorMessage: String,
-        ) : KeywordInputChanged()
     }
-}
 
-data class SearchUiState(
-    val keyword: String = "",
-    val isKeywordEmpty: Boolean = true,
-    val searchHistories: ImmutableList<SearchHistory> = persistentListOf(),
-    val suggestions: ImmutableList<String> = persistentListOf(),
-) : UiState
-
-sealed interface SearchUiEvent : UiEvent {
-    data class KeywordChanged(val keyword: String) : SearchUiEvent
+    private fun cacheSuggestion(keyword: String, suggestion: SearchSuggestion) {
+        val isEmpty = suggestion.forum == null && suggestion.suggestions.isEmpty()
+        // replace with empty obj if result is empty
+        cache.put(keyword, if (isEmpty) emptySuggestion else suggestion)
+    }
 }

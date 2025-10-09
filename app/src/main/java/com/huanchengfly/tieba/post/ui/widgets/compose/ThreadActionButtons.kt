@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -64,7 +65,7 @@ private fun ActionBtn(
 @Composable
 private fun ThreadReplyBtn(
     modifier: Modifier = Modifier,
-    replyNum: String,
+    replies: String,
     onClick: (() -> Unit)? = null,
 ) {
     ActionBtn(
@@ -75,33 +76,33 @@ private fun ThreadReplyBtn(
                 contentDescription = stringResource(id = R.string.desc_comment),
             )
         },
-        text = { Text(replyNum) },
+        text = { Text(replies) },
         onClick = onClick
     )
 }
 
 @Composable
-private fun ThreadAgreeBtn(
+private fun ThreadLikeBtn(
     modifier: Modifier = Modifier,
-    hasAgree: Boolean,
-    agreeNum: String,
+    liked: Boolean,
+    likes: String,
     onClick: (() -> Unit)? = null,
 ) {
     val animatedColor by animateColorAsState(
-        targetValue = if (hasAgree) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+        targetValue = if (liked) MaterialTheme.colorScheme.primary else LocalContentColor.current,
         label = "agreeBtnContentColor"
     )
 
     ActionBtn(
         icon = {
             Icon(
-                imageVector = if (hasAgree) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                imageVector = if (liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                 contentDescription = stringResource(id = R.string.desc_like),
                 tint = animatedColor
             )
         },
         text = {
-            Text(text = agreeNum, color = animatedColor)
+            Text(text = likes, color = animatedColor)
         },
         modifier = modifier,
         onClick = onClick
@@ -111,7 +112,7 @@ private fun ThreadAgreeBtn(
 @Composable
 fun ThreadShareBtn(
     modifier: Modifier = Modifier,
-    shareNum: String,
+    shares: String,
     onClick: (() -> Unit)? = null
 ) {
     ActionBtn(
@@ -121,21 +122,37 @@ fun ThreadShareBtn(
                 contentDescription = stringResource(id = R.string.desc_share),
             )
         },
-        text = {
-            Text(text = shareNum)
-        },
+        text = { Text(text = shares) },
         modifier = modifier,
         onClick = onClick,
     )
 }
 
 @Composable
+private fun rememberShortNumString(number: Long, @StringRes defaultRes: Int): String {
+    return if (number == 0L) {
+        stringResource(id = defaultRes)
+    } else {
+        remember { number.getShortNumString() }
+    }
+}
+
+@Composable
+private fun rememberShortNumString(number: Int, @StringRes defaultRes: Int): String {
+    return if (number == 0) {
+        stringResource(id = defaultRes)
+    } else {
+        remember { number.getShortNumString() }
+    }
+}
+
+@Composable
 fun ThreadActionButtonRow(
     modifier: Modifier = Modifier,
-    shareText: String,
-    replyText: String,
-    agreeText: String,
-    agreed: Boolean,
+    shares: Long,
+    replies: Int,
+    likes: Long,
+    liked: Boolean,
     onShareClicked: (() -> Unit)? = null,
     onReplyClicked: (() -> Unit)? = null,
     onAgreeClicked: (() -> Unit)? = null
@@ -147,63 +164,28 @@ fun ThreadActionButtonRow(
         Row(modifier = modifier.fillMaxWidth()) {
             ThreadShareBtn(
                 modifier = Modifier.weight(1f),
-                shareNum = shareText,
+                shares = rememberShortNumString(shares, R.string.title_share),
                 onClick = onShareClicked
             )
 
             ThreadReplyBtn(
                 modifier = Modifier.weight(1f),
-                replyNum = replyText,
+                replies = rememberShortNumString(replies, R.string.title_reply),
                 onClick = onReplyClicked,
             )
 
-            ThreadAgreeBtn(
+            ThreadLikeBtn(
                 modifier = Modifier.weight(1f),
-                hasAgree = agreed,
-                agreeNum = agreeText,
+                liked = liked,
+                likes = rememberShortNumString(likes, R.string.title_agree),
                 onClick = onAgreeClicked,
             )
         }
     }
 }
 
-@Composable
-fun ThreadActionButtonRow(
-    modifier: Modifier = Modifier,
-    shareNum: Long,
-    replyNum: Int,
-    agreeNum: Long,
-    agreed: Boolean,
-    onShareClicked: (() -> Unit)? = null,
-    onReplyClicked: (() -> Unit)? = null,
-    onAgreeClicked: (() -> Unit)? = null
-) {
-    ThreadActionButtonRow(
-        modifier = modifier,
-        shareText = if (shareNum == 0L) {
-            stringResource(id = R.string.title_share)
-        } else {
-            remember { shareNum.getShortNumString() }
-        },
-        replyText = if (replyNum == 0) {
-            stringResource(id = R.string.title_reply)
-        } else {
-            remember { replyNum.getShortNumString() }
-        },
-        agreeText = if (agreeNum == 0L) {
-            stringResource(id = R.string.title_agree)
-        } else {
-            remember(agreeNum) { agreeNum.getShortNumString() }
-        },
-        agreed = agreed,
-        onShareClicked = onShareClicked,
-        onReplyClicked = onReplyClicked,
-        onAgreeClicked = onAgreeClicked
-    )
-}
-
 @Preview
 @Composable
 private fun ThreadActionButtonRowPreview() = TiebaLiteTheme {
-    ThreadActionButtonRow(shareNum = 9, replyNum = 999, agreeNum = 99999,  agreed = true)
+    ThreadActionButtonRow(shares = 9, replies = 999, likes = 99999, liked = true)
 }

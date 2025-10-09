@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -15,34 +16,30 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.SearchUserBean
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.ui.models.search.SearchUser
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
+import com.huanchengfly.tieba.post.ui.page.search.UiState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LocalShouldLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.StringUtil
-import kotlinx.collections.immutable.persistentListOf
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,122 +47,82 @@ fun SearchUserPage(
     modifier: Modifier = Modifier,
     keyword: String,
     contentPadding: PaddingValues,
-    viewModel: SearchUserViewModel = pageViewModel(),
+    listState: LazyListState = rememberLazyListState(),
+    viewModel: SearchUserViewModel = hiltViewModel(),
 ) {
-    val navigator = LocalNavController.current
-    val listState = rememberLazyListState()
 
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(SearchUserUiIntent.Refresh(keyword))
-        viewModel.initialized = true
+    LaunchedEffect(keyword) {
+        viewModel.onKeywordChanged(keyword)
     }
-    val currentKeyword by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUserUiState::keyword,
-        initial = ""
+
+    val isEmpty by viewModel.uiState.collectPartialAsState(
+        prop1 = UiState<SearchUser>::isEmpty,
+        initial = true
     )
     val error by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUserUiState::error,
+        prop1 = UiState<SearchUser>::error,
         initial = null
     )
     val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUserUiState::isRefreshing,
+        prop1 = UiState<SearchUser>::isRefreshing,
         initial = true
     )
-    val exactMatch by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUserUiState::exactMatch,
-        initial = null
-    )
-    val fuzzyMatch by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUserUiState::fuzzyMatch,
-        initial = persistentListOf()
-    )
-
-    val showExactMatchResult by remember {
-        derivedStateOf { exactMatch != null }
-    }
-    val showFuzzyMatchResult by remember {
-        derivedStateOf { fuzzyMatch.isNotEmpty() }
-    }
-
-    onGlobalEvent<SearchUiEvent.KeywordChanged> {
-        viewModel.send(SearchUserUiIntent.Refresh(it.keyword))
-    }
-    val shouldLoad = LocalShouldLoad.current
-    LaunchedEffect(currentKeyword) {
-        if (currentKeyword.isNotEmpty() && keyword != currentKeyword) {
-            if (shouldLoad) {
-                viewModel.send(SearchUserUiIntent.Refresh(keyword))
-            } else {
-                viewModel.initialized = false
-            }
-        }
-    }
-
-    val isEmpty by remember {
-        derivedStateOf { !showExactMatchResult && !showFuzzyMatchResult }
-    }
-
-    val onReload: () -> Unit = { viewModel.send(SearchUserUiIntent.Refresh(keyword)) }
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
         isError = error != null,
         isLoading = isRefreshing,
-        onReload = onReload,
+        onReload = viewModel::onRefresh,
         errorScreen = {
-            error?.item?.let {
-                ErrorScreen(error = it)
-            }
+            ErrorScreen(error, modifier = Modifier.padding(contentPadding))
         }
     ) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = onReload,
+            onRefresh = viewModel::onRefresh,
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
+            val navigator = LocalNavController.current
+            val headerContentType = Integer.MAX_VALUE
+
+            val onUserClickedListener: (SearchUser) -> Unit = {
+                navigator.navigate(UserProfile(uid = it.id))
+            }
+
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val exactMatchUser = uiState.exactMatch
+            val fuzzyMatchUsers = uiState.fuzzyMatch
+
             MyLazyColumn(
                 modifier = modifier.fillMaxSize(),
                 state = listState,
                 contentPadding = contentPadding,
             ) {
-                if (showExactMatchResult) {
-                    exactMatch?.let {
-                        item(key = "ExactMatchHeader") {
-                            Chip(
-                                text = stringResource(id = R.string.title_exact_match),
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                invertColor = true
-                            )
-                        }
+                if (exactMatchUser != null) {
+                    item(key = "ExactMatchHeader", contentType = headerContentType) {
+                        Chip(
+                            text = stringResource(id = R.string.title_exact_match),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            invertColor = true
+                        )
+                    }
 
-                        item(key = "ExactMatch") {
-                            SearchUserItem(
-                                item = it,
-                                onClick = {
-                                    val uid = it.id?.toLongOrNull() ?: return@SearchUserItem
-                                    navigator.navigate(UserProfile(uid))
-                                }
-                            )
-                        }
+                    item(key = exactMatchUser.id) {
+                        SearchUserItem(user = exactMatchUser, onClick = onUserClickedListener)
                     }
                 }
-                if (showFuzzyMatchResult) {
-                    item(key = "FuzzyMatchHeader") {
+
+                if (fuzzyMatchUsers.isNotEmpty()) {
+                    item(key = "FuzzyMatchHeader", contentType = headerContentType) {
                         Chip(
                             text = stringResource(id = R.string.title_fuzzy_match_user),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                     }
-                    items(fuzzyMatch) {
-                        SearchUserItem(
-                            item = it,
-                            onClick = {
-                                val uid = it.id?.toLongOrNull() ?: return@SearchUserItem
-                                navigator.navigate(UserProfile(uid))
-                            }
-                        )
+                    items(fuzzyMatchUsers, key = { it.id }) {
+                        SearchUserItem(user = it, onClick = onUserClickedListener)
                     }
                 }
             }
@@ -174,41 +131,33 @@ fun SearchUserPage(
 }
 
 @Composable
-private fun SearchUserItem(
-    item: SearchUserBean.UserBean,
-    onClick: () -> Unit,
-) {
-    val context = LocalContext.current
+private fun SearchUserItem(user: SearchUser, onClick: (SearchUser) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable { onClick(user) }
+            .semantics(mergeDescendants = true) {
+                role = Role.DropdownList
+                contentDescription = user.formattedName
+            }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Avatar(
-            data = remember { StringUtil.getAvatarUrl(item.portrait) },
-            size = Sizes.Medium,
-            contentDescription = item.name
-        )
+        Avatar(data = user.avatar, size = Sizes.Medium)
+
         Column(
-            modifier = Modifier
-                .weight(1f),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = remember {
-                    StringUtil.getUserNameString(context, item.name.orEmpty(), item.showNickname)
-                },
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text(text = user.formattedName, style = MaterialTheme.typography.titleMedium)
 
-            if (!item.intro.isNullOrEmpty()) {
+            if (!user.intro.isNullOrEmpty()) {
                 Text(
-                    text = item.intro,
+                    text = user.intro,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
                     style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1
                 )
             }
         }

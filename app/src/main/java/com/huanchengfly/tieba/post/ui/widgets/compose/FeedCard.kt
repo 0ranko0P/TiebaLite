@@ -574,10 +574,10 @@ fun FeedCard(
         action = {
             ThreadActionButtonRow(
                 modifier = Modifier.fillMaxWidth(),
-                shareNum = thread.shareNum,
-                replyNum = thread.replyNum,
-                agreeNum = thread.like.count,
-                agreed = thread.like.liked,
+                shares = thread.shareNum,
+                replies = thread.replyNum,
+                likes = thread.like.count,
+                liked = thread.like.liked,
                 onShareClicked = {
                     TiebaUtil.shareThread(context, thread.title, thread.id)
                 },

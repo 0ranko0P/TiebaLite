@@ -10,10 +10,10 @@ class ForumDetail(
     val avatar: String,
     val name: String,
     val id: Long,
-    val intro: String,
-    val slogan: String,
-    val memberCount: Int,
-    val threadCount: Int,
-    val postCount: Int,
-    val managers: List<ForumManager>?
+    val intro: String = "",
+    val slogan: String = "",
+    val memberCount: Int = 0,
+    val threadCount: Int = 0,
+    val postCount: Int = 0,
+    val managers: List<ForumManager>? = null
 )

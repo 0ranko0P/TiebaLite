@@ -56,9 +56,9 @@ import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.localSharedElements
+import com.huanchengfly.tieba.post.ui.models.search.SearchMedia
+import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
 import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
-import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadInfo
-import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadInfo.Companion.SearchMedia
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlin.math.min
@@ -141,10 +141,10 @@ fun SearchThreadItem(
         header = {
             UserHeader(
                 modifier = modifier,
-                name = item.userName,
-                avatar = item.userAvatarUrl,
+                name = item.author.name,
+                avatar = item.author.avatarUrl,
                 desc = item.timeDesc,
-                onClick = onValidUserClick.takeUnless { item.userId == -1L }
+                onClick = onValidUserClick.takeUnless { item.author.id == -1L }
             )
         },
         content = {
@@ -202,15 +202,6 @@ fun SearchThreadItem(
                     onForumClick(item.forumInfo, item.pid.toString())
                 }
             }
-        },
-        action = {
-            ThreadActionButtonRow(
-                modifier = Modifier.fillMaxWidth(),
-                shareText = item.shareText,
-                replyText = item.postText,
-                agreeText = item.likeText,
-                agreed = false
-            )
         },
         onClick = { onClick(item) },
     )
@@ -308,9 +299,7 @@ fun SearchBox(
             prependIcon.invoke(this)
             BaseTextField(
                 value = keyword,
-                onValueChange = {
-                    onKeywordChange(it)
-                },
+                onValueChange = onKeywordChange,
                 textStyle = MaterialTheme.typography.bodyMedium,
                 placeholder = placeholder,
                 keyboardOptions = KeyboardOptions(

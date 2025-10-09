@@ -1,159 +1,106 @@
 package com.huanchengfly.tieba.post.ui.page.search.thread
 
+import android.util.Log
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.CommonResponse
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadInfo.Companion.getSearchThreadInfoList
+import com.huanchengfly.tieba.post.repository.SearchRepository
+import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Stable
-@HiltViewModel
-class SearchThreadViewModel @Inject constructor() :
-    BaseViewModel<SearchThreadUiIntent, SearchThreadPartialChange, SearchThreadUiState, SearchThreadUiEvent>() {
-    override fun createInitialState(): SearchThreadUiState = SearchThreadUiState()
-
-    override fun createPartialChangeProducer(): PartialChangeProducer<SearchThreadUiIntent, SearchThreadPartialChange, SearchThreadUiState> =
-        SearchThreadPartialChangeProducer
-
-    private object SearchThreadPartialChangeProducer :
-        PartialChangeProducer<SearchThreadUiIntent, SearchThreadPartialChange, SearchThreadUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<SearchThreadUiIntent>): Flow<SearchThreadPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<SearchThreadUiIntent.Refresh>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<SearchThreadUiIntent.LoadMore>()
-                    .flatMapConcat { it.producePartialChange() },
-            )
-
-        private fun SearchThreadUiIntent.Refresh.producePartialChange(): Flow<SearchThreadPartialChange.Refresh> =
-            TiebaApi.getInstance().searchThreadFlow(keyword, 1, sortType)
-                .map<SearchThreadBean, SearchThreadPartialChange.Refresh> {
-                    if (it.errorCode != 0) {
-                        throw TiebaApiException(CommonResponse(it.errorCode, it.errorMsg))
-                    }
-
-                    val threadList = it.data.postList.getSearchThreadInfoList(keyword, App.INSTANCE)
-                    SearchThreadPartialChange.Refresh.Success(
-                        keyword = keyword,
-                        data = threadList,
-                        hasMore = it.data.hasMore == 1,
-                        sortType = sortType
-                    )
-                }
-                .onStart { emit(SearchThreadPartialChange.Refresh.Start) }
-                .catch { emit(SearchThreadPartialChange.Refresh.Failure(it)) }
-
-        private fun SearchThreadUiIntent.LoadMore.producePartialChange(): Flow<SearchThreadPartialChange.LoadMore> =
-            TiebaApi.getInstance().searchThreadFlow(keyword, page + 1, sortType)
-                .map<SearchThreadBean, SearchThreadPartialChange.LoadMore> {
-                    val threadList = it.data.postList.getSearchThreadInfoList(keyword, App.INSTANCE)
-                    SearchThreadPartialChange.LoadMore.Success(
-                        data = threadList,
-                        page = page + 1,
-                        hasMore = it.data.hasMore == 1
-                    )
-                }
-                .onStart { emit(SearchThreadPartialChange.LoadMore.Start) }
-                .catch { emit(SearchThreadPartialChange.LoadMore.Failure(it)) }
-
-    }
-}
-
-sealed interface SearchThreadUiIntent : UiIntent {
-    data class Refresh(val keyword: String, val sortType: Int) : SearchThreadUiIntent
-
-    data class LoadMore(val keyword: String, val page: Int, val sortType: Int) :
-        SearchThreadUiIntent
-}
-
-sealed interface SearchThreadPartialChange : PartialChange<SearchThreadUiState> {
-    sealed class Refresh : SearchThreadPartialChange {
-        override fun reduce(oldState: SearchThreadUiState): SearchThreadUiState = when (this) {
-            Start -> oldState.copy(isRefreshing = true, error = null)
-            is Success -> oldState.copy(
-                isRefreshing = false,
-                error = null,
-                data = data,
-                currentPage = 1,
-                hasMore = hasMore,
-                keyword = keyword,
-                sortType = sortType
-            )
-
-            is Failure -> oldState.copy(isRefreshing = false, error = error.wrapImmutable())
-        }
-
-        data object Start : Refresh()
-        data class Success(
-            val keyword: String,
-            val data: List<SearchThreadInfo>,
-            val hasMore: Boolean,
-            val sortType: Int,
-        ) : Refresh()
-
-        data class Failure(val error: Throwable) : Refresh()
-    }
-
-    sealed class LoadMore : SearchThreadPartialChange {
-        override fun reduce(oldState: SearchThreadUiState): SearchThreadUiState = when (this) {
-            Start -> oldState.copy(isLoadingMore = true, error = null)
-            is Success -> oldState.copy(
-                isLoadingMore = false,
-                error = null,
-                data = (oldState.data + data).toImmutableList(),
-                currentPage = page,
-                hasMore = hasMore
-            )
-
-            is Failure -> oldState.copy(isLoadingMore = false, error = error.wrapImmutable())
-        }
-
-        data object Start : LoadMore()
-        data class Success(
-            val data: List<SearchThreadInfo>,
-            val page: Int,
-            val hasMore: Boolean,
-        ) : LoadMore()
-
-        data class Failure(val error: Throwable) : LoadMore()
-    }
-}
-
+@Immutable
 data class SearchThreadUiState(
     val isRefreshing: Boolean = true,
     val isLoadingMore: Boolean = false,
-    val error: ImmutableHolder<Throwable>? = null,
+    val error: Throwable? = null,
     val currentPage: Int = 1,
-    val hasMore: Boolean = true,
+    val hasMore: Boolean = false,
     val keyword: String = "",
     val data: List<SearchThreadInfo> = emptyList(),
     val sortType: Int = SearchThreadSortType.SORT_TYPE_NEWEST,
-) : UiState
+) : UiState {
 
-sealed interface SearchThreadUiEvent : UiEvent {
-    data class SwitchSortType(val sortType: Int) : SearchThreadUiEvent
+    val isEmpty: Boolean
+        get() = data.isEmpty()
+}
+
+private const val TAG = "SearchThreadViewModel"
+
+@Stable
+@HiltViewModel
+class SearchThreadViewModel @Inject constructor(
+    private val searchRepo: SearchRepository
+) : ViewModel() {
+
+    private var _uiState = MutableStateFlow(SearchThreadUiState())
+    val uiState: StateFlow<SearchThreadUiState> = _uiState.asStateFlow()
+
+    private val handler = CoroutineExceptionHandler { _, e ->
+        Log.e(TAG, "onError: ", e)
+        _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
+    }
+
+    private fun searchThreadInternal(keyword: String) {
+        if (keyword.isEmpty() || keyword.isBlank()) {
+            _uiState.set { SearchThreadUiState(isRefreshing = false, keyword = keyword, sortType = sortType) }
+            return // on clear
+        }
+
+        val uiStateSnapshot = _uiState.updateAndGet { SearchThreadUiState(keyword = keyword, sortType = it.sortType) }
+        viewModelScope.launch(handler) {
+            val sortType = uiStateSnapshot.sortType
+            val (hasMore, threads) = searchRepo.searchThread(keyword, page = 1, sortType)
+            _uiState.update {
+                it.copy(isRefreshing = false, hasMore = hasMore, data = threads)
+            }
+        }
+    }
+
+    fun onLoadMore() {
+        if (_uiState.value.isLoadingMore) return
+
+        val uiStateSnapshot = _uiState.updateAndGet { it.copy(isLoadingMore = true) }
+        viewModelScope.launch(handler) {
+            val page = uiStateSnapshot.currentPage + 1
+            val sortType = uiStateSnapshot.sortType
+            val (hasMore, threads) = searchRepo.searchThread(uiStateSnapshot.keyword, page, sortType)
+            val newData = uiStateSnapshot.data + threads
+            _uiState.update {
+                if (it === uiStateSnapshot) {
+                    it.copy(isLoadingMore = false, currentPage = page, hasMore = hasMore, data = newData)
+                } else {
+                    it // state changed during loading, skip update
+                }
+            }
+        }
+    }
+
+    fun onKeywordChanged(keyword: String) {
+        if (_uiState.value.keyword != keyword) searchThreadInternal(keyword) else return
+    }
+
+    fun onRefresh() {
+        val uiStateSnapshot = _uiState.value
+        if (uiStateSnapshot.isRefreshing) return else searchThreadInternal(uiStateSnapshot.keyword)
+    }
+
+    fun onSortTypeChanged(sortType: Int) {
+        if (uiState.value.sortType != sortType) {
+            val oldState = _uiState.updateAndGet { it.copy(sortType = sortType) }
+            searchThreadInternal(oldState.keyword)
+        }
+    }
 }
 
 object SearchThreadSortType {

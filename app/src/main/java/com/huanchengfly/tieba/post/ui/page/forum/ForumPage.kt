@@ -79,6 +79,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -425,11 +426,7 @@ fun ForumPage(
             isError = uiState.error != null,
             isLoading = forumData == null,
             loadingScreen = {
-                Column(Modifier.padding(contentPadding)) {
-                    repeat(4) {
-                        FeedCardPlaceholder()
-                    }
-                }
+                ForumThreadsPlaceholder(contentPadding = contentPadding)
             },
             errorScreen = { ErrorScreen(uiState.error, Modifier.padding(contentPadding)) }
         ) {
@@ -511,7 +508,7 @@ private fun ClassifyTabs(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun ForumHeaderPlaceholder(
+private fun ForumHeaderPlaceholder(
     forumName: String,
     avatarUrl: String?,
     transitionKey: String?,
@@ -551,6 +548,17 @@ fun ForumHeaderPlaceholder(
                 ) {
                     Text(text = stringResource(id = R.string.button_sign_in), fontSize = 13.sp)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ForumThreadsPlaceholder(modifier: Modifier = Modifier, contentPadding: PaddingValues) {
+    Container(modifier = modifier) {
+        Column(Modifier.padding(contentPadding)) {
+            repeat(4) {
+                FeedCardPlaceholder()
             }
         }
     }

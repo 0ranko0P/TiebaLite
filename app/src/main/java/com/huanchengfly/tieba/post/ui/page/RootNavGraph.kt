@@ -142,7 +142,7 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
 
         composable<Destination.ForumSearchPost> { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.ForumSearchPost>()
-            ForumSearchPostPage(params.forumName, params.forumId, navController)
+            ForumSearchPostPage(params.forumName, navController)
         }
 
         val threadTypeMap = mapOf(typeOf<ThreadFrom?>() to navTypeOf<ThreadFrom?>(isNullableAllowed = true))
