@@ -15,12 +15,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -36,7 +38,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.persistentListOf
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +56,6 @@ fun NotificationsListPage(
     }
     val navigator = LocalNavController.current
     val context = LocalContext.current
-    val hideBlocked = context.appPreferences.hideBlockedContent
 
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = NotificationsListUiState::isRefreshing,
@@ -83,6 +83,11 @@ fun NotificationsListPage(
         onRefresh = { viewModel.send(NotificationsListUiIntent.Refresh) },
         contentPadding = contentPadding,
     ) {
+        val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()
+        val blockedTip: @Composable BoxScope.() -> Unit = {
+            BlockTip { Text(text = stringResource(id = R.string.tip_blocked_message)) }
+        }
+
         SwipeUpLazyLoadColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
@@ -102,61 +107,41 @@ fun NotificationsListPage(
                 )
             }
         ) {
-            val blockedTip: @Composable BoxScope.() -> Unit = {
-                BlockTip { Text(text = stringResource(id = R.string.tip_blocked_message)) }
-            }
-
-            items(
-                items = data,
-                key = { "${it.info.postId}_${it.info.replyer?.id}_${it.info.time}" },
-            ) { (info, blocked) ->
+            items(items = data, key = { it.lazyListItemKey }) { info ->
                 BlockableContent(
-                    blocked = blocked,
+                    blocked = info.isBlocked,
                     blockedTip = blockedTip,
                     hideBlockedContent = hideBlocked
                 ) {
                     Column(
                         modifier = Modifier
                             .clickable {
-                                val threadId: Long = info.threadId!!.toLong()
-                                val postId: Long = info.postId!!.toLong()
-                                if (info.isFloor == "1") {
-                                    navigator.navigate(
-                                        Destination.SubPosts(threadId, subPostId = postId)
-                                    )
+                                val postId: Long = info.postId
+                                val route = if (info.isFloor) {
+                                    Destination.SubPosts(info.threadId, subPostId = postId)
                                 } else {
-                                    navigator.navigate(
-                                        Destination.Thread(threadId, postId = postId)
-                                    )
+                                    Destination.Thread(info.threadId, postId = postId)
                                 }
+                                navigator.navigate(route)
                             }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (info.replyer != null) {
-                            UserHeader(
-                                name = info.replyer.name ?: "",
-                                nameShow = info.replyer.nameShow,
-                                portrait = info.replyer.portrait,
-                                onClick = {
-                                    navigator.navigate(Destination.UserProfile(info.replyer.id!!.toLong()))
-                                },
-                                desc = DateTimeUtils.getRelativeTimeString(
-                                    LocalContext.current,
-                                    info.time!!
-                                )
-                            )
+                        UserHeader(
+                            name = info.replyUser.nameShow,
+                            avatar = info.replyUser.avatarUrl,
+                            onClick = {
+                                navigator.navigate(Destination.UserProfile(info.replyUser.id))
+                            },
+                            desc = remember { DateTimeUtils.getRelativeTimeString(context, info.time) }
+                        )
+
+                        if (info.content != null) {
+                            EmoticonText(text = info.content)
                         }
-                        EmoticonText(text = info.content ?: "")
-                        val quoteText = if (type == NotificationsType.ReplyMe) {
-                            if ("1" == info.isFloor) {
-                                info.quoteContent
-                            } else {
-                                stringResource(
-                                    id = R.string.text_message_list_item_reply_my_thread,
-                                    info.title ?: ""
-                                )
-                            }
+
+                        val quoteText = if (type == NotificationsType.ReplyMe && info.isFloor) {
+                            info.quoteContent
                         } else {
                             info.title
                         }
@@ -168,17 +153,12 @@ fun NotificationsListPage(
                                 .fillMaxWidth()
                                 .clip(MaterialTheme.shapes.small)
                                 .clickable {
-                                    val threadId = info.threadId!!.toLong()
-                                    if ("1" == info.isFloor && info.quotePid != null) {
-                                        navigator.navigate(
-                                            Destination.SubPosts(
-                                                threadId = threadId,
-                                                postId = info.quotePid.toLong()
-                                            )
-                                        )
+                                    val route = if (info.isFloor && info.quotePid != null) {
+                                        Destination.SubPosts(info.threadId, postId = info.quotePid)
                                     } else {
-                                        navigator.navigate(Destination.Thread(threadId = threadId))
+                                        Destination.Thread(info.threadId)
                                     }
+                                    navigator.navigate(route)
                                 }
                                 .background(MaterialTheme.colorScheme.secondaryContainer)
                                 .padding(8.dp),

@@ -19,7 +19,6 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -100,27 +99,6 @@ fun UserHeader(
         }
         content?.invoke(this)
     }
-}
-
-@Composable
-fun UserHeader(
-    modifier: Modifier = Modifier,
-    name: String,
-    nameShow: String?,
-    portrait: String?,
-    onClick: (() -> Unit)? = null,
-    desc: String? = null,
-    content: (@Composable RowScope.() -> Unit)? = null
-) {
-    val context = LocalContext.current
-    UserHeader(
-        modifier = modifier,
-        name = remember { StringUtil.getUserNameString(context, name, nameShow) },
-        avatar = remember { StringUtil.getAvatarUrl(portrait) },
-        onClick = onClick,
-        desc = desc,
-        content = content
-    )
 }
 
 @Composable
