@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.OpenInBrowser
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,7 +32,6 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,23 +68,27 @@ import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.PostCard
 import com.huanchengfly.tieba.post.ui.page.thread.SubPostBlockedTip
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
-import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UseStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.containerColorNoAni
+import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
+import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
@@ -91,7 +96,7 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -122,52 +127,43 @@ internal fun SubPostsContent(
 ) {
     val navigator = LocalNavController.current
     val account = LocalAccount.current
+    val myUid = account?.uid?.toLongOrNull()
     val context = LocalContext.current
     val direction = LocalLayoutDirection.current
 
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val forum = state.forum
+    val uiState by viewModel.state.collectAsStateWithLifecycle()
+    val isLoadingMore = uiState.isLoadingMore
+    val hasMore = uiState.page.hasMore
+    val forumName = uiState.forumName
 
     val lazyListState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect {
-            val unhandledEvent = it?: return@collect
-            when(unhandledEvent) {
-                is CommonUiEvent.Toast -> {
-                    context.toastShort(unhandledEvent.message.toString())
-                }
+            when (it) {
+                is ThreadLikeUiEvent -> context.toastShort(it.toMessage(context))
+
+                is CommonUiEvent.Toast -> context.toastShort(it.message.toString())
 
                 is SubPostsUiEvent.ScrollToSubPosts -> {
-                    val targetIndex = 2 + state.subPosts.indexOfFirst { s -> s.id == subPostId }
+                    val targetIndex = 2 + uiState.subPosts.indexOfFirst { s -> s.id == subPostId }
                     delay(AnimationConstants.DefaultDurationMillis.toLong())
-                    lazyListState.animateScrollToItem(targetIndex.coerceIn(0, state.subPosts.lastIndex))
+                    lazyListState.animateScrollToItem(targetIndex.coerceIn(0, uiState.subPosts.lastIndex))
                 }
+
+                is SubPostsUiEvent.DeletePostFailed -> context.toastShort(R.string.toast_delete_failure, it.message)
+
+                else ->  {/* Unknown UI event */}
             }
         }
     }
 
-    val confirmDeleteDialogState = rememberDialogState()
-    var deleteSubPost by remember { mutableStateOf<SubPostItemData?>(null) }
-    ConfirmDialog(
-        dialogState = confirmDeleteDialogState,
-        onConfirm = {
-            if (deleteSubPost == null) {
-                val isSelfPost = state.post?.author?.id == account?.uid?.toLongOrNull()
-                viewModel.requestDeletePost(deleteMyPost = isSelfPost)
-            } else {
-                val isSelfSubPost = deleteSubPost!!.authorId == account?.uid?.toLongOrNull()
-                viewModel.requestDeletePost(deleteMyPost = isSelfSubPost)
-            }
-        }
-    ) {
-        val deleteType = if (deleteSubPost == null && state.post != null) {
-            stringResource(id = R.string.tip_post_floor, state.post!!.floor) // floor
-        } else {
-            stringResource (id = R.string.this_reply)    // reply
-        }
-        Text(text = stringResource(id = R.string.message_confirm_delete, deleteType))
-    }
+    val deleteTarget by viewModel.delete.collectAsStateWithLifecycle()
+    DeletePostSubPostDialog(
+        deleteTarget = deleteTarget,
+        onCancel = viewModel::onDeleteCancelled,
+        onConfirm = viewModel::onDeleteConfirmed
+    )
 
 //    onGlobalEvent<GlobalEvent.ReplySuccess>(
 //        filter = { it.threadId == threadId && it.postId == postId }
@@ -184,41 +180,33 @@ internal fun SubPostsContent(
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
-        isEmpty = state.subPosts.isEmpty(),
-        isError = state.error != null,
-        onReload = viewModel::requestLoad,
-        errorScreen = {
-            state.error?.let { err -> ErrorScreen(error = err) }
-        },
-        isLoading = state.isRefreshing
+        isEmpty = uiState.subPosts.isEmpty(),
+        isError = uiState.error != null,
+        onReload = viewModel::onRefresh,
+        errorScreen = { ErrorScreen(error = uiState.error) },
+        isLoading = uiState.isRefreshing
     ) {
         val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         val canReply by viewModel.canReply.collectAsStateWithLifecycle()
 
         // Initialize nullable click listeners:
-        val onReplySubPost: ((SubPostItemData) -> Unit)? = { item: SubPostItemData ->
+        val onReplySubPostClickedListener: ((SubPostItemData) -> Unit)? = { item: SubPostItemData ->
             navigator.navigate(
                 Reply(
                     forumId = forumId,
-                    forumName = forum?.get { name } ?: "",
+                    forumName = forumName.orEmpty(),
                     threadId = threadId,
                     postId = postId,
                     subPostId = item.id,
                     replyUserId = item.author.id,
-                    replyUserName = item.author.getDisplayName(context),
+                    replyUserName = item.author.nameShow,
                     replyUserPortrait = item.author.portrait,
                 )
             )
         }.takeIf { canReply }
 
-        // Null when not my SubPost
-        val onDeleteSubPost: (SubPostItemData) -> Unit = { item: SubPostItemData ->
-            deleteSubPost = item
-            confirmDeleteDialogState.show()
-        }
-
-        // This is non-nullable, initialize here just for convenience
-        val onCopyClick: (String) -> Unit = { navigator.navigate(CopyText(it)) }
+        // non-nullable, initialize here for convenience
+        val onCopyClickedListener: (String) -> Unit = { navigator.navigate(CopyText(it)) }
 
         BlurScaffold(
             topHazeBlock = {
@@ -227,35 +215,27 @@ internal fun SubPostsContent(
             topBar = {
                 TitleBar(
                     isSheet = isSheet,
-                    post = state.post,
+                    post = uiState.post,
                     onBack = onNavigateUp,
                     onAction = {
-                        navigator.navigate(Thread(forumId = forumId, threadId = threadId, postId = postId))
+                        navigator.navigate(route = Thread(threadId, forumId, postId = postId))
                     },
                     scrollBehavior = topAppBarScrollBehavior
-                ) {
-                    if (UseStickyHeaderWorkaround) {
-                        StickyHeaderOverlay(state = lazyListState) {
-                            SubPostsHeader(postNum = state.totalCount)
-                        }
-                    }
-                }
+                )
             },
             bottomBar = {
                 if (account == null || !canReply) {
                     BlurNavigationBarPlaceHolder()
-                    return@BlurScaffold
+                } else {
+                    BottomBar(
+                        account = account,
+                        onReply = {
+                            if (forumName != null ) {
+                                navigator.navigate(Reply(forumId, forumName, threadId, postId))
+                            }
+                        }
+                    )
                 }
-
-                BottomBar(
-                    account = account,
-                    onReply = {
-                        val forumName = forum?.get { name } ?: return@BottomBar
-                        navigator.navigate(
-                            route = Reply(forumId = forum.get { id }, forumName, threadId, postId)
-                        )
-                    }
-                )
             }
         ) { padding ->
             // Ignore Scaffold padding changes if workaround enabled
@@ -266,32 +246,29 @@ internal fun SubPostsContent(
                 padding
             }
 
-            val hideBlockedContent: Boolean = context.appPreferences.hideBlockedContent
-            val isLoading by remember { derivedStateOf { state.isLoading } }
-
             SwipeUpLazyLoadColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                 state = lazyListState,
                 contentPadding = contentPadding,
-                isLoading = isLoading,
+                isLoading = isLoadingMore,
                 onLazyLoad = {
-                    if (state.hasMore && state.post != null && state.subPosts.isNotEmpty()) {
-                        viewModel.requestLoadMore()
+                    if (hasMore && uiState.subPosts.isNotEmpty()) {
+                        viewModel.onLoadMore()
                     }
                 },
                 onLoad = null,
                 bottomIndicator = {
                     LoadMoreIndicator(
                         modifier = Modifier.fillMaxWidth(),
-                        isLoading = isLoading,
-                        noMore = !state.hasMore,
+                        isLoading = isLoadingMore,
+                        noMore = !hasMore,
                         onThreshold = false
                     )
                 }
             ) {
-                val postItem = state.post ?: return@SwipeUpLazyLoadColumn
+                val postItem = uiState.post ?: return@SwipeUpLazyLoadColumn
                 item(key = "Post$postId") {
                     Column {
                         PostCard(
@@ -299,55 +276,48 @@ internal fun SubPostsContent(
                             onUserClick = {
                                 navigator.navigate(UserProfile(postItem.author.id))
                             },
-                            onLikeClick = viewModel::onPostLikeClicked,
                             onReplyClick = { it: PostData ->
                                 navigator.navigate(
                                     Reply(
                                         forumId = forumId,
-                                        forumName = forum?.get { name } ?: "",
+                                        forumName = forumName.orEmpty(),
                                         threadId = threadId,
                                         postId = postId,
                                         replyUserId = it.author.id,
-                                        replyUserName = it.author.getDisplayName(context),
+                                        replyUserName = it.author.nameShow,
                                         replyUserPortrait = it.author.portrait
                                     )
                                 )
                             }.takeIf { canReply },
-                            onMenuCopyClick = onCopyClick,
-                            onMenuDeleteClick = {
-                                deleteSubPost = null
-                                confirmDeleteDialogState.show()
-                            }
-                            .takeIf { postItem.author.id == account?.uid?.toLongOrNull() } // Check is my Post
+                            onMenuCopyClick = onCopyClickedListener,
+                            onMenuDeleteClick = viewModel::onDeletePost.takeIf { postItem.author.id == myUid } // Check is my Post
                         )
                         HorizontalDivider(thickness = 2.dp)
                     }
                 } // End of post card
 
+                val postNum = uiState.page.postCount
                 if (useStickyHeaderWorkaround) {
                     item(key = "SubPostsHeader", contentType = Unit) {
-                        SubPostsHeader(postNum = state.totalCount)
+                        SubPostsHeader(postNum = postNum)
                     }
                 } else {
                     stickyHeader(key = "SubPostsHeader", contentType = Unit) {
                         val color by containerColorNoAni(topAppBarScrollBehavior.state, lazyListState)
-                        SubPostsHeader(Modifier.background(color), postNum = state.totalCount)
+                        SubPostsHeader(Modifier.background(color), postNum = postNum)
                     }
                 }
 
-                items(items = state.subPosts, key = { subPost -> subPost.id }) { item ->
+                items(items = uiState.subPosts, key = { subPost -> subPost.id }) { item ->
                     SubPostItem(
                         item = item,
-                        hideBlockedContent = hideBlockedContent,
                         onUserClick = {
                             navigator.navigate(UserProfile(it.id))
                         },
                         onAgree = viewModel::onSubPostLikeClicked,
-                        onMenuReplyClick = onReplySubPost,
-                        onMenuCopyClick = onCopyClick,
-                        onMenuDeleteClick = onDeleteSubPost.takeIf {
-                            item.authorId == account?.uid?.toLongOrNull() // Check is my SubPost
-                        }
+                        onMenuReplyClick = onReplySubPostClickedListener,
+                        onMenuCopyClick = onCopyClickedListener,
+                        onMenuDeleteClick = viewModel::onDeleteSubPost.takeIf { item.authorId == myUid } // Check is my SubPost
                     )
                 }
             }
@@ -440,7 +410,6 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
 @Composable
 private fun SubPostItem(
     item: SubPostItemData,
-    hideBlockedContent: Boolean = false,
     onUserClick: (UserData) -> Unit = {},
     onAgree: (SubPostItemData) -> Unit = {},
     onMenuReplyClick: ((SubPostItemData) -> Unit)?,
@@ -450,7 +419,7 @@ private fun SubPostItem(
     BlockableContent(
         blocked = item.blocked,
         blockedTip = SubPostBlockedTip,
-        hideBlockedContent = hideBlockedContent,
+        hideBlockedContent = false,
     )
 {
     val context = LocalContext.current
@@ -502,10 +471,66 @@ private fun SubPostItem(
                     .fillMaxWidth()
                     .padding(start = 44.dp, top = 8.dp)
             ) {
-                item.pbContent!!.fastForEach {
-                    it.Render()
+                item.content!!.fastForEach { it.Render() }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeletePostSubPostDialog(
+    dialogState: DialogState = rememberDialogState(),
+    deleteTarget: Any?, // Post or Subpost
+    onCancel: () -> Unit,
+    onConfirm: () -> Job
+) {
+    LaunchedEffect(deleteTarget) {
+        if (deleteTarget != null) dialogState.show()
+    }
+
+    if (!dialogState.show) return
+
+    var deleting by remember { mutableStateOf(false) }
+
+    Dialog(
+        dialogState = dialogState,
+        dialogProperties = AnyPopDialogProperties(
+            direction = DirectionState.CENTER,
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        ),
+        title = { Text(text = stringResource(R.string.title_delete)) },
+        buttons = {
+            AnimatedVisibility(visible = !deleting) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                ) {
+                    DialogNegativeButton(text = stringResource(R.string.button_cancel), onClick = onCancel)
+
+                    Button(
+                        onClick = {
+                            deleting = true
+                            onConfirm().invokeOnCompletion {
+                                dismiss()
+                                deleting = false
+                            }
+                        },
+                        content = { Text(text = stringResource(R.string.button_sure_default)) }
+                    )
                 }
             }
+        }
+    ) {
+        if (deleteTarget == null || deleting) {
+            Text(text = stringResource(id = R.string.dialog_content_wait))
+        } else {
+            val type = if (deleteTarget is PostData) {
+                stringResource(R.string.tip_post_floor, deleteTarget.floor)
+            } else {
+                stringResource(R.string.this_reply)
+            }
+            Text(text = stringResource(R.string.message_confirm_delete, type))
         }
     }
 }

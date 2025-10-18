@@ -2,25 +2,20 @@ package com.huanchengfly.tieba.post.api.models.protos
 
 import android.net.Uri
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isTieba
 import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.INLINE_LINK
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.INLINE_LINK_MALICIOUS
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.INLINE_VIDEO
-import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_LZ
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.common.PicContentRender
@@ -33,7 +28,6 @@ import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonUtil
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -112,9 +106,6 @@ val List<PbContent>.plainText: String
 
         return builder.toString()
     }
-
-val List<PbContent>.plainTexts: List<String>
-    get() = mapNotNull { it.text.takeUnless { t -> t.isEmpty() } }
 
 fun PbContent.getPicSize(): IntSize? {
     try {
@@ -265,30 +256,5 @@ val User.bawuType: String?
     get() = if (is_bawu == 1) {
         if (bawu_type == "manager") "吧主" else "小吧主"
     } else null
-
-@OptIn(ExperimentalTextApi::class)
-fun SubPostList.getContentText(isLz: Boolean): AnnotatedString {
-    val context = App.INSTANCE
-    val currentColorScheme = ThemeUtil.currentColorScheme()
-    val userNameStyle = SpanStyle(color = currentColorScheme.primary, fontWeight = FontWeight.Bold)
-
-    val userNameString = buildAnnotatedString {
-        withAnnotation("user", "${author?.id}") {
-            withStyle(userNameStyle) {
-                append(
-                    StringUtil.getUserNameString(context, author?.name ?: "", author?.nameShow)
-                )
-            }
-            if (isLz) {
-                appendInlineContent(TAG_LZ)
-            }
-            append(": ")
-        }
-    }
-
-    val contentStrings = content.renders.map { it.toAnnotationString() }
-
-    return userNameString + contentStrings.reduce { acc, annotatedString -> acc + annotatedString }
-}
 
 fun VideoInfo.aspectRatio(): Float = thumbnailWidth.toFloat() / thumbnailHeight

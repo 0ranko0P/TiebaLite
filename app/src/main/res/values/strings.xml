@@ -470,13 +470,13 @@
     <string name="button_sure_default">确定</string>
     <string name="button_back">返回</string>
     <string name="desc_show">显示</string>
+    <string name="dialog_content_wait">请坐和放宽</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
     <string name="brightness">亮度</string>
     <string name="profile_title_hidden">该用户已隐藏%s</string>
     <string name="theme_dialog_unsave">主题未保存</string>
     <string name="theme_dialog_unsave_msg">保存或放弃更改?</string>
     <string name="theme_dialog_saving">应用主题中</string>
-    <string name="theme_dialog_saving_msg">请坐和放宽</string>
     <string name="theme_btn_color_picker">拾色器</string>
     <string name="theme_title_color_picker">自定义主题颜色</string>
     <string name="theme_tab_featured">精选</string>

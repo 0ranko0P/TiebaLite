@@ -203,7 +203,7 @@ private fun AppThemeSaveDialog(
     ) {
         Text(
             text = if (isSaving) {
-                stringResource(id = R.string.theme_dialog_saving_msg)
+                stringResource(id = R.string.dialog_content_wait)
             } else {
                 stringResource(id = R.string.theme_dialog_unsave_msg)
             }

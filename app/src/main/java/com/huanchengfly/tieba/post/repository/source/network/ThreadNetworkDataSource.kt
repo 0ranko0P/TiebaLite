@@ -1,8 +1,10 @@
 package com.huanchengfly.tieba.post.repository.source.network
 
+import android.text.TextUtils
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.SubPost
 import com.huanchengfly.tieba.post.api.models.protos.User
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
@@ -24,19 +26,31 @@ object ThreadNetworkDataSource {
 
     private val ST_TYPES = listOf(ST_TYPE_MENTION, ST_TYPE_STORE_THREAD)
 
-    suspend fun requestLikeThread(threadId: Long, postId: Long, like: Boolean) {
+    private suspend fun requestLike(threadId: Long, postId: Long, like: Boolean, objType: Int) {
         require(threadId > 0) { "Illegal Thread ID $threadId" }
         require(postId > 0) { "Illegal Post ID: $postId" }
         TiebaApi.getInstance().opAgreeFlow(
             threadId = threadId.toString(),
             postId = postId.toString(),
             opType = if (like) 0 else 1, // 操作 0 = 点赞, 1 = 取消点赞
-            objType = 3
+            objType = objType
         )
         .firstOrThrow()
         .let {
             if (it.data == null || it.errorCode != "0" ) throw TiebaException(message = it.errorMsg)
         }
+    }
+
+    suspend fun requestLikePost(threadId: Long, postId: Long, like: Boolean) {
+        requestLike(threadId, postId, like, objType = 1)
+    }
+
+    suspend fun requestLikeSubpost(threadId: Long, subPostId: Long, like: Boolean) {
+        requestLike(threadId, subPostId, like, objType = 2)
+    }
+
+    suspend fun requestLikeThread(threadId: Long, postId: Long, like: Boolean) {
+        requestLike(threadId, postId, like, objType = 3)
     }
 
     suspend fun pbPageRaw(
@@ -136,6 +150,41 @@ object ThreadNetworkDataSource {
             .firstOrThrow()
             .let {
                 if (it.errorCode != 0) throw TiebaApiException(commonResponse = it)
+            }
+    }
+
+    suspend fun deletePost(
+        forumId: Long,
+        forumName: String,
+        threadId: Long,
+        postId: Long,
+        tbs: String?,
+        delMyPost: Boolean = true
+    ) {
+        require(!TextUtils.isEmpty(forumName)) { "Illegal Forum" }
+        require(threadId > 0) { "Illegal Thread ID $threadId" }
+
+        TiebaApi.getInstance()
+            .delPostFlow(forumId, forumName, threadId, postId, tbs, isFloor = false, delMyPost)
+            .firstOrThrow()
+            .let {
+                if (it.errorCode != 0) throw TiebaApiException(commonResponse = it)
+            }
+    }
+
+    suspend fun pbFloor(threadId: Long, postId: Long, forumId: Long, page: Int = 1): PbFloorResponseData {
+        require(threadId > 0) { "Illegal Thread ID $threadId" }
+        require(page > 0) { "Illegal Page: $page" }
+
+        return TiebaApi.getInstance()
+            .pbFloorFlow(threadId, postId, forumId, page, subPostId = 0)
+            .firstOrThrow()
+            .run {
+                if (data_ == null) throw TiebaApiException(commonResponse = this.error.commonResponse)
+                val forum = data_.forum ?: throw TiebaException("Null forum data")
+                val threadInfo = data_.thread ?: throw TiebaException("Null thread data")
+                // copy data_.forum to data_.thread.forumInfo
+                data_.copy(thread = threadInfo.copy(threadId = threadId, forumInfo = forum))
             }
     }
 

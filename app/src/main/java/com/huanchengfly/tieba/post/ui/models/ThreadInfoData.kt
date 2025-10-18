@@ -27,7 +27,7 @@ data class ThreadInfoData(
     val simpleForum: SimpleForum,
 ) {
     constructor(info: ThreadInfo): this(
-        id = info.threadId,
+        id = info.threadId.takeUnless { it <= 0 } ?: info.id,
         title = info.title,
         collectMarkPid = info.collectMarkPid.toLongOrNull()?: 0L,
         collected = info.collectStatus != 0,

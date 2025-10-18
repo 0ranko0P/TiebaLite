@@ -253,7 +253,7 @@ class TranslucentThemeActivity : AppCompatActivity() {
                     ),
                     title = { Text(text = stringResource(R.string.theme_dialog_saving)) },
                 ) {
-                    Text(text = stringResource(id = R.string.theme_dialog_saving_msg))
+                    Text(text = stringResource(id = R.string.dialog_content_wait))
                 }
             }
         }

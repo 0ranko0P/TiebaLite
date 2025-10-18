@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -96,6 +97,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
+import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
@@ -109,6 +112,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.UseStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
+import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
+import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
@@ -117,6 +122,7 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 const val ThreadResultKey = "THREAD_PAGE"
@@ -214,11 +220,12 @@ fun ThreadPage(
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect {
-            if (it == null) return@collect
-            when(it) {
-                is CommonUiEvent.Toast -> {
-                    snackbarHostState.showSnackbar(it.message.toString())
-                }
+            val message = when (it) {
+                is CommonUiEvent.Toast -> it.message.toString()
+
+                is ThreadUiEvent.DeletePostFailed -> context.getString(R.string.toast_delete_failure, it.message)
+
+                is ThreadUiEvent.DeletePostSuccess -> context.getString(R.string.toast_delete_success)
 
                 is ThreadUiEvent.ScrollToFirstReply -> lazyListState.animateScrollToItem(1)
 
@@ -235,14 +242,19 @@ fun ThreadPage(
                         waitLoadSuccessAndScrollToFirstReply = false
                         lazyListState.animateScrollToItem(1)
                     }
+                    Unit
                 }
 
                 is ThreadUiEvent.ToReplyDestination -> navigator.navigate(it.direction)
 
                 is ThreadUiEvent.ToSubPostsDestination -> navigator.navigate(it.direction)
 
-                is ThreadLikeUiEvent -> snackbarHostState.showSnackbar(it.toMessage(context))
+                is ThreadLikeUiEvent -> it.toMessage(context)
+
+                else -> Unit
             }
+
+            if (message is String) snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -723,22 +735,57 @@ private fun CollectionsUpdateDialog(markedPost: PostData, onUpdate: (PostData) -
 private fun ThreadOrPostDeleteDialog(
     deletePost: PostData?,
     firstPost: PostData?,
-    onConfirm: () -> Unit,
+    onConfirm: () -> Job,
     onCancel: () -> Unit
 ) {
-    if (deletePost == null || firstPost == null) return
-
-    val deleteDialogState = rememberDialogState()
+    val dialogState = rememberDialogState()
     LaunchedEffect(deletePost) {
-        deleteDialogState.show()
+        if (deletePost != null) dialogState.show()
     }
 
-    ConfirmDialog(dialogState = deleteDialogState, onConfirm = onConfirm, onDismiss = onCancel) {
-        val deleteType = if (deletePost.id == firstPost.id) {
-            stringResource(id = R.string.this_thread) // thread
-        } else {
-            stringResource(R.string.tip_post_floor, deletePost.floor) // post
+    if (!dialogState.show || firstPost == null) return
+
+    var deleting by remember { mutableStateOf(false) }
+
+    Dialog(
+        dialogState = dialogState,
+        dialogProperties = AnyPopDialogProperties(
+            direction = DirectionState.CENTER,
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        ),
+        title = { Text(text = stringResource(R.string.title_delete)) },
+        buttons = {
+            AnimatedVisibility(visible = !deleting) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                ) {
+                    DialogNegativeButton(text = stringResource(R.string.button_cancel), onClick = onCancel)
+
+                    Button(
+                        onClick = {
+                            deleting = true
+                            onConfirm().invokeOnCompletion {
+                                dismiss()
+                                deleting = false
+                            }
+                        },
+                        content = { Text(text = stringResource(R.string.button_sure_default)) }
+                    )
+                }
+            }
         }
-        Text(text = stringResource(id = R.string.message_confirm_delete, deleteType))
+    ) {
+        if (deletePost == null || deleting) {
+            Text(text = stringResource(id = R.string.dialog_content_wait))
+        } else {
+            val postType = if (deletePost.id == firstPost.id) {
+                stringResource(id = R.string.this_thread)
+            } else {
+                stringResource(R.string.tip_post_floor, deletePost.floor)
+            }
+            Text(text = stringResource(id = R.string.message_confirm_delete, postType))
+        }
     }
 }

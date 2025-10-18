@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -64,6 +65,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
@@ -162,7 +164,6 @@ class ThreadViewModel @Inject constructor(
             val habitSettings = settingsRepository.habitSettings.flow
             hideReply = habitSettings.first().hideReply
         }
-        sendMsg(R.string.toast_connecting)
     }
 
     fun requestLoad(page: Int = 1, postId: Long) {
@@ -225,10 +226,12 @@ class ThreadViewModel @Inject constructor(
             val nextPage = state.page.nextPage(sortType)
             val response = threadRepo
                 .pbPage(threadId, nextPage, state.page.nextPagePostId, forumId, state.seeLz, sortType)
-            val data = concatNewPostList(old = state.data, new = response.posts)
+            val newData = concatNewPostList(old = state.data, new = response.posts)
 
             _threadUiState.update {
-                it.updateStateFrom(response).copy(data = data)
+                it.updateStateFrom(response).run {
+                    copy(data = newData, page = page.copy(hasPrevious = state.page.hasPrevious))
+                }
             }
         }
     }
@@ -440,18 +443,13 @@ class ThreadViewModel @Inject constructor(
         }
     }
 
-    fun onDeleteConfirmed() {
-        val curForumId = forumId
-        val post = _deletePost.value
-        if (curForumId == null || post == null) { // Won't happen
-            sendMsg(R.string.message_unknown_error); return
-        }
+    fun onDeleteConfirmed(): Job = viewModelScope.launch(handler) {
+        val post = _deletePost.getAndUpdate { null } ?: throw NullPointerException()
         if (post.id == threadUiState.value.firstPost!!.id) {
             requestDeleteThread()
         } else {
-            requestDeletePost(forumId = curForumId, post)
+            requestDeletePost(post)
         }
-        _deletePost.update { null }
     }
 
     /**
@@ -470,33 +468,27 @@ class ThreadViewModel @Inject constructor(
 
     fun onDeleteCancelled() = _deletePost.update { null }
 
-    private fun requestDeletePost(forumId: Long, post: PostData) = viewModelScope.launch(handler) {
+    private suspend fun requestDeletePost(post: PostData) {
         val state = _threadUiState.first()
-        val isSelfPost = post.author.id == state.user?.id
-        TiebaApi.getInstance()
-            .delPostFlow(forumId, forumName!!, threadId, post.id, state.tbs, false, isSelfPost)
-            .catch {
-                sendMsg(R.string.toast_delete_failure, it.getErrorMessage())
-            }
-            .collect { // Remove this post from data list
-                val oldData = state.data.toMutableList()
-                val deleted = oldData.removeIf { it.id == post.id }
-                if (deleted) {
-                    _threadUiState.update { it.copy(data = oldData.toList()) }
-                }
-                sendMsg(R.string.toast_delete_success)
-            }
+        val delMyPost = post.author.id == state.user?.id
+        runCatching {
+            threadRepo.deletePost(post.id, state.thread!!, state.tbs, delMyPost)
+        }
+        .onFailure { e -> sendUiEvent(ThreadUiEvent.DeletePostFailed(message = e.getErrorMessage())) }
+        .onSuccess {
+            // Remove this post from data list
+            _threadUiState.update { it.copy(data = it.data.fastFilter { p -> p.id != post.id }) }
+            sendUiEvent(ThreadUiEvent.DeletePostSuccess)
+        }
     }
 
-    private fun requestDeleteThread() = viewModelScope.launch(handler) {
+    private suspend fun requestDeleteThread() {
         val state = _threadUiState.value
+        val delMyThread = state.lz!!.id == state.user?.id
         runCatching {
-            val isSelfThread = state.lz!!.id == state.user?.id
-            threadRepo.deleteThread(state.thread!!, state.tbs, isSelfThread)
+            threadRepo.deleteThread(state.thread!!, state.tbs, delMyThread)
         }
-        .onFailure {
-            sendMsg(R.string.toast_delete_failure, it.getErrorMessage())
-        }
+        .onFailure { e -> sendUiEvent(ThreadUiEvent.DeletePostFailed(message = e.getErrorMessage())) }
         .onSuccess {
             sendUiEvent(CommonUiEvent.NavigateUp)
         }
@@ -692,6 +684,10 @@ class ThreadViewModel @Inject constructor(
 }
 
 sealed interface ThreadUiEvent : UiEvent {
+    class DeletePostFailed(val message: String) : ThreadUiEvent
+
+    object DeletePostSuccess : ThreadUiEvent
+
     data object ScrollToFirstReply : ThreadUiEvent
 
     data object ScrollToLatestReply : ThreadUiEvent

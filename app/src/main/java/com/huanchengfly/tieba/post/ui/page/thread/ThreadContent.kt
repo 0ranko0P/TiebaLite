@@ -356,7 +356,7 @@ fun PostCard(
     immersiveMode: Boolean = false,
     isCollected: Boolean = false,
     onUserClick: () -> Unit = {},
-    onLikeClick: (PostData) -> Unit = {},
+    onLikeClick: ((PostData) -> Unit)? = null,
     onReplyClick: ((PostData) -> Unit)? = null,
     onSubPostReplyClick: ((PostData, SubPostItemData) -> Unit)? = null,
     onOpenSubPosts: (subPostId: Long) -> Unit = {},
@@ -418,7 +418,7 @@ fun PostCard(
                         desc = remember { post.getDescText(context) },
                         onClick = onUserClick
                     ) {
-                        if (post.floor > 1) {
+                        if (post.floor > 1 && onLikeClick != null) {
                             PostLikeButton(like = post.like, onClick = { onLikeClick(post) })
                         }
                     }
@@ -534,7 +534,7 @@ private fun SubPostItem(
         onClick = { onOpenSubPosts(subPost.id) }
     ) {
         PbContentText(
-            text = subPost.content!!,
+            text = subPost.abstractContent!!,
             modifier = modifier,
             overflow = TextOverflow.Ellipsis,
             maxLines = 4,
