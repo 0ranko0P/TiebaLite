@@ -131,7 +131,6 @@ fun createThreadClickListeners(
     }
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExplorePageTab(
     pagerState: PagerState,

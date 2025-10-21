@@ -344,7 +344,6 @@ private fun SearchSuggestionList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchTabRow(
     modifier: Modifier = Modifier,
@@ -537,7 +536,6 @@ private fun SearchTopBar(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview("SearchBox")
 @Composable
 private fun PreviewSearchBox() {

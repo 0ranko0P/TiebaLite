@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -77,7 +76,6 @@ private val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonalizedPage(
     modifier: Modifier = Modifier,

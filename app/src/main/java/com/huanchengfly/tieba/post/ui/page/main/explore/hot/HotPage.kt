@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -67,7 +66,6 @@ private enum class HotType {
     TopicHeader, TopicList, ThreadTabs, ThreadListTip, Thread, PlaceHolder
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HotPage(
     modifier: Modifier = Modifier,

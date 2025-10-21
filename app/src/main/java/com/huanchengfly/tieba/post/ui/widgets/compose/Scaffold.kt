@@ -37,9 +37,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -49,25 +51,34 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
+import kotlinx.coroutines.launch
 
 @Composable
 fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value != SwipeToDismissBoxValue.Settled) {
-                hostState.currentSnackbarData?.dismiss()
-            }
-            true
-        }
-    )
+    val coroutineScope = rememberCoroutineScope()
+    val dismissState = rememberSwipeToDismissBoxState()
+    val isVisible by remember { derivedStateOf { hostState.currentSnackbarData != null } }
 
-    LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
-            dismissState.reset()
+    LaunchedEffect(isVisible) {
+        if (isVisible && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
         }
     }
-    SwipeToDismissBox(state = dismissState, backgroundContent = {}) {
-        SnackbarHost(hostState = hostState)
+
+    if (isVisible) {
+        SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {},
+            onDismiss = { direction ->
+                if (direction != SwipeToDismissBoxValue.Settled) {
+                    hostState.currentSnackbarData?.dismiss()
+                } else {
+                    coroutineScope.launch { dismissState.reset() }
+                }
+            }
+        ) {
+            SnackbarHost(hostState = hostState)
+        }
     }
 }
 

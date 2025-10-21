@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
@@ -54,7 +55,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.theme.TopBarColors
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
@@ -215,7 +215,7 @@ fun TitleCentredToolbar(
 fun TitleCentredToolbar(
     title: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    colors: TopBarColors = TiebaLiteTheme.extendedColorScheme.appBarColors,
+    colors: TopAppBarColors = TiebaLiteTheme.extendedColorScheme.appBarColors,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     content: (@Composable ColumnScope.() -> Unit)? = null,
@@ -268,7 +268,7 @@ fun Toolbar(
     title: @Composable () -> Unit,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
-    colors: TopBarColors = TiebaLiteTheme.extendedColorScheme.appBarColors,
+    colors: TopAppBarColors = TiebaLiteTheme.extendedColorScheme.appBarColors,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     TopAppBarContainer(
@@ -301,13 +301,13 @@ fun Toolbar(
 fun TopAppBarContainer(
     modifier: Modifier = Modifier,
     topBar: @Composable BoxScope.() -> Unit,
-    colors: TopBarColors = TiebaLiteTheme.extendedColorScheme.appBarColors,
+    colors: TopAppBarColors = TiebaLiteTheme.extendedColorScheme.appBarColors,
     content: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = colors.containerColor,
-        contentColor = colors.contentColor,
+        contentColor = colors.titleContentColor,
     ) {
         Column {
             Box(

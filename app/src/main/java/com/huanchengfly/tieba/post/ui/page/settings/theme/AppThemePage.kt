@@ -210,7 +210,6 @@ private fun AppThemeSaveDialog(
         )
     }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppThemePage(
     navigator: NavController = LocalNavController.current,
@@ -586,7 +585,6 @@ private fun CompactNavigationDrawer(modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ThemedWidgetPanel(
     modifier: Modifier = Modifier,

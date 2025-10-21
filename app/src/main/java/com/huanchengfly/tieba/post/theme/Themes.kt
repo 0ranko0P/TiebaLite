@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.TopAppBarColors
@@ -56,9 +55,8 @@ object TiebaLiteTheme {
     val extendedColorScheme: ExtendedColorScheme
         @Composable @ReadOnlyComposable get() = LocalExtendedColorScheme.current
 
-    @OptIn(ExperimentalMaterial3Api::class)
     val topAppBarColors: TopAppBarColors
-        @Composable @ReadOnlyComposable get() = LocalExtendedColorScheme.current.appBarColors.topAppBarColors
+        @Composable @ReadOnlyComposable get() = LocalExtendedColorScheme.current.appBarColors
 
     val typography: Typography
         @Composable @ReadOnlyComposable get() = MaterialTheme.typography

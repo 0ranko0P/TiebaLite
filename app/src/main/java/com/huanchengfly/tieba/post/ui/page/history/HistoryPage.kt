@@ -17,8 +17,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.movableContentOf
@@ -48,11 +48,11 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeaderPlaceholder
@@ -130,19 +130,18 @@ fun HistoryPage(
                     }
                 },
                 content = {
-                    TabRow(
+                    PrimaryTabRow(
                         selectedTabIndex = pagerState.currentPage,
-                        indicator = { tabPositions ->
-                            PagerTabIndicator(pagerState = pagerState, tabPositions = tabPositions)
+                        indicator = {
+                            FancyAnimatedIndicatorWithModifier(pagerState.currentPage)
                         },
                         divider = {},
                         containerColor = Color.Transparent,
-                        modifier = Modifier.width(100.dp * 2)
                     ) {
                         tabs.fastForEachIndexed { i, title ->
                             Tab(
                                 text = {
-                                    Text(text = stringResource(id = title))
+                                    Text(text = stringResource(id = title), letterSpacing = 0.75.sp)
                                 },
                                 selected = pagerState.currentPage == i,
                                 onClick = {

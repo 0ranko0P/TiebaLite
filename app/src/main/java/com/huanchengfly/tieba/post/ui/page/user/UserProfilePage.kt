@@ -154,7 +154,6 @@ private fun AvatarBackground(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @NonRestartableComposable
 @Composable
 private fun rememberAvatarTopBarColors(): TopAppBarColors {
@@ -418,7 +417,6 @@ private fun UserProfileToolbar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UserProfileTabRow(
     tabs: List<TabWithTitle>,

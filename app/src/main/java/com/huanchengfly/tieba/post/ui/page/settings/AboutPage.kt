@@ -17,6 +17,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +30,6 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.theme.TopBarColors
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 
@@ -50,7 +50,7 @@ fun AboutPage(
                 Text(text = stringResource(id = R.string.title_about))
             },
             navigationIcon = { BackNavigationIcon(onBackPressed = onBackClicked) },
-            colors = TopBarColors(colorScheme)
+            colors = TopAppBarDefaults.topAppBarColors()
         )
 
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {

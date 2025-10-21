@@ -214,7 +214,7 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
 
         composable<Destination.CopyText> { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.CopyText>()
-            CopyTextDialogPage(params.text, navController)
+            CopyTextDialogPage(text = params.text, onBack = navController::navigateUp)
         }
 
         // Bug: new MD3 ModalBottomSheet breaks our reply panel animation

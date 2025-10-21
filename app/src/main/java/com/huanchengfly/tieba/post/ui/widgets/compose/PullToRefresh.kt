@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
@@ -41,7 +40,6 @@ import com.huanchengfly.tieba.post.PaddingNone
 /**
  * Indicator for [PullToRefreshBox] with primary color background.
  * */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopPullToRefreshIndicator(
     modifier: Modifier = Modifier,
@@ -106,7 +104,6 @@ fun RefreshIndicator(
  * @param content the content of the pull refresh container, typically a scrollable layout such as
  *   [LazyColumn] or a layout using [Modifier.verticalScroll]
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PullToRefreshBox(
     isRefreshing: Boolean,

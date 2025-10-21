@@ -17,7 +17,6 @@ import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
 import com.huanchengfly.tieba.post.theme.DefaultColors
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
-import com.huanchengfly.tieba.post.theme.TopBarColors
 import com.huanchengfly.tieba.post.theme.colorscheme.BlueColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.GreenColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.OrangeColorScheme
@@ -26,6 +25,7 @@ import com.huanchengfly.tieba.post.theme.colorscheme.PurpleColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.dynamicColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.monetColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
+import com.huanchengfly.tieba.post.theme.createTopAppBarColors
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
@@ -188,10 +188,8 @@ object ThemeUtil {
 
     private fun createBlurColorScheme(colorScheme: ColorScheme) = ExtendedColorScheme(
         colorScheme = colorScheme,
-        appBarColors = TopBarColors(
-            containerColor = colorScheme.surface,
+        appBarColors = colorScheme.createTopAppBarColors(
             scrolledContainerColor = colorScheme.surfaceContainer.copy(0.64f),
-            contentColor = colorScheme.onSurface
         ),
         navigationContainer = colorScheme.surfaceContainer.copy(0.78f)
     )

@@ -25,7 +25,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
@@ -35,7 +34,7 @@ import com.huanchengfly.tieba.post.utils.TiebaUtil
 @Composable
 fun CopyTextDialogPage(
     text: String,
-    navigator: NavController,
+    onBack: () -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
@@ -53,7 +52,7 @@ fun CopyTextDialogPage(
                     }
                 },
                 navigationIcon = {
-                    BackNavigationIcon(onBackPressed = navigator::navigateUp)
+                    BackNavigationIcon(onBackPressed = onBack)
                 },
                 scrollBehavior = scrollBehavior
             )
@@ -74,11 +73,11 @@ fun CopyTextDialogPage(
                     textRes = R.string.btn_copy_all,
                 ) {
                     TiebaUtil.copyText(context, text)
-                    navigator.navigateUp()
+                    onBack()
                 }
 
                 FilledTonalButton(
-                    onClick = navigator::navigateUp,
+                    onClick = onBack,
                     modifier = Modifier.fillMaxWidth(),
                     content = {
                         Text(text = stringResource(id = R.string.btn_close))

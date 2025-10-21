@@ -223,7 +223,6 @@ fun rememberTopAppBarScrollBehaviors(
 
 /** The default [Saver] implementation for list of [TopAppBarState]. */
 @Suppress("UNCHECKED_CAST")
-@OptIn(ExperimentalMaterial3Api::class)
 private val Saver: Saver<List<TopAppBarState>, *> = listSaver(
     save = {
         it.mapIndexed { i, it ->
