@@ -39,10 +39,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.rounded.Add
@@ -68,7 +71,6 @@ import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -162,6 +164,9 @@ private enum class ThemePage(val nameRes: Int) {
     Custom(nameRes = R.string.theme_tab_custom)
 }
 
+private val PagerState.currentTheme: ThemePage
+    get() = ThemePage.entries[currentPage]
+
 @Composable
 private fun AppThemeSaveDialog(
     state: DialogState,
@@ -193,10 +198,10 @@ private fun AppThemeSaveDialog(
                     Spacer(modifier = Modifier.weight(1.0f))
 
                     DialogNegativeButton(text = stringResource(R.string.button_cancel))
-                    Button(
-                        onClick = onSaveClicked,
-                        content = { Text(text = stringResource(R.string.button_save_profile)) }
-                    )
+
+                    Button(onClick = onSaveClicked) {
+                        Text(text = stringResource(R.string.button_save_profile), maxLines = 1)
+                    }
                 }
             }
         }
@@ -232,7 +237,7 @@ fun AppThemePage(
     }
 
     val translucentThemeActivityLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == RESULT_OK && pagerState.currentPage == ThemePage.Featured.ordinal) {
+        if (it.resultCode == RESULT_OK && pagerState.currentTheme == ThemePage.Featured) {
             viewModel.onTranslucentThemeChanged()
         }
     }
@@ -242,7 +247,7 @@ fun AppThemePage(
     val onSaveThemeClicked: () -> Unit = {
         saveThemeDialogState.show()
         viewModel
-            .onSaveClicked(isFeatured = pagerState.currentPage == ThemePage.Featured.ordinal)
+            .onSaveClicked(isFeatured = pagerState.currentTheme == ThemePage.Featured)
             .invokeOnCompletion { navigator.navigateUp() }
     }
 
@@ -270,11 +275,10 @@ fun AppThemePage(
                 title = stringResource(id = R.string.title_theme),
                 navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) },
                 actions = {
-                    val themeChanged by if (pagerState.currentPage == ThemePage.Featured.ordinal) {
-                        viewModel.isBuiltInThemeChanged
-                    } else {
-                        viewModel.isCustomThemeChanged
-                    }.collectAsState(false)
+                    val themeChanged by when (pagerState.currentTheme) {
+                        ThemePage.Featured -> viewModel.isBuiltInThemeChanged.collectAsStateWithLifecycle(false)
+                        ThemePage.Custom -> viewModel.isCustomThemeChanged.collectAsStateWithLifecycle(false)
+                    }
 
                     AnimatedVisibility(
                         visible = themeChanged,
@@ -302,26 +306,33 @@ fun AppThemePage(
                 .fillMaxWidth()
                 .padding(contentPadding)
                 .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(ThemeItemMargin),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             val defaultTheme = remember { BuiltInTheme(Theme.BLUE, BlueColorScheme) }
             val initialized by remember { derivedStateOf { uiState.builtInThemes.isNotEmpty() } }
             var isDarkMode by remember { mutableStateOf(currentScheme.isDarkScheme) }
 
-            if (!isWindowHeightCompact()) {
-                val currentTheme = when (ThemePage.entries[pagerState.currentPage]) {
-                    ThemePage.Featured -> uiState.pickedBuiltInTheme
-                    ThemePage.Custom -> uiState.pickedVariant ?: uiState.pickedBuiltInTheme
+            Box(
+                modifier = Modifier
+                    .weight(1.0f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (!isWindowHeightCompact()) {
+                    val currentTheme = when (pagerState.currentTheme) {
+                        ThemePage.Featured -> uiState.pickedBuiltInTheme
+                        ThemePage.Custom -> uiState.pickedVariant ?: uiState.pickedBuiltInTheme
+                    }
+
+                    ThemedWidgetPanel(
+                        theme = currentTheme ?: defaultTheme,
+                        isDarkMode = { isDarkMode },
+                        onDarkModeChanged = { isDarkMode = !isDarkMode }
+                    )
+                } else {
+                    Spacer(modifier = Modifier.matchParentSize())
                 }
-
-                ThemedWidgetPanel(
-                    theme = currentTheme ?: defaultTheme,
-                    isDarkMode = { isDarkMode },
-                    onDarkModeChanged = { isDarkMode = !isDarkMode }
-                )
             }
-
-            Spacer(modifier = Modifier.weight(1.0f))
 
             AnimatedVisibility(
                 visible = initialized,
@@ -361,8 +372,6 @@ fun AppThemePage(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(ThemeItemMargin))
 
             FloatingTabRow {
                 ThemePage.entries.forEachIndexed { i, page ->
@@ -685,7 +694,7 @@ private fun ThemeItem(
             content = content
         )
 
-        Text(text = name, style = MaterialTheme.typography.titleMedium)
+        Text(text = name, maxLines = 1, style = MaterialTheme.typography.titleMedium)
     }
 }
 

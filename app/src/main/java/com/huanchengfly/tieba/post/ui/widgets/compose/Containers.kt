@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_LOWER_BOUND
@@ -50,7 +49,7 @@ fun OneTimeMeasurer(modifier: Modifier = Modifier, content: @Composable BoxScope
     var size: IntSize? by remember { mutableStateOf(null) }
 
     Box(
-        modifier = if (size == null) modifier.onGloballyPositioned { size = it.size } else modifier
+        modifier = if (size == null) modifier.onSizeChanged { size = it } else modifier
     ) {
         content(size)
     }

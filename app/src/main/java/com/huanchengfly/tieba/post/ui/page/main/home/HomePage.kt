@@ -115,25 +115,24 @@ private val FORUM_AVATAR_SIZE = 40.dp
 private fun DummySearchBoxPreview() {
     Column {
         TiebaLiteTheme {
-            SearchBox(onClick = {})
+            DummySearchBox(onClick = {})
         }
 
         TiebaLiteTheme(colorSchemeExt = DefaultDarkColors) {
-            SearchBox(onClick =  {})
+            DummySearchBox(onClick =  {})
         }
     }
 }
 
 @Composable
-private fun SearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun DummySearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 6.dp
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -413,17 +412,17 @@ fun HomePage(
                         ) {
                             TiebaUtil.startSign(context)
                         }
-                    }
 
-                    ActionItem(
-                        icon = Icons.Outlined.ViewAgenda,
-                        contentDescription = stringResource(id = R.string.title_switch_list_single),
-                        onClick = viewModel::onListModeChanged
-                    )
+                        ActionItem(
+                            icon = Icons.Outlined.ViewAgenda,
+                            contentDescription = stringResource(id = R.string.title_switch_list_single),
+                            onClick = viewModel::onListModeChanged
+                        )
+                    }
                 },
                 scrollBehavior = scrollBehavior
             ) {
-                SearchBox(
+                DummySearchBox(
                     modifier = Modifier
                         .padding(bottom = 4.dp)
                         .localSharedBounds(key = SearchToolbarSharedBoundsKey),

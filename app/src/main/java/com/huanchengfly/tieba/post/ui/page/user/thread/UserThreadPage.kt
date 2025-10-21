@@ -103,7 +103,6 @@ fun UserThreadPage(
                             onClick = threadClickListeners.onClicked,
                             onLike = viewModel::onThreadLikeClicked,
                             onClickReply = threadClickListeners.onReplyClicked,
-                            onClickUser = threadClickListeners.onAuthorClicked,
                             onClickForum = threadClickListeners.onForumClicked,
                         )
 

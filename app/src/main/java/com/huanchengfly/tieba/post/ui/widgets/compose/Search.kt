@@ -288,8 +288,7 @@ fun SearchBox(
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 6.dp
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),

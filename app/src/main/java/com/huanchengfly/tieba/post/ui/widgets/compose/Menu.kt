@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.round
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import kotlinx.coroutines.flow.filterIsInstance
@@ -160,7 +159,7 @@ fun ClickMenu(
                 expanded = menuState.expanded,
                 onDismissRequest = menuScope::dismiss,
                 modifier = modifier,
-                containerColor = TiebaLiteTheme.extendedColorScheme.sheetContainerColor,
+                containerColor = MaterialTheme.colorScheme.background,
             ) {
                 menuScope.menuContent()
             }
@@ -209,7 +208,7 @@ fun LongClickMenu(
             DropdownMenu(
                 expanded = menuState.expanded,
                 onDismissRequest = menuState::dismiss,
-                containerColor = TiebaLiteTheme.extendedColorScheme.sheetContainerColor,
+                containerColor = MaterialTheme.colorScheme.background,
             ) {
                 menuScope.menuContent()
             }

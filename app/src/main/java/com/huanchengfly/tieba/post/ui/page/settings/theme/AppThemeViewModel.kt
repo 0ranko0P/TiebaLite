@@ -90,8 +90,10 @@ class AppThemeViewModel @Inject constructor(
     val isCustomThemeChanged: Flow<Boolean> = combine(
         flow = _uiState.map { it.pickedVariant },
         flow2 = themeSettings.flow,
-        // Compare picked color and variant
-        transform = { a, b -> a?.color != b.customColor || a?.variant != b.customVariant }
+        // state.value vs settings.value
+        transform = { a, b ->
+            a?.color != b.customColor || a?.variant != b.customVariant || b.theme != Theme.CUSTOM
+        }
     )
     .distinctUntilChanged()
     .shareInBackground()

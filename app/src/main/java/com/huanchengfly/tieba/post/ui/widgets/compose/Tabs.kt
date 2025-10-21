@@ -4,11 +4,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
@@ -16,14 +13,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material3.Icon
@@ -49,53 +40,11 @@ import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.round
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 
-private val DEFAULT_INDICATOR_WIDTH = 16.dp
 private val DEFAULT_INDICATOR_HEIGHT = 3.dp
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun PagerTabIndicator(
-    pagerState: PagerState,
-    tabPositions: List<TabPosition>,
-    tabWidth: Dp = DEFAULT_INDICATOR_WIDTH
-) {
-    if (tabPositions.isNotEmpty()) {
-        val currentPage = minOf(tabPositions.lastIndex, pagerState.currentPage)
-        val currentTab = tabPositions[currentPage]
-        val prevTab = tabPositions.getOrNull(currentPage - 1)
-        val nextTab = tabPositions.getOrNull(currentPage + 1)
-        val fraction = pagerState.currentPageOffsetFraction
-        val currentTabLeft = currentTab.left + (currentTab.width / 2 - tabWidth / 2)
-        val indicatorOffset = if (fraction > 0 && nextTab != null) {
-            val nextTabLeft = nextTab.left + (nextTab.width / 2 - tabWidth / 2)
-            lerp(currentTabLeft, nextTabLeft, fraction)
-        } else if (fraction < 0 && prevTab != null) {
-            val prevTabLeft = prevTab.left + (prevTab.width / 2 - tabWidth / 2)
-            lerp(currentTabLeft, prevTabLeft, -fraction)
-        } else {
-            currentTabLeft
-        }
-        val animatedIndicatorOffset by
-            animateDpAsState(
-                targetValue = indicatorOffset,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
-            )
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .wrapContentSize(Alignment.BottomStart)
-                .offset(x = animatedIndicatorOffset, y = (-8).dp)
-                .width(tabWidth)
-                .height(3.dp)
-                .background(color = LocalContentColor.current, CircleShape)
-        )
-    }
-}
 
 /**
  * From androidx.compose.material3.samples.FancyAnimatedIndicatorWithModifier

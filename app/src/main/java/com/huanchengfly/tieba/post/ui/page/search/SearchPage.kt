@@ -126,6 +126,7 @@ fun SearchPage(
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = rememberSnackbarHostState()
 
     val focusManager = LocalFocusManager.current
@@ -175,7 +176,7 @@ fun SearchPage(
 
     val isKeywordNotEmpty by viewModel.uiState.collectPartialAsState( // note: submitted keyword
         prop1 = SearchUiState::isKeywordNotEmpty,
-        initial = true
+        initial = false
     )
 
     var inputKeyword by rememberSaveable { mutableStateOf("") }
@@ -189,6 +190,9 @@ fun SearchPage(
         focusManager.clearFocus()
         scrollBehaviors.fastForEach { scrollBehavior ->
             scrollBehavior.state.contentOffset = 0f // reset all scroll behavior
+        }
+        coroutineScope.launch {
+            listStates[pagerState.currentPage].scrollToItem(0)
         }
     }
 

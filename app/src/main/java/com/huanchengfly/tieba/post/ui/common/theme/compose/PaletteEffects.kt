@@ -44,8 +44,11 @@ val TiebaBackgorundColors by lazy {
 @Composable
 fun genPaletteColors(): List<Color> {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        dynamicTonalPalette(LocalContext.current).run {
-            remember { persistentListOf(primary80, secondary80, Color.LightGray, tertiary80, primary80) }
+        val context = LocalContext.current
+        remember {
+            with(dynamicTonalPalette(context)) {
+                listOf(primary80, secondary80, Color.LightGray, tertiary80, primary80)
+            }
         }
     } else {
         TiebaBackgorundColors

@@ -55,9 +55,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -327,12 +328,15 @@ private fun WallpaperOverlay(
     }
 
     MaterialTheme(colorScheme = colors, typography = typography) {
-        val scale = maxOf(targetSize.width / screen.width, targetSize.height / screen.height)
+        val scale = ScaleFactor(targetSize.width / screen.width, targetSize.height / screen.height)
         AboutPage(
             modifier = Modifier
                 .size(targetSize)
                 .requiredSize(screen)
-                .scale(scale)
+                .graphicsLayer {
+                    scaleX = scale.scaleX
+                    scaleY = scale.scaleY
+                }
         )
     }
 }
@@ -345,7 +349,7 @@ private fun SelectableTextButton(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val sizeAnim by animateFloatAsState(
+    val scaleAnim by animateFloatAsState(
         targetValue = if (selected) 1.025f else 1f,
         animationSpec = TweenSpec(easing = LinearOutSlowInEasing),
         label = "SelectableTextButtonAnimation"
@@ -353,7 +357,10 @@ private fun SelectableTextButton(
 
     TextButton(
         onClick = onClick,
-        modifier = modifier.scale(sizeAnim),
+        modifier = modifier.graphicsLayer {
+            scaleX = scaleAnim
+            scaleY = scaleAnim
+        },
         enabled = !selected,
         shape = MaterialTheme.shapes.medium,
         colors = colors

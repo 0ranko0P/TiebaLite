@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EditCalendar
@@ -89,7 +90,7 @@ fun DialogScope.DialogPositiveButton(
         },
         modifier = modifier,
         enabled = enabled,
-        content = { Text(text = text) }
+        content = { Text(text = text, maxLines = 1) }
     )
 }
 
@@ -105,7 +106,7 @@ fun DialogScope.DialogNegativeButton(
             onClick?.invoke()
         },
         modifier = modifier,
-        content = { Text(text = text) }
+        content = { Text(text = text, maxLines = 1) }
     )
 }
 

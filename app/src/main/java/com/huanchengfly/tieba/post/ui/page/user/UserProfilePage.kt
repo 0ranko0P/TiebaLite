@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.user
 
 import android.content.Context
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -506,7 +507,11 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
         movableContentOf {
             Avatar(data = avatarUrl, size = 96.dp)
 
-            Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+            ) {
                 Text(
                     text = profile.name,
                     fontSize = 20.sp,

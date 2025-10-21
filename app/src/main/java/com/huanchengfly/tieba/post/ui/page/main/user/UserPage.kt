@@ -31,7 +31,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -215,23 +214,22 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
 @Composable
 fun UserPage(viewModel: UserViewModel = viewModel()) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val navigator = LocalNavController.current
     val colorScheme = MaterialTheme.colorScheme
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val account = LocalAccount.current
 
     MyScaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = emptyBlurBottomNavigation, // MainPage workaround
     ) { contentPaddings ->
+        val account = LocalAccount.current
         val snackbarHostState = LocalSnackbarHostState.current
-        val pullRefreshState = rememberPullToRefreshState()
 
         PullToRefreshBox(
             isRefreshing = isLoading,
             onRefresh = viewModel::onRefresh,
             contentPadding = contentPaddings,
-            state = pullRefreshState
         ) {
             Column(
                 modifier = Modifier
@@ -243,7 +241,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     InfoCard(
                         modifier = Modifier
                             .clickable {
-                                navigator.navigate(Destination.UserProfile(account.uid.toLong()))
+                                navigator.navigate(Destination.UserProfile(uid = account.uid))
                             }
                             .padding(horizontal = 16.dp, vertical = 16.dp),
                         userName = account.nickname ?: account.name,
@@ -287,15 +285,14 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     onClick = { navigator.navigate(Destination.AppTheme) }
                 ) {
                     if (colorScheme.isTranslucent) return@ListMenuItem // Translucent theme has no dark/light mode
+                    val isDarkMode = colorScheme.isDarkScheme
 
-                    val coroutineScope = rememberCoroutineScope()
                     val switchEnabled by remember {
                         derivedStateOf { snackbarHostState.currentSnackbarData == null }
                     }
-                    val isDarkMode = remember(colorScheme) { colorScheme.isDarkScheme }
 
                     Text(text = stringResource(id = R.string.my_info_night), fontSize = 12.sp)
-                    Spacer(modifier = Modifier.width(2.dp))
+
                     Switch(
                         checked = isDarkMode,
                         onCheckedChange = { checked ->

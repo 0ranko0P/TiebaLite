@@ -6,13 +6,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,10 +28,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
+import com.huanchengfly.tieba.post.ui.widgets.compose.containerColor
+import com.huanchengfly.tieba.post.ui.widgets.compose.contentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 
@@ -62,22 +64,11 @@ fun Dislike(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f),
                     )
-                    Spacer(modifier = Modifier.width(32.dp))
-                    Text(
-                        text = stringResource(id = R.string.button_submit),
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.small)
-                            .background(color = colorScheme.tertiary)
-                            .clickable {
-                                onDislikeClicked()
-                                dismiss()
-                            }
-                            .padding(vertical = 4.dp, horizontal = 8.dp),
-                        color = colorScheme.onTertiary,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleSmall,
-                    )
+
+                    SubmitButton(isEnabled = { selectedReasons.isNotEmpty() }) {
+                        dismiss()
+                        onDislikeClicked()
+                    }
                 }
 
                 VerticalGrid(
@@ -92,7 +83,7 @@ fun Dislike(
                     ) {
                         val selected = it in selectedReasons
                         val backgroundColor by animateColorAsState(
-                            targetValue = if (selected) colorScheme.primary else colorScheme.outlineVariant
+                            targetValue = if (selected) colorScheme.primary else colorScheme.secondaryContainer
                         )
 
                         Text(
@@ -100,7 +91,7 @@ fun Dislike(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(backgroundColor, shape = MaterialTheme.shapes.small)
-                                .clickable {
+                                .clickableNoIndication {
                                     onDislikeSelected(it)
                                 }
                                 .padding(vertical = 8.dp, horizontal = 16.dp),
@@ -127,4 +118,25 @@ fun Dislike(
             )
         }
     }
+}
+
+@Composable
+private fun SubmitButton(modifier: Modifier = Modifier, isEnabled: () -> Boolean, onClick: () -> Unit) {
+    val colors = ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.tertiary,
+        contentColor = MaterialTheme.colorScheme.onTertiary
+    )
+    val enabled = isEnabled()
+
+    Text(
+        text = stringResource(id = R.string.button_submit),
+        modifier = modifier
+            .clip(MaterialTheme.shapes.small)
+            .background(color = colors.containerColor(enabled))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = 4.dp, horizontal = 8.dp),
+        color = colors.contentColor(enabled),
+        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.titleSmall,
+    )
 }

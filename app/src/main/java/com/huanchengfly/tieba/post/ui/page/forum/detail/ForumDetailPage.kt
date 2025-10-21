@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.theme.Grey300
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.models.forum.ForumManager
@@ -161,12 +160,12 @@ private fun ForumDetailContent(
                     statNum = memberCount,
                     statTitle = R.string.text_stat_follow
                 )
-                VerticalDivider(color = Grey300)
+                VerticalDivider(color = MaterialTheme.colorScheme.outline)
                 StatCardItem(
                     statNum = threadCount,
                     statTitle = R.string.text_stat_threads
                 )
-                VerticalDivider(color = Grey300)
+                VerticalDivider(color = MaterialTheme.colorScheme.outline)
                 StatCardItem(
                     statNum = postCount,
                     statTitle = R.string.title_stat_posts_num
