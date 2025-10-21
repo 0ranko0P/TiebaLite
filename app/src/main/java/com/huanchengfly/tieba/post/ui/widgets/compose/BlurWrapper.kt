@@ -17,6 +17,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_3BUTTON
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_DEFAULT
@@ -82,6 +84,11 @@ val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
     }
 }
 
+@Composable @ReadOnlyComposable
+private fun isHazeBlurEnabled(): Boolean {
+    return TiebaLiteTheme.extendedColorScheme.navigationContainer.alpha < 1f
+}
+
 @Composable
 @NonRestartableComposable
 fun BlurWrapper(
@@ -118,11 +125,9 @@ fun BlurScaffold(
     contentColor: Color = MaterialTheme.colorScheme.onBackground,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    val color = TiebaLiteTheme.extendedColorScheme
-    // Check translucent theme
-    if (!ThemeUtil.isTranslucentTheme(color) && color.navigationContainer.alpha < 1.0f) {
+    val isTranslucent = MaterialTheme.colorScheme.isTranslucent
+    if (!isTranslucent && isHazeBlurEnabled()) {
         val hazeState = remember { HazeState() }
-
         CompositionLocalProvider(
             LocalSnackbarHostState provides snackbarHostState,
             LocalHazeState provides hazeState,
@@ -144,9 +149,7 @@ fun BlurScaffold(
                 contentColor = contentColor
             ) { paddingValues ->
                 if (attachHazeContentState) {
-                    Box(modifier = Modifier.hazeSource(hazeState)) {
-                        content(paddingValues)
-                    }
+                    Box(Modifier.hazeSource(hazeState), content = { content(paddingValues) })
                 } else {
                     content(paddingValues)
                 }
@@ -155,6 +158,7 @@ fun BlurScaffold(
     } else {
         MyScaffold(
             modifier = modifier,
+            useMD2Layout = isTranslucent,
             topBar = topBar,
             bottomBar = bottomBar,
             snackbarHostState = snackbarHostState,

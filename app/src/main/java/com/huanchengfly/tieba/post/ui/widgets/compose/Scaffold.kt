@@ -95,6 +95,7 @@ val DefaultFabExitTransition: ExitTransition = scaleOut(animationSpec = tween())
 @Composable
 fun MyScaffold(
     modifier: Modifier = Modifier,
+    useMD2Layout: Boolean = true,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
     snackbarHostState: SnackbarHostState = rememberSnackbarHostState(),
@@ -107,18 +108,33 @@ fun MyScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
-        Scaffold(
-            modifier,
-            topBar,
-            bottomBar,
-            snackbarHost = snackbarHost,
-            floatingActionButton,
-            floatingActionButtonPosition,
-            backgroundColor,
-            contentColor,
-            contentWindowInsets,
-            content
-        )
+        if (useMD2Layout) {
+            Scaffold(
+                modifier = modifier,
+                topBar = topBar,
+                bottomBar = bottomBar,
+                snackbarHost = snackbarHost,
+                floatingActionButton = floatingActionButton,
+                floatingActionButtonPosition = floatingActionButtonPosition,
+                containerColor = backgroundColor,
+                contentColor = contentColor,
+                contentWindowInsets = contentWindowInsets,
+                content = content
+            )
+        } else {
+            androidx.compose.material3.Scaffold(
+                modifier = modifier,
+                topBar = topBar,
+                bottomBar = bottomBar,
+                snackbarHost = snackbarHost,
+                floatingActionButton = floatingActionButton,
+                floatingActionButtonPosition = floatingActionButtonPosition,
+                containerColor = backgroundColor,
+                contentColor = contentColor,
+                contentWindowInsets = contentWindowInsets,
+                content = content
+            )
+        }
     }
 }
 

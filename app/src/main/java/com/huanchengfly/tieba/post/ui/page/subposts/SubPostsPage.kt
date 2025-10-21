@@ -41,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -51,7 +50,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
-import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
@@ -72,7 +70,6 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
-import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
@@ -82,9 +79,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.UseStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.containerColorNoAni
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
@@ -114,6 +111,10 @@ fun SubPostsSheetPage(
     }
 }
 
+private const val PostContentType = 0
+private val HeaderContentType = Unit
+// SubpostContentType use Null by default
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SubPostsContent(
@@ -129,7 +130,6 @@ internal fun SubPostsContent(
     val account = LocalAccount.current
     val myUid = account?.uid
     val context = LocalContext.current
-    val direction = LocalLayoutDirection.current
 
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val isLoadingMore = uiState.isLoadingMore
@@ -208,10 +208,7 @@ internal fun SubPostsContent(
         // non-nullable, initialize here for convenience
         val onCopyClickedListener: (String) -> Unit = { navigator.navigate(CopyText(it)) }
 
-        BlurScaffold(
-            topHazeBlock = {
-                blurEnabled = lazyListState.canScrollBackward
-            },
+        MyScaffold (
             topBar = {
                 TitleBar(
                     isSheet = isSheet,
@@ -237,15 +234,7 @@ internal fun SubPostsContent(
                     )
                 }
             }
-        ) { padding ->
-            // Ignore Scaffold padding changes if workaround enabled
-            val useStickyHeaderWorkaround = UseStickyHeaderWorkaround
-            val contentPadding = if (useStickyHeaderWorkaround) {
-                remember(padding.calculateBottomPadding()) { padding.copy(direction) }
-            } else {
-                padding
-            }
-
+        ) { contentPadding ->
             SwipeUpLazyLoadColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -269,7 +258,7 @@ internal fun SubPostsContent(
                 }
             ) {
                 val postItem = uiState.post ?: return@SwipeUpLazyLoadColumn
-                item(key = "Post$postId") {
+                item(key = "Post$postId", contentType = PostContentType) {
                     Column {
                         PostCard(
                             post = postItem,
@@ -296,16 +285,9 @@ internal fun SubPostsContent(
                     }
                 } // End of post card
 
-                val postNum = uiState.page.postCount
-                if (useStickyHeaderWorkaround) {
-                    item(key = "SubPostsHeader", contentType = Unit) {
-                        SubPostsHeader(postNum = postNum)
-                    }
-                } else {
-                    stickyHeader(key = "SubPostsHeader", contentType = Unit) {
-                        val color by containerColorNoAni(topAppBarScrollBehavior.state, lazyListState)
-                        SubPostsHeader(Modifier.background(color), postNum = postNum)
-                    }
+                stickyHeader(key = "SubPostsHeader", contentType = HeaderContentType) {
+                    val color by containerColorNoAni(topAppBarScrollBehavior.state, lazyListState)
+                    SubPostsHeader(Modifier.background(color), postNum = uiState.page.postCount)
                 }
 
                 items(items = uiState.subPosts, key = { subPost -> subPost.id }) { item ->
@@ -535,6 +517,7 @@ private fun DeletePostSubPostDialog(
     }
 }
 
+@NonRestartableComposable
 @Composable
 private fun SubPostsHeader(modifier: Modifier = Modifier, postNum: Int) {
     Text(

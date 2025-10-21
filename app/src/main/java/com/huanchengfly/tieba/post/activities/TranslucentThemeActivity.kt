@@ -54,6 +54,7 @@ import com.huanchengfly.tieba.post.theme.DefaultColors
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
@@ -233,7 +234,7 @@ class TranslucentThemeActivity : AppCompatActivity() {
         @Composable
         private fun currentThemeNoTrans(dark: Boolean) : ExtendedColorScheme {
             val current = TiebaLiteTheme.extendedColorScheme
-            return if (ThemeUtil.isTranslucentTheme(current)) {
+            return if (current.colorScheme.isTranslucent) {
                 if (dark) DefaultDarkColors else DefaultColors
             } else {
                 current

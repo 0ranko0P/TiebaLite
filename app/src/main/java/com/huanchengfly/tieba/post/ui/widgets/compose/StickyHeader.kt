@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -11,10 +12,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.isTranslucent
 
 // Workaround to enable background blurring on StickyHeader
-val UseStickyHeaderWorkaround: Boolean
-    @Composable @ReadOnlyComposable get() = LocalHazeState.current != null
+@Composable @ReadOnlyComposable
+fun useStickyHeaderWorkaround(): Boolean = !MaterialTheme.colorScheme.isTranslucent
 
 /**
  * Workaround to enable background blurring on StickyHeader.

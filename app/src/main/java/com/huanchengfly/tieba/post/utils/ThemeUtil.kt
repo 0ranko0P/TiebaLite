@@ -101,11 +101,6 @@ object ThemeUtil {
         }
     }
 
-    fun isTranslucentTheme(colorScheme: ExtendedColorScheme): Boolean {
-        // colorScheme.theme == THEME_TRANSLUCENT_LIGHT || colorScheme.theme == THEME_TRANSLUCENT_DARK
-        return colorScheme.appBarColors.containerColor == Color.Transparent
-    }
-
     fun isTranslucentTheme(colorScheme: ColorScheme = currentColorScheme()): Boolean {
         return colorScheme.surface == Color.Transparent
     }

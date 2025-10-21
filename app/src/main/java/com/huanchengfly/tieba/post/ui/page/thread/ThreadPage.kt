@@ -109,7 +109,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
-import com.huanchengfly.tieba.post.ui.widgets.compose.UseStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
@@ -118,6 +117,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeState
@@ -193,6 +193,7 @@ fun ThreadPage(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val snackbarHostState = rememberSnackbarHostState()
+    val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
 
     val state by viewModel.threadUiState.collectAsStateWithLifecycle()
     val isEmpty by remember {
@@ -360,7 +361,7 @@ fun ThreadPage(
                     scrollBehavior = topAppBarScrollBehavior
                 ) {
                     val replyNum = state.thread?.replyNum
-                    if (UseStickyHeaderWorkaround && replyNum != null) {
+                    if (useStickyHeaderWorkaround && replyNum != null) {
                         Container {
                             StickyHeaderOverlay(state = lazyListState) {
                                 ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged)
@@ -387,7 +388,6 @@ fun ThreadPage(
             snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
         ) { padding ->
             val hazeState: HazeState? = LocalHazeState.current
-            val useStickyHeaderWorkaround = hazeState != null
 
             // Ignore Scaffold padding changes if workaround enabled
             val direction = LocalLayoutDirection.current
