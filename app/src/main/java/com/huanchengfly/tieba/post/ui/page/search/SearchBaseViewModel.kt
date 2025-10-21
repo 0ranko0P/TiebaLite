@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.repository.SearchResult
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,7 +37,7 @@ abstract class SearchBaseViewModel<T>: ViewModel() {
     protected open var _uiState = MutableStateFlow(UiState<T>())
     val uiState = _uiState.asStateFlow()
 
-    protected abstract suspend fun search(keyword: String): Pair<T?, List<T>> // ExactMatch, FuzzyMatch
+    protected abstract suspend fun search(keyword: String): SearchResult<T>
 
     private fun searchForumInternal(keyword: String) {
         if (keyword.isNotEmpty()) {

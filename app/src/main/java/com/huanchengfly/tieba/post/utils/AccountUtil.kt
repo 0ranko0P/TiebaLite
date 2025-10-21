@@ -1,41 +1,38 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
+import android.util.Log
 import android.webkit.CookieManager
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.util.fastFirst
-import androidx.compose.ui.util.fastFirstOrNull
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.intPreferencesKey
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.LoginBean
-import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.arch.shareInBackground
+import com.huanchengfly.tieba.post.components.modules.SettingsRepositoryEntryPoint
 import com.huanchengfly.tieba.post.dataStoreScope
-import com.huanchengfly.tieba.post.distinctUntilChangedByKeys
 import com.huanchengfly.tieba.post.models.database.Account
-import com.huanchengfly.tieba.post.putInt
+import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
+import com.huanchengfly.tieba.post.repository.source.network.UserProfileNetworkDataSource
+import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.toastShort
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
+import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -43,30 +40,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
-import org.litepal.LitePal.findAll
-import org.litepal.LitePal.where
-import org.litepal.extension.findFirst
-import java.util.UUID
 
 val LocalAccount = staticCompositionLocalOf<Account?> { error("No Account provided") }
-val LocalAllAccounts = staticCompositionLocalOf<ImmutableList<Account>> { error("No Accounts provided") }
-
-@Composable
-fun LocalAccountProvider(content: @Composable () -> Unit) {
-    val accountUtil = AccountUtil.getInstance()
-    val account by accountUtil.currentAccount.collectAsState()
-    CompositionLocalProvider(
-        LocalAccount provides account,
-        LocalAllAccounts provides accountUtil.allAccounts,
-    ) {
-        content()
-    }
-}
 
 class AccountUtil private constructor(context: Context) {
+
     companion object {
-        private const val KEY_CURRENT_ACCOUNT_ID = "account_now"
+        private const val TAG = "AccountUtil"
+
+        private const val UPDATE_EXPIRE_MILL = 0x240C8400 // one week
 
         @Volatile
         private var _instance: AccountUtil? = null
@@ -77,7 +59,7 @@ class AccountUtil private constructor(context: Context) {
             }
         }
 
-        fun <T> getAccountInfo(getter: Account.() -> T): T? = getLoginInfo()?.getter()
+        inline fun <T> getAccountInfo(getter: Account.() -> T): T? = getLoginInfo()?.getter()
 
         fun getLoginInfo(): Account? = runBlocking { getInstance().currentAccount.first() }
 
@@ -87,7 +69,7 @@ class AccountUtil private constructor(context: Context) {
 
         fun getCookie(): String? = getLoginInfo()?.cookie
 
-        fun getUid(): String? = getLoginInfo()?.uid
+        fun getUid(): String? = getLoginInfo()?.uid?.toString()
 
         fun getBduss(): String? = getLoginInfo()?.bduss
 
@@ -111,26 +93,26 @@ class AccountUtil private constructor(context: Context) {
         }
     }
 
-    private val dataStore: DataStore<Preferences> = context.dataStore
+    private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG) + SupervisorJob())
 
-    val currentAccount: StateFlow<Account?> = dataStore.data
-        .distinctUntilChangedByKeys(intPreferencesKey(KEY_CURRENT_ACCOUNT_ID))
-        .map {
-            val id = it[intPreferencesKey(KEY_CURRENT_ACCOUNT_ID)] ?: -1
-            if (id != -1) getAccountInfo(id) else null
+    private val networkDataSource = UserProfileNetworkDataSource
+
+    private val accountUidSettings: Settings<Long> = EntryPointAccessors
+        .fromApplication<SettingsRepositoryEntryPoint>(context) // get settings repository manually
+        .settingsRepository()
+        .accountUid
+
+    private val accountDao = TbLiteDatabase.getInstance(context).accountDao()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val currentAccount: StateFlow<Account?> = accountUidSettings.flow
+        .flatMapMerge { uid ->
+            if (uid != -1L) accountDao.observeById(uid) else flowOf(null)
         }
         .stateIn(dataStoreScope, SharingStarted.Eagerly, null)
 
-    var allAccounts: ImmutableList<Account> by mutableStateOf(persistentListOf())
-        private set
-
-    private val scope = MainScope()
-
-    init {
-        scope.launch {
-            allAccounts = listAllAccount()
-        }
-    }
+    val allAccounts: SharedFlow<List<Account>> = accountDao.observeAll()
+        .shareInBackground()
 
     fun fetchAccountFlow(account: Account): Flow<Account> {
         return fetchAccountFlow(account.bduss, account.sToken, account.cookie)
@@ -145,7 +127,7 @@ class AccountUtil private constructor(context: Context) {
         return TiebaApi.getInstance()
             .loginFlow(bduss, sToken)
             .zip(TiebaApi.getInstance().initNickNameFlow(bduss, sToken)) { loginBean, _ ->
-                val account = getAccountInfoByUid(loginBean.user.id)
+                val account = accountDao.getById(loginBean.user.id.toLong())
                 return@zip if (account != null) {
                     account.copy(
                         bduss = bduss,
@@ -155,13 +137,13 @@ class AccountUtil private constructor(context: Context) {
                         updateAccount(this, loginBean)
                     }
                 } else Account(
-                    loginBean.user.id,
-                    loginBean.user.name,
-                    bduss,
-                    loginBean.anti.tbs,
-                    loginBean.user.portrait,
-                    sToken,
-                    cookie ?: getBdussCookie(bduss),
+                    uid = loginBean.user.id.toLong(),
+                    name = loginBean.user.name,
+                    bduss = bduss,
+                    tbs = loginBean.anti.tbs,
+                    portrait = loginBean.user.portrait,
+                    sToken = sToken,
+                    cookie = cookie ?: getBdussCookie(bduss),
                 )
             }
             .zip(SofireUtils.fetchZid()) { account, zid ->
@@ -172,57 +154,59 @@ class AccountUtil private constructor(context: Context) {
                     .getUserInfoFlow(account.uid.toLong(), account.bduss, account.sToken)
                     .map { checkNotNull(it.data_?.user) }
                     .map { user ->
-                        account.copy(nameShow = user.nameShow, portrait = user.portrait)
+                        account.copy(nickname = user.nameShow, portrait = user.portrait)
                     }
                     .catch {
                         emit(account)
                     }
             }
             .onEach { account ->
-                saveAccount(account.uid, account)
+                accountDao.upsert(account)
             }
             .flowOn(Dispatchers.IO)
     }
 
     /**
-     * Query all Accounts from disk, Non-Cancellable.
+     * Refresh user profile
      * */
-    private suspend fun listAllAccount(): ImmutableList<Account> = withContext(Dispatchers.IO) {
-        findAll(Account::class.java).toImmutableList()
-    }
-
-    private suspend fun saveAccount(uid: String, account: Account): Boolean = withContext(Dispatchers.IO) {
-        account.saveOrUpdate("uid = ?", uid)
-    }
-
-    private suspend fun getAccountInfo(accountId: Int): Account = withContext(Dispatchers.IO) {
-        where("id = ?", accountId.toString()).findFirst(Account::class.java)
-    }
-
-    private suspend fun getAccountInfoByUid(uid: String): Account? = withContext(Dispatchers.IO) {
-        where("uid = ?", uid).findFirst<Account>()
-    }
-
-    private suspend fun getAccountInfoByBduss(bduss: String): Account = withContext(Dispatchers.IO) {
-        where("bduss = ?", bduss).findFirst(Account::class.java)
-    }
-
-    private fun setCurrentAccountId(id: Int) = dataStore.putInt(KEY_CURRENT_ACCOUNT_ID, id)
-
-    suspend fun saveNewAccount(uid: String, account: Account): Boolean = withContext(Dispatchers.Main) {
-        val succeed = saveAccount(uid, account)
-        if (succeed) {
-            allAccounts = listAllAccount()
-            val newAccount = allAccounts.fastFirst { it.uid == account.uid }
-            setCurrentAccountId(id = newAccount.id)
+    suspend fun refreshCurrent(force: Boolean = false): Account {
+        val account = currentAccount.first() ?: throw TiebaNotLoggedInException()
+        val duration = System.currentTimeMillis() - (account.lastUpdate + UPDATE_EXPIRE_MILL)
+        // not force-refresh && not expire
+        if (!force && duration < 0) {
+            return account
+        } else if (duration > 0) {
+            Log.i(TAG, "onRefreshCurrent: Cache of ${account.uid} expired for ${duration / 1000}s")
         }
-        return@withContext succeed
+
+        val user = networkDataSource.loadUserProfile(uid = account.uid)
+        val birthday = user.birthday_info
+        val updated = account.copy(
+            nickname = user.nameShow,
+            portrait = user.portrait,
+            intro = user.intro,
+            sex = user.sex,
+            fans = user.fans_num.getShortNumString(),
+            posts = user.post_num.getShortNumString(),
+            threads = user.thread_num.getShortNumString(),
+            concerned = user.concern_num.getShortNumString(),
+            tbAge = user.tb_age.toFloatOrNull() ?: account.tbAge,
+            age = birthday?.age?: account.age,
+            birthdayShow = birthday?.birthday_show_status == 1,
+            birthdayTime = birthday?.birthday_time ?: account.birthdayTime,
+            constellation = birthday?.constellation,
+            tiebaUid = user.tieba_uid,
+            lastUpdate = System.currentTimeMillis()
+        )
+        accountDao.upsert(updated)
+        return updated
     }
 
-    fun switchAccount(id: Int) {
-        // Double check
-        if (currentAccount.value?.id != id && allAccounts.fastFirstOrNull { it.id == id } == null) {
-            setCurrentAccountId(id)
+    suspend fun saveNewAccount(account: Account) = accountDao.upsert(account)
+
+    fun switchAccount(uid: Long) {
+        if (currentAccount.value?.uid != uid) {
+            accountUidSettings.set(uid)
         }
     }
 
@@ -231,29 +215,26 @@ class AccountUtil private constructor(context: Context) {
         loginBean: LoginBean,
     ) {
         val updated = account.copy(
-            uid = loginBean.user.id,
+            uid = loginBean.user.id.toLong(),
             name = loginBean.user.name,
             portrait = loginBean.user.portrait,
             tbs = loginBean.anti.tbs,
-            uuid = if (account.uuid.isNullOrBlank()) UUID.randomUUID().toString() else account.uuid
         )
-        saveAccount(account.uid, updated)
+        accountDao.upsert(updated)
     }
 
-    fun exit(context: Context) = scope.launch {
-        currentAccount.first()!!.let { account ->
-            withContext(Dispatchers.IO) { account.delete() }
-        }
-
-        CookieManager.getInstance().removeAllCookies(null)
-        allAccounts = listAllAccount()
-        val nextAccount = allAccounts.firstOrNull()
-        if (nextAccount != null) {
-            setCurrentAccountId(nextAccount.id)
-            context.toastShort(R.string.toast_exit_account_switched, nextAccount.nameShow ?: nextAccount.name)
-        } else {
-            setCurrentAccountId(-1)
-            context.toastShort(R.string.toast_exit_account_success)
+    fun exit(context: Context, oldAccount: Account) {
+        scope.launch {
+            val nextAccount = accountDao.getAll().firstOrNull { it.uid != oldAccount.uid }
+            CookieManager.getInstance().removeAllCookies(null)
+            // switch to next account (if exists)
+            accountUidSettings.set(nextAccount?.uid ?: -1)
+            accountDao.deleteById(uid = oldAccount.uid)
+            if (nextAccount != null) {
+                context.toastShort(R.string.toast_exit_account_switched, nextAccount.nickname ?: nextAccount.name)
+            } else {
+                context.toastShort(R.string.toast_exit_account_success)
+            }
         }
     }
 }

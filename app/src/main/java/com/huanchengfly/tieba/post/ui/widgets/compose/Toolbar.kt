@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +50,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -58,7 +60,6 @@ import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import com.huanchengfly.tieba.post.utils.LocalAllAccounts
 import com.huanchengfly.tieba.post.utils.StringUtil
 
 val AppBarHeight: Dp = 56.dp
@@ -77,12 +78,12 @@ private fun AccountDropdownMenuItem(
     modifier: Modifier = Modifier,
 ) {
     DropdownMenuItem(
-        text = { Text(text = account.nameShow ?: account.name) },
+        text = { Text(text = account.nickname ?: account.name) },
         onClick = onClick,
         modifier = modifier.semantics(mergeDescendants = true) {
             role = Role.DropdownList
-            selected = currentAccount.id == account.id
-            contentDescription = account.nameShow ?: account.name
+            selected = currentAccount.uid == account.uid
+            contentDescription = account.nickname ?: account.name
         },
         leadingIcon = {
             Box(
@@ -94,7 +95,7 @@ private fun AccountDropdownMenuItem(
                     data = remember { StringUtil.getAvatarUrl(account.portrait) },
                     size = Sizes.Small
                 )
-                if (currentAccount.id == account.id) {
+                if (currentAccount.uid == account.uid) {
                     Icon(
                         imageVector = Icons.Rounded.CheckCircle,
                         contentDescription = null,
@@ -128,9 +129,12 @@ fun AccountNavIcon(
 
         LongClickMenu(
             menuContent = {
-                LocalAllAccounts.current.fastForEach {
+                val accountUtil = remember { AccountUtil.getInstance() }
+                val accounts by accountUtil.allAccounts.collectAsStateWithLifecycle(emptyList())
+
+                accounts.fastForEach {
                     AccountDropdownMenuItem(
-                        onClick = { AccountUtil.getInstance().switchAccount(it.id) },
+                        onClick = { accountUtil.switchAccount(uid = it.uid) },
                         account = it,
                         currentAccount = currentAccount,
                     )

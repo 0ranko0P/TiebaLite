@@ -50,7 +50,7 @@ class ConcernViewModel @Inject constructor(
 
     private val handler = CoroutineExceptionHandler { _, e ->
         Log.e(TAG, "onError: ", e)
-        _uiState.update { it.copy(isRefreshing = false, error = e) }
+        _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
     }
 
     private val _uiState = MutableStateFlow(ConcernUiState(isRefreshing = true))
@@ -104,7 +104,7 @@ class ConcernViewModel @Inject constructor(
     }
 
     /**
-     * Called when navigate back from thread page with latest [Like] status
+     * Called when navigating back from thread page with the latest [Like] status
      *
      * @param threadId target thread ID
      * @param like latest like status of target thread
@@ -129,7 +129,7 @@ class ConcernViewModel @Inject constructor(
          *
          * @param threadId id of target [ThreadItem]
          * @param liked new like status
-         * @param loading is requesting like status update to server
+         * @param loading is requesting like status update
          *
          * @return new thread list with like status updated
          * */
@@ -159,13 +159,13 @@ class ConcernViewModel @Inject constructor(
                 fastMap {
                     if (it.id == threadId) {
                         // no status changes, return null directly
-                        if (it.liked == like.liked && it.like.count == like.count) return@withContext null
+                        if (it.liked == like.liked/* && it.like.count == like.count */) return@withContext null
                         changed = true
                         it.copy(like = like)
                     } else {
                         it
                     }
-                }.takeIf { changed } // else target thread not found
+                }.takeIf { changed }
             }
         } else {
             null

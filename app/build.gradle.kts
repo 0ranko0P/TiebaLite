@@ -187,10 +187,16 @@ dependencies {
     implementation(libs.androidx.palette)
     implementation(libs.androidx.window)
     implementation(libs.androidx.startup.runtime)
+    implementation(libs.bundles.paging3)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
 
     implementation(libs.google.gson)
 
-    implementation(libs.database.litepal)
     implementation(libs.haze.blur)
 
     //Glide

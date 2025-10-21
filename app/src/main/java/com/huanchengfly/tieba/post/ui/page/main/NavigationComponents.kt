@@ -139,7 +139,7 @@ fun NavigationDrawerContent(
                 ) {
                     AccountNavIcon(spacer = false, size = Sizes.Large)
                     Text(
-                        text = account.nameShow ?: account.name,
+                        text = account.nickname ?: account.name,
                         modifier = Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.titleMedium,
                     )
@@ -305,7 +305,7 @@ data class NavigationItem @OptIn(ExperimentalAnimationGraphicsApi::class) constr
 @Preview("NavigationDrawerContent", device = Devices.PIXEL_TABLET)
 @Composable
 private fun NavigationDrawerContentPreview() = TiebaLiteTheme {
-    val navItems = rememberNavigationItems(account = null, messageCount = { 0 })
+    val navItems = rememberNavigationItems(loggedIn = false, messageCount = { 0 })
     CompositionLocalProvider(LocalAccount provides null) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)

@@ -183,8 +183,11 @@ object ThreadNetworkDataSource {
                 if (data_ == null) throw TiebaApiException(commonResponse = this.error.commonResponse)
                 val forum = data_.forum ?: throw TiebaException("Null forum data")
                 val threadInfo = data_.thread ?: throw TiebaException("Null thread data")
-                // copy data_.forum to data_.thread.forumInfo
-                data_.copy(thread = threadInfo.copy(threadId = threadId, forumInfo = forum))
+                data_.copy(
+                    post = data_.post?.copy(sub_post_list = null),
+                    // copy data_.forum to data_.thread.forumInfo
+                    thread = threadInfo.copy(threadId = threadId, forumInfo = forum)
+                )
             }
     }
 

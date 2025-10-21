@@ -9,8 +9,6 @@ import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.models.database.KeywordProvider
-import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.repository.SearchRepository
 import com.huanchengfly.tieba.post.ui.models.search.SearchSuggestion
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadSortType
@@ -77,7 +75,7 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    val searchHistories: StateFlow<List<SearchHistory>> = searchRepo.getHistoryFlow()
+    val searchHistories: StateFlow<List<String>> = searchRepo.getHistoryFlow()
         .catch { e ->
             handler.handleException(currentCoroutineContext(), e)
         }
@@ -96,17 +94,20 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun onDeleteHistory(history: KeywordProvider) {
+    /**
+     * Called on delete search history is clicked.
+     * */
+    fun onDeleteHistory(history: String) {
         viewModelScope.launch(handler) {
             runCatching {
-                searchRepo.deleteHistory(history as SearchHistory)
+                searchRepo.deleteHistory(history)
             }
             .onFailure { e -> _uiEvent.emit(SearchUiEvent.DeleteHistoryFailed(e)) }
         }
     }
 
     /**
-     * Called when the input text in search box has been changed
+     * Called when the input text in the search box has been changed.
      * */
     fun onKeywordInputChanged(keyword: String) {
         viewModelScope.launch(handler) {

@@ -320,11 +320,8 @@ fun ThreadPage(
             closeBottomSheet(); return@BackHandler
         }
 
-        val lastVisiblePost = lazyListState.lastVisiblePost(state)?.apply {
-            if (id != 0L) {
-                viewModel.onLastPostVisibilityChanged(pid = id, floor = floor)
-            }
-        }
+        val lastVisiblePost = lazyListState.lastVisiblePost(state)
+        viewModel.onSaveHistory(lastVisiblePost)
 
         if (viewModel.info?.collected == true && lastVisiblePost?.floor != 0) {
             // Show CollectionsUpdateDialog now

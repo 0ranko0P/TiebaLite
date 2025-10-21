@@ -170,7 +170,7 @@ fun deleteWithPrefixSafe(dir: File, prefix: String): Int {
 
     if (BuildConfig.DEBUG) {
         val cost = System.currentTimeMillis() - start
-        Log.i(CACHE_DIR_NAME, "Delete $deleted files, cost ${cost}ms")
+        Log.i(CACHE_DIR_NAME, "Delete $deleted files of $prefix, cost ${cost}ms")
     }
     return deleted
 }

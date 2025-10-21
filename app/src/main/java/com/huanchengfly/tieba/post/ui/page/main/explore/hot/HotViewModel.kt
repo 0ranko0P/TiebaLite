@@ -160,7 +160,7 @@ class HotViewModel @Inject constructor(private val exploreRepo: ExploreRepositor
     }
 
     /**
-     * Called when navigate back from thread page with latest [Like] status
+     * Called when navigating back from thread page with the latest [Like] status
      *
      * @param threadId target thread ID
      * @param like like status of target thread

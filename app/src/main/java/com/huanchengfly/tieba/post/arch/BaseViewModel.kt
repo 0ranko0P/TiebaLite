@@ -38,12 +38,12 @@ abstract class BaseViewModel<
 
     private val initialState: State by lazy { createInitialState() }
 
-    private val partialChangeProducer: PartialChangeProducer<Intent, PC, State> = createPartialChangeProducer()
-
     protected abstract fun createInitialState(): State
+
     protected abstract fun createPartialChangeProducer(): PartialChangeProducer<Intent, PC, State>
 
-    val uiState = partialChangeProducer.toPartialChangeFlow(_intentFlow)
+    val uiState by lazy { // lazy initialization for hilt injection
+        createPartialChangeProducer().toPartialChangeFlow(_intentFlow)
         .onEach {
             Log.d(this::class.simpleName, "partialChange $it")
             val event = dispatchEvent(it)
@@ -58,6 +58,7 @@ abstract class BaseViewModel<
         .distinctUntilChanged()
         .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.Eagerly, initialState)
+    }
 
     protected open fun dispatchEvent(partialChange: PC): UiEvent? = null
 

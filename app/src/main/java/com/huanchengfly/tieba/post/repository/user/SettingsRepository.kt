@@ -22,6 +22,11 @@ interface Settings<T> {
  * */
 interface SettingsRepository {
 
+    /**
+     * Settings of current user account ID, ``-1`` if no user logged-in
+     * */
+    val accountUid: Settings<Long>
+
     val blockSettings: Settings<BlockSettings>
 
     /**

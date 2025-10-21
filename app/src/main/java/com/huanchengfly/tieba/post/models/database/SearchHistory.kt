@@ -1,23 +1,26 @@
 package com.huanchengfly.tieba.post.models.database
 
-import androidx.compose.runtime.Immutable
-import org.litepal.crud.LitePalSupport
-
-@Immutable
-data class SearchHistory(
-    val content: String,
-    val timestamp: Long = System.currentTimeMillis(),
-) : LitePalSupport(), KeywordProvider {
-    val id: Long = 0
-
-    override fun getKeyword(): String = content
-}
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
 /**
- * Display search keyword on UI for [SearchHistory] and [SearchPostHistory]
+ * Search history
  *
- * @see [com.huanchengfly.tieba.post.ui.page.search.SearchHistoryList]
- * */
-interface KeywordProvider {
-    fun getKeyword(): String
+ * @param id database primary key
+ * @param keyword search keyword
+ * @param timestamp search timestamp
+ */
+@Entity(
+    tableName = "search",
+    indices = [Index(value = ["timestamp"], unique = true)]
+)
+class SearchHistory(
+    @PrimaryKey
+    override val id: Int,
+    override val keyword: String,
+    override val timestamp: Long = System.currentTimeMillis(),
+): Search() {
+
+    constructor(keyword: String) : this(id = keyword.hashCode(), keyword = keyword)
 }

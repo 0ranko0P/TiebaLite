@@ -6,12 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.activities.TranslucentThemeViewModel.Companion.translucentBackground
 import com.huanchengfly.tieba.post.arch.shareInBackground
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
@@ -45,6 +47,8 @@ class MainViewModel @Inject constructor(
     private val forumRepo: ForumRepository,
     private val threadRepo: PbPageRepository
 ) : ViewModel() {
+
+    val account: StateFlow<Account?> = AccountUtil.getInstance().currentAccount
 
     private val _uiState: MutableStateFlow<MainUiState> = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = combine(

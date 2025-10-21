@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.repository
 
 import android.util.SparseArray
-import androidx.annotation.WorkerThread
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
@@ -26,7 +25,7 @@ import com.huanchengfly.tieba.post.ui.models.explore.HotTopicData
 import com.huanchengfly.tieba.post.ui.models.explore.RecommendTopic
 import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildThreadContent
-import com.huanchengfly.tieba.post.utils.BlockManager
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.coroutines.Dispatchers
@@ -46,7 +45,7 @@ class UserLikeThreads(
 @Singleton
 class ExploreRepository @Inject constructor(
     private val localDataSource: ExploreLocalDataSource,
-    private val homeRepo: HomeRepository,
+    private val blockRepo: BlockRepository,
     private val threadRepo: PbPageRepository,
     settingsRepository: SettingsRepository
 ) {
@@ -56,6 +55,9 @@ class ExploreRepository @Inject constructor(
     private val habitSettings = settingsRepository.habitSettings.flow
 
     private val blockSettings = settingsRepository.blockSettings.flow
+
+    private val currentUid: Long?
+        get() = AccountUtil.getInstance().currentAccount.value?.uid
 
     /**
      * [Dislike] 缓存池
@@ -82,20 +84,19 @@ class ExploreRepository @Inject constructor(
             localDataSource.saveHotThread(tabCode, data)
         }
 
-        return data.mapUiModel(habit.showBothName)
+        return data.mapUiModel(habit.showBothName, blockRepo::isBlocked)
     }
 
     suspend fun loadPersonalized(page: Int, cached: Boolean): List<ThreadItem> {
         var data: PersonalizedResponseData? = null
         if (cached) {
             data = localDataSource.loadPersonalized(page)
-        } else if (page == 1) {
-            // on force-refresh first page, purge all cached pages
-            localDataSource.purgePersonalized()
         }
 
         if (data == null) { // no cache, fetch from network
             data = if (page == 1) {
+                // expired or force-refresh, purge all cached pages
+                localDataSource.purgePersonalized()
                 networkDataSource.refreshPersonalizedThread()
             } else {
                 networkDataSource.loadMorePersonalizedThread(page)
@@ -106,12 +107,13 @@ class ExploreRepository @Inject constructor(
         return data.mapUiModel(
             showBothName = habitSettings.first().showBothName,
             blockVideo = blockSettings.first().blockVideo,
+            isBlocked = blockRepo::isBlocked,
             dislikeProvider = this::getCachedDislike
         )
     }
 
     suspend fun refreshUserLike(lastRequestUnix: Long?, cached: Boolean): UserLikeThreads {
-        val uid = homeRepo.currentAccount.first()?.uid?.toLong() ?: throw TiebaNotLoggedInException()
+        val uid = currentUid ?: throw TiebaNotLoggedInException()
         var data: UserLikeResponseData? = null
         var lastRequestTime = lastRequestUnix ?: 0
 
@@ -122,12 +124,12 @@ class ExploreRepository @Inject constructor(
             if (cachedLastRequestTime > 0) lastRequestTime = cachedLastRequestTime
         }
 
-        if (data == null) { // no cache, fetch from network
+        if (data == null) { // on cache miss, fetch from network
             data = networkDataSource.refreshUserLikeThread(lastRequestTime)
             localDataSource.saveUserLikeFirstPage(uid, data)
         }
         val showBothName = habitSettings.first().showBothName
-        val threads = data.threadInfo.mapUiModel(showBothName)
+        val threads = data.threadInfo.mapUiModel(showBothName, blockRepo::isBlocked)
         return UserLikeThreads(data.requestUnix, data.pageTag, data.hasMore == 1, threads)
     }
 
@@ -139,7 +141,7 @@ class ExploreRepository @Inject constructor(
      * */
     suspend fun loadUserLike(pageTag: String, lastRequestUnix: Long): UserLikeThreads {
         val data = networkDataSource.loadMoreUserLikeThread(pageTag, lastRequestUnix)
-        val threads = data.threadInfo.mapUiModel(habitSettings.first().showBothName)
+        val threads = data.threadInfo.mapUiModel(habitSettings.first().showBothName, blockRepo::isBlocked)
         return UserLikeThreads(data.requestUnix, data.pageTag, data.hasMore == 1, threads)
     }
 
@@ -152,10 +154,7 @@ class ExploreRepository @Inject constructor(
     fun purgeCache(targetPage: ExplorePageItem) {
         AppBackgroundScope.launch {
             when (targetPage) {
-                ExplorePageItem.Concern -> {
-                    val uid = homeRepo.currentAccount.first()?.uid?.toLong() ?: throw TiebaNotLoggedInException()
-                    localDataSource.purgeUserLike(uid)
-                }
+                ExplorePageItem.Concern -> localDataSource.purgeUserLike(uid = currentUid ?: throw TiebaNotLoggedInException())
 
                 ExplorePageItem.Personalized -> localDataSource.purgePersonalized()
 
@@ -192,10 +191,17 @@ class ExploreRepository @Inject constructor(
             return withContext(Dispatchers.Default) { distinctBy { it.id } }
         }
 
-        @WorkerThread
-        fun ThreadInfo.mapUiModel(
+        /**
+         * Convert thread info to UI Model.
+         *
+         * @param showBothName show both username and nickname
+         * @param isBlocked check thread author, title or content is blocked
+         * @param threadDislikeMap associated dislike resource map, used in personalized page
+         * */
+        suspend fun ThreadInfo.mapUiModel(
             showBothName: Boolean,
-            threadDislikeMap: Map<Long, List<Dislike>>? // <ThreadId: ThreadPersonalized.dislikeResource>
+            isBlocked: suspend (uid: Long, content: Array<String>) -> Boolean,
+            threadDislikeMap: Map<Long, List<Dislike>>?
         ): ThreadItem {
             val author = with(this.author!!) {
                 val nameShow = StringUtil.getUserNameString(showBothName, name, nameShow)
@@ -208,7 +214,7 @@ class ExploreRepository @Inject constructor(
                     id = this.id,
                     firstPostId = this.firstPostId,
                     author = author,
-                    blocked = BlockManager.shouldBlock(authorId, title, abstractText),
+                    blocked = isBlocked(author.id, arrayOf(title, abstractText)),
                     content = buildThreadContent(title, abstractText, tabName, isGood = this.isGood == 1),
                     title = this.title,
                     lastTimeMill = DateTimeUtils.fixTimestamp(lastTimeInt.toLong()),
@@ -235,13 +241,16 @@ class ExploreRepository @Inject constructor(
             }
         }
 
-        private suspend fun HotThreadListResponseData.mapUiModel(showBothName: Boolean): HotTopicData {
+        private suspend fun HotThreadListResponseData.mapUiModel(
+            showBothName: Boolean,
+            isBlocked: suspend (uid: Long, content: Array<String>) -> Boolean,
+        ): HotTopicData {
             return withContext(Dispatchers.Default) {
                 HotTopicData(
                     topics = topicList.map { RecommendTopic(it.topicName, it.tag) },
                     tabs = hotThreadTabInfo.map { HotTab(name = it.tabName, tabCode = it.tabCode) },
                     threads = threadInfo.map {
-                        it.mapUiModel(showBothName, threadDislikeMap = null)
+                        it.mapUiModel(showBothName, isBlocked, threadDislikeMap = null)
                     }
                 )
             }
@@ -250,9 +259,10 @@ class ExploreRepository @Inject constructor(
         private suspend fun PersonalizedResponseData.mapUiModel(
             showBothName: Boolean,
             blockVideo: Boolean,
+            isBlocked: suspend (uid: Long, content: Array<String>) -> Boolean,
             dislikeProvider: (DislikeReason) -> Dislike
         ): List<ThreadItem> {
-            // Map<ThreadId: ThreadPersonalized.dislikeResource>
+            // associate dislikeResource by thread id
             val threadDislikeMap: Map<Long, List<Dislike>> = thread_personalized.associateBy(
                 keySelector = { it.tid },
                 // Map dislikeResource to List<Dislike> with cached object pool
@@ -261,15 +271,18 @@ class ExploreRepository @Inject constructor(
             return withContext(Dispatchers.Default) {
                 thread_list
                     .filter { !blockVideo || it.videoInfo == null }
-                    .map { it.mapUiModel(showBothName, threadDislikeMap) }
+                    .map { it.mapUiModel(showBothName, isBlocked, threadDislikeMap) }
             }
         }
 
-        private suspend fun List<ConcernData>.mapUiModel(showBothName: Boolean): List<ThreadItem> {
+        private suspend fun List<ConcernData>.mapUiModel(
+            showBothName: Boolean,
+            isBlocked: suspend (uid: Long, content: Array<String>) -> Boolean,
+        ): List<ThreadItem> {
             return withContext(Dispatchers.Default) {
                 mapNotNull {
                     if (it.recommendType == 1 && it.threadList != null) {
-                        it.threadList.mapUiModel(showBothName, threadDislikeMap = null)
+                        it.threadList.mapUiModel(showBothName, isBlocked, threadDislikeMap = null)
                     } else {
                         null // recommend users
                     }

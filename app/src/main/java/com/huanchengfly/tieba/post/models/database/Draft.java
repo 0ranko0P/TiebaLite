@@ -1,31 +1,28 @@
 package com.huanchengfly.tieba.post.models.database;
 
-import org.litepal.crud.LitePalSupport;
+import androidx.room.Entity;
 
-public class Draft extends LitePalSupport {
-    private String hash;
-    private String content;
+/**
+ * Represent a reply draft stored locally in the database.
+ */
+@Entity(
+        tableName = "draft",
+        primaryKeys = {"threadId", "postId", "subpostId"}
+)
+public final class Draft {
 
-    public Draft(String hash, String content) {
-        this.hash = hash;
+    public long threadId;
+
+    public long postId;
+
+    public long subpostId;
+
+    public String content;
+
+    public Draft(long threadId, long postId, long subpostId, String content) {
+        this.threadId = threadId;
+        this.postId = postId;
+        this.subpostId = subpostId;
         this.content = content;
-    }
-
-    public String getHash() {
-        return hash;
-    }
-
-    public Draft setHash(String hash) {
-        this.hash = hash;
-        return this;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public Draft setContent(String content) {
-        this.content = content;
-        return this;
     }
 }

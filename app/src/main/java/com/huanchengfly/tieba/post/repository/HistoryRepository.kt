@@ -1,78 +1,85 @@
 package com.huanchengfly.tieba.post.repository
 
-import androidx.annotation.IntDef
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.room.withTransaction
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
+import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
+import com.huanchengfly.tieba.post.models.database.dao.ForumHistoryDao
+import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
+import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.models.database.History
-import com.huanchengfly.tieba.post.repository.source.local.HistoryDao
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.channels.Channel
+import com.huanchengfly.tieba.post.models.database.ThreadHistory
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@IntDef(HistoryType.FORUM, HistoryType.THREAD)
-@Retention(AnnotationRetention.SOURCE)
-annotation class HistoryType {
-    companion object  {
-        const val FORUM = 1
-        const val THREAD = 2
-    }
-}
-
+/**
+ * Repository that manages history data.
+ * */
 @Singleton
-class HistoryRepository @Inject constructor(private val localDataSource: HistoryDao) {
+class HistoryRepository @Inject constructor(
+    private val dataBase: TbLiteDatabase
+) {
+    private val scope = AppBackgroundScope
 
-    companion object {
-        const val PAGE_SIZE = 100
+    private val threadHistoryDao: ThreadHistoryDao = dataBase.threadHistoryDao()
+
+    private val forumHistoryDao: ForumHistoryDao = dataBase.forumHistoryDao()
+
+    private val defaultConfig by unsafeLazy {
+        PagingConfig(pageSize = 20, prefetchDistance = 4, maxSize = 80)
     }
 
-    private val refresh by lazy { Channel<Unit>(capacity = Channel.CONFLATED) }
+    fun getForumHistoryTop10(): Flow<List<ForumHistory>> = forumHistoryDao.observeTop(limit = 10)
 
-    // TODO: Migrate to Room DataBase for native Flow support
-    fun getHistoryFlow(@HistoryType type: Int, page: Int = 0): Flow<List<History>> {
-        return flow {
-            val iterator = refresh.iterator()
-            do {
-                emit(localDataSource.get(type, page, limit = PAGE_SIZE))
-                yield()
-                if (iterator.hasNext()) iterator.next() else break
-            } while (true)
+    fun getForumHistory(config: PagingConfig = defaultConfig): Flow<PagingData<ForumHistory>> {
+        return Pager(
+            config = config,
+            pagingSourceFactory = { forumHistoryDao.pagingSource() }
+        ).flow
+    }
+
+    fun getThreadHistory(config: PagingConfig = defaultConfig): Flow<PagingData<ThreadHistory>> {
+        return Pager(
+            config = config,
+            pagingSourceFactory = { threadHistoryDao.pagingSourceSorted() }
+        ).flow
+    }
+
+    fun saveHistory(history: History) {
+        scope.launch {
+            when (history) {
+                is ThreadHistory -> threadHistoryDao.upsert(history)
+
+                is ForumHistory -> forumHistoryDao.upsert(history)
+
+                else -> throw RuntimeException()
+            }
         }
     }
 
-    suspend fun getHistory(@HistoryType type: Int, page: Int = 0): Result<List<History>> = runCatching {
-        localDataSource.get(type, page, limit = PAGE_SIZE)
-    }
+    fun deleteHistory(history: History) {
+        scope.launch {
+            when (history) {
+                is ThreadHistory -> threadHistoryDao.deleteById(threadId = history.id)
 
-    fun save(history: History): Deferred<Boolean> = AppBackgroundScope.async {
-        runCatching {
-            localDataSource.saveOrUpdateAsync(history).also { notifyDataChanged(it) }
+                is ForumHistory -> forumHistoryDao.deleteById(forumId = history.id)
+
+                else -> throw RuntimeException()
+            }
         }
-        .onFailure { it.printStackTrace() }
-        .getOrNull() == true
     }
 
-    suspend fun delete(history: History): Boolean {
-        return runCatching {
-            localDataSource.delete(history).also { notifyDataChanged(it) }
+    fun deleteAll() {
+        scope.launch {
+            dataBase.withTransaction {
+                threadHistoryDao.deleteAll()
+                forumHistoryDao.deleteAll()
+            }
         }
-        .onFailure { it.printStackTrace() }
-        .getOrNull() == true
-    }
-
-    suspend fun deleteAll(): Boolean {
-        return runCatching {
-            localDataSource.deleteAll().also { notifyDataChanged(it) }
-        }
-        .onFailure { it.printStackTrace() }
-        .getOrNull() == true
-    }
-
-    private fun notifyDataChanged(succeed: Boolean) {
-        if (succeed) refresh.trySend(Unit)
     }
 }

@@ -52,17 +52,18 @@ private data class ForumCache(
 @Singleton
 class ForumRepository @Inject constructor(
     @ApplicationContext context: Context,
-    private val settingsRepository: SettingsRepository,
-    private val homeRepository: HomeRepository
+    private val blockRepo: BlockRepository,
+    private val settingsRepo: SettingsRepository,
+    private val homeRepo: HomeRepository
 ) {
 
     private val networkDataSource = ForumNetworkDataSource
 
     private val blockedSettings: Flow<BlockSettings>
-        get() = settingsRepository.blockSettings.flow
+        get() = settingsRepo.blockSettings.flow
 
     private val habitSettings: Flow<HabitSettings>
-        get() = settingsRepository.habitSettings.flow
+        get() = settingsRepo.habitSettings.flow
 
     private val dataStore by lazy {
         PreferenceDataStoreFactory.create {
@@ -99,7 +100,7 @@ class ForumRepository @Inject constructor(
         var forumManagers: List<ForumManager>? = null
         val showBothName = habitSettings.first().showBothName
         val typedThreads = ThreadItemList(
-            threads = data.thread_list.mapUiModel(blockedSettings.first(), showBothName),
+            threads = data.thread_list.mapUiModel(blockedSettings.first(), showBothName, blockRepo::isBlocked),
             threadIds = data.thread_id_list,
             hasMore = data.page!!.has_more == 1
         )
@@ -120,22 +121,19 @@ class ForumRepository @Inject constructor(
     }
 
     suspend fun loadForumDetail(forumName: String): ForumDetail {
-        val sortType = getSortType(forumName).first()
-        // Note: 因为ForumDetailFlow 未登录时返回的数据不全/为空, 需额外提供 ForumData
-        val cachedData = frsPage(forumName, page = 1, loadType = 1, sortType, null, forceNew = false)
-        val forum = cachedData.first
-        val detail = networkDataSource.loadForumDetail(forum.id)
+        val (forumData, _, managers) = frsPage(forumName, page = 1, loadType = 1, sortType = -1, null)
+        val detail = networkDataSource.loadForumDetail(forumData.id)
 
         return ForumDetail(
-            avatar = forum.avatar,
-            name = forum.name,
-            id = forum.id,
+            avatar = forumData.avatar,
+            name = forumData.name,
+            id = forumData.id,
             intro = detail.content.plainText,
             slogan = detail.slogan,
             memberCount = detail.member_count,
-            threadCount = forum.threads,
-            postCount = forum.posts,
-            managers = cachedData.third
+            threadCount = forumData.threads,
+            postCount = forumData.posts,
+            managers = managers
         )
     }
 
@@ -179,7 +177,11 @@ class ForumRepository @Inject constructor(
         return networkDataSource
             .loadThread(forumId, forumName, page, sortType, threadIds)
             .thread_list
-            .mapUiModel(blockedSetting = blockedSettings.first(), showBothName = habitSettings.first().showBothName)
+            .mapUiModel(
+                showBothName = habitSettings.first().showBothName,
+                blockedSetting = blockedSettings.first(),
+                isBlocked = blockRepo::isBlocked,
+            )
     }
 
     suspend fun loadForumRule(forumId: Long): ForumRule {
@@ -192,7 +194,7 @@ class ForumRepository @Inject constructor(
                 publishTime = data.publish_time.takeUnless { time -> time.isEmpty() },
                 preface = data.preface,
                 data = data.rules.map {
-                    Rule(it.title, it.content.plainText.trim().takeUnless { c -> c.isEmpty() })
+                    Rule(it.title, it.content.plainText)
                 },
                 author = data.bazhu?.run {
                     ForumManager(
@@ -210,7 +212,7 @@ class ForumRepository @Inject constructor(
         val info = networkDataSource.like(forum.id, forum.name, forum.tbs!!)
 
         // Notify forum changes to home
-        homeRepository.onLikeForum()
+        homeRepo.onLikeForum()
         return forum.copy(
             liked = true,
             level = info.levelId.toInt(),
@@ -224,7 +226,7 @@ class ForumRepository @Inject constructor(
     suspend fun dislikeForum(forum: ForumData) {
         networkDataSource.dislike(forum.id, forum.name, forum.tbs!!)
         // Notify forum changes to home
-        homeRepository.onDislikeForum(forumId = forum.id)
+        homeRepo.onDislikeForum(forumId = forum.id)
     }
 
     suspend fun forumSignIn(forumId: Long, forumName: String, tbs: String): SignResultBean.UserInfo {
@@ -261,12 +263,13 @@ class ForumRepository @Inject constructor(
 private suspend fun List<ThreadInfo>.mapUiModel(
     blockedSetting: BlockSettings,
     showBothName: Boolean,
+    isBlocked: suspend (uid: Long, content: Array<String>) -> Boolean,
 ): List<ThreadItem> {
     return if (isNotEmpty()) {
         withContext(Dispatchers.Default) {
             mapNotNull {
                 val notBlocked = !blockedSetting.blockVideo || it.videoInfo == null
-                if (notBlocked) it.mapUiModel(showBothName, threadDislikeMap = null) else null
+                if (notBlocked) it.mapUiModel(showBothName, isBlocked, threadDislikeMap = null) else null
             }
             .distinctById()
         }

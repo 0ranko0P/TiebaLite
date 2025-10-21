@@ -178,7 +178,6 @@ private fun ReplyPageContent(
     replyUserName: String? = null,
     tbs: String? = null,
 ) {
-    viewModel.initialize(threadId, postId, subPostId)
     val pickMediasLauncher = rememberLauncherForActivityResult(PickMultipleVisualMedia(MAX_SELECTABLE_IMAGE)) { uris ->
         if (uris.isEmpty()) return@rememberLauncherForActivityResult
         viewModel.send(ReplyUiIntent.AddImage(uris.map { it.toString() }))

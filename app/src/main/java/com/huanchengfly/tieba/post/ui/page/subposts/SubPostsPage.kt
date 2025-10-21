@@ -127,7 +127,7 @@ internal fun SubPostsContent(
 ) {
     val navigator = LocalNavController.current
     val account = LocalAccount.current
-    val myUid = account?.uid?.toLongOrNull()
+    val myUid = account?.uid
     val context = LocalContext.current
     val direction = LocalLayoutDirection.current
 
@@ -383,7 +383,7 @@ private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: 
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Avatar(
-                data = StringUtil.getAvatarUrl(account.portrait),
+                data = remember { StringUtil.getAvatarUrl(account.portrait) },
                 size = Sizes.Tiny,
                 contentDescription = account.name,
             )

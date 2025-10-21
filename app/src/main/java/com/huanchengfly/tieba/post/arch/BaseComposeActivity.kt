@@ -4,7 +4,6 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,7 +11,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.huanchengfly.tieba.post.activities.BaseActivity
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
-import com.huanchengfly.tieba.post.utils.LocalAccountProvider
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 
 abstract class BaseComposeActivity : BaseActivity() {
@@ -27,10 +25,6 @@ abstract class BaseComposeActivity : BaseActivity() {
         ThemeUtil.onUpdateSystemUiMode(this)
 
         setContent {
-            LocalAccountProvider {
-                Content()
-            }
-
             StrongBox {
                 val colorState by ThemeUtil.colorState
                 val colorScheme = colorState.colorScheme
@@ -39,6 +33,8 @@ abstract class BaseComposeActivity : BaseActivity() {
                     windowInsetsController.isAppearanceLightStatusBars = ThemeUtil.isStatusBarFontDark(colorScheme)
                     windowInsetsController.isAppearanceLightNavigationBars = ThemeUtil.isNavigationBarFontDark(colorScheme)
                 }
+
+                Content()
             }
         }
     }

@@ -257,10 +257,10 @@ fun ForumSearchPostPage(
                     .padding(contentPadding)
                     .verticalScroll(rememberScrollState())
             ) {
-                val searchHistories by viewModel.searchHistories.collectAsStateWithLifecycle()
+                val history by viewModel.searchHistories.collectAsStateWithLifecycle()
                 SearchHistoryList(
-                    searchHistories = searchHistories,
-                    onSearchHistoryClick = onKeywordSubmit,
+                    history = history,
+                    onHistoryClick = onKeywordSubmit,
                     expanded = { isSearchHistoryExpanded },
                     onToggleExpand = { isSearchHistoryExpanded = !isSearchHistoryExpanded },
                     onDelete = viewModel::onDeleteHistory,

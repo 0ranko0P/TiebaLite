@@ -2,11 +2,14 @@ package com.huanchengfly.tieba.post.ui.page.settings.blocklist
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -16,83 +19,167 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.models.database.Block
+import com.huanchengfly.tieba.post.models.database.BlockUser
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.BlockManager
 import kotlinx.coroutines.launch
 
-// Type: Category(enum), Title(resId), TabTitle(resId)
-private typealias BlockPage = Triple<Int, Int, Int>
+private sealed class BlockType(val title: Int, val contentDescription: Int) {
+    object Blacklist: BlockType(R.string.title_black_list, R.string.title_add_black)
+
+    object Whitelist: BlockType(R.string.title_white_list, R.string.title_add_white)
+}
+
+@Composable
+fun UserBlockListPage(
+    onBack: () -> Unit,
+    viewModel: BlockListViewModel = hiltViewModel(),
+) {
+    val blackList by viewModel.userBlacklist.collectAsStateWithLifecycle()
+    val whitelist by viewModel.userWhitelist.collectAsStateWithLifecycle()
+
+    BlockListScaffold(
+        title = R.string.settings_block_user,
+        blackList = { blackList },
+        whitelist = { whitelist },
+        onBack = onBack,
+        itemKeyProvider = { it.uid },
+    ) { user ->
+        LongClickMenu(
+            menuContent = {
+                TextMenuItem(text = R.string.title_delete, onClick = { viewModel.onDelete(user) })
+            }
+        ) {
+            UserItem(user = user)
+        }
+    }
+}
+
+@Composable
+fun KeywordBlockListPage(
+    onBack: () -> Unit,
+    viewModel: BlockListViewModel = hiltViewModel(),
+) {
+    var addKeywordType: BlockType? by remember { mutableStateOf(null) }
+    val dialogState = rememberDialogState()
+
+    PromptDialog(
+        onConfirm = { keyword ->
+            viewModel.addKeyword(keyword, whitelisted = addKeywordType == BlockType.Whitelist)
+        },
+        dialogState = dialogState,
+        isError = viewModel::hasKeyword,
+        title = {
+            addKeywordType?.title?.let {
+                Text(text = stringResource(id = it))
+            }
+        }
+    ) {
+        Text(text = stringResource(id = R.string.tip_add_block))
+    }
+
+    val blackList by viewModel.getBlacklist().collectAsStateWithLifecycle()
+    val whitelist by viewModel.getWhitelist().collectAsStateWithLifecycle()
+
+    BlockListScaffold(
+        blackList = { blackList },
+        whitelist = { whitelist },
+        onAddClicked = {
+            addKeywordType = it
+            dialogState.show()
+        },
+        onBack = onBack,
+        itemKeyProvider = { it },
+    ) { keyword ->
+        LongClickMenu(
+            menuContent = {
+                TextMenuItem(text = R.string.title_delete, onClick = { viewModel.onDelete(keyword) })
+            }
+        ) {
+            KeywordItem(keyword = keyword)
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BlockListPage(
-    viewModel: BlockListViewModel = viewModel(),
-    onBack: () -> Unit,
+private fun <T> BlockListScaffold(
+    title: Int = R.string.settings_block_keyword,
+    blackList: () -> List<T>?,
+    whitelist: () -> List<T>?,
+    onAddClicked: ((type: BlockType) -> Unit)? = null,
+    onBack: () -> Unit = {},
+    itemKeyProvider: (item: T) -> Any = { it.toString() },
+    itemContent: @Composable LazyItemScope.(item: T) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    val pages = remember {
-        listOf(
-            BlockPage(Block.CATEGORY_BLACK_LIST, R.string.title_add_black, R.string.title_black_list),
-            BlockPage(Block.CATEGORY_WHITE_LIST, R.string.title_add_white, R.string.title_white_list)
-        )
-    }
+    val pages = remember { listOf(BlockType.Blacklist, BlockType.Whitelist) }
     val pagerState = rememberPagerState { pages.size }
-
-    val dialogState = rememberDialogState()
-    PromptDialog(
-        onConfirm = {
-            val currentPage = pages[pagerState.currentPage]
-            viewModel.addKeyword(category = currentPage.first, keyword = it)
-        },
-        dialogState = dialogState,
-        isError = BlockManager::hasKeyword,
-        title = { Text(text = stringResource(id = pages[pagerState.currentPage].second)) }
-    ) {
-        Text(text = stringResource(id = R.string.tip_add_block))
+    val pagerMovableContent = remember {
+        pages.map { page ->
+            movableContentOf<PaddingValues> { contentPadding ->
+                val items = if (page == BlockType.Blacklist) blackList() else whitelist()
+                StateScreen(
+                    isEmpty = items.isNullOrEmpty(),
+                    isError = false,
+                    isLoading = items == null,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = contentPadding
+                    ) {
+                        items(items ?: emptyList(), key = itemKeyProvider, itemContent = itemContent)
+                    }
+                }
+            }
+        }
     }
 
     MyScaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                titleRes = R.string.title_block_list,
+                titleRes = title,
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = onBack)
                 },
+                scrollBehavior = scrollBehavior
             ) {
                 PrimaryTabRow(
                     selectedTabIndex = pagerState.currentPage,
@@ -102,13 +189,13 @@ fun BlockListPage(
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.primary,
                 ) {
-                    pages.fastForEachIndexed { i, (_, _, tabTitle) ->
+                    pages.fastForEachIndexed { i, page ->
                         Tab(
                             selected = pagerState.currentPage == i,
                             onClick = {
                                 coroutineScope.launch { pagerState.animateScrollToPage(i) }
                             },
-                            text = { Text(text = stringResource(id = tabTitle)) },
+                            text = { Text(text = stringResource(id = page.title)) },
                             unselectedContentColor = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -116,84 +203,40 @@ fun BlockListPage(
             }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = dialogState::show) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = stringResource(id = pages[pagerState.currentPage].second)
-                )
+            if (onAddClicked == null) return@MyScaffold
+
+            FloatingActionButton(
+                onClick = { onAddClicked(pages[pagerState.currentPage]) }
+            ) {
+                val description = stringResource(pages[pagerState.currentPage].contentDescription)
+                Icon(imageVector = Icons.Filled.Add, contentDescription = description)
             }
         },
         floatingActionButtonPosition = FabPosition.Center
-    ) { paddingValues ->
-
+    ) { contentPadding ->
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             key = { it },
-            contentPadding = paddingValues,
             verticalAlignment = Alignment.Top
-        ) { position ->
-            val items by when(pages[position].first) {
-                Block.CATEGORY_BLACK_LIST -> viewModel.blackList.collectAsStateWithLifecycle()
-                Block.CATEGORY_WHITE_LIST -> viewModel.whiteList.collectAsStateWithLifecycle()
-                else -> throw RuntimeException()
-            }
-
-            val isEmpty by remember {
-                derivedStateOf { items.isNullOrEmpty() }
-            }
-
-            val isLoading by remember {
-                derivedStateOf { items == null }
-            }
-
-            StateScreen(
-                isEmpty = isEmpty,
-                isError = false,
-                isLoading = isLoading,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                ProvideTextStyle(MaterialTheme.typography.titleMedium) {
-                    MyLazyColumn(Modifier.fillMaxSize()) {
-                        items(items!!, key = { it.id }) {
-                            LongClickMenu(
-                                menuContent = {
-                                    TextMenuItem(
-                                        text = R.string.title_delete,
-                                        onClick = { viewModel.remove(it) }
-                                    )
-                                }
-                            ) {
-                                BlockItem(item = it)
-                            }
-                        }
-                    }
-                }
-            }
+        ) { index ->
+            pagerMovableContent[index](contentPadding)
         }
     }
 }
 
 @Composable
-private fun BlockItem(
-    item: Block,
-) {
+private fun UserItem(modifier: Modifier = Modifier, user: BlockUser) {
+    val uidText = remember { "UID: " + user.uid.toString() }
     Row(
-        modifier = Modifier.padding(16.dp),
+        modifier = modifier
+            .padding(16.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = user.name ?: uidText
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = if (item.type == Block.TYPE_USER) {
-                Icons.Outlined.AccountCircle
-            } else {
-                ImageVector.vectorResource(id = R.drawable.ic_comment_new)
-            },
-            contentDescription = if (item.type == Block.TYPE_USER) {
-                stringResource(id = R.string.block_type_user)
-            } else {
-                stringResource(id = R.string.block_type_keywords)
-            }
-        )
+        Icon(imageVector = Icons.Outlined.AccountCircle, contentDescription = null)
 
         Spacer(modifier = Modifier.width(16.dp))
 
@@ -201,31 +244,56 @@ private fun BlockItem(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            if (item.type == Block.TYPE_USER) {
-                Text(text = item.username.orEmpty())
-                Text(
-                    text = "UID: ${item.uid}",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            } else {
-                Text(text = item.keyword!!)
+            if (!user.name.isNullOrEmpty()) {
+                Text(text = user.name, style = MaterialTheme.typography.titleMedium)
             }
+
+            Text(text = uidText, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
 
-@Preview("BlockItem")
 @Composable
-private fun BlockItemPreview() = TiebaLiteTheme {
-    ProvideTextStyle(MaterialTheme.typography.titleMedium) {
-        Column {
-            BlockItem(Block(type = Block.TYPE_USER, username = "Test", uid = Long.MAX_VALUE))
-            BlockItem(Block(type = Block.TYPE_USER, username = "Test User", uid = 0))
+private fun KeywordItem(modifier: Modifier = Modifier, keyword: String) {
+    Row(
+        modifier = modifier
+            .padding(16.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = keyword
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(ImageVector.vectorResource(id = R.drawable.ic_comment_new), contentDescription = null)
 
-            HorizontalDivider()
+        Spacer(modifier = Modifier.width(16.dp))
 
-            BlockItem(Block(type = Block.TYPE_KEYWORD, keyword = "keyword"))
-            BlockItem(Block(type = Block.TYPE_KEYWORD, keyword = "null"))
-        }
+        Text(
+            text = keyword,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleMedium
+        )
     }
+}
+
+@Preview("BlockListScaffold Keyword")
+@Composable
+private fun BlockListScaffoldKeywordPreview() = TiebaLiteTheme {
+    val blackList = (0..10).map { "Test keyword: $it" }
+    BlockListScaffold(
+        blackList = { blackList },
+        whitelist = { emptyList() },
+        onAddClicked = {},
+        itemContent = { KeywordItem(keyword = it) }
+    )
+}
+@Preview("BlockListScaffold User")
+@Composable
+private fun BlockListScaffoldUserPreview() = TiebaLiteTheme {
+    val blackList = (0..10L).map { BlockUser(uid = it, name = "User: $it", whitelisted = false) }
+    BlockListScaffold(
+        blackList = { blackList },
+        whitelist = { emptyList() },
+        itemKeyProvider = { it.uid },
+        itemContent = { UserItem(user = it) }
+    )
 }

@@ -10,7 +10,7 @@ class ForumDetail(
     val avatar: String,
     val name: String,
     val id: Long,
-    val intro: String = "",
+    val intro: String? = null,
     val slogan: String = "",
     val memberCount: Int = 0,
     val threadCount: Int = 0,

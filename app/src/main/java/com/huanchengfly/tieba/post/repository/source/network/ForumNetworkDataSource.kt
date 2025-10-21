@@ -21,9 +21,6 @@ import kotlinx.coroutines.withContext
 
 object ForumNetworkDataSource {
 
-    /**
-     * Note: ForumDetailFlow 未登录时返回的数据不全/为空, 需额外提供 ForumData
-     * */
     @Throws(NoConnectivityException::class, TiebaException::class)
     suspend fun loadForumDetail(forumId: Long): RecommendForumInfo {
         return TiebaApi.getInstance()

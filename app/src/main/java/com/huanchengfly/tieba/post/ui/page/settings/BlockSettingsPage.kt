@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.settings
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.HideSource
+import androidx.compose.material.icons.outlined.NoAccounts
 import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -32,10 +33,19 @@ fun BlockSettingsPage(navigator: NavController) {
         ) {
             prefsItem {
                 TextPref(
-                    title = stringResource(id = R.string.title_block_list),
+                    title = stringResource(id = R.string.settings_block_user),
+                    leadingIcon = Icons.Outlined.NoAccounts,
+                    onClick = {
+                        navigator.navigate(route = BlockList(isUser = true))
+                    }
+                )
+            }
+            prefsItem {
+                TextPref(
+                    title = stringResource(id = R.string.settings_block_keyword),
                     leadingIcon = Icons.Outlined.Block,
                     onClick = {
-                        navigator.navigate(BlockList)
+                        navigator.navigate(route = BlockList(isUser = false))
                     }
                 )
             }

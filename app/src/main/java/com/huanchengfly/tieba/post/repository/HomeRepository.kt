@@ -1,141 +1,152 @@
 package com.huanchengfly.tieba.post.repository
 
+import android.util.Log
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
+import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.models.database.Account
-import com.huanchengfly.tieba.post.repository.source.local.HomeLocalDataSource
-import com.huanchengfly.tieba.post.repository.source.local.TopForumDao
+import com.huanchengfly.tieba.post.models.database.LocalLikedForum
+import com.huanchengfly.tieba.post.models.database.Timestamp
+import com.huanchengfly.tieba.post.models.database.dao.LikedForumDao
+import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.repository.source.network.ForumNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.LikedForum
 import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Home Repository that manages LikedForum data.
+ *
+ * This repository uses the database as the source of truth, observe the database to get
+ * consistent and up-to-date forums.
  * */
 @Singleton
 class HomeRepository @Inject constructor(
     private val networkDataSource: HomeNetworkDataSource,
-    private val localDataSource: HomeLocalDataSource
+    private val localDataSource: LikedForumDao,
+    private val timestampDao: TimestampDao,
+    private val settingsRepo: SettingsRepository
 ) {
 
     private val forumNetworkDataSource = ForumNetworkDataSource
 
-    private val localTopForumDataSource = TopForumDao
-
-    val currentAccount: Flow<Account?> = AccountUtil.getInstance().currentAccount
-
-    private val refresh by lazy { Channel<Unit>(capacity = Channel.CONFLATED) }
+    private val currentAccount: Account?
+        get() = AccountUtil.getInstance().currentAccount.value
 
     /**
-     * In-Memory cache of [HomeNetworkDataSource.getLikedForums].
-     *
-     * Updated by multiple ViewModels.
-     *
-     * @see dislikeForum
-     * @see onLikeForum
-     * @see refreshForumList
+     * Observe the current user's liked forums, ``null`` if no user logged-in
      * */
-    private val _likedForums: MutableStateFlow<List<LikedForum>?> = MutableStateFlow(null)
-    val likedForums: StateFlow<List<LikedForum>?> = _likedForums.asStateFlow()
-
-    suspend fun refreshForumList(cached: Boolean = true) {
-        // Retrieve cached forums
-        val uid = currentAccount.firstOrNull()?.uid?.toLong() ?: throw TiebaNotLoggedInException()
-        if (cached) {
-            val cachedForumList = localDataSource.get(uid)?.mapUiModel()
-            if (cachedForumList != null) {
-                _likedForums.value = cachedForumList
-                return
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getLikedForums(): Flow<List<LikedForum>?> {
+        return settingsRepo.accountUid.flow
+            .flatMapLatest { uid ->
+                if (uid != -1L) localDataSource.observeAllSorted(uid) else throw TiebaNotLoggedInException()
             }
-            // else: cache expired or not exists
-        }
-
-        val forums = networkDataSource.getLikedForums()
-        // Write to cache, even it's empty
-        localDataSource.saveOrUpdate(uid, forums)
-        val likedForumList: List<LikedForum> = forums.mapUiModel()
-        _likedForums.update { likedForumList }
+            .map { forums -> // Map to UI Model if not empty
+                if (forums.isNotEmpty()) forums.mapUiModel() else emptyList()
+            }
     }
 
-    suspend fun dislikeForum(forum: LikedForum) {
-        val account = currentAccount.firstOrNull() ?: throw TiebaNotLoggedInException()
-        forumNetworkDataSource.dislike(forum.id, forum.name, account.tbs)
+    /**
+     * Refresh the current user's liked forums
+     * */
+    suspend fun refresh(cached: Boolean) {
+        val uid = currentAccount?.uid ?: throw TiebaNotLoggedInException()
+        val start = System.currentTimeMillis()
+
+        // force refresh or cache is expired
+        if (!cached || isCacheExpired(uid)) {
+            val forums = networkDataSource.getLikedForums().mapEntity(uid)
+            localDataSource.upsertAll(forums)
+            // save last update timestamp
+            timestampDao.upsert(Timestamp(uid, TIMESTAMP_TYPE))
+            if (BuildConfig.DEBUG) {
+                val cost = System.currentTimeMillis() - start
+                Log.i(TAG, "onRefresh: user: $uid, forums: ${forums.size}, cost: ${cost}ms.")
+            }
+        }
+    }
+
+    suspend fun onDislikeForum(forum: LikedForum) {
+        val tbs = currentAccount?.tbs ?: throw TiebaNotLoggedInException()
+        forumNetworkDataSource.dislike(forumId = forum.id, forumName = forum.name, tbs)
         onDislikeForum(forumId = forum.id)
     }
 
     fun onDislikeForum(forumId: Long) {
         AppBackgroundScope.launch(Dispatchers.Main) {
-            // Update in-memory cache now
-            var cache = _likedForums.firstOrNull()
-            if (cache != null) {
-                cache = withContext(Dispatchers.Default) { cache.filter { it.id != forumId } }
-                _likedForums.update { cache }
-                val uid = currentAccount.firstOrNull()?.uid ?: throw TiebaNotLoggedInException()
-                localDataSource.delete(uid.toLong())
-            }
-            // Remove TopForum
-            // localTopForumDataSource.delete(TopForum(forum.id))
+            val uid = currentAccount?.uid ?: throw TiebaNotLoggedInException()
+            localDataSource.deleteById(uid, forumId)
         }
     }
 
     fun onLikeForum() {
-        AppBackgroundScope.launch(Dispatchers.Main) { refreshForumList(cached = false) }
+        AppBackgroundScope.launch { refresh(cached = false) }
     }
 
-    // TODO: Migrate to Room DataBase for native Flow support
-    fun getTopForumIds(): Flow<Set<Long>> = flow {
-        val iterator = refresh.iterator()
-        do {
-            val topForums = localTopForumDataSource.getTopForums()
-            val forumIds = if (topForums.isNotEmpty()) {
-                withContext(Dispatchers.Default) { topForums.mapTo(HashSet()) { it.forumId } }
-            } else {
-                emptySet()
+    fun getPinnedForumIds(): Flow<List<Long>> = localDataSource.observePinnedForums()
+
+    suspend fun addTopForum(forum: LikedForum) {
+        localDataSource.pinForum(forumId = forum.id)
+    }
+
+    suspend fun removeTopForum(forum: LikedForum) {
+        localDataSource.unpinForum(forumId = forum.id)
+    }
+
+    private suspend fun isCacheExpired(uid: Long, duration: Long = TimeUnit.DAYS.toMillis(7)): Boolean {
+        val lastUpdate = timestampDao.get(uid, TIMESTAMP_TYPE) ?: return true
+        return lastUpdate + duration < System.currentTimeMillis()
+    }
+
+    companion object {
+        private const val TAG = "HomeRepository"
+
+        /**
+         * Type key used to retrieve the last forum update time
+         * */
+        private const val TIMESTAMP_TYPE = -2
+
+        // Map network model to entity
+        private suspend fun List<LikeForum>.mapEntity(uid: Long) = withContext(Dispatchers.Default) {
+            val now = System.currentTimeMillis()
+            map {
+                LocalLikedForum(
+                    id = it.forum_id,
+                    uid = uid,
+                    avatar = it.avatar,
+                    name = it.forum_name,
+                    level = it.level_id,
+                    signInTimestamp = if (it.is_sign == 1) now else -1, // set timestamp to now if signed
+                )
             }
-            emit(forumIds)
-        } while (iterator.hasNext().apply { iterator.next() })
-    }
+        }
 
-    suspend fun addTopForum(forum: LikedForum): Boolean {
-        return localTopForumDataSource
-                .add(forum.id)
-                .also { succeed -> notifyDataChanged(succeed) }
-    }
-
-    suspend fun removeTopForum(forum: LikedForum): Boolean {
-        return localTopForumDataSource
-            .delete(forum.id)
-            .also { notifyDataChanged(succeed = it) }
-    }
-
-    private fun notifyDataChanged(succeed: Boolean) {
-        if (succeed) refresh.trySend(Unit)
-    }
-
-    private suspend fun List<LikeForum>.mapUiModel() = withContext(Dispatchers.Default) {
-        map {
-            LikedForum(
-                avatar = it.avatar,
-                id = it.forum_id,
-                name = it.forum_name,
-                isSign = it.is_sign == 1,
-                level = "Lv.${it.level_id}"
-            )
+        // Map entity to ui model
+        private suspend fun List<LocalLikedForum>.mapUiModel() = withContext(Dispatchers.Default) {
+            val today = DateTimeUtils.todayTimeMill()
+            map {
+                LikedForum(
+                    avatar = it.avatar,
+                    id = it.id,
+                    name = it.name,
+                    signed = it.signInTimestamp >= today,
+                    level = "Lv.${it.level}"
+                )
+            }
         }
     }
 }

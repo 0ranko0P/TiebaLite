@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
@@ -108,6 +109,8 @@ fun PersonalizedPage(
                 is PersonalizedUiEvent.DislikeFailed -> {
                     context.toastShort(R.string.toast_exception, it.e.getErrorMessage())
                 }
+
+                is CommonUiEvent.Toast -> context.toastShort(it.message.toString())
 
                 else -> {}
             }

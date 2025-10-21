@@ -42,7 +42,6 @@ import androidx.navigation.NavHostController
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePage
@@ -110,9 +109,9 @@ fun isBottomNavigation(): Boolean {
 
 @Composable
 fun rememberNavigationItems(
-    account: Account?,
+    loggedIn: Boolean,
     messageCount: () -> Int
-): List<NavigationItem> = remember(account) {
+): List<NavigationItem> = remember(loggedIn) {
     listOfNotNull(
         NavigationItem(
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_inventory_2) },
@@ -122,17 +121,22 @@ fun rememberNavigationItems(
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_toy_fans) },
             title = R.string.title_explore,
         ),
-        NavigationItem(
-            icon = {
-                AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)
-            },
-            title = R.string.title_notifications,
-            badgeText = { messageCount().takeIf { it > 0 }?.toString() },
-        ).takeIf { account != null },
+        if (loggedIn) { // hide notifications when not logged-in
+            NavigationItem(
+                icon = {
+                    AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)
+                },
+                title = R.string.title_notifications,
+                badgeText = { messageCount().takeIf { it > 0 }?.toString() },
+            )
+        } else {
+            null
+        },
         NavigationItem(
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_person) },
             title = R.string.title_user,
-        ))
+        )
+    )
 }
 
 @OptIn(ExperimentalAnimationGraphicsApi::class)
@@ -141,7 +145,7 @@ fun MainPage(
     navHostController: NavHostController,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val account = LocalAccount.current
+    val loggedIn = LocalAccount.current != null
 
     var messageCount by rememberSaveable { mutableIntStateOf(0) }
 
@@ -150,7 +154,7 @@ fun MainPage(
         notificationCountFlow.collect { messageCount = it }
     }
 
-    val navigationItems = rememberNavigationItems(account, messageCount = { messageCount })
+    val navigationItems = rememberNavigationItems(loggedIn, messageCount = { messageCount })
     val pagerState = rememberPagerState { navigationItems.size }
 
     val onItemClicked: (position: Int) -> Unit = remember { {

@@ -1156,7 +1156,7 @@ object MixedTiebaApiImpl : ITiebaApi {
                             is_pictxt = "0",
                             is_show_bless = 0,
                             is_twzhibo_thread = "0",
-                            name_show = nameShow ?: AccountUtil.getAccountInfo { this.nameShow }
+                            name_show = nameShow ?: AccountUtil.getAccountInfo { this.nickname }
                                 .orEmpty(),
                             new_vcode = "1",
                             post_from = if (postId.isNullOrEmpty() && subPostId.isNullOrEmpty()) "13" else if (subPostId.isNullOrEmpty()) "0" else null,

@@ -79,7 +79,6 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.goToActivity
-import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
@@ -206,7 +205,7 @@ fun UserProfilePage(
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val userProfile = uiState.profile?: return@StateScreen
         val account = LocalAccount.current
-        val isSelf = remember(account?.uid) { account?.uid == uid.toString() }
+        val isSelf = account?.uid == uid
 
         val tabs: List<TabWithTitle> = remember {
             Tab.entries.mapNotNull {
@@ -272,6 +271,7 @@ fun UserProfilePage(
 
         MyScaffold(
             topBar = {
+                val blockState by viewModel.blockState.collectAsStateWithLifecycle()
                 UserProfileToolbar(
                     title = userProfileDetail.takeUnless { contentRowLayout },
                     collapsedTitle = {
@@ -294,9 +294,9 @@ fun UserProfilePage(
                             else -> viewModel.onFollowClicked()
                         }
                     }.takeUnless { uiState.isRequestingFollow || account == null },
-                    block = uiState.block,
-                    onBlackListClicked = viewModel::onBlackListClicked,
-                    onWhiteListClicked = viewModel::onWhiteListClicked,
+                    block = blockState,
+                    onBlackListClicked = viewModel::onUserBlacklisted,
+                    onWhiteListClicked = viewModel::onUserWhitelisted,
                     onBack = navigator::navigateUp,
                     scrollBehavior = scrollBehavior
                 ) {
@@ -345,7 +345,7 @@ private fun UserProfileToolbar(
     modifier: Modifier = Modifier,
     title: (@Composable () -> Unit)?,
     collapsedTitle: @Composable () -> Unit,
-    block: Block? = null,
+    block: UserBlockState,
     isSelf: Boolean = false,
     isFollowing: Boolean = false,
     onActionClicked: (() -> Unit)? = null,
@@ -369,8 +369,8 @@ private fun UserProfileToolbar(
         }
 
         if (!isSelf) {
-            val isInBlackList = block != null && block.category == Block.CATEGORY_BLACK_LIST
-            val isInWhiteList = block != null && block.category == Block.CATEGORY_WHITE_LIST
+            val isInBlackList = block == UserBlockState.Blacklisted
+            val isInWhiteList = block == UserBlockState.Whitelisted
 
             ClickMenu(
                 menuContent = {

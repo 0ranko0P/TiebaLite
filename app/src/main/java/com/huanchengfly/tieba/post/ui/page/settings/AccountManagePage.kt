@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
@@ -34,7 +35,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_LITTLE_TAIL
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import com.huanchengfly.tieba.post.utils.LocalAllAccounts
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.launchUrl
 import kotlinx.collections.immutable.toImmutableMap
@@ -49,16 +49,15 @@ fun AccountManagePage(navigator: NavController) {
             )
         },
     ) { paddingValues ->
-        val account = LocalAccount.current
         val context = LocalContext.current
         val accountUtil = remember { AccountUtil.getInstance() }
+        val account = LocalAccount.current
+        val accounts by accountUtil.allAccounts.collectAsStateWithLifecycle(emptyList())
 
         PrefsScreen(contentPadding = paddingValues) {
             prefsItem {
-                val accounts = LocalAllAccounts.current
                 val accountsMap = remember(accounts) {
-                    accounts.associate { it.id to (it.nameShow ?: it.name) }
-                        .toImmutableMap()
+                    accounts.associate { it.uid to (it.nickname ?: it.name) }.toImmutableMap()
                 }
                 if (account != null) {
                     DropDownPref(
@@ -66,11 +65,11 @@ fun AccountManagePage(navigator: NavController) {
                         title = stringResource(id = R.string.title_switch_account),
                         summary = stringResource(
                             id = R.string.summary_now_account,
-                            account.nameShow ?: account.name
+                            account.nickname ?: account.name
                         ),
                         leadingIcon =  Icons.Outlined.AccountCircle,
                         onValueChange = accountUtil::switchAccount,
-                        defaultValue = account.id,
+                        defaultValue = account.uid,
                         options = accountsMap
                     )
                 } else {
@@ -104,18 +103,22 @@ fun AccountManagePage(navigator: NavController) {
                     Text(text = tip, fontSize = 12.sp)
                 }
             }
-            prefsItem {
-                TextPref(
-                    title = stringResource(id = R.string.title_exit_account),
-                    onClick = {
-                        if (accountUtil.allAccounts.size <= 1) {
-                            navigator.navigateUp()
-                        }
-                        accountUtil.exit(context)
-                    },
-                    leadingIcon = Icons.AutoMirrored.Outlined.Logout
-                )
+
+            if (account != null) {
+                prefsItem {
+                    TextPref(
+                        title = stringResource(id = R.string.title_exit_account),
+                        onClick = {
+                            if (accounts.size == 1) {
+                                navigator.navigateUp()
+                            }
+                            accountUtil.exit(context.applicationContext, account)
+                        },
+                        leadingIcon = Icons.AutoMirrored.Outlined.Logout
+                    )
+                }
             }
+
             prefsItem {
                 TextPref(
                     title = stringResource(id = R.string.title_modify_username),

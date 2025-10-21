@@ -22,13 +22,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListViewModel.Companion.NotificationsListVmFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
@@ -45,9 +46,10 @@ import kotlinx.collections.immutable.persistentListOf
 fun NotificationsListPage(
     type: NotificationsType,
     contentPadding: PaddingValues = PaddingNone,
-    viewModel: NotificationsListViewModel = when (type) {
-        NotificationsType.ReplyMe -> pageViewModel<NotificationsListUiIntent, ReplyMeListViewModel>()
-        NotificationsType.AtMe -> pageViewModel<NotificationsListUiIntent, AtMeListViewModel>()
+    viewModel: NotificationsListViewModel = hiltViewModel<NotificationsListViewModel, NotificationsListVmFactory>(
+        key = type.name
+    ) {
+        it.create(type)
     }
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -81,6 +83,7 @@ fun NotificationsListPage(
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = { viewModel.send(NotificationsListUiIntent.Refresh) },
+        modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding,
     ) {
         val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()

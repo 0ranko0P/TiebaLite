@@ -3,9 +3,8 @@ package com.huanchengfly.tieba.post.repository
 import android.content.Context
 import com.huanchengfly.tieba.post.api.models.FollowBean
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
+import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
-import com.huanchengfly.tieba.post.api.models.protos.profile.ProfileResponseData
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.repository.source.local.UserProfileLocalDataSource
@@ -19,6 +18,7 @@ import com.huanchengfly.tieba.post.ui.models.user.PostContent
 import com.huanchengfly.tieba.post.ui.models.user.PostListItem
 import com.huanchengfly.tieba.post.ui.models.user.UserProfile
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildThreadContent
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
@@ -26,7 +26,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,12 +33,14 @@ import javax.inject.Singleton
 @Singleton
 class UserProfileRepository @Inject constructor(
     @ApplicationContext val context: Context,
-    private val homeRepository: HomeRepository,
     private val threadRepo: PbPageRepository,
     private val localDataSource: UserProfileLocalDataSource
 ){
 
     private val networkDataSource = UserProfileNetworkDataSource
+
+    private val tbs: String?
+        get() = AccountUtil.getInstance().currentAccount.value?.tbs
 
     /**
      * Load user threads or posts.
@@ -55,11 +56,12 @@ class UserProfileRepository @Inject constructor(
         var data: List<PostInfoList>? = null
         if (cached) {
             data = localDataSource.loadUserThreadPost(uid, page, isThread)
-        } else if (page == 1) {
-            localDataSource.purgeUserThreadPost(uid, isThread)
         }
 
         if (data == null) {
+            if (page == 1) { // expired or force-refresh, purge all cached threads
+                localDataSource.purgeUserThreadPost(uid, isThread)
+            }
             data = networkDataSource.loadUserThreadPost(uid, page, isThread)
             localDataSource.saveUserThreadPost(uid, page, data, isThread)
         }
@@ -76,7 +78,7 @@ class UserProfileRepository @Inject constructor(
     }
 
     suspend fun loadUserProfile(uid: Long, cached: Boolean): UserProfile {
-        var data: ProfileResponseData? = null
+        var data: User? = null
         if (cached) {
             data = localDataSource.loadUserProfile(uid)
         }
@@ -87,19 +89,23 @@ class UserProfileRepository @Inject constructor(
             localDataSource.saveUserProfile(uid, data)
         }
         currentCoroutineContext().ensureActive()
-        return data.mapUiModel()
+        return mapToUser(data)
     }
 
     suspend fun requestFollowUser(profile: UserProfile): FollowBean.Info {
-        val tbs = homeRepository.currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
-        val result = networkDataSource.requestFollowUser(profile.portrait, tbs)
+        val result = networkDataSource.requestFollowUser(
+            portrait = profile.portrait,
+            tbs = tbs ?: throw TiebaNotLoggedInException()
+        )
         localDataSource.deleteUserProfile(profile.uid)
         return result
     }
 
     suspend fun requestUnfollowUser(profile: UserProfile) {
-        val tbs = homeRepository.currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
-        networkDataSource.requestUnfollowUser(profile.portrait, tbs)
+        networkDataSource.requestUnfollowUser(
+            portrait = profile.portrait,
+            tbs = tbs ?: throw TiebaNotLoggedInException()
+        )
         localDataSource.deleteUserProfile(profile.uid)
     }
 
@@ -169,35 +175,31 @@ class UserProfileRepository @Inject constructor(
             }
         }
 
-        private fun ProfileResponseData.mapUiModel(): UserProfile {
-            if (user == null) throw TiebaException("Null user")
-
-            return UserProfile(
-                uid = user.id,
-                portrait = user.portrait,
-                name = user.nameShow.trim(),
-                userName = user.name.takeUnless { it == user.nameShow || it.length <= 1 }?.trim()?.let { "($it)" },
-                tiebaUid = user.tieba_uid,
-                intro = user.intro.takeUnless { it.isEmpty() },
-                sex = when (user.sex) {
-                    1 -> "♂"
-                    2 -> "♀"
-                    else -> "?"
-                },
-                tbAge = user.tb_age.toFloatOrNull() ?: 0f,
-                address = user.ip_address.takeUnless { it.isEmpty() },
-                following = user.has_concerned != 0,
-                threadNum = user.thread_num,
-                postNum = user.post_num,
-                forumNum = user.my_like_num,
-                followNum = user.concern_num.getShortNumString(),
-                fans = user.fans_num,
-                agreeNum = user.total_agree_num.getShortNumString(),
-                bazuDesc = user.bazhu_grade?.desc?.takeUnless { it.isEmpty() },
-                newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name,
-                privateForum = user.privSets?.like != 1,
-                isOfficial = user.is_guanfang == 1
-            )
-        }
+        private fun mapToUser(user: User): UserProfile = UserProfile(
+            uid = user.id,
+            portrait = user.portrait,
+            name = user.nameShow.trim(),
+            userName = user.name.takeUnless { it == user.nameShow || it.length <= 1 }?.trim()?.let { "($it)" },
+            tiebaUid = user.tieba_uid,
+            intro = user.intro.takeUnless { it.isEmpty() },
+            sex = when (user.sex) {
+                1 -> "♂"
+                2 -> "♀"
+                else -> "?"
+            },
+            tbAge = user.tb_age.toFloatOrNull() ?: 0f,
+            address = user.ip_address.takeUnless { it.isEmpty() },
+            following = user.has_concerned != 0,
+            threadNum = user.thread_num,
+            postNum = user.post_num,
+            forumNum = user.my_like_num,
+            followNum = user.concern_num.getShortNumString(),
+            fans = user.fans_num,
+            agreeNum = user.total_agree_num.getShortNumString(),
+            bazuDesc = user.bazhu_grade?.desc?.takeUnless { it.isEmpty() },
+            newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name,
+            privateForum = user.privSets?.like != 1,
+            isOfficial = user.is_guanfang == 1
+        )
     }
 }

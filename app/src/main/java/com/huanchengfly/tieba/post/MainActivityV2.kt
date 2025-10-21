@@ -62,6 +62,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.EmoticonManager
+import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
@@ -233,7 +234,9 @@ class MainActivityV2 : BaseComposeActivity() {
     @NonSkippableComposable
     @Composable
     private fun TiebaLiteLocalProvider(content: @Composable () -> Unit) {
+        val currentAccount by viewModel.account.collectAsStateWithLifecycle()
         CompositionLocalProvider(
+            LocalAccount provides currentAccount,
             LocalNotificationCountFlow provides notificationCountFlow,
             content = content
         )

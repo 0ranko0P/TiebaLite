@@ -3,7 +3,9 @@ package com.huanchengfly.tieba.post.ui.page.settings
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.huanchengfly.tieba.post.ui.page.settings.blocklist.BlockListPage
+import androidx.navigation.toRoute
+import com.huanchengfly.tieba.post.ui.page.settings.blocklist.KeywordBlockListPage
+import com.huanchengfly.tieba.post.ui.page.settings.blocklist.UserBlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.theme.AppFontPage
 import kotlinx.serialization.Serializable
 
@@ -24,8 +26,13 @@ sealed interface SettingsDestination {
     @Serializable
     data object BlockSettings: SettingsDestination
 
+    /**
+     * Destination of block list page
+     *
+     * @param isUser is user or keyword blocklist
+     * */
     @Serializable
-    data object BlockList: SettingsDestination
+    data class BlockList(val isUser: Boolean): SettingsDestination
 
     @Serializable
     data object Custom: SettingsDestination
@@ -62,8 +69,13 @@ fun settingsNestedGraphBuilder(navController: NavController): NavGraphBuilder.()
         BlockSettingsPage(navController)
     }
 
-    composable<SettingsDestination.BlockList> {
-        BlockListPage(onBack = navController::navigateUp)
+    composable<SettingsDestination.BlockList> { backStackEntry ->
+        val params = backStackEntry.toRoute<SettingsDestination.BlockList>()
+        if (params.isUser) {
+            UserBlockListPage(onBack = navController::navigateUp)
+        } else {
+            KeywordBlockListPage(onBack = navController::navigateUp)
+        }
     }
 
     composable<SettingsDestination.Custom> {

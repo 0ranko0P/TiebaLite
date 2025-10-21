@@ -11,6 +11,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.UploadPictureResultBean
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
@@ -27,8 +28,8 @@ import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.components.ImageUploader
 import com.huanchengfly.tieba.post.models.database.Draft
+import com.huanchengfly.tieba.post.models.database.dao.DraftDao
 import com.huanchengfly.tieba.post.repository.AddPostRepository
-import com.huanchengfly.tieba.post.toMD5
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
@@ -39,9 +40,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,16 +54,13 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.litepal.LitePal
-import org.litepal.extension.deleteAllAsync
-import org.litepal.extension.findFirst
 import javax.inject.Inject
 
 @Stable
 @HiltViewModel
 class ReplyViewModel @Inject constructor(
     @ApplicationContext val context: Context,
+    private val draftDao: DraftDao,
     savedStateHandle: SavedStateHandle
 ) : BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>(), TextWatcher {
 
@@ -94,22 +90,17 @@ class ReplyViewModel @Inject constructor(
      * */
     private var userDraft: CharSequence? = null
 
-    private var hash: String? = null
-
     private val emoticonContentRunner = ControlledRunner<Unit>()
 
     private var emoticonSize = -1
 
-    fun initialize(threadId: Long, postId: Long? = null, subPostId: Long? = null) {
-        if (super.initialized) return
-        hash = "${threadId}_${postId}_${subPostId}".toMD5()
+    init {
         // Restore draft from DataBase
-        viewModelScope.launch(Dispatchers.Main.immediate) {
-            val draft = withContext(Dispatchers.IO) {
-                LitePal.where("hash = ?", hash).findFirst<Draft?>()
-            }?: return@launch
-
-            onTextChanged(draft.content, 0, 0, draft.content.length)
+        viewModelScope.launch {
+            val draft = draftDao.getByIds(threadId, postId ?: 0, subPostId ?: 0).firstOrNull()
+            if (!draft.isNullOrEmpty()) {
+                onTextChanged(draft, 0, 0, draft.length)
+            }
         }
         emoticons = EmoticonManager.getAllEmoticon()
         super.initialized = true
@@ -282,20 +273,22 @@ class ReplyViewModel @Inject constructor(
 
     fun deleteDraft() {
         userDraft = null
-        hash?.let {
-            LitePal.deleteAllAsync<Draft>("hash = ?", it)
+        AppBackgroundScope.launch {
+            draftDao.deleteByIds(threadId, postId ?: 0, subPostId ?: 0)
         }
     }
 
     override fun onCleared() {
         super.onCleared()
         emoticonContentRunner.cancelCurrent()
-        val draft = userDraft?.toString()?.trim().orEmpty()
-        if (draft.isNotEmpty() && hash != null) {
-            MainScope().launch(Dispatchers.IO) {
-                val rec = Draft(hash, draft).saveOrUpdate("hash = ?", hash)
-                if (!rec) {
-                    Log.w(TAG, "onCleared: Save draft $draft failed, hash=$hash")
+        val draft = userDraft?.toString()?.trim()
+        if (!draft.isNullOrEmpty() && draft.isNotBlank()) {
+            AppBackgroundScope.launch {
+                runCatching {
+                    draftDao.upsert(Draft(threadId, postId ?: 0, subPostId ?: 0, draft))
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "onCleared: Save draft failed: ${e.message}, content: $draft")
                 }
             }
         }

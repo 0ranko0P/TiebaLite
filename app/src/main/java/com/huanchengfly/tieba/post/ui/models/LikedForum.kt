@@ -7,6 +7,6 @@ class LikedForum(
     val avatar: String = "",
     val id: Long,
     val name: String = "",
-    val isSign: Boolean = false,
+    val signed: Boolean = false,
     val level: String = ""
 )

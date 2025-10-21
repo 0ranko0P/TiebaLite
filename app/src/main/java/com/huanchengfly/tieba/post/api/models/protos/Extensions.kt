@@ -77,8 +77,10 @@ private val PbContent.picUrl: String
         cdnSrc        // Worst quality in [PbContent]
     )
 
-val List<PbContent>.plainText: String
+val List<PbContent>.plainText: String?
     get() {
+        if (isEmpty()) return null
+
         val builder = StringBuilder()
         var text: String
 

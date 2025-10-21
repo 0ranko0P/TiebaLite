@@ -15,7 +15,6 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -174,7 +173,15 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                     }
                 },
                 client = remember(navigator) {
-                    LoginWebViewClient(context, coroutineScope, snackbarHostState, onBack)
+                    LoginWebViewClient(
+                        context,
+                        coroutineScope,
+                        onToast = { message, duration ->
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            snackbarHostState.showSnackbar(message, duration = duration)
+                        },
+                        onBack
+                    )
                 },
             )
         }
@@ -184,7 +191,7 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
 private class LoginWebViewClient(
     context: Context,
     val coroutineScope: CoroutineScope,
-    val snackbarHostState: SnackbarHostState,
+    val onToast: suspend (String, SnackbarDuration) -> Unit,
     val onLoggedIn: () -> Unit
 ) : TbWebViewClient(context, coroutineScope, onNavigate = null) {
     private var isLoadingAccount = false
@@ -212,10 +219,7 @@ private class LoginWebViewClient(
                 ClientUtils.saveBaiduId(baiduId)
             }
             coroutineScope.launch {
-                snackbarHostState.showSnackbar(
-                    context.getString(R.string.text_please_wait),
-                    duration = SnackbarDuration.Indefinite
-                )
+                onToast(context.getString(R.string.text_please_wait), SnackbarDuration.Indefinite)
             }
             coroutineScope.launch {
                 val accountUtil = AccountUtil.getInstance()
@@ -223,34 +227,18 @@ private class LoginWebViewClient(
                     .catch {
                         isLoadingAccount = false
                         navigator.loadUrl(LOGIN_URL)
-                        snackbarHostState.currentSnackbarData?.dismiss()
-                        snackbarHostState.showSnackbar(
-                            context.getString(
-                                R.string.text_login_failed,
-                                it.getErrorMessage()
-                            ), duration = SnackbarDuration.Short
+                        onToast(
+                            context.getString(R.string.text_login_failed, it.getErrorMessage()),
+                            SnackbarDuration.Short
                         )
                     }
                     .flowOn(Dispatchers.Main)
                     .collect { account ->
                         isLoadingAccount = false
-                        val succeed = accountUtil.saveNewAccount(account.uid, account)
-                        if (succeed) {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            snackbarHostState.showSnackbar(
-                                message = context.getString(R.string.text_login_success),
-                                duration = SnackbarDuration.Short
-                            )
-                            delay(1500L)
-                            onLoggedIn()
-                        } else {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            snackbarHostState.showSnackbar(
-                                context.getString(R.string.text_login_failed_default),
-                                duration = SnackbarDuration.Short
-                            )
-                            view.loadUrl(LOGIN_URL)
-                        }
+                        accountUtil.saveNewAccount(account)
+                        onToast(context.getString(R.string.text_login_success), SnackbarDuration.Short)
+                        delay(1000)
+                        onLoggedIn()
                     }
             }
         }

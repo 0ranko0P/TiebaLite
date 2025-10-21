@@ -89,6 +89,8 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override val clientConfig: Settings<ClientConfig> = ComplexSettings(ClientConfigTransformer)
 
+    override val accountUid: Settings<Long> = SimpleSettings(longPreferencesKey("account_uid"), -1)
+
     override val blockSettings: Settings<BlockSettings> = ComplexSettings(BlockTransformer)
 
     override val fontScale: Settings<Float> = SimpleSettings(floatPreferencesKey("fontScale"), 1.0f)

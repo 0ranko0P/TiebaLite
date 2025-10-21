@@ -9,6 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.util.fastMap
 import com.huanchengfly.tieba.post.api.models.SearchForumBean.ForumInfoBean
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean.MediaInfo.Companion.TYPE_PICTURE
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean.MediaInfo.Companion.TYPE_VIDEO
@@ -17,8 +18,8 @@ import com.huanchengfly.tieba.post.api.models.SearchUserBean.UserBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
-import com.huanchengfly.tieba.post.repository.source.local.SearchHistoryDao
-import com.huanchengfly.tieba.post.repository.source.local.SearchPostHistoryDao
+import com.huanchengfly.tieba.post.models.database.dao.SearchDao
+import com.huanchengfly.tieba.post.models.database.dao.SearchPostDao
 import com.huanchengfly.tieba.post.repository.source.network.SearchNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
@@ -35,50 +36,41 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// ExactMatch, FuzzyMatch
-typealias SearchForumResult = Pair<SearchForum?, List<SearchForum>>
-
 // HasMore, Threads
 typealias SearchThreadResult = Pair<Boolean, List<SearchThreadInfo>>
 
-// ExactMatch, FuzzyMatch
-typealias SearchUserResult = Pair<SearchUser?, List<SearchUser>>
+data class SearchResult<T>(
+    val exactMatch: T?,
+    val fuzzyMatch: List<T>
+)
 
 @Singleton
 class SearchRepository @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val historyDao: SearchDao,
+    private val postHistoryDao: SearchPostDao,
     private val settingsRepo: SettingsRepository
 ) {
 
-    private val historyDao = SearchHistoryDao
-
-    private val postHistoryDao = SearchPostHistoryDao
-
     private val networkDataSource = SearchNetworkDataSource
 
-    private val refreshPostHistory by lazy { Channel<Unit>(capacity = Channel.CONFLATED) }
-
-    private val refreshHistory by lazy { Channel<Unit>(capacity = Channel.CONFLATED) }
-
-    suspend fun searchForum(keyword: String): SearchForumResult {
+    suspend fun searchForum(keyword: String): SearchResult<SearchForum> {
         val data = networkDataSource.searchForum(keyword)
-        return withContext(Dispatchers.Default) {
-            val exactMatch = data.exactMatch?.mapUiModel()
-            val fuzzyMatch = data.fuzzyMatch.takeUnless { it.isEmpty() }?.map { it.mapUiModel() }
-            SearchForumResult(exactMatch, fuzzyMatch ?: emptyList())
-        }
+        return mapSearchResult(
+            exactMatch = data.exactMatch,
+            fuzzyMatch = data.fuzzyMatch,
+            mapUiModel = ::mapUiModel
+        )
     }
 
     suspend fun searchSuggestions(keyword: String): SearchSuggestion {
@@ -111,91 +103,82 @@ class SearchRepository @Inject constructor(
         return SearchThreadResult(data.hasMore == 1, threads)
     }
 
-    suspend fun searchUser(keyword: String): SearchUserResult {
+    suspend fun searchUser(keyword: String): SearchResult<SearchUser> {
         val data = networkDataSource.searchUser(keyword)
-        return withContext(Dispatchers.Default) {
-            val exactMatch = data.exactMatch?.mapUiModel()
-            val fuzzyMatch = data.fuzzyMatch?.map { it.mapUiModel() }
-            SearchUserResult(exactMatch, fuzzyMatch ?: emptyList())
-        }
+        // Map to UI Model
+        return mapSearchResult(
+            exactMatch = data.exactMatch,
+            fuzzyMatch = data.fuzzyMatch,
+            mapUiModel = ::mapUiModel
+        )
     }
 
     suspend fun addHistory(keyword: String) {
         require(keyword.isNotBlank() && keyword.isNotEmpty()) { "Invalid search keyword" }
-        if (historyDao.saveOrUpdate(SearchHistory(keyword))) {
-            refreshHistory.trySend(Unit)
-        }
+        historyDao.upsert(SearchHistory(keyword))
     }
 
-    suspend fun clearHistory(): Int {
-        val rec = historyDao.deleteAll()
-        if (rec > 0) {
-            refreshHistory.trySend(Unit)
-        }
-        return rec
+    suspend fun clearHistory() = historyDao.deleteAll()
+
+    suspend fun deleteHistory(history: String): Boolean {
+        return historyDao.deleteById(history.hashCode()) == 1
     }
 
-    suspend fun deleteHistory(history: SearchHistory): Boolean {
-        val rec = historyDao.delete(history)
-        if (rec) {
-            refreshHistory.trySend(Unit)
-        }
-        return rec
-    }
+    fun getHistoryFlow(): Flow<List<String>> = historyDao.observeAllKeywords()
 
-    // TODO: Migrate to Room DataBase for native Flow support
-    fun getHistoryFlow(): Flow<List<SearchHistory>> = flow {
-        val iterator = refreshHistory.iterator()
-        do {
-            emit(historyDao.listDesc())
-            currentCoroutineContext().ensureActive()
-            if (iterator.hasNext()) iterator.next() else break
-        } while (true)
-    }
-
-    suspend fun addPostHistory(forumName: String, keyword: String) {
+    suspend fun addPostHistory(forumId: Long, keyword: String) {
         require(keyword.isNotBlank() && keyword.isNotEmpty()) { "Invalid search keyword" }
-        require(forumName.isNotBlank() && forumName.isNotEmpty()) { "Invalid forum name" }
-
-        if (postHistoryDao.saveOrUpdate(SearchPostHistory(keyword, forumName))) {
-            refreshPostHistory.trySend(Unit)
-        }
+        require(forumId > 0) { "Invalid forum ID $forumId" }
+        postHistoryDao.upsert(SearchPostHistory(forumId, keyword))
     }
 
-    suspend fun clearPostHistory(forumName: String): Int {
-        val rec = postHistoryDao.deleteForum(forumName)
-        if (rec > 0) {
-            refreshPostHistory.send(Unit)
-        }
-        return rec
+    suspend fun clearPostHistory(forumId: Long): Int {
+        return postHistoryDao.deleteAll(forumId)
     }
 
-    suspend fun deletePostHistory(history: SearchPostHistory): Boolean {
-        val rec = postHistoryDao.delete(history)
-        if (rec) {
-            refreshPostHistory.trySend(Unit)
-        }
-        return rec
+    suspend fun deletePostHistory(forumId: Long, history: String): Boolean {
+        return postHistoryDao.delete(forumId, history) == 1
     }
 
-    fun getPostHistoryFlow(forumName: String): Flow<List<SearchPostHistory>> = flow {
-        val iterator = refreshPostHistory.iterator()
-        do {
-            emit(postHistoryDao.listDesc(forumName, limit = 50))
-            currentCoroutineContext().ensureActive()
-            if (iterator.hasNext()) iterator.next() else break
-        } while (true)
+    fun getPostHistoryFlow(forumId: Long): Flow<List<String>> {
+        return postHistoryDao.observeAllKeywords(forumId)
     }
 
     companion object {
 
-        private fun ForumInfoBean.mapUiModel() = SearchForum(
-            id = forumId!!, name = forumName ?: forumNameShow.orEmpty(),
-            avatar = avatar.orEmpty(),
-            slogan = slogan?.takeUnless { it.isEmpty() || it.isBlank() }
-        )
+        private suspend inline fun <NetModel, UiModel> mapSearchResult(
+            exactMatch: NetModel?,
+            fuzzyMatch: List<NetModel>?,
+            crossinline mapUiModel: (NetModel) -> UiModel
+        ): SearchResult<UiModel> {
+            return withContext(Dispatchers.Default) {
+                SearchResult(
+                    exactMatch = exactMatch?.let { mapUiModel(it) },
+                    fuzzyMatch = if (fuzzyMatch.isNullOrEmpty()) {
+                        emptyList()
+                    } else {
+                        fuzzyMatch.fastMap(mapUiModel)
+                    }
+                )
+            }
+        }
 
-        private fun UserBean.mapUiModel(): SearchUser {
+        /**
+         * Map ForumInfo to UI Model
+         * */
+        private fun mapUiModel(info: ForumInfoBean) = with(info) {
+            SearchForum(
+                id = info.forumId!!,
+                name = forumName ?: forumNameShow.orEmpty(),
+                avatar = avatar.orEmpty(),
+                slogan = slogan?.takeUnless { it.isEmpty() || it.isBlank() }
+            )
+        }
+
+        /**
+         * Map UserBean to UI Model
+         * */
+        private fun mapUiModel(user: UserBean): SearchUser = with(user) {
             val nickname = (showNickname ?: userNickname)!!
             val userName = name?.takeUnless { it == nickname }
             // show both nickname and username if possible
@@ -246,6 +229,13 @@ class SearchRepository @Inject constructor(
             append(content)
         }
 
+        /**
+         * Map thread info to UI Model.
+         *
+         * @param keyword search keyword
+         * @param context application context
+         * @param showBothName show both username and nickname
+         * */
         private suspend fun List<ThreadInfoBean>.mapUiModel(
             keyword: String,
             context: Context,

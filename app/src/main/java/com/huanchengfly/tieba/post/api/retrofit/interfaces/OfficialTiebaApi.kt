@@ -383,7 +383,7 @@ interface OfficialTiebaApi {
         @Field("quote_id") quoteId: String? = null,
         @Field("repostid") repostId: String? = null,
         @Field("reply_uid") replyUserId: String = "null",
-        @Field("name_show") nameShow: String? = AccountUtil.getLoginInfo()?.nameShow,
+        @Field("name_show") nameShow: String? = AccountUtil.getLoginInfo()?.nickname,
         @Field("anonymous") anonymous: String = "1",
         @Field("authsid") authsid: String = "null",
         @Field("barrage_time") barrage_time: String = "0",

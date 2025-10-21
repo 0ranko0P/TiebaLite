@@ -4,7 +4,9 @@ import android.content.Context
 import com.huanchengfly.tieba.post.R
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 object DateTimeUtils {
 
@@ -65,16 +67,20 @@ object DateTimeUtils {
         }
     }
 
-    private fun Calendar.clearTime() {
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-    }
-
     fun isToday(formatter: DateFormat, timestamp: Long): Boolean {
         val date = formatter.format(timestamp)
         val todayDate = formatter.format(System.currentTimeMillis())
         return date == todayDate
+    }
+
+    fun todayTimeMill(): Long {
+        return Calendar.getInstance().run {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            timeInMillis
+        }
     }
 
     private fun Calendar.format(pattern: String): String {

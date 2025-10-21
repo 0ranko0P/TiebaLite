@@ -36,7 +36,7 @@ private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
         TextPref(
             modifier = modifier,
             title = stringResource(id = R.string.title_account_manage),
-            summary = stringResource(id = R.string.summary_now_account, account.nameShow ?: account.name),
+            summary = stringResource(id = R.string.summary_now_account, account.nickname ?: account.name),
             onClick = {
                 navigator.navigate(route = AccountManage)
             },

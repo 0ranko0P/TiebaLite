@@ -79,8 +79,6 @@ import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.isOverlapping
-import com.huanchengfly.tieba.post.models.database.KeywordProvider
-import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
@@ -107,7 +105,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -266,10 +263,10 @@ fun SearchPage(
                     .padding(contentPadding)
                     .verticalScroll(rememberScrollState())
             ) {
-                val searchHistories by viewModel.searchHistories.collectAsStateWithLifecycle()
+                val history by viewModel.searchHistories.collectAsStateWithLifecycle()
                 SearchHistoryList(
-                    searchHistories = searchHistories,
-                    onSearchHistoryClick = onKeywordSubmit,
+                    history = history,
+                    onHistoryClick = onKeywordSubmit,
                     expanded = { isSearchHistoryExpanded },
                     onToggleExpand = { isSearchHistoryExpanded = !isSearchHistoryExpanded },
                     onDelete = viewModel::onDeleteHistory,
@@ -416,15 +413,14 @@ private fun SearchTabRow(
 @Composable
 fun SearchHistoryList(
     modifier: Modifier = Modifier,
-    searchHistories: List<KeywordProvider>,
-    onSearchHistoryClick: (String) -> Unit,
+    history: List<String>,
+    onHistoryClick: (String) -> Unit,
     expanded: () -> Boolean,
     onToggleExpand: () -> Unit = {},
-    onDelete: (KeywordProvider) -> Unit = {},
+    onDelete: (String) -> Unit = {},
     onClear: () -> Unit = {},
 ) {
-    val notEmpty = searchHistories.isNotEmpty()
-    val hasMore = searchHistories.size > 6
+    val hasMore = history.size > 6
 
     Column(modifier = modifier) {
         Row(
@@ -436,7 +432,7 @@ fun SearchHistoryList(
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.labelLarge
             )
-            if (notEmpty) {
+            if (history.isNotEmpty()) {
                 Text(
                     text = stringResource(id = R.string.button_clear_all),
                     modifier = Modifier.clickableNoIndication(onClick = onClear),
@@ -453,20 +449,20 @@ fun SearchHistoryList(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val maxItemViewSize = if (!expanded() && hasMore) 6 else searchHistories.size
+            val maxItemViewSize = if (!expanded() && hasMore) 6 else history.size
             val historyBackground = MaterialTheme.colorScheme.secondaryContainer
 
             for (i in 0 until maxItemViewSize) {
-                val searchHistory = searchHistories[i]
+                val searchHistory = history[i]
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = historyBackground,
                 ) {
                     Text(
-                        text = searchHistory.getKeyword(),
+                        text = searchHistory,
                         modifier = Modifier
                             .combinedClickable(
-                                onClick = { onSearchHistoryClick(searchHistory.getKeyword()) },
+                                onClick = { onHistoryClick(searchHistory) },
                                 onLongClick = { onDelete(searchHistory) }
                             )
                             .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -494,7 +490,7 @@ fun SearchHistoryList(
                     }
                 )
             }
-        } else if (!notEmpty) {
+        } else if (history.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -567,10 +563,8 @@ private fun PreviewSearchHistoryList() {
         var expanded by remember { mutableStateOf(false) }
         Surface {
             SearchHistoryList(
-                searchHistories = (0..20).map {
-                    SearchHistory(content = if (it % 2 == 0) "记录$it" else "搜索记录$it")
-                }.toImmutableList(),
-                onSearchHistoryClick = {},
+                history = (0..20).map { if (it % 2 == 0) "记录$it" else "搜索记录$it" },
+                onHistoryClick = {},
                 expanded = { expanded },
                 onToggleExpand = { expanded = !expanded },
             )

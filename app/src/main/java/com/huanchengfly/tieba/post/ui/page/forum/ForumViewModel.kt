@@ -16,11 +16,9 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
-import com.huanchengfly.tieba.post.models.ForumHistoryExtra
-import com.huanchengfly.tieba.post.models.database.History
+import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.HistoryRepository
-import com.huanchengfly.tieba.post.repository.HistoryType
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
@@ -36,6 +34,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +48,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @Stable
@@ -70,6 +68,8 @@ class ForumViewModel @Inject constructor(
     }
 
     private val param = savedStateHandle.toRoute<Destination.Forum>()
+
+    private var historyRecorded = false
 
     private val forumName: String = param.forumName
 
@@ -96,21 +96,12 @@ class ForumViewModel @Inject constructor(
         requestLoadForm()
     }
 
-    private fun saveHistory(forum: ForumData) = historyRepo.save(
-        history = History(
-            timestamp = System.currentTimeMillis(),
-            avatar = forum.avatar,
-            type = HistoryType.FORUM,
-            data = forum.name,
-            extras = Json.encodeToString(ForumHistoryExtra(forum.id))
-        )
-    )
-
     private fun requestLoadForm() = viewModelScope.launch(handler) {
         _uiState.set { copy(forum = null, error = null) }
         val forumData = forumRepo.loadForumInfo(forumName)
+        ensureActive()
         _uiState.set { copy(forum = forumData) }
-        saveHistory(forumData)
+        recordHistory(forumData)
     }
 
     fun onGoodClassifyChanged(classifyId: Int) {
@@ -231,6 +222,13 @@ class ForumViewModel @Inject constructor(
     }
 
     fun shareForum() = TiebaUtil.shareForum(context, forumName)
+
+    private fun recordHistory(forum: ForumData) = with(forum) {
+        if (!historyRecorded) {
+            historyRepo.saveHistory(ForumHistory(id, name, avatar))
+            historyRecorded = true
+        }
+    }
 
     companion object {
         private const val TAG = "ForumViewModel"

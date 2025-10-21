@@ -1,9 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.main.notifications.list
 
 import android.content.Context
-import androidx.compose.runtime.Stable
 import androidx.lifecycle.viewModelScope
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.MessageListBean
@@ -18,16 +16,21 @@ import com.huanchengfly.tieba.post.arch.PartialChangeProducer
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.message.MessageItemData
 import com.huanchengfly.tieba.post.ui.models.message.ReplyUser
+import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListViewModel.Companion.NotificationsListVmFactory
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.StringUtil
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,9 +47,14 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
-abstract class NotificationsListViewModel(settingsRepo: SettingsRepository) :
+@HiltViewModel(assistedFactory = NotificationsListVmFactory::class)
+class NotificationsListViewModel @AssistedInject constructor(
+    @Assisted private val type: NotificationsType,
+    @ApplicationContext private val context: Context,
+    private val blockRepo: BlockRepository,
+    settingsRepo: SettingsRepository,
+) :
     BaseViewModel<NotificationsListUiIntent, NotificationsListPartialChange, NotificationsListUiState, NotificationsListUiEvent>() {
 
     val hideBlocked: StateFlow<Boolean> = settingsRepo.blockSettings.flow.map { it.hideBlocked }
@@ -55,35 +63,31 @@ abstract class NotificationsListViewModel(settingsRepo: SettingsRepository) :
 
     override fun createInitialState(): NotificationsListUiState = NotificationsListUiState()
 
+    override fun createPartialChangeProducer():
+            PartialChangeProducer<NotificationsListUiIntent, NotificationsListPartialChange, NotificationsListUiState> {
+        return NotificationsListPartialChangeProducer(context, type, blockRepo::isBlocked)
+    }
+
     override fun dispatchEvent(partialChange: NotificationsListPartialChange): UiEvent? =
         when (partialChange) {
             is NotificationsListPartialChange.Refresh.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
             is NotificationsListPartialChange.LoadMore.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
             else -> null
         }
-}
 
-@Stable
-@HiltViewModel
-class ReplyMeListViewModel @Inject constructor(settingsRepo: SettingsRepository) : NotificationsListViewModel(settingsRepo) {
-    override fun createPartialChangeProducer():
-            PartialChangeProducer<NotificationsListUiIntent, NotificationsListPartialChange, NotificationsListUiState> {
-        return NotificationsListPartialChangeProducer(App.INSTANCE, NotificationsType.ReplyMe)
-    }
-}
+    companion object {
 
-@Stable
-@HiltViewModel
-class AtMeListViewModel @Inject constructor(settingsRepo: SettingsRepository) : NotificationsListViewModel(settingsRepo) {
-    override fun createPartialChangeProducer():
-            PartialChangeProducer<NotificationsListUiIntent, NotificationsListPartialChange, NotificationsListUiState> {
-        return NotificationsListPartialChangeProducer(App.INSTANCE, NotificationsType.AtMe)
+        @AssistedFactory
+        interface NotificationsListVmFactory {
+            fun create(type: NotificationsType): NotificationsListViewModel
+        }
     }
 }
 
 private class NotificationsListPartialChangeProducer(
     private val context: Context,
-    private val type: NotificationsType
+    private val type: NotificationsType,
+    private val isBlocked: suspend (uid: Long, content: String) -> Boolean,
 ) : PartialChangeProducer<NotificationsListUiIntent, NotificationsListPartialChange, NotificationsListUiState> {
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun toPartialChangeFlow(intentFlow: Flow<NotificationsListUiIntent>): Flow<NotificationsListPartialChange> =
@@ -102,7 +106,7 @@ private class NotificationsListPartialChangeProducer(
         }).map<MessageListBean, NotificationsListPartialChange.Refresh> { messageListBean ->
             val data =
                 ((if (type == NotificationsType.ReplyMe) messageListBean.replyList else messageListBean.atList)
-                    ?: emptyList()).mapUiModel(context, type)
+                    ?: emptyList()).mapUiModel(context, type, isBlocked)
             NotificationsListPartialChange.Refresh.Success(
                 data = data,
                 hasMore = messageListBean.page?.hasMore == "1"
@@ -119,7 +123,7 @@ private class NotificationsListPartialChangeProducer(
         }).map<MessageListBean, NotificationsListPartialChange.LoadMore> { messageListBean ->
             val data =
                 ((if (type == NotificationsType.ReplyMe) messageListBean.replyList else messageListBean.atList)
-                    ?: emptyList()).mapUiModel(context, type)
+                    ?: emptyList()).mapUiModel(context, type, isBlocked)
             NotificationsListPartialChange.LoadMore.Success(
                 currentPage = page,
                 data = data,
@@ -201,7 +205,18 @@ sealed interface NotificationsListPartialChange : PartialChange<NotificationsLis
     }
 }
 
-private suspend fun List<MessageInfoBean>.mapUiModel(context: Context, type: NotificationsType): List<MessageItemData> {
+/**
+ * Convert MessageInfo to UI Model
+ *
+ * @param context application context
+ * @param type notifications type
+ * @param isBlocked check author, title or content is blocked
+ * */
+private suspend fun List<MessageInfoBean>.mapUiModel(
+    context: Context,
+    type: NotificationsType,
+    isBlocked: suspend (uid: Long, content: String) -> Boolean,
+): List<MessageItemData> {
     return withContext(Dispatchers.Default) {
         val isReply = type == NotificationsType.ReplyMe
         map {
@@ -238,7 +253,7 @@ private suspend fun List<MessageInfoBean>.mapUiModel(context: Context, type: Not
                 replyUser = replyUser,
                 threadId = it.threadId?.toLongOrNull() ?: throw TiebaException("Invalid thread ID ${it.threadId}."),
                 postId = it.postId?.toLongOrNull() ?: throw TiebaException("Invalid post ID ${it.postId}."),
-                isBlocked = BlockManager.shouldBlock(userId = replyUser.id, it.content.orEmpty()),
+                isBlocked = isBlocked(replyUser.id, it.content.orEmpty()),
                 isFloor = isFloor,
                 title = title?.emoticonString,
                 content = it.content?.emoticonString,

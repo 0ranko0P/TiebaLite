@@ -114,9 +114,7 @@ object StringUtil {
         return 0L
     }
 
-    fun Int.getShortNumString(): String {
-        return toLong().getShortNumString()
-    }
+    fun Int.getShortNumString(): String = if (this <= 999) toString() else toLong().getShortNumString()
 
     fun Long.getShortNumString(): String {
         val long = this

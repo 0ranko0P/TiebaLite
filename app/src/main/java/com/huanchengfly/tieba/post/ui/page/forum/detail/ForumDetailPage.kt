@@ -177,7 +177,7 @@ private fun ForumDetailContent(
 }
 
 @Composable
-private fun IntroItem(modifier: Modifier = Modifier, slogan: String, intro: String) {
+private fun IntroItem(modifier: Modifier = Modifier, slogan: String, intro: String?) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -190,11 +190,13 @@ private fun IntroItem(modifier: Modifier = Modifier, slogan: String, intro: Stri
             style = MaterialTheme.typography.bodyLarge
         )
 
-        Text(
-            text = intro,
-            modifier = Modifier.padding(horizontal = 16.dp),
-            style = MaterialTheme.typography.bodyLarge
-        )
+        if (intro != null) {
+            Text(
+                text = intro,
+                modifier = Modifier.padding(horizontal = 16.dp),
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
     }
 }
 

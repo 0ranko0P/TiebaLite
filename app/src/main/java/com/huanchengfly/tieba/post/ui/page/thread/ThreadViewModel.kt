@@ -25,17 +25,14 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
-import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
-import com.huanchengfly.tieba.post.models.database.History
+import com.huanchengfly.tieba.post.models.database.ThreadHistory
 import com.huanchengfly.tieba.post.repository.EmptyDataException
 import com.huanchengfly.tieba.post.repository.HistoryRepository
-import com.huanchengfly.tieba.post.repository.HistoryType
 import com.huanchengfly.tieba.post.repository.PageData
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.repository.PbPageUiResponse
 import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_LZ
 import com.huanchengfly.tieba.post.ui.models.PostData
@@ -96,8 +93,6 @@ class ThreadViewModel @Inject constructor(
     private val historyTimeStamp = System.currentTimeMillis()
 
     private var from: String = params.from?.tag ?: ""
-
-    private var history: History? = null
 
     private var _threadUiState = MutableStateFlow(
         ThreadUiState(seeLz = params.seeLz, sortType = params.sortType)
@@ -504,23 +499,21 @@ class ThreadViewModel @Inject constructor(
         requestLoadFirstPage()
     }
 
-    fun onLastPostVisibilityChanged(pid: Long, floor: Int?) = viewModelScope.launch {
+    fun onSaveHistory(lastVisiblePost: PostData?) {
         val state = threadUiState.value
-        val author = state.lz ?: return@launch
-        val title = state.thread?.title ?: return@launch
+        val author = state.lz ?: return
+        val title = state.thread?.title ?: return
 
-        history = withContext(Dispatchers.IO) {
-            val bean = ThreadHistoryInfoBean(state.seeLz, pid, forumName, floor = floor?.toString())
-            History(
-                title = title,
-                data = threadId.toString(),
-                type = HistoryType.THREAD,
-                timestamp = historyTimeStamp,
-                extras = bean.toJson(),
-                avatar =  StringUtil.getAvatarUrl(author.portrait),
-                username = author.nameShow
-            )
-        }
+        val history = ThreadHistory(
+            id = threadId,
+            name = author.nameShow,
+            avatar = StringUtil.getAvatarUrl(author.portrait),
+            title = title,
+            isSeeLz = state.seeLz,
+            pid = lastVisiblePost?.takeIf { it.id > 0 && it.floor > 5 }?.id ?: 0, // 大于 5 楼
+            timestamp = historyTimeStamp,
+        )
+        historyRepo.saveHistory(history)
     }
 
     fun onShareThread() = TiebaUtil.shareThread(context, info?.title?: "", threadId)
@@ -589,11 +582,6 @@ class ThreadViewModel @Inject constructor(
         sendUiEvent(
             ThreadUiEvent.ToSubPostsDestination(SubPosts(threadId, forumId, post.id, subPostId))
         )
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        history?.let { historyRepo.save(it) }
     }
 
     private fun sendMsg(@StringRes int: Int, vararg formatArgs: Any) {

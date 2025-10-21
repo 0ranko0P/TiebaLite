@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.repository
 
 import com.huanchengfly.tieba.post.api.models.ThreadStoreBean.ThreadStoreInfo
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.source.network.ThreadStoreNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
@@ -10,7 +9,6 @@ import com.huanchengfly.tieba.post.ui.models.ThreadStore
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import okhttp3.internal.toLongOrDefault
@@ -27,8 +25,8 @@ class ThreadStoreRepository @Inject constructor(
 
     private val networkDataSource = ThreadStoreNetworkDataSource
 
-    private val currentAccount: Flow<Account?>
-        get() = AccountUtil.getInstance().currentAccount
+    private val tbs: String
+        get() = AccountUtil.getInstance().currentAccount.value?.tbs ?: throw TiebaNotLoggedInException()
 
     /**
      * 加载收藏的帖子
@@ -47,7 +45,6 @@ class ThreadStoreRepository @Inject constructor(
      * 取消收藏这个帖子
      * */
     suspend fun remove(thread: ThreadStore) = runCatching {
-        val tbs = currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
         networkDataSource.remove(threadId = thread.id, tbs = tbs)
     }
 
@@ -55,8 +52,7 @@ class ThreadStoreRepository @Inject constructor(
      * 取消收藏这个帖子
      * */
     suspend fun remove(threadId: Long, forumId: Long?, tbs: String?) {
-        val validTbs = tbs ?: currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
-        networkDataSource.remove(threadId, forumId, validTbs)
+        networkDataSource.remove(threadId, forumId, tbs ?: this.tbs)
     }
 
     companion object {

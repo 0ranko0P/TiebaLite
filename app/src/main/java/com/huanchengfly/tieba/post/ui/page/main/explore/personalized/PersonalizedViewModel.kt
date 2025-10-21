@@ -8,6 +8,11 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.huanchengfly.tieba.post.api.Error.ERROR_NETWORK
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
@@ -73,11 +78,6 @@ class PersonalizedViewModel @Inject constructor(
         }
     }
 
-    private val handler = CoroutineExceptionHandler { _, e ->
-        Log.e(TAG, "onError: ", e)
-        _uiState.update { it.copy(isRefreshing = false, error = e) }
-    }
-
     private val _uiState = MutableStateFlow(PersonalizedUiState())
     val uiState: StateFlow<PersonalizedUiState> = _uiState.asStateFlow()
 
@@ -87,6 +87,14 @@ class PersonalizedViewModel @Inject constructor(
     private val _uiEvent: MutableSharedFlow<UiEvent?> = MutableSharedFlow()
     val uiEvent: Flow<UiEvent?>
         get() = _uiEvent
+
+    private val handler = CoroutineExceptionHandler { _, e ->
+        if (e !is TiebaNotLoggedInException) {
+            Log.e(TAG, "onError: ", e)
+        }
+
+        _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
+    }
 
     private val blockedIds: MutableSet<Long> = Collections.synchronizedSet(ArraySet())
 
@@ -120,10 +128,21 @@ class PersonalizedViewModel @Inject constructor(
         if (!oldState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
 
         viewModelScope.launch(handler) {
-            val page = oldState.currentPage + 1
-            val data = exploreRepo.loadPersonalized(page, cached = true)
-            val newData = (oldState.data + data).distinctById(blockedIds)
-            _uiState.update { it.copy(isLoadingMore = false, currentPage = page, data = newData) }
+            runCatching {
+                val page = oldState.currentPage + 1
+                val data = exploreRepo.loadPersonalized(page, cached = true)
+                val newData = (oldState.data + data).distinctById(blockedIds)
+                _uiState.update { it.copy(isLoadingMore = false, currentPage = page, data = newData) }
+            }
+            .onFailure { e ->
+                // 网络错误, 继续浏览缓存的内容
+                if (e.getErrorCode() == ERROR_NETWORK && !oldState.isEmpty) {
+                    _uiState.update { it.copy(isLoadingMore = false) }
+                    _uiEvent.emit(CommonUiEvent.Toast(e.getErrorMessage()))
+                } else {
+                    _uiState.update { it.copy(isLoadingMore = false, error = e) }
+                }
+            }
         }
     }
 
@@ -152,7 +171,7 @@ class PersonalizedViewModel @Inject constructor(
     }
 
     /**
-     * Called when navigate back from thread page with latest [Like] status
+     * Called when navigating back from thread page with the latest [Like] status
      *
      * @param threadId target thread ID
      * @param like like status of target thread

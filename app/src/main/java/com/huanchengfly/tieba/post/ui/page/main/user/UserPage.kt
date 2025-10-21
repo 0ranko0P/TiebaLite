@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.isDarkScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
@@ -83,32 +82,22 @@ private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
 
 /**
  * User status card
- *
- * @param modifier the [Modifier] to be applied to this card
- * @param account user account
  * */
 @Composable
-fun StatCard(modifier: Modifier = Modifier, account: Account?) {
+fun StatCard(posts: String?, fans: String?, concerned: String?, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .padding(vertical = 16.dp)
             .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StatCardItem(
-            statNum = account?.postNum,
-            statText = stringResource(id = R.string.title_stat_posts_num)
-        )
+        StatCardItem(title = stringResource(R.string.title_stat_posts_num), stat = posts)
         VerticalDivider(color = MaterialTheme.colorScheme.outline)
-        StatCardItem(
-            statNum = account?.fansNum,
-            statText = stringResource(id = R.string.text_stat_fans)
-        )
+
+        StatCardItem(title = stringResource(R.string.text_stat_fans), stat = fans)
         VerticalDivider(color = MaterialTheme.colorScheme.outline)
-        StatCardItem(
-            statNum = account?.concernNum,
-            statText = stringResource(id = R.string.text_stat_follow)
-        )
+
+        StatCardItem(title = stringResource(R.string.text_stat_follow), stat = concerned)
     }
 }
 
@@ -182,15 +171,17 @@ private fun InfoCard(
 }
 
 @Composable
-private fun RowScope.StatCardItem(statNum: String?, statText: String) {
+private fun RowScope.StatCardItem(title: String, stat: String?) {
     Column(
         modifier = Modifier.weight(1f),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = statNum ?: 0.toString(), fontSize = 20.sp, fontFamily = BebasFamily)
+        Text(text = stat ?: 0.toString(), fontSize = 20.sp, fontFamily = BebasFamily)
+
         Spacer(modifier = Modifier.height(2.dp))
+
         Text(
-            text = statText,
+            text = title,
             color = LocalContentColor.current.copy(0.84f),
             style = MaterialTheme.typography.labelMedium,
         )
@@ -257,7 +248,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                                 navigator.navigate(Destination.UserProfile(account.uid.toLong()))
                             }
                             .padding(horizontal = 16.dp, vertical = 16.dp),
-                        userName = account.nameShow ?: account.name,
+                        userName = account.nickname ?: account.name,
                         userIntro = account.intro?.takeUnless { it.isEmpty() },
                         avatar = remember { StringUtil.getAvatarUrl(account.portrait) },
                     )
@@ -267,7 +258,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                         shape = MaterialTheme.shapes.small,
                         color = colorScheme.secondaryContainer,
                     ) {
-                        StatCard(account = account)
+                        StatCard(account.posts, account.fans, account.concerned)
                     }
                 } else if (isLoading) {
                     InfoCardPlaceHolder(modifier = Modifier.padding(16.dp))

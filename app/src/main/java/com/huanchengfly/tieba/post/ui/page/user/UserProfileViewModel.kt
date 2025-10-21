@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.user
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,21 +16,33 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderEffectImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImageProcessor
-import com.huanchengfly.tieba.post.models.database.Block
+import com.huanchengfly.tieba.post.models.database.BlockUser
+import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
 import com.huanchengfly.tieba.post.ui.models.user.UserProfile
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
-import com.huanchengfly.tieba.post.utils.BlockManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+sealed interface UserBlockState {
+
+    object Blacklisted: UserBlockState
+
+    object Whitelisted: UserBlockState
+
+    object None: UserBlockState
+}
 
 sealed interface UserProfileUiEvent : UiEvent {
     class FollowSuccess(val message: String?): UserProfileUiEvent
@@ -39,11 +52,11 @@ sealed interface UserProfileUiEvent : UiEvent {
     class UnfollowFailed(val e: Throwable) : UserProfileUiEvent
 }
 
+@Immutable
 data class UserProfileUiState(
     val isRefreshing: Boolean = false,
     val isRequestingFollow: Boolean = false,
     val error: Throwable? = null,
-    val block: Block? = null,
     val profile: UserProfile? = null,
 ) : UiState
 
@@ -51,10 +64,21 @@ data class UserProfileUiState(
 class UserProfileViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val userProfileRepo: UserProfileRepository,
+    private val blockRepo: BlockRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     val uid: Long = savedStateHandle.toRoute<Destination.UserProfile>().uid
+
+    val blockState: StateFlow<UserBlockState> = blockRepo.observeUser(uid)
+        .map {
+            when (it) {
+                null -> UserBlockState.None
+                true -> UserBlockState.Whitelisted
+                false -> UserBlockState.Blacklisted
+            }
+        }
+        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), UserBlockState.None)
 
     private val handler = CoroutineExceptionHandler { _, e ->
         if (e !is NoConnectivityException) {
@@ -87,8 +111,7 @@ class UserProfileViewModel @Inject constructor(
 
         viewModelScope.launch(handler) {
             val profile = userProfileRepo.loadUserProfile(uid, cached)
-            val block = BlockManager.findUserById(uid)
-            _uiState.update { UserProfileUiState(block = block, profile = profile) }
+            _uiState.update { UserProfileUiState(profile = profile) }
         }
     }
 
@@ -96,25 +119,25 @@ class UserProfileViewModel @Inject constructor(
         if (!_uiState.value.isRefreshing) refreshInternal(cached = false)
     }
 
-    private fun updateBlockCategory(category: Int) = viewModelScope.launch(handler) {
-        val block = _uiState.value.block
-        // Remove if Blacklisted or Whitelisted
-        val newBlock = if (block?.category == category) {
-            BlockManager.removeBlock(block.id)
-            null
-        } else if (block != null) {
-            BlockManager.saveOrUpdateBlock(block.clone(category = category))
-        } else {
-            BlockManager.saveOrUpdateBlock(
-                Block(category, Block.TYPE_USER, username = uiState.value.profile?.name, uid = uid)
-            )
+    /**
+     * 更新用户屏蔽
+     *
+     * @param newState 将该用户加入白名单, 黑名单或移除
+     * */
+    private fun updateBlockState(newState: UserBlockState) {
+        val name = _uiState.value.profile?.name ?: throw NullPointerException()
+        when (newState) {
+            UserBlockState.Blacklisted -> blockRepo.upsertUser(BlockUser(uid, name, false))
+
+            UserBlockState.Whitelisted -> blockRepo.upsertUser(BlockUser(uid, name, true))
+
+            UserBlockState.None -> blockRepo.deleteUser(uid)
         }
-        _uiState.update { it.copy(block = newBlock) }
     }
 
-    fun onBlackListClicked() = updateBlockCategory(Block.CATEGORY_BLACK_LIST)
+    fun onUserBlacklisted() = updateBlockState(UserBlockState.Blacklisted)
 
-    fun onWhiteListClicked() = updateBlockCategory(Block.CATEGORY_WHITE_LIST)
+    fun onUserWhitelisted() = updateBlockState(UserBlockState.Whitelisted)
 
     private fun updateRequestingFollowState(following: Boolean, requesting: Boolean) {
         _uiState.update {

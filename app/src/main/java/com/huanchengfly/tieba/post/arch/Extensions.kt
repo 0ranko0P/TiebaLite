@@ -177,9 +177,6 @@ inline fun <INTENT : UiIntent, reified VM : BaseViewModel<INTENT, *, *, *>> page
     }
 }
 
-inline fun <reified T> sealedValues(): List<T> {
-    return T::class.sealedSubclasses.mapNotNull { it.objectInstance as T }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 val TopAppBarScrollBehavior.isOverlapping: Boolean

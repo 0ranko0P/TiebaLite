@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.user.edit
 import androidx.compose.runtime.Stable
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
-import com.huanchengfly.tieba.post.api.models.protos.profile.ProfileResponse
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
@@ -61,33 +60,12 @@ class EditProfileViewModel @Inject constructor() :
             return if (account == null) {
                 flowOf<EditProfilePartialChange.Init>(EditProfilePartialChange.Init.Fail("not logged in!"))
             } else {
-                TiebaApi.getInstance()
-                    .userProfileFlow(account.uid.toLong())
-                    .map<ProfileResponse, EditProfilePartialChange.Init> { profile ->
-                        val user = checkNotNull(profile.data_?.user)
-                        val updated = account.copy(
-                            nameShow = user.nameShow,
-                            portrait = user.portrait,
-                            intro = user.intro,
-                            sex = user.sex.toString(),
-                            fansNum = user.fans_num.toString(),
-                            postNum = user.post_num.toString(),
-                            threadNum = user.thread_num.toString(),
-                            concernNum = user.concern_num.toString(),
-                            tbAge = user.tb_age,
-                            age = user.birthday_info?.age?.toString(),
-                            birthdayShowStatus =
-                                user.birthday_info?.birthday_show_status?.toString(),
-                            birthdayTime = user.birthday_info?.birthday_time?.toString(),
-                            constellation = user.birthday_info?.constellation,
-                            tiebaUid = user.tieba_uid,
-                            loadSuccess = true,
-                        )
-                        accountUtil.saveNewAccount(updated.uid, updated)
-                        EditProfilePartialChange.Init.Success(account = updated)
-                    }
-                    .onStart { emit(EditProfilePartialChange.Init.Loading) }
-                    .catch { emit(EditProfilePartialChange.Init.Fail(it.getErrorMessage())) }
+                flow<EditProfilePartialChange.Init> {
+                    val updated = accountUtil.refreshCurrent(force = true)
+                    emit(EditProfilePartialChange.Init.Success(account = updated))
+                }
+                .onStart { emit(EditProfilePartialChange.Init.Loading) }
+                .catch { emit(EditProfilePartialChange.Init.Fail(it.getErrorMessage())) }
             }
         }
 
@@ -235,11 +213,11 @@ sealed class EditProfilePartialChange : PartialChange<EditProfileState> {
                     isLoading = false,
                     portrait = account.portrait,
                     name = account.name,
-                    nickName = account.nameShow ?: account.name,
-                    sex = account.sex?.toInt() ?: 0,
-                    birthdayTime = account.birthdayTime?.toLong()?.times(1000L) ?: 0L,
-                    tbAge = account.tbAge ?: "0",
-                    intro = account.intro ?: ""
+                    nickName = account.nickname ?: account.name,
+                    sex = account.sex,
+                    birthdayTime = account.birthdayTime * 1000L,
+                    tbAge = account.tbAge.toString(),
+                    intro = account.intro
                 )
 
                 is Fail -> oldState.copy(isLoading = false)

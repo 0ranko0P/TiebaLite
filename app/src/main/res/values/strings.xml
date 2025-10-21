@@ -216,8 +216,6 @@
     <string name="relative_date_after">刚刚</string>
     <string name="title_oksign_finish">签到完成</string>
     <string name="title_oksign_fail">签到失败</string>
-    <string name="title_history_today">今天早些时候</string>
-    <string name="title_history_before">昨天或更早</string>
     <string name="title_history_thread">贴子记录</string>
     <string name="title_history_forum">经过贴吧</string>
     <string name="title_thread_header">回复 %1$s</string>
@@ -326,8 +324,6 @@
     <string name="desc_like">赞</string>
     <string name="title_concern">关注</string>
     <string name="title_personalized">推荐</string>
-    <string name="block_type_keywords">关键词</string>
-    <string name="block_type_user">用户</string>
     <string name="tip_add_block">含有全部关键词的内容将会被屏蔽</string>
     <string name="desc_download_pic">下载图片</string>
     <string name="hot_topic_rank">话题榜</string>
@@ -397,7 +393,8 @@
     <string name="title_sub_posts_header">%d 条回复</string>
     <string name="pull_to_load">继续上拉加载</string>
     <string name="release_to_load">松开加载</string>
-    <string name="title_block_list">屏蔽词管理</string>
+    <string name="settings_block_keyword">屏蔽词管理</string>
+    <string name="settings_block_user">屏蔽用户管理</string>
     <string name="settings_hide_blocked_content">彻底隐藏被屏蔽的内容</string>
     <string name="settings_block_video_summary">隐藏动态页面和吧页面的所有视频贴</string>
     <string name="desc_image">图片</string>
@@ -462,7 +459,6 @@
     <string name="text_god_verify">%s领域大神</string>
     <string name="text_login_failed">登录失败 %s</string>
     <string name="text_login_success">登录成功，即将跳转</string>
-    <string name="text_login_failed_default">登录失败</string>
     <string name="video_preview_not_supported">暂不支持视频预览</string>
     <string name="button_ok">我知道了</string>
     <string name="button_submit">提交</string>

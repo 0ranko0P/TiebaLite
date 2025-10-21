@@ -7,8 +7,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.models.database.KeywordProvider
-import com.huanchengfly.tieba.post.models.database.SearchPostHistory
 import com.huanchengfly.tieba.post.repository.SearchRepository
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -74,7 +72,7 @@ class ForumSearchPostViewModel @Inject constructor(
         _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
     }
 
-    val searchHistories: StateFlow<List<SearchPostHistory>> = searchRepo.getPostHistoryFlow(forumName)
+    val searchHistories: StateFlow<List<String>> = searchRepo.getPostHistoryFlow(forumId)
         .catch { e ->
             handler.handleException(currentCoroutineContext(), e)
         }
@@ -84,17 +82,22 @@ class ForumSearchPostViewModel @Inject constructor(
         viewModelScope.launch(handler) {
             runCatching {
                 require(searchHistories.value.isNotEmpty()) { "Empty History" }
-                searchRepo.clearPostHistory(forumName)
+                searchRepo.clearPostHistory(forumId)
             }
             .onFailure { _uiEvent.emit(SearchUiEvent.ClearHistoryFailed(it)) }
             .onSuccess { _uiEvent.emit(SearchUiEvent.ClearHistorySucceed) }
         }
     }
 
-    fun onDeleteHistory(history: KeywordProvider) {
+    /**
+     * Called when delete search history is clicked
+     *
+     * @param history search history
+     * */
+    fun onDeleteHistory(history: String) {
         viewModelScope.launch(handler) {
             runCatching {
-                searchRepo.deletePostHistory(history as SearchPostHistory)
+                searchRepo.deletePostHistory(forumId, history)
             }
             .onFailure { e -> _uiEvent.emit(SearchUiEvent.DeleteHistoryFailed(e)) }
         }
@@ -153,7 +156,7 @@ class ForumSearchPostViewModel @Inject constructor(
     fun onSubmitKeyword(keyword: String) {
         if (keyword != _uiState.value.keyword) {
             viewModelScope.launch(handler) {
-                searchRepo.addPostHistory(forumName, keyword)
+                searchRepo.addPostHistory(forumId, keyword)
             }
             searchPostInternal(keyword)
         }

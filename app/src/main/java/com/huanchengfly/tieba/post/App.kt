@@ -13,14 +13,12 @@ import androidx.annotation.Keep
 import androidx.appcompat.app.AppCompatDelegate
 import com.huanchengfly.tieba.post.activities.CrashActivity
 import com.huanchengfly.tieba.post.components.ConfigInitializer
-import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import org.litepal.LitePal
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -58,9 +56,7 @@ class App : Application() {
                 WebView.setDataDirectorySuffix(processName)
             }
         }
-        LitePal.initialize(this)
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        BlockManager.init()
         EmoticonManager.init(this)
     }
 

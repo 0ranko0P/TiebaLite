@@ -1,15 +1,32 @@
 package com.huanchengfly.tieba.post.models.database
 
-import androidx.compose.runtime.Immutable
-import org.litepal.crud.LitePalSupport
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import java.util.Objects
 
-@Immutable
+/**
+ * Search post history
+ *
+ * @param id database primary key
+ * @param forumId forum id
+ * @param keyword search keyword
+ * @param timestamp search timestamp
+ */
+@Entity(
+    tableName = "search_post",
+    indices = [
+        Index(value = ["forumId"]),
+        Index(value = ["timestamp"], unique = true)
+    ]
+)
 class SearchPostHistory(
-    val content: String,
-    val forumName: String,
-    val timestamp: Long = System.currentTimeMillis(),
-) : LitePalSupport(), KeywordProvider {
-    val id: Long = 0
+    @PrimaryKey
+    override val id: Int,
+    val forumId: Long,
+    override val keyword: String,
+    override val timestamp: Long = System.currentTimeMillis(),
+) : Search() {
 
-    override fun getKeyword(): String = content
+    constructor(forumId: Long, keyword: String) : this(Objects.hash(forumId, keyword), forumId, keyword)
 }

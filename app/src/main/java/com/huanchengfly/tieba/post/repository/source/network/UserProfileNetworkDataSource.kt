@@ -5,8 +5,9 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.FollowBean
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
-import com.huanchengfly.tieba.post.api.models.protos.profile.ProfileResponseData
+import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataSource.commonResponse
@@ -28,14 +29,15 @@ object UserProfileNetworkDataSource {
             }
     }
 
-    suspend fun loadUserProfile(uid: Long): ProfileResponseData {
+    suspend fun loadUserProfile(uid: Long): User {
         require(uid > 0) { "Invalid user ID: $uid." }
 
         return TiebaApi.getInstance()
             .userProfileFlow(uid)
             .firstOrThrow()
             .run {
-                data_ ?: throw TiebaApiException(commonResponse = error.commonResponse)
+                val data = data_ ?: throw TiebaApiException(commonResponse = error.commonResponse)
+                data.user ?: throw TiebaException("Null user data")
             }
     }
 

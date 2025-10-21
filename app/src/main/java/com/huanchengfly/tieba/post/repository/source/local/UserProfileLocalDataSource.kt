@@ -2,7 +2,7 @@ package com.huanchengfly.tieba.post.repository.source.local
 
 import android.content.Context
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
-import com.huanchengfly.tieba.post.api.models.protos.profile.ProfileResponseData
+import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.decodeCache
 import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.decodeListCache
@@ -68,21 +68,21 @@ class UserProfileLocalDataSource @Inject constructor(@ApplicationContext context
         }
     }
 
-    suspend fun loadUserProfile(uid: Long): ProfileResponseData? = withContext(Dispatchers.IO) {
+    suspend fun loadUserProfile(uid: Long): User? = withContext(Dispatchers.IO) {
         val cacheFile = userCacheFile(uid)
         mutex.withLock {
             runCatching {
-                ProfileResponseData.ADAPTER.decodeCache(cacheFile, PROFILE_EXPIRE_MILL.toLong())
+                User.ADAPTER.decodeCache(cacheFile, PROFILE_EXPIRE_MILL.toLong())
             }
             .getOrNull()
         }
     }
 
-    suspend fun saveUserProfile(uid: Long, data: ProfileResponseData) = withContext(Dispatchers.IO) {
+    suspend fun saveUserProfile(uid: Long, data: User) = withContext(Dispatchers.IO) {
         val cacheFile = userCacheFile(uid)
         mutex.withLock {
             runCatching {
-                ProfileResponseData.ADAPTER.encodeCache(cacheFile, data)
+                User.ADAPTER.encodeCache(cacheFile, data)
             }
             .isSuccess
         }

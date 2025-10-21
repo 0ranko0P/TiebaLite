@@ -1,25 +1,25 @@
 package com.huanchengfly.tieba.post.models.database;
 
-import org.litepal.crud.LitePalSupport;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
 
-public class TopForum extends LitePalSupport {
-    private long forumId;
-    private int id;
+/**
+ * Represent a pinned forum for all users
+ */
+@Entity(tableName = "top_forum")
+public final class TopForum {
+
+    @PrimaryKey private long forumId;
 
     public TopForum(long forumId) {
         this.forumId = forumId;
-    }
-
-    public int getId() {
-        return id;
     }
 
     public long getForumId() {
         return forumId;
     }
 
-    public TopForum setForumId(long forumId) {
+    public void setForumId(long forumId) {
         this.forumId = forumId;
-        return this;
     }
 }

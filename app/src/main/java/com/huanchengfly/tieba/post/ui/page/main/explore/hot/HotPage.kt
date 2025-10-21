@@ -230,15 +230,21 @@ fun HotPage(
                     key = { _, thread -> thread.id },
                     contentType = { _,_ -> HotType.Thread }
                 ) { index, thread ->
-                    FeedCard(
-                        thread = thread,
-                        onClick = threadClickListeners.onClicked,
-                        onLike = viewModel::onThreadLikeClicked,
-                        onClickReply = threadClickListeners.onReplyClicked,
-                        onClickUser = threadClickListeners.onAuthorClicked,
-                        onClickForum = threadClickListeners.onForumClicked,
-                    ) {
-                        HotRankText(rank = index + 1, hotNum = thread.hotNum)
+                    Column {
+                        FeedCard(
+                            thread = thread,
+                            onClick = threadClickListeners.onClicked,
+                            onLike = viewModel::onThreadLikeClicked,
+                            onClickReply = threadClickListeners.onReplyClicked,
+                            onClickUser = threadClickListeners.onAuthorClicked,
+                            onClickForum = threadClickListeners.onForumClicked,
+                        ) {
+                            HotRankText(rank = index + 1, hotNum = thread.hotNum)
+                        }
+
+                        if (index != threadList.lastIndex) {
+                            HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 2.dp)
+                        }
                     }
                 }
             }

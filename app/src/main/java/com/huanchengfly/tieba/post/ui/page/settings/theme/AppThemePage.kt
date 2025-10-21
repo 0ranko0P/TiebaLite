@@ -243,7 +243,7 @@ fun AppThemePage(
     val onSaveThemeClicked: () -> Unit = {
         saveThemeDialogState.show()
         viewModel
-            .onSaveClicked(isFeatured = pagerState.currentPage == 0)
+            .onSaveClicked(isFeatured = pagerState.currentPage == ThemePage.Featured.ordinal)
             .invokeOnCompletion { navigator.navigateUp() }
     }
 
@@ -386,31 +386,13 @@ fun AppThemePage(
     }
 }
 
-@Composable
-private fun rememberWidgetDemoAccount(): Account {
-    val context = LocalContext.current
-    val localAccount = LocalAccount.current
-    return remember {
-        // preprocess desc and avatar url
-        val desc = context.getString(R.string.relative_date_minute, 1)
-        localAccount?.copy(
-            portrait = StringUtil.getAvatarUrl(localAccount.portrait),
-            intro = desc
-        ) ?: Account(
-            name = context.getString(R.string.title_not_logged_in),
-            intro = desc,
-            fansNum = "60W",
-            postNum = "2.6K",
-            concernNum = "10"
-        )
-    }
-}
-
 // UserStatsCard and DarkMode status Chip
 @Composable
 private fun UserStatWidgetRow(
     modifier: Modifier = Modifier,
-    account: Account,
+    posts: String?,
+    fans: String?,
+    concerned: String?,
     isDarkMode: () -> Boolean
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -454,7 +436,7 @@ private fun UserStatWidgetRow(
                 color = secondaryContainerAni,
                 contentColor = colorScheme.onSecondaryContainer
             ) {
-                StatCard(account = account)
+                StatCard(posts, fans, concerned)
             }
         }
     }
@@ -533,7 +515,7 @@ private fun SlidersWidgetRow(
 }
 
 @Composable
-private fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account, postText: Int) {
+private fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account?, postText: Int) {
     val colorScheme = MaterialTheme.colorScheme
 
     CompositionLocalProvider(LocalContentColor provides colorScheme.onSurface) {
@@ -545,14 +527,22 @@ private fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account, 
         ) {
             UserHeader(
                 avatar = {
-                    if (account.portrait.isEmpty()) {
+                    if (account?.portrait.isNullOrEmpty()) {
                         Avatar(R.drawable.ic_launcher_new_round, size = Sizes.Small)
                     } else {
-                        Avatar(account.portrait, size = Sizes.Small)
+                        Avatar(remember { StringUtil.getAvatarUrl(account.portrait) }, size = Sizes.Small)
                     }
                 },
-                name = { Text(account.name) },
-                desc = { Text(text = account.intro!!) },
+                name = {
+                    if (account != null) {
+                        Text(text = account.name)
+                    } else {
+                        Text(text = stringResource(R.string.title_not_logged_in))
+                    }
+                },
+                desc = {
+                    Text(text = stringResource(R.string.relative_date_minute, 1), maxLines = 1)
+               },
             ) {
                 var like by remember { mutableStateOf(Like(true, 99999)) }
                 PostLikeButton(like, onClick = { like = !like })
@@ -569,7 +559,7 @@ private fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account, 
 @Composable
 private fun CompactNavigationDrawer(modifier: Modifier = Modifier) {
     var selected by remember { mutableIntStateOf(0) }
-    val navItems = rememberNavigationItems(Account(), messageCount = { 0 })
+    val navItems = rememberNavigationItems(loggedIn = false, messageCount = { 0 })
 
     Column(
         modifier = modifier
@@ -604,8 +594,7 @@ private fun ThemedWidgetPanel(
     isDarkMode: () -> Boolean,
     onDarkModeChanged: () -> Unit
 ) {
-    val account: Account = rememberWidgetDemoAccount()
-
+    val account = LocalAccount.current
     val colorScheme = theme.getColorScheme(isDarkMode())
     val isTranslucentTheme = theme is TranslucentTheme
     val isCompactWidth = isWindowWidthCompact()
@@ -631,7 +620,12 @@ private fun ThemedWidgetPanel(
                 Column(
                     modifier = Modifier.fillMaxWidth(fraction = if (isCompactWidth) 1.0f else 0.65f)
                 ) {
-                    UserStatWidgetRow(account = account, isDarkMode = isDarkMode)
+                    UserStatWidgetRow(
+                        posts = account?.posts ?: "2.6K",
+                        fans = account?.fans ?: "10",
+                        concerned = account?.concerned ?: "10W",
+                        isDarkMode = isDarkMode
+                    )
 
                     SlidersWidgetRow(isDarkMode = isDarkMode, onDarkModeChanged = onDarkModeChanged)
 
