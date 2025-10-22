@@ -20,8 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bumptech.glide.Glide
@@ -81,8 +79,6 @@ object EmoticonManager {
     private val emoticonIds: MutableSet<String> = hashSetOf()
 
     private val inlineTextCache = HashMap<Int, WeakReference<Map<String, InlineTextContent>>>()
-
-    private val lineHeightCache = HashMap<TextStyle, Int>(4)
 
     private val emoticonMapping: MutableMap<String, String> = ConcurrentHashMap()
 
@@ -263,25 +259,8 @@ object EmoticonManager {
         }
     }
 
-    @Composable
-    fun calcLineHeightPx(style: TextStyle): Int {
-        val cachedSize = lineHeightCache[style]
-        return if (cachedSize != null) {
-            cachedSize
-        } else {
-            val textLayoutResult = rememberTextMeasurer().measure(
-                text = stringResource(id = R.string.single_chinese_char),
-                style = style
-            )
-            val height = textLayoutResult.size.height
-            lineHeightCache[style] = height
-            height
-        }
-    }
-
     fun clear() {
         inlineTextCache.clear()
-        lineHeightCache.clear()
         contextRef.clear()
     }
 }

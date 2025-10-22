@@ -1,3 +1,5 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.huanchengfly.tieba.post.utils
 
 import android.app.Activity
@@ -10,12 +12,16 @@ import android.view.WindowManager
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.isSpecified
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -52,10 +58,24 @@ object DisplayUtil {
 
     /**
      * 将sp值转换为px值
+     *
+     * @throws IllegalStateException 传入了EM值
      */
-    fun sp2px(context: Context, spValue: Float): Int {
-        val fontScale = context.resources.displayMetrics.scaledDensity
-        return (spValue * fontScale + 0.5f).toInt()
+    @Composable
+    @Stable
+    inline fun TextUnit.sp2px(): Int = with(LocalDensity.current) { roundToPx() }
+
+    /**
+     * 将SP值相加
+     *
+     * @throws IllegalStateException 传入了EM值
+     * */
+    @Composable
+    @Stable
+    inline operator fun TextUnit.plus(other: TextUnit): TextUnit = if (other.isSpecified) {
+        with(LocalDensity.current) { (toDp() + other.toDp()).toSp() }
+    } else {
+        this
     }
 
     /**

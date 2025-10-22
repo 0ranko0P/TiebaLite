@@ -380,7 +380,6 @@
     <string name="message_update_collect_mark">本次阅读到第 %d 楼，是否更新收藏楼层？</string>
     <string name="message_update_collect_mark_failed">更新收藏楼层失败 %s</string>
     <string name="message_update_collect_mark_success">更新收藏楼层成功</string>
-    <string name="single_chinese_char" translatable="false">国</string>
     <string name="open_all_sub_posts">查看全部 %d 条回复</string>
     <string name="message_store_thread_update">贴子更新到了第 %d 楼</string>
     <string name="tip_blocked_post">由于你的屏蔽设置，第 %d 楼已被屏蔽</string>

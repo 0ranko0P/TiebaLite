@@ -255,7 +255,7 @@ fun PbContentText(
     textDecoration: TextDecoration? = null,
     textAlign: TextAlign? = null,
     lineHeight: TextUnit = TextUnit.Unspecified,
-    lineSpacing: TextUnit = 0.sp,
+    lineSpacing: TextUnit = TextUnit.Unspecified,
     overflow: TextOverflow = TextOverflow.Clip,
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
@@ -36,62 +37,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.takeOrElse
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.pxToSpFloat
 import com.huanchengfly.tieba.post.spToPxFloat
 import com.huanchengfly.tieba.post.theme.tokens.ColorSchemeKeyTokens
 import com.huanchengfly.tieba.post.theme.tokens.value
+import com.huanchengfly.tieba.post.utils.DisplayUtil.plus
+import com.huanchengfly.tieba.post.utils.DisplayUtil.sp2px
 import com.huanchengfly.tieba.post.utils.EmoticonManager
-import com.huanchengfly.tieba.post.utils.EmoticonManager.calcLineHeightPx
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 
 const val EMOTICON_SIZE_SCALE = 0.9f
-
-@Composable
-fun EmoticonText(
-    text: String,
-    modifier: Modifier = Modifier,
-    color: Color = LocalContentColor.current,
-    fontSize: TextUnit = TextUnit.Unspecified,
-    fontStyle: FontStyle? = null,
-    fontWeight: FontWeight? = null,
-    fontFamily: FontFamily? = null,
-    letterSpacing: TextUnit = TextUnit.Unspecified,
-    textDecoration: TextDecoration? = null,
-    textAlign: TextAlign? = null,
-    lineHeight: TextUnit = TextUnit.Unspecified,
-    lineSpacing: TextUnit = 0.sp,
-    overflow: TextOverflow = TextOverflow.Clip,
-    softWrap: Boolean = true,
-    maxLines: Int = Int.MAX_VALUE,
-    minLines: Int = 1,
-    onTextLayout: (TextLayoutResult) -> Unit = {},
-    style: TextStyle = LocalTextStyle.current,
-) {
-    val emoticonString = remember(key1 = text) { text.emoticonString }
-
-    EmoticonText(
-        emoticonString,
-        modifier,
-        color,
-        fontSize,
-        fontStyle,
-        fontWeight,
-        fontFamily,
-        letterSpacing,
-        textDecoration,
-        textAlign,
-        lineHeight,
-        lineSpacing,
-        overflow,
-        softWrap,
-        maxLines,
-        minLines,
-        inlineContent = emptyMap(),
-        onTextLayout = onTextLayout,
-        style = style
-    )
-}
 
 @Composable
 fun EmoticonText(
@@ -106,7 +63,7 @@ fun EmoticonText(
     textDecoration: TextDecoration? = null,
     textAlign: TextAlign? = null,
     lineHeight: TextUnit = TextUnit.Unspecified,
-    lineSpacing: TextUnit = 0.sp,
+    lineSpacing: TextUnit = TextUnit.Unspecified,
     overflow: TextOverflow = TextOverflow.Clip,
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
@@ -115,42 +72,32 @@ fun EmoticonText(
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current
 ) {
+    val lineHeightSp = lineHeight.takeOrElse { style.lineHeight }.takeOrElse { 24.sp/* BodyLarge */}
+
     val mergedStyle = style.merge(
-        TextStyle(
-            color = color.takeOrElse { style.color },
+            color = color.takeOrElse { style.color.takeOrElse { LocalContentColor.current } },
             fontSize = fontSize,
             fontWeight = fontWeight,
             textAlign = textAlign ?: TextAlign.Unspecified,
-            lineHeight = lineHeight,
+            lineHeight = lineHeightSp + lineSpacing,
             fontFamily = fontFamily,
             textDecoration = textDecoration,
             fontStyle = fontStyle,
             letterSpacing = letterSpacing
-        )
     )
-    val sizePx = calcLineHeightPx(mergedStyle)
-    val spacingLineHeight = (sizePx + lineSpacing.value.spToPxFloat()).pxToSpFloat().sp
-    val emoticonInlineContent = EmoticonManager.getEmoticonInlineContent(sizePx, EMOTICON_SIZE_SCALE)
 
-    Text(
-        text.emoticonString,
-        modifier,
-        color,
-        fontSize,
-        fontStyle,
-        fontWeight,
-        fontFamily,
-        letterSpacing,
-        textDecoration,
-        textAlign,
-        spacingLineHeight,
-        overflow,
-        softWrap,
-        maxLines,
-        minLines,
-        inlineContent?.let { emoticonInlineContent + it} ?: emoticonInlineContent,
-        onTextLayout,
-        style
+    val emoticonInlineContent = EmoticonManager.getEmoticonInlineContent(lineHeightSp.sp2px(), EMOTICON_SIZE_SCALE)
+
+    BasicText(
+        text = text.emoticonString,
+        modifier = modifier,
+        style = mergedStyle,
+        onTextLayout = onTextLayout,
+        overflow = overflow,
+        softWrap = softWrap,
+        maxLines = maxLines,
+        minLines = minLines,
+        inlineContent = inlineContent?.let { emoticonInlineContent + it } ?: emoticonInlineContent,
     )
 }
 
