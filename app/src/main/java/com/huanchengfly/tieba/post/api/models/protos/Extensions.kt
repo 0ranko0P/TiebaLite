@@ -254,9 +254,4 @@ val Post.contentRenders: ImmutableList<PbContentRender>
         }.toImmutableList()
     }
 
-val User.bawuType: String?
-    get() = if (is_bawu == 1) {
-        if (bawu_type == "manager") "吧主" else "小吧主"
-    } else null
-
 fun VideoInfo.aspectRatio(): Float = thumbnailWidth.toFloat() / thumbnailHeight

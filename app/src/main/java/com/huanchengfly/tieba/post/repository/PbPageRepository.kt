@@ -12,6 +12,7 @@ import com.huanchengfly.tieba.post.api.models.protos.Page
 import com.huanchengfly.tieba.post.api.models.protos.Post
 import com.huanchengfly.tieba.post.api.models.protos.SubPostList
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
+import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.contentRenders
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
@@ -33,6 +34,7 @@ import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
+import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -139,11 +141,11 @@ class PbPageRepository @Inject constructor(
         } else {
             data.thread.getNextPagePostId(data.post_list, sortType)
         }
-        val firstPost = data.first_floor_post?.mapToUiModel(lz.id, hideBlocked = false, blockRepo::isBlocked)
         val hideBlocked = blockSettings.first().hideBlocked
+        val firstPost = data.first_floor_post?.mapToUiModel(lzId = lz.id, hideBlocked = false) // non-blockable
 
         return PbPageUiResponse(
-            user = data.user?.takeIf { it.is_login == 1 }?.run { UserData(user = this, isLz = id == lz.id) },
+            user = data.user?.takeIf { it.is_login == 1 }?.mapToUiModel(lzId = lz.id),
             firstPost = firstPost,
             posts = data.post_list.mapToUiModel(lzId = lz.id, hideBlocked, isBlocked = blockRepo::isBlocked),
             tbs = data.anti!!.tbs,
@@ -167,8 +169,8 @@ class PbPageRepository @Inject constructor(
         val anti = data.anti ?: throw TiebaException("Null anti data")
         val hideBlocked = blockSettings.first().hideBlocked
         return PbFloorUiResponse(
-            post = post.mapToUiModel(lzId, hideBlocked = false, isBlocked = blockRepo::isBlocked),
-            subPosts = data.subpost_list.mapToUiModel(lzId, hideBlocked, isBlocked = blockRepo::isBlocked, abstract = false),
+            post = post.mapToUiModel(lzId, hideBlocked = false), // non-blockable
+            subPosts = data.subpost_list.mapToUiModel(lzId, abstract = false, hideBlocked, isBlocked = blockRepo::isBlocked),
             tbs = anti.tbs,
             thread = ThreadInfoData(data.thread!!),
             page = PageData(
@@ -238,6 +240,23 @@ class PbPageRepository @Inject constructor(
     }
 }
 
+/**
+ * Convert [User] to UI Model
+ *
+ * @param lzId 楼主 uid
+ * */
+private fun User.mapToUiModel(lzId: Long): UserData = UserData(
+    id = id,
+    name = name,
+    nameShow = nameShow,
+    avatarUrl = StringUtil.getAvatarUrl(portrait),
+    portrait = portrait,
+    ip = ip_address,
+    levelId = level_id,
+    bawuType = if (is_bawu == 1) { if (bawu_type == "manager") "吧主" else "小吧主" } else null,
+    isLz = id == lzId
+)
+
 @OptIn(ExperimentalTextApi::class)
 private fun buildAbstractContent(content: List<PbContentRender>, user: UserData): AnnotatedString {
     return buildAnnotatedString {
@@ -260,7 +279,7 @@ private suspend fun SubPostList.mapToUiModel(
     abstract: Boolean,
     isBlocked: suspend (uid: Long, content: String) -> Boolean,
 ): SubPostItemData {
-    val author = UserData(user = author!!, isLz = lzId == author.id)
+    val author = author!!.mapToUiModel(lzId)
     val plainText = content.plainText.orEmpty()
     val contentRenders = content.renders
     return SubPostItemData(
@@ -276,7 +295,7 @@ private suspend fun SubPostList.mapToUiModel(
 }
 
 /**
- * Convert SubPostList to UI Model
+ * Convert SubPostLists to UI Model
  *
  * @param lzId user ID of LZ
  * @param hideBlocked remove blocked subpost from result
@@ -284,16 +303,16 @@ private suspend fun SubPostList.mapToUiModel(
  * */
 private suspend fun List<SubPostList>.mapToUiModel(
     lzId: Long,
+    abstract: Boolean,
     hideBlocked: Boolean,
-    isBlocked: suspend (uid: Long, content: String) -> Boolean,
-    abstract: Boolean
+    isBlocked: suspend (uid: Long, content: String) -> Boolean
 ): List<SubPostItemData> {
-    return if (isNotEmpty()) {
-        withContext(Dispatchers.Default) {
-            mapNotNull { it.mapToUiModel(lzId, abstract, isBlocked).takeUnless { i -> i.blocked && hideBlocked } }
+    if (isEmpty()) return emptyList()
+
+    return withContext(Dispatchers.Default) {
+        mapNotNull {
+            it.mapToUiModel(lzId, abstract, isBlocked).takeUnless { i -> i.blocked && hideBlocked }
         }
-    } else {
-        emptyList()
     }
 }
 
@@ -306,22 +325,21 @@ private suspend fun List<SubPostList>.mapToUiModel(
  * */
 private suspend fun Post.mapToUiModel(
     lzId: Long,
-    hideBlocked: Boolean,
-    isBlocked: suspend (uid: Long, content: String) -> Boolean,
+    hideBlocked: Boolean = false,
+    isBlocked: suspend (uid: Long, content: String) -> Boolean = { _, _, -> false },
 ): PostData {
     val plainText = content.plainText.orEmpty()
-    val authorId = author?.id ?: author_id
-    val author = author?.let { UserData(user = it, isLz = authorId == lzId) }
-    val subPosts = sub_post_list?.sub_post_list?.mapToUiModel(lzId, hideBlocked, isBlocked, abstract = true)
+    val author = author!!.mapToUiModel(lzId)
+    val subPosts = sub_post_list?.sub_post_list?.mapToUiModel(lzId, abstract = true, hideBlocked, isBlocked)
 
     return PostData(
         id = this.id,
-        author = author ?: UserData.Empty,
+        author = author,
         floor = floor,
         title = title.takeUnless { is_ntitle == 1 || title.isEmpty() || title.isBlank() },
         time = DateTimeUtils.fixTimestamp(time.toLong()),
         like = agree?.let { Like(agree = it) } ?: LikeZero,
-        blocked = isBlocked(author?.id ?: authorId, plainText),
+        blocked = isBlocked(author.id, plainText),
         plainText = plainText,
         contentRenders = contentRenders,
         subPosts = subPosts,

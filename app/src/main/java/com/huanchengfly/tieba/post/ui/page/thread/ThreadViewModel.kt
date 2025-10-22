@@ -507,7 +507,7 @@ class ThreadViewModel @Inject constructor(
         val history = ThreadHistory(
             id = threadId,
             name = author.nameShow,
-            avatar = StringUtil.getAvatarUrl(author.portrait),
+            avatar = author.avatarUrl,
             title = title,
             isSeeLz = state.seeLz,
             pid = lastVisiblePost?.takeIf { it.id > 0 && it.floor > 5 }?.id ?: 0, // 大于 5 楼
