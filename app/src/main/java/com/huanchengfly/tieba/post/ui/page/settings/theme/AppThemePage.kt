@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
@@ -82,11 +83,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -97,7 +103,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -120,7 +128,6 @@ import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.models.Like
@@ -260,16 +267,16 @@ fun AppThemePage(
         )
     }
 
-    // Add overlay color when using translucent theme
     val currentScheme = MaterialTheme.colorScheme
-    val backgroundColor = if (currentScheme.isTranslucent) {
-        currentScheme.background.copy(0.76f)
-    } else {
-        Color.Transparent
+
+    var themeWidgetLayoutData by remember { mutableStateOf<Pair<IntSize, Offset>?>(null) }
+    if (currentScheme.isTranslucent) {
+        themeWidgetLayoutData?.let { (size, pos) ->
+            TranslucentThemeOverlay(widgetPanelSize = size, positionInWindow = pos)
+        }
     }
 
     MyScaffold(
-        backgroundColor = backgroundColor,
         topBar = {
             TitleCentredToolbar(
                 title = stringResource(id = R.string.title_theme),
@@ -325,6 +332,14 @@ fun AppThemePage(
                     }
 
                     ThemedWidgetPanel(
+                        modifier = Modifier.onCase(currentScheme.isTranslucent) {
+                            // Track layout coordinates on translucent theme
+                            onPlaced {
+                                if (currentTheme is TranslucentTheme) {
+                                    themeWidgetLayoutData = it.size to it.positionInWindow()
+                                }
+                            }
+                        },
                         theme = currentTheme ?: defaultTheme,
                         isDarkMode = { isDarkMode },
                         onDarkModeChanged = { isDarkMode = !isDarkMode }
@@ -542,11 +557,7 @@ private fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account?,
                     }
                 },
                 name = {
-                    if (account != null) {
-                        Text(text = account.name)
-                    } else {
-                        Text(text = stringResource(R.string.title_not_logged_in))
-                    }
+                    Text(text = account?.name ?: stringResource(R.string.app_name))
                 },
                 desc = {
                     Text(text = stringResource(R.string.relative_date_minute, 1), maxLines = 1)
@@ -567,7 +578,7 @@ private fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account?,
 @Composable
 private fun CompactNavigationDrawer(modifier: Modifier = Modifier) {
     var selected by remember { mutableIntStateOf(0) }
-    val navItems = rememberNavigationItems(loggedIn = false, messageCount = { 0 })
+    val navItems = rememberNavigationItems(loggedIn = true, messageCount = { 0 })
 
     Column(
         modifier = modifier
@@ -595,6 +606,35 @@ private fun CompactNavigationDrawer(modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun TranslucentThemeOverlay(widgetPanelSize: IntSize, positionInWindow: Offset) {
+    val currentScheme = MaterialTheme.colorScheme
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                compositingStrategy = CompositingStrategy.Offscreen
+            }
+            .drawWithContent {
+                val size = widgetPanelSize.toSize()
+                val widgetCornerSize = ThemePanelShape.topStart.toPx(size, this)
+                val cornerRadius = CornerRadius(widgetCornerSize)
+
+                // simi-transparent background overlay
+                drawRect(currentScheme.background.copy(0.76f))
+
+                // erase background overlay with panel rect
+                drawRoundRect(
+                    Color.Black,
+                    positionInWindow,
+                    size,
+                    cornerRadius,
+                    blendMode = BlendMode.Clear
+                )
+            }
+    )
+}
+
+@Composable
 private fun ThemedWidgetPanel(
     modifier: Modifier = Modifier,
     theme: AppTheme,
@@ -606,21 +646,18 @@ private fun ThemedWidgetPanel(
     val isTranslucentTheme = theme is TranslucentTheme
     val isCompactWidth = isWindowWidthCompact()
 
-    Box(modifier = modifier) {
-        if (isTranslucentTheme) {
-            TranslucentThemeBackground(Modifier.matchParentSize(), theme.background, ThemePanelShape)
-        }
-
+    Box(
+        modifier = modifier
+            .onCase(condition = !isTranslucentTheme) {
+                animateBackground(
+                    color = colorScheme.surfaceColorAtElevation(4.dp),
+                    shape = ThemePanelShape,
+                    animationSpec = spring(stiffness = Spring.StiffnessVeryLow)
+                )
+            }
+            .padding(all = ThemeItemMargin)
+    ) {
         Row(
-            modifier = Modifier
-                .onCase(condition = !isTranslucentTheme) {
-                    animateBackground(
-                        color = colorScheme.surfaceColorAtElevation(4.dp),
-                        shape = ThemePanelShape,
-                        animationSpec = spring(stiffness = Spring.StiffnessVeryLow)
-                    )
-                }
-                .padding(all = ThemeItemMargin),
             horizontalArrangement = Arrangement.Center
         ) {
             MaterialTheme(colorScheme = colorScheme) {
@@ -732,13 +769,12 @@ private fun ColorSchemeItem(
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun TranslucentThemeBackground(modifier: Modifier = Modifier, file: File?, shape: Shape? = null) {
+fun TranslucentThemeBackground(modifier: Modifier = Modifier, file: File?) {
     GlideImage(
         model = file ?: R.drawable.user_header,
         contentDescription = null,
-        modifier = modifier
-            .onNotNull(shape) { clip(shape = it) },
-        contentScale = ContentScale.Crop,
+        modifier = modifier,
+        contentScale = ContentScale.None,
         failure = placeholder(R.drawable.user_header),
         requestBuilderTransform = { it.diskCacheStrategy(DiskCacheStrategy.NONE) }
     )
