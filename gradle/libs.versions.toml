@@ -104,7 +104,7 @@ squareup-retrofit2 = { module = "com.squareup.retrofit2:retrofit", version.ref =
 squareup-retrofit2-wire = { module = "com.squareup.retrofit2:converter-wire", version.ref = "retrofit2" }
 subsampling-image = { module = "com.davemorrissey.labs:subsampling-scale-image-view-androidx", version = "3.10.0" }
 iielse-imageviewer = { module = "com.github.iielse:imageviewer", version = "2.1.23" }
-yalantis-ucrop = { module = "com.github.yalantis:ucrop", version = "2.2.8" }
+yalantis-ucrop = { module = "com.github.yalantis:ucrop", version = "2.2.11" }
 
 liyujiang-oadi = { module = "com.github.gzu-liyujiang:Android_CN_OAID", version = "4.2.4" }
 wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }

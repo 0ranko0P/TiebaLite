@@ -99,13 +99,15 @@ class EditProfileActivity : BaseComposeActivity() {
 
     private val portraitFile: File by lazy { File(cacheDir, "cropped_portrait") }
 
-    private val uCropLauncher = registerUCropResult {
-        val result: Result<Uri> = it ?: return@registerUCropResult // Canceled
-        if (result.isSuccess) {
-            viewModel.send(EditProfileIntent.UploadPortrait(portraitFile))
-        } else {
-            val error = result.exceptionOrNull()?.message ?: getString(R.string.error_unknown)
-            toastShort(error)
+    // Launch UCropActivity for result (cropped portrait)
+    private val uCropLauncher = registerUCropResult { result ->
+        result?.run { // null when RESULT_CANCELED, do nothing
+            onSuccess { uri ->
+                viewModel.send(EditProfileIntent.UploadPortrait(portraitFile))
+            }
+            onFailure { e ->
+                toastShort(e.message ?: getString(R.string.error_unknown))
+            }
         }
     }
 
@@ -183,14 +185,10 @@ class EditProfileActivity : BaseComposeActivity() {
             .withOptions(UCrop.Options().apply {
                 setShowCropFrame(true)
                 setShowCropGrid(true)
-                setStatusBarColor(primaryColor)
                 setToolbarColor(primaryColor)
-                setToolbarWidgetColor(Color.White.toArgb())
-                setActiveControlsWidgetColor(primaryColor)
                 setLogoColor(primaryColor)
                 setCompressionFormat(Bitmap.CompressFormat.JPEG)
-            }
-            )
+            })
     }
 }
 

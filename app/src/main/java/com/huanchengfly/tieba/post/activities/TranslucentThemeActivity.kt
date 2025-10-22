@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,6 +47,7 @@ import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.activities.TranslucentThemeViewModel.Companion.CROP_FILE_PREFIX
 import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUCropResult
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.theme.DefaultColors
@@ -93,19 +93,20 @@ class TranslucentThemeActivity : AppCompatActivity() {
             delay(240L) // Wait exit animation of MediaPicker Activity
 
             val primaryColor = vm.uiState.first().primaryColor
-            // Launch UCropActivity now
             val uCrop = buildUCropOptions(uri, primaryColor.toArgb())
-            ucropActivityResultLauncher.launch(uCrop)
+            ucropActivityLauncher.launch(uCrop)
         }
     }
 
-    private val ucropActivityResultLauncher = registerUCropResult {
-        val result: Result<Uri> = it ?: return@registerUCropResult // Canceled
-        if (result.isSuccess) {
-            vm.onNewWallpaperSelected(uri = result.getOrThrow())
-        } else {
-            val error = result.exceptionOrNull()?.message ?: getString(R.string.error_unknown)
-            toastShort(error)
+    // Launch UCropActivity for result (cropped theme wallpaper)
+    private val ucropActivityLauncher = registerUCropResult { result ->
+        result?.run { // null when RESULT_CANCELED, do nothing
+            onSuccess { uri ->
+                vm.onNewWallpaperSelected(uri)
+            }
+            onFailure { e ->
+                toastShort(e.message ?: getString(R.string.error_unknown))
+            }
         }
     }
 
@@ -198,11 +199,15 @@ class TranslucentThemeActivity : AppCompatActivity() {
 
                     if (windowSize.isLooseWindowWidth()) {
                         Row(modifier = Modifier.padding(paddingValues)) {
-                            contents(Modifier.weight(1.0f).fillMaxHeight())
+                            contents(Modifier
+                                .weight(1.0f)
+                                .fillMaxHeight())
                         }
                     } else {
                         Column(modifier = Modifier.padding(paddingValues)) {
-                            contents(Modifier.weight(1.0f).fillMaxWidth())
+                            contents(Modifier
+                                .weight(1.0f)
+                                .fillMaxWidth())
                         }
                     }
                 }
@@ -264,7 +269,7 @@ class TranslucentThemeActivity : AppCompatActivity() {
          * */
         private fun Context.buildUCropOptions(sourceUri: Uri, @ColorInt accent: Int): UCrop {
             // Save cropped image to cache dir temporary
-            val destUri = Uri.fromFile(File(cacheDir, "cropped_${sourceUri.hashCode()}.webp"))
+            val destUri = Uri.fromFile(File(cacheDir, "$CROP_FILE_PREFIX${System.currentTimeMillis()}.webp"))
 
             // Restrict image to screen aspect ratio
             val screen = DisplayUtil.getScreenPixels(this)
@@ -274,10 +279,7 @@ class TranslucentThemeActivity : AppCompatActivity() {
                 .withAspectRatio(aspectRatio, 1f)
                 .withMaxResultSize(screen.width, screen.height)
                 .withOptions(UCrop.Options().apply {
-                    setStatusBarColor(accent)
                     setToolbarColor(accent)
-                    setToolbarWidgetColor(Color.White.toArgb())
-                    setActiveControlsWidgetColor(accent)
                     setLogoColor(accent)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         setCompressionFormat(Bitmap.CompressFormat.WEBP_LOSSY)

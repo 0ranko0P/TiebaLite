@@ -19,6 +19,7 @@ import androidx.core.graphics.createBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
+import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.arch.shareInBackground
 import com.huanchengfly.tieba.post.components.glide.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
@@ -247,12 +248,23 @@ class TranslucentThemeViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         imageProcessor.cleanup()
+        AppBackgroundScope.launch {
+            try {
+                application.cacheDir
+                    .listFiles { it.isFile && it.name.startsWith(CROP_FILE_PREFIX) }
+                    ?.forEach { it.deleteQuietly() }
+            } catch (e: Throwable) {
+                Log.w(TAG, "onCleared: Error when deleting uCrop images", e)
+            }
+        }
     }
 
     companion object {
         private const val TAG = "ThemeViewModel"
 
         private const val CROPPED_WALLPAPER_FILE = "cropped_background"
+
+        const val CROP_FILE_PREFIX = "uCrop_theme_"
 
         val DefaultColors by lazy {
             arrayOf(
