@@ -36,6 +36,7 @@ import com.huanchengfly.tieba.post.ui.page.hottopic.list.HotTopicListPage
 import com.huanchengfly.tieba.post.ui.page.login.LoginPage
 import com.huanchengfly.tieba.post.ui.page.main.MainPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
+import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPageBottomSheet
 import com.huanchengfly.tieba.post.ui.page.search.SearchPage
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
@@ -51,6 +52,8 @@ import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
 import kotlin.reflect.typeOf
+
+const val TB_LITE_DOMAIN = "tblite"
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -107,7 +110,7 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
         }
 
         composable<Destination.History>(
-            deepLinks = listOf(navDeepLink<Destination.History>(basePath = "tblite://history"))
+            deepLinks = listOf(navDeepLink<Destination.History>(basePath = "$TB_LITE_DOMAIN://history"))
         ) {
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                 HistoryPage(navController)
@@ -115,13 +118,14 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
         }
 
         composable<Destination.Notification>(
-            deepLinks = listOf(navDeepLink<Destination.Notification>(basePath = "tblite://notifications"))
-        ) {
-            NotificationsPage(navigator = navController)
+            deepLinks = listOf(navDeepLink<Destination.Notification>(basePath = "$TB_LITE_DOMAIN://notifications"))
+        ) { backStackEntry ->
+            val type = backStackEntry.toRoute<Destination.Notification>().type
+            NotificationsPage(initialPage = NotificationsType.entries[type], navigator = navController)
         }
 
         composable<Destination.Forum>(
-            deepLinks = listOf(navDeepLink<Destination.Forum>(basePath = "tblite://forum"))
+            deepLinks = listOf(navDeepLink<Destination.Forum>(basePath = "$TB_LITE_DOMAIN://forum"))
         ) { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.Forum>()
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
@@ -147,7 +151,6 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
 
         val threadTypeMap = mapOf(typeOf<ThreadFrom?>() to navTypeOf<ThreadFrom?>(isNullableAllowed = true))
         composable<Destination.Thread>(
-            deepLinks = listOf(navDeepLink<Destination.Thread>(basePath = "tblite://thread", typeMap = threadTypeMap)),
             typeMap = threadTypeMap
         ) { backStackEntry ->
             with(backStackEntry.toRoute<Destination.Thread>()) {
@@ -163,7 +166,7 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
         }
 
         composable<Destination.ThreadStore>(
-            deepLinks = listOf(navDeepLink<Destination.ThreadStore>(basePath = "tblite://favorite"))
+            deepLinks = listOf(navDeepLink<Destination.ThreadStore>(basePath = "$TB_LITE_DOMAIN://favorite"))
         ) {
             ThreadStorePage(navController)
         }
@@ -190,7 +193,7 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
         }
 
         composable<Destination.Search>(
-            deepLinks = listOf(navDeepLink<Destination.Search>(basePath = "tblite://search"))
+            deepLinks = listOf(navDeepLink<Destination.Search>(basePath = "$TB_LITE_DOMAIN://search"))
         ) {
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                 SearchPage(navController)

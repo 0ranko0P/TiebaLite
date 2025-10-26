@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
 import androidx.navigation.NavType
+import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -24,7 +25,9 @@ sealed interface Destination {
     data object HotTopicList: Destination
 
     @Serializable
-    data object Notification: Destination
+    data class Notification(
+        val type: Int = NotificationsType.ReplyMe.ordinal
+    ): Destination
 
     @Serializable
     data object Login: Destination

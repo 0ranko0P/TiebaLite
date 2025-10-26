@@ -37,11 +37,12 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsPage(
+    initialPage: NotificationsType = NotificationsType.ReplyMe,
     fromHome: Boolean = false,
     navigator: NavController = LocalNavController.current
 ) {
     val pages = NotificationsType.entries
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { pages.size })
+    val pagerState = rememberPagerState(initialPage = initialPage.ordinal, pageCount = { pages.size })
     val coroutineScope = rememberCoroutineScope()
 
     BlurScaffold(

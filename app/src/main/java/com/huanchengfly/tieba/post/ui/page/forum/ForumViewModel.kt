@@ -25,6 +25,7 @@ import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -211,7 +212,7 @@ class ForumViewModel @Inject constructor(
             "forum_${forum.id}",
             forum.avatar,
             context.getString(R.string.title_forum, forum.name),
-            Intent(Intent.ACTION_VIEW, "tblite://forum/${forum.name}".toUri())
+            Intent(Intent.ACTION_VIEW, "$TB_LITE_DOMAIN://forum/${forum.name}".toUri())
         )
         .onSuccess {
             sendMsg(context.getString(R.string.toast_send_to_desktop_success))

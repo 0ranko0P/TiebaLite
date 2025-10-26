@@ -8,6 +8,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.viewModels
@@ -39,6 +40,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
+import androidx.navigation.NavDeepLinkRequest
+import androidx.navigation.NavOptions
 import androidx.navigation.compose.rememberNavController
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.collectIn
@@ -48,6 +52,7 @@ import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.RootNavGraph
+import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
 import com.huanchengfly.tieba.post.ui.page.settings.theme.TranslucentThemeBackground
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
@@ -83,28 +88,16 @@ val LocalWindowAdaptiveInfo =
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
 
-    private var pendingRoute: Destination? by mutableStateOf(null)
+    private var pendingAppLink by mutableStateOf<Destination?>(null)
+
+    private var pendingDeepLink by mutableStateOf<NavDeepLinkRequest?>(null)
 
     private val notificationCountFlow: MutableSharedFlow<Int> =
         MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private var mNewMessageReceiver: NewMessageReceiver? = null
 
-    // Convert Deep Link intent to destination route if it's valid
-    private fun handelDeepLinks(intent: Intent): Destination? = intent.data?.let { uri ->
-        ClipBoardLinkDetector.parseDeepLink(uri)?.toRoute()
-    }
-
     private val viewModel: MainViewModel by viewModels()
-
-    override fun onNewIntent(intent: Intent) {
-        val route: Destination? = handelDeepLinks(intent)
-        if (route != null) {
-            pendingRoute = route
-        } else {
-            super.onNewIntent(intent)
-        }
-    }
 
     private suspend fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AccountUtil.isLoggedIn()) {
@@ -142,7 +135,7 @@ class MainActivityV2 : BaseComposeActivity() {
             delay(2000L)
             requestNotificationPermission()
         }
-        intent?.let { pendingRoute = handelDeepLinks(it) }
+        intent?.data?.normalizeScheme()?.let { pendingAppLink = appLinkToNavRoute(uri = it) }
 
         runCatching {
             TiebaUtil.initAutoSign(this)
@@ -153,6 +146,20 @@ class MainActivityV2 : BaseComposeActivity() {
         // Due to the privacy changes in Android 10, check Clipboard only when focused
         if (hasFocus) {
             viewModel.onCheckClipBoard()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        if (intent.action == Intent.ACTION_VIEW) {
+            val uri = intent.data?.normalizeScheme() ?: return
+            // Is TbLite DeepLink
+            if (uri.scheme == TB_LITE_DOMAIN) {
+                pendingDeepLink = NavDeepLinkRequest.Builder.fromUri(uri).build()
+            } else {
+                pendingAppLink = appLinkToNavRoute(uri)
+            }
+        } else {
+            super.onNewIntent(intent)
         }
     }
 
@@ -171,12 +178,7 @@ class MainActivityV2 : BaseComposeActivity() {
                     RootNavGraph(/* bottomSheetNavigator, */navController, startDestination = entryRoute)
 
                     if (setupFinished) {
-                        LaunchedEffect(pendingRoute) {
-                            pendingRoute?.let {
-                                navController.navigate(route = it)
-                                pendingRoute = null
-                            }
-                        }
+                        LaunchedDeepLinkEffect(navController)
                     }
                 }
 
@@ -223,6 +225,27 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
+    @Composable
+    private fun LaunchedDeepLinkEffect(navController: NavController) {
+        LaunchedEffect(pendingDeepLink) {
+            pendingDeepLink?.let {
+                val navOptions = NavOptions.Builder().setLaunchSingleTop(true).build()
+                runCatching {
+                    navController.navigate(request = it, navOptions = navOptions)
+                }
+                .onFailure { e -> e.printStackTrace() }
+                pendingDeepLink = null
+            }
+        }
+
+        LaunchedEffect(pendingAppLink) {
+            pendingAppLink?.let {
+                navController.navigate(route = it)
+                pendingAppLink = null
+            }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         EmoticonManager.clear()
@@ -256,6 +279,10 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     companion object {
+
+        private fun appLinkToNavRoute(uri: Uri): Destination? {
+            return ClipBoardLinkDetector.parseDeepLink(uri)?.toRoute()
+        }
 
         @Composable
         private fun ClipBoardDetectDialog(

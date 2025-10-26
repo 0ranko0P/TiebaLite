@@ -80,7 +80,7 @@ class NotifyJobService : JobService() {
                             ID_REPLY,
                             CHANNEL_REPLY,
                             CHANNEL_REPLY_NAME,
-                            Intent(ACTION_VIEW, Uri.parse("tblite://notifications/0"))
+                            Intent(ACTION_VIEW, Uri.parse("tblite://notifications?type=0"))
                         )
                     }
                     if ("0" != msgBean.message?.atMe) {
@@ -102,7 +102,7 @@ class NotifyJobService : JobService() {
                             ID_AT,
                             CHANNEL_AT,
                             CHANNEL_AT_NAME,
-                            Intent(ACTION_VIEW, Uri.parse("tblite://notifications/1"))
+                            Intent(ACTION_VIEW, Uri.parse("tblite://notifications?type=1"))
                         )
                     }
                     sendBroadcast(
