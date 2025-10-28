@@ -25,8 +25,9 @@ class ThreadStoreRepository @Inject constructor(
 
     private val networkDataSource = ThreadStoreNetworkDataSource
 
-    private val tbs: String
-        get() = AccountUtil.getInstance().currentAccount.value?.tbs ?: throw TiebaNotLoggedInException()
+    private suspend fun requireTBS(): String {
+        return AccountUtil.getInstance().currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
+    }
 
     /**
      * 加载收藏的帖子
@@ -45,14 +46,14 @@ class ThreadStoreRepository @Inject constructor(
      * 取消收藏这个帖子
      * */
     suspend fun remove(thread: ThreadStore) = runCatching {
-        networkDataSource.remove(threadId = thread.id, tbs = tbs)
+        networkDataSource.remove(threadId = thread.id, tbs = requireTBS())
     }
 
     /**
      * 取消收藏这个帖子
      * */
     suspend fun remove(threadId: Long, forumId: Long?, tbs: String?) {
-        networkDataSource.remove(threadId, forumId, tbs ?: this.tbs)
+        networkDataSource.remove(threadId, forumId, tbs = tbs ?: requireTBS())
     }
 
     companion object {

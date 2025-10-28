@@ -1,7 +1,8 @@
 package com.huanchengfly.tieba.post.repository.source.network
 
 import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
+import com.huanchengfly.tieba.post.api.getError
+import com.huanchengfly.tieba.post.api.models.MsgBean.MessageBean
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
@@ -10,23 +11,38 @@ import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterce
 import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataSource.commonResponse
 import kotlinx.coroutines.flow.catch
-import javax.inject.Inject
 
 /**
- * Main entry point for accessing liked forums data from the network.
- *
- * @see ITiebaApi.forumRecommendNewFlow
+ * Main entry point for accessing liked forums and new message data from the network.
  */
-class HomeNetworkDataSource @Inject constructor() {
+interface HomeNetworkDataSource {
+
+    suspend fun getLikedForums(): List<LikeForum>
+
+    suspend fun fetchNewMessage(): MessageBean
+}
+
+object HomeNetworkDataSourceImp : HomeNetworkDataSource {
 
     @Throws(NoConnectivityException::class, TiebaException::class)
-    suspend fun getLikedForums(): List<LikeForum> {
+    override suspend fun getLikedForums(): List<LikeForum> {
         return TiebaApi.getInstance()
             .forumRecommendNewFlow()
             .catch { throw ConnectivityInterceptor.wrapException(it) }
             .firstOrThrow()
             .run {
                 this.data_?.like_forum ?: throw TiebaApiException(error.commonResponse)
+            }
+    }
+
+    @Throws(NoConnectivityException::class, TiebaException::class)
+    override suspend fun fetchNewMessage(): MessageBean {
+        return TiebaApi.getInstance().msgFlow()
+            .catch { throw ConnectivityInterceptor.wrapException(it) }
+            .firstOrThrow()
+            .run {
+                if (errorCode != "0") throw TiebaApiException(commonResponse = this.getError())
+                this.message ?: throw TiebaException("Null message")
             }
     }
 }

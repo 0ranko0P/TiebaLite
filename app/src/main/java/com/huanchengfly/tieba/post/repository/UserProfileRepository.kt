@@ -26,6 +26,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -39,8 +40,9 @@ class UserProfileRepository @Inject constructor(
 
     private val networkDataSource = UserProfileNetworkDataSource
 
-    private val tbs: String?
-        get() = AccountUtil.getInstance().currentAccount.value?.tbs
+    private suspend fun requireTBS(): String {
+        return AccountUtil.getInstance().currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
+    }
 
     /**
      * Load user threads or posts.
@@ -93,19 +95,13 @@ class UserProfileRepository @Inject constructor(
     }
 
     suspend fun requestFollowUser(profile: UserProfile): FollowBean.Info {
-        val result = networkDataSource.requestFollowUser(
-            portrait = profile.portrait,
-            tbs = tbs ?: throw TiebaNotLoggedInException()
-        )
+        val result = networkDataSource.requestFollowUser(portrait = profile.portrait, tbs = requireTBS())
         localDataSource.deleteUserProfile(profile.uid)
         return result
     }
 
     suspend fun requestUnfollowUser(profile: UserProfile) {
-        networkDataSource.requestUnfollowUser(
-            portrait = profile.portrait,
-            tbs = tbs ?: throw TiebaNotLoggedInException()
-        )
+        networkDataSource.requestUnfollowUser(portrait = profile.portrait, tbs = requireTBS())
         localDataSource.deleteUserProfile(profile.uid)
     }
 

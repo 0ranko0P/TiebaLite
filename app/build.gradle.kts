@@ -189,6 +189,11 @@ dependencies {
     implementation(libs.androidx.startup.runtime)
     implementation(libs.bundles.paging3)
 
+    // WorkManager
+    implementation(libs.androidx.hilt.work)
+    implementation(libs.androidx.work.runtime)
+    androidTestImplementation(libs.androidx.work.testing)
+
     // Room
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)

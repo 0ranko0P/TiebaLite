@@ -11,13 +11,13 @@ import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.shareInBackground
 import com.huanchengfly.tieba.post.components.modules.SettingsRepositoryEntryPoint
-import com.huanchengfly.tieba.post.dataStoreScope
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
 import com.huanchengfly.tieba.post.repository.source.network.UserProfileNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import com.huanchengfly.tieba.post.workers.NewMessageWorker
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -27,7 +27,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
@@ -36,7 +35,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -93,7 +91,7 @@ class AccountUtil private constructor(context: Context) {
         }
     }
 
-    private val scope = CoroutineScope(Dispatchers.Main + CoroutineName(TAG) + SupervisorJob())
+    private val scope = CoroutineScope(Dispatchers.IO + CoroutineName(TAG) + SupervisorJob())
 
     private val networkDataSource = UserProfileNetworkDataSource
 
@@ -105,11 +103,11 @@ class AccountUtil private constructor(context: Context) {
     private val accountDao = TbLiteDatabase.getInstance(context).accountDao()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val currentAccount: StateFlow<Account?> = accountUidSettings.flow
+    val currentAccount: SharedFlow<Account?> = accountUidSettings.flow
         .flatMapMerge { uid ->
             if (uid != -1L) accountDao.observeById(uid) else flowOf(null)
         }
-        .stateIn(dataStoreScope, SharingStarted.Eagerly, null)
+        .shareInBackground(SharingStarted.Eagerly)
 
     val allAccounts: SharedFlow<List<Account>> = accountDao.observeAll()
         .shareInBackground()
@@ -198,14 +196,19 @@ class AccountUtil private constructor(context: Context) {
             tiebaUid = user.tieba_uid,
             lastUpdate = System.currentTimeMillis()
         )
-        accountDao.upsert(updated)
+        accountDao.upsert(account = updated)
         return updated
     }
 
-    suspend fun saveNewAccount(account: Account) = accountDao.upsert(account)
+    suspend fun saveNewAccount(context: Context, account: Account) {
+        accountDao.upsert(account)
+        val workManager = context.workManager()
+        NewMessageWorker.schedulePeriodically(workManager)
+        NewMessageWorker.startNow(workManager)
+    }
 
-    fun switchAccount(uid: Long) {
-        if (currentAccount.value?.uid != uid) {
+    fun switchAccount(uid: Long) = scope.launch {
+        if (currentAccount.first()?.uid != uid) {
             accountUidSettings.set(uid)
         }
     }
@@ -224,7 +227,7 @@ class AccountUtil private constructor(context: Context) {
     }
 
     fun exit(context: Context, oldAccount: Account) {
-        scope.launch {
+        scope.launch(Dispatchers.Main) {
             val nextAccount = accountDao.getAll().firstOrNull { it.uid != oldAccount.uid }
             CookieManager.getInstance().removeAllCookies(null)
             // switch to next account (if exists)
@@ -233,6 +236,7 @@ class AccountUtil private constructor(context: Context) {
             if (nextAccount != null) {
                 context.toastShort(R.string.toast_exit_account_switched, nextAccount.nickname ?: nextAccount.name)
             } else {
+                context.workManager().cancelAllWorkByTag(NewMessageWorker.TAG)
                 context.toastShort(R.string.toast_exit_account_success)
             }
         }

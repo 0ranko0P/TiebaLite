@@ -18,6 +18,7 @@ androidx-hilt = "1.2.0"
 androidx-lifecycle = "2.9.0"
 androidx-paging = "3.3.6"
 androidx-room = "2.8.2"
+androidx-work = "2.11.0"
 material3 = "1.4.0"
 androidx-media3 = "1.8.0"
 glide = "5.0.4"
@@ -56,6 +57,7 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidx-hilt" }
 androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "androidx-hilt" }
+androidx-hilt-work = { module = "androidx.hilt:hilt-work", version.ref = "androidx-hilt" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
 
@@ -72,6 +74,8 @@ androidx-test-core = { module = "androidx.test:core", version = "1.6.1" }
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version = "3.6.1" }
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version = "1.2.0" }
 androidx-window = { module = "androidx.window:window", version = "1.4.0" }
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "androidx-work" }
+androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "androidx-work" }
 
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "androidx-paging" }
 androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "androidx-paging" }

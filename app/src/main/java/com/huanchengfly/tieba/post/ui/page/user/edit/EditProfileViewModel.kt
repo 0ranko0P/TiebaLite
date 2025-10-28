@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
@@ -55,18 +54,13 @@ class EditProfileViewModel @Inject constructor() :
             )
 
         private fun EditProfileIntent.Init.toPartialChangeFlow(): Flow<EditProfilePartialChange.Init> {
-            val accountUtil = AccountUtil.getInstance()
-            val account = accountUtil.currentAccount.value
-            return if (account == null) {
-                flowOf<EditProfilePartialChange.Init>(EditProfilePartialChange.Init.Fail("not logged in!"))
-            } else {
-                flow<EditProfilePartialChange.Init> {
-                    val updated = accountUtil.refreshCurrent(force = true)
-                    emit(EditProfilePartialChange.Init.Success(account = updated))
-                }
-                .onStart { emit(EditProfilePartialChange.Init.Loading) }
-                .catch { emit(EditProfilePartialChange.Init.Fail(it.getErrorMessage())) }
+            return flow<EditProfilePartialChange.Init> {
+                val accountUtil = AccountUtil.getInstance()
+                val updated = accountUtil.refreshCurrent(force = true)
+                emit(EditProfilePartialChange.Init.Success(account = updated))
             }
+            .onStart { emit(EditProfilePartialChange.Init.Loading) }
+            .catch { emit(EditProfilePartialChange.Init.Fail(it.getErrorMessage())) }
         }
 
         private fun EditProfileIntent.Submit.toPartialChangeFlow() =

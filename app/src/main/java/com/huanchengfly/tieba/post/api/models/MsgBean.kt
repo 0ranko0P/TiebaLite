@@ -7,13 +7,11 @@ import com.huanchengfly.tieba.post.models.ErrorBean
 class MsgBean : ErrorBean() {
     val message: MessageBean? = null
 
-    inner class MessageBean : BaseBean() {
+    data class MessageBean(
         @SerializedName("replyme")
-        val replyMe: String? = null
-
+        val replyMe: Int = 0,
         @SerializedName("atme")
-        val atMe: String? = null
-        val fans: String? = null
-
-    }
+        val atMe: Int = 0,
+        val fans: Int = 0,
+    ) : BaseBean()
 }

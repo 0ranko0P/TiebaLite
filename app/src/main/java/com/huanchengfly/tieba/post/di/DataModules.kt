@@ -11,7 +11,13 @@ import com.huanchengfly.tieba.post.models.database.dao.SearchDao
 import com.huanchengfly.tieba.post.models.database.dao.SearchPostDao
 import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
+import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
+import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSourceImp
+import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
+import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSourceIml
 import com.huanchengfly.tieba.post.repository.user.DataStoreSettingsRepository
+import com.huanchengfly.tieba.post.repository.user.OKSignRepository
+import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import dagger.Binds
 import dagger.Module
@@ -30,6 +36,25 @@ abstract class RepositoryModule {
     @Singleton
     @Binds
     abstract fun bindSettingsRepository(repository: DataStoreSettingsRepository): SettingsRepository
+
+    @Singleton
+    @Binds
+    abstract fun bindOKSignRepository(repository: OKSignRepositoryImp): OKSignRepository
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object ApiModule {
+
+    @Provides
+    fun provideHomeNetworkDataSource(): HomeNetworkDataSource {
+        return HomeNetworkDataSourceImp
+    }
+
+    @Provides
+    fun provideOKSignNetworkDataSource(): OKSignNetworkDataSource {
+        return OKSignNetworkDataSourceIml
+    }
 }
 
 @Module

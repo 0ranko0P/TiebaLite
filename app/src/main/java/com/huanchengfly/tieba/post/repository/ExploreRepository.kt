@@ -56,8 +56,9 @@ class ExploreRepository @Inject constructor(
 
     private val blockSettings = settingsRepository.blockSettings.flow
 
-    private val currentUid: Long?
-        get() = AccountUtil.getInstance().currentAccount.value?.uid
+    private suspend fun requireUid(): Long {
+        return AccountUtil.getInstance().currentAccount.first()?.uid ?: throw TiebaNotLoggedInException()
+    }
 
     /**
      * [Dislike] 缓存池
@@ -113,7 +114,7 @@ class ExploreRepository @Inject constructor(
     }
 
     suspend fun refreshUserLike(lastRequestUnix: Long?, cached: Boolean): UserLikeThreads {
-        val uid = currentUid ?: throw TiebaNotLoggedInException()
+        val uid = requireUid()
         var data: UserLikeResponseData? = null
         var lastRequestTime = lastRequestUnix ?: 0
 
@@ -154,7 +155,7 @@ class ExploreRepository @Inject constructor(
     fun purgeCache(targetPage: ExplorePageItem) {
         AppBackgroundScope.launch {
             when (targetPage) {
-                ExplorePageItem.Concern -> localDataSource.purgeUserLike(uid = currentUid ?: throw TiebaNotLoggedInException())
+                ExplorePageItem.Concern -> localDataSource.purgeUserLike(uid = requireUid())
 
                 ExplorePageItem.Personalized -> localDataSource.purgePersonalized()
 

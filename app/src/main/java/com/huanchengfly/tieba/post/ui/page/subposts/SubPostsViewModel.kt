@@ -193,7 +193,7 @@ class SubPostsViewModel @Inject constructor(
         runCatching {
             val thread = uiStateSnapshot.thread!!
             val tbs = uiStateSnapshot.tbs
-            val myUid = currentAccount.first()?.uid?.toLong() ?: throw TiebaNotLoggedInException()
+            val myUid = currentAccount.first()?.uid ?: throw TiebaNotLoggedInException()
             when (target) {
                 is SubPostItemData -> threadRepo.deleteSubPost(target.id, thread, tbs, delMyPost = target.authorId == myUid)
 

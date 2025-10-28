@@ -1,13 +1,7 @@
 package com.huanchengfly.tieba.post
 
 import android.Manifest
-import android.app.job.JobInfo
-import android.app.job.JobScheduler
-import android.content.BroadcastReceiver
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,7 +30,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -45,9 +38,7 @@ import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.rememberNavController
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
-import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
-import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -73,14 +64,8 @@ import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
-
-val LocalNotificationCountFlow =
-    staticCompositionLocalOf<Flow<Int>> { throw IllegalStateException("not allowed here!") }
 
 val LocalWindowAdaptiveInfo =
     staticCompositionLocalOf<WindowAdaptiveInfo> { throw IllegalStateException("not allowed here!") }
@@ -92,38 +77,11 @@ class MainActivityV2 : BaseComposeActivity() {
 
     private var pendingDeepLink by mutableStateOf<NavDeepLinkRequest?>(null)
 
-    private val notificationCountFlow: MutableSharedFlow<Int> =
-        MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-
-    private var mNewMessageReceiver: NewMessageReceiver? = null
-
     private val viewModel: MainViewModel by viewModels()
 
     private suspend fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AccountUtil.isLoggedIn()) {
             askPermission(R.string.desc_permission_post_notifications, Manifest.permission.POST_NOTIFICATIONS, noRationale = true)
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        AccountUtil.getInstance().currentAccount.collectIn(this) { account ->
-            if (account == null) return@collectIn
-            if (mNewMessageReceiver != null) return@collectIn
-
-            runCatching {
-                mNewMessageReceiver = NewMessageReceiver()
-                ContextCompat.registerReceiver(this@MainActivityV2, mNewMessageReceiver!!,
-                    IntentFilter(NotifyJobService.ACTION_NEW_MESSAGE), ContextCompat.RECEIVER_NOT_EXPORTED)
-
-                val notifyJobService = ComponentName(this, NotifyJobService::class.java)
-                val builder = JobInfo.Builder(appPreferences.autoSignJobId, notifyJobService)
-                    .setPersisted(true)
-                    .setPeriodic(30 * 60 * 1000L)
-                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                val jobScheduler = getSystemService(JOB_SCHEDULER_SERVICE) as JobScheduler
-                jobScheduler.schedule(builder.build())
-            }
         }
     }
 
@@ -249,33 +207,13 @@ class MainActivityV2 : BaseComposeActivity() {
     override fun onDestroy() {
         super.onDestroy()
         EmoticonManager.clear()
-        mNewMessageReceiver?.let { unregisterReceiver(it) }
     }
 
     @NonSkippableComposable
     @Composable
     private fun TiebaLiteLocalProvider(content: @Composable () -> Unit) {
-        val currentAccount by viewModel.account.collectAsStateWithLifecycle()
-        CompositionLocalProvider(
-            LocalAccount provides currentAccount,
-            LocalNotificationCountFlow provides notificationCountFlow,
-            content = content
-        )
-    }
-
-    private inner class NewMessageReceiver : BroadcastReceiver() {
-
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == NotifyJobService.ACTION_NEW_MESSAGE) {
-                val channel = intent.getStringExtra("channel")
-                val count = intent.getIntExtra("count", 0)
-                if (channel != null && channel == NotifyJobService.CHANNEL_TOTAL) {
-                    lifecycleScope.launch {
-                        notificationCountFlow.emit(count)
-                    }
-                }
-            }
-        }
+        val currentAccount by viewModel.account.collectAsStateWithLifecycle(initialValue = null)
+        CompositionLocalProvider(LocalAccount provides currentAccount, content = content)
     }
 
     companion object {

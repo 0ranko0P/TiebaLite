@@ -22,6 +22,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -48,7 +49,7 @@ class MainViewModel @Inject constructor(
     private val threadRepo: PbPageRepository
 ) : ViewModel() {
 
-    val account: StateFlow<Account?> = AccountUtil.getInstance().currentAccount
+    val account: SharedFlow<Account?> = AccountUtil.getInstance().currentAccount
 
     private val _uiState: MutableStateFlow<MainUiState> = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = combine(

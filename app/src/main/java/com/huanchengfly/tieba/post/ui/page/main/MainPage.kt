@@ -22,11 +22,9 @@ import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,8 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.util.fastMap
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.isTranslucent
@@ -143,16 +142,12 @@ fun rememberNavigationItems(
 @Composable
 fun MainPage(
     navHostController: NavHostController,
+    vm: MainPageViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
     val loggedIn = LocalAccount.current != null
 
-    var messageCount by rememberSaveable { mutableIntStateOf(0) }
-
-    val notificationCountFlow = LocalNotificationCountFlow.current
-    LaunchedEffect(notificationCountFlow) {
-        notificationCountFlow.collect { messageCount = it }
-    }
+    val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
 
     val navigationItems = rememberNavigationItems(loggedIn, messageCount = { messageCount })
     val pagerState = rememberPagerState { navigationItems.size }
@@ -160,7 +155,7 @@ fun MainPage(
     val onItemClicked: (position: Int) -> Unit = remember { {
         coroutineScope.launch { pagerState.scrollToPage(it) }
         if (navigationItems[it].title == R.string.title_notifications && messageCount > 0) {
-            messageCount = 0
+            vm.onNavigateNotification()
         }
     } }
 

@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.api
 
+import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
+import com.huanchengfly.tieba.post.models.ErrorBean
 import okhttp3.FormBody
 import okio.Buffer
 import java.net.URLDecoder
@@ -136,4 +138,11 @@ internal inline fun List<ParamExpression>.forEachNonNull(action: (String, String
             action(name, value)
         }
     }
+}
+
+fun ErrorBean.getError(): CommonResponse {
+    return CommonResponse(
+        errorCode = errorCode.toIntOrNull() ?: Error.ERROR_UNKNOWN,
+        errorMsg = errorMsg
+    )
 }

@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.repository
 import android.util.Log
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.BuildConfig
+import com.huanchengfly.tieba.post.api.models.MsgBean.MessageBean
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.models.database.Account
@@ -10,6 +11,9 @@ import com.huanchengfly.tieba.post.models.database.LocalLikedForum
 import com.huanchengfly.tieba.post.models.database.Timestamp
 import com.huanchengfly.tieba.post.models.database.dao.LikedForumDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
+import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TYPE_FORUM_LAST_UPDATED
+import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TYPE_NEW_MESSAGE_COUNT
+import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TYPE_NEW_MESSAGE_UPDATED
 import com.huanchengfly.tieba.post.repository.source.network.ForumNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
@@ -18,7 +22,9 @@ import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -43,8 +49,9 @@ class HomeRepository @Inject constructor(
 
     private val forumNetworkDataSource = ForumNetworkDataSource
 
-    private val currentAccount: Account?
-        get() = AccountUtil.getInstance().currentAccount.value
+    suspend fun requireAccount(): Account {
+       return AccountUtil.getInstance().currentAccount.first() ?: throw TiebaNotLoggedInException()
+    }
 
     /**
      * Observe the current user's liked forums, ``null`` if no user logged-in
@@ -64,15 +71,15 @@ class HomeRepository @Inject constructor(
      * Refresh the current user's liked forums
      * */
     suspend fun refresh(cached: Boolean) {
-        val uid = currentAccount?.uid ?: throw TiebaNotLoggedInException()
         val start = System.currentTimeMillis()
+        val uid = requireAccount().uid
 
         // force refresh or cache is expired
         if (!cached || isCacheExpired(uid)) {
             val forums = networkDataSource.getLikedForums().mapEntity(uid)
             localDataSource.upsertAll(forums)
             // save last update timestamp
-            timestampDao.upsert(Timestamp(uid, TIMESTAMP_TYPE))
+            timestampDao.upsert(Timestamp(uid, TYPE_FORUM_LAST_UPDATED))
             if (BuildConfig.DEBUG) {
                 val cost = System.currentTimeMillis() - start
                 Log.i(TAG, "onRefresh: user: $uid, forums: ${forums.size}, cost: ${cost}ms.")
@@ -81,15 +88,14 @@ class HomeRepository @Inject constructor(
     }
 
     suspend fun onDislikeForum(forum: LikedForum) {
-        val tbs = currentAccount?.tbs ?: throw TiebaNotLoggedInException()
+        val tbs = requireAccount().tbs
         forumNetworkDataSource.dislike(forumId = forum.id, forumName = forum.name, tbs)
         onDislikeForum(forumId = forum.id)
     }
 
     fun onDislikeForum(forumId: Long) {
         AppBackgroundScope.launch(Dispatchers.Main) {
-            val uid = currentAccount?.uid ?: throw TiebaNotLoggedInException()
-            localDataSource.deleteById(uid, forumId)
+            localDataSource.deleteById(uid = requireAccount().uid, forumId = forumId)
         }
     }
 
@@ -108,17 +114,53 @@ class HomeRepository @Inject constructor(
     }
 
     private suspend fun isCacheExpired(uid: Long, duration: Long = TimeUnit.DAYS.toMillis(7)): Boolean {
-        val lastUpdate = timestampDao.get(uid, TIMESTAMP_TYPE) ?: return true
+        val lastUpdate = timestampDao.get(uid, TYPE_FORUM_LAST_UPDATED) ?: return true
         return lastUpdate + duration < System.currentTimeMillis()
+    }
+
+    suspend fun fetchNewMessage(): MessageBean {
+        val timestamp = System.currentTimeMillis()
+        val uid = settingsRepo.accountUid.flow.first()
+        if (uid == -1L) {
+            throw TiebaNotLoggedInException()
+        }
+        if (BuildConfig.DEBUG) {
+            val lastUpdate = timestampDao.get(uid, TYPE_NEW_MESSAGE_UPDATED) ?: timestamp
+            val duration = (timestamp - lastUpdate) / 1000 / 60
+            Log.i(TAG, "onFetchNewMessage: last update $duration minutes ago.")
+        }
+        return AppBackgroundScope.async {
+            val newMessage = networkDataSource.fetchNewMessage()
+            newMessage.apply {
+                timestampDao.updateNewMessageCount(uid, timestamp, newMsgCount = replyMe + atMe)
+                val cost = System.currentTimeMillis() - timestamp
+                Log.w(TAG, "onFetchNewMessage: Done. reply=$replyMe, at=$atMe, cost ${cost}ms.")
+            }
+        }.await()
+    }
+
+    /**
+     * Observe the current user's new message count.
+     * */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeNewMessage(): Flow<Long?> = settingsRepo.accountUid.flow
+        .flatMapLatest { uid ->
+            if (uid != -1L) {
+                timestampDao.observe(uid, TYPE_NEW_MESSAGE_COUNT)
+            } else {
+                throw TiebaNotLoggedInException()
+            }
+        }
+
+    fun clearNewMessage() {
+        AppBackgroundScope.launch {
+            val uid = settingsRepo.accountUid.flow.first()
+            timestampDao.delete(uid, TYPE_NEW_MESSAGE_COUNT)
+        }
     }
 
     companion object {
         private const val TAG = "HomeRepository"
-
-        /**
-         * Type key used to retrieve the last forum update time
-         * */
-        private const val TIMESTAMP_TYPE = -2
 
         // Map network model to entity
         private suspend fun List<LikeForum>.mapEntity(uid: Long) = withContext(Dispatchers.Default) {

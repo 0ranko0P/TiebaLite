@@ -11,6 +11,8 @@ import android.os.Process
 import android.webkit.WebView
 import androidx.annotation.Keep
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import com.huanchengfly.tieba.post.activities.CrashActivity
 import com.huanchengfly.tieba.post.components.ConfigInitializer
 import com.huanchengfly.tieba.post.utils.EmoticonManager
@@ -22,14 +24,27 @@ import kotlinx.coroutines.SupervisorJob
 import javax.inject.Inject
 
 @HiltAndroidApp
-class App : Application() {
+class App : Application(), Configuration.Provider {
+
     private val mActivityList: MutableList<Activity> = mutableListOf()
 
-    val powerManager by lazy {
+    val powerManager: PowerManager by lazy {
         getSystemService(POWER_SERVICE) as PowerManager
     }
 
+    /**
+     * OAID config initializer
+     *
+     * @see [App.Config]
+     * */
     @Inject lateinit var configInit : ConfigInitializer
+
+    @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     private fun getProcessName(context: Context): String? {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) return getProcessName()

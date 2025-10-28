@@ -235,7 +235,7 @@ private class LoginWebViewClient(
                     .flowOn(Dispatchers.Main)
                     .collect { account ->
                         isLoadingAccount = false
-                        accountUtil.saveNewAccount(account)
+                        accountUtil.saveNewAccount(context, account)
                         onToast(context.getString(R.string.text_login_success), SnackbarDuration.Short)
                         delay(1000)
                         onLoggedIn()

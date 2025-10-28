@@ -10,6 +10,7 @@ import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.navigation.NavController
+import androidx.work.WorkManager
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView
@@ -77,6 +78,8 @@ fun Context.requestIgnoreBatteryOptimizations() {
 fun Context.isIgnoringBatteryOptimizations(): Boolean {
     return (applicationContext as App).powerManager.isIgnoringBatteryOptimizations(packageName)
 }
+
+fun Context.workManager(): WorkManager = WorkManager.getInstance(this)
 
 suspend fun requestPinShortcut(
     context: Context,

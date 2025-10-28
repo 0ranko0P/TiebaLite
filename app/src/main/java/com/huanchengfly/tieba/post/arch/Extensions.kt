@@ -44,7 +44,7 @@ import kotlin.reflect.KProperty1
 fun <T> Flow<T>.collectIn(
     lifecycleOwner: LifecycleOwner,
     minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
-    action: (T) -> Unit
+    action: suspend (T) -> Unit
 ): Job = lifecycleOwner.lifecycleScope.launch {
     flowWithLifecycle(lifecycleOwner.lifecycle, minActiveState).collect(action)
 }

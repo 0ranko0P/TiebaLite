@@ -272,11 +272,6 @@
             </intent-filter>
         </service>
 
-        <service
-            android:name=".services.NotifyJobService"
-            android:exported="true"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
-
         <activity
             android:name=".activities.TranslucentThemeActivity"
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
@@ -309,9 +304,16 @@
 
         <provider
             android:name="androidx.startup.InitializationProvider"
-            android:authorities="com.huanchengfly.tieba.post.androidx-startup"
+            android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
+
+            <!-- Remove the default work manager initializer -->
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+
             <meta-data
                 android:name="com.huanchengfly.tieba.post.components.WindowInitializer"
                 android:value="androidx.startup" />
