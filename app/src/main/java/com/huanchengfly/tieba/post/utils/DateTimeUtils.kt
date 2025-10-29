@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
 import com.huanchengfly.tieba.post.R
-import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -67,12 +66,6 @@ object DateTimeUtils {
         }
     }
 
-    fun isToday(formatter: DateFormat, timestamp: Long): Boolean {
-        val date = formatter.format(timestamp)
-        val todayDate = formatter.format(System.currentTimeMillis())
-        return date == todayDate
-    }
-
     fun todayTimeMill(): Long {
         return Calendar.getInstance().run {
             set(Calendar.HOUR_OF_DAY, 0)
@@ -85,6 +78,18 @@ object DateTimeUtils {
 
     private fun Calendar.format(pattern: String): String {
         return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(timeInMillis))
+    }
+
+    fun calculateNextDayDurationMills(hourOfDay: Int, minute: Int): Long {
+        val now = Calendar.getInstance()
+        val target = Calendar.getInstance()
+        target[Calendar.MINUTE] = minute
+        target[Calendar.HOUR_OF_DAY] = hourOfDay
+
+        if (target.before(now)) {
+            target.add(Calendar.HOUR_OF_DAY, 24)
+        }
+        return target.timeInMillis - System.currentTimeMillis()
     }
 
     fun fixTimestamp(timestamp: Long): Long {

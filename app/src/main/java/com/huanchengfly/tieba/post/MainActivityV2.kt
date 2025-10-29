@@ -61,7 +61,6 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
-import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
@@ -94,10 +93,6 @@ class MainActivityV2 : BaseComposeActivity() {
             requestNotificationPermission()
         }
         intent?.data?.normalizeScheme()?.let { pendingAppLink = appLinkToNavRoute(uri = it) }
-
-        runCatching {
-            TiebaUtil.initAutoSign(this)
-        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

@@ -5,12 +5,11 @@ import android.provider.Settings
 import android.text.TextUtils
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
-import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.getString
-import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.toMD5
 import com.huanchengfly.tieba.post.utils.helios.Base32
 import com.huanchengfly.tieba.post.utils.helios.Hasher
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.UUID
@@ -71,15 +70,13 @@ object UIDUtil {
             return "$cUID|$imei"
         }
 
-    private const val KEY_UUID = "uuid"
-
     val uUID: String
         get() {
-            val dataStore = INSTANCE.dataStore
-            var uuid = dataStore.getString(KEY_UUID, "")
+            val uuidSettings = INSTANCE.settingRepository.UUIDSettings
+            var uuid = runBlocking { uuidSettings.flow.first() }
             if (uuid.isEmpty()) {
                 uuid = UUID.randomUUID().toString()
-                dataStore.putString(KEY_UUID, uuid)
+                uuidSettings.set(uuid)
             }
             return uuid
         }

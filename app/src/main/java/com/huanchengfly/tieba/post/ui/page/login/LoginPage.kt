@@ -53,13 +53,10 @@ import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AccountUtil.Companion.parseCookie
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 
 const val LOGIN_URL =
@@ -220,26 +217,21 @@ private class LoginWebViewClient(
             }
             coroutineScope.launch {
                 onToast(context.getString(R.string.text_please_wait), SnackbarDuration.Indefinite)
-            }
-            coroutineScope.launch {
                 val accountUtil = AccountUtil.getInstance()
-                accountUtil.fetchAccountFlow(bduss, sToken, cookieStr)
-                    .catch {
-                        isLoadingAccount = false
-                        navigator.loadUrl(LOGIN_URL)
-                        onToast(
-                            context.getString(R.string.text_login_failed, it.getErrorMessage()),
-                            SnackbarDuration.Short
-                        )
-                    }
-                    .flowOn(Dispatchers.Main)
-                    .collect { account ->
-                        isLoadingAccount = false
-                        accountUtil.saveNewAccount(context, account)
-                        onToast(context.getString(R.string.text_login_success), SnackbarDuration.Short)
-                        delay(1000)
-                        onLoggedIn()
-                    }
+                try {
+                    val account = accountUtil.fetchAccount(bduss, sToken, cookieStr)
+                    isLoadingAccount = false
+                    accountUtil.saveNewAccount(context, account)
+                    onToast(context.getString(R.string.text_login_success), SnackbarDuration.Short)
+                    delay(1000)
+                    onLoggedIn()
+                } catch(e: Throwable) {
+                    val error = context.getString(R.string.text_login_failed, e.getErrorMessage())
+                    onToast(error, SnackbarDuration.Short)
+                    navigator.loadUrl(LOGIN_URL)
+                } finally {
+                    isLoadingAccount = false
+                }
             }
         }
     }

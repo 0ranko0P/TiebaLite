@@ -396,8 +396,10 @@ fun HomePage(
 
     val forumLists by viewModel.forumListsFlow.collectAsStateWithLifecycle()
     val (topForums, forums) = forumLists
-    val hasTopForum = topForums.isNotEmpty()
-    val isEmpty = !hasTopForum && forums.isEmpty()
+    val hasTopForum = !topForums.isNullOrEmpty()
+
+    // Empty but not null
+    val isEmpty = topForums?.isEmpty() == true && forums?.isEmpty() == true
 
     BlurScaffold(
         topBar = {
@@ -406,9 +408,11 @@ fun HomePage(
                 navigationIcon = accountNavIconIfCompact,
                 actions = {
                     if (loggedIn) {
+                        val isSinging by viewModel.isOkSignWorkerRunning.collectAsStateWithLifecycle(true)
                         ActionItem(
                             icon = ImageVector.vectorResource(id = R.drawable.ic_oksign),
-                            contentDescription = stringResource(id = R.string.title_oksign)
+                            contentDescription = stringResource(id = R.string.title_oksign),
+                            enabled = !isSinging
                         ) {
                             TiebaUtil.startSign(context)
                         }
@@ -467,7 +471,7 @@ fun HomePage(
         StateScreen(
             isEmpty = isEmpty,
             isError = uiState.error != null,
-            isLoading = uiState.isLoading,
+            isLoading = forums == null || uiState.isLoading,
             modifier = Modifier.fillMaxSize(),
             onReload = viewModel::onRefresh,
             emptyScreen = {
@@ -531,6 +535,7 @@ fun HomePage(
                         }
                     }
 
+                    if (forums == null) return@MyLazyVerticalGrid
                     items(items = forums, key = { it.id }, contentType = contentType) {
                         ForumItem(
                             modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),

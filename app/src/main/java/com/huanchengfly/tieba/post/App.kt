@@ -15,7 +15,10 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.huanchengfly.tieba.post.activities.CrashActivity
 import com.huanchengfly.tieba.post.components.ConfigInitializer
+import com.huanchengfly.tieba.post.di.RepositoryEntryPoint
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.utils.EmoticonManager
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +48,12 @@ class App : Application(), Configuration.Provider {
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
+
+    // For components that can't work with Hilt inject
+    val settingRepository: SettingsRepository
+        get() = EntryPointAccessors
+            .fromApplication<RepositoryEntryPoint>(this)
+            .settingsRepository()
 
     private fun getProcessName(context: Context): String? {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) return getProcessName()

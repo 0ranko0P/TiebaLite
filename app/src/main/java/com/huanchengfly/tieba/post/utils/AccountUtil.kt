@@ -4,38 +4,32 @@ import android.content.Context
 import android.util.Log
 import android.webkit.CookieManager
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.work.WorkRequest
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.arch.shareInBackground
-import com.huanchengfly.tieba.post.components.modules.SettingsRepositoryEntryPoint
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
+import com.huanchengfly.tieba.post.models.database.dao.AccountDao
+import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.repository.source.network.UserProfileNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.workers.NewMessageWorker
-import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -47,6 +41,8 @@ class AccountUtil private constructor(context: Context) {
         private const val TAG = "AccountUtil"
 
         private const val UPDATE_EXPIRE_MILL = 0x240C8400 // one week
+
+        private const val FETCH_EXPIRE_MILL = WorkRequest.MAX_BACKOFF_MILLIS // 5 hours
 
         @Volatile
         private var _instance: AccountUtil? = null
@@ -95,12 +91,17 @@ class AccountUtil private constructor(context: Context) {
 
     private val networkDataSource = UserProfileNetworkDataSource
 
-    private val accountUidSettings: Settings<Long> = EntryPointAccessors
-        .fromApplication<SettingsRepositoryEntryPoint>(context) // get settings repository manually
-        .settingsRepository()
-        .accountUid
+    private val accountUidSettings: Settings<Long> = (context as App).settingRepository.accountUid
 
-    private val accountDao = TbLiteDatabase.getInstance(context).accountDao()
+    private val accountDao: AccountDao
+
+    private val timeDao: TimestampDao
+
+    init {
+        val database = TbLiteDatabase.getInstance(context)
+        accountDao = database.accountDao()
+        timeDao = database.timestampDao()
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val currentAccount: SharedFlow<Account?> = accountUidSettings.flow
@@ -112,56 +113,58 @@ class AccountUtil private constructor(context: Context) {
     val allAccounts: SharedFlow<List<Account>> = accountDao.observeAll()
         .shareInBackground()
 
-    fun fetchAccountFlow(account: Account): Flow<Account> {
-        return fetchAccountFlow(account.bduss, account.sToken, account.cookie)
+    suspend fun updateSigningAccount(): Account {
+        val account = currentAccount.first() ?: throw TiebaNotLoggedInException()
+        val lastUpdate = timeDao.get(account.uid, TimestampDao.TYPE_SIGN_INFO_UPDATED) ?: -1
+        val duration = System.currentTimeMillis() - (lastUpdate + FETCH_EXPIRE_MILL)
+        if (duration > 0) {
+            Log.i(TAG, "onUpdateSigningAccount: Expired for ${duration / 1000}s")
+            return fetchAccount(account.bduss, account.sToken, account.cookie)
+        } else {
+            return account
+        }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun fetchAccountFlow(
-        bduss: String,
-        sToken: String,
-        cookie: String? = null
-    ): Flow<Account> {
-        return TiebaApi.getInstance()
-            .loginFlow(bduss, sToken)
-            .zip(TiebaApi.getInstance().initNickNameFlow(bduss, sToken)) { loginBean, _ ->
-                val account = accountDao.getById(loginBean.user.id.toLong())
-                return@zip if (account != null) {
-                    account.copy(
-                        bduss = bduss,
-                        sToken = sToken,
-                        cookie = cookie ?: getBdussCookie(bduss)
-                    ).apply {
-                        updateAccount(this, loginBean)
-                    }
-                } else Account(
-                    uid = loginBean.user.id.toLong(),
+    suspend fun fetchAccount(bduss: String, sToken: String, cookie: String? = null): Account {
+        val zid = SofireUtils.fetchZid().firstOrThrow()
+
+        // Fetching account login info, this is non-cancellable
+        return scope.async {
+            val (loginBean, userInfo) = networkDataSource.loginWithInit(bduss, sToken)
+            val uid = loginBean.user.id.toLong()
+            val nameShow = userInfo.nameShow.takeIf { it != loginBean.user.name }
+            var account = accountDao.getById(uid)
+            // Update existing account
+            if (account != null) {
+                account = account.copy(
                     name = loginBean.user.name,
+                    nickname = nameShow,
                     bduss = bduss,
                     tbs = loginBean.anti.tbs,
                     portrait = loginBean.user.portrait,
                     sToken = sToken,
                     cookie = cookie ?: getBdussCookie(bduss),
+                    tiebaUid = userInfo.tiebaUid,
+                    zid = zid,
+                )
+            } else {
+                account = Account(
+                    uid = uid,
+                    name = loginBean.user.name,
+                    nickname = nameShow,
+                    bduss = bduss,
+                    tbs = loginBean.anti.tbs,
+                    portrait = loginBean.user.portrait,
+                    sToken = sToken,
+                    cookie = cookie ?: getBdussCookie(bduss),
+                    tiebaUid = userInfo.tiebaUid,
+                    zid = zid,
                 )
             }
-            .zip(SofireUtils.fetchZid()) { account, zid ->
-                account.copy(zid = zid)
-            }
-            .flatMapConcat { account ->
-                TiebaApi.getInstance()
-                    .getUserInfoFlow(account.uid.toLong(), account.bduss, account.sToken)
-                    .map { checkNotNull(it.data_?.user) }
-                    .map { user ->
-                        account.copy(nickname = user.nameShow, portrait = user.portrait)
-                    }
-                    .catch {
-                        emit(account)
-                    }
-            }
-            .onEach { account ->
-                accountDao.upsert(account)
-            }
-            .flowOn(Dispatchers.IO)
+            // Save to the database
+            account.also { accountDao.upsert(account = it) }
+        }
+        .await()
     }
 
     /**
@@ -200,8 +203,11 @@ class AccountUtil private constructor(context: Context) {
         return updated
     }
 
-    suspend fun saveNewAccount(context: Context, account: Account) {
+    fun saveNewAccount(context: Context, account: Account) = scope.launch(Dispatchers.Main) {
         accountDao.upsert(account)
+        if (currentAccount.first() == null) {
+            accountUidSettings.set(account.uid)
+        }
         val workManager = context.workManager()
         NewMessageWorker.schedulePeriodically(workManager)
         NewMessageWorker.startNow(workManager)
@@ -211,19 +217,6 @@ class AccountUtil private constructor(context: Context) {
         if (currentAccount.first()?.uid != uid) {
             accountUidSettings.set(uid)
         }
-    }
-
-    private suspend fun updateAccount(
-        account: Account,
-        loginBean: LoginBean,
-    ) {
-        val updated = account.copy(
-            uid = loginBean.user.id.toLong(),
-            name = loginBean.user.name,
-            portrait = loginBean.user.portrait,
-            tbs = loginBean.anti.tbs,
-        )
-        accountDao.upsert(updated)
     }
 
     fun exit(context: Context, oldAccount: Account) {

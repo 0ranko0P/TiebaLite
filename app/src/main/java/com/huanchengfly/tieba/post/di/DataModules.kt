@@ -1,4 +1,4 @@
-package com.huanchengfly.tieba.post.components.modules
+package com.huanchengfly.tieba.post.di
 
 import android.content.Context
 import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
@@ -44,7 +44,7 @@ abstract class RepositoryModule {
 
 @Module
 @InstallIn(SingletonComponent::class)
-object ApiModule {
+object DataSourceModule {
 
     @Provides
     fun provideHomeNetworkDataSource(): HomeNetworkDataSource {
@@ -97,6 +97,8 @@ object DatabaseModule {
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
-interface SettingsRepositoryEntryPoint {
+interface RepositoryEntryPoint {
     fun settingsRepository(): SettingsRepository
+
+    fun OKSignRepository(): OKSignRepository
 }

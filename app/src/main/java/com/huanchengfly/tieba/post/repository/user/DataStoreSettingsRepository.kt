@@ -102,6 +102,8 @@ class DataStoreSettingsRepository @Inject constructor(
     override val uiSettings: Settings<UISettings> = ComplexSettings(UISettingsTransformer)
 
     override val signConfig: Settings<SignConfig> = ComplexSettings(SignConfigTransformer)
+
+    override val UUIDSettings: Settings<String> = SimpleSettings(stringPreferencesKey("uuid"), "")
 }
 
 private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {

@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.api.models
 
-
 import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
@@ -57,17 +56,17 @@ data class GetForumListBean(
         @SerializedName("cont_sign_num")
         val contSignNum: String,
         @SerializedName("forum_id")
-        val forumId: String,
+        val forumId: Long,
         @SerializedName("forum_name")
         val forumName: String,
         @SerializedName("is_sign_in")
-        val isSignIn: String,
+        val isSignIn: Int,
         @SerializedName("need_exp")
         val needExp: String,
         @SerializedName("user_exp")
         val userExp: String,
         @SerializedName("user_level")
-        val userLevel: String
+        val userLevel: Int
     )
 
     @Keep

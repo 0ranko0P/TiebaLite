@@ -12,6 +12,7 @@ import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.repository.HomeRepository
+import com.huanchengfly.tieba.post.repository.user.OKSignRepository
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.LikedForum
@@ -24,6 +25,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,7 +43,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 // Pinned Top Forums, Normal Forums
-private typealias ForumLists = Pair<List<LikedForum>, List<LikedForum>>
+private typealias ForumLists = Pair<List<LikedForum>?, List<LikedForum>?>
 
 private const val TAG = "HomeViewModel"
 
@@ -64,6 +66,7 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val homeRepo: HomeRepository,
     historyRepo: HistoryRepository,
+    okSignRepo: OKSignRepository,
     settingsRepo: SettingsRepository
 ) : ViewModel() {
 
@@ -91,7 +94,7 @@ class HomeViewModel @Inject constructor(
         flow2 = homeRepo.getLikedForums(),
     ) { topForumIds, forumList->
         when {
-            forumList.isNullOrEmpty() -> ForumLists(emptyList(), emptyList())
+            forumList.isEmpty() -> ForumLists(emptyList(), emptyList())
 
             topForumIds.isEmpty() -> ForumLists(emptyList(), forumList)
 
@@ -107,7 +110,7 @@ class HomeViewModel @Inject constructor(
     }
     .flowOn(Dispatchers.Default)
     .catch { e -> handler.handleException(currentCoroutineContext(), e) }
-    .stateIn(viewModelScope, SharingStarted.Eagerly, ForumLists(emptyList(), emptyList()))
+    .stateIn(viewModelScope, SharingStarted.Eagerly, ForumLists(null, null))
 
     /**
      * Recent forum history, ``null`` when show history is disabled in habit settings.
@@ -122,6 +125,8 @@ class HomeViewModel @Inject constructor(
             if (showHistory) historyRepo.getForumHistoryTop10() else flowOf(null)
         }
         .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = null)
+
+    val isOkSignWorkerRunning: SharedFlow<Boolean> = okSignRepo.observeWorkerIsRunning()
 
     init {
         refreshInternal(cached = true)

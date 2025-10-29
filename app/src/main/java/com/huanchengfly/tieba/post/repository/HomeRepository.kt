@@ -54,10 +54,10 @@ class HomeRepository @Inject constructor(
     }
 
     /**
-     * Observe the current user's liked forums, ``null`` if no user logged-in
+     * Observe the current user's liked forums.
      * */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getLikedForums(): Flow<List<LikedForum>?> {
+    fun getLikedForums(): Flow<List<LikedForum>> {
         return settingsRepo.accountUid.flow
             .flatMapLatest { uid ->
                 if (uid != -1L) localDataSource.observeAllSorted(uid) else throw TiebaNotLoggedInException()
@@ -77,14 +77,18 @@ class HomeRepository @Inject constructor(
         // force refresh or cache is expired
         if (!cached || isCacheExpired(uid)) {
             val forums = networkDataSource.getLikedForums().mapEntity(uid)
-            localDataSource.upsertAll(forums)
-            // save last update timestamp
-            timestampDao.upsert(Timestamp(uid, TYPE_FORUM_LAST_UPDATED))
+            updateLikedForums(uid, forums)
             if (BuildConfig.DEBUG) {
                 val cost = System.currentTimeMillis() - start
                 Log.i(TAG, "onRefresh: user: $uid, forums: ${forums.size}, cost: ${cost}ms.")
             }
         }
+    }
+
+    suspend fun updateLikedForums(uid: Long, forums: List<LocalLikedForum>) {
+        localDataSource.upsertAll(forums)
+        // save last update timestamp
+        timestampDao.upsert(Timestamp(uid, TYPE_FORUM_LAST_UPDATED))
     }
 
     suspend fun onDislikeForum(forum: LikedForum) {

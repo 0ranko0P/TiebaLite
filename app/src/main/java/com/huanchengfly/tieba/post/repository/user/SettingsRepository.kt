@@ -6,7 +6,9 @@ import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
+import com.huanchengfly.tieba.post.utils.UIDUtil
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 interface Settings<T> {
 
@@ -41,6 +43,13 @@ interface SettingsRepository {
     val uiSettings: Settings<UISettings>
 
     val signConfig: Settings<SignConfig>
+
+    /**
+     * Settings of client [UUID].
+     *
+     * @see UIDUtil.uUID
+     * */
+    val UUIDSettings: Settings<String>
 
     val clientConfig: Settings<ClientConfig>
 }

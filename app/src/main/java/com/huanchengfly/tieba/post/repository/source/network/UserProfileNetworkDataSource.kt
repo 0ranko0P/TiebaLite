@@ -4,6 +4,8 @@ import android.text.TextUtils
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.FollowBean
+import com.huanchengfly.tieba.post.api.models.InitNickNameBean
+import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
@@ -16,6 +18,26 @@ import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataS
  * Main entry point for accessing user profile data from the network.
  */
 object UserProfileNetworkDataSource {
+
+    /**
+     * 登录
+     */
+    suspend fun loginWithInit(bduss: String, sToken: String): Pair<LoginBean, InitNickNameBean.UserInfo> {
+        require(bduss.isNotEmpty())
+        require(sToken.isNotEmpty())
+
+        val loginBean = TiebaApi.getInstance().loginFlow(bduss, sToken).firstOrThrow()
+        var errorCode = loginBean.errorCode.toIntOrNull() ?: 0
+        // check LoginBean
+        if (errorCode != 0) throw TiebaException("Login error: $errorCode")
+
+        val nameBean = TiebaApi.getInstance().initNickNameFlow(bduss, sToken).firstOrThrow()
+        // check UserBean
+        errorCode = nameBean.errorCode.toIntOrNull() ?: 0
+        if (errorCode != 0) throw TiebaException("Load user info failed: $errorCode")
+
+        return loginBean to nameBean.userInfo
+    }
 
     suspend fun loadUserThreadPost(uid: Long, page: Int, isThread: Boolean): List<PostInfoList> {
         require(uid > 0) { "Invalid user ID: $uid." }

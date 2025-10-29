@@ -20,7 +20,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
     <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT" />
     <uses-permission android:name="com.android.launcher.permission.READ_SETTINGS" />
@@ -57,33 +57,12 @@
         android:theme="@style/Theme.NewAppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="UnusedAttribute">
-        <service
-            android:name=".services.OKSignService"
-            android:exported="false"
-            android:enabled="true"
-            android:foregroundServiceType="specialUse"
-            android:permission="android.permission.BIND_JOB_SERVICE">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="oksign" />
-        </service>
 
         <activity
             android:name=".ui.page.photoview.PhotoViewActivity"
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
             android:theme="@style/Theme.Transparent.PhotoView"
             android:windowSoftInputMode="adjustResize" />
-
-        <receiver
-            android:name=".receivers.BootCompleteSignReceiver"
-            android:enabled="true"
-            android:exported="false">
-            <intent-filter>
-                <category android:name="android.intent.category.LAUNCHER" />
-
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
 
         <meta-data
             android:name="android.max_aspect"
@@ -249,6 +228,12 @@
             </intent-filter>
         </activity>
 
+        <!-- OKSign Worker -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
+
         <!-- Trigger Google Play services to install the backported photo picker module. -->
         <!--suppress AndroidDomInspection -->
         <service android:name="com.google.android.gms.metadata.ModuleDependencies"
@@ -289,8 +274,6 @@
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
             android:label="@string/title_activity_edit_profile"
             android:windowSoftInputMode="adjustResize" />
-
-        <receiver android:name=".receivers.AutoSignAlarm" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

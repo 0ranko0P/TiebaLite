@@ -57,6 +57,11 @@ interface TimestampDao {
         const val TYPE_FORUM_LAST_UPDATED = -2
 
         /**
+         * Timestamp Type: Last updated time of account signing info, Separated from the account table.
+         * */
+        const val TYPE_SIGN_INFO_UPDATED = -1
+
+        /**
          * Timestamp Type: Last updated time of new message.
          * */
         const val TYPE_NEW_MESSAGE_UPDATED = 8

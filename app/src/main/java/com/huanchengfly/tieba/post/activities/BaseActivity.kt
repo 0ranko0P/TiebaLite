@@ -9,10 +9,8 @@ import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.components.NetworkObserver
-import com.huanchengfly.tieba.post.components.modules.SettingsRepositoryEntryPoint
 import com.huanchengfly.tieba.post.ui.widgets.VoicePlayerView
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
-import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -79,8 +77,8 @@ abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
     }
 
     private fun overrideFontScaleOneShot(baseContext: Context) {
-        val settingsEntryPoint = EntryPointAccessors.fromApplication<SettingsRepositoryEntryPoint>(baseContext.applicationContext)
-        val fontScaleFlow = settingsEntryPoint.settingsRepository().fontScale.flow
+        val settingsRepository = (baseContext.applicationContext as App).settingRepository
+        val fontScaleFlow = settingsRepository.fontScale.flow
         runCatching {
             // Block the Main thread to avoid IllegalStateException in ContextThemeWrapper
             val fontScale = runBlocking { fontScaleFlow.first() }

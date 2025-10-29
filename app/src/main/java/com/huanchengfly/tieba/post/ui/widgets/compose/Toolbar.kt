@@ -178,8 +178,8 @@ fun AccountNavIcon(
 }
 
 @Composable
-fun ActionItem(icon: ImageVector, contentDescription: String, onClick: () -> Unit) {
-    IconButton(onClick = onClick) {
+fun ActionItem(icon: ImageVector, contentDescription: String, enabled: Boolean = true, onClick: () -> Unit) {
+    IconButton(onClick = onClick, enabled = enabled) {
         Icon(imageVector = icon, contentDescription = contentDescription)
     }
 }
