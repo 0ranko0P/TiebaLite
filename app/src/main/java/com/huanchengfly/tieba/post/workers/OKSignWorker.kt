@@ -26,6 +26,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterceptor
 import com.huanchengfly.tieba.post.repository.user.OKSignRepository
+import com.huanchengfly.tieba.post.services.OKSignTileService
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.NotificationUtils
 import com.huanchengfly.tieba.post.utils.NotificationUtils.notificationManager
@@ -47,10 +48,12 @@ class OKSignWorker @AssistedInject constructor(
         context = applicationContext,
         cancelIntent = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id),
     ) { progress, total ->
+        OKSignTileService.requestListening(applicationContext)
         setProgressAsync(workDataOf(KEY_PROGRESS to progress, KEY_TOTAL to total))
     }
 
     override suspend fun doWork(): Result = try {
+        OKSignTileService.requestListening(applicationContext)
         notificationUpdater.setupNotification()
         try {
             setForeground(getForegroundInfo())
@@ -64,7 +67,7 @@ class OKSignWorker @AssistedInject constructor(
         Log.e(TAG, "onDoWork: $id is canceled: ${e.message}.")
         throw e
     } catch (e: Throwable) {
-        Log.e(TAG, "onDoWork", e)
+        Log.e(TAG, "onDoWork: ${e.getErrorMessage()}.", e)
         notificationUpdater.onError(ConnectivityInterceptor.wrapException(e))
         Result.failure()
     } finally {
