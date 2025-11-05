@@ -5,7 +5,6 @@ import android.content.Context
 import android.webkit.CookieManager
 import android.webkit.WebView
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -13,40 +12,31 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.components.TbWebViewClient
-import com.huanchengfly.tieba.post.ui.page.webview.WebViewProgressIndicator
-import com.huanchengfly.tieba.post.ui.page.webview.isInternalHost
-import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.components.TiebaWebView
+import com.huanchengfly.tieba.post.components.TiebaWebView.Companion.dispose
+import com.huanchengfly.tieba.post.ui.page.webview.WebviewTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.AccountUtil
@@ -54,9 +44,6 @@ import com.huanchengfly.tieba.post.utils.AccountUtil.Companion.parseCookie
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 const val LOGIN_URL =
@@ -72,32 +59,6 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
     var loaded by rememberSaveable {
         mutableStateOf(false)
     }
-    var pageTitle = webViewState.pageTitle
-    val currentHost by remember {
-        derivedStateOf {
-            webViewState.lastLoadedUrl?.toUri()?.host.orEmpty().lowercase()
-        }
-    }
-    val isExternalHost by remember {
-        derivedStateOf {
-            currentHost.isNotEmpty() && !isInternalHost(currentHost)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        val job = coroutineScope.launch {
-            snapshotFlow { webViewState.pageTitle }
-                .filterNotNull()
-                .filter { it.isNotEmpty() }
-                .cancellable()
-                .collect {
-                    pageTitle = it
-                }
-        }
-        onDispose {
-            job.cancel()
-        }
-    }
 
     LazyLoad(loaded = loaded) {
         webViewNavigator.loadUrl(LOGIN_URL)
@@ -106,50 +67,24 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
 
     MyScaffold(
         topBar = {
-            Toolbar(
-                title = {
-                    Column {
-                        Text(
-                            text = pageTitle ?: stringResource(R.string.title_default),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (isExternalHost) {
-                            Text(
-                                text = currentHost,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                },
-                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
-                actions = {
-                    val menuState = rememberMenuState()
-                    ClickMenu(
-                        menuContent = {
-                            TextMenuItem(
-                                text = R.string.title_refresh,
-                                onClick = webViewNavigator::reload
-                            )
-                        },
-                        menuState = menuState,
-                        triggerShape = CircleShape
+            WebviewTopAppBar(state = webViewState, onBack = onBack) {
+                ClickMenu(
+                    menuContent = {
+                        TextMenuItem(text = R.string.title_refresh, onClick = webViewNavigator::reload)
+                    },
+                    triggerShape = CircleShape
+                ) {
+                    Box(
+                        modifier = Modifier.size(48.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier.size(48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = stringResource(id = R.string.btn_more)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(id = R.string.btn_more)
+                        )
                     }
-                },
-                content = { WebViewProgressIndicator(webViewState = webViewState) }
-            )
+                }
+            }
         }
     ) { paddingValues ->
         Box {
@@ -169,6 +104,7 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                         displayZoomControls = false
                     }
                 },
+                onDispose = TiebaWebView::dispose,
                 client = remember(navigator) {
                     LoginWebViewClient(
                         context,
