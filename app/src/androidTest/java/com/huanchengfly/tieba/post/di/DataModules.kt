@@ -3,6 +3,8 @@
 package com.huanchengfly.tieba.post.di
 
 import android.content.Context
+import androidx.room.Room
+import androidx.room.RoomDatabase
 import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
 import com.huanchengfly.tieba.post.models.database.dao.AccountDao
 import com.huanchengfly.tieba.post.models.database.dao.BlockDao
@@ -14,58 +16,56 @@ import com.huanchengfly.tieba.post.models.database.dao.SearchPostDao
 import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
-import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSourceImp
-import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
-import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSourceIml
-import com.huanchengfly.tieba.post.repository.user.DataStoreSettingsRepository
-import com.huanchengfly.tieba.post.repository.user.OKSignRepository
-import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp
+import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkFakeDataSource
+import com.huanchengfly.tieba.post.repository.user.FakeSettingsRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dagger.hilt.testing.TestInstallIn
 import javax.inject.Singleton
 
 @Module
-@InstallIn(SingletonComponent::class)
-abstract class RepositoryModule {
+@TestInstallIn(
+    components = [SingletonComponent::class],
+    replaces = [RepositoryModule::class]
+)
+abstract class FakeRepositoryModule {
 
     @Singleton
     @Binds
-    abstract fun bindSettingsRepository(repository: DataStoreSettingsRepository): SettingsRepository
-
-    @Singleton
-    @Binds
-    abstract fun bindOKSignRepository(repository: OKSignRepositoryImp): OKSignRepository
+    abstract fun bindSettingsRepository(repository: FakeSettingsRepository): SettingsRepository
 }
 
 @Module
-@InstallIn(SingletonComponent::class)
-object DataSourceModule {
+@TestInstallIn(
+    components = [SingletonComponent::class],
+    replaces = [DataSourceModule::class]
+)
+object FakeDataSourceModule {
 
     @Provides
-    fun provideHomeNetworkDataSource(): HomeNetworkDataSource {
-        return HomeNetworkDataSourceImp
-    }
+    fun provideHomeNetworkDataSource(): HomeNetworkDataSource = HomeNetworkFakeDataSource
 
     @Provides
-    fun provideOKSignNetworkDataSource(): OKSignNetworkDataSource {
-        return OKSignNetworkDataSourceIml
-    }
+    fun provideHomeFakeNetworkDataSource(): HomeNetworkFakeDataSource = HomeNetworkFakeDataSource
 }
 
 @Module
-@InstallIn(SingletonComponent::class)
-object DatabaseModule {
+@TestInstallIn(
+    components = [SingletonComponent::class],
+    replaces = [DatabaseModule::class]
+)
+object FakeDatabaseModule {
 
     @Singleton
     @Provides
     fun provideDataBase(@ApplicationContext context: Context): TbLiteDatabase {
-        return TbLiteDatabase.getInstance(context)
+        return Room.inMemoryDatabaseBuilder(context, TbLiteDatabase::class.java)
+            .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
+            .build()
     }
 
     @Provides
@@ -94,12 +94,4 @@ object DatabaseModule {
 
     @Provides
     fun provideTimestampDao(database: TbLiteDatabase): TimestampDao = database.timestampDao()
-}
-
-@EntryPoint
-@InstallIn(SingletonComponent::class)
-interface RepositoryEntryPoint {
-    fun settingsRepository(): SettingsRepository
-
-    fun OKSignRepository(): OKSignRepository
 }

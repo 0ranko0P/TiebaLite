@@ -32,7 +32,8 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 390100
         versionName = "4.0.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Configure custom runner to set up the Hilt test application
+        testInstrumentationRunner = "$applicationId.TbLiteTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -225,10 +226,14 @@ dependencies {
     implementation(libs.godaddy.colorpicker)
     implementation(libs.yalantis.ucrop)
 
-    //Test
+    // Test
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
 
     // UI Tests
     androidTestImplementation(libs.androidx.compose.ui.test)

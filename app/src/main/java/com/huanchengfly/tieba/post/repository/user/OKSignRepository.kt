@@ -68,7 +68,8 @@ class OKSignRepositoryImp @Inject constructor(
     private val networkDataSource: OKSignNetworkDataSource
 ): OKSignRepository {
 
-    private val workManager = context.workManager()
+    // Lazy init for instrumented test
+    private val workManager by lazy { context.workManager() }
 
     override val isOKSignWorkerRunning: SharedFlow<Boolean> by lazy {
         combine(

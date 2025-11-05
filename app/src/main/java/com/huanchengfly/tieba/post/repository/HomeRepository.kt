@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.repository
 
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.models.MsgBean.MessageBean
@@ -165,7 +166,8 @@ class HomeRepository @Inject constructor(
         private const val TAG = "HomeRepository"
 
         // Map network model to entity
-        private suspend fun List<LikeForum>.mapEntity(uid: Long) = withContext(Dispatchers.Default) {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        suspend fun List<LikeForum>.mapEntity(uid: Long) = withContext(Dispatchers.Default) {
             val now = System.currentTimeMillis()
             map {
                 LocalLikedForum(
