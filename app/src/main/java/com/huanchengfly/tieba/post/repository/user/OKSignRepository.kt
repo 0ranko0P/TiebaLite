@@ -41,9 +41,9 @@ import kotlin.math.abs
 
 interface OKSignRepository {
 
-    suspend fun sign(listener: ProgressListener?)
+    val isOKSignWorkerRunning: SharedFlow<Boolean>
 
-    fun observeWorkerIsRunning(): SharedFlow<Boolean>
+    suspend fun sign(listener: ProgressListener?)
 
     fun scheduleWorker()
 
@@ -70,7 +70,7 @@ class OKSignRepositoryImp @Inject constructor(
 
     private val workManager = context.workManager()
 
-    private val workerRunningFlow: SharedFlow<Boolean> by lazy {
+    override val isOKSignWorkerRunning: SharedFlow<Boolean> by lazy {
         combine(
             workManager.getWorkInfosByTagFlow(OKSignWorker.TAG_EXPEDITED),
             workManager.getWorkInfosByTagFlow(OKSignWorker.TAG)
@@ -250,8 +250,6 @@ class OKSignRepositoryImp @Inject constructor(
         val signConfig = settingsRepo.signConfig.flow.first()
         signInternal(account, signConfig, listener)
     }
-
-    override fun observeWorkerIsRunning(): SharedFlow<Boolean> = workerRunningFlow
 
     private suspend fun scheduleWorkerInternal(signConfig: SignConfig) {
         if (!signConfig.autoSign) {

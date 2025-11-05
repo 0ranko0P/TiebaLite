@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,5 +25,7 @@ class MainPageViewModel @Inject constructor(
         .catch { /* Ignored */ }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialValue = 0)
 
-    fun onNavigateNotification() = homeRepo.clearNewMessage()
+    fun onNavigateNotification() = viewModelScope.launch {
+        homeRepo.clearNewMessage()
+    }
 }

@@ -78,6 +78,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
@@ -85,7 +86,6 @@ import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.LikeZero
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
-import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -117,6 +117,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
+import com.huanchengfly.tieba.post.utils.LocalAccount
+import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeState
@@ -371,7 +373,6 @@ fun ThreadPage(
             },
             bottomBar = {
                 BottomBar(
-                    user = state.user,
                     onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
                     onClickMore = {
                         if (bottomSheetState.isVisible) closeBottomSheet() else openBottomSheet()
@@ -525,7 +526,7 @@ private fun ForumTitleChip(forum: SimpleForum, onForumClick: () -> Unit) {
 @Composable
 private fun BottomBar(
     modifier: Modifier = Modifier,
-    user: UserData?,
+    account: Account? = LocalAccount.current,
     onClickReply: (() -> Unit)?,
     onClickMore: () -> Unit,
     like: Like,
@@ -543,11 +544,11 @@ private fun BottomBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (user != null && onClickReply != null) { // User logged in && not HideReply
+            if (account != null && onClickReply != null) { // User logged in && not HideReply
                 Avatar(
-                    data = user.avatarUrl,
+                    data = remember { StringUtil.getAvatarUrl(account.portrait) },
                     size = Sizes.Tiny,
-                    contentDescription = user.name,
+                    contentDescription = account.name,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
 

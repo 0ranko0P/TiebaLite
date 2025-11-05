@@ -330,7 +330,9 @@ fun UserProfilePage(
                     }
                 } else {
                     pagerMovableContent(
-                        Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                        Modifier
+                            .nestedScroll(scrollBehavior.nestedScrollConnection)
+                            .padding(paddingValues),
                         false // fluid
                     )
                 }

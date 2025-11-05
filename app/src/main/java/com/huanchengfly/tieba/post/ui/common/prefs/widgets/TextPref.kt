@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -121,7 +122,7 @@ fun TipPref(
     text: @Composable BoxScope.() -> Unit
 ) {
     Surface(
-        modifier = modifier
+        modifier = modifier.fillMaxWidth()
             .padding(ContentPadding)
             .padding(start = 8.dp),
         shape = MaterialTheme.shapes.small,

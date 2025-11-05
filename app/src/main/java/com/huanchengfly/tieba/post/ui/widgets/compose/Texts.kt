@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
@@ -112,17 +113,17 @@ fun buildChipInlineContent(
 ): InlineTextContent {
     val textMeasurer = rememberTextMeasurer()
     val textSize = remember(text, textStyle) { textMeasurer.measure(text, textStyle).size }
-    val heightPx = textSize.height
-    val heightSp = heightPx.pxToSpFloat().sp
     val textHeightPx = textStyle.fontSize.value.spToPxFloat() -
             padding.calculateTopPadding().value.dpToPxFloat() -
             padding.calculateBottomPadding().value.dpToPxFloat()
     val fontSize = textHeightPx.pxToSpFloat().sp
-    val textWidthPx = textSize.width
-    val widthPx = textWidthPx +
-            padding.calculateStartPadding(LocalLayoutDirection.current).value.dpToPxFloat() +
-            padding.calculateEndPadding(LocalLayoutDirection.current).value.dpToPxFloat()
-    val widthSp = widthPx.pxToSpFloat().sp
+
+    val density = LocalDensity.current
+    val direction = LocalLayoutDirection.current
+    val horizontalPadding = padding.calculateStartPadding(direction) + padding.calculateEndPadding(direction)
+    val verticalPadding = padding.calculateTopPadding() + padding.calculateBottomPadding()
+    val widthSp = with(density) { (textSize.width.toDp() + horizontalPadding).toSp() }
+    val heightSp = with(density) { (textSize.height.toDp() + verticalPadding).toSp() }
     return InlineTextContent(
         placeholder = Placeholder(
             width = widthSp,

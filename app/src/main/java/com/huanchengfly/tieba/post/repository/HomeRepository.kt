@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -91,21 +90,20 @@ class HomeRepository @Inject constructor(
         timestampDao.upsert(Timestamp(uid, TYPE_FORUM_LAST_UPDATED))
     }
 
-    suspend fun onDislikeForum(forum: LikedForum) {
+    suspend fun requestDislikeForum(forum: LikedForum) {
         val tbs = requireAccount().tbs
         forumNetworkDataSource.dislike(forumId = forum.id, forumName = forum.name, tbs)
         onDislikeForum(forumId = forum.id)
     }
 
-    fun onDislikeForum(forumId: Long) {
-        AppBackgroundScope.launch(Dispatchers.Main) {
+    suspend fun onDislikeForum(forumId: Long) {
+        AppBackgroundScope.async {
             localDataSource.deleteById(uid = requireAccount().uid, forumId = forumId)
         }
+        .await()
     }
 
-    fun onLikeForum() {
-        AppBackgroundScope.launch { refresh(cached = false) }
-    }
+    suspend fun onLikeForum() = refresh(cached = false)
 
     fun getPinnedForumIds(): Flow<List<Long>> = localDataSource.observePinnedForums()
 
@@ -156,11 +154,11 @@ class HomeRepository @Inject constructor(
             }
         }
 
-    fun clearNewMessage() {
-        AppBackgroundScope.launch {
+    suspend fun clearNewMessage() {
+        AppBackgroundScope.async {
             val uid = settingsRepo.accountUid.flow.first()
             timestampDao.delete(uid, TYPE_NEW_MESSAGE_COUNT)
-        }
+        }.await()
     }
 
     companion object {

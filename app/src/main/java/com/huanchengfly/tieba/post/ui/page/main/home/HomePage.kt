@@ -72,6 +72,7 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.accompanist.placeholder.PlaceholderDefaults
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -397,9 +398,7 @@ fun HomePage(
     val forumLists by viewModel.forumListsFlow.collectAsStateWithLifecycle()
     val (topForums, forums) = forumLists
     val hasTopForum = !topForums.isNullOrEmpty()
-
-    // Empty but not null
-    val isEmpty = topForums?.isEmpty() == true && forums?.isEmpty() == true
+    val isEmpty = topForums.isNullOrEmpty() && forums.isNullOrEmpty()
 
     BlurScaffold(
         topBar = {
@@ -468,24 +467,27 @@ fun HomePage(
             confirmUnfollowDialog.show()
         }
 
+        val screenModifier = Modifier.padding(contentPaddings)
         StateScreen(
             isEmpty = isEmpty,
             isError = uiState.error != null,
             isLoading = forums == null || uiState.isLoading,
             modifier = Modifier.fillMaxSize(),
-            onReload = viewModel::onRefresh,
+            onReload = viewModel::onRefresh.takeIf { loggedIn },
             emptyScreen = {
-                EmptyScreen(
-                    modifier = Modifier.padding(contentPaddings),
-                    loggedIn = loggedIn,
-                    onOpenExplore = onOpenExplore
-                )
+                EmptyScreen(modifier = screenModifier, onExploreClicked = onOpenExplore)
             },
             loadingScreen = {
-                HomePageSkeletonScreen(Modifier.padding(contentPaddings), listSingle, gridCells)
+                HomePageSkeletonScreen(modifier = screenModifier, listSingle, gridCells)
             },
             errorScreen = {
-                ErrorScreen(error = uiState.error, Modifier.padding(contentPaddings))
+                if (uiState.error is TiebaNotLoggedInException) {
+                    GuestScreen(modifier = screenModifier, onExploreClicked = onOpenExplore) {
+                        navigator.navigate(Destination.Login)
+                    }
+                } else  {
+                    ErrorScreen(error = uiState.error, modifier = screenModifier)
+                }
             }
         ) {
             val history by viewModel.historyFlow.collectAsStateWithLifecycle()
@@ -552,6 +554,17 @@ fun HomePage(
     }
 }
 
+@NonRestartableComposable
+@Composable
+private fun ExploreButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    PositiveButton(
+        textRes = R.string.button_go_to_explore,
+        modifier = modifier,
+        colors = ButtonDefaults.filledTonalButtonColors(),
+        onClick = onClick,
+    )
+}
+
 @Composable
 private fun HomePageSkeletonScreen(
     modifier: Modifier = Modifier,
@@ -569,18 +582,14 @@ private fun HomePageSkeletonScreen(
 }
 
 @Composable
-fun EmptyScreen(
+private fun GuestScreen(
     modifier: Modifier = Modifier,
-    loggedIn: Boolean,
-    onOpenExplore: () -> Unit
+    onExploreClicked: () -> Unit,
+    onLoginClicked: () -> Unit
 ) {
     TipScreen(
         title = {
-            if (!loggedIn) {
-                Text(text = stringResource(id = R.string.title_not_logged_in))
-            } else {
-                Text(text = stringResource(id = R.string.title_empty))
-            }
+            Text(text = stringResource(id = R.string.title_not_logged_in))
         },
         modifier = modifier,
         image = {
@@ -594,25 +603,33 @@ fun EmptyScreen(
             )
         },
         message = {
-            if (!loggedIn) {
-                Text(text = stringResource(R.string.home_empty_login), textAlign = TextAlign.Center)
-            }
+            Text(text = stringResource(R.string.home_empty_login), textAlign = TextAlign.Center)
         },
         actions = {
-            if (!loggedIn) {
-                val navigator = LocalNavController.current
-                PositiveButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    textRes = R.string.button_login,
-                    onClick = { navigator.navigate(Destination.Login) },
-                )
-            }
-            PositiveButton(
-                onClick = onOpenExplore,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.filledTonalButtonColors(),
-                textRes = R.string.button_go_to_explore
+            PositiveButton(R.string.button_login, Modifier.fillMaxWidth(), onClick = onLoginClicked)
+
+            ExploreButton(modifier = Modifier.fillMaxWidth(), onClick = onExploreClicked)
+        }
+    )
+}
+
+@Composable
+private fun EmptyScreen(modifier: Modifier = Modifier, onExploreClicked: () -> Unit) {
+    TipScreen(
+        title = {
+            Text(text = stringResource(id = R.string.title_empty))
+        },
+        modifier = modifier,
+        image = {
+            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_astronaut))
+            LottieAnimation(
+                composition = composition,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2f)
             )
         },
+        actions = { ExploreButton(modifier = Modifier.fillMaxWidth(), onClick = onExploreClicked) },
     )
 }

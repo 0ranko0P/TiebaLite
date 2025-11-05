@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,18 +12,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.PagerDefaults
@@ -50,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
@@ -77,7 +72,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
@@ -89,7 +83,6 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumItem
 import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumPage
-import com.huanchengfly.tieba.post.ui.page.search.thread.DefaultSortType
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadPage
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadSortType
 import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserPage
@@ -98,14 +91,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
-import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -119,7 +110,7 @@ private enum class SearchPages(val titleRes: Int) {
     User(titleRes = R.string.title_search_user)
 }
 
-@OptIn(FlowPreview::class, ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SearchPage(
     navigator: NavController,
@@ -174,11 +165,6 @@ fun SearchPage(
         }
     }
 
-    val isKeywordNotEmpty by viewModel.uiState.collectPartialAsState( // note: submitted keyword
-        prop1 = SearchUiState::isKeywordNotEmpty,
-        initial = false
-    )
-
     var inputKeyword by rememberSaveable { mutableStateOf("") }
 
     // Callback for HistoryList, SearchBox and SuggestionList
@@ -194,6 +180,19 @@ fun SearchPage(
         coroutineScope.launch {
             listStates[pagerState.currentPage].scrollToItem(0)
         }
+    }
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Submitted search keyword
+    val isKeywordNotEmpty = uiState.isKeywordNotEmpty
+    // Input search keyword
+    val isInputKeywordNotEmpty by remember {
+        derivedStateOf { inputKeyword.isNotEmpty() && inputKeyword.isNotBlank() }
+    }
+
+    val showSuggestion by remember {
+        derivedStateOf { isInputKeywordNotEmpty && inputKeyword != uiState.submittedKeyword }
     }
 
     BackHandler(enabled = isKeywordNotEmpty) {
@@ -226,17 +225,15 @@ fun SearchPage(
                 },
                 scrollBehavior = scrollBehaviors[pagerState.currentPage]
             ) {
-                val searchThreadSortType by viewModel.uiState.collectPartialAsState(
-                    prop1 = SearchUiState::sortType,
-                    initial = DefaultSortType
-                )
-
-                AnimatedVisibility(isKeywordNotEmpty, Modifier.align(Alignment.CenterHorizontally)) {
+                AnimatedVisibility(
+                    visible = isInputKeywordNotEmpty && isKeywordNotEmpty && !showSuggestion,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
                     SearchTabRow(
                         pagerState = pagerState,
                         pages = pages,
                         sortTypes = sortTypes,
-                        selectedSortType = searchThreadSortType,
+                        selectedSortType = uiState.sortType,
                         onSelectSortType = viewModel::onSortTypeChanged
                     )
                 }
@@ -246,26 +243,9 @@ fun SearchPage(
     ) { contentPadding ->
         var isSearchHistoryExpanded by rememberSaveable { mutableStateOf(false) }
 
-        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-        val threadSortType = uiState.sortType
-
-        if (isKeywordNotEmpty) {
-            ProvideNavigator(navigator = navigator) {
-                LazyLoadHorizontalPager(
-                    state = pagerState,
-                    key = { pages[it].titleRes },
-                    modifier = Modifier.fillMaxSize(),
-                    flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
-                ) {
-                    movablePageContents[it](contentPadding, uiState.submittedKeyword, threadSortType)
-                }
-            }
-        } else {
+        if (!isInputKeywordNotEmpty) { // History list: empty input keyword
             Container(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(contentPadding)
-                    .verticalScroll(rememberScrollState())
+                modifier = Modifier.padding(contentPadding)
             ) {
                 val history by viewModel.searchHistories.collectAsStateWithLifecycle()
                 SearchHistoryList(
@@ -277,30 +257,30 @@ fun SearchPage(
                     onClear = viewModel::onClearHistory
                 )
             }
-        }
-    }
-
-    StrongBox {
-        val suggestion by viewModel.uiState.collectPartialAsState(
-            prop1 = SearchUiState::suggestion,
-            initial = null
-        )
-
-        suggestion?.let {
-            SearchSuggestionList(
-                modifier = Modifier
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(top = TopAppBarDefaults.TopAppBarExpandedHeight)
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-                contentPadding = WindowInsets.navigationBars.asPaddingValues(),
-                suggestion = it,
-                onForumClick = { f ->
-                    val transitionKey = f.id.toString() // use forum ID as transition animation key
-                    navigator.navigate(Destination.Forum(forumName = f.name, avatar = f.avatar, transitionKey))
-                },
-                onItemClick = onKeywordSubmit
-            )
+        } else if (showSuggestion) { // Suggestion list: input keyword != submitted keyword
+            uiState.suggestion?.let {
+                SearchSuggestionList(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = contentPadding,
+                    suggestion = it,
+                    onForumClick = { f ->
+                        val transitionKey = f.id.toString() // use forum ID as transition animation key
+                        navigator.navigate(Destination.Forum(forumName = f.name, avatar = f.avatar, transitionKey))
+                    },
+                    onItemClick = onKeywordSubmit
+                )
+            }
+        } else if (isKeywordNotEmpty) { // Search result pager
+            ProvideNavigator(navigator = navigator) {
+                LazyLoadHorizontalPager(
+                    state = pagerState,
+                    key = { pages[it].titleRes },
+                    modifier = Modifier.fillMaxSize(),
+                    flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
+                ) { i ->
+                    movablePageContents[i](contentPadding, uiState.submittedKeyword, uiState.sortType)
+                }
+            }
         }
     }
 }
@@ -425,7 +405,12 @@ fun SearchHistoryList(
 ) {
     val hasMore = history.size > 6
 
-    Column(modifier = modifier) {
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .verticalScroll(rememberScrollState())
+            .then(modifier)
+    ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,

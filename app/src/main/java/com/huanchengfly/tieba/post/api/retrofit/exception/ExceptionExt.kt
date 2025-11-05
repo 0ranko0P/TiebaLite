@@ -1,7 +1,5 @@
 package com.huanchengfly.tieba.post.api.retrofit.exception
 
-import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.Error
 
 fun Throwable.getErrorCode(): Int {
@@ -14,7 +12,7 @@ fun Throwable.getErrorCode(): Int {
 
 fun Throwable.getErrorMessage(): String {
     return if (message.isNullOrEmpty()) {
-        App.INSTANCE.getString(R.string.error_unknown)
+        this::class.java.simpleName
     } else {
         message!!
     }

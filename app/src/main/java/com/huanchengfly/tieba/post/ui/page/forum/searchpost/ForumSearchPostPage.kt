@@ -6,16 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDropDown
@@ -29,6 +26,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -101,6 +99,8 @@ fun ForumSearchPostPage(
         }
     }
 
+    var inputKeyword by rememberSaveable { mutableStateOf("") }
+
     val currentSortType by viewModel.uiState.collectPartialAsState(
         prop1 = ForumSearchPostUiState::sortType,
         initial = ForumSearchPostSortType.NEWEST
@@ -109,12 +109,17 @@ fun ForumSearchPostPage(
         prop1 = ForumSearchPostUiState::filterType,
         initial = ForumSearchPostFilterType.ALL
     )
+
+    // Submitted search keyword
     val isKeywordNotEmpty by viewModel.uiState.collectPartialAsState(
         prop1 = ForumSearchPostUiState::isKeywordNotEmpty,
         initial = false
     )
 
-    var inputKeyword by rememberSaveable { mutableStateOf("") }
+    // Input search keyword
+    val isInputKeywordNotEmpty by remember {
+        derivedStateOf { inputKeyword.isNotEmpty() && inputKeyword.isNotBlank() }
+    }
 
     val onKeywordSubmit: (String) -> Unit = {
         val newKeyword = it.trim()
@@ -170,7 +175,7 @@ fun ForumSearchPostPage(
                 },
                 scrollBehavior = scrollBehavior,
             ) {
-                AnimatedVisibility(visible = isKeywordNotEmpty) {
+                AnimatedVisibility(visible = isInputKeywordNotEmpty && isKeywordNotEmpty) {
                     SortToolBar(
                         modifier = Modifier.fillMaxWidth(),
                         sortType = { currentSortType },
@@ -191,7 +196,21 @@ fun ForumSearchPostPage(
         val hasMore = uiState.hasMore
         val data = uiState.data
 
-        if (isKeywordNotEmpty) {
+        if (!isInputKeywordNotEmpty) {
+            Container(
+                modifier = Modifier.padding(contentPadding)
+            ) {
+                val history by viewModel.searchHistories.collectAsStateWithLifecycle()
+                SearchHistoryList(
+                    history = history,
+                    onHistoryClick = onKeywordSubmit,
+                    expanded = { isSearchHistoryExpanded },
+                    onToggleExpand = { isSearchHistoryExpanded = !isSearchHistoryExpanded },
+                    onDelete = viewModel::onDeleteHistory,
+                    onClear = viewModel::onClearHistory
+                )
+            }
+        } else if (isKeywordNotEmpty) {
             StateScreen(
                 modifier = Modifier.fillMaxSize(),
                 isEmpty = data.isEmpty(),
@@ -209,7 +228,9 @@ fun ForumSearchPostPage(
                 ) {
                     ProvideNavigator(navigator = navigator) {
                         SwipeUpLazyLoadColumn(
-                            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .nestedScroll(scrollBehavior.nestedScrollConnection),
                             contentPadding = contentPadding,
                             isLoading = isLoadingMore,
                             onLazyLoad = {
@@ -249,23 +270,6 @@ fun ForumSearchPostPage(
                         }
                     }
                 }
-            }
-        } else {
-            Container(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(contentPadding)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                val history by viewModel.searchHistories.collectAsStateWithLifecycle()
-                SearchHistoryList(
-                    history = history,
-                    onHistoryClick = onKeywordSubmit,
-                    expanded = { isSearchHistoryExpanded },
-                    onToggleExpand = { isSearchHistoryExpanded = !isSearchHistoryExpanded },
-                    onDelete = viewModel::onDeleteHistory,
-                    onClear = viewModel::onClearHistory
-                )
             }
         }
     }

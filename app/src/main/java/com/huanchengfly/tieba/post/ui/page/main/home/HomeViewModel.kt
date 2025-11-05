@@ -65,8 +65,8 @@ data class HomeUiState(
 @Stable
 class HomeViewModel @Inject constructor(
     private val homeRepo: HomeRepository,
+    private val okSignRepo: OKSignRepository,
     historyRepo: HistoryRepository,
-    okSignRepo: OKSignRepository,
     settingsRepo: SettingsRepository
 ) : ViewModel() {
 
@@ -78,10 +78,8 @@ class HomeViewModel @Inject constructor(
     private val handler = CoroutineExceptionHandler { _, e ->
         if (e !is NoConnectivityException && e !is TiebaNotLoggedInException) {
             Log.e(TAG, "onError: ", e)
-            _uiState.update { it.copy(isLoading = false) } // suppress these exception
-        } else {
-            _uiState.update { it.copy(isLoading = false, error = e) }
         }
+        _uiState.update { it.copy(isLoading = false, error = e) }
     }
 
     /**
@@ -126,7 +124,8 @@ class HomeViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = null)
 
-    val isOkSignWorkerRunning: SharedFlow<Boolean> = okSignRepo.observeWorkerIsRunning()
+    val isOkSignWorkerRunning: SharedFlow<Boolean>
+        get() = okSignRepo.isOKSignWorkerRunning
 
     init {
         refreshInternal(cached = true)
@@ -145,7 +144,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onDislikeForum(forum: LikedForum) {
-        viewModelScope.launch(handler) { homeRepo.onDislikeForum(forum) }
+        viewModelScope.launch(handler) { homeRepo.requestDislikeForum(forum) }
     }
 
     fun onPinnedForumChanged(forum: LikedForum, isTop: Boolean) {
