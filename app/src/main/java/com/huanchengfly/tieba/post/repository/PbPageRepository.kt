@@ -32,11 +32,14 @@ import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.UserData
+import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
+import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -90,7 +93,9 @@ class PbPageRepository @Inject constructor(
 
     private val networkDataSource = ThreadNetworkDataSource
 
-    private val blockSettings = settingsRepo.blockSettings.flow
+    private val blockSettings: Flow<BlockSettings> = settingsRepo.blockSettings.flow
+
+    private val habitSettings: Flow<HabitSettings> = settingsRepo.habitSettings.flow
 
     /**
      * 发送帖子点赞请求
@@ -142,12 +147,13 @@ class PbPageRepository @Inject constructor(
             data.thread.getNextPagePostId(data.post_list, sortType)
         }
         val hideBlocked = blockSettings.first().hideBlocked
-        val firstPost = data.first_floor_post?.mapToUiModel(lzId = lz.id, hideBlocked = false) // non-blockable
+        val showBothName = habitSettings.first().showBothName
+        val firstPost = data.first_floor_post?.mapToUiModel(lz.id, hideBlocked = false/* non-blockable */, showBothName)
 
         return PbPageUiResponse(
-            user = data.user?.takeIf { it.is_login == 1 }?.mapToUiModel(lzId = lz.id),
+            user = data.user?.takeIf { it.is_login == 1 }?.mapToUiModel(lzId = lz.id, showBothName),
             firstPost = firstPost,
-            posts = data.post_list.mapToUiModel(lzId = lz.id, hideBlocked, isBlocked = blockRepo::isBlocked),
+            posts = data.post_list.mapToUiModel(lzId = lz.id, hideBlocked, showBothName, isBlocked = blockRepo::isBlocked),
             tbs = data.anti!!.tbs,
             thread = ThreadInfoData(data.thread),
             page = PageData(
@@ -168,9 +174,16 @@ class PbPageRepository @Inject constructor(
         val lzId = data.thread?.author?.id ?: -1L
         val anti = data.anti ?: throw TiebaException("Null anti data")
         val hideBlocked = blockSettings.first().hideBlocked
+        val showBothName = habitSettings.first().showBothName
         return PbFloorUiResponse(
-            post = post.mapToUiModel(lzId, hideBlocked = false), // non-blockable
-            subPosts = data.subpost_list.mapToUiModel(lzId, abstract = false, hideBlocked, isBlocked = blockRepo::isBlocked),
+            post = post.mapToUiModel(lzId, hideBlocked = false/* non-blockable */, showBothName),
+            subPosts = data.subpost_list.mapToUiModel(
+                lzId = lzId,
+                abstract = false,
+                showBothName = showBothName,
+                hideBlocked = hideBlocked,
+                isBlocked = blockRepo::isBlocked
+            ),
             tbs = anti.tbs,
             thread = ThreadInfoData(data.thread!!),
             page = PageData(
@@ -244,11 +257,13 @@ class PbPageRepository @Inject constructor(
  * Convert [User] to UI Model
  *
  * @param lzId 楼主 uid
+ * @param showBothName 同时显示用户名和昵称
  * */
-private fun User.mapToUiModel(lzId: Long): UserData = UserData(
+private fun User.mapToUiModel(lzId: Long, showBothName: Boolean): UserData = UserData(
     id = id,
     name = name,
     nameShow = nameShow,
+    showBothName = showBothName,
     avatarUrl = StringUtil.getAvatarUrl(portrait),
     portrait = portrait,
     ip = ip_address,
@@ -277,9 +292,10 @@ private fun buildAbstractContent(content: List<PbContentRender>, user: UserData)
 private suspend fun SubPostList.mapToUiModel(
     lzId: Long,
     abstract: Boolean,
+    showBothName: Boolean,
     isBlocked: suspend (uid: Long, content: String) -> Boolean,
 ): SubPostItemData {
-    val author = author!!.mapToUiModel(lzId)
+    val author = author!!.mapToUiModel(lzId, showBothName)
     val plainText = content.plainText.orEmpty()
     val contentRenders = content.renders
     return SubPostItemData(
@@ -298,12 +314,14 @@ private suspend fun SubPostList.mapToUiModel(
  * Convert SubPostLists to UI Model
  *
  * @param lzId user ID of LZ
- * @param hideBlocked remove blocked subpost from result
  * @param abstract build abstract content instead of full PbContent, ``true`` for ThreadPage
+ * @param showBothName show both username and nickname
+ * @param hideBlocked remove blocked subpost from result
  * */
 private suspend fun List<SubPostList>.mapToUiModel(
     lzId: Long,
     abstract: Boolean,
+    showBothName: Boolean,
     hideBlocked: Boolean,
     isBlocked: suspend (uid: Long, content: String) -> Boolean
 ): List<SubPostItemData> {
@@ -311,7 +329,7 @@ private suspend fun List<SubPostList>.mapToUiModel(
 
     return withContext(Dispatchers.Default) {
         mapNotNull {
-            it.mapToUiModel(lzId, abstract, isBlocked).takeUnless { i -> i.blocked && hideBlocked }
+            it.mapToUiModel(lzId, abstract, showBothName, isBlocked).takeUnless { i -> i.blocked && hideBlocked }
         }
     }
 }
@@ -321,16 +339,18 @@ private suspend fun List<SubPostList>.mapToUiModel(
  *
  * @param lzId user ID of LZ
  * @param hideBlocked remove blocked subpost
+ * @param showBothName show both username and nickname
  * @param isBlocked check author, title or content is blocked
  * */
 private suspend fun Post.mapToUiModel(
     lzId: Long,
     hideBlocked: Boolean = false,
+    showBothName: Boolean,
     isBlocked: suspend (uid: Long, content: String) -> Boolean = { _, _, -> false },
 ): PostData {
     val plainText = content.plainText.orEmpty()
-    val author = author!!.mapToUiModel(lzId)
-    val subPosts = sub_post_list?.sub_post_list?.mapToUiModel(lzId, abstract = true, hideBlocked, isBlocked)
+    val author = author!!.mapToUiModel(lzId, showBothName)
+    val subPosts = sub_post_list?.sub_post_list?.mapToUiModel(lzId, abstract = true, showBothName, hideBlocked, isBlocked)
 
     return PostData(
         id = this.id,
@@ -350,13 +370,14 @@ private suspend fun Post.mapToUiModel(
 private suspend fun List<Post>.mapToUiModel(
     lzId: Long,
     hideBlocked: Boolean,
+    showBothName: Boolean,
     isBlocked: suspend (uid: Long, content: String) -> Boolean,
 ): List<PostData> {
     return withContext(Dispatchers.Default) {
         mapNotNull {
             // 0楼: 伪装的广告, 1楼: 楼主
             if (it.floor > 1) {
-                it.mapToUiModel(lzId, hideBlocked, isBlocked).takeUnless { p -> hideBlocked && p.blocked }
+                it.mapToUiModel(lzId, hideBlocked, showBothName, isBlocked).takeUnless { p -> hideBlocked && p.blocked }
             } else {
                 null
             }

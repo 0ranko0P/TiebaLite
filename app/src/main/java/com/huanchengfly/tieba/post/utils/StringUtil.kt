@@ -57,16 +57,6 @@ object StringUtil {
         }
     }
 
-    @Deprecated("Deprecated")
-    fun getUserNameString(context: Context, username: String, nickname: String?): String {
-        val canShowBoth = !nickname.isNullOrBlank() && username != nickname && username.isNotBlank()
-        return if (canShowBoth && context.appPreferences.showBothUsernameAndNickname) {
-            "$nickname $username"
-        } else {
-            nickname ?: username
-        }
-    }
-
     @JvmStatic
     @Stable
     fun getAvatarUrl(portrait: String?): String {

@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -22,7 +21,6 @@ import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -36,12 +34,10 @@ import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.utils.ColorUtils.getIconColorByLevel
-import com.huanchengfly.tieba.post.utils.StringUtil
 
 @Composable
 fun UserHeaderPlaceholder(
@@ -115,7 +111,7 @@ fun UserHeader(
         Avatar(
             data = avatar,
             size = Sizes.Small,
-            modifier = Modifier.block { onClick?.let { clickableNoIndication(onClick = it) } },
+            modifier = Modifier.onNotNull(onClick) { clickableNoIndication(onClick = it) },
             contentDescription = name
         )
     },
@@ -140,13 +136,13 @@ fun UserDataHeader(
         Avatar(
             data = author.avatarUrl,
             size = Sizes.Small,
-            modifier = Modifier.onNotNull(onClick) { clickable(onClick = it) },
+            modifier = Modifier.onNotNull(onClick) { clickableNoIndication(onClick = it) },
             contentDescription = author.name
         )
     },
     name = {
         UserNameText(
-            userName = StringUtil.getUserNameString(LocalContext.current, author.name, author.nameShow),
+            userName = author.userShowBothName ?: author.name,
             userLevel = author.levelId,
             isLz = author.isLz,
             bawuType = author.bawuType,
@@ -222,7 +218,7 @@ private fun TextChip(
 
 @Preview("UserNameText")
 @Composable
-fun UserNameTextPreview() = TiebaLiteTheme {
+private fun UserNameTextPreview() = TiebaLiteTheme {
     ProvideTextStyle(MaterialTheme.typography.labelLarge) {
         UserNameText(Modifier.padding(10.dp), userName = "我是谁", userLevel = 5, isLz = true)
     }
