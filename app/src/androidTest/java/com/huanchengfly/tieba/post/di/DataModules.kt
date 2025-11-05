@@ -17,7 +17,11 @@ import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkFakeDataSource
+import com.huanchengfly.tieba.post.repository.source.network.OKSignFakeDataSource
+import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.FakeSettingsRepository
+import com.huanchengfly.tieba.post.repository.user.OKSignRepository
+import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import dagger.Binds
 import dagger.Module
@@ -37,6 +41,10 @@ abstract class FakeRepositoryModule {
     @Singleton
     @Binds
     abstract fun bindSettingsRepository(repository: FakeSettingsRepository): SettingsRepository
+
+    @Singleton
+    @Binds
+    abstract fun bindOKSignRepository(repository: OKSignRepositoryImp): OKSignRepository
 }
 
 @Module
@@ -51,6 +59,12 @@ object FakeDataSourceModule {
 
     @Provides
     fun provideHomeFakeNetworkDataSource(): HomeNetworkFakeDataSource = HomeNetworkFakeDataSource
+
+    @Provides
+    fun provideOKSignNetworkDataSource(): OKSignNetworkDataSource = OKSignFakeDataSource
+
+    @Provides
+    fun provideOKSignFakeNetworkDataSource(): OKSignFakeDataSource = OKSignFakeDataSource
 }
 
 @Module

@@ -202,7 +202,6 @@ class OKSignWorker @AssistedInject constructor(
                 buildProgressNotification(title, content)
                     .build()
                     .let { notificationManager.notify(NOTIFICATION_ID, it) }
-                onProgress(progress, total)
             }
 
             override fun onInit(total: Int, userName: String) {
@@ -227,6 +226,7 @@ class OKSignWorker @AssistedInject constructor(
                         }
                     )
                 }
+                onProgress(progress + 1, total)
             }
 
             override fun onFailed(progress: Int, forum: String, error: String) {
@@ -234,6 +234,7 @@ class OKSignWorker @AssistedInject constructor(
                     val content = context.getString(R.string.text_singing_progress_fail, forum, error)
                     updateProgressNotification(progress = progress + 1, content = content)
                 }
+                onProgress(progress + 1, total)
             }
 
             override fun onMSignFailed(e: Throwable) {
