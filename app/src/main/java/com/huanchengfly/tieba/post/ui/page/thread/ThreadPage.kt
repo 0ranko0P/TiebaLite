@@ -63,7 +63,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -79,7 +78,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
@@ -113,6 +111,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
+import com.huanchengfly.tieba.post.ui.widgets.compose.fixedTopBarPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
@@ -389,9 +388,8 @@ fun ThreadPage(
         ) { padding ->
             val hazeState: HazeState? = LocalHazeState.current
 
-            // Ignore Scaffold padding changes if workaround enabled
-            val direction = LocalLayoutDirection.current
-            val contentPadding = if (useStickyHeaderWorkaround) remember { padding.copy(direction) } else padding
+            // Ignore Scaffold padding top changes if workaround enabled
+            val contentPadding = padding.fixedTopBarPadding()
 
             val enablePullRefresh by remember {
                 derivedStateOf { state.page.hasPrevious || state.sortType == ThreadSortType.BY_DESC }

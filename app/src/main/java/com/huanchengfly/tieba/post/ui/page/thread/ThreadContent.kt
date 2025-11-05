@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
@@ -78,9 +77,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.containerColorNoAni
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
+import com.huanchengfly.tieba.post.ui.widgets.compose.stickyHeaderBackground
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.coroutines.launch
 
@@ -161,9 +160,8 @@ fun StateScreenScope.ThreadContent(
             state.thread?.replyNum?.let { replyNum ->
                 if (useStickyHeader) {
                     stickyHeader(key = Type.Header.key, contentType = Type.Header) {
-                        val color by containerColorNoAni(topAppBarScrollBehavior.state, lazyListState)
-                        val headerMod = Modifier.background(color)
-                        ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged, headerMod)
+                        val modifier = Modifier.stickyHeaderBackground(topAppBarScrollBehavior.state, lazyListState)
+                        ThreadHeader(replyNum, state.seeLz, viewModel::onSeeLzChanged, modifier)
                     }
                 } else {
                     item(key = Type.Header.key, contentType = Type.Header) {

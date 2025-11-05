@@ -70,6 +70,7 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
@@ -79,15 +80,17 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.containerColorNoAni
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
+import com.huanchengfly.tieba.post.ui.widgets.compose.fixedTopBarPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.stickyHeaderBackground
+import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -186,6 +189,7 @@ internal fun SubPostsContent(
         errorScreen = { ErrorScreen(error = uiState.error) },
         isLoading = uiState.isRefreshing
     ) {
+        val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
         val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         val canReply by viewModel.canReply.collectAsStateWithLifecycle()
 
@@ -208,7 +212,10 @@ internal fun SubPostsContent(
         // non-nullable, initialize here for convenience
         val onCopyClickedListener: (String) -> Unit = { navigator.navigate(CopyText(it)) }
 
-        MyScaffold (
+        BlurScaffold(
+            topHazeBlock = {
+                blurEnabled = lazyListState.canScrollBackward
+            },
             topBar = {
                 TitleBar(
                     isSheet = isSheet,
@@ -218,7 +225,13 @@ internal fun SubPostsContent(
                         navigator.navigate(route = Thread(threadId, forumId, postId = postId))
                     },
                     scrollBehavior = topAppBarScrollBehavior
-                )
+                ) {
+                    if (useStickyHeaderWorkaround) {
+                        StickyHeaderOverlay(state = lazyListState) {
+                            SubPostsHeader(postNum = uiState.page.postCount)
+                        }
+                    }
+                }
             },
             bottomBar = {
                 if (account == null || !canReply) {
@@ -234,7 +247,9 @@ internal fun SubPostsContent(
                     )
                 }
             }
-        ) { contentPadding ->
+        ) { padding ->
+            val contentPadding = padding.fixedTopBarPadding()
+
             SwipeUpLazyLoadColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -285,9 +300,17 @@ internal fun SubPostsContent(
                     }
                 } // End of post card
 
-                stickyHeader(key = "SubPostsHeader", contentType = HeaderContentType) {
-                    val color by containerColorNoAni(topAppBarScrollBehavior.state, lazyListState)
-                    SubPostsHeader(Modifier.background(color), postNum = uiState.page.postCount)
+                if (useStickyHeaderWorkaround) {
+                    item(key = "SubPostsHeader", contentType = HeaderContentType) {
+                        SubPostsHeader(postNum = uiState.page.postCount)
+                    }
+                } else {
+                    stickyHeader(key = "SubPostsHeader", contentType = HeaderContentType) {
+                        SubPostsHeader(
+                            modifier = Modifier.stickyHeaderBackground(topAppBarScrollBehavior.state, lazyListState),
+                            postNum = uiState.page.postCount
+                        )
+                    }
                 }
 
                 items(items = uiState.subPosts, key = { subPost -> subPost.id }) { item ->

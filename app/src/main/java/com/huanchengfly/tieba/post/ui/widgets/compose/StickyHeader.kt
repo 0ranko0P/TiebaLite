@@ -1,16 +1,26 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
+import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 
@@ -32,20 +42,41 @@ fun StickyHeaderOverlay(state: LazyListState, header: @Composable () -> Unit) {
 }
 
 /**
- * Workaround to apply TopAppBar container color changes on StickyHeader
+ * Workaround to ignore padding top changes when using [StickyHeaderOverlay].
  * */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun containerColorNoAni(appBarState: TopAppBarState, listState: LazyListState): State<Color>  {
+fun PaddingValues.fixedTopBarPadding(topBarHeight: Dp = TopAppBarDefaults.TopAppBarExpandedHeight): PaddingValues {
+    if (!useStickyHeaderWorkaround()) return this
+
+    val statusBarWindowInsets = WindowInsets.statusBars
+    val density = LocalDensity.current
+    val direction = LocalLayoutDirection.current
+    return remember(
+        calculateStartPadding(direction),
+        topBarHeight,
+        calculateEndPadding(direction),
+        calculateBottomPadding()
+    ) {
+        with(density) {
+            copy(direction, top = statusBarWindowInsets.getTop(density).toDp() + topBarHeight)
+        }
+    }
+}
+
+/**
+ * Workaround to apply TopAppBar background changes on StickyHeader.
+ * */
+fun Modifier.stickyHeaderBackground(appBarState: TopAppBarState, listState: LazyListState) = composed {
     val topAppBarColors = TiebaLiteTheme.topAppBarColors
-    return remember {
-        derivedStateOf {
+    drawWithCache {
+        onDrawBehind {
             // double check, LazyListState#scrollToItem might cause buggy TopAppbarState
-            if (appBarState.overlappedFraction > 0.01f && listState.firstVisibleItemIndex > 0) {
+            val color = if (appBarState.overlappedFraction > 0.01f && listState.firstVisibleItemIndex > 0) {
                 topAppBarColors.scrolledContainerColor
             } else {
                 topAppBarColors.containerColor
             }
+            drawRect(color)
         }
     }
 }
