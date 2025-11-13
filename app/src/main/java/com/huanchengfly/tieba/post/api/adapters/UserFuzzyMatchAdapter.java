@@ -39,8 +39,12 @@ public class UserFuzzyMatchAdapter implements JsonDeserializer<List<SearchUserBe
     }
 
     @Nullable
-    private String getNonNullString(JsonElement jsonElement) {
-        return jsonElement.isJsonNull() ? null : jsonElement.getAsString();
+    private String getNonNullString(@Nullable JsonElement jsonElement) {
+        if (jsonElement != null) {
+            return jsonElement.isJsonNull() ? null : jsonElement.getAsString();
+        } else {
+            return null;
+        }
     }
 
     private SearchUserBean.UserBean getUserBean(JsonObject jsonObject) {

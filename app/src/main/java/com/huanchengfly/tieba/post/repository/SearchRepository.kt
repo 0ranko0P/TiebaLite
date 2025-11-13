@@ -9,13 +9,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.util.fastMap
+import androidx.compose.ui.util.fastMapNotNull
 import com.huanchengfly.tieba.post.api.models.SearchForumBean.ForumInfoBean
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean.MediaInfo.Companion.TYPE_PICTURE
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean.MediaInfo.Companion.TYPE_VIDEO
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean.ThreadInfoBean
 import com.huanchengfly.tieba.post.api.models.SearchUserBean.UserBean
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
 import com.huanchengfly.tieba.post.models.database.dao.SearchDao
@@ -149,7 +148,7 @@ class SearchRepository @Inject constructor(
         private suspend inline fun <NetModel, UiModel> mapSearchResult(
             exactMatch: NetModel?,
             fuzzyMatch: List<NetModel>?,
-            crossinline mapUiModel: (NetModel) -> UiModel
+            crossinline mapUiModel: (NetModel) -> UiModel?
         ): SearchResult<UiModel> {
             return withContext(Dispatchers.Default) {
                 SearchResult(
@@ -157,7 +156,7 @@ class SearchRepository @Inject constructor(
                     fuzzyMatch = if (fuzzyMatch.isNullOrEmpty()) {
                         emptyList()
                     } else {
-                        fuzzyMatch.fastMap(mapUiModel)
+                        fuzzyMatch.fastMapNotNull(mapUiModel)
                     }
                 )
             }
@@ -178,13 +177,14 @@ class SearchRepository @Inject constructor(
         /**
          * Map UserBean to UI Model
          * */
-        private fun mapUiModel(user: UserBean): SearchUser = with(user) {
+        private fun mapUiModel(user: UserBean): SearchUser? = with(user) {
+            val uid = id?.toLongOrNull() ?: return@with null // 用户已注销?
             val nickname = (showNickname ?: userNickname)!!
             val userName = name?.takeUnless { it == nickname }
             // show both nickname and username if possible
             val formattedName = if (userName.isNullOrEmpty()) nickname else "$nickname ($userName)"
             return SearchUser(
-                id = id?.toLong()?.takeUnless { it <= -1 } ?: throw TiebaException("Illegal User ID $id, $userNickname"),
+                id = uid,
                 avatar = StringUtil.getAvatarUrl(portrait!!),
                 formattedName = formattedName,
                 intro = intro

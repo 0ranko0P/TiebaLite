@@ -36,7 +36,6 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInExcept
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 
@@ -47,7 +46,6 @@ fun TipScreen(
     image: @Composable () -> Unit = {},
     message: (@Composable () -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
-    scrollable: Boolean = false,
 ) {
     val typography = MaterialTheme.typography
     val widthFraction = if (isWindowWidthCompact()) 0.9f else 0.5f
@@ -55,7 +53,7 @@ fun TipScreen(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .onCase(scrollable) { verticalScroll(rememberScrollState()) }
+            .verticalScroll(rememberScrollState())
             .fillMaxWidth(fraction = widthFraction)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

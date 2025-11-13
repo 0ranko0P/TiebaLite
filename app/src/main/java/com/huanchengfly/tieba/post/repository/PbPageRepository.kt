@@ -45,11 +45,6 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-object EmptyDataException : TiebaException("data is empty!") {
-    override val code: Int
-        get() = -2
-}
-
 /**
  * UiModel of [Page]
  * */

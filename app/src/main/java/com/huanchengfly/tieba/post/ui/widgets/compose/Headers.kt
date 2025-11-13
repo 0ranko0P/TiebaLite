@@ -142,7 +142,7 @@ fun UserDataHeader(
     },
     name = {
         UserNameText(
-            userName = author.userShowBothName ?: author.name,
+            userName = author.userShowBothName ?: author.nameShow,
             userLevel = author.levelId,
             isLz = author.isLz,
             bawuType = author.bawuType,

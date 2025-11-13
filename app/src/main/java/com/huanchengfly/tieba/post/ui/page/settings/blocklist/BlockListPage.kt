@@ -26,6 +26,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +51,7 @@ import com.huanchengfly.tieba.post.models.database.BlockUser
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -82,10 +84,43 @@ fun UserBlockListPage(
         LongClickMenu(
             menuContent = {
                 TextMenuItem(text = R.string.title_delete, onClick = { viewModel.onDelete(user) })
-            }
+            },
+            shape = MaterialTheme.shapes.extraSmall,
         ) {
             UserItem(user = user)
         }
+    }
+}
+
+@Composable
+private fun KeywordBlockDialog(
+    modifier: Modifier = Modifier,
+    dialogState: DialogState = rememberDialogState(),
+    blockType: BlockType? = null,
+    isError: ((String) -> Boolean)? = null,
+    onConfirm: (String) -> Unit,
+    onCancel: () -> Unit
+) {
+    if (blockType == null) return
+    LaunchedEffect(blockType) {
+        dialogState.show()
+    }
+
+    PromptDialog(
+        onConfirm = onConfirm,
+        modifier = modifier,
+        dialogState = dialogState,
+        isError = isError,
+        onCancel = onCancel,
+        title = {
+            Text(text = stringResource(id = blockType.contentDescription))
+        }
+    ) {
+       if (blockType == BlockType.Blacklist) {
+           Text(text = stringResource(R.string.dialog_add_blocklist))
+       } else {
+           Text(text = stringResource(R.string.dialog_add_whitelist))
+       }
     }
 }
 
@@ -95,22 +130,14 @@ fun KeywordBlockListPage(
     viewModel: BlockListViewModel = hiltViewModel(),
 ) {
     var addKeywordType: BlockType? by remember { mutableStateOf(null) }
-    val dialogState = rememberDialogState()
-
-    PromptDialog(
+    KeywordBlockDialog(
+        blockType = addKeywordType,
+        isError = viewModel::hasKeyword,
         onConfirm = { keyword ->
             viewModel.addKeyword(keyword, whitelisted = addKeywordType == BlockType.Whitelist)
         },
-        dialogState = dialogState,
-        isError = viewModel::hasKeyword,
-        title = {
-            addKeywordType?.title?.let {
-                Text(text = stringResource(id = it))
-            }
-        }
-    ) {
-        Text(text = stringResource(id = R.string.tip_add_block))
-    }
+        onCancel = { addKeywordType = null },
+    )
 
     val blackList by viewModel.getBlacklist().collectAsStateWithLifecycle()
     val whitelist by viewModel.getWhitelist().collectAsStateWithLifecycle()
@@ -118,17 +145,15 @@ fun KeywordBlockListPage(
     BlockListScaffold(
         blackList = { blackList },
         whitelist = { whitelist },
-        onAddClicked = {
-            addKeywordType = it
-            dialogState.show()
-        },
+        onAddClicked = { addKeywordType = it },
         onBack = onBack,
         itemKeyProvider = { it },
     ) { keyword ->
         LongClickMenu(
             menuContent = {
                 TextMenuItem(text = R.string.title_delete, onClick = { viewModel.onDelete(keyword) })
-            }
+            },
+            shape = MaterialTheme.shapes.extraSmall,
         ) {
             KeywordItem(keyword = keyword)
         }

@@ -16,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import com.huanchengfly.tieba.post.App
 
@@ -41,24 +40,10 @@ fun keyboardAnimationHeight(): State<Dp> {
     return rememberUpdatedState(height)
 }
 
-/**
- * https://stackoverflow.com/questions/68847559/how-can-i-detect-keyboard-opening-and-closing-in-jetpack-compose
- *
- * @author ujizin
- *
- * @return whether IME visible or not
- * */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun keyboardAsState(): State<Boolean> {
-    val isImeVisible = WindowInsets.imeAnimationTarget.getBottom(LocalDensity.current) > 0
-    return rememberUpdatedState(isImeVisible)
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun keyboardMaxHeight(): State<Dp> {
-    val state = remember { mutableStateOf(250.dp) }
+    val state = remember { mutableStateOf(Dp.Hairline) }
     val height = with(LocalDensity.current) {
         WindowInsets.imeAnimationTarget.exclude(WindowInsets.navigationBars).getBottom(this).toDp()
     }

@@ -85,11 +85,11 @@ class ForumRepository @Inject constructor(
         var cached: ForumCache? = null
         val cacheable = if (sortType == -1) (goodClassifyId ?: 0) == 0 else sortType == ForumSortType.BY_REPLY
 
-        // Cache if is first page, not load more
+        // Load first page from lru cache if possible
         if (page == 1 && cacheable && loadType == 1) {
             key = forumName
             cached = cache[key]
-            val typedItemList = cached?.getItemsByType(isGood = sortType == -1)
+            val typedItemList = cached?.getItemsByType(isGood = goodClassifyId != null)
             if (!forceNew && typedItemList != null) {
                 return ForumPageResult(cached.forum, typedItemList, cached.managers)
             }

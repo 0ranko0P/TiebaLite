@@ -1,7 +1,9 @@
 package com.huanchengfly.tieba.post.repository.source.network
 
 import android.text.TextUtils
+import com.huanchengfly.tieba.post.api.Error.ERROR_NOMORE
 import com.huanchengfly.tieba.post.api.TiebaApi
+import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.protos.SubPost
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
@@ -10,7 +12,6 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
 import com.huanchengfly.tieba.post.arch.firstOrThrow
-import com.huanchengfly.tieba.post.repository.EmptyDataException
 import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataSource.commonResponse
 import com.huanchengfly.tieba.post.ui.page.thread.FROM_STORE
 import kotlinx.coroutines.Dispatchers
@@ -106,7 +107,7 @@ object ThreadNetworkDataSource {
             lastPostId = lastPostId
         )
 
-        if (data.post_list.isEmpty()) throw EmptyDataException
+        if (data.post_list.isEmpty()) throw TiebaApiException(CommonResponse(ERROR_NOMORE))
         if (data.page == null || data.forum == null || data.anti == null) throw TiebaUnknownException
 
         val lz = data.thread?.author ?: throw TiebaException("Null Lz data")
@@ -140,6 +141,8 @@ object ThreadNetworkDataSource {
                 // fill missing properties
                 it.copy(threadId = it.id, firstPostId = firstPost?.id ?: it.firstPostId, forumInfo = data.forum)
             },
+            banner_list = null,
+            ala_info = null,
             first_floor_post = firstPost
         )
     }

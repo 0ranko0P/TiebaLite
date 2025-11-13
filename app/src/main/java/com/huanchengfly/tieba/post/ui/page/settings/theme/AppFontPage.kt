@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -107,7 +108,7 @@ private fun AppFontContent(
     if (fontScale < 0f) return // Initializing
 
     val chatTextStyle = MaterialTheme.typography.bodyLarge
-    val fontSize = chatTextStyle.fontSize * fontScale
+    val fontSize = chatTextStyle.fontSize / LocalDensity.current.fontScale * fontScale
 
     Column(modifier.padding(18.dp)) {
         ProvideTextStyle(chatTextStyle) {

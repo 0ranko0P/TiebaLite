@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose.states
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -81,20 +80,14 @@ fun StateScreen(
     isError: Boolean,
     isLoading: Boolean,
     onReload: (() -> Unit)? = null,
-    clickToReload: Boolean = false,
     emptyScreen: @Composable StateScreenScope.() -> Unit = DefaultEmptyScreen,
     errorScreen: @Composable StateScreenScope.() -> Unit = DefaultErrorScreen,
     loadingScreen: @Composable StateScreenScope.() -> Unit = DefaultLoadingScreen,
     content: @Composable StateScreenScope.() -> Unit,
 ) {
     val stateScreenScope = remember(key1 = onReload) { StateScreenScope(onReload) }
-    val clickableModifier = if (onReload != null && clickToReload) Modifier.clickable(
-        enabled = isEmpty && !isLoading,
-        onClick = onReload
-    ) else Modifier
     Box(
-        modifier = modifier
-                then clickableModifier,
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
         if (isError) {

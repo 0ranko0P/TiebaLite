@@ -104,7 +104,7 @@ class AppThemeViewModel @Inject constructor(
     val isBuiltInThemeChanged: Flow<Boolean> = combine(
         flow = _uiState.map { it.pickedBuiltInTheme?.theme },
         flow2 = themeSettings.flow,
-        transform = { a, b -> a != b.theme }
+        transform = { a, b -> a != null && a != b.theme }
     )
     .distinctUntilChanged()
     .shareInBackground()

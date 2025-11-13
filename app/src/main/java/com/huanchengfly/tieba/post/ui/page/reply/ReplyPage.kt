@@ -6,12 +6,14 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.view.View
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.animation.core.AnimationConstants
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,13 +28,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
@@ -90,12 +91,14 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.EMOJI
@@ -109,6 +112,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_WARNING
@@ -117,10 +121,8 @@ import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
 import com.huanchengfly.tieba.post.utils.EmoticonUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.keyboardAnimationHeight
-import com.huanchengfly.tieba.post.utils.keyboardAsState
 import com.huanchengfly.tieba.post.utils.keyboardMaxHeight
 import com.huanchengfly.tieba.post.utils.showKeyboard
 import kotlinx.collections.immutable.persistentListOf
@@ -224,6 +226,10 @@ private fun ReplyPageContent(
         }
     }
 
+    viewModel.onEvent<CommonUiEvent.Toast> {
+        Toast.makeText(context, it.message, it.length).show()
+    }
+
     viewModel.onEvent<ReplyUiEvent.ReplySuccess> {
         if (it.expInc.isEmpty()) {
             context.toastShort(R.string.toast_reply_success_default)
@@ -263,7 +269,7 @@ private fun ReplyPageContent(
             if (curKeyboardType != NONE) {
                 coroutineScope.launch {
                     showKeyboard()
-                    delay(AnimationConstants.DefaultDurationMillis.toLong()) // Wait ime animation
+                    delay(500) // Wait ime animation
                     curKeyboardType = NONE
                 }
             } else {
@@ -286,14 +292,11 @@ private fun ReplyPageContent(
     val minHeight: Dp = remember(textStyle, density) {
         textMeasurer.measure(
             text = AnnotatedString("\n\n"),
-            style = textStyle.copy(fontSize = 14.sp * context.appPreferences.fontScale)
+            style = textStyle.copy(fontSize = 14.sp * density.fontScale)
         )
         .size.toDpSize(density).height
     }
     val maxHeight: Dp = minHeight * 3
-
-    var focused by remember { mutableStateOf(false) }
-    val panelHeight by keyboardMaxHeight()
 
     val textFieldScrollState = rememberScrollState()
 
@@ -343,7 +346,6 @@ private fun ReplyPageContent(
                                 hint = ctx.getString(R.string.hint_reply, replyUserName)
                             }
                             setOnFocusChangeListener { _, hasFocus ->
-                                focused = hasFocus
                                 if (hasFocus) {
                                     switchToPanel(NONE)
                                 }
@@ -402,46 +404,56 @@ private fun ReplyPageContent(
             }
         )
 
-        when (curKeyboardType) {
-            NONE -> {
-                ImeSpacerPanel(panelHeight = panelHeight, focused = { focused }, onHideIme = ::hideKeyboard)
-            }
+        StrongBox {
+            val imeMaxHeight by keyboardMaxHeight()
+            val imeCurrentHeight by keyboardAnimationHeight()
+            val isFloatingIme by remember { derivedStateOf { imeMaxHeight == Dp.Hairline } }
+            val panelMaxHeight = if (isFloatingIme) 250.dp else imeMaxHeight
+            val panelHeightAni by animateDpAsState(if (curKeyboardType == NONE) imeCurrentHeight else panelMaxHeight)
 
-            EMOJI -> {
-                EmoticonPanel(
-                    modifier = Modifier.height(panelHeight),
-                    emoticons = viewModel.emoticons,
-                    onEmoticonClick = { emoticon ->
-                        editTextView?.let {
-                            val start = it.selectionStart
-                            val emoText = EmoticonUtil.inlineTextFormat(name = emoticon.name)
-                            it.text?.insert(start, emoText)
-                            it.setSelection(start + emoText.length)
+            when (curKeyboardType) {
+                NONE -> {
+                    Spacer(
+                        modifier = Modifier.block { // use animated height on floating keyboard
+                            if (isFloatingIme) height(panelHeightAni) else imePadding()
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-            IMAGE -> {
-                ImagePanel(
-                    selectedImages = selectedImageList,
-                    onAddImageClicked = {
-                        pickMediasLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
-                    },
-                    onRemoveImage = {
-                        viewModel.send(ReplyUiIntent.RemoveImage(it))
-                    },
-                    isOriginImage = isOriginImage,
-                    onIsOriginImageChange = {
-                        viewModel.send(ReplyUiIntent.ToggleIsOriginImage(it))
-                    },
-                    modifier = Modifier
-                        .height(panelHeight)
-                        .padding(16.dp),
-                )
-            }
+                EMOJI -> {
+                    EmoticonPanel(
+                        modifier = Modifier.height(panelHeightAni),
+                        emoticons = viewModel.emoticons,
+                        onEmoticonClick = { emoticon ->
+                            editTextView?.let {
+                                val start = it.selectionStart
+                                val emoText = EmoticonUtil.inlineTextFormat(name = emoticon.name)
+                                it.text?.insert(start, emoText)
+                                it.setSelection(start + emoText.length)
+                            }
+                        }
+                    )
+                }
 
-            else -> {}
+                IMAGE -> {
+                    ImagePanel(
+                        selectedImages = selectedImageList,
+                        onAddImageClicked = {
+                            pickMediasLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                        },
+                        onRemoveImage = {
+                            viewModel.send(ReplyUiIntent.RemoveImage(it))
+                        },
+                        isOriginImage = isOriginImage,
+                        onIsOriginImageChange = {
+                            viewModel.send(ReplyUiIntent.ToggleIsOriginImage(it))
+                        },
+                        modifier = Modifier.height(panelHeightAni)
+                    )
+                }
+
+                else -> {}
+            }
         }
     }
 
@@ -572,7 +584,7 @@ private fun ImagePanel(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.Center
     ) {
         LazyRow(
@@ -639,28 +651,6 @@ private fun ImagePanel(
             Checkbox(checked = isOriginImage, onCheckedChange = onIsOriginImageChange)
             Text(text = stringResource(id = R.string.origin_image))
         }
-    }
-}
-
-@Composable
-private fun ImeSpacerPanel(
-    modifier: Modifier = Modifier,
-    panelHeight: Dp,
-    focused: () -> Boolean,
-    onHideIme: () -> Unit
-) {
-    val imeCurrentHeight by keyboardAnimationHeight()
-    val imeVisible by keyboardAsState()
-
-    LaunchedEffect(imeVisible) {
-        if (!imeVisible) onHideIme()
-    }
-
-    val showPanelSpacer = focused() && imeCurrentHeight < panelHeight
-    if (showPanelSpacer) {
-        Spacer(modifier = modifier.height(panelHeight))
-    } else {
-        Spacer(modifier = modifier.windowInsetsBottomHeight(WindowInsets.ime))
     }
 }
 

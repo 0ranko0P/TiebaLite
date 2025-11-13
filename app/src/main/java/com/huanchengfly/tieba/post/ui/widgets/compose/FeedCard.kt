@@ -305,8 +305,9 @@ fun ForumInfoChip(
             text = stringResource(id = R.string.title_forum_name, forumName),
             modifier = Modifier
                 .localSharedBounds(key = ForumTitleSharedBoundsKey(forumName, extraKey)),
-            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
+            maxLines = 1,
+            style = MaterialTheme.typography.bodySmall,
         )
     }
 }

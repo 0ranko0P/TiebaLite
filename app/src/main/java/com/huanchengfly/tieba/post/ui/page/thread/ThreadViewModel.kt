@@ -19,14 +19,15 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.Error.ERROR_NOMORE
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.booleanToString
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.models.database.ThreadHistory
-import com.huanchengfly.tieba.post.repository.EmptyDataException
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.repository.PageData
 import com.huanchengfly.tieba.post.repository.PbPageRepository
@@ -44,7 +45,6 @@ import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
-import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -137,6 +137,19 @@ class ThreadViewModel @Inject constructor(
         }
     }
 
+    private val loadMoreHandler = CoroutineExceptionHandler { context, e ->
+        if (e.getErrorCode() == ERROR_NOMORE) {
+            _threadUiState.update {
+                val hasMore = if (it.sortType == ThreadSortType.BY_ASC) it.page.hasMore else false
+                val page = it.page.copy(hasMore = hasMore)
+                it.copy(isRefreshing = false, isLoadingMore = false, isLoadingLatestReply = false, error = null, page = page)
+            }
+            sendMsg(R.string.no_more)
+        } else {
+            handler.handleException(context, e)
+        }
+    }
+
     private val firstPostId: Long
         get() = threadUiState.value.firstPost?.id ?: 0L
 
@@ -215,7 +228,7 @@ class ThreadViewModel @Inject constructor(
     fun requestLoadMore() {
         if (isLoadingMore) return else _threadUiState.set { copy(isLoadingMore = true, error = null) }
 
-        viewModelScope.launch(handler) {
+        viewModelScope.launch(loadMoreHandler) {
             val state = _threadUiState.value
             val sortType = state.sortType
             val nextPage = state.page.nextPage(sortType)
@@ -234,41 +247,23 @@ class ThreadViewModel @Inject constructor(
     /**
      * 加载当前贴子的最新回复
      */
-    fun requestLoadLatestPosts() = viewModelScope.launch(handler) {
+    fun requestLoadLatestPosts() = viewModelScope.launch(loadMoreHandler) {
         if (isLoadingMore) return@launch // Check loading status
 
         val state = _threadUiState.updateAndGet { it.copy(isLoadingMore = true, error = null) }
         val curLatestPostId = state.data.last().id
-        runCatching {
-            threadRepo.pbPage(
-                threadId = threadId,
-                page = 0,
-                postId = curLatestPostId,
-                forumId = forumId,
-                seeLz = state.seeLz,
-                sortType = state.sortType,
-                lastPostId = curLatestPostId
-            )
-        }
-        .onFailure { e ->
-            if (e is EmptyDataException) {
-                sendMsg(R.string.no_more)
-                _threadUiState.update { s -> s.copy(isLoadingMore = false, error = null) }
-            } else {
-                throw e
-            }
-        }
-        .onSuccess { response ->
-            val data = concatNewPostList(state.data, response.posts)
-            _threadUiState.update {
-                it.copy(
-                    isLoadingMore = false,
-                    data = data,
-                    thread = response.thread,
-                    latestPosts = null,
-                    page = response.page
-                )
-            }
+        val response = threadRepo.pbPage(
+            threadId = threadId,
+            page = 0,
+            postId = curLatestPostId,
+            forumId = forumId,
+            seeLz = state.seeLz,
+            sortType = state.sortType,
+            lastPostId = curLatestPostId
+        )
+        val data = concatNewPostList(state.data, response.posts)
+        _threadUiState.update {
+            it.copy(isLoadingMore = false, data = data, thread = response.thread, latestPosts = null, page = response.page)
         }
     }
 
@@ -278,7 +273,7 @@ class ThreadViewModel @Inject constructor(
     fun requestLoadMyLatestReply(newPostId: Long) {
         if (_threadUiState.value.isLoadingLatestReply) return
 
-        viewModelScope.launch(handler) {
+        viewModelScope.launch(loadMoreHandler) {
             val state = _threadUiState.updateAndGet { it.copy(isLoadingLatestReply = true, error = null) }
             val isDesc = state.sortType == ThreadSortType.BY_DESC
             val curLatestPostFloor = if (isDesc) {

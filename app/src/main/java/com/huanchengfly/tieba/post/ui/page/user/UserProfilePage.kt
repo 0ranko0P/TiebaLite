@@ -22,6 +22,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -514,21 +515,25 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
             ) {
-                Text(
-                    text = profile.name,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                profile.userName?.let { userName -> // 同时显示用户名与昵称
+                SelectionContainer {
                     Text(
-                        text = userName,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 16.sp,
+                        text = profile.name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        overflow = TextOverflow.Ellipsis
                     )
+                }
+                profile.userName?.let { userName -> // 同时显示用户名与昵称
+                    SelectionContainer {
+                        Text(
+                            text = userName,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 16.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
 
                 ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
@@ -654,7 +659,6 @@ private fun UserPageHide(hiddenTab: Tab) {
                     .aspectRatio(2.5f)
             )
         },
-        scrollable = true,
     )
 }
 
@@ -675,7 +679,6 @@ private fun UserPageEmpty() {
                     .aspectRatio(2.0f)
             )
         },
-        scrollable = true
     )
 }
 

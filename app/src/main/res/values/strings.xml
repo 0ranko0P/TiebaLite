@@ -326,7 +326,6 @@
     <string name="desc_like">赞</string>
     <string name="title_concern">关注</string>
     <string name="title_personalized">推荐</string>
-    <string name="tip_add_block">含有全部关键词的内容将会被屏蔽</string>
     <string name="desc_download_pic">下载图片</string>
     <string name="hot_topic_rank">话题榜</string>
     <string name="topic_tag_hot">热</string>
@@ -467,6 +466,8 @@
     <string name="button_sure_default">确定</string>
     <string name="button_back">返回</string>
     <string name="desc_show">显示</string>
+    <string name="dialog_add_blocklist">包含关键词的内容将会被屏蔽</string>
+    <string name="dialog_add_whitelist">包含关键词的内容不会被屏蔽, 白名单优先级高于黑名单</string>
     <string name="dialog_content_wait">请坐和放宽</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
     <string name="brightness">亮度</string>

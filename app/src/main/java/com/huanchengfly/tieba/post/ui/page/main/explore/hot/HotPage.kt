@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.hot
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +45,7 @@ import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.YellowA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.explore.HotTab
 import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
@@ -173,7 +173,7 @@ fun HotPage(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable(onClick = threadClickListeners.onNavigateHotTopicList)
+                                            .clickableNoIndication(onClick = threadClickListeners.onNavigateHotTopicList)
                                             .padding(bottom = 8.dp)
                                     ) {
                                         Text(
