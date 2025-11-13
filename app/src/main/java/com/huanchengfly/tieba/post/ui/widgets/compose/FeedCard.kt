@@ -285,7 +285,7 @@ fun ForumInfoChip(
         modifier = modifier
             .height(IntrinsicSize.Min)
             .clip(MaterialTheme.shapes.extraSmall)
-            .background(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+            .background(color = MaterialTheme.colorScheme.secondaryContainer)
             .clickable(onClick = onClick)
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -306,7 +306,7 @@ fun ForumInfoChip(
             modifier = Modifier
                 .localSharedBounds(key = ForumTitleSharedBoundsKey(forumName, extraKey)),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
         )
     }
 }
@@ -346,7 +346,7 @@ val singleMediaFraction: Float
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-private fun ThreadMedia(
+fun ThreadMedia(
     modifier: Modifier = Modifier,
     forumId: Long,
     forumName: String,
@@ -611,7 +611,7 @@ private fun ActionBtnPlaceholder(
 
 @Preview("FeedCardPreview")
 @Composable
-fun FeedCardPreview() = TiebaLiteTheme {
+private fun FeedCardPreview() = TiebaLiteTheme {
     Surface {
         FeedCard(
             thread = ThreadItem(

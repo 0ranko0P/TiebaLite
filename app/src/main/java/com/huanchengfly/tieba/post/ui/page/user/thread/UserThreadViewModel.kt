@@ -4,13 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
-import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
-import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
-import com.huanchengfly.tieba.post.ui.page.user.post.UserPostViewModel
 import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadViewModel.Companion.UserThreadVmFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.assisted.Assisted
@@ -84,16 +80,6 @@ class UserThreadViewModel @AssistedInject constructor(
                     it.copy(isLoadingMore = false, hasMore = false)
                 }
             }
-        }
-    }
-
-    fun onThreadLikeClicked(thread: ThreadItem) = viewModelScope.launch(handler) {
-        updateLikeStatusUiStateCommon(
-            thread = thread,
-            onRequestLikeThread = { userProfileRepo.requestLikeThread(uid, thread) },
-            onEvent = ::emitGlobalEventSuspend
-        ) { threadId, liked, loading ->
-            _uiState.update { it.copy(data = it.data.updateLikeStatus(threadId, liked, loading)) }
         }
     }
 

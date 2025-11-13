@@ -8,28 +8,42 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.PbContentText
+import com.huanchengfly.tieba.post.ui.models.Author
+import com.huanchengfly.tieba.post.ui.models.SimpleForum
+import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadViewModel.Companion.UserThreadVmFactory
+import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumInfoChip
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
+import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadMedia
+import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.utils.DateTimeUtils
 
 @Composable
 fun UserThreadPage(
@@ -98,11 +112,9 @@ fun UserThreadPage(
             ) {
                 itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { i, thread ->
                     Column {
-                        FeedCard(
+                        UserThread(
                             thread = thread,
                             onClick = threadClickListeners.onClicked,
-                            onLike = viewModel::onThreadLikeClicked,
-                            onClickReply = threadClickListeners.onReplyClicked,
                             onClickForum = threadClickListeners.onForumClicked,
                         )
 
@@ -113,5 +125,75 @@ fun UserThreadPage(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun UserThread(
+    modifier: Modifier = Modifier,
+    thread: ThreadItem,
+    onClick: (ThreadItem) -> Unit,
+    onClickForum: (ThreadItem) -> Unit,
+) {
+    val context = LocalContext.current
+    val (forumId, forumName, forumAvatar) = thread.simpleForum
+
+    Card(
+        modifier = modifier,
+        header = {
+            UserHeader(
+                name = thread.author.name,
+                avatar = thread.author.avatarUrl,
+                desc = remember { DateTimeUtils.getRelativeTimeString(context, thread.lastTimeMill) },
+            ) {
+                ForumInfoChip(
+                    forumName = forumName,
+                    avatarUrl = forumAvatar,
+                    transitionKey = thread.id.toString(),
+                    onClick = { onClickForum(thread) }
+                )
+            }
+        },
+        content = {
+            if (!thread.content.isNullOrEmpty()) {
+                PbContentText(
+                    text = thread.content,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(modifier),
+                    fontSize = 15.sp,
+                    lineSpacing = 0.8.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 5,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            ThreadMedia(
+                forumId = forumId,
+                forumName = forumName,
+                threadId = thread.id,
+                medias = thread.medias ?: emptyList(),
+                videoInfo = thread.video,
+            )
+        },
+        onClick = { onClick(thread) },
+    )
+}
+
+@Preview("UserThreadPreview")
+@Composable
+private fun UserThreadPreview() = TiebaLiteTheme {
+    Surface {
+        UserThread(
+            thread = ThreadItem(
+                author = Author(0, name = "User", avatarUrl = ""),
+                title = "预览",
+                lastTimeMill = System.currentTimeMillis(),
+                simpleForum = SimpleForum(-1, "测试", null)
+            ),
+            onClick = {},
+            onClickForum = {},
+        )
     }
 }
