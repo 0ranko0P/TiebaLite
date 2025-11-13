@@ -9,15 +9,17 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.security.MessageDigest
+import java.security.cert.CertificateException
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import javax.net.ssl.SSLException
+import javax.net.ssl.SSLHandshakeException
 import kotlin.random.Random
 
 @Serializable
@@ -89,8 +91,11 @@ object SofireUtils {
                 )
                 decryptData.token
             }
-            .catch {
-                it.printStackTrace()
+            .catch { e ->
+                if (e is SSLHandshakeException || e is CertificateException) {
+                    throw SSLException("连接 [sofire.baidu.com] 失败, 请检查您的广告拦截器", e)
+                }
+                throw e
             }
     }
 }
