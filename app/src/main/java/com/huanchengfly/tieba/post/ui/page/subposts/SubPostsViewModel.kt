@@ -16,7 +16,6 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.repository.PageData
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
@@ -32,14 +31,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.getAndUpdate
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -73,7 +68,6 @@ data class SubPostsUiState(
 class SubPostsViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val threadRepo: PbPageRepository,
-    settingsRepo: SettingsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -112,14 +106,6 @@ class SubPostsViewModel @Inject constructor(
      * */
     private val _delete: MutableStateFlow<Any?> = MutableStateFlow(null)
     val delete: StateFlow<Any?> = _delete.asStateFlow()
-
-    val canReply: StateFlow<Boolean> = combine(
-        flow = currentAccount,
-        flow2 = settingsRepo.habitSettings.flow,
-        transform = { account, habit -> account != null && !habit.hideReply }
-    )
-    .distinctUntilChanged()
-    .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = false)
 
     init {
         refreshInternal()

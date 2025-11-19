@@ -306,7 +306,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                                     duration = SnackbarDuration.Short
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
-                                    navigator.navigate(SettingsDestination.Custom)
+                                    navigator.navigate(route = SettingsDestination.UI)
                                 }
                             }
                         },

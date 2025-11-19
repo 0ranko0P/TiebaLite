@@ -98,7 +98,7 @@ class PersonalizedViewModel @Inject constructor(
 
     private val blockedIds: MutableSet<Long> = Collections.synchronizedSet(ArraySet())
 
-    val hideBlockedContent: StateFlow<Boolean> = settingsRepository.blockSettings.flow
+    val hideBlockedContent: StateFlow<Boolean> = settingsRepository.blockSettings
         .map { it.hideBlocked }
         .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), false)
 

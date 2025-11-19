@@ -1,14 +1,13 @@
-package com.huanchengfly.tieba.post.ui.common.prefs.widgets
+package com.huanchengfly.tieba.post.ui.widgets.compose.preference
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -23,35 +22,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 
-private val ContentPadding: Dp = 16.dp
 private const val DisabledTextOpacity = 0.38f
 
-//TODO add single line title?
+private val ContentPadding: Dp = 16.dp
 
 /**
- * Simple Text with title and summary.
- * Used to show some information to the user and is the basis of all other preferences.
+ * Basic preference component.
  *
- * @param title Main text which describes this preference
- * @param modifier the [Modifier] to be applied on this preference
- * @param summary Used to give some more information about what this preference is for
- * Mostly for internal use with custom Prefs.
- * @param onClick called when this preference is clicked. Parse null to disable this Pref
- * @param enabled controls the enabled state of this preference
- * @param leadingIcon icon will be drawn at the start of the preference
- * @param trailingContent content will be drawn at the end of the preference
+ * @param title text which describes this preference.
+ * @param modifier the [Modifier] to be applied on this preference.
+ * @param summary used to give some more information about what this preference is for.
+ *   Mostly for internal use with custom Prefs.
+ * @param enabled controls the enabled state of this preference.
+ * @param leadingContent content will be drawn at the beginning of the
+ *   preference, expected to be an [Icon].
+ * @param trailingContent content will be drawn at the end of the preference.
  */
 @Composable
-fun TextPref(
+fun BasePreference(
     modifier: Modifier = Modifier,
     title: String,
     summary: String? = null,
-    onClick: (() -> Unit)? = null,
-    leadingIcon: @Composable BoxScope.() -> Unit = {},
-    enabled: Boolean = onClick != null,
+    enabled: Boolean,
+    leadingContent: @Composable (BoxScope.() -> Unit)? = null,
     trailingContent: @Composable (RowScope.() -> Unit)? = null
 ) {
     val colors = MaterialTheme.colorScheme
@@ -64,24 +59,26 @@ fun TextPref(
         contentColor = titleColor,
     ) {
         Row(
-            modifier = Modifier
-                .block { onClick?.let { clickable(enabled, onClick = it) } }
-                .padding(ContentPadding),
+            modifier = Modifier.padding(ContentPadding),
             horizontalArrangement = Arrangement.spacedBy(ContentPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Restrict minimum leading icon size
-            Box(
-                modifier = Modifier
-                    .size(Sizes.Small)
-                    .padding(6.dp),
-                content = leadingIcon
-            )
+            if (leadingContent != null) {
+                Box(
+                    modifier = Modifier
+                        .size(Sizes.Small)
+                        .padding(6.dp),
+                    content = leadingContent
+                )
+            } else {
+                Spacer(modifier = Modifier.size(Sizes.Small))
+            }
 
             Column(modifier = Modifier.weight(1.0f)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
 
-                if (summary != null) {
+                if (!summary.isNullOrEmpty()) {
                     Text(summary, color = summaryColor, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -93,41 +90,34 @@ fun TextPref(
     }
 }
 
+/**
+ * Basic preference component.
+ *
+ * @param title text which describes this preference.
+ * @param modifier the [Modifier] to be applied on this preference.
+ * @param summary used to give some more information about what this preference is for.
+ *   Mostly for internal use with custom Prefs.
+ * @param enabled controls the enabled state of this preference.
+ * @param leadingIcon optional leading icon to be drawn at the beginning of the preference.
+ * @param trailingContent optional content will be drawn at the end of the preference.
+ */
 @NonRestartableComposable
 @Composable
-fun TextPref(
+fun BasePreference(
     modifier: Modifier = Modifier,
     title: String,
     summary: String? = null,
-    onClick: (() -> Unit)? = null,
-    leadingIcon: ImageVector?,
-    enabled: Boolean = onClick != null,
+    enabled: Boolean = true,
+    leadingIcon: ImageVector? = null,
     trailingContent: @Composable (RowScope.() -> Unit)? = null
 ) =
-    TextPref(
+    BasePreference(
         modifier = modifier,
         title = title,
         summary = summary,
-        onClick = onClick,
-        leadingIcon = {
-            leadingIcon?.let { Icon(it, title, Modifier.fillMaxSize()) }
+        leadingContent = leadingIcon?.let { icon ->
+            { Icon(imageVector = icon, contentDescription = null, Modifier.fillMaxSize()) }
         },
         enabled = enabled,
         trailingContent = trailingContent
     )
-
-@Composable
-fun TipPref(
-    modifier: Modifier = Modifier,
-    text: @Composable BoxScope.() -> Unit
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth()
-            .padding(ContentPadding)
-            .padding(start = 8.dp),
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.secondaryContainer
-    ) {
-        Box(modifier = Modifier.padding(12.dp), content = text)
-    }
-}

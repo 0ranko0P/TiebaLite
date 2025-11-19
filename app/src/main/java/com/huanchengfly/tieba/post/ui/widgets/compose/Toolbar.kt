@@ -147,10 +147,6 @@ fun AccountNavIcon(
                     onClick = {
                         navigator.navigate(Destination.Login)
                     },
-                    modifier = Modifier.semantics(mergeDescendants = true) {
-                        role = Role.DropdownList
-                        contentDescription = addTitleText
-                    },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Add,

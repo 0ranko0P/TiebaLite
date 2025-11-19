@@ -283,8 +283,8 @@ fun AppThemePage(
                 navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) },
                 actions = {
                     val themeChanged by when (pagerState.currentTheme) {
-                        ThemePage.Featured -> viewModel.isBuiltInThemeChanged.collectAsStateWithLifecycle(false)
-                        ThemePage.Custom -> viewModel.isCustomThemeChanged.collectAsStateWithLifecycle(false)
+                        ThemePage.Featured -> viewModel.isBuiltInThemeChanged.collectAsStateWithLifecycle()
+                        ThemePage.Custom -> viewModel.isCustomThemeChanged.collectAsStateWithLifecycle()
                     }
 
                     AnimatedVisibility(
@@ -774,7 +774,7 @@ fun TranslucentThemeBackground(modifier: Modifier = Modifier, file: File?) {
         model = file ?: R.drawable.user_header,
         contentDescription = null,
         modifier = modifier,
-        contentScale = ContentScale.None,
+        contentScale = ContentScale.Crop,
         failure = placeholder(R.drawable.user_header),
         requestBuilderTransform = { it.diskCacheStrategy(DiskCacheStrategy.NONE) }
     )

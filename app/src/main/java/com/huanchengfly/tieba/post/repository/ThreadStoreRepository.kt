@@ -34,7 +34,7 @@ class ThreadStoreRepository @Inject constructor(
      * */
     suspend fun load(page: Int = 0, limit: Int = LOAD_LIMIT): Result<List<ThreadStore>> = runCatching {
         val data = networkDataSource.load(page, limit)
-        val showBothName = settingsRepository.habitSettings.flow.first().showBothName
+        val showBothName = settingsRepository.habitSettings.snapshot().showBothName
         data.mapUiModel(showBothName)
     }
 

@@ -57,15 +57,13 @@ class HomeRepository @Inject constructor(
      * Observe the current user's liked forums.
      * */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getLikedForums(): Flow<List<LikedForum>> {
-        return settingsRepo.accountUid.flow
-            .flatMapLatest { uid ->
-                if (uid != -1L) localDataSource.observeAllSorted(uid) else throw TiebaNotLoggedInException()
-            }
-            .map { forums -> // Map to UI Model if not empty
-                if (forums.isNotEmpty()) forums.mapUiModel() else emptyList()
-            }
-    }
+    fun getLikedForums(): Flow<List<LikedForum>> = settingsRepo.accountUid
+        .flatMapLatest { uid ->
+            if (uid != -1L) localDataSource.observeAllSorted(uid) else throw TiebaNotLoggedInException()
+        }
+        .map { forums -> // Map to UI Model if not empty
+            if (forums.isNotEmpty()) forums.mapUiModel() else emptyList()
+        }
 
     /**
      * Refresh the current user's liked forums
@@ -123,7 +121,7 @@ class HomeRepository @Inject constructor(
 
     suspend fun fetchNewMessage(): MessageBean {
         val timestamp = System.currentTimeMillis()
-        val uid = settingsRepo.accountUid.flow.first()
+        val uid = settingsRepo.accountUid.snapshot()
         if (uid == -1L) {
             throw TiebaNotLoggedInException()
         }
@@ -146,18 +144,17 @@ class HomeRepository @Inject constructor(
      * Observe the current user's new message count.
      * */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun observeNewMessage(): Flow<Long?> = settingsRepo.accountUid.flow
-        .flatMapLatest { uid ->
-            if (uid != -1L) {
-                timestampDao.observe(uid, TYPE_NEW_MESSAGE_COUNT)
-            } else {
-                throw TiebaNotLoggedInException()
-            }
+    fun observeNewMessage(): Flow<Long?> = settingsRepo.accountUid.flatMapLatest { uid ->
+        if (uid != -1L) {
+            timestampDao.observe(uid, TYPE_NEW_MESSAGE_COUNT)
+        } else {
+            throw TiebaNotLoggedInException()
         }
+    }
 
     suspend fun clearNewMessage() {
         AppBackgroundScope.async {
-            val uid = settingsRepo.accountUid.flow.first()
+            val uid = settingsRepo.accountUid.snapshot()
             timestampDao.delete(uid, TYPE_NEW_MESSAGE_COUNT)
         }.await()
     }

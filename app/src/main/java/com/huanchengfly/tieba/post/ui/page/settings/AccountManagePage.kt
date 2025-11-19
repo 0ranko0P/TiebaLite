@@ -18,29 +18,31 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.rememberPreferenceAsState
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.DropDownPref
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.EditTextPref
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TipPref
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.repository.user.Settings
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.DropDownPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.EditTextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TipPref
 import com.huanchengfly.tieba.post.ui.page.Destination.Login
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_LITTLE_TAIL
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.launchUrl
 import kotlinx.collections.immutable.toImmutableMap
 
 @Composable
-fun AccountManagePage(navigator: NavController) {
+fun AccountManagePage(
+    myLittleTailSettings: Settings<String>,
+    navigator: NavController
+) {
     MyScaffold(
         topBar = {
             TitleCentredToolbar(
@@ -51,43 +53,46 @@ fun AccountManagePage(navigator: NavController) {
     ) { paddingValues ->
         val context = LocalContext.current
         val accountUtil = remember { AccountUtil.getInstance() }
-        val account = LocalAccount.current
+        val account = LocalAccount.current ?: throw TiebaNotLoggedInException()
         val accounts by accountUtil.allAccounts.collectAsStateWithLifecycle(emptyList())
 
-        PrefsScreen(contentPadding = paddingValues) {
-            prefsItem {
-                val accountsMap = remember(accounts) {
-                    accounts.associate { it.uid to (it.nickname ?: it.name) }.toImmutableMap()
-                }
-                if (account != null) {
+        PrefsScreen(
+            settings = myLittleTailSettings,
+            initialValue = "",
+            contentPadding = paddingValues
+        ) {
+            TextItem {
+                val accountName = account.nickname ?: account.name
+                if (accounts.size > 1) {
+                    val accountsMap = remember(accounts) {
+                        accounts.associate { it.uid to (it.nickname ?: it.name) }.toImmutableMap()
+                    }
                     DropDownPref(
-                        key = null,
+                        value = account.uid,
                         title = stringResource(id = R.string.title_switch_account),
-                        summary = stringResource(
-                            id = R.string.summary_now_account,
-                            account.nickname ?: account.name
-                        ),
-                        leadingIcon =  Icons.Outlined.AccountCircle,
+                        summary = stringResource(id = R.string.summary_now_account, accountName),
+                        leadingIcon = Icons.Outlined.AccountCircle,
                         onValueChange = accountUtil::switchAccount,
-                        defaultValue = account.uid,
                         options = accountsMap
                     )
                 } else {
                     TextPref(
-                        title = stringResource(id = R.string.title_switch_account),
-                        summary = null,
-                        leadingIcon = Icons.Outlined.AccountCircle,
+                        title = accountName,
+                        enabled = true,
+                        leadingIcon = Icons.Outlined.AccountCircle
                     )
                 }
             }
-            prefsItem {
+
+            TextItem {
                 TextPref(
                     title = stringResource(id = R.string.title_new_account),
                     onClick = { navigator.navigate(Login) },
                     leadingIcon = Icons.Outlined.AddCircleOutline,
                 )
             }
-            prefsItem {
+
+            TextItem {
                 TipPref {
                     val tip = remember {
                         buildAnnotatedString {
@@ -104,22 +109,20 @@ fun AccountManagePage(navigator: NavController) {
                 }
             }
 
-            if (account != null) {
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_exit_account),
-                        onClick = {
-                            if (accounts.size == 1) {
-                                navigator.navigateUp()
-                            }
-                            accountUtil.exit(context.applicationContext, account)
-                        },
-                        leadingIcon = Icons.AutoMirrored.Outlined.Logout
-                    )
-                }
+            TextItem {
+                TextPref(
+                    title = stringResource(id = R.string.title_exit_account),
+                    onClick = {
+                        if (accounts.size == 1) {
+                            navigator.navigateUp()
+                        }
+                        accountUtil.exit(context.applicationContext, account)
+                    },
+                    leadingIcon = Icons.AutoMirrored.Outlined.Logout
+                )
             }
 
-            prefsItem {
+            TextItem {
                 TextPref(
                     title = stringResource(id = R.string.title_modify_username),
                     onClick = {
@@ -132,26 +135,23 @@ fun AccountManagePage(navigator: NavController) {
                     leadingIcon = Icons.Outlined.SupervisedUserCircle,
                 )
             }
-            prefsItem {
+
+            TextItem {
                 TextPref(
                     title = stringResource(id = R.string.title_copy_bduss),
                     summary = stringResource(id = R.string.summary_copy_bduss),
-                    onClick = { TiebaUtil.copyText(context, account?.bduss, isSensitive = true) },
+                    onClick = { TiebaUtil.copyText(context, account.bduss, isSensitive = true) },
                     leadingIcon = Icons.Outlined.ContentCopy,
                 )
             }
-            prefsItem {
-                val littleTail by rememberPreferenceAsState(
-                    key = stringPreferencesKey(KEY_LITTLE_TAIL),
-                    defaultValue = ""
-                )
 
+            Item { myLittleTail ->
                 EditTextPref(
-                    key = KEY_LITTLE_TAIL,
+                    value = myLittleTail,
+                    onValueChanged = { newTail -> updatePreference { newTail } },
                     title = stringResource(id = R.string.title_my_tail),
-                    summary = littleTail.ifEmpty { stringResource(id = R.string.tip_no_little_tail) },
+                    summary = myLittleTail.ifEmpty { context.getString(R.string.tip_no_little_tail) },
                     leadingIcon = Icons.Outlined.Edit,
-                    enabled = true,
                     dialogTitle = stringResource(id = R.string.title_dialog_modify_little_tail),
                 )
             }

@@ -115,7 +115,7 @@
     <string name="summary_auto_sign">开启后，将每天定时运行一键签到</string>
     <string name="summary_auto_sign_on">自动签到已开启</string>
     <string name="summary_auto_sign_time">当前设置为 %1$s</string>
-    <string name="tip_auto_sign">请允许贴吧 Lite 的自启动并忽略“电池优化”，否则可能无法正常唤醒签到。\n若使用的是 MIUI 等国产定制 UI，你还需要在系统设置中进行相应修改。</string>
+    <string name="tip_auto_sign">在 Android 12 及以上版本中，后台启动前台服务被严格限制。为了避免一键签到服务无法正常启动，请忽略本应用的“电池优化”。\n若使用的是 MIUI 等国产定制 UI，你还需要在系统设置中进行相应修改。</string>
     <string name="title_forum">%1$s吧</string>
     <string name="menu_edit_info">编辑资料</string>
     <string name="button_allow">允许</string>
@@ -142,11 +142,11 @@
     <string name="title_top_forum">置顶</string>
     <string name="title_use_webview">系统 WebView</string>
     <string name="title_settings_read_habit">使用习惯</string>
-    <string name="settings_collect_thread_see_lz">收藏贴自动开启只看楼主</string>
-    <string name="tip_collect_thread_see_lz">开启后，从收藏进入的贴子将自动切换至只看楼主</string>
-    <string name="tip_collect_thread_see_lz_on">从收藏进入的贴子将自动切换至只看楼主</string>
-    <string name="settings_collect_thread_desc_sort">收藏贴自动开启倒序浏览</string>
-    <string name="tip_collect_thread_desc_sort">开启后，从收藏进入的贴子将自动切换至倒序浏览</string>
+    <string name="settings_collect_thread_see_lz">收藏贴自动只看楼主</string>
+    <string name="tip_collect_thread_see_lz">从收藏进入的贴子将自动切换至只看楼主</string>
+    <string name="tip_collect_thread_see_lz_on">从收藏进入贴子将自动切换至只看楼主</string>
+    <string name="settings_collect_thread_desc_sort">收藏贴自动倒序浏览</string>
+    <string name="tip_collect_thread_desc_sort">从收藏进入贴子将自动切换至倒序浏览</string>
     <string name="tip_collect_thread_desc_sort_on">从收藏进入的贴子将自动切换至倒序浏览</string>
     <string name="toast_feed_refresh">更新了 %1$d 条动态</string>
     <string name="title_dislike">不喜欢推荐用户的理由</string>
@@ -269,7 +269,6 @@
     <string name="btn_continue_reply">无视风险，继续回贴</string>
     <string name="button_official_client_reply">使用官方客户端回贴</string>
     <string name="toast_official_client_not_install">未安装官方版客户端</string>
-    <string name="title_post_or_reply_warning">发贴回贴风险提示</string>
     <string name="summary_ignore_battery_optimization">请忽略“电池优化”以允许应用启动自动签到</string>
     <string name="title_ignore_battery_optimization">忽略“电池优化”</string>
     <string name="summary_battery_optimization_ignored">“电池优化”已忽略</string>
@@ -353,7 +352,6 @@
     <string name="insert_photo">插入图片</string>
     <string name="emoticon">表情 %s</string>
     <string name="title_dialog_oksign_battery_optimization">请忽略“电池优化”</string>
-    <string name="message_dialog_oksign_battery_optimization">在 Android 12 及以上版本中，后台启动前台服务被严格限制。为了避免一键签到无法正常启动，请忽略本应用的“电池优化”。</string>
     <string name="button_dont_remind_again">不再提示</string>
     <string name="link">链接</string>
     <string name="title_empty">这里什么都没有</string>
@@ -431,7 +429,7 @@
     <string name="settings_image_darken_when_night_mode">夜间模式压暗缩略图</string>
     <string name="title_hide_reply">隐藏回贴入口</string>
     <string name="title_settings_use_themed_icon">应用图标使用动态取色</string>
-    <string name="tip_settings_use_themed_icon_summary_not_supported">当前正在使用的应用图标暂不支持动态取色</string>
+    <string name="tip_themed_icon_unsupported">当前正在使用的应用图标暂不支持动态取色</string>
     <string name="btn_copy_all">复制全部</string>
     <string name="desc_photo">图片</string>
     <string name="btn_open_photos">查看图片 (%d)</string>
@@ -476,6 +474,7 @@
     <string name="channel_group_msg">消息通知</string>
     <string name="channel_group_msg_description">贴吧的各种消息通知</string>
     <string name="profile_title_hidden">该用户已隐藏%s</string>
+    <string name="title_hide_reply_warning">忽略回贴风险提示</string>
     <string name="theme_dialog_unsave">主题未保存</string>
     <string name="theme_dialog_unsave_msg">保存或放弃更改?</string>
     <string name="theme_dialog_saving">应用主题中</string>

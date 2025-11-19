@@ -145,7 +145,7 @@ class TranslucentThemeActivity : AppCompatActivity() {
                             title = stringResource(id = R.string.activity_translucent),
                             navigationIcon = { BackNavigationIcon(onBackPressed = ::finish) },
                             actions = {
-                                val configChanged by vm.configChanged.collectAsStateWithLifecycle(!ThemeUtil.isTranslucentTheme())
+                                val configChanged by vm.configChanged.collectAsStateWithLifecycle()
                                 AnimatedVisibility(
                                     visible = configChanged,
                                     enter = DefaultFabEnterTransition,

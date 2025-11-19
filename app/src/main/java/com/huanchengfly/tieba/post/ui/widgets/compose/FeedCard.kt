@@ -53,13 +53,14 @@ import androidx.compose.ui.util.fastForEach
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.aspectRatio
-import com.huanchengfly.tieba.post.api.models.protos.renders
+import com.huanchengfly.tieba.post.api.models.protos.buildRenders
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.arch.wrapImmutable
@@ -81,17 +82,17 @@ import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlin.math.max
 import kotlin.math.min
 
 private val Media.url: String
-    get() = ImageUtil.getThumbnail(
-        // srcPic, // Best  quality in [Media]
-        bigPic,
-        originPic  // Worst quality in [Media]
+    @Composable @ReadOnlyComposable get() = ImageUtil.getThumbnail(
+        loadType = LocalHabitSettings.current.imageLoadType,
+        // srcPic,               // Best quality in [Media]
+        originUrl = bigPic,
+        smallPicUrl = originPic  // Worst quality in [Media]
     )
 
 enum class FeedType {
@@ -355,16 +356,14 @@ fun ThreadMedia(
     medias: List<Media> = persistentListOf(),
     videoInfo: ImmutableHolder<VideoInfo>? = null,
 ) {
-    val context = LocalContext.current
+    if (medias.isEmpty() && videoInfo == null) return
 
+    val context = LocalContext.current
+    val hideMedia: Boolean = LocalHabitSettings.current.hideMedia
     val mediaCount = medias.size
     val isSinglePhoto = mediaCount == 1
 
     Box(modifier = modifier) {
-        if (medias.isEmpty() && videoInfo == null) return@Box
-
-        val hideMedia: Boolean = LocalContext.current.appPreferences.hideMedia
-
         if (videoInfo != null) {
             if (hideMedia) {
                 MediaPlaceholder(
@@ -475,17 +474,16 @@ fun OriginThreadCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
+    val imageLoadType = LocalHabitSettings.current.imageLoadType
     val contentRenders = remember(originThreadInfo.item.tid) {
-        originThreadInfo.get { content.renders }
+        originThreadInfo.get { content.buildRenders(imageLoadType) }
     }
 
     Column(
         modifier = modifier
             .clip(MaterialTheme.shapes.small)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .onNotNull(onClick) {
-                clickable(onClick = it)
-            }
+            .onNotNull(onClick) { clickable(onClick = it) }
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

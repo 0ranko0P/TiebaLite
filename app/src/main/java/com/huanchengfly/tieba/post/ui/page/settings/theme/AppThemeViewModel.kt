@@ -9,7 +9,6 @@ import androidx.compose.ui.util.fastFirstOrNull
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.material.color.utilities.Variant
-import com.huanchengfly.tieba.post.arch.shareInBackground
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.theme.TiebaBlue
@@ -28,14 +27,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -87,27 +86,25 @@ class AppThemeViewModel @Inject constructor(
     /**
      * Whether or not user modified custom theme
      * */
-    val isCustomThemeChanged: Flow<Boolean> = combine(
+    val isCustomThemeChanged: StateFlow<Boolean> = combine(
         flow = _uiState.map { it.pickedVariant },
-        flow2 = themeSettings.flow,
+        flow2 = themeSettings,
         // state.value vs settings.value
         transform = { a, b ->
             a?.color != b.customColor || a?.variant != b.customVariant || b.theme != Theme.CUSTOM
         }
     )
-    .distinctUntilChanged()
-    .shareInBackground()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialValue = false)
 
     /**
      * Whether or not user picked new built-in theme
      * */
-    val isBuiltInThemeChanged: Flow<Boolean> = combine(
+    val isBuiltInThemeChanged: StateFlow<Boolean> = combine(
         flow = _uiState.map { it.pickedBuiltInTheme?.theme },
-        flow2 = themeSettings.flow,
+        flow2 = themeSettings,
         transform = { a, b -> a != null && a != b.theme }
     )
-    .distinctUntilChanged()
-    .shareInBackground()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialValue = false)
 
     private val variantList: List<Variant> by lazy { getReorderedVariants() }
 
@@ -116,7 +113,7 @@ class AppThemeViewModel @Inject constructor(
     }
 
     private fun loadThemes() = viewModelScope.launch {
-        val themeSettings = themeSettings.flow.first()
+        val themeSettings = themeSettings.snapshot()
         val currentTheme = themeSettings.theme
         val customColor = themeSettings.customColor
         val customVariant = themeSettings.customVariant
@@ -179,7 +176,7 @@ class AppThemeViewModel @Inject constructor(
 
     // On Translucent Activity RESULT_OK, Theme changed to Theme.Translucent
     fun onTranslucentThemeChanged() = viewModelScope.launch {
-        val translucentTheme = themeSettings.flow
+        val translucentTheme = themeSettings
             .map { TranslucentTheme(settings = it, context = context) }
             .first()
 

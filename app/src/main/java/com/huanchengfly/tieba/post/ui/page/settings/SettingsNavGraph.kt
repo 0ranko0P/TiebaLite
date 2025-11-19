@@ -4,6 +4,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.page.settings.blocklist.KeywordBlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.blocklist.UserBlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.theme.AppFontPage
@@ -12,19 +14,19 @@ import kotlinx.serialization.Serializable
 sealed interface SettingsDestination {
 
     @Serializable
-    data object Settings: SettingsDestination
+    object Settings: SettingsDestination
 
     @Serializable
-    data object About: SettingsDestination
+    object About: SettingsDestination
 
     @Serializable
-    data object AccountManage: SettingsDestination
+    object AccountManage: SettingsDestination
 
     @Serializable
-    data object AppFont: SettingsDestination
+    object AppFont: SettingsDestination
 
     @Serializable
-    data object BlockSettings: SettingsDestination
+    object BlockSettings: SettingsDestination
 
     /**
      * Destination of block list page
@@ -35,20 +37,22 @@ sealed interface SettingsDestination {
     data class BlockList(val isUser: Boolean): SettingsDestination
 
     @Serializable
-    data object Custom: SettingsDestination
+    object UI: SettingsDestination
 
     @Serializable
-    data object Habit: SettingsDestination
+    object Habit: SettingsDestination
 
     @Serializable
-    data object More: SettingsDestination
+    object More: SettingsDestination
 
     @Serializable
-    data object OKSign: SettingsDestination
-
+    object OKSign: SettingsDestination
 }
 
-fun settingsNestedGraphBuilder(navController: NavController): NavGraphBuilder.() -> Unit = {
+fun settingsNestedGraphBuilder(
+    navController: NavController,
+    settingsRepo: SettingsRepository = App.INSTANCE.settingRepository
+): NavGraphBuilder.() -> Unit = {
     composable<SettingsDestination.Settings> {
         SettingsPage(navController)
     }
@@ -58,7 +62,7 @@ fun settingsNestedGraphBuilder(navController: NavController): NavGraphBuilder.()
     }
 
     composable<SettingsDestination.AccountManage> {
-        AccountManagePage(navController)
+        AccountManagePage(myLittleTailSettings = settingsRepo.myLittleTail, navController)
     }
 
     composable<SettingsDestination.AppFont> {
@@ -66,7 +70,7 @@ fun settingsNestedGraphBuilder(navController: NavController): NavGraphBuilder.()
     }
 
     composable<SettingsDestination.BlockSettings> {
-        BlockSettingsPage(navController)
+        BlockSettingsPage(settings = settingsRepo.blockSettings, navController)
     }
 
     composable<SettingsDestination.BlockList> { backStackEntry ->
@@ -78,12 +82,12 @@ fun settingsNestedGraphBuilder(navController: NavController): NavGraphBuilder.()
         }
     }
 
-    composable<SettingsDestination.Custom> {
-        CustomSettingsPage(navController)
+    composable<SettingsDestination.UI> {
+        UISettingsPage(settings = settingsRepo.uiSettings, navController)
     }
 
     composable<SettingsDestination.Habit> {
-        HabitSettingsPage(navController::navigateUp)
+        HabitSettingsPage(settingsRepo.habitSettings, onBack = navController::navigateUp)
     }
 
     composable<SettingsDestination.More> {
@@ -91,6 +95,6 @@ fun settingsNestedGraphBuilder(navController: NavController): NavGraphBuilder.()
     }
 
     composable<SettingsDestination.OKSign> {
-        OKSignSettingsPage(navController::navigateUp)
+        OKSignSettingsPage(settings = settingsRepo.signConfig, onBack = navController::navigateUp)
     }
 }

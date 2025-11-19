@@ -19,7 +19,6 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.HistoryRepository
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
@@ -44,7 +43,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -57,7 +55,6 @@ class ForumViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val forumRepo: ForumRepository,
     private val historyRepo: HistoryRepository,
-    settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -73,10 +70,6 @@ class ForumViewModel @Inject constructor(
     private var historyRecorded = false
 
     private val forumName: String = param.forumName
-
-    val fab = settingsRepository.habitSettings.flow
-        .map { it.forumFAB }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ForumFAB.BACK_TO_TOP)
 
     val sortType = forumRepo.getSortType(forumName)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ForumSortType.BY_REPLY)
@@ -131,8 +124,8 @@ class ForumViewModel @Inject constructor(
         }
     }
 
-    fun onFabClicked(isGood: Boolean) {
-        when (fab.value) {
+    fun onFabClicked(@ForumFAB fab: Int, isGood: Boolean) {
+        when (fab) {
             ForumFAB.POST -> sendMsg(context.getString(R.string.toast_feature_unavailable))
 
             ForumFAB.REFRESH -> onRefreshClicked(isGood)

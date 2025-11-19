@@ -64,7 +64,7 @@ class ForumThreadListViewModel @AssistedInject constructor(
     )
     val uiState: StateFlow<ForumThreadListUiState> = _uiState.asStateFlow()
 
-    val hideBlocked: StateFlow<Boolean> = settingsRepo.blockSettings.flow
+    val hideBlocked: StateFlow<Boolean> = settingsRepo.blockSettings
         .map { it.hideBlocked }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 

@@ -1,14 +1,11 @@
 package com.huanchengfly.tieba.post
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.PendingIntent
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Build
-import android.view.Window
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.ColorRes
@@ -22,9 +19,6 @@ import androidx.core.content.ContextCompat
 import com.google.gson.reflect.TypeToken
 import com.huanchengfly.tieba.post.utils.GsonUtil
 import com.huanchengfly.tieba.post.utils.MD5Util
-import com.huanchengfly.tieba.post.utils.appPreferences
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import java.io.File
 import kotlin.math.roundToInt
 
@@ -128,33 +122,11 @@ fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-fun pendingIntentFlagMutable(): Int {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        PendingIntent.FLAG_MUTABLE
-    } else {
-        0
-    }
-}
-
-fun pendingIntentFlagImmutable(): Int = PendingIntent.FLAG_IMMUTABLE
-
-fun <T> ImmutableList<T>.removeAt(index: Int): ImmutableList<T> {
-    return this.toMutableList().apply { removeAt(index) }.toImmutableList()
-}
-
-/**
- * @return this instance, `Null` when blur effect is unavailable
- *
- * @see [Window.setBackgroundBlurRadius]
- * */
-@SuppressLint("NewApi")
-fun WindowManager.LayoutParams.enableBackgroundBlur(context: Context, radius: Int = 56): WindowManager.LayoutParams? {
-    return if (context.appPreferences.useRenderEffect) {
+fun WindowManager.LayoutParams.enableBackgroundBlur(radius: Int = 56) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
         blurBehindRadius = radius
-        this
     } else {
         dimAmount = 0f // Remove for older devices
-        null
     }
 }

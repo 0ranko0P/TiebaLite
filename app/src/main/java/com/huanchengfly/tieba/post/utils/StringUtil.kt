@@ -6,6 +6,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.text.Spannable
 import android.text.SpannableString
 import androidx.compose.runtime.Stable
+import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +14,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 object StringUtil {
+
+    private val CONTROL_CHAR_REGEX_PATTERN by unsafeLazy { "\\p{C}".toRegex() }
 
     suspend fun getEmoticonContent(
         context: Context,
@@ -55,6 +58,7 @@ object StringUtil {
         } else {
             nickname ?: username
         }
+        .normalized()
     }
 
     @JvmStatic
@@ -120,4 +124,7 @@ object StringUtil {
             "$this"
         }
     }
+
+    // remove control chars
+    fun String.normalized(): String = replace(CONTROL_CHAR_REGEX_PATTERN, "")
 }

@@ -17,17 +17,14 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
 import androidx.media3.common.MimeTypes
 import com.bumptech.glide.load.engine.GlideException
-import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.components.glide.ProgressListener
-import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
 import com.huanchengfly.tieba.post.utils.ImageUtil.downloadForShare
-import com.huanchengfly.tieba.post.utils.ImageUtil.imageLoadSettings
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
@@ -36,6 +33,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
+import okhttp3.internal.closeQuietly
 import okio.buffer
 import okio.sink
 import okio.source
@@ -69,11 +67,6 @@ object ImageUtil {
      */
     const val SETTINGS_ALL_NO = 3
 
-    const val KEY_IMAGE_LOAD_TYPE = "image_load_type"
-
-    val imageLoadSettings: Int
-        get() = INSTANCE.dataStore.getInt(KEY_IMAGE_LOAD_TYPE, SETTINGS_SMART_ORIGIN)
-
     /**
      * Directory where the shared image will be saved, keep it sync with [R.xml.file_paths_share_img]
      *
@@ -88,20 +81,14 @@ object ImageUtil {
     private fun isGifFile(body: ResponseBody): Boolean {
         val type = body.contentType()
         return if (type == null) {
-            body.byteStream().use { isGifFile(it) }
+            isGifFile(body.byteStream())
         } else {
             type.toString() == MIME_TYPE_GIF
         }
     }
 
     private fun isGifFile(file: File?): Boolean {
-        if (file == null) return false
-        try {
-            return FileInputStream(file).use { isGifFile(it) }
-        } catch (e: FileNotFoundException) {
-            e.printStackTrace()
-        }
-        return false
+        return file?.let { isGifFile(FileInputStream(it)) } == true
     }
 
     //判断是否为GIF文件
@@ -114,6 +101,8 @@ object ImageUtil {
             return str.equals("GIF8", ignoreCase = true)
         } catch (e: IOException) {
             e.printStackTrace()
+        } finally {
+            inputStream.closeQuietly()
         }
         return false
     }
@@ -279,24 +268,14 @@ object ImageUtil {
     /**
      * 根据流量设置返回要加载的缩略图 Url
      *
+     * @param loadType 图片加载设置
      * @param originUrl   原图 Url
      * @param smallPicUrl 最差图片
      *
-     * @see imageLoadSettings
+     * @see HabitSettings.imageLoadType
      */
-    fun getThumbnail(originUrl: String, smallPicUrl: String): String {
-        return if (loadWorst()) smallPicUrl else originUrl
-    }
-
     fun getThumbnail(loadType: Int, originUrl: String, smallPicUrl: String): String {
         return if (loadWorst(loadType)) smallPicUrl else originUrl
-    }
-
-    private fun loadWorst(): Boolean {
-        return if (imageLoadSettings == SETTINGS_SMART_ORIGIN &&
-            NetworkObserver.isNetworkUnMetered
-        ) false
-        else imageLoadSettings != SETTINGS_ALL_ORIGIN
     }
 
     private fun loadWorst(loadType: Int): Boolean {

@@ -104,7 +104,7 @@ class AccountUtil private constructor(context: Context) {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val currentAccount: SharedFlow<Account?> = accountUidSettings.flow
+    val currentAccount: SharedFlow<Account?> = accountUidSettings
         .flatMapMerge { uid ->
             if (uid != -1L) accountDao.observeById(uid) else flowOf(null)
         }

@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -41,11 +40,8 @@ private val List<ThreadStore>.hasMore: Boolean
 
 @HiltViewModel
 class ThreadStoreViewModel @Inject constructor(
-    settingsRepository: SettingsRepository,
     private val threadStoreRepo: ThreadStoreRepository
 ) : ViewModel() {
-
-    val habitSettingsFlow = settingsRepository.habitSettings.flow
 
     private val _uiState: MutableStateFlow<ThreadStoreUiState> = MutableStateFlow(ThreadStoreUiState())
     val uiState: StateFlow<ThreadStoreUiState> = _uiState.asStateFlow()
@@ -64,7 +60,9 @@ class ThreadStoreViewModel @Inject constructor(
     private fun refreshInternal() = viewModelScope.launch {
         _uiState.update { ThreadStoreUiState(isRefreshing = true) }
         threadStoreRepo.load()
-            .onFailure { e -> _uiState.update { it.copy(isLoadingMore = false, error = e) } }
+            .onFailure { e ->
+                _uiState.update { it.copy(isLoadingMore = false, error = e) }
+            }
             .onSuccess { data ->
                 _uiState.update { ThreadStoreUiState(data = data, hasMore = data.hasMore) }
             }

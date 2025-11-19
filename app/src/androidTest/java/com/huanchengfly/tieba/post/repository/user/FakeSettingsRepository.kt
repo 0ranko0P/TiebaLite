@@ -6,14 +6,11 @@ import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
-private class FakeSettings<T>(default: T): Settings<T> {
-
-    override val flow: Flow<T> = MutableStateFlow(default)
+private class FakeSettings<T>(default: T): Settings<T>(MutableStateFlow(default)) {
 
     override fun set(new: T) = (flow as MutableStateFlow).update { new }
 
@@ -46,5 +43,8 @@ class FakeSettingsRepository @Inject constructor(): SettingsRepository {
         get() = throw RuntimeException("Not yet implemented")
 
     override val clientConfig: Settings<ClientConfig>
+        get() = throw RuntimeException("Not yet implemented")
+
+    override val myLittleTail: Settings<String>
         get() = throw RuntimeException("Not yet implemented")
 }

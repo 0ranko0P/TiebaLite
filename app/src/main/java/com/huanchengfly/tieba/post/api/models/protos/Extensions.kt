@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.api.models.protos
 
 import android.net.Uri
+import androidx.annotation.WorkerThread
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -70,12 +71,14 @@ val PostInfoList.abstractText: String
         }
     }
 
-private val PbContent.picUrl: String
-    get() = ImageUtil.getThumbnail(
-        // originSrc, // Best  quality in [PbContent]
-        bigCdnSrc,
-        cdnSrc        // Worst quality in [PbContent]
+private fun PbContent.getPicUrl(loadType: Int): String {
+    return ImageUtil.getThumbnail(
+        loadType = loadType,
+        // originSrc,               // Best quality in [PbContent]
+        originUrl = bigCdnSrc,
+        smallPicUrl = cdnSrc        // Worst quality in [PbContent]
     )
+}
 
 val List<PbContent>.plainText: String?
     get() {
@@ -133,8 +136,7 @@ private fun isMaliciousLink(linkPbContent: PbContent): Boolean {
     }
 }
 
-val List<PbContent>.renders: ImmutableList<PbContentRender>
-    get() {
+fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRender> {
         val pureText = fastFirstOrNull { it.type !in PureTextType } == null
         if (pureText) {
             return fastMap { PureTextContentRender(it.text) }.toImmutableList()
@@ -178,7 +180,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                 3 -> {
                     renders.add(
                         PicContentRender(
-                            picUrl = it.picUrl,
+                            picUrl = it.getPicUrl(imageLoadType),
                             originUrl = it.originSrc,
                             originSize = it.originSize,
                             dimensions = it.getPicSize(),
@@ -243,15 +245,14 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
         return renders.toImmutableList()
     }
 
-val Post.contentRenders: ImmutableList<PbContentRender>
-    get() {
-        val renders = content.renders
-
-        return renders.map {
+@WorkerThread
+fun Post.buildContentRenders(imageLoadType: Int): List<PbContentRender> {
+    return content.buildRenders(imageLoadType)
+        .map {
             if (it is PicContentRender) {
                 it.copy(photoViewData = getPhotoViewData(post = this, it))
             } else it
-        }.toImmutableList()
-    }
+        }
+}
 
 fun VideoInfo.aspectRatio(): Float = thumbnailWidth.toFloat() / thumbnailHeight

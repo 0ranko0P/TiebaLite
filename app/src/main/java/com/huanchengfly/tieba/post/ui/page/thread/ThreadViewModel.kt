@@ -115,6 +115,7 @@ class ThreadViewModel @Inject constructor(
         private set
 
     var hideReply = false
+        private set
 
     private val isRefreshing: Boolean
         get() = _threadUiState.value.isRefreshing
@@ -169,8 +170,7 @@ class ThreadViewModel @Inject constructor(
     init {
         requestLoad(page = 0, postId)
         viewModelScope.launch {
-            val habitSettings = settingsRepository.habitSettings.flow
-            hideReply = habitSettings.first().hideReply
+            hideReply = settingsRepository.habitSettings.snapshot().hideReply
         }
     }
 

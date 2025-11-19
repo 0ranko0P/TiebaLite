@@ -20,7 +20,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
-import com.huanchengfly.tieba.post.arch.shareInBackground
 import com.huanchengfly.tieba.post.components.glide.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderEffectImageProcessor
@@ -34,6 +33,7 @@ import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.ImageUtil.toFile
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Deferred
@@ -42,12 +42,13 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -105,8 +106,8 @@ class TranslucentThemeViewModel @Inject constructor(
         RenderScriptImageProcessor(application)
     }
 
-    val configChanged: SharedFlow<Boolean> = combine(
-        flow = settingsRepository.themeSettings.flow,
+    val configChanged: StateFlow<Boolean> = combine(
+        flow = settingsRepository.themeSettings,
         flow2 = _uiState
     ) { settings, state ->
         when {
@@ -120,7 +121,7 @@ class TranslucentThemeViewModel @Inject constructor(
                     || state.blur != settings.transBlur
         }
     }
-    .shareInBackground()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), !ThemeUtil.isTranslucentTheme())
 
     /**
      * Backup File without any filter
@@ -132,7 +133,7 @@ class TranslucentThemeViewModel @Inject constructor(
             val wallpaper: Uri? = withContext(Dispatchers.IO) {
                 Uri.fromFile(croppedWallpaperFile).takeIf { croppedWallpaperFile.exists() }
             }
-            val initState = settingsRepository.themeSettings.flow
+            val initState = settingsRepository.themeSettings
                 .map {
                     val blur: Float? = it.transBlur.takeUnless { f -> f == 0f }
                     UiState(
@@ -214,7 +215,7 @@ class TranslucentThemeViewModel @Inject constructor(
                 }
 
                 val themeSettings = settingsRepository.themeSettings
-                val currentTheme = themeSettings.flow.first()
+                val currentTheme = themeSettings.snapshot()
                 val previousWallpaper: String? = currentTheme.transBackground
                 themeSettings.save {
                     it.copy(

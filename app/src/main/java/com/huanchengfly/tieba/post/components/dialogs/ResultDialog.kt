@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.enableBackgroundBlur
 import com.huanchengfly.tieba.post.findActivity
@@ -38,6 +40,7 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelResult
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
@@ -86,8 +89,11 @@ abstract class ResultDialog<T>() : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
-        dialog?.window?.apply {
-            onSetupWindow(window = this)
+        dialog?.window?.let { window ->
+            val uiSettings = (requireContext().applicationContext as App).settingRepository.uiSettings
+            lifecycleScope.launch {
+                onSetupWindow(window, backgroundBlur = !uiSettings.snapshot().reduceEffect)
+            }
         }
     }
 
@@ -108,13 +114,13 @@ abstract class ResultDialog<T>() : DialogFragment() {
         mResult.close()
     }
 
-    protected open fun onSetupWindow(window: Window) {
+    protected open fun onSetupWindow(window: Window, backgroundBlur: Boolean) {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.attributes = window.attributes.apply {
             width = WindowManager.LayoutParams.MATCH_PARENT
             height = WindowManager.LayoutParams.MATCH_PARENT
-
-            backgroundColor = if (this.enableBackgroundBlur(window.context) != null) {
+            backgroundColor = if (backgroundBlur) {
+                enableBackgroundBlur()
                 ThemeUtil.currentColorScheme().background.copy(0.2f)
             } else {
                 ThemeUtil.currentColorScheme().background.copy(0.86f)

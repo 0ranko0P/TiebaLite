@@ -11,14 +11,15 @@ import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPrefsScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
 import com.huanchengfly.tieba.post.ui.page.Destination.Login
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -40,10 +41,9 @@ private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
             onClick = {
                 navigator.navigate(route = AccountManage)
             },
-            leadingIcon = {
+            leadingContent = {
                 Avatar(
-                    data = StringUtil.getAvatarUrl(account.portrait),
-                    contentDescription = stringResource(id = R.string.title_account_manage),
+                    data = remember { StringUtil.getAvatarUrl(account.portrait) },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -74,60 +74,54 @@ fun SettingsPage(navigator: NavController) {
             containerColor = Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onSurface
         ) { paddingValues ->
-            PrefsScreen(contentPadding = paddingValues) {
-                prefsItem {
-                    NowAccountItem(account = LocalAccount.current)
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_block_settings),
-                        summary = stringResource(id = R.string.summary_block_settings),
-                        onClick = {
-                            navigator.navigate(SettingsDestination.BlockSettings)
-                        },
-                        leadingIcon = Icons.Rounded.DoNotDisturbOff
-                    )
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_settings_custom),
-                        summary = stringResource(id = R.string.summary_settings_custom),
-                        onClick = {
-                            navigator.navigate(SettingsDestination.Custom)
-                        },
-                        leadingIcon = Icons.Outlined.FormatPaint
-                    )
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_settings_read_habit),
-                        summary = stringResource(id = R.string.summary_settings_habit),
-                        onClick = {
-                            navigator.navigate(SettingsDestination.Habit)
-                        },
-                        leadingIcon = Icons.Outlined.DashboardCustomize
-                    )
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_oksign),
-                        summary = stringResource(id = R.string.summary_settings_oksign),
-                        onClick = {
-                            navigator.navigate(SettingsDestination.OKSign)
-                        },
-                        leadingIcon = Icons.Rounded.Checklist
-                    )
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_settings_more),
-                        summary = stringResource(id = R.string.summary_settings_more),
-                        onClick = {
-                            navigator.navigate(SettingsDestination.More)
-                        },
-                        leadingIcon =  Icons.Rounded.MoreHoriz
-                    )
-                }
+            TextPrefsScreen(contentPadding = paddingValues) {
+                NowAccountItem(account = LocalAccount.current)
+
+                TextPref(
+                    title = stringResource(id = R.string.title_block_settings),
+                    summary = stringResource(id = R.string.summary_block_settings),
+                    onClick = {
+                        navigator.navigate(SettingsDestination.BlockSettings)
+                    },
+                    leadingIcon = Icons.Rounded.DoNotDisturbOff
+                )
+
+                TextPref(
+                    title = stringResource(id = R.string.title_settings_custom),
+                    summary = stringResource(id = R.string.summary_settings_custom),
+                    onClick = {
+                        navigator.navigate(SettingsDestination.UI)
+                    },
+                    leadingIcon = Icons.Outlined.FormatPaint
+                )
+
+                TextPref(
+                    title = stringResource(id = R.string.title_settings_read_habit),
+                    summary = stringResource(id = R.string.summary_settings_habit),
+                    onClick = {
+                        navigator.navigate(SettingsDestination.Habit)
+                    },
+                    leadingIcon = Icons.Outlined.DashboardCustomize
+                )
+
+                TextPref(
+                    title = stringResource(id = R.string.title_oksign),
+                    summary = stringResource(id = R.string.summary_settings_oksign),
+                    onClick = {
+                        navigator.navigate(SettingsDestination.OKSign)
+                    },
+                    leadingIcon = Icons.Rounded.Checklist,
+                    enabled = LocalAccount.current != null
+                )
+
+                TextPref(
+                    title = stringResource(id = R.string.title_settings_more),
+                    summary = stringResource(id = R.string.summary_settings_more),
+                    onClick = {
+                        navigator.navigate(SettingsDestination.More)
+                    },
+                    leadingIcon =  Icons.Rounded.MoreHoriz
+                )
             }
         }
     }

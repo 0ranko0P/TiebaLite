@@ -52,9 +52,9 @@ class ExploreRepository @Inject constructor(
 
     private val networkDataSource = ExploreNetworkDataSource
 
-    private val habitSettings = settingsRepository.habitSettings.flow
+    private val habitSettings = settingsRepository.habitSettings
 
-    private val blockSettings = settingsRepository.blockSettings.flow
+    private val blockSettings = settingsRepository.blockSettings
 
     private suspend fun requireUid(): Long {
         return AccountUtil.getInstance().currentAccount.first()?.uid ?: throw TiebaNotLoggedInException()
@@ -70,7 +70,7 @@ class ExploreRepository @Inject constructor(
     suspend fun loadHotTopic(cached: Boolean = false) = loadHotThreads(HOT_THREAD_TAB_ALL, cached)
 
     suspend fun loadHotThreads(tabCode: String, cached: Boolean): HotTopicData {
-        val habit = habitSettings.first()
+        val habit = habitSettings.snapshot()
         var data: HotThreadListResponseData? = null
         if (cached) {
             data = localDataSource.loadHotThread(tabCode)
@@ -106,8 +106,8 @@ class ExploreRepository @Inject constructor(
         }
 
         return data.mapUiModel(
-            showBothName = habitSettings.first().showBothName,
-            blockVideo = blockSettings.first().blockVideo,
+            showBothName = habitSettings.snapshot().showBothName,
+            blockVideo = blockSettings.snapshot().blockVideo,
             isBlocked = blockRepo::isBlocked,
             dislikeProvider = this::getCachedDislike
         )
@@ -129,7 +129,7 @@ class ExploreRepository @Inject constructor(
             data = networkDataSource.refreshUserLikeThread(lastRequestTime)
             localDataSource.saveUserLikeFirstPage(uid, data)
         }
-        val showBothName = habitSettings.first().showBothName
+        val showBothName = habitSettings.snapshot().showBothName
         val threads = data.threadInfo.mapUiModel(showBothName, blockRepo::isBlocked)
         return UserLikeThreads(data.requestUnix, data.pageTag, data.hasMore == 1, threads)
     }
@@ -142,7 +142,8 @@ class ExploreRepository @Inject constructor(
      * */
     suspend fun loadUserLike(pageTag: String, lastRequestUnix: Long): UserLikeThreads {
         val data = networkDataSource.loadMoreUserLikeThread(pageTag, lastRequestUnix)
-        val threads = data.threadInfo.mapUiModel(habitSettings.first().showBothName, blockRepo::isBlocked)
+        val showBothName = habitSettings.snapshot().showBothName
+        val threads = data.threadInfo.mapUiModel(showBothName, isBlocked = blockRepo::isBlocked)
         return UserLikeThreads(data.requestUnix, data.pageTag, data.hasMore == 1, threads)
     }
 

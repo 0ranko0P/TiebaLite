@@ -51,6 +51,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
@@ -60,7 +61,6 @@ import com.huanchengfly.tieba.post.ui.models.search.SearchMedia
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
 import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
-import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlin.math.min
 
 @Composable
@@ -158,7 +158,7 @@ fun SearchThreadItem(
             )
 
             val medias: @Composable () -> Unit = {
-                if (!LocalContext.current.appPreferences.hideMedia) {
+                if (!LocalHabitSettings.current.hideMedia) {
                     if (item.pictures != null) {
                         SearchPhoto(pics = item.pictures)
                     } else if (item.video != null) {

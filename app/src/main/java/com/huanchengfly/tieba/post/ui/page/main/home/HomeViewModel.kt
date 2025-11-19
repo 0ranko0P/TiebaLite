@@ -17,7 +17,6 @@ import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.LikedForum
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +31,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -51,13 +49,11 @@ private const val TAG = "HomeViewModel"
  * Ui State for Home Page
  *
  * @param isLoading loading forum list
- * @param listSingle show forums in list
  * @param error throwable error
  * */
 @Immutable
 data class HomeUiState(
     val isLoading: Boolean = true,
-    val listSingle: Boolean = false,
     val error: Throwable? = null,
 ) : UiState
 
@@ -116,7 +112,7 @@ class HomeViewModel @Inject constructor(
      * @see SettingsRepository.habitSettings
      * */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val historyFlow: StateFlow<List<ForumHistory>?> = settingsRepo.habitSettings.flow
+    val historyFlow: StateFlow<List<ForumHistory>?> = settingsRepo.habitSettings
         .map { it.showHistoryInHome }
         .distinctUntilChanged()
         .flatMapLatest { showHistory ->
@@ -132,8 +128,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun refreshInternal(cached: Boolean) = viewModelScope.launch(handler) {
-        val listSingle = uiSettings.flow.first().homeForumList
-        _uiState.update { HomeUiState(isLoading = true, listSingle = listSingle) }
+        _uiState.update { HomeUiState(isLoading = true) }
         homeRepo.refresh(cached)
         delay(200) // wait 200ms for data mapping in forumListsFlow
         _uiState.update { it.copy(isLoading = false, error = null) }
@@ -157,9 +152,5 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onListModeChanged() {
-        val newMode = !_uiState.value.listSingle
-        _uiState.set { copy(listSingle = newMode) }
-        uiSettings.save { it.copy(homeForumList = newMode) }
-    }
+    fun onListModeChanged() = uiSettings.save { it.copy(homeForumList = !it.homeForumList) }
 }

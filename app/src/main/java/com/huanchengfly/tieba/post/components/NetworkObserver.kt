@@ -8,8 +8,13 @@ import android.net.NetworkRequest
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.arch.unsafeLazy
 
 object NetworkObserver: ConnectivityManager.NetworkCallback(), DefaultLifecycleObserver {
+
+    private val connectivityManager by unsafeLazy {
+        App.INSTANCE.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
 
     var isNetworkConnected = false
         private set
@@ -29,7 +34,6 @@ object NetworkObserver: ConnectivityManager.NetworkCallback(), DefaultLifecycleO
         if (isObserving) return
 
         isObserving = true
-        val connectivityManager = App.INSTANCE.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
@@ -49,13 +53,11 @@ object NetworkObserver: ConnectivityManager.NetworkCallback(), DefaultLifecycleO
 
     override fun onUnavailable() {
         isNetworkConnected = false
-        isNetworkUnMetered = false
     }
 
     override fun onLost(network: Network) = onUnavailable()
 
     override fun onDestroy(owner: LifecycleOwner) {
-        val connectivityManager = App.INSTANCE.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         connectivityManager.unregisterNetworkCallback(this)
         isObserving = false
     }

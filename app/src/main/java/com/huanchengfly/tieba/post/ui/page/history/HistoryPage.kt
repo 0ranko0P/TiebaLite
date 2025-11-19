@@ -209,7 +209,6 @@ private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: Stri
                 data = avatar,
                 size = Sizes.Small,
                 modifier = Modifier.localSharedBounds(key = ForumAvatarSharedBoundsKey(forum, null)),
-                contentDescription = forum
             )
         },
         name = {

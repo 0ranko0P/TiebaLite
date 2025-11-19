@@ -7,7 +7,6 @@ import com.huanchengfly.tieba.post.api.models.protos.Post
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
-import kotlinx.collections.immutable.ImmutableList
 
 /**
  * Represents [Post] in UI
@@ -37,7 +36,7 @@ import kotlinx.collections.immutable.ImmutableList
     val like: Like,
     val blocked: Boolean,
     val plainText: String,
-    val contentRenders: ImmutableList<PbContentRender>,
+    val contentRenders: List<PbContentRender>,
     val subPosts: List<SubPostItemData>?,
     val subPostNumber: Int
 ) {
@@ -75,7 +74,7 @@ import kotlinx.collections.immutable.ImmutableList
         like: Like = this.like,
         blocked: Boolean = this.blocked,
         plainText: String = this.plainText,
-        contentRenders: ImmutableList<PbContentRender> = this.contentRenders,
+        contentRenders: List<PbContentRender> = this.contentRenders,
         subPosts: List<SubPostItemData>? = this.subPosts,
         subPostNumber: Int = this.subPostNumber
     ) = PostData(
@@ -91,8 +90,6 @@ import kotlinx.collections.immutable.ImmutableList
         subPosts = subPosts,
         subPostNumber = subPostNumber
     )
-
-    companion object {
-        private const val DESC_SEPARATOR = " · "
-    }
 }
+
+private const val DESC_SEPARATOR = " · "

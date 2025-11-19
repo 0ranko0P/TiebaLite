@@ -1,5 +1,6 @@
-package com.huanchengfly.tieba.post.ui.common.prefs.widgets
+package com.huanchengfly.tieba.post.ui.widgets.compose.preference
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -9,56 +10,44 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import com.huanchengfly.tieba.post.asyncEdit
-import com.huanchengfly.tieba.post.dataStore
 import kotlinx.collections.immutable.ImmutableMap
 
 /**
  * Preference that shows a list of entries in a DropDown
  *
- * @param key Key used to identify this Pref in the [DataStore], null when it's not a DataStore pref
- * @param title Main text which describes the Pref
- * @param modifier the [Modifier] to be applied on this preference
- * @param summary Used to give some more information about what this Pref is for
- * @param defaultValue Value to use if this Pref does not exist in [DataStore].
+ * @param modifier the [Modifier] to be applied on this preference.
+ * @param value current selected value of this preference.
+ * @param title text which describes this preference.
+ * @param summary used to give some more information about what this Preference is for.
  * @param onValueChange Callback to be invoked when user selected new option in [options]
  * @param useSelectedAsSummary If true, uses the current selected item as the summary. Equivalent of useSimpleSummaryProvider in androidx.
- * @param options All available options of this [key] and their description
+ * @param options All available options of this preference with description
  */
 @Composable
 fun <T> DropDownPref(
-    key: Preferences.Key<T>?,
-    title: String,
     modifier: Modifier = Modifier,
+    value: T?,
+    title: String,
     summary: String? = null,
-    defaultValue: T,
     onValueChange: ((T) -> Unit)? = null,
     useSelectedAsSummary: Boolean = false,
     leadingIcon: ImageVector? = null,
     options: ImmutableMap<T, String>
 ) {
-    val context = LocalContext.current
     var expanded by rememberSaveable { mutableStateOf(false) }
-    var prefs: T by remember { mutableStateOf(defaultValue) }
 
     Column {
-        TextPref(
+        BasePreference(
+            modifier = modifier.clickable(role = Role.DropdownList) { expanded = true },
             title = title,
-            modifier = modifier,
-            summary = if (useSelectedAsSummary) options[prefs] else summary,
-            leadingIcon = leadingIcon,
-            onClick = {
-                expanded = true
-            },
+            summary = if (useSelectedAsSummary) options[value] else summary,
+            leadingIcon = leadingIcon
         )
 
         Box(
@@ -75,12 +64,8 @@ fun <T> DropDownPref(
                         },
                         onClick = {
                             expanded = false
-                            if (item.key != defaultValue) {
-                                prefs = item.key
-                                if (key != null) {
-                                    context.dataStore.asyncEdit(key, prefs.takeUnless { it == defaultValue })
-                                }
-                                onValueChange?.invoke(item.key)
+                            if (onValueChange != null && item.key != value) {
+                                onValueChange(item.key)
                             }
                         }
                     )

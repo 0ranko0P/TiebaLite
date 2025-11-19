@@ -29,12 +29,13 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView.Companion.dumpWebViewVersion
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPrefsScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import com.huanchengfly.tieba.post.utils.buildAppSettingsIntent
@@ -66,45 +67,40 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
         }
     }
 
-    PrefsScreen(
-        contentPadding = paddingValues
-    ) {
+    TextPrefsScreen(contentPadding = paddingValues) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            prefsItem {
-                TextPref(
-                    title = stringResource(R.string.title_use_webview),
-                    summary = remember {
-                        dumpWebViewVersion(context) ?: context.getString(R.string.toast_load_failed)
-                    },
-                    onClick = {
-                        WebView.getCurrentWebViewPackage()?.packageName?.let {
-                            runCatching { context.startActivity(buildAppSettingsIntent(it)) }
-                        }
-                    },
-                    leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
-                )
-            }
-        }
-
-        prefsItem {
             TextPref(
-                leadingIcon = Icons.AutoMirrored.Outlined.OpenInNew,
-                title = stringResource(id = R.string.title_settings_app_link),
-                summary = stringResource(id = R.string.summary_app_link),
+                title = stringResource(R.string.title_use_webview),
+                summary = remember {
+                    dumpWebViewVersion(context) ?: context.getString(R.string.toast_load_failed)
+                },
                 onClick = {
                     runCatching {
-                        context.startActivity(buildAppSettingsIntent(BuildConfig.APPLICATION_ID))
+                        val pkg = WebView.getCurrentWebViewPackage() ?: return@runCatching
+                        context.startActivity(buildAppSettingsIntent(pkg.packageName))
                     }
-                    .onFailure {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(context.getString(R.string.error_open_settings))
-                        }
-                    }
-                }
+                },
+                leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
             )
         }
 
-        prefsItem {
+        TextPref(
+            leadingIcon = Icons.AutoMirrored.Outlined.OpenInNew,
+            title = stringResource(id = R.string.title_settings_app_link),
+            summary = stringResource(id = R.string.summary_app_link),
+            onClick = {
+                runCatching {
+                    context.startActivity(buildAppSettingsIntent(BuildConfig.APPLICATION_ID))
+                }
+                .onFailure {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(context.getString(R.string.error_open_settings))
+                    }
+                }
+            }
+        )
+
+        StrongBox {
             var cacheSize: Long by rememberSaveable { mutableLongStateOf(-1) }
             var summary: String by rememberSaveable { mutableStateOf("...") }
             val enabled by remember { derivedStateOf { cacheSize > 0 && diskCacheJob == null } }
@@ -139,16 +135,14 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
             )
         }
 
-        prefsItem {
-            TextPref(
-                leadingIcon = Icons.Outlined.Info,
-                title = stringResource(id = R.string.title_about),
-                onClick = {
-                    navigator.navigate(About)
-                },
-                summary = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME)
-            )
-        }
+        TextPref(
+            leadingIcon = Icons.Outlined.Info,
+            title = stringResource(id = R.string.title_about),
+            onClick = {
+                navigator.navigate(About)
+            },
+            summary = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME)
+        )
     }
 }
 

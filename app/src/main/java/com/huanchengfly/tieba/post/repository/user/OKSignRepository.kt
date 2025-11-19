@@ -85,7 +85,7 @@ class OKSignRepositoryImp @Inject constructor(
 
     init { // Observe config changes then reschedule OKSignWorker
         AppBackgroundScope.launch {
-            settingsRepo.signConfig.flow.collect {
+            settingsRepo.signConfig.collect {
                 scheduleWorkerInternal(signConfig = it)
             }
         }
@@ -248,7 +248,7 @@ class OKSignRepositoryImp @Inject constructor(
 
     override suspend fun sign(listener: ProgressListener?) {
         val account = AccountUtil.getInstance().updateSigningAccount()
-        val signConfig = settingsRepo.signConfig.flow.first()
+        val signConfig = settingsRepo.signConfig.snapshot()
         signInternal(account, signConfig, listener)
     }
 
@@ -280,7 +280,7 @@ class OKSignRepositoryImp @Inject constructor(
 
     override fun scheduleWorker() {
         AppBackgroundScope.launch {
-            val signConfig = settingsRepo.signConfig.flow.first()
+            val signConfig = settingsRepo.signConfig.snapshot()
             scheduleWorkerInternal(signConfig)
         }
     }

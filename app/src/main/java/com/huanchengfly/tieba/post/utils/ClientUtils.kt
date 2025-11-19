@@ -6,7 +6,6 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -29,7 +28,7 @@ object ClientUtils {
 
     fun init(settings: Settings<ClientConfig>, configSnapshot: ClientConfig?) {
         clientConfigSettings = settings
-        val config = configSnapshot ?: runBlocking { settings.flow.first() }
+        val config = configSnapshot ?: runBlocking { settings.snapshot() }
         clientId = config.clientId
         sampleId = config.sampleId
         baiduId = config.baiduId

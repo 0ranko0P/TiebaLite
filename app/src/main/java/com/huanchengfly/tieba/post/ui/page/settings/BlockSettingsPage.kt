@@ -9,17 +9,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
+import com.huanchengfly.tieba.post.repository.user.Settings
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SwitchPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
+import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.BlockList
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
 
 @Composable
-fun BlockSettingsPage(navigator: NavController) {
+fun BlockSettingsPage(
+    settings: Settings<BlockSettings>,
+    navigator: NavController,
+) {
     MyScaffold(
         topBar = {
             TitleCentredToolbar(
@@ -29,9 +33,11 @@ fun BlockSettingsPage(navigator: NavController) {
         },
     ) { paddingValues ->
         PrefsScreen(
+            settings = settings,
+            initialValue = BlockSettings(),
             contentPadding = paddingValues
         ) {
-            prefsItem {
+            TextItem {
                 TextPref(
                     title = stringResource(id = R.string.settings_block_user),
                     leadingIcon = Icons.Outlined.NoAccounts,
@@ -40,7 +46,8 @@ fun BlockSettingsPage(navigator: NavController) {
                     }
                 )
             }
-            prefsItem {
+
+            TextItem {
                 TextPref(
                     title = stringResource(id = R.string.settings_block_keyword),
                     leadingIcon = Icons.Outlined.Block,
@@ -49,20 +56,26 @@ fun BlockSettingsPage(navigator: NavController) {
                     }
                 )
             }
-            prefsItem {
+
+            Item { block ->
                 SwitchPref(
-                    key = AppPreferencesUtils.KEY_POST_HIDE_BLOCKED,
+                    checked = block.hideBlocked,
+                    onCheckedChange = {
+                        updatePreference { old -> old.copy(hideBlocked = it) }
+                    },
                     title = R.string.settings_hide_blocked_content,
-                    defaultChecked = false,
                     leadingIcon = Icons.Outlined.HideSource
                 )
             }
-            prefsItem {
+
+            Item { block ->
                 SwitchPref(
-                    key = AppPreferencesUtils.KEY_POST_BLOCK_VIDEO,
+                    checked = block.blockVideo,
+                    onCheckedChange = {
+                        updatePreference { old -> old.copy(blockVideo = it) }
+                    },
                     title = R.string.settings_block_video,
-                    summary = { R.string.settings_block_video_summary },
-                    defaultChecked = false,
+                    summary = R.string.settings_block_video_summary,
                     leadingIcon = Icons.Outlined.VideocamOff
                 )
             }

@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
@@ -224,7 +225,6 @@ fun ForumPage(
     viewModel: ForumViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val loggedIn = LocalAccount.current != null
     val snackbarHostState = rememberSnackbarHostState()
 
     LaunchedEffect(viewModel) {
@@ -262,7 +262,7 @@ fun ForumPage(
     val listStates = rememberPagerListStates(pagerState.pageCount)
 
     val unlikeDialogState = rememberDialogState()
-    if (loggedIn && forumData != null) {
+    if (unlikeDialogState.show) {
         ConfirmDialog(
             dialogState = unlikeDialogState,
             onConfirm = viewModel::onDislikeForum,
@@ -408,7 +408,7 @@ fun ForumPage(
         snackbarHostState = snackbarHostState,
         snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            val fab by viewModel.fab.collectAsStateWithLifecycle()
+            val fab = LocalHabitSettings.current.forumFAB
             if (fab == ForumFAB.HIDE || forumData == null) return@MyScaffold
 
             val isFabVisible by remember {
@@ -416,7 +416,7 @@ fun ForumPage(
             }
 
             ForumFab(fab = fab, visible = isFabVisible) {
-                viewModel.onFabClicked(pagerState.currentPage == TAB_FORUM_GOOD)
+                viewModel.onFabClicked(fab, isGood = pagerState.currentPage == TAB_FORUM_GOOD)
             }
         }
     ) { contentPadding ->

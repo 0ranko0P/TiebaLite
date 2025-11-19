@@ -11,7 +11,6 @@ import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.packageInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,7 +34,7 @@ class ConfigInitializer @Inject constructor(
                 isTrackLimited = false
             }
             userAgent = WebSettings.getDefaultUserAgent(context)
-            var config = runBlocking { clientSettings.flow.first() }
+            var config = runBlocking { clientSettings.snapshot() }
             appFirstInstallTime = config.firstInstallTime ?: context.packageInfo.firstInstallTime
             appLastUpdateTime = config.lastUpdateTime ?: context.packageInfo.lastUpdateTime
 

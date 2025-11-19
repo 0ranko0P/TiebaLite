@@ -52,18 +52,16 @@ private data class ForumCache(
 @Singleton
 class ForumRepository @Inject constructor(
     @ApplicationContext context: Context,
+    settingsRepo: SettingsRepository,
     private val blockRepo: BlockRepository,
-    private val settingsRepo: SettingsRepository,
     private val homeRepo: HomeRepository
 ) {
 
     private val networkDataSource = ForumNetworkDataSource
 
-    private val blockedSettings: Flow<BlockSettings>
-        get() = settingsRepo.blockSettings.flow
+    private val blockedSettings: Flow<BlockSettings> = settingsRepo.blockSettings
 
-    private val habitSettings: Flow<HabitSettings>
-        get() = settingsRepo.habitSettings.flow
+    private val habitSettings: Flow<HabitSettings> = settingsRepo.habitSettings
 
     private val dataStore by lazy {
         PreferenceDataStoreFactory.create {

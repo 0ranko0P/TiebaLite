@@ -31,7 +31,7 @@ data class WelcomeState(
 class WelcomeViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val configInitializer: ConfigInitializer,
-    private val settingsRepository: SettingsRepository
+    val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     val permissionList = listOfNotNull(

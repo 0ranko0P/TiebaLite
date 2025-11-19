@@ -2,14 +2,8 @@
 
 package com.huanchengfly.tieba.post
 
-import android.content.Context
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
@@ -19,51 +13,13 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-
-private const val DATA_STORE_NAME = "app_preferences"
-val dataStoreScope = CoroutineScope(Dispatchers.IO + CoroutineName(DATA_STORE_NAME) + SupervisorJob())
-
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
-    name = DATA_STORE_NAME,
-    scope = dataStoreScope
-)
-
-@Composable
-fun <T> rememberPreferenceAsState(
-    key: Preferences.Key<T>,
-    defaultValue: T
-): State<T> {
-    val dataStore = LocalContext.current.dataStore
-
-    return produceState(defaultValue, Unit) {
-        dataStore.data
-            .map { it[key] ?: defaultValue }
-            .distinctUntilChanged()
-            .collect {
-                value = it
-            }
-    }
-}
-
-@Composable
-fun <T> DataStore<Preferences>.collectPreferenceAsState(
-    key: Preferences.Key<T>,
-    defaultValue: T
-): State<T> {
-    return data.map { it[key] ?: defaultValue }.collectAsState(initial = defaultValue)
-}
 
 fun Flow<Preferences>.distinctUntilChangedByKeys(vararg keys: Preferences.Key<*>): Flow<Preferences> {
     if (keys.size == 1) return this.distinctUntilChangedBy { it[keys.first()] }
@@ -76,7 +32,7 @@ fun Flow<Preferences>.distinctUntilChangedByKeys(vararg keys: Preferences.Key<*>
 }
 
 fun<T> DataStore<Preferences>.asyncEdit(key: Preferences.Key<T>, value: T?) {
-    dataStoreScope.launch {
+    AppBackgroundScope.launch {
         try {
             edit {
                 if (value == null) it.remove(key) else it[key] = value

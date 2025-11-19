@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -85,12 +86,14 @@ fun PermissionPage(modifier: Modifier = Modifier, permissions: List<String>, onP
         title = R.string.welcome_permission,
         subtitle = if (granted) R.string.welcome_permission_done else R.string.welcome_permission_subtitle
     ) {
-        permissionInfoList.fastForEach { info ->
-            Permission(info = info) {
-                coroutineScope.launch {
-                    context.askPermission(desc = info.description, info.permission)
-                        .onGranted { onPermissionResult(info.permission, true) }
-                        .onDenied { onPermissionResult(info.permission, false) }
+        Column(modifier = Modifier.fillMaxSize()) {
+            permissionInfoList.fastForEach { info ->
+                Permission(info = info) {
+                    coroutineScope.launch {
+                        context.askPermission(desc = info.description, info.permission)
+                            .onGranted { onPermissionResult(info.permission, true) }
+                            .onDenied { onPermissionResult(info.permission, false) }
+                    }
                 }
             }
         }

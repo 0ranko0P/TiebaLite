@@ -48,6 +48,7 @@ import androidx.compose.ui.util.fastForEach
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.models.database.Account
@@ -129,10 +130,11 @@ internal fun SubPostsContent(
     isSheet: Boolean = false,
     onNavigateUp: () -> Unit = {},
 ) {
+    val context = LocalContext.current
     val navigator = LocalNavController.current
     val account = LocalAccount.current
     val myUid = account?.uid
-    val context = LocalContext.current
+    val canReply = account != null && !LocalHabitSettings.current.hideReply
 
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val isLoadingMore = uiState.isLoadingMore
@@ -191,7 +193,6 @@ internal fun SubPostsContent(
     ) {
         val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
         val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-        val canReply by viewModel.canReply.collectAsStateWithLifecycle()
 
         // Initialize nullable click listeners:
         val onReplySubPostClickedListener: ((SubPostItemData) -> Unit)? = { item: SubPostItemData ->

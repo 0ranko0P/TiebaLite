@@ -19,9 +19,9 @@ import com.huanchengfly.tieba.post.utils.ColorUtils
 
 val LocalExtendedColorScheme = staticCompositionLocalOf { DefaultColors }
 
-val DefaultColors = ExtendedColorScheme(BlueColorScheme.lightColor)
+val DefaultColors = ExtendedColorScheme(BlueColorScheme.lightColor, darkTheme = false)
 
-val DefaultDarkColors = ExtendedColorScheme(BlueColorScheme.darkColor)
+val DefaultDarkColors = ExtendedColorScheme(BlueColorScheme.darkColor, darkTheme = true)
 
 @Composable
 fun TiebaLiteTheme(

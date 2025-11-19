@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -42,8 +43,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 @Composable
 fun ThreadStorePage(
@@ -120,22 +119,21 @@ fun ThreadStorePage(
                 initial = emptyList()
             )
 
+            val habit = LocalHabitSettings.current
+
             // Initialize click listeners now
             val onUserClicked: (Long) -> Unit = { navigator.navigate(UserProfile(uid = it)) }
 
             val onThreadClicked: (ThreadStore) -> Unit = { thread ->
-                scope.launch {
-                    val habit = viewModel.habitSettingsFlow.first()
-                    navigator.navigate(
-                        route = Thread(
-                            threadId = thread.id,
-                            postId = thread.markPid,
-                            seeLz = habit.favoriteSeeLz,
-                            sortType = if (habit.favoriteDesc) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT,
-                            from = ThreadFrom.Store(maxPid = thread.maxPid, maxFloor = thread.postNo)
-                        )
+                navigator.navigate(
+                    route = Thread(
+                        threadId = thread.id,
+                        postId = thread.markPid,
+                        seeLz = habit.favoriteSeeLz,
+                        sortType = if (habit.favoriteDesc) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT,
+                        from = ThreadFrom.Store(maxPid = thread.maxPid, maxFloor = thread.postNo)
                     )
-                }
+                )
             }
 
             PullToRefreshBox(

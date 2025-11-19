@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,9 +21,11 @@ import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.NonSkippableComposable
+import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -39,8 +40,11 @@ import androidx.navigation.NavOptions
 import androidx.navigation.compose.rememberNavController
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
+import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
+import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.RootNavGraph
 import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
@@ -51,6 +55,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -66,8 +71,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-val LocalWindowAdaptiveInfo =
-    staticCompositionLocalOf<WindowAdaptiveInfo> { throw IllegalStateException("not allowed here!") }
+val LocalWindowAdaptiveInfo = staticCompositionLocalOf<WindowAdaptiveInfo> { error("No WindowAdaptiveInfo provided!") }
+
+val LocalHabitSettings = compositionLocalOf<HabitSettings> { error("No HabitSettings provided!") }
+
+val LocalUISettings = compositionLocalOf { UISettings() }
 
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
@@ -120,39 +128,30 @@ class MainActivityV2 : BaseComposeActivity() {
     override fun Content() {
         // val bottomSheetNavigator = rememberBottomSheetNavigator(skipPartiallyExpanded = true)
         val navController = rememberNavController(/* bottomSheetNavigator */)
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-        TiebaLiteLocalProvider {
-            TiebaExtendedTheme {
-                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                val okSignAlertDialogState = rememberDialogState()
+        TiebaExtendedTheme(colorsExt = uiState.themeColor) {
+            TiebaLiteLocalProvider(
+                habit = uiState.habitSettings ?: return@TiebaExtendedTheme, // Initializing ...
+                uiSettings = uiState.uiSettings ?: return@TiebaExtendedTheme
+            ) {
+                val setupFinished = uiState.uiSettings!!.setupFinished
+                val entryRoute = if (setupFinished) Destination.Main else Destination.Welcome
+                RootNavGraph(/* bottomSheetNavigator, */navController, startDestination = entryRoute)
 
-                uiState.setupFinished?.let { setupFinished ->
-                    val entryRoute = if (setupFinished) Destination.Main else Destination.Welcome
-                    RootNavGraph(/* bottomSheetNavigator, */navController, startDestination = entryRoute)
+                if (setupFinished) {
+                    LaunchedDeepLinkEffect(navController)
 
-                    if (setupFinished) {
-                        LaunchedDeepLinkEffect(navController)
-                    }
-                }
+                    StrongBox {
+                        val preview by viewModel.previewInfoFlow.collectAsStateWithLifecycle()
+                        ClipBoardDetectDialog(preview, viewModel::onClipBoardDetectDialogDismiss) {
+                            val route: Destination = it.clipBoardLink.toRoute(avatarUrl = it.icon?.url)
+                            navController.navigate(route = route)
+                        }
 
-                ClipBoardDetectDialog(uiState.preview, viewModel::onClipBoardDetectDialogDismiss) {
-                    uiState.preview?.let {
-                        val route: Destination = it.clipBoardLink.toRoute(avatarUrl = it.icon?.url)
-                        navController.navigate(route = route)
-                    }
-                }
-
-                if (uiState.ignoreBatteryOpDialogVisible) {
-                    BatteryOpDialog(
-                        dialogState = okSignAlertDialogState,
-                        onDismiss = viewModel::onDismissBatteryOpDialog,
-                        onIgnore = viewModel::onIgnoreBatteryOpDialog,
-                        onOpenSettings = this::requestIgnoreBatteryOptimizations
-                    )
-
-                    LaunchedEffect(Unit) {
-                        delay(2000L)
-                        okSignAlertDialogState.show()
+                        if (uiState.autoSignRestricted) {
+                            BatteryOpDialog(onOpenSettings = ::requestIgnoreBatteryOptimizations)
+                        }
                     }
                 }
             }
@@ -160,9 +159,8 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     @Composable
-    private fun TiebaExtendedTheme(content: @Composable () -> Unit) {
-        val colorsExt by viewModel.extendedColorScheme.collectAsStateWithLifecycle()
-        val backgroundImage by viewModel.translucentThemeBackground.collectAsStateWithLifecycle(null)
+    private fun TiebaExtendedTheme(colorsExt: ExtendedColorScheme, content: @Composable () -> Unit) {
+        val backgroundImage by viewModel.translucentThemeBackground.collectAsStateWithLifecycle()
 
         Box(modifier = Modifier.fillMaxSize()) {
             if (backgroundImage != null) {
@@ -204,11 +202,20 @@ class MainActivityV2 : BaseComposeActivity() {
         EmoticonManager.clear()
     }
 
-    @NonSkippableComposable
+    @NonRestartableComposable
     @Composable
-    private fun TiebaLiteLocalProvider(content: @Composable () -> Unit) {
+    private fun TiebaLiteLocalProvider(
+        habit: HabitSettings,
+        uiSettings: UISettings,
+        content: @Composable () -> Unit
+    ) {
         val currentAccount by viewModel.account.collectAsStateWithLifecycle(initialValue = null)
-        CompositionLocalProvider(LocalAccount provides currentAccount, content = content)
+        CompositionLocalProvider(
+            LocalAccount provides currentAccount,
+            LocalHabitSettings provides habit,
+            LocalUISettings provides uiSettings,
+            content = content
+        )
     }
 
     companion object {
@@ -221,7 +228,7 @@ class MainActivityV2 : BaseComposeActivity() {
         private fun ClipBoardDetectDialog(
             preview: PreviewInfo?,
             onDismiss: () -> Unit,
-            onOpen: () -> Unit
+            onOpen: (PreviewInfo) -> Unit
         ) {
             val dialogState = rememberDialogState()
 
@@ -242,7 +249,9 @@ class MainActivityV2 : BaseComposeActivity() {
                 },
                 buttons = {
                     DialogNegativeButton(text = stringResource(id = R.string.btn_close))
-                    DialogPositiveButton(text = stringResource(id = R.string.button_open), onClick = onOpen)
+                    DialogPositiveButton(text = stringResource(id = R.string.button_open)) {
+                        onOpen(preview)
+                    }
                 },
             ) {
                 Surface(
@@ -280,23 +289,29 @@ class MainActivityV2 : BaseComposeActivity() {
 
         @Composable
         private fun BatteryOpDialog(
-            dialogState: DialogState,
-            onDismiss: () -> Unit,
-            onIgnore: () -> Unit,
+            dialogState: DialogState = rememberDialogState(),
             onOpenSettings: () -> Unit
         ) {
+            // Show dialog only once
+            var dismissed by rememberSaveable { mutableStateOf(false) }
+            if (dismissed) return
+
+            LaunchedEffect(Unit) {
+                delay(2000L)
+                dialogState.show()
+            }
+            if (!dialogState.show) return
+
             Dialog(
                 dialogState = dialogState,
-                onDismiss = onDismiss,
-                title = { Text(text = stringResource(id = R.string.title_dialog_oksign_battery_optimization)) },
-                content = {
-                    Text(text = stringResource(id = R.string.message_dialog_oksign_battery_optimization))
+                onDismiss = {
+                    dismissed = true
                 },
-                buttons = { rowScope ->
-                    DialogNegativeButton(text = stringResource(id = R.string.button_dont_remind_again), onClick = onIgnore)
-
-                    with(rowScope) { Spacer(modifier = Modifier.weight(1.0f)) }
-
+                title = { Text(text = stringResource(id = R.string.title_ignore_battery_optimization)) },
+                content = {
+                    Text(text = stringResource(id = R.string.tip_auto_sign))
+                },
+                buttons = {
                     DialogNegativeButton(text = stringResource(id = R.string.button_cancel))
 
                     DialogPositiveButton(

@@ -87,15 +87,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
@@ -115,7 +114,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
-import com.huanchengfly.tieba.post.utils.AppPreferencesUtils.Companion.KEY_REPLY_WARNING
 import com.huanchengfly.tieba.post.utils.DisplayUtil.toDpSize
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
@@ -157,7 +155,6 @@ fun ReplyPageBottomSheet(
                     viewModel = viewModel,
                     onBack = onBack,
                     forumName = params.forumName,
-                    threadId = params.threadId,
                     postId = params.postId,
                     subPostId = params.subPostId,
                     replyUserName = params.replyUserName,
@@ -174,7 +171,6 @@ private fun ReplyPageContent(
     viewModel: ReplyViewModel,
     onBack: () -> Unit,
     forumName: String,
-    threadId: Long,
     postId: Long? = null,
     subPostId: Long? = null,
     replyUserName: String? = null,
@@ -457,7 +453,7 @@ private fun ReplyPageContent(
         }
     }
 
-    ReplyWaringDialog(threadId = threadId, postId = postId, onBack = onBack)
+    ReplyWarningDialog(vm = viewModel, onBack = onBack)
 }
 
 @Composable
@@ -680,44 +676,46 @@ private fun Context.launchOfficialApp(threadId: Long, postId: Long?) {
 }
 
 @Composable
-private fun ReplyWaringDialog(threadId: Long, postId: Long?, onBack: () -> Unit) {
-    val warning by rememberPreferenceAsState(booleanPreferencesKey(KEY_REPLY_WARNING), true)
-    var showed by rememberSaveable { mutableStateOf(false) }
-    val warningDialogState = rememberDialogState()
+private fun ReplyWarningDialog(vm: ReplyViewModel, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val hideWarning = LocalHabitSettings.current.hideReplyWarning
+    // Show warning dialog only once
+    var dismissed by rememberSaveable { mutableStateOf(hideWarning) }
+    if (dismissed) return
 
+    val warningDialogState = rememberDialogState()
     if (warningDialogState.show) {
-        val context = LocalContext.current
-        ReplyWaringDialog(
+        ReplyWarningDialog(
             dialogState = warningDialogState,
-            onLaunchOfficialApp = { context.launchOfficialApp(threadId, postId) },
+            onDismiss = { dismissed = true },
+            onLaunchOfficialApp = { context.launchOfficialApp(vm.threadId, vm.postId) },
             onBack = onBack
         )
     }
 
     LaunchedEffect(Unit) {
-        if (warning && !showed) {
-            delay(AnimationConstants.DefaultDurationMillis.toLong()) // Wait BottomSheet animation
-            warningDialogState.show()
-            showed = true
-        }
+        delay(AnimationConstants.DefaultDurationMillis.toLong()) // Wait BottomSheet animation
+        warningDialogState.show()
     }
 }
 
 @Composable
-private fun ReplyWaringDialog(
+private fun ReplyWarningDialog(
     modifier: Modifier = Modifier,
     dialogState: DialogState,
+    onDismiss: () -> Unit,
     onLaunchOfficialApp: () -> Unit,
     onBack: () -> Unit,
 ) {
     Dialog(
         modifier = modifier,
         dialogState = dialogState,
+        onDismiss = onDismiss,
         title = { Text(text = stringResource(id = R.string.title_dialog_reply_warning)) },
         buttons = {
             Column(
                 modifier = Modifier.padding(horizontal = DefaultDialogContentPadding),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 DialogPositiveButton(
                     modifier = Modifier.fillMaxWidth(),

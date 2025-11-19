@@ -152,12 +152,12 @@ fun MainPage(
     val navigationItems = rememberNavigationItems(loggedIn, messageCount = { messageCount })
     val pagerState = rememberPagerState { navigationItems.size }
 
-    val onItemClicked: (position: Int) -> Unit = remember { {
+    val onItemClicked: (position: Int) -> Unit = {
         coroutineScope.launch { pagerState.scrollToPage(it) }
         if (navigationItems[it].title == R.string.title_notifications && messageCount > 0) {
             vm.onNavigateNotification()
         }
-    } }
+    }
 
     ProvideNavigator(navigator = navHostController) {
         NavigationSuiteScaffold(

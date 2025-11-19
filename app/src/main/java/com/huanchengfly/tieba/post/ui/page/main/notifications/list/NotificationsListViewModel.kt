@@ -38,7 +38,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
@@ -57,8 +56,8 @@ class NotificationsListViewModel @AssistedInject constructor(
 ) :
     BaseViewModel<NotificationsListUiIntent, NotificationsListPartialChange, NotificationsListUiState, NotificationsListUiEvent>() {
 
-    val hideBlocked: StateFlow<Boolean> = settingsRepo.blockSettings.flow.map { it.hideBlocked }
-        .distinctUntilChanged()
+    val hideBlocked: StateFlow<Boolean> = settingsRepo.blockSettings
+        .map { it.hideBlocked }
         .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), false)
 
     override fun createInitialState(): NotificationsListUiState = NotificationsListUiState()

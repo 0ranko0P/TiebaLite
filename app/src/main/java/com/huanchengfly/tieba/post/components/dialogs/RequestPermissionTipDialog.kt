@@ -123,13 +123,14 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
         }
     }
 
-    override fun onSetupWindow(window: Window) {
-        super.onSetupWindow(window)
+    override fun onSetupWindow(window: Window, backgroundBlur: Boolean) {
+        super.onSetupWindow(window, backgroundBlur = false)
         showRationale = permissions.any { shouldShowRequestPermissionRationale(it)}
 
         window.attributes = window.attributes.apply {
             // Enable blur effect only when showing rationale message
-            backgroundColor = if (showRationale && enableBackgroundBlur(window.context) != null) {
+            backgroundColor = if (showRationale) {
+                enableBackgroundBlur()
                 ThemeUtil.currentColorScheme().background.copy(0.2f)
             } else {
                 ThemeUtil.currentColorScheme().background.copy(0.86f)

@@ -33,9 +33,8 @@ abstract class BaseComposeActivity : BaseActivity() {
                     windowInsetsController.isAppearanceLightStatusBars = ThemeUtil.isStatusBarFontDark(colorScheme)
                     windowInsetsController.isAppearanceLightNavigationBars = ThemeUtil.isNavigationBarFontDark(colorScheme)
                 }
-
-                Content()
             }
+            Content()
         }
     }
 

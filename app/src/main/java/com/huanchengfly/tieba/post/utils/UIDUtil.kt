@@ -8,7 +8,6 @@ import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.toMD5
 import com.huanchengfly.tieba.post.utils.helios.Base32
 import com.huanchengfly.tieba.post.utils.helios.Hasher
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -73,7 +72,7 @@ object UIDUtil {
     val uUID: String
         get() {
             val uuidSettings = INSTANCE.settingRepository.UUIDSettings
-            var uuid = runBlocking { uuidSettings.flow.first() }
+            var uuid = runBlocking { uuidSettings.snapshot() }
             if (uuid.isEmpty()) {
                 uuid = UUID.randomUUID().toString()
                 uuidSettings.set(uuid)

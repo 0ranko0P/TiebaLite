@@ -42,7 +42,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +70,7 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.accompanist.placeholder.PlaceholderDefaults
+import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.models.database.History
@@ -374,7 +374,7 @@ fun HomePage(
     onOpenExplore: () -> Unit = {},
 ) {
     val account = LocalAccount.current
-    val loggedIn by remember { derivedStateOf { account != null } }
+    val loggedIn = account != null
     val context = LocalContext.current
     val navigator = LocalNavController.current
     val gridState = rememberLazyGridState()
@@ -445,13 +445,13 @@ fun HomePage(
     ) { contentPaddings ->
 
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-        val listSingle = uiState.listSingle
+        val listSingle = LocalUISettings.current.homeForumList
         val gridCells = remember(listSingle) {
             if (listSingle) GridCells.Fixed(1) else GridCells.Adaptive(180.dp)
         }
 
         val contentType: (item: LikedForum) -> ForumType = {
-            if (uiState.listSingle) ForumType.ListItem else ForumType.GridItem
+            if (listSingle) ForumType.ListItem else ForumType.GridItem
         }
 
         // Initialize click listeners now

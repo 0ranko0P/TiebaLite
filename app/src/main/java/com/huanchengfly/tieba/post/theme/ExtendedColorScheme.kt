@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 @Immutable
 data class ExtendedColorScheme(
     val colorScheme: ColorScheme,
+    val darkTheme: Boolean,
     val appBarColors: TopAppBarColors = colorScheme.createTopAppBarColors(),
     val navigationContainer: Color = colorScheme.surfaceContainer,
 ) {

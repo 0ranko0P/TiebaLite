@@ -12,8 +12,6 @@ import com.huanchengfly.tieba.post.api.retrofit.body.buildMultipartBody
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.MD5Util
 import kotlinx.coroutines.Dispatchers
@@ -41,15 +39,6 @@ class ImageUploader(
 
         const val IMAGE_MAX_SIZE = 5242880
         const val ORIGIN_IMAGE_MAX_SIZE = 10485760
-
-
-        /**
-         * 图片上传水印, Default: [PIC_WATER_TYPE_FORUM_NAME]
-         * */
-        const val KEY_PIC_WATERMARK_TYPE = "pic_watermark_type"
-        const val PIC_WATER_TYPE_NO = 0
-        const val PIC_WATER_TYPE_USER_NAME = 1
-        const val PIC_WATER_TYPE_FORUM_NAME = 2
     }
 
     fun uploadImages(
@@ -124,8 +113,7 @@ class ImageUploader(
         val fileMd5 = MD5Util.toMd5(file)
         val isMultipleChunkSize = fileLength % chunkSize == 0L
         val totalChunkNum = fileLength / chunkSize + if (isMultipleChunkSize) 0 else 1
-        val picWatermarkType =
-            App.INSTANCE.dataStore.getInt(KEY_PIC_WATERMARK_TYPE, PIC_WATER_TYPE_FORUM_NAME)
+        val picWatermarkType = App.INSTANCE.settingRepository.habitSettings.snapshot().imageWatermarkType
         val requestBodies = (0 until totalChunkNum).map { chunk ->
             val isFinish = chunk == totalChunkNum - 1
             val curChunkSize = if (isFinish) {

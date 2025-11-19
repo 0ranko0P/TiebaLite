@@ -64,6 +64,7 @@ fun Modifier.animateBackground(
         properties["shape"] = shape
     }
 ) {
+    if (color == Color.Transparent) return@composed this
     val backgroundAni by animateColorAsState(targetValue = color, animationSpec = animationSpec)
     drawBehind {
         if (shape == RectangleShape) {

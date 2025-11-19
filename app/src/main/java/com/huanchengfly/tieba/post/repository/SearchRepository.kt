@@ -38,7 +38,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -90,15 +89,15 @@ class SearchRepository @Inject constructor(
         page: Int
     ): SearchThreadResult {
         val data = networkDataSource.searchPost(keyword, forumName, forumId, sortType, filterType, page)
-        val habitSettings = settingsRepo.habitSettings.flow.first()
-        val posts = data.postList.mapUiModel(keyword, context, habitSettings.showBothName)
+        val showBothName = settingsRepo.habitSettings.snapshot().showBothName
+        val posts = data.postList.mapUiModel(keyword, context, showBothName)
         return SearchThreadResult(data.hasMore == 1, posts)
     }
 
     suspend fun searchThread(keyword: String, page: Int, sortType: Int): SearchThreadResult {
         val data = networkDataSource.searchThread(keyword, page, sortType)
-        val habitSettings = settingsRepo.habitSettings.flow.first()
-        val threads = data.postList.mapUiModel(keyword, context, habitSettings.showBothName)
+        val showBothName = settingsRepo.habitSettings.snapshot().showBothName
+        val threads = data.postList.mapUiModel(keyword, context, showBothName)
         return SearchThreadResult(data.hasMore == 1, threads)
     }
 
