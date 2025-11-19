@@ -3,18 +3,12 @@ package com.huanchengfly.tieba.post.ui.widgets.compose.preference
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.huanchengfly.tieba.post.ui.widgets.compose.TimePickerDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import com.huanchengfly.tieba.post.utils.HmTime
 
 /**
  * Preference which shows a [TimePickerDialog]
@@ -28,29 +22,19 @@ import java.util.Locale
  * @param enabled controls the enabled state of this preference
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@NonRestartableComposable
 @Composable
 fun TimePickerPerf(
-    time: String,
-    onTimePicked: (String) -> Unit,
+    time: HmTime,
+    onTimePicked: (HmTime) -> Unit,
     title: String,
     modifier: Modifier = Modifier,
-    summary: @Composable (value: String) -> String? = { null },
+    summary: @Composable (value: HmTime) -> String? = { null },
     dialogTitle: String? = null,
     leadingIcon: ImageVector? = null,
     enabled: Boolean = true,
 ) {
     val dialogState = rememberDialogState()
-    val formatter = remember { SimpleDateFormat("HH:mm", Locale.US) }
-    val calendar = remember { Calendar.getInstance(Locale.US) }
-
-    var editHour by remember { mutableIntStateOf(0) }
-    var editMinute by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(time) {
-        calendar.time = formatter.parse(time) ?: throw NullPointerException("Null on parse $time")
-        editHour = calendar.get(Calendar.HOUR_OF_DAY)
-        editMinute = calendar.get(Calendar.MINUTE)
-    }
 
     TextPref(
         title = title,
@@ -63,19 +47,17 @@ fun TimePickerPerf(
 
     if (dialogState.show) {
         TimePickerDialog(
-            initialHour = editHour,
-            initialMinute = editMinute,
+            initialTime = time,
             title = {
                 if (dialogTitle != null) {
                     Text(text = dialogTitle)
                 }
             },
             onConfirm = { state ->
-                if (state.hour == editHour && state.minute == editMinute) return@TimePickerDialog
-                calendar.set(Calendar.HOUR_OF_DAY, state.hour)
-                calendar.set(Calendar.MINUTE, state.minute)
-                val newTime = formatter.format(calendar.time)
-                onTimePicked(newTime)
+                val newTime = HmTime(hourOfDay = state.hour, minute = state.minute)
+                if (newTime != time) {
+                    onTimePicked(newTime)
+                }
             },
             dialogState = dialogState,
         )

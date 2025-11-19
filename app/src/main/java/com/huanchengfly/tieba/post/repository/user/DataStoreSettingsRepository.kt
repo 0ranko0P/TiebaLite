@@ -37,6 +37,8 @@ import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.ui.models.settings.WaterType
+import com.huanchengfly.tieba.post.ui.models.settings.randomSignTime
+import com.huanchengfly.tieba.post.utils.HmTime
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.JobQueue
 import com.huanchengfly.tieba.post.utils.LauncherIcons
@@ -269,10 +271,11 @@ private object BlockTransformer: PreferenceTransformer<BlockSettings> {
 
 private object SignConfigTransformer: PreferenceTransformer<SignConfig> {
     override val get: (Preferences) -> SignConfig = {
+        val hmTime = it[longPreferencesKey(KEY_OKSIGN_AUTO_TIME)]?.let { t -> HmTime(t) }
         SignConfig(
             autoSign = it[booleanPreferencesKey(KEY_OKSIGN_AUTO)] == true,
             autoSignSlow = it[booleanPreferencesKey(KEY_OKSIGN_SLOW)] ?: true,
-            autoSignTime = it[stringPreferencesKey(KEY_OKSIGN_AUTO_TIME)] ?: "09:00",
+            autoSignTime = hmTime ?: randomSignTime(),
             okSignOfficial = it[booleanPreferencesKey(KEY_OKSIGN_OFFICIAL)] ?: true,
         )
     }
@@ -280,7 +283,7 @@ private object SignConfigTransformer: PreferenceTransformer<SignConfig> {
     override val set: (MutablePreferences, SignConfig) -> Unit = { it, config ->
         it.putBoolean(KEY_OKSIGN_AUTO, config.autoSign)
         it.putBoolean(KEY_OKSIGN_SLOW, config.autoSignSlow)
-        it.putString(KEY_OKSIGN_AUTO_TIME, config.autoSignTime)
+        it.putLong(KEY_OKSIGN_AUTO_TIME, config.autoSignTime.value)
         it.putBoolean(KEY_OKSIGN_OFFICIAL, config.okSignOfficial)
     }
 

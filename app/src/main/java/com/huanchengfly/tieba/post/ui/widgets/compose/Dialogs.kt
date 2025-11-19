@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EditCalendar
@@ -31,7 +30,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,13 +53,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.window.core.layout.WindowSizeClass
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
+import com.huanchengfly.tieba.post.utils.HmTime
 
 val DefaultDialogContentPadding = 20.dp
 val DefaultDialogMargin = 16.dp
@@ -114,8 +112,7 @@ fun DialogScope.DialogNegativeButton(
 @Composable
 fun TimePickerDialog(
     modifier: Modifier = Modifier,
-    initialHour: Int,
-    initialMinute: Int,
+    initialTime: HmTime,
     title: @Composable (() -> Unit)? = null,
     onConfirm: (TimePickerState) -> Unit,
     dialogState: DialogState = rememberDialogState(),
@@ -125,7 +122,7 @@ fun TimePickerDialog(
 ) {
     val isWindowHeightCompact = isWindowHeightCompact()
     var pickerStyle by remember { mutableStateOf(!isWindowHeightCompact) }
-    val timePickerState = rememberTimePickerState(initialHour, initialMinute)
+    val timePickerState = rememberTimePickerState(initialTime.hourOfDay, initialTime.minute)
 
     Dialog(
         modifier = modifier,

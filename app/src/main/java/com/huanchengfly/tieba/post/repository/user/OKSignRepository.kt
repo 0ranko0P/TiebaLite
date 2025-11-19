@@ -31,9 +31,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import java.util.concurrent.ThreadLocalRandom
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -258,12 +255,7 @@ class OKSignRepositoryImp @Inject constructor(
             return
         }
 
-        val formatter = SimpleDateFormat("HH:mm", Locale.US)
-        val calendar = Calendar.getInstance(Locale.US)
-        val signTime = signConfig.autoSignTime
-        calendar.time = formatter.parse(signTime) ?: throw NullPointerException("Null when parsing $signTime")
-        val hourOfDay: Int = calendar.get(Calendar.HOUR_OF_DAY)
-        val minute: Int = calendar.get(Calendar.MINUTE)
+        val (hourOfDay, minute) = signConfig.autoSignTime
         val info = OKSignWorker.observeOKSignWorkerInfo(workManager).first()
         if (info?.state == WorkInfo.State.RUNNING) {
             return
