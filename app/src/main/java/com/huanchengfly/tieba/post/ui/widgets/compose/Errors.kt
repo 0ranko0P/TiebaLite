@@ -36,6 +36,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInExcept
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 
@@ -43,6 +44,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 fun TipScreen(
     title: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    scrollable: Boolean = true,
     image: @Composable () -> Unit = {},
     message: (@Composable () -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
@@ -53,8 +55,8 @@ fun TipScreen(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .verticalScroll(rememberScrollState())
             .fillMaxWidth(fraction = widthFraction)
+            .onCase(scrollable) { verticalScroll(rememberScrollState()) }
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.CenterVertically)
@@ -82,7 +84,7 @@ fun TipScreen(
     }
 }
 
-data class ErrorType(
+class ErrorType(
     @StringRes val title: Int,
     val message: String,
     @RawRes val lottieResId: Int,

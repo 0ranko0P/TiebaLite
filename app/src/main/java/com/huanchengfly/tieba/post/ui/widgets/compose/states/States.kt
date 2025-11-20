@@ -40,7 +40,8 @@ val DefaultLoadingScreen: @Composable StateScreenScope.() -> Unit = {
 //    CircularProgressIndicator(modifier = Modifier.size(48.dp), color = MaterialTheme.colors.primary)
 }
 
-val DefaultEmptyScreen: @Composable StateScreenScope.() -> Unit = {
+@Composable
+fun StateScreenScope.DefaultEmptyScreen(modifier: Modifier = Modifier) {
     TipScreen(
         title = { Text(text = stringResource(id = R.string.title_empty)) },
         image = {
@@ -61,7 +62,7 @@ val DefaultEmptyScreen: @Composable StateScreenScope.() -> Unit = {
                 )
             }
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     )
 }
 
@@ -80,7 +81,7 @@ fun StateScreen(
     isError: Boolean,
     isLoading: Boolean,
     onReload: (() -> Unit)? = null,
-    emptyScreen: @Composable StateScreenScope.() -> Unit = DefaultEmptyScreen,
+    emptyScreen: @Composable StateScreenScope.() -> Unit = { DefaultEmptyScreen() },
     errorScreen: @Composable StateScreenScope.() -> Unit = DefaultErrorScreen,
     loadingScreen: @Composable StateScreenScope.() -> Unit = DefaultLoadingScreen,
     content: @Composable StateScreenScope.() -> Unit,

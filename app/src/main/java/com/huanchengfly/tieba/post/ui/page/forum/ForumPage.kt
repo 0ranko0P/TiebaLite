@@ -284,7 +284,7 @@ fun ForumPage(
         ForumType.entries.map { forumType ->
             movableContentOf<Modifier, PaddingValues, ForumData> { modifier, contentPadding, forum ->
                 ForumThreadList(
-                    modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
+                    modifier = modifier,
                     threadClickListeners = threadClickListeners,
                     forumId = forum.id,
                     forumName = forum.name,
@@ -412,7 +412,7 @@ fun ForumPage(
             if (fab == ForumFAB.HIDE || forumData == null) return@MyScaffold
 
             val isFabVisible by remember {
-                derivedStateOf { !scrollStateConnection.isScrolling && !pagerState.isScrolling }
+                derivedStateOf { uiState.error == null && !scrollStateConnection.isScrolling && !pagerState.isScrolling }
             }
 
             ForumFab(fab = fab, visible = isFabVisible) {
@@ -421,7 +421,10 @@ fun ForumPage(
         }
     ) { contentPadding ->
         StateScreen(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(connection = scrollStateConnection)
+                .nestedScroll(connection = topBarScrollBehavior.nestedScrollConnection),
             isEmpty = false,
             isError = uiState.error != null,
             isLoading = forumData == null,
@@ -431,19 +434,16 @@ fun ForumPage(
             errorScreen = { ErrorScreen(uiState.error, Modifier.padding(contentPadding)) }
         ) {
             if (forumData == null) return@StateScreen
-            val pageModifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection)
 
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(connection = scrollStateConnection),
+                modifier = Modifier.fillMaxSize(),
                 flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f),
                 key = { it },
                 verticalAlignment = Alignment.Top,
             ) { page ->
                 ProvideNavigator(navigator = navigator) {
-                    forumThreadPages[page](pageModifier, contentPadding, forumData)
+                    forumThreadPages[page](Modifier, contentPadding, forumData)
                 }
             }
         }

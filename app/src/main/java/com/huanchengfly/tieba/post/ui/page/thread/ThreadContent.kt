@@ -47,10 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.wrapImmutable
@@ -72,12 +68,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.DefaultEmptyScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.stickyHeaderBackground
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -183,13 +178,12 @@ fun StateScreenScope.ThreadContent(
                 }
             }
 
-            val data = state.data
-            if (data.isEmpty()) {
+            if (state.data.isEmpty()) {
                 item(key = "EmptyTip") {
-                    EmptyScreen(canReload, onReload = this@ThreadContent::reload)
+                    DefaultEmptyScreen(modifier = Modifier.fillParentMaxHeight(fraction = 0.75f))
                 }
             } else {
-                items(data, key = { "$ITEM_POST_KEY_PREFIX${it.id}" }) { item ->
+                items(items = state.data, key = { "$ITEM_POST_KEY_PREFIX${it.id}" }) { item ->
                     PostCardItem(viewModel, item, localUid, collectPid)
                 }
             }
@@ -542,26 +536,6 @@ private fun SubPostItem(
         )
     }
 }
-
-@Composable
-private fun EmptyScreen(canReload: Boolean, onReload: () -> Unit) =
-    TipScreen(
-        modifier = Modifier.fillMaxSize(),
-        title = { Text(stringResource(id = R.string.title_empty)) },
-        image = {
-            val composition by rememberLottieComposition(
-                LottieCompositionSpec.RawRes(R.raw.lottie_empty_box)
-            )
-            LottieAnimation(
-                composition = composition,
-                iterations = LottieConstants.IterateForever,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        actions = {
-            PositiveButton(textRes = R.string.btn_refresh, enabled = canReload, onClick = onReload)
-        },
-    )
 
 @Preview("LoadPreviousButton")
 @Composable
