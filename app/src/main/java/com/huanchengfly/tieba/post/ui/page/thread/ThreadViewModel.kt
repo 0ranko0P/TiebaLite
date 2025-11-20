@@ -342,7 +342,7 @@ class ThreadViewModel @Inject constructor(
                 }
                 .onSuccess {
                     _threadUiState.update {
-                        it.copy(thread = it.thread!!.updateCollectStatus(collected = true, markPostId = markedPost.id))
+                        it.copy(thread = it.thread!!.copy(collectMarkPid = markedPost.id))
                     }
                     sendMsg(R.string.message_add_favorite_success, markedPost.floor)
                 }
@@ -361,7 +361,7 @@ class ThreadViewModel @Inject constructor(
         collectionsJob = viewModelScope.launch(handler) {
             val state = _threadUiState.first()
             runCatching {
-                if (state.thread?.collected == false) throw IllegalStateException()
+                require(state.thread!!.collected)
                 storeRepo.remove(threadId, forumId = forumId, tbs = state.tbs)
             }
             .onFailure { e ->
@@ -369,7 +369,7 @@ class ThreadViewModel @Inject constructor(
             }
             .onSuccess {
                 _threadUiState.update {
-                    it.copy(thread = it.thread!!.updateCollectStatus(collected = false, markPostId = 0))
+                    it.copy(thread = it.thread!!.copy(collectMarkPid = null))
                 }
                 sendMsg(R.string.delete_store_success)
             }

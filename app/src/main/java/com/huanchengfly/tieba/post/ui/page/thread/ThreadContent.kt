@@ -49,7 +49,6 @@ import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
@@ -133,15 +132,13 @@ fun StateScreenScope.ThreadContent(
                 Column {
                     PostCardItem(viewModel, firstPost, localUid, collectPid)
 
-                    val info = state.thread?.originThreadInfo
-                    if (info != null && state.thread?.isShareThread == true) {
+                    state.thread?.originThreadInfo?.let { info ->
                         OriginThreadCard(
-                            originThreadInfo = info.wrapImmutable(),
+                            originThreadInfo = info,
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                         ) {
-                            navigator.navigate(
-                                route = Thread(threadId = info.tid.toLong(), forumId = info.fid)
-                            )
+                            val threadId = info.item.tid.toLong()
+                            navigator.navigate(route = Thread(threadId, forumId = info.get { fid }))
                         }
                     }
 

@@ -20,6 +20,7 @@ import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
 import com.huanchengfly.tieba.post.api.models.protos.plainText
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
+import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.repository.source.network.ThreadNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
@@ -28,6 +29,7 @@ import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.LikeZero
 import com.huanchengfly.tieba.post.ui.models.PostData
+import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
@@ -40,6 +42,7 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import okhttp3.internal.toLongOrDefault
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -147,7 +150,7 @@ class PbPageRepository @Inject constructor(
             firstPost = firstPost,
             posts = data.post_list.mapToUiModel(lzId = lz.id),
             tbs = data.anti!!.tbs,
-            thread = ThreadInfoData(data.thread),
+            thread = data.thread.mapToUiModel(),
             page = PageData(
                 current = pageData.current_page,
                 total = pageData.new_total_page,
@@ -169,7 +172,7 @@ class PbPageRepository @Inject constructor(
             post = post.mapToUiModel(lzId, blockable = false),
             subPosts = data.subpost_list.mapToUiModel(lzId = lzId, abstract = false),
             tbs = anti.tbs,
-            thread = ThreadInfoData(data.thread!!),
+            thread = data.thread!!.mapToUiModel(),
             page = PageData(
                 current = pageData.current_page,
                 total = pageData.total_page,
@@ -309,6 +312,17 @@ class PbPageRepository @Inject constructor(
             }
         }
     }
+
+    private fun ThreadInfo.mapToUiModel(): ThreadInfoData = ThreadInfoData(
+        id = threadId.takeUnless { it <= 0 } ?: id,
+        title = title,
+        collectMarkPid = if (collectStatus != 0) collectMarkPid.toLongOrDefault(0) else null,
+        firstPostId = firstPostId,
+        like = agree?.let { Like(it) } ?: LikeZero,
+        originThreadInfo = origin_thread_info?.takeIf { is_share_thread == 1 }?.wrapImmutable(),
+        replyNum = replyNum,
+        simpleForum = forumInfo!!.let { SimpleForum(it.id, it.name, it.avatar) }
+    )
 }
 
 /**
