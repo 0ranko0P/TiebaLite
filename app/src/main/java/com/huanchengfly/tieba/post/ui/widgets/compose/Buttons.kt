@@ -27,12 +27,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -111,7 +114,7 @@ fun FavoriteButton(
     onClick: () -> Unit,
     favoriteCounter: @Composable RowScope.() -> Unit
 ) {
-    val description = stringResource(id = R.string.title_agree)
+    val context = LocalContext.current
     val direction = LocalLayoutDirection.current
 
     Row(
@@ -120,7 +123,8 @@ fun FavoriteButton(
             .clickable(onClick = onClick)
             .semantics(mergeDescendants = true) {
                 role = Role.Button
-                contentDescription = description
+                toggleableState = ToggleableState(favorite)
+                contentDescription = context.getString(R.string.button_like)
             }
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically

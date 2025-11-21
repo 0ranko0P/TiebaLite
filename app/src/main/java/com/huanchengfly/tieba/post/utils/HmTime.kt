@@ -31,5 +31,5 @@ value class HmTime(val value: Long) {
 
     operator fun component2(): Int = minute
 
-    override fun toString(): String = "$hourOfDay:$minute"
+    override fun toString(): String = String.format(null, "%02d:%02d", hourOfDay, minute)
 }

@@ -21,6 +21,8 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -62,6 +64,7 @@ private fun ActionBtn(
     }
 }
 
+@NonRestartableComposable
 @Composable
 private fun ThreadReplyBtn(
     modifier: Modifier = Modifier,
@@ -81,6 +84,7 @@ private fun ThreadReplyBtn(
     )
 }
 
+@NonRestartableComposable
 @Composable
 private fun ThreadLikeBtn(
     modifier: Modifier = Modifier,
@@ -97,7 +101,7 @@ private fun ThreadLikeBtn(
         icon = {
             Icon(
                 imageVector = if (liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                contentDescription = stringResource(id = R.string.desc_like),
+                contentDescription = stringResource(id = R.string.button_like),
                 tint = animatedColor
             )
         },
@@ -109,6 +113,7 @@ private fun ThreadLikeBtn(
     )
 }
 
+@NonRestartableComposable
 @Composable
 fun ThreadShareBtn(
     modifier: Modifier = Modifier,
@@ -119,7 +124,7 @@ fun ThreadShareBtn(
         icon = {
             Icon(
                 imageVector = Icons.Rounded.SwapCalls,
-                contentDescription = stringResource(id = R.string.desc_share),
+                contentDescription = stringResource(id = R.string.title_share),
             )
         },
         text = { Text(text = shares) },
@@ -128,19 +133,13 @@ fun ThreadShareBtn(
     )
 }
 
+@Stable
 @Composable
 private fun rememberShortNumString(number: Long, @StringRes defaultRes: Int): String {
-    return if (number == 0L) {
+    return if (number <= 0) {
         stringResource(id = defaultRes)
-    } else {
-        remember { number.getShortNumString() }
-    }
-}
-
-@Composable
-private fun rememberShortNumString(number: Int, @StringRes defaultRes: Int): String {
-    return if (number == 0) {
-        stringResource(id = defaultRes)
+    } else if (number <= 999) {
+        number.toString()
     } else {
         remember { number.getShortNumString() }
     }
@@ -170,14 +169,14 @@ fun ThreadActionButtonRow(
 
             ThreadReplyBtn(
                 modifier = Modifier.weight(1f),
-                replies = rememberShortNumString(replies, R.string.title_reply),
+                replies = rememberShortNumString(replies.toLong(), R.string.title_reply),
                 onClick = onReplyClicked,
             )
 
             ThreadLikeBtn(
                 modifier = Modifier.weight(1f),
                 liked = liked,
-                likes = rememberShortNumString(likes, R.string.title_agree),
+                likes = rememberShortNumString(likes, R.string.button_like),
                 onClick = onAgreeClicked,
             )
         }

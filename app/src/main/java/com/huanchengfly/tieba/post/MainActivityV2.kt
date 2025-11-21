@@ -136,9 +136,6 @@ class MainActivityV2 : BaseComposeActivity() {
                 uiSettings = uiState.uiSettings ?: return@TiebaExtendedTheme
             ) {
                 val setupFinished = uiState.uiSettings!!.setupFinished
-                val entryRoute = if (setupFinished) Destination.Main else Destination.Welcome
-                RootNavGraph(/* bottomSheetNavigator, */navController, startDestination = entryRoute)
-
                 if (setupFinished) {
                     LaunchedDeepLinkEffect(navController)
 
@@ -153,7 +150,15 @@ class MainActivityV2 : BaseComposeActivity() {
                             BatteryOpDialog(onOpenSettings = ::requestIgnoreBatteryOptimizations)
                         }
                     }
+                } else {
+                    intent.data = null
                 }
+
+                RootNavGraph(
+                    // bottomSheetNavigator = bottomSheetNavigator,
+                    navController = navController,
+                    startDestination = if (setupFinished) Destination.Main else Destination.Welcome
+                )
             }
         }
     }

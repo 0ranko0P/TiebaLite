@@ -138,7 +138,7 @@ fun OKSignSettingsPage(settings: Settings<SignConfig>, onBack: () -> Unit) {
                         stringResource(id = R.string.summary_battery_optimization_ignored)
                     },
                     onClick = {
-                        if (context.isIgnoringBatteryOptimizations()) {
+                        if (!context.isIgnoringBatteryOptimizations()) {
                             context.requestIgnoreBatteryOptimizations()
                         } else {
                             coroutineScope.launch {

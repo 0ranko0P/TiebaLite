@@ -43,7 +43,7 @@ fun Uri.toShareIntent(context: Context, type: String = "image/*", message: Strin
         setType(type)
     }
 
-    return Intent.createChooser(shareIntent, context.getString(R.string.desc_share)).apply {
+    return Intent.createChooser(shareIntent, context.getString(R.string.title_share)).apply {
         flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
     }
 }

@@ -81,15 +81,16 @@ object DateTimeUtils {
     }
 
     fun calculateNextDayDurationMills(hourOfDay: Int, minute: Int): Long {
-        val now = Calendar.getInstance()
         val target = Calendar.getInstance()
-        target[Calendar.MINUTE] = minute
         target[Calendar.HOUR_OF_DAY] = hourOfDay
+        target[Calendar.MINUTE] = minute
+        target[Calendar.MILLISECOND] = 0
 
+        val now = Calendar.getInstance()
         if (target.before(now)) {
             target.add(Calendar.HOUR_OF_DAY, 24)
         }
-        return target.timeInMillis - System.currentTimeMillis()
+        return target.timeInMillis - now.timeInMillis
     }
 
     fun fixTimestamp(timestamp: Long): Long {

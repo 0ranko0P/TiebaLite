@@ -94,7 +94,7 @@
     <string name="tip_good">精</string>
     <string name="button_no">否</string>
     <string name="button_yes">是</string>
-    <string name="title_agree">点赞</string>
+    <string name="button_like">点赞</string>
     <string name="title_copy_forum_name">复制吧名</string>
     <string name="title_clear_picture_cache">清除图片缓存</string>
     <string name="toast_clear_picture_cache_success">成功清除图片缓存</string>
@@ -321,8 +321,6 @@
     <string name="title_dialog_modify_little_tail">修改小尾巴</string>
     <string name="no_more">没有更多了</string>
     <string name="desc_comment">评论</string>
-    <string name="desc_share">分享</string>
-    <string name="desc_like">赞</string>
     <string name="title_concern">关注</string>
     <string name="title_personalized">推荐</string>
     <string name="desc_download_pic">下载图片</string>

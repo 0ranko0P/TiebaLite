@@ -261,7 +261,7 @@ private fun ReplyPageContent(
     var curKeyboardType by remember { mutableStateOf(NONE) }
 
     fun switchToPanel(type: ReplyPanelType) {
-        if (curKeyboardType == type || type == NONE) {
+        if (curKeyboardType == type || type == NONE) { // Closing current panel
             if (curKeyboardType != NONE) {
                 coroutineScope.launch {
                     showKeyboard()
@@ -277,8 +277,10 @@ private fun ReplyPageContent(
         }
     }
 
-    BackHandler(enabled = curKeyboardType != NONE) {
-        switchToPanel(NONE)
+    StrongBox {
+        BackHandler(enabled = curKeyboardType != NONE) { // Close current panel when back
+            switchToPanel(NONE)
+        }
     }
 
     val density = LocalDensity.current

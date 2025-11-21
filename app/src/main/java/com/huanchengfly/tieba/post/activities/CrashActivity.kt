@@ -66,7 +66,7 @@ class CrashActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth(),
                         enabled = dumpLogJob == null
                     ) {
-                        Text(text = stringResource(id = R.string.desc_share))
+                        Text(text = stringResource(id = R.string.title_share))
                     }
                 }
             }

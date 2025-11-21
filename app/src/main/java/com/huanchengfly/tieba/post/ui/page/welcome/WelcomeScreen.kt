@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.welcome
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.AnimationConstants
@@ -133,6 +134,7 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
             pagerState.animateScrollToPage(pagerState.currentPage - 1, animationSpec = tween())
         }
     }
+    val onBackClickable by remember { derivedStateOf { !pagerState.isFirstPage } }
     val onFinishClicked: () -> Unit = { finishSetup(login = false) }
 
     MyScaffold(
@@ -143,7 +145,7 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
                     .fillMaxWidth()
                     // Make buttons visually aligned with dual title
                     .padding(22.dp, Dp.Hairline, 30.dp, 30.dp),
-                onBack = onBackClicked.takeUnless { pagerState.isFirstPage },
+                onBack = onBackClicked.takeIf { onBackClickable },
                 onFinish = onFinishClicked.takeIf { pagerState.isLastPage },
                 onProceed = onProceedClicked.takeIf { proceedBtnEnabled }
             )
@@ -176,6 +178,9 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
         }
     }
 
+    BackHandler(enabled = onBackClickable, onBack = onBackClicked)
+
+    if (!disclaimerDialog.show) return
     ConfirmDialog(
         dialogState = disclaimerDialog,
         onConfirm = {
