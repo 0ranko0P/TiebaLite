@@ -101,15 +101,6 @@
 -keep class com.huanchengfly.tieba.post.models.** { *; }
 -keep class com.huanchengfly.tieba.post.api.models.** { *; }
 
-# LitePal相关
--keep class org.litepal.** {
-    *;
-}
-
--keep class * extends org.litepal.crud.LitePalSupport {
-    *;
-}
-
 -keep class * implements com.google.gson.JsonDeserializer {
     *;
 }
@@ -167,13 +158,6 @@
 
 # @Serializable and @Polymorphic are used at runtime for polymorphic serialization.
 -keepattributes RuntimeVisibleAnnotations,AnnotationDefault
-
-# Compose Runtime Tracing
--assumenosideeffects public class androidx.compose.runtime.ComposerKt {
-   boolean isTraceInProgress();
-   void traceEventStart(int,int,int,java.lang.String);
-   void traceEventEnd();
-}
 
 # Keep generic signature of Flow (R8 full mode strips signatures from non-kept items).
 -keep,allowobfuscation,allowshrinking class kotlinx.coroutines.flow.Flow

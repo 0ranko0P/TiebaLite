@@ -280,7 +280,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.huanchengfly.tieba.post.share.FileProvider"
+            android:authorities="${applicationId}.share.FileProvider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

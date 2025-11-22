@@ -72,8 +72,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFirstOrNull
+import androidx.compose.ui.util.trace
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -190,7 +192,7 @@ fun ThreadPage(
     navigator: NavController,
     viewModel: ThreadViewModel,
     onBackWithResult: (ThreadResult?) -> Unit
-) {
+) = trace(MacrobenchmarkConstant.TRACE_THREAD) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val snackbarHostState = rememberSnackbarHostState()

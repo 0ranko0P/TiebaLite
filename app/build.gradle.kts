@@ -69,18 +69,37 @@ android {
 
             buildConfigField("String", "BUILD_GIT", "\"${gitVersion}\"")
         }
+
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
+                "compose-rules.pro",
                 "proguard-rules.pro"
             )
             isDebuggable = false
             isJniDebuggable = false
             multiDexEnabled = true
         }
+
+        // Variant for benchmark, auto-selected by Macrobenchmark
+        create("benchmarkRelease") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            applicationIdSuffix = ".benchmark"
+            versionNameSuffix = "-benchmark"
+            isProfileable = true
+            proguardFile("benchmark-rules.pro")
+        }
+
+        // Variant for composition tracing, auto-selected by benchmarkComposeTracing in Macrobenchmark
+        create("ComposeTracing") {
+            initWith(getByName("benchmarkRelease"))
+            proguardFiles.removeIf { it.name == "compose-rules.pro" } // Keep tracing API
+        }
     }
+
     compileOptions {
         targetCompatibility = JavaVersion.VERSION_11
         sourceCompatibility = JavaVersion.VERSION_11
@@ -165,6 +184,7 @@ dependencies {
     implementation(libs.androidx.compose.material.iconsCore)
     // Optional - Add full set of material icons
     implementation(libs.androidx.compose.material.iconsExtended)
+    implementation(libs.androidx.compose.runtime.tracing)
     implementation(libs.androidx.compose.ui.util)
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -189,6 +209,7 @@ dependencies {
     implementation(libs.androidx.palette)
     implementation(libs.androidx.window)
     implementation(libs.androidx.startup.runtime)
+    implementation(libs.androidx.tracing)
     implementation(libs.bundles.paging3)
 
     // WorkManager
@@ -238,6 +259,9 @@ dependencies {
     // UI Tests
     androidTestImplementation(libs.androidx.compose.ui.test)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+
+    // Startup Profile & Baseline Profile
+    // baselineProfile(project(":macrobenchmark"))
 }
 
 abstract class GitVersionValueSource : ValueSource<String, ValueSourceParameters.None> {

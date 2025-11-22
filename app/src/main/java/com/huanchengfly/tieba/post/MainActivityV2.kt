@@ -38,6 +38,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.rememberNavController
+import com.huanchengfly.tieba.post.MacrobenchmarkConstant.KEY_WELCOME_SETUP
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
@@ -86,6 +87,11 @@ class MainActivityV2 : BaseComposeActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
+    /**
+     * Used in Macrobenchmark to control the initial welcome screen state
+     * */
+    private var welcomeScreen: Boolean? = null
+
     private suspend fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AccountUtil.isLoggedIn()) {
             askPermission(R.string.desc_permission_post_notifications, Manifest.permission.POST_NOTIFICATIONS, noRationale = true)
@@ -100,7 +106,10 @@ class MainActivityV2 : BaseComposeActivity() {
             delay(2000L)
             requestNotificationPermission()
         }
-        intent?.data?.normalizeScheme()?.let { pendingAppLink = appLinkToNavRoute(uri = it) }
+        intent?.run {
+            welcomeScreen = extras?.getBoolean(KEY_WELCOME_SETUP, false)
+            data?.normalizeScheme()?.let { pendingAppLink = appLinkToNavRoute(uri = it) }
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -135,7 +144,12 @@ class MainActivityV2 : BaseComposeActivity() {
                 habit = uiState.habitSettings ?: return@TiebaExtendedTheme, // Initializing ...
                 uiSettings = uiState.uiSettings ?: return@TiebaExtendedTheme
             ) {
-                val setupFinished = uiState.uiSettings!!.setupFinished
+                val setupFinished = if (welcomeScreen == null) {
+                    uiState.uiSettings!!.setupFinished
+                } else {
+                    welcomeScreen == false // Override by Macrobenchmark
+                }
+
                 if (setupFinished) {
                     LaunchedDeepLinkEffect(navController)
 

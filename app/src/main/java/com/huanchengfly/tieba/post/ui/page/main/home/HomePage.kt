@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.home
 
+import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.animateFloatAsState
@@ -551,6 +552,8 @@ fun HomePage(
                 }
             }
         }
+
+        ReportDrawnWhen { !uiState.isLoading }
     }
 }
 

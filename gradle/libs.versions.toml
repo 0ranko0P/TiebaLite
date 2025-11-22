@@ -13,10 +13,12 @@ minSdk = "24"
 
 androidx-appcompat = "1.7.1"
 androidx-activity-compose = "1.10.1"
+androidx-benchmark = "1.4.1"
 androidx-compose-bom = "2025.08.01"
 androidx-hilt = "1.2.0"
 androidx-lifecycle = "2.9.0"
 androidx-paging = "3.3.6"
+androidx-perfetto = "1.0.0"
 androidx-room = "2.8.2"
 androidx-work = "2.11.0"
 material3 = "1.4.0"
@@ -44,6 +46,7 @@ androidx-compose-material3 = { module = "androidx.compose.material3:material3", 
 androidx-compose-material3-navsuite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3" }
 androidx-compose-material-iconsCore = { module = "androidx.compose.material:material-icons-core" }
 androidx-compose-material-iconsExtended = { module = "androidx.compose.material:material-icons-extended" }
+androidx-compose-runtime-tracing = { module = "androidx.compose.runtime:runtime-tracing" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
 androidx-compose-ui-test = { module = "androidx.compose.ui:ui-test" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
@@ -54,6 +57,9 @@ androidx-compose-ui-util = { module = "androidx.compose.ui:ui-util" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.17.0" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version = "1.0.1" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version = "1.1.7" }
+
+androidx-benchmark-junit = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "androidx-benchmark" }
+androidx-junit = { module = "androidx.test.ext:junit", version = "1.3.0" }
 
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidx-hilt" }
 androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "androidx-hilt" }
@@ -71,13 +77,19 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "androidx-media3" }
 androidx-palette = { module = "androidx.palette:palette-ktx", version = "1.0.0" }
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version = "1.4.1" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version = "1.4.0" }
+androidx-test-automator = { module = "androidx.test.uiautomator:uiautomator", version = "2.4.0-alpha06" }
 androidx-test-core = { module = "androidx.test:core", version = "1.6.1" }
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version = "3.6.1" }
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version = "1.2.0" }
 androidx-window = { module = "androidx.window:window", version = "1.4.0" }
 androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "androidx-work" }
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "androidx-work" }
+
+androidx-tracing = { module = "androidx.tracing:tracing", version = "1.3.0" }
+androidx-tracing-perfetto = { module = "androidx.tracing:tracing-perfetto", version.ref = "androidx-perfetto" }
+androidx-tracing-perfetto-binary = { module = "androidx.tracing:tracing-perfetto-binary", version.ref = "androidx-perfetto" }
 
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "androidx-paging" }
 androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "androidx-paging" }
@@ -124,7 +136,9 @@ paging3 = ["androidx-paging-runtime", "androidx-paging-common", "androidx-paging
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+android-baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidx-benchmark" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+android-test = { id = "com.android.test", version.ref = "agp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

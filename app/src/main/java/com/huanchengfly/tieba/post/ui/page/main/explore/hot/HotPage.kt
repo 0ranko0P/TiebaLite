@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.tracing.trace
+import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.theme.OrangeA700
@@ -228,6 +230,8 @@ fun HotPage(
                     key = { _, thread -> thread.id },
                     contentType = { _,_ -> HotType.Thread }
                 ) { index, thread ->
+                    // Start of FeedCard trace
+                    trace(MacrobenchmarkConstant.TRACE_FEED_CARD) {
                     Column {
                         FeedCard(
                             thread = thread,
@@ -244,7 +248,7 @@ fun HotPage(
                             HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 2.dp)
                         }
                     }
-                }
+                } } // End of FeedCard trace
             }
         }
     }
