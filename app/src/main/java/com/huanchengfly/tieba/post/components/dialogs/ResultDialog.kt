@@ -55,7 +55,10 @@ abstract class ResultDialog<T>() : DialogFragment() {
     open fun getTAG(): String? = null
 
     @Composable
-    abstract fun BoxScope.ContentView(savedInstanceState: Bundle?)
+    protected open fun BoxScope.DialogView() {}
+
+    @Composable
+    abstract fun ContentView()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val context = requireContext()
@@ -73,12 +76,14 @@ abstract class ResultDialog<T>() : DialogFragment() {
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
+                            DialogView()
+
                             Surface(
                                 modifier = Modifier.padding(DefaultDialogMargin),
                                 shape = AlertDialogDefaults.shape,
                                 color = MaterialTheme.colorScheme.background,
                                 tonalElevation = 6.dp,
-                                content = { ContentView(savedInstanceState) }
+                                content = { ContentView() }
                             )
                         }
                     }

@@ -12,18 +12,17 @@ import android.view.Window
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,9 +43,10 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.dialogs.RequestPermissionTipDialog.Companion.PermissionRationale
 import com.huanchengfly.tieba.post.components.dialogs.RequestPermissionTipDialog.Companion.PermissionTip
 import com.huanchengfly.tieba.post.enableBackgroundBlur
-import com.huanchengfly.tieba.post.theme.Grey600
+import com.huanchengfly.tieba.post.theme.Grey700
 import com.huanchengfly.tieba.post.theme.Grey800
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogContentPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogMargin
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
@@ -84,7 +84,7 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
     }
 
     /**
-     * Whether display permission tip or rationale message
+     * Whether to show the permission tip or the rationale message.
      *
      * @see shouldShowRequestPermissionRationale
      * @see PermissionTip
@@ -104,21 +104,26 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
     }
 
     @Composable
-    override fun BoxScope.ContentView(savedInstanceState: Bundle?) {
+    override fun BoxScope.DialogView() {
+        if (!showRationale) {
+            PermissionTip(
+                modifier = Modifier.align(Alignment.TopCenter),
+                title = getString(R.string.title_request_permission_tip_dialog, permissionName),
+                message = message
+            )
+        }
+    }
+
+    @Composable
+    override fun ContentView() {
         if (showRationale) {
             PermissionRationale(
-                modifier = Modifier.align(Alignment.Center),
-                title = stringResource(R.string.title_permission_rationale, permissionName),
+                rationale = getString(R.string.dialog_permission_rationale, permissionName),
                 message = message,
                 onDeny = {
                     onActivityResult(permissions.associateWith { false })
                 },
                 onGrant = this@RequestPermissionTipDialog::openSettings
-            )
-        } else {
-            PermissionTip(
-                title =  stringResource(R.string.title_request_permission_tip_dialog, permissionName),
-                message = message
             )
         }
     }
@@ -133,7 +138,7 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
                 enableBackgroundBlur()
                 ThemeUtil.currentColorScheme().background.copy(0.2f)
             } else {
-                ThemeUtil.currentColorScheme().background.copy(0.86f)
+                ThemeUtil.currentColorScheme().background.copy(0.96f)
             }
         }
 
@@ -205,25 +210,30 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
 
         @Composable
         private fun PermissionTip(modifier: Modifier = Modifier, title: String, message: String) {
-            Row(
-                modifier = modifier
-                    .fillMaxWidth(dialogAdaptiveFraction)
-                    .background(Color.White, MaterialTheme.shapes.large) // Hardcode background color
-                    .padding(DefaultDialogMargin),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Surface(
+                modifier = modifier.fillMaxWidth(dialogAdaptiveFraction),
+                shape = MaterialTheme.shapes.large,
+                color = Color.White, // Hardcode background color
+                contentColor = Grey800,
+                shadowElevation = 4.dp
             ) {
-                Image(
-                    painter = painterResource(R.drawable.ic_launcher_round),
-                    contentDescription = null,
-                    modifier = Modifier.size(Sizes.Small)
-                )
-
-                Column(
-                    modifier = Modifier.weight(1.0f)
+                Row(
+                    modifier = Modifier.padding(DefaultDialogMargin),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(title, color = Grey800, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(message, color = Grey600, fontSize = 12.sp)
+                    Image(
+                        painter = painterResource(R.drawable.ic_launcher_new_round),
+                        contentDescription = null,
+                        modifier = Modifier.size(Sizes.Small)
+                    )
+
+                    Column(
+                        modifier = Modifier.weight(1.0f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(text = title, color = Grey800, fontWeight = FontWeight.Bold)
+                        Text(text = message, color = Grey700, fontSize = 13.sp)
+                    }
                 }
             }
         }
@@ -231,7 +241,7 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
         @Composable
         private fun PermissionRationale(
             modifier: Modifier = Modifier,
-            title: String,
+            rationale: String,
             message: String,
             onGrant: () -> Unit,
             onDeny: () -> Unit
@@ -239,13 +249,21 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
             Column(
                 modifier = modifier
                     .fillMaxWidth(dialogAdaptiveFraction)
-                    .padding(DefaultDialogMargin),
+                    .padding(DefaultDialogContentPadding),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = title, fontWeight = FontWeight.Bold)
+                Text(
+                    text = stringResource(R.string.welcome_permission),
+                    style = MaterialTheme.typography.titleLarge
+                )
 
-                Text(message, Modifier.align(Alignment.Start))
+                Column(
+                    modifier = Modifier.align(Alignment.Start)
+                ) {
+                    Text(text = rationale, style = MaterialTheme.typography.bodyLarge)
+                    Text(text = message, style = MaterialTheme.typography.bodyLarge)
+                }
 
                 Row(
                     modifier = Modifier.align(Alignment.End)

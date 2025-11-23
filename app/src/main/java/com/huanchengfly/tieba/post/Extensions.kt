@@ -127,6 +127,6 @@ fun WindowManager.LayoutParams.enableBackgroundBlur(radius: Int = 56) {
         flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
         blurBehindRadius = radius
     } else {
-        dimAmount = 0f // Remove for older devices
+        dimAmount = 0.6f
     }
 }

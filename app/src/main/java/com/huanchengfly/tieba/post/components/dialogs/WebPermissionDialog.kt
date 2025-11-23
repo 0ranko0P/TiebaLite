@@ -11,7 +11,6 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -104,7 +103,7 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
     }
 
     @Composable
-    override fun BoxScope.ContentView(savedInstanceState: Bundle?) {
+    override fun ContentView() {
         val colorScheme = MaterialTheme.colorScheme
         val hideRetainBox = permission is File || permission is APP
 
@@ -144,11 +143,11 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
 
                 Spacer(modifier = Modifier.weight(1.0f))
 
-                NegativeButton(text = stringResource(R.string.button_denied), onClick = this@WebPermissionDialog::onDenyClicked)
+                NegativeButton(text = getString(R.string.button_denied), onClick = ::onDenyClicked)
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                PositiveButton(text = stringResource(R.string.button_allow), onClick = this@WebPermissionDialog::onGrantClicked)
+                PositiveButton(text = getString(R.string.button_allow), onClick = ::onGrantClicked)
             }
         }
     }
