@@ -24,7 +24,7 @@ import com.huanchengfly.tieba.post.utils.ImageUtil
 private fun shouldLoadImage(imageLoadSettings: Int): Boolean {
     return imageLoadSettings == ImageUtil.SETTINGS_SMART_ORIGIN
             || imageLoadSettings == ImageUtil.SETTINGS_ALL_ORIGIN
-            || (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkObserver.isNetworkUnMetered)
+            || (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkObserver.isNetworkUnmetered)
 }
 
 @OptIn(ExperimentalGlideComposeApi::class)
@@ -63,7 +63,7 @@ fun NetworkImage(
             colorFilter = if (darkenImage) GlideUtil.DarkFilter else null,
             // transition = CrossFade
         ) {
-            if (shouldLoadImage(imageLoadSettings)) {
+            if (NetworkObserver.isNetworkConnected && shouldLoadImage(imageLoadSettings)) {
                 it
             } else {
                 it.onlyRetrieveFromCache(true)

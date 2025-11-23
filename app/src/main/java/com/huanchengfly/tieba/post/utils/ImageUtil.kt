@@ -279,10 +279,11 @@ object ImageUtil {
     }
 
     private fun loadWorst(loadType: Int): Boolean {
-        if (loadType == SETTINGS_SMART_ORIGIN && NetworkObserver.isNetworkUnMetered) {
-            return false
+        return if (loadType == SETTINGS_SMART_ORIGIN) {
+            !NetworkObserver.isNetworkUnmetered
+        } else {
+            loadType != SETTINGS_ALL_ORIGIN
         }
-        return loadType != SETTINGS_ALL_ORIGIN
     }
 
     // Check is long image with given width x height size
