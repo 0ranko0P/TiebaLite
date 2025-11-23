@@ -13,7 +13,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -23,6 +22,7 @@ import androidx.navigation.createGraph
 import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
@@ -70,9 +70,7 @@ fun RootNavGraph(
             // ) {
                 NavHost(
                     navController = navController,
-                    graph = remember(startDestination) {
-                        buildRootNavGraph(navController, startDestination)
-                    },
+                    graph = remember { buildRootNavGraph(navController, startDestination) },
                     enterTransition = {
                         scaleIn(
                             animationSpec = tween(delayMillis = 35),
@@ -182,7 +180,7 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
 
         composable<Destination.Login> {
             LoginPage(navController) {
-                if (navController.isLastOrEmptyRoute()) {
+                if (navController.previousBackStackEntry == null) {
                     navController.navigate(Destination.Main) {
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
@@ -238,8 +236,6 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
     }
 }
 
-val DefaultFadeOut: ExitTransition by lazy {
+private val DefaultFadeOut: ExitTransition by unsafeLazy {
     fadeOut(animationSpec = tween(100))
 }
-
-private fun NavController.isLastOrEmptyRoute(): Boolean = visibleEntries.value.size <= 1

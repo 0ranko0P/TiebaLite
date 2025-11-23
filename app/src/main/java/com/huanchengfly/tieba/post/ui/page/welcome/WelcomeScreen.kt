@@ -108,10 +108,10 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
     val pagerState = rememberPagerState { pages.size }
 
     fun finishSetup(login: Boolean) {
-        viewModel.onSetupFinished()
         navController.navigate(route = if (login) Destination.Login else Destination.Main) {
             popUpTo(navController.graph.id) { inclusive = true }
         }
+        viewModel.onSetupFinished()
     }
 
     // Setup nullable button click listeners

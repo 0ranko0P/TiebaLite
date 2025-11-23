@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.webkit.CookieManager
 import android.webkit.WebView
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -30,7 +31,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
-import com.huanchengfly.tieba.post.components.TiebaWebView.Companion.dispose
 import com.huanchengfly.tieba.post.ui.page.webview.WebviewTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
@@ -119,6 +119,8 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
             )
         }
     }
+
+    BackHandler(onBack = onBack) // Navigate to main page on setup
 }
 
 private class LoginWebViewClient(
