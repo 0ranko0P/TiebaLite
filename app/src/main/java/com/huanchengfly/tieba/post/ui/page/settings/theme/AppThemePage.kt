@@ -60,7 +60,6 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -138,6 +137,7 @@ import com.huanchengfly.tieba.post.ui.page.main.home.HistoryItem
 import com.huanchengfly.tieba.post.ui.page.main.rememberNavigationItems
 import com.huanchengfly.tieba.post.ui.page.main.user.StatCard
 import com.huanchengfly.tieba.post.ui.page.subposts.PostLikeButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ChipText
@@ -292,12 +292,11 @@ fun AppThemePage(
                         enter = DefaultFabEnterTransition,
                         exit = DefaultFabExitTransition
                     ) {
-                        IconButton(onClick = onSaveThemeClicked) {
-                            Icon(
-                                imageVector = Icons.Rounded.Save,
-                                contentDescription = stringResource(R.string.button_save_profile)
-                            )
-                        }
+                        ActionItem(
+                            icon = Icons.Rounded.Save,
+                            contentDescription = R.string.button_save_profile,
+                            onClick = onSaveThemeClicked
+                        )
                     }
 
                     BackHandler(enabled = themeChanged, onBack = saveThemeDialogState::show)
@@ -356,6 +355,7 @@ fun AppThemePage(
                 VerticalPager(
                     state = pagerState,
                     modifier = Modifier.height(120.dp),
+                    beyondViewportPageCount = 1,
                     userScrollEnabled = false
                 ) {
                     when(ThemePage.entries[it]) {

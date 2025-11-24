@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -23,16 +24,22 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
@@ -42,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -173,12 +181,44 @@ fun AccountNavIcon(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ActionItem(icon: ImageVector, contentDescription: String, enabled: Boolean = true, onClick: () -> Unit) {
-    IconButton(onClick = onClick, enabled = enabled) {
-        Icon(imageVector = icon, contentDescription = contentDescription)
+fun ActionItem(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    contentDescription: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    TooltipBox(
+        modifier = modifier,
+        positionProvider = rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Below),
+        tooltip = {
+            PlainTooltip { Text(text = contentDescription) }
+        },
+        state = rememberTooltipState(),
+    ) {
+        IconButton(onClick = onClick, enabled = enabled) {
+            Icon(imageVector = icon, contentDescription = contentDescription)
+        }
     }
 }
+
+@NonRestartableComposable
+@Composable
+fun ActionItem(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    @StringRes contentDescription: Int,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) = ActionItem(
+    modifier = modifier,
+    icon = icon,
+    contentDescription = LocalContext.current.getString(contentDescription),
+    enabled = enabled,
+    onClick = onClick
+)
 
 @Composable
 fun BackNavigationIcon(onBackPressed: () -> Unit) {

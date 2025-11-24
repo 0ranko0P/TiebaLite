@@ -31,7 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -60,7 +59,6 @@ import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
-import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
@@ -72,8 +70,8 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadList
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
-import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
+import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -342,15 +340,11 @@ fun ForumPage(
                 },
                 actions = {
                     if (forumData == null) return@TwoRowsTopAppBar // Loading
-                    IconButton(
+                    ActionItem(
+                        icon = Icons.Rounded.Search,
+                        contentDescription = R.string.btn_search_in_forum,
                         onClick = { navigator.navigate(ForumSearchPost(forumName, forumData.id)) }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = stringResource(id = R.string.btn_search_in_forum),
-                            modifier = Modifier.localSharedElements(SearchIconSharedElementKey)
-                        )
-                    }
+                    )
 
                     ClickMenu(
                         menuContent = {

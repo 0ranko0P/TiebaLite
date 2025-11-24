@@ -411,7 +411,7 @@ fun HomePage(
                         val isSinging by viewModel.isOkSignWorkerRunning.collectAsStateWithLifecycle(true)
                         ActionItem(
                             icon = ImageVector.vectorResource(id = R.drawable.ic_oksign),
-                            contentDescription = stringResource(id = R.string.title_oksign),
+                            contentDescription = R.string.title_oksign,
                             enabled = !isSinging
                         ) {
                             TiebaUtil.startSign(context)
@@ -419,7 +419,7 @@ fun HomePage(
 
                         ActionItem(
                             icon = Icons.Outlined.ViewAgenda,
-                            contentDescription = stringResource(id = R.string.title_switch_list_single),
+                            contentDescription = R.string.title_switch_list_single,
                             onClick = viewModel::onListModeChanged
                         )
                     }

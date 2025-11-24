@@ -22,8 +22,6 @@ import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -68,6 +66,7 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.PostCard
 import com.huanchengfly.tieba.post.ui.page.thread.SubPostBlockedTip
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
+import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
@@ -359,21 +358,19 @@ private fun TitleBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = if (isSheet) Icons.Rounded.Close else Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = stringResource(id = R.string.btn_close)
-                )
-            }
+            ActionItem(
+                icon = if (isSheet) Icons.Rounded.Close else Icons.AutoMirrored.Rounded.ArrowBack,
+                contentDescription = R.string.btn_close,
+                onClick = onBack
+            )
         },
         actions = {
             if (!isSheet) {
-                IconButton(onClick = onAction) {
-                    Icon(
-                        imageVector = Icons.Rounded.OpenInBrowser,
-                        contentDescription = stringResource(id = R.string.btn_open_origin_thread)
-                    )
-                }
+                ActionItem(
+                    icon = Icons.Rounded.OpenInBrowser,
+                    contentDescription = R.string.btn_open_origin_thread,
+                    onClick = onAction
+                )
             }
         },
         scrollBehavior = scrollBehavior,

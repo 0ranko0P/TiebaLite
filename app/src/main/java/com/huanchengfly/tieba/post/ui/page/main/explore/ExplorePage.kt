@@ -16,7 +16,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
@@ -53,7 +52,6 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
@@ -67,10 +65,10 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
 import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
-import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadResult
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadResultKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
@@ -242,13 +240,11 @@ fun ExplorePage() {
                 titleRes = R.string.title_explore,
                 navigationIcon = accountNavIconIfCompact,
                 actions = {
-                    IconButton(onClick = { navigator.navigate(Search) }) {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = stringResource(id = R.string.title_search),
-                            modifier = Modifier.localSharedElements(SearchIconSharedElementKey)
-                        )
-                    }
+                    ActionItem(
+                        icon = Icons.Rounded.Search,
+                        contentDescription = R.string.title_search,
+                        onClick = { navigator.navigate(route = Search) }
+                    )
                 },
                 scrollBehavior = scrollBehaviors[pagerState.currentPage]
             ) {
