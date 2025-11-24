@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -44,15 +47,21 @@ import dev.chrisbanes.haze.hazeSource
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
 @OptIn(ExperimentalHazeApi::class)
-val DefaultInputScale = HazeInputScale.Fixed(0.66f)
+val DefaultInputScale = HazeInputScale.Fixed(0.33f)
 
 val defaultHazeStyle: HazeStyle
     @Composable get() {
-        val colors = MaterialTheme.colorScheme
-        return remember(colors) {
-            HazeStyle(colors.surfaceContainer, null, blurRadius = 48.dp, noiseFactor = 0.15f)
+        val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
+        return remember(backgroundColor) {
+            HazeStyle(backgroundColor, tint = null, blurRadius = 28.dp, noiseFactor = 0f)
         }
     }
+
+@OptIn(ExperimentalHazeApi::class)
+val DefaultHazeBlock: HazeEffectScope.() -> Unit = {
+    blurEnabled = true
+    inputScale = DefaultInputScale
+}
 
 /**
  * Placeholder to make [Scaffold] consume [WindowInsets.Companion.navigationBars]
@@ -84,24 +93,41 @@ val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
 }
 
 @Composable
-@NonRestartableComposable
-fun BlurWrapper(
+inline fun BlurWrapper(
     modifier: Modifier = Modifier,
-    hazeStyle: HazeStyle = defaultHazeStyle,
-    hazeBlock: (HazeEffectScope.() -> Unit)? = null,
+    state: HazeState? = LocalHazeState.current,
+    style: HazeStyle = defaultHazeStyle,
+    noinline hazeBlock: (HazeEffectScope.() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    Box(modifier = modifier.hazeEffect(LocalHazeState.current, hazeStyle, hazeBlock)) {
+    Box(modifier = modifier.hazeEffect(state, style, hazeBlock)) {
         content()
     }
 }
 
 /**
- * Scaffold which lays out [content] behind both the top bar and the bottom bar content with Haze
- * background blurring.
+ * Material Scaffold with real-time backdrop blurring effect on [topBar] and [bottomBar].
  *
- * @see [LocalHazeState]
- * */
+ * @param modifier the [Modifier] to be applied to this scaffold
+ * @param attachHazeContentState whether or not [content] is captured as background
+ *   content for [hazeEffect] child nodes.
+ * @param hazeStyle the [HazeStyle] to be applied on [topBar] and [bottomBar]
+ * @param topBar top app bar of the screen, typically a [TopAppBar]
+ * @param topHazeBlock define the styling and visual properties for [TopAppBar]
+ * @param bottomBar bottom bar of the screen, typically a [NavigationBar]
+ * @param bottomHazeBlock define the styling and visual properties for [bottomBar]
+ * @param snackbarHostState state of the [SnackbarHost]
+ * @param snackbarHost component to host [Snackbar]s that are pushed to be shown via
+ *   [SnackbarHostState.showSnackbar], typically a [SnackbarHost].
+ * @param floatingActionButton Main action button of the screen, typically a [FloatingActionButton]
+ * @param floatingActionButtonPosition position of the FAB on the screen. See [FabPosition].
+ * @param backgroundColor the color used for the background of this scaffold. Default
+ *   is [Color.Transparent].
+ * @param contentColor the preferred color for content inside this scaffold.
+ * @param content content of the screen.
+ *
+ * @see LocalHazeState
+ */
 @Composable
 fun BlurScaffold(
     modifier: Modifier = Modifier,
@@ -129,12 +155,12 @@ fun BlurScaffold(
             Scaffold(
                 modifier = modifier,
                 topBar = {
-                    BlurWrapper(hazeStyle = hazeStyle, hazeBlock = topHazeBlock, content = topBar)
+                    BlurWrapper(state = hazeState, style = hazeStyle, hazeBlock = topHazeBlock, content = topBar)
                 },
                 bottomBar = if (bottomBar === BlurNavigationBarPlaceHolder) {
                     bottomBar
                 } else {
-                    { BlurWrapper(hazeStyle = hazeStyle, hazeBlock = bottomHazeBlock, content = bottomBar) }
+                    { BlurWrapper(state = hazeState, style = hazeStyle, hazeBlock = bottomHazeBlock, content = bottomBar) }
                 },
                 snackbarHost = snackbarHost,
                 floatingActionButton = floatingActionButton,
@@ -171,9 +197,4 @@ fun Modifier.hazeSource(
     state: HazeState?,
     zIndex: Float = 0f,
     key: Any? = null,
-): Modifier =
-    if (state == null) Modifier else (this.hazeSource(state, zIndex, key))
-
-private fun List<LazyListState?>.canScrollBackwardAt(index: Int): Boolean {
-    return getOrNull(index)?.canScrollBackward == true
-}
+): Modifier = if (state == null) this else (this.hazeSource(state, zIndex, key))

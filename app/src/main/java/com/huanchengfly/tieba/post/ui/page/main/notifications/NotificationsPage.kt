@@ -9,9 +9,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
@@ -23,13 +27,14 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
+import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
-import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import kotlinx.coroutines.launch
@@ -43,11 +48,19 @@ fun NotificationsPage(
 ) {
     val pages = NotificationsType.entries
     val pagerState = rememberPagerState(initialPage = initialPage.ordinal, pageCount = { pages.size })
+    val scrollBehaviors = rememberTopAppBarScrollBehaviors(pages.size) {
+        TopAppBarDefaults.pinnedScrollBehavior(state = it)
+    }
     val coroutineScope = rememberCoroutineScope()
 
-    BlurScaffold(
+    MyScaffold(
+        useMD2Layout = true,
         topBar = {
-            NotificationsToolBar(navigator, fromHome = fromHome) {
+            NotificationsToolBar(
+                navigator = navigator,
+                fromHome = fromHome,
+                scrollBehavior = { scrollBehaviors[pagerState.currentPage] }
+            ) {
                 PrimaryTabRow(
                     selectedTabIndex = pagerState.currentPage,
                     indicator = {
@@ -78,9 +91,6 @@ fun NotificationsPage(
                 }
             }
         },
-        topHazeBlock = {
-            blurEnabled = false
-        },
         bottomBar = if (fromHome) emptyBlurBottomNavigation else BlurNavigationBarPlaceHolder,
     ) { contentPadding ->
         ProvideNavigator(navigator = navigator) {
@@ -88,7 +98,11 @@ fun NotificationsPage(
                 state = pagerState,
                 key = { pages[it] }
             ) {
-                NotificationsListPage(type = NotificationsType.entries[it], contentPadding)
+                NotificationsListPage(
+                    modifier = Modifier.nestedScroll(scrollBehaviors[it].nestedScrollConnection),
+                    type = NotificationsType.entries[it],
+                    contentPadding = contentPadding
+                )
             }
         }
     }
@@ -99,6 +113,7 @@ fun NotificationsPage(
 private fun NotificationsToolBar(
     navigator: NavController,
     fromHome: Boolean,
+    scrollBehavior: () -> TopAppBarScrollBehavior?,
     content: (@Composable ColumnScope.() -> Unit)?
 ) {
     if (fromHome) {
@@ -112,6 +127,7 @@ private fun NotificationsToolBar(
                     onClick = { navigator.navigate(Search) }
                 )
             },
+            scrollBehavior = scrollBehavior(),
             content = content
         )
     } else {
@@ -120,6 +136,7 @@ private fun NotificationsToolBar(
             navigationIcon = {
                 BackNavigationIcon(onBackPressed = navigator::navigateUp)
             },
+            scrollBehavior = scrollBehavior(),
             content = content
         )
     }

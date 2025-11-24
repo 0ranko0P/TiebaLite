@@ -42,6 +42,7 @@ import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun NotificationsListPage(
+    modifier: Modifier = Modifier,
     type: NotificationsType,
     contentPadding: PaddingValues = PaddingNone,
     viewModel: NotificationsListViewModel = hiltViewModel<NotificationsListViewModel, NotificationsListVmFactory>(
@@ -90,7 +91,7 @@ fun NotificationsListPage(
         }
 
         SwipeUpLazyLoadColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             contentPadding = contentPadding,
             isLoading = isLoadingMore,
             onLazyLoad = {

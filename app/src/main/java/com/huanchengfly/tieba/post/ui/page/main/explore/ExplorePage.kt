@@ -75,6 +75,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultHazeBlock
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
@@ -255,9 +256,7 @@ fun ExplorePage() {
             }
         },
         bottomBar = emptyBlurBottomNavigation, // MainPage workaround when enabling BottomBar blurring
-        bottomHazeBlock = {
-            inputScale = DefaultInputScale
-        },
+        bottomHazeBlock = DefaultHazeBlock,
         floatingActionButton = {
             // FAB visibility: not scrolling, pager not scrolling, current page not refreshing
             val visible by remember {

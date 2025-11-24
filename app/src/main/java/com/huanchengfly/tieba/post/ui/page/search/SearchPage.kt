@@ -73,6 +73,7 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isOverlapping
+import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
@@ -146,6 +147,14 @@ fun SearchPage(
     val scrollBehaviors = rememberTopAppBarScrollBehaviors(pages.size) {
         TopAppBarDefaults.pinnedScrollBehavior(state = it)
     }
+
+    fun resetCurrentListState() {
+        coroutineScope.launch {
+            listStates[pagerState.currentPage].scrollToItem(0)
+            scrollBehaviors.fastForEach { b -> b.state.contentOffset = 0f } // reset all scroll behavior
+        }
+    }
+
     val movablePageContents = remember {
         pages.map { page ->
             movableContentOf<PaddingValues, String, Int> { contentPadding, keyword, threadSortType ->
@@ -174,12 +183,7 @@ fun SearchPage(
         keyboardController?.hide()
         if (inputKeyword != newKeyword) inputKeyword = newKeyword
         focusManager.clearFocus()
-        scrollBehaviors.fastForEach { scrollBehavior ->
-            scrollBehavior.state.contentOffset = 0f // reset all scroll behavior
-        }
-        coroutineScope.launch {
-            listStates[pagerState.currentPage].scrollToItem(0)
-        }
+        resetCurrentListState()
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -195,16 +199,16 @@ fun SearchPage(
         derivedStateOf { isInputKeywordNotEmpty && inputKeyword != uiState.submittedKeyword }
     }
 
-    BackHandler(enabled = isKeywordNotEmpty) {
+    BackHandler(enabled = isKeywordNotEmpty && isInputKeywordNotEmpty) {
         onKeywordSubmit("")
     }
 
     BlurScaffold(
         topHazeBlock = {
-            blurEnabled = isKeywordNotEmpty && scrollBehaviors.isOverlapping(pagerState)
+            blurEnabled = isKeywordNotEmpty && scrollBehaviors.isOverlapping(pagerState) || pagerState.isScrolling
         },
         bottomHazeBlock = {
-            blurEnabled = isKeywordNotEmpty
+            blurEnabled = isKeywordNotEmpty || pagerState.isScrolling
         },
         topBar = {
             TopAppBar(
@@ -256,6 +260,9 @@ fun SearchPage(
                     onDelete = viewModel::onDeleteHistory,
                     onClear = viewModel::onClearHistory
                 )
+                LaunchedEffect(Unit) {
+                    resetCurrentListState()
+                }
             }
         } else if (showSuggestion) { // Suggestion list: input keyword != submitted keyword
             uiState.suggestion?.let {

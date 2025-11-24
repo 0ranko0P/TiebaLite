@@ -221,6 +221,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
 
     MyScaffold(
         modifier = Modifier.fillMaxSize(),
+        useMD2Layout = true,
         bottomBar = emptyBlurBottomNavigation, // MainPage workaround
     ) { contentPaddings ->
         val account = LocalAccount.current

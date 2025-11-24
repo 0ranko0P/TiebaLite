@@ -96,6 +96,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultHazeBlock
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
@@ -384,6 +385,7 @@ fun ThreadPage(
                 )
             },
             bottomHazeBlock = {
+                blurEnabled = lazyListState.canScrollForward
                 inputScale = DefaultInputScale
             },
             snackbarHostState = snackbarHostState,
@@ -477,7 +479,7 @@ fun ThreadPage(
                         modifier = Modifier
                             .fillMaxWidth()
                             .onNotNull(hazeState) {
-                                hazeEffect(state = it, style = defaultHazeStyle)
+                                hazeEffect(state = it, defaultHazeStyle, DefaultHazeBlock)
                             }
                             .background(TiebaLiteTheme.extendedColorScheme.sheetContainerColor)
                             .padding(top = 16.dp)

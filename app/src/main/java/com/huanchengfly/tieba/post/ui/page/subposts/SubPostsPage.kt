@@ -73,6 +73,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
@@ -97,6 +98,7 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -119,7 +121,7 @@ private const val PostContentType = 0
 private val HeaderContentType = Unit
 // SubpostContentType use Null by default
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeApi::class)
 @Composable
 internal fun SubPostsContent(
     viewModel: SubPostsViewModel,
@@ -216,6 +218,7 @@ internal fun SubPostsContent(
         BlurScaffold(
             topHazeBlock = {
                 blurEnabled = lazyListState.canScrollBackward
+                inputScale = DefaultInputScale
             },
             topBar = {
                 TitleBar(
@@ -247,6 +250,10 @@ internal fun SubPostsContent(
                         }
                     )
                 }
+            },
+            bottomHazeBlock = {
+                blurEnabled = lazyListState.canScrollForward
+                inputScale = DefaultInputScale
             }
         ) { padding ->
             val contentPadding = padding.fixedTopBarPadding()
@@ -378,7 +385,7 @@ private fun TitleBar(
 private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: () -> Unit) =
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(TiebaLiteTheme.extendedColorScheme.navigationContainer)
             .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         Row(
