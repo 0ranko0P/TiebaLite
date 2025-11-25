@@ -14,6 +14,7 @@ import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.textAsString
 import androidx.test.uiautomator.uiAutomator
 import com.huanchengfly.tieba.macrobenchmark.DEFAULT_ITERATIONS
+import com.huanchengfly.tieba.macrobenchmark.TAG_COLUMN
 import com.huanchengfly.tieba.macrobenchmark.TARGET_PACKAGE
 import com.huanchengfly.tieba.macrobenchmark.TRACE_THREAD
 import com.huanchengfly.tieba.macrobenchmark.startActivityAndSetup
@@ -56,8 +57,7 @@ class ThreadPageFrameTimingBenchmark {
         ) {
             uiAutomator {
                 onElement { textAsString() == "楼主" && isVisibleToUser }
-                device.waitForIdle()
-                onElement { isScrollable }.run {
+                onElement { viewIdResourceName == TAG_COLUMN && isVisibleToUser }.run {
                     repeat(1) {
                         fling(Direction.DOWN)
                     }

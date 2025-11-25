@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.huanchengfly.tieba.post.MacrobenchmarkConstant.testColumn
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -110,6 +111,7 @@ fun StateScreenScope.ThreadContent(
         SwipeUpLazyLoadColumn(
             modifier = modifier
                 .fillMaxSize()
+                .testColumn()
                 .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
             state = lazyListState,
             contentPadding = contentPadding,
