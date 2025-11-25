@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.welcome
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -63,6 +64,7 @@ import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.settings.CollectSeeLzPreference
+import com.huanchengfly.tieba.post.ui.page.settings.DarkImagePreference
 import com.huanchengfly.tieba.post.ui.page.settings.DarkThemeModePreference
 import com.huanchengfly.tieba.post.ui.page.settings.DefaultSortPreference
 import com.huanchengfly.tieba.post.ui.page.settings.ForumListPreference
@@ -356,8 +358,12 @@ private fun CustomPage(
                 leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_brush_24)
             )
             DarkThemeModePreference()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                ReduceEffectPreference()
+            } else {
+                DarkImagePreference()
+            }
             ForumListPreference()
-            ReduceEffectPreference()
         }
     }
 }

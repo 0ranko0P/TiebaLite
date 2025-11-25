@@ -73,19 +73,11 @@ fun UISettingsPage(
 
             DarkThemeModePreference()
 
-            Item { uiSettings ->
-                SwitchPref(
-                    checked = uiSettings.darkenImage,
-                    onCheckedChange = {
-                        updatePreference { old -> old.copy(darkenImage = it)}
-                    },
-                    title = R.string.settings_image_darken_when_night_mode,
-                    leadingIcon = Icons.Outlined.NightsStay,
-                    enabled = uiSettings.darkPreference != DarkPreference.DISABLED
-                )
-            }
+            DarkImagePreference()
 
-            ReduceEffectPreference()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                ReduceEffectPreference()
+            }
 
             Item { uiSettings ->
                 ListPref(
@@ -151,6 +143,20 @@ fun UISettingsPage(
             }
         }
     }
+}
+
+@Composable
+fun PrefsScope<UISettings>.DarkImagePreference(modifier: Modifier = Modifier) = Item { uiSettings ->
+    SwitchPref(
+        modifier = modifier,
+        checked = uiSettings.darkenImage,
+        onCheckedChange = {
+            updatePreference { old -> old.copy(darkenImage = it)}
+        },
+        title = R.string.settings_image_darken_when_night_mode,
+        leadingIcon = Icons.Outlined.NightsStay,
+        enabled = uiSettings.darkPreference != DarkPreference.DISABLED
+    )
 }
 
 @Composable
