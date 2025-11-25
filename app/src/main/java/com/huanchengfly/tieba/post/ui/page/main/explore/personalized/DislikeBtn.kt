@@ -16,7 +16,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -29,14 +28,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultHazeBlock
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.containerColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.contentColor
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
+import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import dev.chrisbanes.haze.hazeEffect
 
 @Composable
 fun Dislike(
@@ -46,11 +51,15 @@ fun Dislike(
     onDislikeSelected: (Dislike) -> Unit,
     onDislikeClicked: () -> Unit
 ) {
+    val hazeState = LocalHazeState.current
     val menuState = rememberMenuState()
+    val buttonColors = ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.tertiary,
+        contentColor = MaterialTheme.colorScheme.onTertiary
+    )
+
     ClickMenu(
         menuContent = {
-            val colorScheme = MaterialTheme.colorScheme
-
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -83,7 +92,7 @@ fun Dislike(
                     ) {
                         val selected = it in selectedReasons
                         val backgroundColor by animateColorAsState(
-                            targetValue = if (selected) colorScheme.primary else colorScheme.secondaryContainer
+                            targetValue = buttonColors.containerColor(selected)
                         )
 
                         Text(
@@ -95,7 +104,7 @@ fun Dislike(
                                     onDislikeSelected(it)
                                 }
                                 .padding(vertical = 8.dp, horizontal = 16.dp),
-                            color = colorScheme.contentColorFor(backgroundColor),
+                            color = buttonColors.contentColor(selected),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
@@ -105,6 +114,12 @@ fun Dislike(
                 }
             }
         },
+        modifier = Modifier
+            .onNotNull(hazeState) {
+                hazeSource(state = it, zIndex = 1f)
+                    .hazeEffect(state = it, style = defaultHazeStyle, block = DefaultHazeBlock)
+                    .background(color = MaterialTheme.colorScheme.background.copy(alpha = 0.74f))
+             },
         menuState = menuState,
         onDismiss = onDismiss
     ) {
@@ -122,10 +137,7 @@ fun Dislike(
 
 @Composable
 private fun SubmitButton(modifier: Modifier = Modifier, isEnabled: () -> Boolean, onClick: () -> Unit) {
-    val colors = ButtonDefaults.buttonColors(
-        containerColor = MaterialTheme.colorScheme.tertiary,
-        contentColor = MaterialTheme.colorScheme.onTertiary
-    )
+    val colors = ButtonDefaults.filledTonalButtonColors()
     val enabled = isEnabled()
 
     Text(
