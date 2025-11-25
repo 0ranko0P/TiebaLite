@@ -34,6 +34,7 @@ import com.huanchengfly.tieba.post.fromJson
 import com.huanchengfly.tieba.post.models.EmoticonCache
 import com.huanchengfly.tieba.post.pxToDp
 import com.huanchengfly.tieba.post.pxToSp
+import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import kotlinx.coroutines.CoroutineName
@@ -127,7 +128,7 @@ object EmoticonManager {
                     imageVector = Icons.Rounded.Report,
                     contentDescription = stringResource(id = R.string.link),
                     modifier = Modifier.size(sizeDp),
-                    tint = MaterialTheme.colorScheme.error,
+                    tint = RedA700,
                 )
             },
             PbContentRender.INLINE_VIDEO to InlineTextContent(placeholder = placeholder) {

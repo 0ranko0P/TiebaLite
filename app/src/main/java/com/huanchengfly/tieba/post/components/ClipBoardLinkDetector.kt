@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.components
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
+import androidx.core.net.toUri
 import com.google.common.base.Preconditions.checkArgument
 import com.google.common.net.InternetDomainName
 import com.huanchengfly.tieba.post.App
@@ -73,8 +74,8 @@ object ClipBoardLinkDetector {
     private var lastClipBoardHash: Int = -1
 
     private fun parseLink(url: String): ClipBoardLink? {
-        val uri = Uri.parse(url)
-        if (uri.isTieba()) {
+        if (isTieba(url)) {
+            val uri = url.toUri().normalizeScheme()
             QuickPreviewUtil.getForumName(uri)?.let {
                 return ClipBoardLink.Forum(url, forumName = it)
             }
@@ -166,8 +167,10 @@ object ClipBoardLinkDetector {
         it == "mr" || it == "mbd" || it == "t" || it == "rh" || (it.first() == 'm' && it.getOrNull(1)?.isDigit() == true)
     }
 
-    fun Uri.isBaidu(): Boolean = try {
-        checkArgument(this.isHttp())
+    fun Uri.isBaidu(skipSchemeCheck: Boolean = false): Boolean = try {
+        if (!skipSchemeCheck) {
+            checkArgument(this.isHttp())
+        }
         with(InternetDomainName.from(host!!)) {
             when {
                 isTopPrivateDomain -> "baidu.com" == host
@@ -185,11 +188,17 @@ object ClipBoardLinkDetector {
 
     fun Uri.isHttp(): Boolean = scheme?.startsWith("http", ignoreCase = true) == true
 
-    fun Uri.isTieba(): Boolean {
-        return host != null && (host.equals("wapp.baidu.com", ignoreCase = true) ||
-                host.equals("tieba.baidu.com", ignoreCase = true) ||
-                host.equals("tiebac.baidu.com", ignoreCase = true))
-                && queryParameterNames?.contains("tbjump") != true // Exclude Tieba redirect
+    fun isTieba(url: String, skipSchemeCheck: Boolean = false): Boolean {
+        try {
+            val uri = url.toUri().normalizeScheme()
+            if (!uri.isBaidu(skipSchemeCheck)) return false
+
+            val subDomain = InternetDomainName.from(uri.host!!).parts().first()
+            return (subDomain == "tieba" || subDomain == "tiebac" || subDomain == "wapp") &&
+                    uri.queryParameterNames?.contains("tbjump") != true // Exclude Tieba redirect
+        } catch (_: Exception) {
+            return false
+        }
     }
 
     fun Uri.isLogin(): Boolean = path?.let { p ->

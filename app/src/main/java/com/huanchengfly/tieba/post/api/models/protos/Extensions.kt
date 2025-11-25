@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.api.models.protos
 
-import android.net.Uri
 import androidx.annotation.WorkerThread
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.ui.text.SpanStyle
@@ -129,11 +128,7 @@ private val PureTextType = setOf(0, 9, 27, 40)
 
 // 显示为贴吧链接实际是外部链接, 这种情况应直接标记为恶意链接
 private fun isMaliciousLink(linkPbContent: PbContent): Boolean {
-    return if (Uri.parse(linkPbContent.text).isTieba()) {
-        !Uri.parse(linkPbContent.link).isTieba()
-    } else {
-        false
-    }
+    return isTieba(linkPbContent.text, skipSchemeCheck = true) && !isTieba(linkPbContent.link)
 }
 
 fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRender> {
