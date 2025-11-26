@@ -124,7 +124,7 @@ fun PbContent.getPicSize(): IntSize? {
     return null
 }
 
-private val PureTextType = setOf(0, 9, 27, 40)
+private val PureTextType = arrayOf(0, 9, 27, 35/*传送门?*/, 40)
 
 // 显示为贴吧链接实际是外部链接, 这种情况应直接标记为恶意链接
 private fun isMaliciousLink(linkPbContent: PbContent): Boolean {
