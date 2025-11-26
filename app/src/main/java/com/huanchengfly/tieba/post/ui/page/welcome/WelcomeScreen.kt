@@ -99,9 +99,9 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
     val settingsRepo = viewModel.settingsRepository
 
     val pages = remember {
-        listOfNotNull(
+        listOf(
             R.string.welcome_intro,
-            R.string.welcome_permission.takeUnless { state.permissionGranted },
+            R.string.welcome_permission,
             R.string.welcome_habit,
             R.string.title_settings_custom,
             R.string.welcome_completed,
@@ -118,7 +118,7 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
 
     // Setup nullable button click listeners
     val proceedBtnEnabled by remember {
-        derivedStateOf { state.permissionGranted || pagerState.currentPage < 1 }
+        derivedStateOf { state.essentialGranted || pagerState.currentPage < 1 }
     }
 
     val onProceedClicked: () -> Unit = {
@@ -164,7 +164,10 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
             when (pages[i]) {
                 R.string.welcome_intro -> IntroPage()
 
-                R.string.welcome_permission -> PermissionPage(permissions = state.permissionRequest) { it, granted ->
+                R.string.welcome_permission -> PermissionPage(
+                    settings = settingsRepo.privacySettings,
+                    uiState = state,
+                ) { it, granted ->
                     viewModel.onPermissionResult(permission = it)
                     if (!granted) context.toastShort(R.string.tip_no_permission)
                 }

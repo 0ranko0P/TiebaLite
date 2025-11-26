@@ -9,9 +9,11 @@ import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
+import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.utils.AccountUtil
@@ -77,9 +79,13 @@ class MainViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    private val privacySettings: Settings<PrivacySettings> = settingsRepository.privacySettings
+
     fun onCheckClipBoard() {
         viewModelScope.launch {
-            ClipBoardLinkDetector.checkClipBoard(context, forumRepo, threadRepo)
+            if (privacySettings.snapshot().readClipBoardLink) {
+                ClipBoardLinkDetector.checkClipBoard(context, forumRepo, threadRepo)
+            }
         }
     }
 

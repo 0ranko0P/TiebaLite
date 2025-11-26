@@ -24,9 +24,12 @@
     <string name="toast_delete_success">删除成功</string>
     <string name="title_about">关于</string>
     <string name="title_settings_app_link">App Links</string>
-    <string name="summary_app_link">允许浏览器跳转至贴吧Lite. 要更改此选项:\n单击此处打开应用设置, 找到“默认打开”</string>
+    <string name="title_settings_clipboard_link">剪贴板读取</string>
+    <string name="summary_app_link">允许浏览器跳转至贴吧Lite.\n单击此处打开应用设置</string>
+    <string name="summary_clipboard_link">读取并打开剪贴板中的贴吧链接</string>
     <string name="title_settings">设置</string>
     <string name="title_settings_custom">个性化</string>
+    <string name="title_settings_privacy">隐私</string>
     <string name="tip_signed">已签</string>
     <string name="title_oksign">一键签到</string>
     <string name="title_open_in_browser">在浏览器内打开</string>
@@ -313,6 +316,7 @@
     <string name="summary_block_settings">眼不见心不烦</string>
     <string name="summary_settings_custom">个性你的 UI 界面</string>
     <string name="summary_settings_habit">万般功能不如自己顺手</string>
+    <string name="summary_settings_privacy">应用隐私设定</string>
     <string name="summary_settings_oksign">一键签到功能设定</string>
     <string name="summary_settings_more">其他杂项</string>
     <string name="tip_start">提示：</string>
@@ -437,6 +441,8 @@
     <string name="button_restart">重启</string>
     <string name="btn_hide">隐藏</string>
     <string name="desc_search_sug">搜索联想：%s</string>
+    <string name="title_permission_essential">必要权限</string>
+    <string name="title_permission_optional">可选权限</string>
     <string name="title_forum_manager">本吧吧主</string>
     <string name="title_forum_manager_none">本吧没有吧主</string>
     <string name="title_forum_intro">本吧简介</string>
@@ -485,7 +491,8 @@
     <string name="toast_exception">出错了 %1$s</string>
     <string name="welcome_intro">欢迎使用贴吧 Lite</string>
     <string name="welcome_intro_subtitle">极简的贴吧第三方客户端</string>
-    <string name="welcome_permission">权限申请</string>
+    <string name="welcome_permission">隐私与权限</string>
+    <string name="welcome_permission_essential">必要权限已授予</string>
     <string name="welcome_permission_done">所有权限已授予</string>
     <string name="welcome_permission_subtitle">我们需要申请一些权限</string>
     <string name="welcome_habit">使用习惯设置</string>

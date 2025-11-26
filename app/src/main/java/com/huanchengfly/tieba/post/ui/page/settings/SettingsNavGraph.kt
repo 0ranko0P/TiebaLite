@@ -43,6 +43,9 @@ sealed interface SettingsDestination {
     object Habit: SettingsDestination
 
     @Serializable
+    object Privacy: SettingsDestination
+
+    @Serializable
     object More: SettingsDestination
 
     @Serializable
@@ -88,6 +91,10 @@ fun settingsNestedGraphBuilder(
 
     composable<SettingsDestination.Habit> {
         HabitSettingsPage(settingsRepo.habitSettings, onBack = navController::navigateUp)
+    }
+
+    composable<SettingsDestination.Privacy> {
+        PrivacySettingsPage(settingsRepo.privacySettings, onBack = navController::navigateUp)
     }
 
     composable<SettingsDestination.More> {

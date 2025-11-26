@@ -32,6 +32,7 @@ import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
 import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
@@ -114,6 +115,8 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override val habitSettings: Settings<HabitSettings> = ComplexSettings(HabitSettingsTransformer)
 
+    override val privacySettings: Settings<PrivacySettings> = ComplexSettings(PrivacySettingsTransformer)
+
     override val themeSettings: Settings<ThemeSettings> = ComplexSettings(ThemeSettingsTransformer)
 
     override val uiSettings: Settings<UISettings> = ComplexSettings(UISettingsTransformer)
@@ -170,6 +173,21 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
     private const val KEY_REPLY_HIDE_WARNING = "ui_reply_hide_warn"
     private const val KEY_SHOW_NICKNAME = "ui_show_both_name"
     private const val KEY_HOME_PAGE_SHOW_HISTORY = "ui_history_in_home"
+}
+
+private object PrivacySettingsTransformer : PreferenceTransformer<PrivacySettings> {
+
+    override val get: (Preferences) -> PrivacySettings = {
+        PrivacySettings(
+            readClipBoardLink = it[booleanPreferencesKey(KEY_PRIVACY_CLIPBOARD)] ?: true
+        )
+    }
+
+    override val set: (MutablePreferences, PrivacySettings) -> Unit = { it, settings ->
+        it.putBoolean(KEY_PRIVACY_CLIPBOARD, settings.readClipBoardLink)
+    }
+
+    private const val KEY_PRIVACY_CLIPBOARD = "clipboard_link"
 }
 
 private object ThemeSettingsTransformer : PreferenceTransformer<ThemeSettings> {

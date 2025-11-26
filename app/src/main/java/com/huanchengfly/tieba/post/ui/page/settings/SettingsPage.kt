@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DashboardCustomize
 import androidx.compose.material.icons.outlined.FormatPaint
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.DoNotDisturbOff
@@ -102,6 +103,15 @@ fun SettingsPage(navigator: NavController) {
                         navigator.navigate(SettingsDestination.Habit)
                     },
                     leadingIcon = Icons.Outlined.DashboardCustomize
+                )
+
+                TextPref(
+                    title = stringResource(id = R.string.title_settings_privacy),
+                    summary = stringResource(id = R.string.summary_settings_privacy),
+                    onClick = {
+                        navigator.navigate(SettingsDestination.Privacy)
+                    },
+                    leadingIcon = Icons.Outlined.Shield
                 )
 
                 TextPref(

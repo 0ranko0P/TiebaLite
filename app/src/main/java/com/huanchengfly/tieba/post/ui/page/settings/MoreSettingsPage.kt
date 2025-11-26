@@ -7,7 +7,6 @@ import android.text.format.Formatter
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.runtime.Composable
@@ -29,14 +28,14 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView.Companion.dumpWebViewVersion
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPrefsScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPrefsScreen
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import com.huanchengfly.tieba.post.utils.buildAppSettingsIntent
 import kotlinx.coroutines.Job
@@ -83,22 +82,6 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
                 leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
             )
         }
-
-        TextPref(
-            leadingIcon = Icons.AutoMirrored.Outlined.OpenInNew,
-            title = stringResource(id = R.string.title_settings_app_link),
-            summary = stringResource(id = R.string.summary_app_link),
-            onClick = {
-                runCatching {
-                    context.startActivity(buildAppSettingsIntent(BuildConfig.APPLICATION_ID))
-                }
-                .onFailure {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(context.getString(R.string.error_open_settings))
-                    }
-                }
-            }
-        )
 
         StrongBox {
             var cacheSize: Long by rememberSaveable { mutableLongStateOf(-1) }

@@ -1,12 +1,21 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose.preference
 
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.State
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 
 @DslMarker
@@ -21,6 +30,35 @@ class PrefsScope<T>(
     val updatePreference: (transform: (old: T) -> T) -> Unit,
     private val dividerIndent: Dp = Dp.Hairline
 ): ColumnScope by columnScope {
+
+    @PrefsDsl
+    @Composable
+    fun Group(title: @Composable () -> Unit, content: @Composable PrefsScope<T>.() -> Unit) {
+        Box(
+            modifier = Modifier.padding(vertical = 6.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            ProvideContentColorTextStyle(
+                contentColor = MaterialTheme.colorScheme.primary,
+                textStyle = MaterialTheme.typography.titleMedium,
+                content = title
+            )
+        }
+
+        content()
+    }
+
+    @PrefsDsl
+    @NonRestartableComposable
+    @Composable
+    fun Group(@StringRes titleRes: Int, content: @Composable PrefsScope<T>.() -> Unit) {
+        Group(
+            title = {
+                Text(text = stringResource(id = titleRes))
+            },
+            content = content
+        )
+    }
 
     /**
      * Adds a single preference.

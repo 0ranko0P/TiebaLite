@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
@@ -40,6 +41,8 @@ interface SettingsRepository {
     val fontScale: Settings<Float>
 
     val habitSettings: Settings<HabitSettings>
+
+    val privacySettings: Settings<PrivacySettings>
 
     val themeSettings: Settings<ThemeSettings>
 

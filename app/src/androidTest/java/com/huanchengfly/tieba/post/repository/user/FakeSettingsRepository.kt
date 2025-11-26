@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.repository.user
 import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
@@ -30,6 +31,9 @@ class FakeSettingsRepository @Inject constructor(): SettingsRepository {
         get() = throw RuntimeException("Not yet implemented")
 
     override val habitSettings: Settings<HabitSettings>
+        get() = throw RuntimeException("Not yet implemented")
+
+    override val privacySettings: Settings<PrivacySettings>
         get() = throw RuntimeException("Not yet implemented")
 
     override val themeSettings: Settings<ThemeSettings>

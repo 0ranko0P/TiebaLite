@@ -101,6 +101,7 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
         description = bundle.getString(KEY_DESCRIPTION)!!
         permissionName = PermissionUtils.transformText(context, *permissions).first()
         message = context.getString(R.string.message_request_permission_tip_dialog, description)
+        showRationale = permissions.any { shouldShowRequestPermissionRationale(it)}
     }
 
     @Composable
@@ -130,8 +131,6 @@ class RequestPermissionTipDialog() : ResultDialog<Result>(), ActivityResultCallb
 
     override fun onSetupWindow(window: Window, backgroundBlur: Boolean) {
         super.onSetupWindow(window, backgroundBlur = false)
-        showRationale = permissions.any { shouldShowRequestPermissionRationale(it)}
-
         window.attributes = window.attributes.apply {
             // Enable blur effect only when showing rationale message
             backgroundColor = if (showRationale) {

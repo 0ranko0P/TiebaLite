@@ -32,7 +32,7 @@ import androidx.compose.ui.text.TextStyle
  * Text styles will be merged with the current value of LocalTextStyle.
  */
 @Composable
-internal fun ProvideContentColorTextStyle(
+fun ProvideContentColorTextStyle(
     contentColor: Color,
     textStyle: TextStyle,
     content: @Composable () -> Unit,
