@@ -69,6 +69,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFirstOrNull
@@ -297,7 +298,10 @@ fun ThreadPage(
             viewModel.requestLoad(it.toInt(), postId = 0L)
         },
         dialogState = jumpToPageDialogState,
-        onValueChange = { newVal, _ -> "^[0-9]*$".toRegex().matches(newVal) },
+        keyboardType = KeyboardType.Number,
+        isError = {
+            it.isEmpty() || (it.toIntOrNull() ?: -1) !in 1..state.page.total
+        },
         title = { Text(text = stringResource(id = R.string.title_jump_page)) },
         content = {
             with(state.page) {

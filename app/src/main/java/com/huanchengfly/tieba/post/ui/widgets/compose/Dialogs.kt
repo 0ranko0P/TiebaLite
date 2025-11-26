@@ -50,6 +50,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
@@ -243,6 +244,7 @@ fun PromptDialog(
     onConfirm: (String) -> Unit,
     modifier: Modifier = Modifier,
     dialogState: DialogState = rememberDialogState(),
+    keyboardType: KeyboardType = KeyboardType.Unspecified,
     initialValue: String = "",
     onValueChange: (newVal: String, oldVal: String) -> Boolean = { _, _ -> true },
     isError: ((String) -> Boolean)? = null,
@@ -291,9 +293,18 @@ fun PromptDialog(
                 },
                 isError = isErrorState,
                 maxLines = 1,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = keyboardType,
+                    imeAction = ImeAction.Done
+                ),
                 keyboardActions = KeyboardActions(
-                    onDone = { softwareKeyboardController?.hide() }
+                    onDone = {
+                        softwareKeyboardController?.hide()
+                        if (!isErrorState) {
+                            dismiss()
+                            onConfirm(textVal)
+                        }
+                    }
                 ),
                 modifier = Modifier
                     .focusRequester(focusRequester)
