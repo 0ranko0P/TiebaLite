@@ -1,7 +1,7 @@
 package com.huanchengfly.tieba.post.repository.source.network
 
 import android.text.TextUtils
-import com.huanchengfly.tieba.post.api.Error.ERROR_NOMORE
+import com.huanchengfly.tieba.post.api.Error.ERROR_POST_NOMORE
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.protos.SubPost
@@ -108,7 +108,7 @@ object ThreadNetworkDataSource {
         )
 
         if (data.post_list.isEmpty()) {
-            throw TiebaApiException(CommonResponse(ERROR_NOMORE, "没有更多了"))
+            throw TiebaApiException(CommonResponse(ERROR_POST_NOMORE, "没有更多了"))
         }
         if (data.page == null || data.forum == null || data.anti == null) throw TiebaUnknownException
 

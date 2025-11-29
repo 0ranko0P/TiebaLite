@@ -79,12 +79,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.stickyHeaderBackground
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.coroutines.launch
 
-const val ITEM_POST_KEY_PREFIX = "Post_"
-
-private sealed class Type(val key: String) {
+sealed class Type(val key: String) {
     object FirstPost: Type("FirstPost")
     object Header: Type("ThreadHeader")
     object LoadPrevious: Type("LoadPreviousBtn")
+    object Post: Type("") // Use PostData.id as item key
 }
 
 /**
@@ -93,9 +92,7 @@ private sealed class Type(val key: String) {
  * @see ThreadViewModel.requestLoadPrevious
  * */
 private fun LazyListState.firstVisiblePostOffset(): Int {
-    val postItem = layoutInfo.visibleItemsInfo.firstOrNull { item ->
-        (item.key as? String)?.startsWith(ITEM_POST_KEY_PREFIX) == true
-    }
+    val postItem = layoutInfo.visibleItemsInfo.firstOrNull { it.contentType === Type.Post }
     return postItem?.offset ?: 0
 }
 
@@ -197,7 +194,7 @@ fun StateScreenScope.ThreadContent(
                     DefaultEmptyScreen(modifier = Modifier.fillParentMaxHeight(fraction = 0.75f))
                 }
             } else {
-                items(items = state.data, key = { "$ITEM_POST_KEY_PREFIX${it.id}" }) { item ->
+                items(items = state.data, key = { it.id }, contentType = { Type.Post }) { item ->
                     PostCardItem(viewModel, item, localUid, collectPid)
                 }
             }

@@ -173,15 +173,15 @@ private fun ToggleButton(
     }
 }
 
-private fun LazyListState.lastVisiblePost(uiState: ThreadUiState): PostData? {
-    val lastPostItem = layoutInfo.visibleItemsInfo.lastOrNull { item ->
-        item.key is String && (item.key as String).startsWith(ITEM_POST_KEY_PREFIX)
-    }?: return uiState.firstPost
-
-    val lastPostItemKey = lastPostItem.key as String
-    return uiState.data
-        .fastFirstOrNull { post -> lastPostItemKey.endsWith(post.id.toString()) }
-        ?: uiState.firstPost
+private fun LazyListState.middleVisiblePost(uiState: ThreadUiState): PostData? = layoutInfo.run {
+    var postItem = visibleItemsInfo.getOrNull(visibleItemsInfo.size / 2)
+    if (postItem == null || postItem.contentType !== Type.Post) {
+        // Not found, search last visible post
+        postItem = visibleItemsInfo.lastOrNull { it.contentType === Type.Post } ?: return uiState.firstPost
+    }
+    // item key is Post ID
+    val postId = postItem.key as Long
+    return uiState.data.fastFirstOrNull { p -> p.id == postId } ?: uiState.firstPost
 }
 
 @OptIn(ExperimentalHazeApi::class, ExperimentalMaterial3Api::class)
@@ -338,7 +338,7 @@ fun ThreadPage(
         if (bottomSheetState.isVisible) { // Close bottom sheet now
             closeBottomSheet()
         } else {
-            val lastVisiblePost = lazyListState.lastVisiblePost(state)
+            val lastVisiblePost = lazyListState.middleVisiblePost(state)
             viewModel.onSaveHistory(lastVisiblePost)
             // 更新收藏楼层
             val collectMarkPid: Long? = viewModel.info?.collectMarkPid
@@ -467,7 +467,7 @@ fun ThreadPage(
                             } else if (viewModel.info!!.collected) {
                                 viewModel.removeFromCollections()
                             } else {
-                                lazyListState.lastVisiblePost(state)?.let { post ->
+                                lazyListState.middleVisiblePost(state)?.let { post ->
                                     viewModel.updateCollections(markedPost = post)
                                 }
                             }
