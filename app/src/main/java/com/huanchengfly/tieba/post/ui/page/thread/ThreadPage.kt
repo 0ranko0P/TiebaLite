@@ -243,12 +243,22 @@ fun ThreadPage(
                     }
                 }
 
+                // Workaround for broken scroll position preservation
+                is ThreadUiEvent.LoadPreviousSuccess -> {
+                    val nonDataItems = if (state.pageData.hasPrevious) 3 else 2 // FirstPost + StickyHeader + PreviousButton
+                    lazyListState.scrollToItem(nonDataItems + it.previousIndex, it.offset)
+                }
+
                 is ThreadUiEvent.LoadSuccess -> {
-                    if (it.page > 1 || waitLoadSuccessAndScrollToFirstReply) {
+                    // loaded with postId || not first page || scrollToReply
+                    if (it.postId != 0L || it.page > 1 || waitLoadSuccessAndScrollToFirstReply) {
                         waitLoadSuccessAndScrollToFirstReply = false
                         lazyListState.animateScrollToItem(1)
+                    } else {
+                        // Scroll to bottom when sorting by DESC
+                        val index = if (state.sortType != ThreadSortType.BY_DESC) 1 else 2 + state.data.size
+                        lazyListState.animateScrollToItem(index)
                     }
-                    Unit
                 }
 
                 is ThreadUiEvent.ToReplyDestination -> navigator.navigate(it.direction)
@@ -295,16 +305,16 @@ fun ThreadPage(
     val jumpToPageDialogState = rememberDialogState()
     PromptDialog(
         onConfirm = {
-            viewModel.requestLoad(it.toInt(), postId = 0L)
+            viewModel.requestLoad(it.toInt())
         },
         dialogState = jumpToPageDialogState,
         keyboardType = KeyboardType.Number,
         isError = {
-            it.isEmpty() || (it.toIntOrNull() ?: -1) !in 1..state.page.total
+            it.isEmpty() || (it.toIntOrNull() ?: -1) !in 1..state.pageData.total
         },
         title = { Text(text = stringResource(id = R.string.title_jump_page)) },
         content = {
-            with(state.page) {
+            with(state.pageData) {
                 Text(text = stringResource(R.string.tip_jump_page, current, total))
             }
         }
@@ -324,21 +334,24 @@ fun ThreadPage(
         }
     }
 
-    BackHandler(enabled = true) {
+    val onBackPressedCallback: () -> Unit = {
         if (bottomSheetState.isVisible) { // Close bottom sheet now
-            closeBottomSheet(); return@BackHandler
-        }
-
-        val lastVisiblePost = lazyListState.lastVisiblePost(state)
-        viewModel.onSaveHistory(lastVisiblePost)
-
-        if (viewModel.info?.collected == true && lastVisiblePost?.floor != 0) {
-            // Show CollectionsUpdateDialog now
-            newMarkedCollectionPost = lastVisiblePost
+            closeBottomSheet()
         } else {
-            navigateUpWithResult()
+            val lastVisiblePost = lazyListState.lastVisiblePost(state)
+            viewModel.onSaveHistory(lastVisiblePost)
+            // 更新收藏楼层
+            val collectMarkPid: Long? = viewModel.info?.collectMarkPid
+            val newCollectMarkPid: Long? = lastVisiblePost?.id
+            if (collectMarkPid != null && collectMarkPid != newCollectMarkPid) {
+                // Show CollectionsUpdateDialog now
+                newMarkedCollectionPost = lastVisiblePost
+            } else {
+                navigateUpWithResult()
+            }
         }
     }
+    BackHandler(enabled = true, onBack = onBackPressedCallback)
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
@@ -365,7 +378,9 @@ fun ThreadPage(
                             }
                         }
                     },
-                    navigationIcon = { BackNavigationIcon(onBackPressed = navigateUpWithResult) },
+                    navigationIcon = {
+                        BackNavigationIcon(onBackPressed = onBackPressedCallback)
+                    },
                     scrollBehavior = topAppBarScrollBehavior
                 ) {
                     val replyNum = state.thread?.replyNum
@@ -401,7 +416,7 @@ fun ThreadPage(
             val contentPadding = padding.fixedTopBarPadding()
 
             val enablePullRefresh by remember {
-                derivedStateOf { state.page.hasPrevious || state.sortType == ThreadSortType.BY_DESC }
+                derivedStateOf { state.pageData.hasPrevious || state.sortType == ThreadSortType.BY_DESC }
             }
 
             ProvideNavigator(navigator = navigator) {

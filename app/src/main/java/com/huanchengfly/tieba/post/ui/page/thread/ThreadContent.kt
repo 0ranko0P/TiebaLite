@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -86,6 +87,18 @@ private sealed class Type(val key: String) {
     object LoadPrevious: Type("LoadPreviousBtn")
 }
 
+/**
+ * Get [LazyListItemInfo.offset] of first visible post.
+ *
+ * @see ThreadViewModel.requestLoadPrevious
+ * */
+private fun LazyListState.firstVisiblePostOffset(): Int {
+    val postItem = layoutInfo.visibleItemsInfo.firstOrNull { item ->
+        (item.key as? String)?.startsWith(ITEM_POST_KEY_PREFIX) == true
+    }
+    return postItem?.offset ?: 0
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StateScreenScope.ThreadContent(
@@ -119,12 +132,12 @@ fun StateScreenScope.ThreadContent(
             onLoad = onSwipeUpRefresh.takeIf {  // Enable it conditionally
                 state.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC
             },
-            onLazyLoad = { if (state.page.hasMore) viewModel.requestLoadMore() },
+            onLazyLoad = { if (state.pageData.hasMore) viewModel.requestLoadMore() },
             bottomIndicator = { onThreshold ->
                 LoadMoreIndicator(
                     modifier = Modifier.fillMaxWidth(),
                     isLoading = isLoadingMore,
-                    noMore = !state.page.hasMore,
+                    noMore = !state.pageData.hasMore,
                     onThreshold = onThreshold
                 )
             }
@@ -171,9 +184,11 @@ fun StateScreenScope.ThreadContent(
                 postTipItem(isDesc = true)    // DESC tip on bottom
             }
 
-            if (state.page.hasPrevious) {
+            if (state.pageData.hasPrevious) {
                 item(key = Type.LoadPrevious.key, contentType = Type.LoadPrevious) {
-                    LoadPreviousButton(state.isLoadingMore, viewModel::requestLoadPrevious)
+                    LoadPreviousButton(isLoading = state.isLoadingMore) {
+                        viewModel.requestLoadPrevious(offset = lazyListState.firstVisiblePostOffset())
+                    }
                 }
             }
 

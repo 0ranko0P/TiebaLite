@@ -19,9 +19,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.Error.ERROR_NOMORE
+import com.huanchengfly.tieba.post.api.Error
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.booleanToString
+import com.huanchengfly.tieba.post.api.models.protos.Page
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -139,13 +140,11 @@ class ThreadViewModel @Inject constructor(
     }
 
     private val loadMoreHandler = CoroutineExceptionHandler { context, e ->
-        if (e.getErrorCode() == ERROR_NOMORE) {
+        if (e.getErrorCode() == Error.ERROR_POST_NOMORE || e.getErrorCode() == Error.ERROR_NETWORK) {
             _threadUiState.update {
-                val hasMore = if (it.sortType == ThreadSortType.BY_ASC) it.page.hasMore else false
-                val page = it.page.copy(hasMore = hasMore)
-                it.copy(isRefreshing = false, isLoadingMore = false, isLoadingLatestReply = false, error = null, page = page)
+                it.copy(isRefreshing = false, isLoadingMore = false, isLoadingLatestReply = false, error = null)
             }
-            sendMsg(R.string.no_more)
+            sendMsg(e.getErrorMessage())
         } else {
             handler.handleException(context, e)
         }
@@ -183,8 +182,22 @@ class ThreadViewModel @Inject constructor(
             val fromType = from.takeIf { it == FROM_STORE }.orEmpty()
             val response = threadRepo
                 .pbPage(threadId, page, postId, forumId, oldState.seeLz, sortType, from = fromType)
-            _threadUiState.update { it.updateStateFrom(response) }
-            sendUiEvent(ThreadUiEvent.LoadSuccess(page = response.page.current))
+            val pageData = response.page.let {
+                it.mapToUiModel(
+                    previous = it.current_page,
+                    nextPagePostId = response.nextPagePostId,
+                    hasPrevious = if (sortType != ThreadSortType.BY_DESC) {
+                        it.has_prev != 0 // Bug: Server returns wrong has_prev when FROM_STORE with seeLz enabled
+                    } else {
+                        // Check has previous manually if sort by DESC
+                        it.total_page > 1 && it.current_page < it.total_page
+                    }
+                )
+            }
+            _threadUiState.update {
+                it.updateStateFrom(response).copy(pageData = pageData)
+            }
+            sendUiEvent(ThreadUiEvent.LoadSuccess(page, postId))
         }
     }
 
@@ -194,33 +207,77 @@ class ThreadViewModel @Inject constructor(
         val oldState = _threadUiState.updateAndGet { it.copy(isRefreshing = true, error = null) }
         viewModelScope.launch(handler) {
             val sortType = oldState.sortType
+            val isAscSorting = sortType == ThreadSortType.BY_ASC
             val response = threadRepo.pbPage(threadId, 0, 0, forumId, oldState.seeLz, sortType)
-            val page = if (sortType != ThreadSortType.BY_DESC) {
-                response.page
-            } else {
-                response.page.copy(current = response.page.total, nextPagePostId = response.posts.lastOrNull()?.id ?: 0)
+            val pageData = response.page.run {
+                mapToUiModel(
+                    previous = total_page,
+                    current = if (isAscSorting) current_page else total_page,
+                    nextPagePostId = if (isAscSorting) {
+                        response.nextPagePostId
+                    } else {
+                        response.posts.lastOrNull()?.id ?: 0
+                    }
+                )
             }
-
             _threadUiState.update {
-                it.updateStateFrom(response).copy(firstPost = it.firstPost, page = page)
+                it.updateStateFrom(response).copy(firstPost = it.firstPost, pageData = pageData)
+            }
+            // Scroll LazyList based on current sort type
+            if (isAscSorting) {
+                sendUiEvent(ThreadUiEvent.ScrollToFirstReply)
+            } else {
+                sendUiEvent(ThreadUiEvent.ScrollToLatestReply)
             }
         }
     }
 
-    fun requestLoadPrevious() {
+    fun requestLoad(page: Int) {
+        val state = _threadUiState.value
+        // Check target page is first page
+        if (page == 1 || (page == state.pageData.total && state.sortType == ThreadSortType.BY_DESC)) {
+            requestLoadFirstPage()
+        } else {
+            requestLoad(page, postId = 0)
+        }
+    }
+
+    /**
+     * Load previous page.
+     *
+     * @param offset offset of the first visible post. Will be used as backward scroll offset
+     *   in [ThreadUiEvent.LoadPreviousSuccess]. This is a workaround for broken scroll
+     *   position preservation caused by LoadPreviousButton.
+     *
+     * @see [PageData.hasPrevious]
+     * */
+    fun requestLoadPrevious(offset: Int) {
         if (isLoadingMore) return else _threadUiState.set { copy(isLoadingMore = true, error = null) }
 
-        viewModelScope.launch(handler) {
+        viewModelScope.launch(loadMoreHandler) {
             val state = _threadUiState.value
             val sortType = state.sortType
-            val page = state.page.previousPage(sortType)
+            val page = state.pageData.previousPage(sortType)
             val postId = state.data.first().id
             val response = threadRepo
                 .pbPage(threadId, page, postId, forumId, state.seeLz, sortType, back = true)
             val newData = concatNewPostList(old = state.data, new = response.posts, asc = false)
+            val pageData = response.page.mapToUiModel(
+                previous = response.page.current_page,
+                current = state.pageData.current,
+                hasMore = state.pageData.hasMore
+            )
 
             _threadUiState.update {
-                it.copy(isLoadingMore = false, thread = response.thread, data = newData, page = response.page)
+                it.copy(isLoadingMore = false, thread = response.thread, data = newData, pageData = pageData)
+            }
+            // Scroll to previous floor
+            val previousIndex = withContext(Dispatchers.Default) {
+                newData.indexOfFirst { p -> p.floor == state.data[0].floor }
+            }
+            // Check no visible post(covered by BottomBar) || empty new data
+            if (offset > 0 && previousIndex > 0) {
+                sendUiEvent(ThreadUiEvent.LoadPreviousSuccess(previousIndex, -offset))
             }
         }
     }
@@ -231,15 +288,18 @@ class ThreadViewModel @Inject constructor(
         viewModelScope.launch(loadMoreHandler) {
             val state = _threadUiState.value
             val sortType = state.sortType
-            val nextPage = state.page.nextPage(sortType)
+            val nextPage = state.pageData.nextPage(sortType)
             val response = threadRepo
-                .pbPage(threadId, nextPage, state.page.nextPagePostId, forumId, state.seeLz, sortType)
+                .pbPage(threadId, nextPage, state.pageData.nextPagePostId, forumId, state.seeLz, sortType)
             val newData = concatNewPostList(old = state.data, new = response.posts)
+            val pageData = response.page.mapToUiModel(
+                previous = state.pageData.previous,
+                nextPagePostId = response.nextPagePostId,
+                hasPrevious = state.pageData.hasPrevious
+            )
 
             _threadUiState.update {
-                it.updateStateFrom(response).run {
-                    copy(data = newData, page = page.copy(hasPrevious = state.page.hasPrevious))
-                }
+                it.updateStateFrom(response).copy(data = newData, pageData = pageData)
             }
         }
     }
@@ -262,8 +322,13 @@ class ThreadViewModel @Inject constructor(
             lastPostId = curLatestPostId
         )
         val data = concatNewPostList(state.data, response.posts)
+        val pageData = response.page.mapToUiModel(
+            previous = state.pageData.previous,
+            nextPagePostId = response.nextPagePostId,
+            hasPrevious = state.pageData.hasPrevious
+        )
         _threadUiState.update {
-            it.copy(isLoadingMore = false, data = data, thread = response.thread, latestPosts = null, page = response.page)
+            it.copy(isLoadingMore = false, data = data, thread = response.thread, latestPosts = null, pageData = pageData)
         }
     }
 
@@ -291,7 +356,7 @@ class ThreadViewModel @Inject constructor(
                 hasNewPost = postData.any { !oldPostIds.contains(it.id) }
                 val firstLatestPost = postData.first()
                 val isContinuous = firstLatestPost.floor == curLatestPostFloor + 1
-                val continuous = isContinuous || response.page.current == state.page.current
+                val continuous = isContinuous || response.page.current_page == state.pageData.current
 
                 val replacePostIndexes = oldPostData.mapIndexedNotNull { index, old ->
                     val replaceItemIndex = postData.indexOfFirst { it.id == old.id }
@@ -485,8 +550,14 @@ class ThreadViewModel @Inject constructor(
     }
 
     fun onSeeLzChanged() {
-        _threadUiState.update { it.copy(seeLz = !it.seeLz) }
-        requestLoadFirstPage()
+        val newState = _threadUiState.updateAndGet { it.copy(seeLz = !it.seeLz) }
+        val collectMarkPid = newState.thread?.collectMarkPid
+        // Jump to collectMarkPid when seeLz switched off
+        if (!newState.seeLz && collectMarkPid != null && collectMarkPid != newState.firstPost?.id) {
+            requestLoad(0, postId = newState.thread.collectMarkPid)
+        } else {
+            requestLoadFirstPage()
+        }
     }
 
     fun onSortChanged(sortType: Int) {
@@ -611,13 +682,38 @@ class ThreadViewModel @Inject constructor(
             error = null,
             user = response.user,
             data = response.posts,
-            firstPost = response.firstPost ?: this.firstPost,
+            firstPost = this.firstPost ?: response.firstPost, // use old firstPost if possible
             tbs = response.tbs,
             thread = response.thread,
             latestPosts = null,
-            page = response.page
         )
     }
+
+    private fun Page.mapToUiModel(
+        current: Int = current_page,
+        previous: Int = 0,
+        nextPagePostId: Long = 0,
+        // Note: Do not use has_more, check manually
+        hasMore: Boolean = if (_threadUiState.value.sortType != ThreadSortType.BY_DESC) {
+            new_total_page > 1 && current < new_total_page
+        } else {
+            new_total_page > 1 && current > 1
+        },
+        // Note: Use has_prev only when load with post
+        hasPrevious: Boolean = if (_threadUiState.value.sortType != ThreadSortType.BY_DESC) {
+            new_total_page > 1 && previous > 1 && previous < new_total_page
+        } else {
+            new_total_page > 1 && previous < new_total_page
+        },
+    ): PageData = PageData(
+        current = current,
+        previous = previous,
+        total = new_total_page,
+        postCount = total_count,
+        nextPagePostId = nextPagePostId,
+        hasMore = hasMore,
+        hasPrevious = hasPrevious
+    )
 
     companion object {
 
@@ -629,7 +725,7 @@ class ThreadViewModel @Inject constructor(
         }
 
         private fun PageData.previousPage(sortType: Int): Int {
-            val page = if (sortType == ThreadSortType.BY_DESC) current + 1 else current - 1
+            val page = if (sortType == ThreadSortType.BY_DESC) previous + 1 else previous - 1
             return page.coerceIn(1, total)
         }
 
@@ -671,11 +767,13 @@ sealed interface ThreadUiEvent : UiEvent {
 
     object DeletePostSuccess : ThreadUiEvent
 
-    data object ScrollToFirstReply : ThreadUiEvent
+    object ScrollToFirstReply : ThreadUiEvent
 
-    data object ScrollToLatestReply : ThreadUiEvent
+    object ScrollToLatestReply : ThreadUiEvent
 
-    data class LoadSuccess(val page: Int) : ThreadUiEvent
+    data class LoadPreviousSuccess(val previousIndex: Int, val offset: Int) : ThreadUiEvent
+
+    data class LoadSuccess(val page: Int, val postId: Long) : ThreadUiEvent
 
     data class ToReplyDestination(val direction: Reply): ThreadUiEvent
 

@@ -107,7 +107,9 @@ object ThreadNetworkDataSource {
             lastPostId = lastPostId
         )
 
-        if (data.post_list.isEmpty()) throw TiebaApiException(CommonResponse(ERROR_NOMORE))
+        if (data.post_list.isEmpty()) {
+            throw TiebaApiException(CommonResponse(ERROR_NOMORE, "没有更多了"))
+        }
         if (data.page == null || data.forum == null || data.anti == null) throw TiebaUnknownException
 
         val lz = data.thread?.author ?: throw TiebaException("Null Lz data")

@@ -22,7 +22,7 @@ data class ThreadUiState(
     val tbs: String? = null,
     val data: List<PostData> = emptyList(),
     val latestPosts: List<PostData>? = null,
-    val page: PageData = PageData()
+    val pageData: PageData = PageData()
 ) : UiState {
 
     val lz: UserData?

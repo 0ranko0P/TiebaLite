@@ -51,6 +51,7 @@ import javax.inject.Singleton
  * */
 data class PageData(
     val current: Int = 0,
+    val previous: Int = 0,
     val total: Int = 0,
     val postCount: Int = 0,
     val nextPagePostId: Long = 0,
@@ -67,7 +68,8 @@ class PbPageUiResponse(
     val posts: List<PostData>,
     val tbs: String,
     val thread: ThreadInfoData,
-    val page: PageData,
+    val page: Page,
+    val nextPagePostId: Long,
 )
 
 /**
@@ -151,14 +153,8 @@ class PbPageRepository @Inject constructor(
             posts = data.post_list.mapToUiModel(lzId = lz.id),
             tbs = data.anti!!.tbs,
             thread = data.thread.mapToUiModel(),
-            page = PageData(
-                current = pageData.current_page,
-                total = pageData.new_total_page,
-                postCount = pageData.total_count,
-                nextPagePostId = nextPagePostId,
-                hasMore = pageData.has_more != 0,
-                hasPrevious = pageData.has_prev != 0,
-            )
+            page = pageData,
+            nextPagePostId = nextPagePostId,
         )
     }
 

@@ -17,7 +17,7 @@ object Error {
     const val ERROR_NOT_LOGGED_IN = 11
     const val ERROR_LOGGED_IN_EXPIRED = 12
     const val ERROR_UPDATE_NOT_ENABLE = 100
-    const val ERROR_NOMORE = 350006
+    const val ERROR_POST_NOMORE = 350006
 }
 
 object Header {
