@@ -29,7 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
@@ -128,7 +128,7 @@ class TranslucentThemeActivity : AppCompatActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
-            val colorSchemeExt = currentThemeNoTrans(isSystemInDarkTheme())
+            val colorSchemeExt = currentThemeNoTrans()
             LaunchedEffect(colorSchemeExt) {
                 windowInsetsController.run {
                     isAppearanceLightStatusBars = ThemeUtil.isStatusBarFontDark(colorSchemeExt.colorScheme)
@@ -235,10 +235,10 @@ class TranslucentThemeActivity : AppCompatActivity() {
     companion object {
 
         // Do not use App Theme if it's translucent
-        @NonRestartableComposable
         @Composable
-        private fun currentThemeNoTrans(dark: Boolean) : ExtendedColorScheme {
-            val current = TiebaLiteTheme.extendedColorScheme
+        @ReadOnlyComposable
+        fun currentThemeNoTrans(dark: Boolean = isSystemInDarkTheme()): ExtendedColorScheme {
+            val current by ThemeUtil.colorState
             return if (current.colorScheme.isTranslucent) {
                 if (dark) DefaultDarkColors else DefaultColors
             } else {

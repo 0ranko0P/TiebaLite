@@ -298,11 +298,9 @@
     <string name="profile_sex">性别</string>
     <string name="profile_sex_female">女</string>
     <string name="profile_sex_male">男</string>
-    <string name="profile_sex_unset" />
     <string name="upload_portrait">上传头像</string>
     <string name="title_intro">简介</string>
     <string name="toast_intro_length_beyond_restrict">你输入的字数超出限制</string>
-    <string name="title_modify_sex">选择性别</string>
     <string name="desc_checked">已选中</string>
     <string name="title_oksign_use_official_oksign">使用官方一键签到</string>
     <string name="summary_oksign_use_official_oksign">先使用官方一键签到减少需签到吧数量，以加快签到速度</string>

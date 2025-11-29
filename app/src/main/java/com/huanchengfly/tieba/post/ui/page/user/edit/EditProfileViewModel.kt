@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.utils.StringUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -45,8 +46,6 @@ class EditProfileViewModel @Inject constructor() :
                     .flatMapConcat { it.toPartialChangeFlow() },
                 intentFlow.filterIsInstance<EditProfileIntent.Submit>()
                     .flatMapConcat { it.toPartialChangeFlow() },
-                intentFlow.filterIsInstance<EditProfileIntent.SubmitWithoutChange>()
-                    .flatMapConcat { it.toPartialChangeFlow() },
                 intentFlow.filterIsInstance<EditProfileIntent.UploadPortrait>()
                     .flatMapConcat { it.toPartialChangeFlow() },
                 intentFlow.filterIsInstance<EditProfileIntent.UploadPortraitStart>()
@@ -60,16 +59,16 @@ class EditProfileViewModel @Inject constructor() :
                 emit(EditProfilePartialChange.Init.Success(account = updated))
             }
             .onStart { emit(EditProfilePartialChange.Init.Loading) }
-            .catch { emit(EditProfilePartialChange.Init.Fail(it.getErrorMessage())) }
+            .catch { emit(EditProfilePartialChange.Init.Fail(it)) }
         }
 
         private fun EditProfileIntent.Submit.toPartialChangeFlow() =
             tiebaApi.profileModifyFlow(
-                birthdayShowStatus,
-                "${birthdayTime / 1000L}",
-                intro,
-                "$sex",
-                nickName
+                birthdayShowStatus = edit.birthdayShowStatus,
+                birthdayTime = "${edit.birthdayTime / 1000L}",
+                intro = edit.intro ?: "",
+                sex = edit.sex.toString(),
+                nickName = edit.nickName
             )
                 .map {
                     if (it.errorCode == 0) EditProfilePartialChange.Submit.Success else EditProfilePartialChange.Submit.Fail(
@@ -77,20 +76,9 @@ class EditProfileViewModel @Inject constructor() :
                     )
                 }
                 .onStart {
-                    emit(
-                        EditProfilePartialChange.Submit.Submitting(
-                            sex,
-                            birthdayTime,
-                            birthdayShowStatus,
-                            intro,
-                            nickName
-                        )
-                    )
+                    emit(EditProfilePartialChange.Submit.Submitting(edit))
                 }
                 .catch { emit(EditProfilePartialChange.Submit.Fail(it.getErrorMessage())) }
-
-        private fun EditProfileIntent.SubmitWithoutChange.toPartialChangeFlow() =
-            flow { emit(EditProfilePartialChange.Submit.SuccessWithoutChange) }
 
         private fun EditProfileIntent.UploadPortraitStart.toPartialChangeFlow() =
             flow { emit(EditProfilePartialChange.UploadPortrait.Start) }
@@ -115,7 +103,6 @@ class EditProfileViewModel @Inject constructor() :
 
     override fun dispatchEvent(partialChange: EditProfilePartialChange): UiEvent? {
         return when (partialChange) {
-            is EditProfilePartialChange.Init.Fail -> EditProfileEvent.Init.Fail(partialChange.error)
             is EditProfilePartialChange.Submit.Fail -> EditProfileEvent.Submit.Result(
                 false,
                 message = partialChange.error
@@ -142,12 +129,13 @@ class EditProfileViewModel @Inject constructor() :
             else -> null
         }
     }
+
+    fun onSubmitProfile(newProfile: EditProfile) {
+        send(intent = EditProfileIntent.Submit(newProfile))
+    }
 }
 
 sealed interface EditProfileEvent : UiEvent {
-    sealed interface Init : EditProfileEvent {
-        data class Fail(val toast: String) : Init
-    }
 
     sealed interface Submit : EditProfileEvent {
         data class Result(
@@ -165,17 +153,9 @@ sealed interface EditProfileEvent : UiEvent {
 }
 
 sealed interface EditProfileIntent : UiIntent {
-    data class Init(val userId: String) : EditProfileIntent
+    object Init : EditProfileIntent
 
-    data class Submit(
-        val sex: Int,
-        val birthdayTime: Long,
-        val birthdayShowStatus: Boolean,
-        val intro: String,
-        val nickName: String,
-    ) : EditProfileIntent
-
-    data object SubmitWithoutChange : EditProfileIntent
+    data class Submit(val edit: EditProfile) : EditProfileIntent
 
     data class UploadPortrait(val file: File) : EditProfileIntent
 
@@ -202,24 +182,28 @@ sealed class EditProfilePartialChange : PartialChange<EditProfileState> {
     sealed class Init : EditProfilePartialChange() {
         override fun reduce(oldState: EditProfileState): EditProfileState =
             when (this) {
-                is Loading -> oldState.copy(isLoading = true)
+                is Loading -> oldState.copy(isLoading = true, error = null)
                 is Success -> oldState.copy(
-                    isLoading = false,
-                    portrait = account.portrait,
+                    avatarUrl = StringUtil.getAvatarUrl(account.portrait),
                     name = account.name,
-                    nickName = account.nickname ?: account.name,
-                    sex = account.sex,
-                    birthdayTime = account.birthdayTime * 1000L,
                     tbAge = account.tbAge.toString(),
-                    intro = account.intro
+                    edit = oldState.edit ?: EditProfile(
+                        nickName = account.nickname ?: account.name,
+                        sex = account.sex,
+                        birthdayShowStatus = account.birthdayShow,
+                        birthdayTime = account.birthdayTime * 1000L,
+                        intro = account.intro,
+                    ),
+                    isLoading = false,
+                    error = null
                 )
 
-                is Fail -> oldState.copy(isLoading = false)
+                is Fail -> oldState.copy(isLoading = false, error = error)
             }
 
         data object Loading : Init()
         data class Success(val account: Account) : Init()
-        data class Fail(val error: String) : Init()
+        data class Fail(val error: Throwable) : Init()
     }
 
     sealed class Submit : EditProfilePartialChange() {
@@ -227,10 +211,8 @@ sealed class EditProfilePartialChange : PartialChange<EditProfileState> {
             when (this) {
                 is Submitting -> oldState.copy(
                     isSubmitting = true,
-                    sex = sex,
-                    birthdayTime = birthdayTime,
-                    birthdayShowStatus = birthdayShowStatus,
-                    intro = intro
+                    edit = newProfile,
+                    error = null
                 )
 
                 Success -> oldState.copy(isSubmitting = false)
@@ -238,13 +220,7 @@ sealed class EditProfilePartialChange : PartialChange<EditProfileState> {
                 is Fail -> oldState.copy(isSubmitting = false)
             }
 
-        data class Submitting(
-            val sex: Int,
-            val birthdayTime: Long,
-            val birthdayShowStatus: Boolean,
-            val intro: String,
-            val nickName: String,
-        ) : Submit()
+        data class Submitting(val newProfile: EditProfile) : Submit()
 
         data object Success : Submit()
         data object SuccessWithoutChange : Submit()
@@ -252,15 +228,20 @@ sealed class EditProfilePartialChange : PartialChange<EditProfileState> {
     }
 }
 
-data class EditProfileState(
-    val portrait: String = "",
-    val name: String = "",
+data class EditProfile(
     val nickName: String = "",
     val sex: Int = 0,
     val birthdayShowStatus: Boolean = false,
     val birthdayTime: Long = 0L,
-    val tbAge: String = "0",
     val intro: String? = null,
+)
+
+data class EditProfileState(
+    val avatarUrl: String? = null,
+    val name: String = "",
+    val tbAge: String = "0",
+    val edit: EditProfile? = null,
     val isLoading: Boolean = true,
     val isSubmitting: Boolean = false,
+    val error: Throwable? = null
 ) : UiState

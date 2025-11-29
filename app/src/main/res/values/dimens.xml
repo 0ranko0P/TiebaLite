@@ -1,8 +1,3 @@
 <resources>
-
     <dimen name="radius">8dp</dimen>
-    <dimen name="size_avatar_small">36dp</dimen>
-
-    <dimen name="card_margin">12dp</dimen>
-
 </resources>
