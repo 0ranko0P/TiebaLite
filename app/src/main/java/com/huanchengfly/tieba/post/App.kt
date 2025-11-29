@@ -11,6 +11,8 @@ import android.os.Process
 import android.webkit.WebView
 import androidx.annotation.Keep
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.Composer
+import androidx.compose.runtime.ExperimentalComposeRuntimeApi
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.huanchengfly.tieba.post.activities.CrashActivity
@@ -67,6 +69,7 @@ class App : Application(), Configuration.Provider {
         return null
     }
 
+    @OptIn(ExperimentalComposeRuntimeApi::class)
     override fun onCreate() {
         INSTANCE = this
         super.onCreate()
@@ -82,6 +85,7 @@ class App : Application(), Configuration.Provider {
         }
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         EmoticonManager.init(this)
+        Composer.setDiagnosticStackTraceEnabled(BuildConfig.DEBUG)
     }
 
     //解决魅族 Flyme 系统夜间模式强制反色
