@@ -4,10 +4,7 @@ import android.os.Build
 import android.text.TextUtils
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.ClientVersion
-import com.huanchengfly.tieba.post.api.ForumSortType
 import com.huanchengfly.tieba.post.api.Param
-import com.huanchengfly.tieba.post.api.SearchThreadFilter
-import com.huanchengfly.tieba.post.api.SearchThreadOrder
 import com.huanchengfly.tieba.post.api.booleanToString
 import com.huanchengfly.tieba.post.api.buildAdParam
 import com.huanchengfly.tieba.post.api.buildAppPosInfo
@@ -21,7 +18,6 @@ import com.huanchengfly.tieba.post.api.models.CheckReportBean
 import com.huanchengfly.tieba.post.api.models.CollectDataBean
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.FollowBean
-import com.huanchengfly.tieba.post.api.models.ForumPageBean
 import com.huanchengfly.tieba.post.api.models.ForumRecommend
 import com.huanchengfly.tieba.post.api.models.GetForumListBean
 import com.huanchengfly.tieba.post.api.models.InitNickNameBean
@@ -109,7 +105,6 @@ import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
 import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostRequest
 import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostRequestData
 import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostResponse
-import com.huanchengfly.tieba.post.api.models.web.ForumBean
 import com.huanchengfly.tieba.post.api.models.web.ForumHome
 import com.huanchengfly.tieba.post.api.models.web.HotMessageListBean
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
@@ -221,24 +216,6 @@ object MixedTiebaApiImpl : ITiebaApi {
 
     override fun forumRecommendFlow(): Flow<ForumRecommend> =
         RetrofitTiebaApi.MINI_TIEBA_API.forumRecommendFlow()
-
-    override fun forumPage(
-        forumName: String, page: Int, sortType: ForumSortType, goodClassifyId: String?
-    ): Call<ForumPageBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.forumPage(forumName, page, sortType.value, goodClassifyId)
-
-    override fun forumPageAsync(
-        forumName: String,
-        page: Int,
-        sortType: ForumSortType,
-        goodClassifyId: String?
-    ): Deferred<ApiResult<ForumPageBean>> =
-        RetrofitTiebaApi.MINI_TIEBA_API.forumPageAsync(
-            forumName,
-            page,
-            sortType.value,
-            goodClassifyId
-        )
 
     override fun floor(
         threadId: String, page: Int, postId: String?, subPostId: String?
@@ -656,16 +633,6 @@ object MixedTiebaApiImpl : ITiebaApi {
     override fun searchForumFlow(keyword: String): Flow<SearchForumBean> =
         RetrofitTiebaApi.HYBRID_TIEBA_API.searchForumFlow(keyword)
 
-    override fun searchThread(
-        keyword: String, page: Int, order: SearchThreadOrder, filter: SearchThreadFilter,
-    ): Call<SearchThreadBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.searchThread(
-            keyword,
-            page,
-            order.toString(),
-            filter.toString()
-        )
-
     override fun searchThreadFlow(
         keyword: String, page: Int, sort: Int,
     ): Flow<SearchThreadBean> =
@@ -874,35 +841,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             floor = floor,
             bsk = bsk,
             referer = "https://tieba.baidu.com/p/$threadId?lp=5028&mo_device=1&is_jingpost=0&pn=$pn&"
-        )
-
-
-    override fun webForumPage(
-        forumName: String,
-        page: Int,
-        goodClassifyId: String?,
-        sortType: ForumSortType,
-        pageSize: Int
-    ): Call<ForumBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.frs(
-            forumName,
-            (page - 1) * pageSize,
-            sortType.value,
-            goodClassifyId
-        )
-
-    override fun webForumPageAsync(
-        forumName: String,
-        page: Int,
-        goodClassifyId: String?,
-        sortType: ForumSortType,
-        pageSize: Int
-    ): Deferred<ApiResult<ForumBean>> =
-        RetrofitTiebaApi.WEB_TIEBA_API.frsAsync(
-            forumName,
-            (page - 1) * pageSize,
-            sortType.value,
-            goodClassifyId
         )
 
     override fun checkReportPost(postId: String): Call<CheckReportBean> =

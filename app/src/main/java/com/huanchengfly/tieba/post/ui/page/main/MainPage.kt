@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -50,7 +51,6 @@ import com.huanchengfly.tieba.post.ui.page.main.user.UserPage
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationSuiteScaffold
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.ThemeUtil
@@ -166,7 +166,7 @@ fun MainPage(
             navigationItems = navigationItems,
             navigationBarAtop = !ThemeUtil.isTranslucentTheme(),
         ) {
-            LazyLoadHorizontalPager(
+            HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
                     .windowInsetsPadding(NavigationBarDefaults.windowInsets.only(WindowInsetsSides.End)),

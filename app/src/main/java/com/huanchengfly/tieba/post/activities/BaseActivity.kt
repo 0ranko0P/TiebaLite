@@ -5,31 +5,20 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.util.DisplayMetrics
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.ui.widgets.VoicePlayerView
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
-import kotlin.coroutines.CoroutineContext
 import kotlin.math.abs
 
-abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
-    override val coroutineContext: CoroutineContext = lifecycleScope.coroutineContext
-
-    private var isActivityRunning = true
+abstract class BaseActivity : AppCompatActivity() {
 
     override fun attachBaseContext(newBase: Context?) {
         super.attachBaseContext(newBase)
         if (newBase != null) {
             overrideFontScaleOneShot(newBase)
         }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        isActivityRunning = false
     }
 
     override fun onStop() {
@@ -47,11 +36,6 @@ abstract class BaseActivity : AppCompatActivity(), CoroutineScope {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         getDeviceDensity()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        isActivityRunning = true
     }
 
     override fun onDestroy() {

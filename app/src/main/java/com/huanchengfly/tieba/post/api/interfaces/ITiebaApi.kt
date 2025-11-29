@@ -1,8 +1,5 @@
 package com.huanchengfly.tieba.post.api.interfaces
 
-import com.huanchengfly.tieba.post.api.ForumSortType
-import com.huanchengfly.tieba.post.api.SearchThreadFilter
-import com.huanchengfly.tieba.post.api.SearchThreadOrder
 import com.huanchengfly.tieba.post.api.models.*
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.ForumRecommendResponse
@@ -24,7 +21,6 @@ import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRespon
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
 import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
 import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostResponse
-import com.huanchengfly.tieba.post.api.models.web.ForumBean
 import com.huanchengfly.tieba.post.api.models.web.ForumHome
 import com.huanchengfly.tieba.post.api.models.web.HotMessageListBean
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
@@ -163,36 +159,6 @@ interface ITiebaApi {
      * **需登录**
      */
     fun forumRecommendFlow(): Flow<ForumRecommend>
-
-    /**
-     * 吧页面
-     *
-     * @param forumName 吧名
-     * @param page 分页页码（从 1 开始）
-     * @param sortType 排序类型 [com.huanchengfly.tieba.post.api.ForumSortType]
-     * @param goodClassifyId 精品贴分类 ID
-     */
-    fun forumPage(
-        forumName: String,
-        page: Int = 1,
-        sortType: ForumSortType = ForumSortType.REPLY_TIME,
-        goodClassifyId: String? = null
-    ): Call<ForumPageBean>
-
-    /**
-     * 吧页面（异步）
-     *
-     * @param forumName 吧名
-     * @param page 分页页码（从 1 开始）
-     * @param sortType 排序类型 [com.huanchengfly.tieba.api.ForumSortType]
-     * @param goodClassifyId 精品贴分类 ID
-     */
-    fun forumPageAsync(
-        forumName: String,
-        page: Int = 1,
-        sortType: ForumSortType = ForumSortType.REPLY_TIME,
-        goodClassifyId: String? = null
-    ): Deferred<ApiResult<ForumPageBean>>
 
     /**
      * 楼中楼页面
@@ -921,21 +887,6 @@ interface ITiebaApi {
     ): Flow<SearchForumBean>
 
     /**
-     * 搜索贴
-     *
-     * @param keyword 关键词
-     * @param page 分页页码
-     * @param order 排序设置 [com.huanchengfly.tieba.post.api.SearchThreadOrder]
-     * @param filter 过滤设置 [com.huanchengfly.tieba.post.api.SearchThreadFilter]
-     */
-    fun searchThread(
-        keyword: String,
-        page: Int,
-        order: SearchThreadOrder,
-        filter: SearchThreadFilter,
-    ): Call<SearchThreadBean>
-
-    /**
      * 搜索主题贴
      *
      * @param keyword 关键词
@@ -1160,40 +1111,6 @@ interface ITiebaApi {
         pn: String,
         bsk: String
     ): Deferred<ApiResult<WebReplyResultBean>>
-
-    /**
-     * 吧页面（web 接口）
-     *
-     * @param forumName 吧名
-     * @param page 分页页码
-     * @param goodClassifyId 精品贴分类 ID
-     * @param sortType 贴排序类型
-     * @param pageSize 每页贴数（默认 30）
-     */
-    fun webForumPage(
-        forumName: String,
-        page: Int,
-        goodClassifyId: String? = null,
-        sortType: ForumSortType = ForumSortType.REPLY_TIME,
-        pageSize: Int = 30
-    ): Call<ForumBean>
-
-    /**
-     * 吧页面（web 接口）
-     *
-     * @param forumName 吧名
-     * @param page 分页页码
-     * @param goodClassifyId 精品贴分类 ID
-     * @param sortType 贴排序类型
-     * @param pageSize 每页贴数（默认 30）
-     */
-    fun webForumPageAsync(
-        forumName: String,
-        page: Int,
-        goodClassifyId: String? = null,
-        sortType: ForumSortType = ForumSortType.REPLY_TIME,
-        pageSize: Int = 30
-    ): Deferred<ApiResult<ForumBean>>
 
     /**
      * 获取举报贴子/回贴页面 URL

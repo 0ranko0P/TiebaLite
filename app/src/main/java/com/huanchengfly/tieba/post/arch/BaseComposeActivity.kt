@@ -15,7 +15,7 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil
 
 abstract class BaseComposeActivity : BaseActivity() {
 
-    private val windowInsetsController: WindowInsetsControllerCompat by lazy {
+    protected val windowInsetsController: WindowInsetsControllerCompat by lazy {
         WindowCompat.getInsetsController(window, window.decorView)
     }
 

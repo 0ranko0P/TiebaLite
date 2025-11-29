@@ -153,7 +153,6 @@
     <string name="tip_collect_thread_desc_sort_on">从收藏进入的贴子将自动切换至倒序浏览</string>
     <string name="toast_feed_refresh">更新了 %1$d 条动态</string>
     <string name="title_dislike">不喜欢推荐用户的理由</string>
-    <string name="tip_refresh">上次阅读到此处，点击刷新</string>
     <string name="button_next">继续</string>
     <string name="button_previous">上一步</string>
     <string name="button_finish">完成</string>

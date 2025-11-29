@@ -403,45 +403,6 @@ private fun ScaffoldLayout(
     }
 }
 
-/** The possible positions for a [FloatingActionButton] attached to a [Scaffold]. */
-@JvmInline
-value class FabPosition internal constructor(@Suppress("unused") private val value: Int) {
-    companion object {
-        /**
-         * Position FAB at the bottom of the screen at the start, above the [NavigationBar] (if it
-         * exists)
-         */
-        val Start = FabPosition(0)
-
-        /**
-         * Position FAB at the bottom of the screen in the center, above the [NavigationBar] (if it
-         * exists)
-         */
-        val Center = FabPosition(1)
-
-        /**
-         * Position FAB at the bottom of the screen at the end, above the [NavigationBar] (if it
-         * exists)
-         */
-        val End = FabPosition(2)
-
-        /**
-         * Position FAB at the bottom of the screen at the end, overlaying the [NavigationBar] (if
-         * it exists)
-         */
-        val EndOverlay = FabPosition(3)
-    }
-
-    override fun toString(): String {
-        return when (this) {
-            Start -> "FabPosition.Start"
-            Center -> "FabPosition.Center"
-            End -> "FabPosition.End"
-            else -> "FabPosition.EndOverlay"
-        }
-    }
-}
-
 /**
  * Placement information for a [FloatingActionButton] inside a [Scaffold].
  *

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.movableContentWithReceiverOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -54,31 +53,6 @@ internal class GridScopeImpl : GridScope {
 
     override fun item(span: Int, content: @Composable () -> Unit) {
         items.add(Item(span, content))
-    }
-}
-
-@Stable
-class GridCounter(
-    private val initialValue: Int
-) {
-    var mutableValue: Int = initialValue
-
-    val value: Int
-        get() = mutableValue
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as GridCounter
-
-        if (initialValue != other.initialValue) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return initialValue
     }
 }
 
