@@ -119,15 +119,15 @@ class AccountUtil private constructor(context: Context) {
         val duration = System.currentTimeMillis() - (lastUpdate + FETCH_EXPIRE_MILL)
         if (duration > 0) {
             Log.i(TAG, "onUpdateSigningAccount: Expired for ${duration / 1000}s")
-            return fetchAccount(account.bduss, account.sToken, account.cookie)
+            val zid = SofireUtils.fetchZid().firstOrThrow()
+            return fetchAccount(account.bduss, account.sToken, account.cookie, zid)
         } else {
             return account
         }
     }
 
-    suspend fun fetchAccount(bduss: String, sToken: String, cookie: String? = null): Account {
-        val zid = SofireUtils.fetchZid().firstOrThrow()
-
+    suspend fun fetchAccount(bduss: String, sToken: String, cookie: String? = null, zid: String): Account {
+        require(zid.isNotEmpty())
         // Fetching account login info, this is non-cancellable
         return scope.async {
             val (loginBean, userInfo) = networkDataSource.loginWithInit(bduss, sToken)

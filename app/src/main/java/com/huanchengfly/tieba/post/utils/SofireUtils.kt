@@ -3,24 +3,38 @@ package com.huanchengfly.tieba.post.utils
 import android.util.Base64
 import com.huanchengfly.tieba.post.api.models.SofireResponseData
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
+import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterceptor
+import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.toMD5
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 import java.security.MessageDigest
-import java.security.cert.CertificateException
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
-import javax.net.ssl.SSLException
-import javax.net.ssl.SSLHandshakeException
 import kotlin.random.Random
+
+/**
+ * Note: https://github.com/HuanCheng65/TiebaLite/issues/150#issuecomment-1407816656
+ * */
+class SofireException : IOException {
+
+    constructor() : super()
+
+    constructor(cause: Throwable) : super(cause)
+
+    override val message: String = "连接 [sofire.baidu.com] 失败, 请检查您的广告拦截器"
+}
 
 @Serializable
 data class SofireRequestBody(
@@ -91,11 +105,12 @@ object SofireUtils {
                 )
                 decryptData.token
             }
+            .flowOn(Dispatchers.IO)
             .catch { e ->
-                if (e is SSLHandshakeException || e is CertificateException) {
-                    throw SSLException("连接 [sofire.baidu.com] 失败, 请检查您的广告拦截器", e)
+                if (e is IOException && NetworkObserver.isNetworkConnected) {
+                    throw SofireException(e)
                 }
-                throw e
+                throw ConnectivityInterceptor.wrapException(e)
             }
     }
 }

@@ -39,6 +39,7 @@ import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
+import com.huanchengfly.tieba.post.utils.SofireException
 
 @Composable
 fun TipScreen(
@@ -72,7 +73,7 @@ fun TipScreen(
 
         if (message != null) {
             ProvideContentColorTextStyle(
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurface,
                 textStyle = typography.bodyLarge,
                 content = message
             )
@@ -216,6 +217,12 @@ private fun toKnownErrorType(context: Context, err: Throwable?): ErrorType? {
             title = R.string.title_not_logged_in,
             message = context.getString(R.string.message_not_logged_in),
             lottieResId = R.raw.lottie_astronaut
+        )
+
+        is SofireException -> ErrorType(
+            title = R.string.title_sofire_blocked,
+            message = context.getString(R.string.message_sofire_blocked),
+            lottieResId = R.raw.lottie_no_internet
         )
 
         else -> null // Unknown Type

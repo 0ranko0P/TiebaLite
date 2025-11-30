@@ -8,13 +8,17 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
@@ -33,12 +39,16 @@ import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.ui.page.webview.WebviewTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AccountUtil.Companion.parseCookie
 import com.huanchengfly.tieba.post.utils.ClientUtils
@@ -51,18 +61,41 @@ const val LOGIN_URL =
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun LoginPage(navigator: NavController, onBack: () -> Unit) {
+fun LoginPage(
+    navigator: NavController,
+    viewModel: LoginViewModel = hiltViewModel(),
+    onBack: () -> Unit
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val webViewState = rememberSaveableWebViewState()
     val webViewNavigator = rememberWebViewNavigator()
-    var loaded by rememberSaveable {
-        mutableStateOf(false)
-    }
+    val snackbarHostState = rememberSnackbarHostState()
 
-    LazyLoad(loaded = loaded) {
-        webViewNavigator.loadUrl(LOGIN_URL)
-        loaded = true
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            when (it) {
+                is LoginUiEvent.Start -> coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = context.getString(R.string.text_please_wait),
+                        duration = SnackbarDuration.Indefinite
+                    )
+                }
+
+                is LoginUiEvent.Success -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.text_login_success))
+                    delay(300)
+                    onBack()
+                }
+
+                is LoginUiEvent.Error -> {
+                    val message = context.getString(R.string.text_login_failed, it.msg)
+                    snackbarHostState.showSnackbar(message)
+                    webViewNavigator.loadUrl(LOGIN_URL)
+                }
+            }
+        }
     }
 
     MyScaffold(
@@ -75,7 +108,7 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                     triggerShape = CircleShape
                 ) {
                     Box(
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.minimumInteractiveComponentSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -85,10 +118,20 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                     }
                 }
             }
-        }
+        },
+        snackbarHostState = snackbarHostState,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
-        Box {
-            val snackbarHostState = LocalSnackbarHostState.current
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        StateScreen(
+            modifier = Modifier.fillMaxSize(),
+            isError = uiState.error != null,
+            isLoading = uiState.isLoadingZid,
+            onReload = viewModel::fetchZid,
+            errorScreen = {
+                ErrorScreen(error = uiState.error, modifier = Modifier.padding(paddingValues))
+            }
+        ) {
             WebView(
                 state = webViewState,
                 modifier = Modifier
@@ -106,17 +149,17 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
                 },
                 onDispose = TiebaWebView::dispose,
                 client = remember(navigator) {
-                    LoginWebViewClient(
-                        context,
-                        coroutineScope,
-                        onToast = { message, duration ->
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            snackbarHostState.showSnackbar(message, duration = duration)
-                        },
-                        onBack
-                    )
+                    LoginWebViewClient(context, coroutineScope, onLoggIn = viewModel::onLogin)
                 },
             )
+        }
+
+        StrongBox {
+            if (uiState.zid != null) {
+                LaunchedEffect(Unit) {
+                    webViewNavigator.loadUrl(LOGIN_URL)
+                }
+            }
         }
     }
 
@@ -125,11 +168,9 @@ fun LoginPage(navigator: NavController, onBack: () -> Unit) {
 
 private class LoginWebViewClient(
     context: Context,
-    val coroutineScope: CoroutineScope,
-    val onToast: suspend (String, SnackbarDuration) -> Unit,
-    val onLoggedIn: () -> Unit
+    coroutineScope: CoroutineScope,
+    private val onLoggIn: (bduss: String, sToken: String, baiduId: String?, cookie: String) -> Unit
 ) : TbWebViewClient(context, coroutineScope, onNavigate = null) {
-    private var isLoadingAccount = false
 
     override fun injectCookies(url: String) {}
 
@@ -138,38 +179,15 @@ private class LoginWebViewClient(
         if (url == null) {
             return
         }
-        if (isLoadingAccount) {
-            return
-        }
+
         val cookieStr = CookieManager.getInstance().getCookie(url) ?: return
         val cookies = parseCookie(cookieStr).mapKeys { it.key.uppercase() }
         val bduss = cookies["BDUSS"]
         val sToken = cookies["STOKEN"]
         val baiduId = cookies["BAIDUID"]
         if (url.startsWith("https://tieba.baidu.com/index/tbwise/") || url.startsWith("https://tiebac.baidu.com/index/tbwise/")) {
-            if (bduss == null || sToken == null) {
-                return
-            }
-            if (ClientUtils.baiduId.isNullOrEmpty()) {
-                ClientUtils.saveBaiduId(baiduId)
-            }
-            coroutineScope.launch {
-                onToast(context.getString(R.string.text_please_wait), SnackbarDuration.Indefinite)
-                val accountUtil = AccountUtil.getInstance()
-                try {
-                    val account = accountUtil.fetchAccount(bduss, sToken, cookieStr)
-                    isLoadingAccount = false
-                    accountUtil.saveNewAccount(context, account)
-                    onToast(context.getString(R.string.text_login_success), SnackbarDuration.Short)
-                    delay(1000)
-                    onLoggedIn()
-                } catch(e: Throwable) {
-                    val error = context.getString(R.string.text_login_failed, e.getErrorMessage())
-                    onToast(error, SnackbarDuration.Short)
-                    navigator.loadUrl(LOGIN_URL)
-                } finally {
-                    isLoadingAccount = false
-                }
+            if (bduss != null && sToken != null) {
+                onLoggIn(bduss, sToken, baiduId, cookieStr)
             }
         }
     }
