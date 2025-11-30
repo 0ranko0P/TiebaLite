@@ -128,7 +128,7 @@ fun NavigationDrawerContent(
         drawerContentColor = drawerContentColor
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         ) {
             val account = LocalAccount.current
             if (account != null) {
@@ -137,7 +137,7 @@ fun NavigationDrawerContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.padding(vertical = 16.dp)
                 ) {
-                    AccountNavIcon(spacer = false, size = Sizes.Large)
+                    AccountNavIcon(size = Sizes.Large)
                     Text(
                         text = account.nickname ?: account.name,
                         modifier = Modifier.fillMaxWidth(),
@@ -204,8 +204,7 @@ fun NavigationRail(
         containerColor = TiebaLiteTheme.extendedColorScheme.navigationContainer,
         contentColor = TiebaLiteTheme.colorScheme.onSurface,
         header = {
-            // TODO: Align with new TopAppbar
-            AccountNavIcon(spacer = false)
+            AccountNavIcon(modifier = Modifier.padding(top = 10.dp))
         }
     ) {
         Column(

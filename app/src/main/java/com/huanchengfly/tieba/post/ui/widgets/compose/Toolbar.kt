@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -74,7 +73,7 @@ val AppBarHeight: Dp = 56.dp
 
 val accountNavIconIfCompact: @Composable () -> Unit = {
     if (isWindowWidthCompact()) {
-        AccountNavIcon()
+        AccountNavIcon(modifier = Modifier.padding(start = 12.dp))
     }
 }
 
@@ -82,7 +81,7 @@ val accountNavIconIfCompact: @Composable () -> Unit = {
 private fun AccountDropdownMenuItem(
     onClick: () -> Unit,
     account: Account,
-    currentAccount: Account,
+    currentAccountUid: Long,
     modifier: Modifier = Modifier,
 ) {
     DropdownMenuItem(
@@ -90,7 +89,7 @@ private fun AccountDropdownMenuItem(
         onClick = onClick,
         modifier = modifier.semantics(mergeDescendants = true) {
             role = Role.DropdownList
-            selected = currentAccount.uid == account.uid
+            selected = currentAccountUid == account.uid
             contentDescription = account.nickname ?: account.name
         },
         leadingIcon = {
@@ -103,7 +102,7 @@ private fun AccountDropdownMenuItem(
                     data = remember { StringUtil.getAvatarUrl(account.portrait) },
                     size = Sizes.Small
                 )
-                if (currentAccount.uid == account.uid) {
+                if (currentAccountUid == account.uid) {
                     Icon(
                         imageVector = Icons.Rounded.CheckCircle,
                         contentDescription = null,
@@ -121,21 +120,22 @@ private fun AccountDropdownMenuItem(
 
 @Composable
 fun AccountNavIcon(
-    onClick: (() -> Unit)? = null,
-    spacer: Boolean = true,
+    modifier: Modifier = Modifier,
     size: Dp = Sizes.Small
+) = Box(
+    modifier = modifier,
+    contentAlignment = Alignment.Center
 ) {
     val navigator = LocalNavController.current
     val currentAccount = LocalAccount.current
 
-    if (spacer) Spacer(modifier = Modifier.width(12.dp))
     if (currentAccount == null) {
         Avatar(data = R.drawable.ic_launcher_new_round, size = size)
     } else {
         val menuState = rememberMenuState()
         val addTitleText = stringResource(id = R.string.title_new_account)
 
-        LongClickMenu(
+        ClickMenu(
             menuContent = {
                 val accountUtil = remember { AccountUtil.getInstance() }
                 val accounts by accountUtil.allAccounts.collectAsStateWithLifecycle(emptyList())
@@ -144,7 +144,7 @@ fun AccountNavIcon(
                     AccountDropdownMenuItem(
                         onClick = { accountUtil.switchAccount(uid = it.uid) },
                         account = it,
-                        currentAccount = currentAccount,
+                        currentAccountUid = currentAccount.uid,
                     )
                 }
 
@@ -169,8 +169,7 @@ fun AccountNavIcon(
                 )
             },
             menuState = menuState,
-            onClick = onClick,
-            shape = CircleShape
+            triggerShape = CircleShape
         ) {
             Avatar(
                 data = StringUtil.getAvatarUrl(currentAccount.portrait),
@@ -192,7 +191,7 @@ fun ActionItem(
 ) {
     TooltipBox(
         modifier = modifier,
-        positionProvider = rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Below),
+        positionProvider = rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
         tooltip = {
             PlainTooltip { Text(text = contentDescription) }
         },
