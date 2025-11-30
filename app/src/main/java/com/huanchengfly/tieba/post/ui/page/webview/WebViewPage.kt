@@ -18,9 +18,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +42,9 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TbWebChromeClient
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.createTopAppBarColors
+import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
@@ -51,6 +56,21 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.WebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+
+private val topAppBarColorsHighContrast: TopAppBarColors
+    @Composable @ReadOnlyComposable get() {
+        val colorSchemeExt = TiebaLiteTheme.extendedColorScheme
+        // Make TopAppBar non-translucent
+        return if (colorSchemeExt.colorScheme.isTranslucent) {
+            val colorScheme = colorSchemeExt.colorScheme
+            colorScheme.createTopAppBarColors(
+                containerColor = colorScheme.surfaceContainerLowest,
+                scrolledContainerColor = colorScheme.surfaceContainerLowest
+            )
+        } else {
+            colorSchemeExt.appBarColors
+        }
+    }
 
 @Composable
 fun WebViewProgressIndicator(modifier: Modifier =  Modifier, webViewState: WebViewState) {
@@ -126,6 +146,7 @@ private fun WebviewTopAppBar(
         },
         navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
         actions = actions,
+        colors = topAppBarColorsHighContrast,
         content = progressBar
     )
 }
