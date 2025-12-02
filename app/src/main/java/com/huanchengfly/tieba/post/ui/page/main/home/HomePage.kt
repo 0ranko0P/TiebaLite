@@ -74,6 +74,7 @@ import com.google.accompanist.placeholder.PlaceholderDefaults
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -281,7 +282,7 @@ private fun ForumItemContent(forum: LikedForum, showAvatar: Boolean) {
     ) {
         if (showAvatar) {
             Avatar(
-                data = forum.avatar,
+                data = TbGlideUrl(forum.avatar),
                 modifier = Modifier
                     .padding(end = 14.dp)
                     .size(FORUM_AVATAR_SIZE)

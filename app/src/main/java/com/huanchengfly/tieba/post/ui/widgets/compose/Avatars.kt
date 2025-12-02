@@ -47,7 +47,7 @@ fun Avatar(
     shape: Shape = CircleShape,
 ) {
     if (!data.isNullOrEmpty()) {
-        Avatar(data, contentDescription, modifier.size(size), shape)
+        Avatar(modifier.size(size), data, contentDescription, shape)
     } else {
         Avatar(R.drawable.ic_account, size, null, modifier)
     }
@@ -56,9 +56,9 @@ fun Avatar(
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun Avatar(
-    data: String?,
-    contentDescription: String? = null,
     modifier: Modifier = Modifier,
+    data: Any?,
+    contentDescription: String? = null,
     shape: Shape = CircleShape
 ) =
     // TODO: Unbox when glide-compose stable released

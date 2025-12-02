@@ -81,6 +81,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
@@ -528,7 +529,7 @@ private fun ForumTitleChip(forum: SimpleForum, onForumClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Avatar(
-                data = forum.third,
+                data = forum.third?.let { TbGlideUrl(url = it) },
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxHeight()

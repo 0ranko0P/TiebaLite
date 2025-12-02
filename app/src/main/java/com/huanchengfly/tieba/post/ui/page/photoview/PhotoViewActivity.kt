@@ -19,6 +19,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MimeTypes
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.github.iielse.imageviewer.ImageViewerDialogFragment
 import com.github.iielse.imageviewer.core.Components
 import com.github.iielse.imageviewer.core.OverlayCustomizer
@@ -79,7 +80,11 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
             Config.SWIPE_DISMISS = false
 
             Components.initialize(
-                imageLoader = SimpleImageLoader(this::onImageClicked, this::onProgress),
+                imageLoader = SimpleImageLoader(
+                    glide = Glide.with(this),
+                    onClick = this::onImageClicked,
+                    onProgress = this::onProgress
+                ),
                 dataProvider = viewModel,
                 transformer = object : Transformer { /*** NO-OP ***/ }
             )

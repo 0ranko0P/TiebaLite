@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.NetworkObserver
+import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
@@ -56,7 +57,7 @@ fun NetworkImage(
             }
     ) {
         GlideImage(
-            model = imageUri,
+            model = TbGlideUrl(imageUri),
             contentDescription = contentDescription,
             modifier = Modifier.matchParentSize(),
             contentScale = contentScale,

@@ -58,6 +58,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
@@ -122,12 +123,12 @@ private fun ForumHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Avatar(
-                data = forum.avatar,
-                size = Sizes.Large,
-                contentDescription = forum.name,
                 modifier = Modifier
+                    .size(Sizes.Large)
                     .localSharedBounds(key = ForumAvatarSharedBoundsKey(forum.name, transitionKey))
-                    .clickable(onClick = onOpenForumInfo)
+                    .clickable(onClick = onOpenForumInfo),
+                data = TbGlideUrl(forum.avatar),
+                contentDescription = forum.name,
             )
             Column(
                 modifier = Modifier.weight(1f),
