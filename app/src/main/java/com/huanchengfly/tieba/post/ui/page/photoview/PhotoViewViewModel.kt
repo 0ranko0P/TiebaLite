@@ -6,19 +6,17 @@ import androidx.lifecycle.viewModelScope
 import com.github.iielse.imageviewer.adapter.ItemType
 import com.github.iielse.imageviewer.core.DataProvider
 import com.github.iielse.imageviewer.core.Photo
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.PicPageBean
 import com.huanchengfly.tieba.post.api.models.bestQualitySrc
 import com.huanchengfly.tieba.post.api.models.isGif
 import com.huanchengfly.tieba.post.api.models.isLongPic
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
-import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.JobQueue
 import kotlinx.collections.immutable.persistentListOf
@@ -32,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.timeout
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.seconds
@@ -43,7 +42,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
 
     private val handler = CoroutineExceptionHandler { _, e ->
         Log.e(TAG, "onError: ", e)
-        App.INSTANCE.toastShort(e.getErrorMessage())
+        _state.update { it.copy(error = e) }
     }
 
     private val queue = JobQueue()
@@ -78,7 +77,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
                     .firstOrThrow()
 
                 val stateSnapshot = _state.first()
-                val picAmount = picPageBean.picAmount.toInt()
+                val picAmount = picPageBean.picAmount ?: throw TiebaException("加载列表失败, 远古坟贴?")
                 val fetchedItems = picPageBean.picList.toUniquePhotoViewItems(old = stateSnapshot.data)
                 val firstItemIndex = fetchedItems.first().overallIndex
                 val localItems =
@@ -174,7 +173,8 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
                 .firstOrThrow()
 
             val newData = picPageBean.picList
-            val hasNext = newData.last().overAllIndex.toInt() < picPageBean.picAmount.toInt()
+            val picAmount = picPageBean.picAmount ?: throw TiebaException("加载列表失败, 远古坟贴?")
+            val hasNext = newData.last().overAllIndex.toInt() < picAmount
             val uniqueItems = newData.toUniquePhotoViewItems(old = uiState.data)
             val newItems = (uiState.data + uniqueItems).toImmutableList()
 
@@ -232,7 +232,8 @@ data class PhotoViewUiState(
     val totalAmount: Int = 0,
     val hasNext: Boolean = false,
     val hasPrev: Boolean = false,
-    val initialIndex: Int = 0
+    val initialIndex: Int = 0,
+    val error: Throwable? = null,
 )
 
 data class PhotoViewItem(

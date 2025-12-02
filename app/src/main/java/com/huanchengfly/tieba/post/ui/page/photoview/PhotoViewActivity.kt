@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -61,8 +62,17 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         val data: PhotoViewData = intent.getParcelableExtraCompat(EXTRA_PHOTO_VIEW_DATA)!!
         viewModel.initData(data)
         viewModel.state.collectIn(this) { uiState ->
-            if (uiState.data.isEmpty()) return@collectIn
-            if (fragmentManager.findFragmentById(android.R.id.content) != null) return@collectIn
+            when {
+                uiState.error != null -> {
+                    Toast.makeText(application, uiState.error.getErrorMessage(), Toast.LENGTH_LONG).show()
+                    finish()
+                    return@collectIn
+                }
+
+                uiState.data.isEmpty() -> return@collectIn
+
+                fragmentManager.findFragmentById(android.R.id.content) != null -> return@collectIn
+            }
 
             // Use window background
             Config.VIEWER_BACKGROUND_COLOR = Color.TRANSPARENT
