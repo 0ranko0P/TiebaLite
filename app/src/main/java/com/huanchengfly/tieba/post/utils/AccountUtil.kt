@@ -119,7 +119,7 @@ class AccountUtil private constructor(context: Context) {
         val duration = System.currentTimeMillis() - (lastUpdate + FETCH_EXPIRE_MILL)
         if (duration > 0) {
             Log.i(TAG, "onUpdateSigningAccount: Expired for ${duration / 1000}s")
-            val zid = SofireUtils.fetchZid().firstOrThrow()
+            val zid = account.zid!! // SofireUtils.fetchZid().firstOrThrow()
             return fetchAccount(account.bduss, account.sToken, account.cookie, zid)
         } else {
             return account
