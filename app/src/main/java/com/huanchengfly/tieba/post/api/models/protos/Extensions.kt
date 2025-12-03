@@ -70,11 +70,21 @@ val PostInfoList.abstractText: String
         }
     }
 
+// Almost the same with PbContent.getPicUrl (OfficialProtobufTiebaApi v12.52.1.0)
+fun Media.getPicUrl(loadType: Int): String {
+    return ImageUtil.getThumbnail(
+        loadType = loadType,
+        // originUrl = originPic,   // Best quality in [Media]
+        originUrl = srcPic,         // Medium
+        smallPicUrl = bigPic        // Worst quality in [Media]
+    )
+}
+
 private fun PbContent.getPicUrl(loadType: Int): String {
     return ImageUtil.getThumbnail(
         loadType = loadType,
-        // originSrc,               // Best quality in [PbContent]
-        originUrl = bigCdnSrc,
+        // originUrl = originSrc,   // Best quality in [PbContent]
+        originUrl = bigCdnSrc,      // Medium
         smallPicUrl = cdnSrc        // Worst quality in [PbContent]
     )
 }

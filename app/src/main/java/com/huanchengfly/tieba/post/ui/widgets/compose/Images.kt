@@ -62,6 +62,7 @@ fun NetworkImage(
             modifier = Modifier.matchParentSize(),
             contentScale = contentScale,
             colorFilter = if (darkenImage) GlideUtil.DarkFilter else null,
+            failure = GlideUtil.DefaultErrorPlaceholder,
             // transition = CrossFade
         ) {
             if (NetworkObserver.isNetworkConnected && shouldLoadImage(imageLoadSettings)) {

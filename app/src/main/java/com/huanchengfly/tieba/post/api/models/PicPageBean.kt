@@ -73,18 +73,17 @@ val PicPageBean.ImgBean.isGif: Boolean
 
 val PicPageBean.ImgBean.bestQualitySrc: String
     get() = with(this.original) {
-        if (isGif) return@with originalSrc
-
         val size = original.size.toLongOrNull() ?: 0
+        when {
+            isGif -> waterUrl
 
-        return if (size >= 1024 * 1024 * 2 && isLongPic()) {
             // Quality: bigCdnSrc > waterUrl = url = originalSrc
-            this.bigCdnSrc
-        } else if (size > 1024 * 1024 * 1) {
-            // Quality: waterUrl = url = originalSrc > bigCdnSrc
-            this.originalSrc
-        } else {
-            // Quality: waterUrl = bigCdnSrc = url = originalSrc
-            this.originalSrc
+            size >= 1024 * 1024 * 2 && isLongPic() -> bigCdnSrc
+
+            // Same file hash and url with PbContent.originSrc (OfficialProtobufTiebaApi V12)
+            else -> waterUrl
+
+            // Same file hash and url with PbContent.originSrc but id changed
+            // else -> this.originalSrc
         }
     }

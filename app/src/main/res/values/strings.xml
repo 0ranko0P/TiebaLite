@@ -75,6 +75,7 @@
     <string name="button_discard">放弃更改</string>
     <string name="title_delete">删除</string>
     <string name="tip_lz">楼主</string>
+    <string name="tip_long_pic">长图</string>
     <string name="title_auto_sign_time">自动签到时间</string>
     <string name="tip_about">当前版本： %1$s</string>
     <string name="tip_account_error">若您的账号登录失效，可点击“添加账号”，然后登录相同的账号即可更新登录信息。</string>

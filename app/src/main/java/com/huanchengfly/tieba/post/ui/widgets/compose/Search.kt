@@ -21,7 +21,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
-import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -214,7 +213,7 @@ private fun SearchVideo(modifier: Modifier = Modifier, video: SearchMedia.Video)
     val context = LocalContext.current
     VideoThumbnail(
         modifier = modifier
-            .fillMaxWidth(singleMediaFraction)
+            .fillMaxWidth(singleVideoFraction)
             .aspectRatio(ratio = 2.0f)
             .clip(MaterialTheme.shapes.small),
         thumbnailUrl = video.thumbnail,
@@ -232,7 +231,7 @@ private fun SearchPhoto(modifier: Modifier = Modifier, pics: List<SearchMedia.Pi
 
     val picCount = pics.size
     val isSinglePhoto = picCount == 1
-    val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
+    val mediaWidthFraction = if (isSinglePhoto) singlePhotoFraction else 1f
     val mediaAspectRatio = if (isSinglePhoto) 2f else 3f
     val hasMoreMedia = picCount > MAX_PHOTO_IN_ROW
 
@@ -257,12 +256,11 @@ private fun SearchPhoto(modifier: Modifier = Modifier, pics: List<SearchMedia.Pi
         }
 
         if (hasMoreMedia) {
-            Badge(
-                icon = Icons.Rounded.PhotoSizeSelectActual,
-                text = picCount.toString(),
+            MediaSizeBadge(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(8.dp)
+                    .padding(8.dp),
+                size = picCount,
             )
         }
     }

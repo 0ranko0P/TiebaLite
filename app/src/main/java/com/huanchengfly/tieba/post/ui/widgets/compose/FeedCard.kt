@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.OndemandVideo
 import androidx.compose.material.icons.rounded.Photo
@@ -31,12 +30,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -61,6 +60,7 @@ import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.aspectRatio
 import com.huanchengfly.tieba.post.api.models.protos.buildRenders
+import com.huanchengfly.tieba.post.api.models.protos.getPicUrl
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.arch.wrapImmutable
@@ -79,21 +79,12 @@ import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
-import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlin.math.max
 import kotlin.math.min
-
-private val Media.url: String
-    @Composable @ReadOnlyComposable get() = ImageUtil.getThumbnail(
-        loadType = LocalHabitSettings.current.imageLoadType,
-        // srcPic,               // Best quality in [Media]
-        originUrl = bigPic,
-        smallPicUrl = originPic  // Worst quality in [Media]
-    )
 
 enum class FeedType {
     Top, PlainText, SingleMedia, MultiMedia, Video
@@ -143,27 +134,26 @@ fun Card(
 }
 
 @Composable
-fun Badge(
-    icon: ImageVector,
-    text: String,
+fun MediaSizeBadge(
     modifier: Modifier = Modifier,
+    size: Int,
     backgroundColor: Color = Color.Black.copy(0.5f),
     contentColor: Color = Color.White,
 ) {
     Row(
         modifier = modifier
-            .background(color = backgroundColor, shape = CircleShape)
-            .padding(horizontal = 6.dp, vertical = 2.dp),
+            .background(color = backgroundColor, shape = MaterialTheme.shapes.extraSmall)
+            .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Icon(
-            imageVector = icon,
+            imageVector = Icons.Rounded.PhotoSizeSelectActual,
             contentDescription = null,
             tint = contentColor,
             modifier = Modifier.size(12.dp)
         )
-        Text(text = text, fontSize = 12.sp, color = contentColor)
+        Text(text = size.toString(), fontSize = 12.sp, color = contentColor)
     }
 }
 
@@ -343,8 +333,18 @@ private fun MediaPlaceholder(
 
 const val MAX_PHOTO_IN_ROW = 3
 
-val singleMediaFraction: Float
-    @Composable @ReadOnlyComposable get() = if (isWindowWidthCompact()) 1f else 0.5f
+val singleVideoFraction: Float
+    @Composable @ReadOnlyComposable get() = if (isWindowWidthCompact()) 1.0f else 0.5f
+
+val singlePhotoFraction: Float
+    @Composable @ReadOnlyComposable get() = if (isWindowWidthCompact()) 0.75f else 0.5f
+
+private val Media.singlePhotoAspectRatio: Float
+    @Stable get() = if (width <= 0 || height <= 0) {
+        1f
+    } else {
+        (width / height.toFloat()).coerceAtLeast(0.6f) // Limit long pic height
+    }
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -359,13 +359,13 @@ fun ThreadMedia(
     if (medias.isEmpty() && videoInfo == null) return
 
     val context = LocalContext.current
-    val hideMedia: Boolean = LocalHabitSettings.current.hideMedia
+    val habitSettings = LocalHabitSettings.current
     val mediaCount = medias.size
     val isSinglePhoto = mediaCount == 1
 
     Box(modifier = modifier) {
         if (videoInfo != null) {
-            if (hideMedia) {
+            if (habitSettings.hideMedia) {
                 MediaPlaceholder(
                     icon = {
                         Icon(
@@ -381,7 +381,7 @@ fun ThreadMedia(
             } else {
                 VideoThumbnail(
                     modifier = Modifier
-                        .fillMaxWidth(singleMediaFraction)
+                        .fillMaxWidth(singleVideoFraction)
                         .aspectRatio(ratio = max(videoInfo.item.aspectRatio(), 16f / 9))
                         .clip(MaterialTheme.shapes.small),
                     thumbnailUrl = videoInfo.item.thumbnailUrl,
@@ -391,10 +391,7 @@ fun ThreadMedia(
                 )
             }
         } else {
-            val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
-            val mediaAspectRatio = if (isSinglePhoto) 2f else 3f
-
-            if (hideMedia) {
+            if (habitSettings.hideMedia) {
                 MediaPlaceholder(
                     icon = {
                         Icon(
@@ -423,48 +420,76 @@ fun ThreadMedia(
                 )
             } else {
                 val hasMoreMedia = medias.size > MAX_PHOTO_IN_ROW
+                val mediaWidthFraction = if (isSinglePhoto) singlePhotoFraction else 1f
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(mediaWidthFraction)
-                        .aspectRatio(mediaAspectRatio)
+                        .aspectRatio(if (isSinglePhoto) medias[0].singlePhotoAspectRatio else 3f)
                 ) {
                     Row(
-                        modifier = Modifier.matchParentSize()
+                        modifier = Modifier
+                            .matchParentSize()
                             .clip(MaterialTheme.shapes.small),
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         for (index in 0 until min(medias.size, MAX_PHOTO_IN_ROW)) {
-                            NetworkImage(
-                                imageUri = medias[index].url,
-                                contentDescription = null,
+                            Box(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .weight(1f),
-                                contentScale = ContentScale.Crop,
-                                photoViewDataProvider = {
-                                    getPhotoViewData(
-                                        medias = medias.toImmutableList(),
-                                        forumId = forumId,
-                                        forumName = forumName,
-                                        threadId = threadId,
-                                        index = index
-                                    )
-                                },
-                            )
+                                contentAlignment = Alignment.BottomEnd
+                            ) {
+                                NetworkImage(
+                                    imageUri = medias[index].getPicUrl(habitSettings.imageLoadType),
+                                    contentDescription = null,
+                                    modifier = Modifier.matchParentSize(),
+                                    contentScale = ContentScale.Crop,
+                                    photoViewDataProvider = {
+                                        getPhotoViewData(
+                                            medias = medias.toImmutableList(),
+                                            forumId = forumId,
+                                            forumName = forumName,
+                                            threadId = threadId,
+                                            index = index
+                                        )
+                                    },
+                                )
+                                if (medias[index].isLongPic == 1) {
+                                    LongPicChip(modifier = Modifier.padding(6.dp))
+                                }
+                            }
                         }
                     }
                     if (hasMoreMedia) {
-                        Badge(
-                            icon = Icons.Rounded.PhotoSizeSelectActual,
-                            text = medias.size.toString(),
+                        MediaSizeBadge(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .padding(8.dp)
+                                .padding(8.dp),
+                            size = medias.size,
                         )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun LongPicChip(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = MaterialTheme.shapes.extraSmall
+            )
+            .padding(4.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.tip_long_pic),
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }
 
