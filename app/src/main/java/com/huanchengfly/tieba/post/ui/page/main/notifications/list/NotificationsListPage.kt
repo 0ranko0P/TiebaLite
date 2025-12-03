@@ -119,11 +119,13 @@ fun NotificationsListPage(
                         modifier = Modifier
                             .clickable {
                                 val postId: Long = info.postId
-                                val route = if (info.isFloor) {
-                                    Destination.SubPosts(info.threadId, subPostId = postId)
-                                } else {
-                                    Destination.Thread(info.threadId, postId = postId)
-                                }
+                                // param error, code=210009
+                                // val route = if (info.isFloor) {
+                                //     Destination.SubPosts(info.threadId, subPostId = postId)
+                                // } else {
+                                //     Destination.Thread(info.threadId, postId = postId)
+                                // }
+                                val route = Destination.Thread(info.threadId, postId = postId)
                                 navigator.navigate(route)
                             }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
