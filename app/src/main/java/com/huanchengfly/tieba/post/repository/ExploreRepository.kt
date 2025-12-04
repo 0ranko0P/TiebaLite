@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.repository
 
 import android.util.SparseArray
+import androidx.collection.LruCache
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
@@ -189,8 +190,19 @@ class ExploreRepository @Inject constructor(
     companion object {
         const val HOT_THREAD_TAB_ALL = "all"
 
+        private val simpleForumCache: LruCache<Long, SimpleForum> = LruCache(maxSize = 6)
+
         suspend fun List<ThreadItem>.distinctById(): List<ThreadItem> {
             return withContext(Dispatchers.Default) { distinctBy { it.id } }
+        }
+
+        private fun ThreadInfo.getCachedSimpleForum(): SimpleForum {
+            var rec = simpleForumCache[forumId]
+            if (rec == null) {
+                rec = SimpleForum(forumId, forumInfo?.name ?: forumName, forumInfo?.avatar)
+                simpleForumCache.put(forumId, rec)
+            }
+            return rec
         }
 
         /**
@@ -209,7 +221,6 @@ class ExploreRepository @Inject constructor(
                 val nameShow = StringUtil.getUserNameString(showBothName, name, nameShow)
                 Author(id = this.id, name = nameShow, avatarUrl = StringUtil.getAvatarUrl(portrait))
             }
-            val simpleForum = with(this.forumInfo!!) { SimpleForum(id, name, avatar) }
             return if (this.isTop != 1) {
                 val abstractText = this.abstractText
                 ThreadItem(
@@ -227,7 +238,7 @@ class ExploreRepository @Inject constructor(
                     medias = this.media,
                     video = this.videoInfo?.wrapImmutable(),
                     originThreadInfo = origin_thread_info?.takeIf { is_share_thread == 1 }?.wrapImmutable(),
-                    simpleForum = simpleForum,
+                    simpleForum = getCachedSimpleForum(),
                     dislikeResource = threadDislikeMap?.get(this.id)
                 )
             } else { // 置顶贴: 不可拉黑, 无内容, 无图
@@ -238,7 +249,7 @@ class ExploreRepository @Inject constructor(
                     isTop = true,
                     title = this.title,
                     lastTimeMill = DateTimeUtils.fixTimestamp(lastTimeInt.toLong()),
-                    simpleForum = simpleForum
+                    simpleForum = getCachedSimpleForum()
                 )
             }
         }
