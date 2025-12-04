@@ -7,6 +7,7 @@ import android.text.format.Formatter
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.runtime.Composable
@@ -82,6 +83,14 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
                 leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
             )
         }
+
+        TextPref(
+            leadingIcon = Icons.Outlined.Analytics,
+            title = stringResource(id = R.string.title_settings_worker),
+            onClick = {
+                navigator.navigate(route = SettingsDestination.WorkInfo)
+            },
+        )
 
         StrongBox {
             var cacheSize: Long by rememberSaveable { mutableLongStateOf(-1) }

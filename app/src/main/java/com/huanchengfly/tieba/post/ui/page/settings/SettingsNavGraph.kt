@@ -50,6 +50,9 @@ sealed interface SettingsDestination {
 
     @Serializable
     object OKSign: SettingsDestination
+
+    @Serializable
+    object WorkInfo: SettingsDestination
 }
 
 fun settingsNestedGraphBuilder(
@@ -103,5 +106,9 @@ fun settingsNestedGraphBuilder(
 
     composable<SettingsDestination.OKSign> {
         OKSignSettingsPage(settings = settingsRepo.signConfig, onBack = navController::navigateUp)
+    }
+
+    composable<SettingsDestination.WorkInfo> {
+        WorkInfoPage(onBack = navController::navigateUp)
     }
 }

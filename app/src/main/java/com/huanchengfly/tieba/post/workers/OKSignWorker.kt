@@ -69,7 +69,9 @@ class OKSignWorker @AssistedInject constructor(
     } catch (e: Throwable) {
         Log.e(TAG, "onDoWork: ${e.getErrorMessage()}.", e)
         notificationUpdater.onError(ConnectivityInterceptor.wrapException(e))
-        Result.failure()
+        Result.failure(
+            workDataOf(KEY_ERROR_MESSAGE to e.getErrorMessage())
+        )
     } finally {
         notificationManager.cancel(NOTIFICATION_ID)
         okSignRepository.scheduleWorker()
@@ -94,6 +96,8 @@ class OKSignWorker @AssistedInject constructor(
 
         const val KEY_PROGRESS = "sign_progress"
         const val KEY_TOTAL = "sign_total"
+
+        const val KEY_ERROR_MESSAGE = "sign_error_msg"
 
         /**
          * Channel ID of signing notifications.
