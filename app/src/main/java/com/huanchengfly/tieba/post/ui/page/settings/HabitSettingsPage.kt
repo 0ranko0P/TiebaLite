@@ -163,7 +163,6 @@ fun PrefsScope<HabitSettings>.ImageLoadPreference(modifier: Modifier = Modifier)
             ImageUtil.SETTINGS_SMART_ORIGIN to R.string.title_image_load_type_smart_origin,
             ImageUtil.SETTINGS_SMART_LOAD to R.string.title_image_load_type_smart_load,
             ImageUtil.SETTINGS_ALL_ORIGIN to R.string.title_image_load_type_all_origin,
-            ImageUtil.SETTINGS_ALL_NO to R.string.title_image_load_type_all_no
         ),
         leadingIcon = Icons.Outlined.PhotoSizeSelectActual
     )

@@ -65,7 +65,8 @@ object ImageUtil {
     /**
      * 始终无图
      */
-    const val SETTINGS_ALL_NO = 3
+    // Replaced with HabitSettings#hideMedia
+    // const val SETTINGS_ALL_NO = 3
 
     /**
      * Directory where the shared image will be saved, keep it sync with [R.xml.file_paths_share_img]

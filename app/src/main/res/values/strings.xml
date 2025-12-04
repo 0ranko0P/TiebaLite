@@ -174,7 +174,6 @@
     <string name="title_image_load_type_smart_origin">智能省流量</string>
     <string name="title_image_load_type_smart_load">智能无图</string>
     <string name="title_image_load_type_all_origin">始终高质量</string>
-    <string name="title_image_load_type_all_no">始终无图</string>
     <string name="title_settings_image_load_type">图片加载设置</string>
     <string name="tip_touch_to_view">轻按以查看</string>
     <string name="title_signing_progress">%1$s正在签到中 (%2$d/%3$d)</string>
