@@ -21,6 +21,11 @@ import kotlinx.coroutines.withContext
 
 object ForumNetworkDataSource {
 
+    private val threadFilter: (ThreadInfo) -> Boolean = {
+        it.ala_info == null &&  // 去他妈的直播
+        it.forumInfo != null    // 去他妈的跨吧广告帖
+    }
+
     @Throws(NoConnectivityException::class, TiebaException::class)
     suspend fun loadForumDetail(forumId: Long): RecommendForumInfo {
         return TiebaApi.getInstance()
@@ -48,7 +53,7 @@ object ForumNetworkDataSource {
 
         return withContext(Dispatchers.Default) {
             response.data_.thread_list
-                .filter { it.ala_info == null } // 去他妈的直播
+                .filter(threadFilter)
                 .addUsers(response.data_.user_list)
                 .let { new ->
                     response.data_.copy(thread_list = new)
@@ -73,7 +78,7 @@ object ForumNetworkDataSource {
 
         return withContext(Dispatchers.Default) {
             response.data_.thread_list
-                .filter { it.ala_info == null } // 去他妈的直播
+                .filter(threadFilter)
                 .addUsers(response.data_.user_list)
                 .let { new ->
                     response.data_.copy(thread_list = new)
