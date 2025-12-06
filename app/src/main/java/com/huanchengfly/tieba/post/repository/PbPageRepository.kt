@@ -329,7 +329,7 @@ class PbPageRepository @Inject constructor(
  * */
 private fun User.mapToUiModel(lzId: Long, showBothName: Boolean): UserData = UserData(
     id = id,
-    name = name,
+    name = name.normalized(),
     nameShow = nameShow.normalized(),
     showBothName = showBothName,
     avatarUrl = StringUtil.getAvatarUrl(portrait),

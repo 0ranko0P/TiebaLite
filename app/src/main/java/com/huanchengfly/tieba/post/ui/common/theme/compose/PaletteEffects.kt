@@ -10,11 +10,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
@@ -25,15 +24,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.theme.Blue200
 import com.huanchengfly.tieba.post.theme.Purple100
+import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import kotlinx.collections.immutable.persistentListOf
 
 // Blue Gray Purple
@@ -55,7 +53,6 @@ fun genPaletteColors(): List<Color> {
     }
 }
 
-@NonRestartableComposable
 @Composable
 fun rememberAnimatedGradientBrush(colors: List<Color> = genPaletteColors()): State<Brush> {
     val brushSize = 600.0f
@@ -70,24 +67,14 @@ fun rememberAnimatedGradientBrush(colors: List<Color> = genPaletteColors()): Sta
         label = "OffsetTransition"
     )
 
-    return remember { mutableStateOf<Brush>(SolidColor(Color.Transparent)) }.apply {
-        value = Brush.linearGradient(
+    return rememberUpdatedState(
+        Brush.linearGradient(
             colors = colors,
             start = Offset(offset, offset),
             end = Offset(offset + brushSize, offset + brushSize),
             tileMode = TileMode.Mirror
         )
-    }
-}
-
-private fun Modifier.background(brush: Brush, shape: Shape = RectangleShape) = drawWithCache {
-    onDrawBehind {
-        if (shape === RectangleShape) {
-            drawRect(brush)
-        } else {
-            drawOutline(shape.createOutline(size, layoutDirection, this), brush)
-        }
-    }
+    )
 }
 
 /**
@@ -114,17 +101,17 @@ fun PaletteBackground(
         Modifier
     }
 
-    Box(
-        modifier = modifier.block {
-            if (shape != RectangleShape) Modifier.clip(shape) else null
-        }
+    StrongBox(
+        modifier = modifier.onCase(shape != RectangleShape) { clip(shape) }
     ) {
         val brush by rememberAnimatedGradientBrush(colors)
         // Avoid blurring the content
         Box(
             modifier = blurModifier
                 .matchParentSize()
-                .background(brush)
+                .drawWithCache {
+                    onDrawWithContent { drawRect(brush) }
+                }
         )
 
         if (content != null) {

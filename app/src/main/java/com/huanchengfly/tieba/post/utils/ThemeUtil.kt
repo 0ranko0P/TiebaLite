@@ -165,7 +165,7 @@ object ThemeUtil {
         appBarColors = colorScheme.createTopAppBarColors(
             scrolledContainerColor = colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.86f else 0.74f),
         ),
-        navigationContainer = colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.92f else 0.78f)
+        navigationContainer = colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.9f else 0.78f)
     )
 
     /**

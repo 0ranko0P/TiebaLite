@@ -238,7 +238,7 @@
     <string name="toast_oksign_start">签到已开始，可在通知栏查看进度</string>
     <string name="text_please_wait">请稍候……</string>
     <string name="title_loading_data">正在加载数据</string>
-    <string name="text_oksign_failed">官方一键签到失败[%1$d]: %2$s</string>
+    <string name="text_oksign_failed">官方一键签到失败 [%1$d]: %2$s</string>
     <string name="text_oksign_fallback">切换至普通签到模式</string>
     <string name="text_oksign_no_signable">没有可签到的吧</string>
     <string name="title_forum_info">关于本吧</string>

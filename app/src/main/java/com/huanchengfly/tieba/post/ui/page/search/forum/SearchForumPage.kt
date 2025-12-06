@@ -148,7 +148,7 @@ fun SearchForumItem(forum: SearchForum, transitionKey: String? = null, onClick: 
 
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.CenterVertically)
         ) {
             Text(
                 text = stringResource(id = R.string.title_forum, forum.name),

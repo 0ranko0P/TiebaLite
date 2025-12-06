@@ -98,6 +98,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -178,11 +179,11 @@ fun SearchPage(
 
     // Callback for HistoryList, SearchBox and SuggestionList
     val onKeywordSubmit: (String) -> Unit = {
+        keyboardController?.hide()
         val newKeyword = it.trim()
         viewModel.onSubmitKeyword(newKeyword)
-        keyboardController?.hide()
         if (inputKeyword != newKeyword) inputKeyword = newKeyword
-        focusManager.clearFocus()
+        focusManager.clearFocus(force = true)
         resetCurrentListState()
     }
 
@@ -223,9 +224,16 @@ fun SearchPage(
                             inputKeyword = it
                             viewModel.onKeywordInputChanged(keyword = it.trim())
                         },
-                        onKeywordSubmit = onKeywordSubmit,
-                        onBack = navigator::navigateUp
-                    )
+                        onKeywordSubmit = onKeywordSubmit
+                    ) {
+                        coroutineScope.launch { // Clear SearchBox for transition animation
+                            if (isKeywordNotEmpty && isInputKeywordNotEmpty) {
+                                onKeywordSubmit("")
+                                delay(150) // Wait keyboard animation
+                            }
+                            navigator.navigateUp()
+                        }
+                    }
                 },
                 scrollBehavior = scrollBehaviors[pagerState.currentPage]
             ) {
@@ -271,6 +279,8 @@ fun SearchPage(
                     contentPadding = contentPadding,
                     suggestion = it,
                     onForumClick = { f ->
+                        keyboardController?.hide()
+                        focusManager.clearFocus(force = true)
                         val transitionKey = f.id.toString() // use forum ID as transition animation key
                         navigator.navigate(Destination.Forum(forumName = f.name, avatar = f.avatar, transitionKey))
                     },

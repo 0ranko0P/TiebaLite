@@ -107,10 +107,11 @@ object SofireUtils {
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                if (e is IOException && NetworkObserver.isNetworkConnected) {
+                if (NetworkObserver.isNetworkConnected) {
                     throw SofireException(e)
+                } else {
+                    throw ConnectivityInterceptor.wrapException(e)
                 }
-                throw ConnectivityInterceptor.wrapException(e)
             }
     }
 }

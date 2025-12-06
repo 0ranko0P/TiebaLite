@@ -12,6 +12,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.doIfFailure
 import com.huanchengfly.tieba.post.api.retrofit.doIfSuccess
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.urlEncode
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.dialogs.LoadingDialog
@@ -78,9 +79,13 @@ object TiebaUtil {
                 dialog.dismiss()
                 navigator.navigate(Destination.WebView(it.data.url))
             }
-            .doIfFailure {
+            .doIfFailure { e ->
                 dialog.dismiss()
-                context.toastShort(R.string.toast_load_failed)
+                if (e is TiebaNotLoggedInException) {
+                    context.toastShort(R.string.title_not_logged_in)
+                } else {
+                    context.toastShort(R.string.toast_load_failed)
+                }
             }
     }
 }

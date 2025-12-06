@@ -142,7 +142,10 @@ fun AccountNavIcon(
 
                 accounts.fastForEach {
                     AccountDropdownMenuItem(
-                        onClick = { accountUtil.switchAccount(uid = it.uid) },
+                        onClick = {
+                            menuState.expanded = false
+                            accountUtil.switchAccount(uid = it.uid)
+                        },
                         account = it,
                         currentAccountUid = currentAccount.uid,
                     )
@@ -153,6 +156,7 @@ fun AccountNavIcon(
                 DropdownMenuItem(
                     text = { Text(text = addTitleText) },
                     onClick = {
+                        menuState.expanded = false
                         navigator.navigate(Destination.Login)
                     },
                     leadingIcon = {

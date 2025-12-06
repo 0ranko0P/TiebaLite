@@ -146,7 +146,7 @@ fun ReplyPageBottomSheet(
         contentAlignment = Alignment.BottomStart
     ) {
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainer
+            color = MaterialTheme.colorScheme.background
         ) {
             Box(
                 modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)

@@ -85,6 +85,7 @@ import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.LikeZero
@@ -155,7 +156,7 @@ private fun ToggleButton(
         onClick = onClick,
         modifier = modifier,
         shape = MaterialTheme.shapes.small,
-        color = if (checked) colorScheme.secondaryContainer else colorScheme.surfaceContainer,
+        color = if (checked) colorScheme.secondaryContainer else colorScheme.surfaceContainerHigh,
         contentColor = if (checked) colorScheme.onSecondaryContainer else colorScheme.onSurface,
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -219,7 +220,7 @@ fun ThreadPage(
             bottomSheetState.show()
         }
     }
-    val closeBottomSheet = {
+    val closeBottomSheet: () -> Unit = {
         coroutineScope
             .launch { bottomSheetState.hide() }
             .invokeOnCompletion { showBottomSheet = false }
@@ -396,6 +397,7 @@ fun ThreadPage(
             },
             bottomBar = {
                 BottomBar(
+                    modifier = Modifier.clickableNoIndication { /* Block click event */ },
                     onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
                     onClickMore = {
                         if (bottomSheetState.isVisible) closeBottomSheet() else openBottomSheet()
@@ -458,10 +460,7 @@ fun ThreadPage(
                         isCollected = viewModel.info?.collected == true,
                         isImmersiveMode = viewModel.isImmersiveMode,
                         isDesc = isDesc,
-                        onSeeLzClick = {
-                            viewModel.onSeeLzChanged()
-                            closeBottomSheet()
-                        },
+                        onSeeLzClick = viewModel::onSeeLzChanged,
                         onCollectClick = {
                             if (state.user == null) {
                                 context.toastShort(R.string.title_not_logged_in)
@@ -472,30 +471,25 @@ fun ThreadPage(
                                     viewModel.updateCollections(markedPost = post)
                                 }
                             }
-                            closeBottomSheet()
                         },
                         onImmersiveModeClick = {
                             if (!viewModel.isImmersiveMode && !state.seeLz) {
                                 viewModel.onSeeLzChanged()
                             }
                             viewModel.onImmersiveModeChanged()
-                            closeBottomSheet()
                         },
                         onDescClick = {
                             val notDesc = state.sortType != ThreadSortType.BY_DESC
                             viewModel.onSortChanged(
                                 if (notDesc) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT
                             )
-                            closeBottomSheet()
                         },
-                        onJumpPageClick = {
-                            closeBottomSheet()
-                            jumpToPageDialogState.show()
-                        },
+                        onJumpPageClick = jumpToPageDialogState::show,
                         onShareClick = viewModel::onShareThread,
                         onCopyLinkClick = viewModel::onCopyThreadLink,
-                        onReportClick = { viewModel.onReportThread(context, navigator) },
+                        onReportClick = { viewModel.onReportThread(navigator) },
                         onDeleteClick = viewModel::onDeleteThread.takeIf { isMyThread },
+                        requestCloseMenu = closeBottomSheet,
                         modifier = Modifier
                             .fillMaxWidth()
                             .onNotNull(hazeState) {
@@ -638,6 +632,7 @@ private fun ThreadMenu(
     onCopyLinkClick: () -> Unit,
     onReportClick: () -> Unit,
     onDeleteClick: (() -> Unit)?,
+    requestCloseMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -662,7 +657,10 @@ private fun ThreadMenu(
                 ToggleButton(
                     text = stringResource(id = R.string.title_see_lz),
                     checked = isSeeLz,
-                    onClick = onSeeLzClick,
+                    onClick = {
+                        requestCloseMenu()
+                        onSeeLzClick()
+                    },
                     icon = if (isSeeLz) Icons.Rounded.Face6 else Icons.Rounded.FaceRetouchingOff,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -671,7 +669,10 @@ private fun ThreadMenu(
                 ToggleButton(
                     text = stringResource(id = if (isCollected) R.string.title_collected else R.string.title_uncollected),
                     checked = isCollected,
-                    onClick = onCollectClick,
+                    onClick = {
+                        requestCloseMenu()
+                        onCollectClick()
+                    },
                     icon = if (isCollected) Icons.Rounded.Star else Icons.Rounded.StarBorder,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -680,7 +681,10 @@ private fun ThreadMenu(
                 ToggleButton(
                     text = stringResource(id = R.string.title_pure_read),
                     checked = isImmersiveMode,
-                    onClick = onImmersiveModeClick,
+                    onClick = {
+                        requestCloseMenu()
+                        onImmersiveModeClick()
+                    },
                     icon = if (isImmersiveMode) Icons.AutoMirrored.Rounded.ChromeReaderMode else Icons.AutoMirrored.Outlined.ChromeReaderMode,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -689,7 +693,10 @@ private fun ThreadMenu(
                 ToggleButton(
                     text = stringResource(id = R.string.title_sort),
                     checked = isDesc,
-                    onClick = onDescClick,
+                    onClick = {
+                        requestCloseMenu()
+                        onDescClick()
+                    },
                     icon = Icons.AutoMirrored.Rounded.Sort,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -699,32 +706,47 @@ private fun ThreadMenu(
             ListMenuItem(
                 icon = Icons.Rounded.RocketLaunch,
                 text = stringResource(id = R.string.title_jump_page),
-                onClick = onJumpPageClick,
+                onClick = {
+                    requestCloseMenu()
+                    onJumpPageClick()
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             ListMenuItem(
                 icon = Icons.Rounded.Share,
                 text = stringResource(id = R.string.title_share),
-                onClick = onShareClick,
+                onClick = {
+                    requestCloseMenu()
+                    onShareClick()
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             ListMenuItem(
                 icon = Icons.Rounded.ContentCopy,
                 text = stringResource(id = R.string.title_copy_link),
-                onClick = onCopyLinkClick,
+                onClick = {
+                    requestCloseMenu()
+                    onCopyLinkClick()
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             ListMenuItem(
                 icon = Icons.Rounded.Report,
                 text = stringResource(id = R.string.title_report),
-                onClick = onReportClick,
+                onClick = {
+                    requestCloseMenu()
+                    onReportClick()
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             if (onDeleteClick != null) {
                 ListMenuItem(
                     icon = Icons.Rounded.Delete,
                     text = stringResource(id = R.string.title_delete),
-                    onClick = onDeleteClick,
+                    onClick = {
+                        requestCloseMenu()
+                        onDeleteClick()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }

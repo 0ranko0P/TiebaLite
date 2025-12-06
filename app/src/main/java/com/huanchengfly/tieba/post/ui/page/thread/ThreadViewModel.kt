@@ -235,7 +235,9 @@ class ThreadViewModel @Inject constructor(
     fun requestLoad(page: Int) {
         val state = _threadUiState.value
         // Check target page is first page
-        if (page == 1 || (page == state.pageData.total && state.sortType == ThreadSortType.BY_DESC)) {
+        if ((page == 1 && state.sortType == ThreadSortType.BY_ASC) ||
+            (page == state.pageData.total && state.sortType == ThreadSortType.BY_DESC)
+        ) {
             requestLoadFirstPage()
         } else {
             requestLoad(page, postId = 0)
@@ -591,7 +593,7 @@ class ThreadViewModel @Inject constructor(
         ClipBoardLinkDetector.onCopyTiebaLink(link)
     }
 
-    fun onReportThread(context: Context, navigator: NavController) = viewModelScope.launch {
+    fun onReportThread(navigator: NavController) = viewModelScope.launch {
         TiebaUtil.reportPost(context, navigator, firstPostId.toString())
     }
 

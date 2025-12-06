@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -153,7 +152,6 @@ private fun WorkInfoItem(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         StrongBox(
             modifier = Modifier.minimumInteractiveComponentSize(),

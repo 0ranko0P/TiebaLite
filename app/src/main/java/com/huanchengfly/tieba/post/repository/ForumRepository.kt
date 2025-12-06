@@ -114,12 +114,11 @@ class ForumRepository @Inject constructor(
     }
 
     suspend fun loadForumInfo(forumName: String, forceNew: Boolean = true): ForumData {
-        val sortType = getSortType(forumName).first()
-        return frsPage(forumName, page = 1, loadType = 1, sortType, null, forceNew).first
+        return frsPage(forumName, page = 1, loadType = 1, sortType = 0, null, forceNew).first
     }
 
     suspend fun loadForumDetail(forumName: String): ForumDetail {
-        val (forumData, _, managers) = frsPage(forumName, page = 1, loadType = 1, sortType = -1, null)
+        val (forumData, _, managers) = frsPage(forumName, page = 1, loadType = 1, sortType = 0, null)
         val detail = networkDataSource.loadForumDetail(forumData.id)
 
         return ForumDetail(

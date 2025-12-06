@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 
@@ -57,13 +59,20 @@ fun BaseTextField(
             }
         },
 ) {
+    // If color is not provided via the text style, use content color as a default
+    val textColor =
+        textStyle.color.takeOrElse {
+            val focused = interactionSource.collectIsFocusedAsState().value
+            colors.textColor(enabled, isError, focused)
+        }
+    val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier.background(color = colors.containerColor(enabled, isError, isFocused)),
         enabled = enabled,
         readOnly = readOnly,
-        textStyle = textStyle,
+        textStyle = mergedTextStyle,
         cursorBrush = SolidColor(colors.cursorColor(isError)),
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,

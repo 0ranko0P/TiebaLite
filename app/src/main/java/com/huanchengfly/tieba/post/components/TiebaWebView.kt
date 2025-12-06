@@ -9,14 +9,11 @@ import android.os.Bundle
 import android.webkit.WebBackForwardList
 import android.webkit.WebView
 import androidx.annotation.RequiresApi
-import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.ui.graphics.toArgb
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isBaidu
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isHttp
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isLogin
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.loadPackageLabel
 import com.huanchengfly.tieba.post.utils.queryDeepLink
 import kotlinx.serialization.json.Json
@@ -73,16 +70,9 @@ class TiebaWebView(context: Context): WebView(context) {
         }
 
         fun launchCustomTab(context: Context, url: Uri): Result<Unit> = runCatching {
-            val colorScheme = ThemeUtil.currentColorScheme()
             CustomTabsIntent.Builder()
                 .setShowTitle(true)
-                .setDefaultColorSchemeParams(
-                    CustomTabColorSchemeParams.Builder()
-                        .setToolbarColor(colorScheme.surfaceContainer.toArgb())
-                        .setNavigationBarColor(colorScheme.surfaceContainer.toArgb())
-                        .setNavigationBarDividerColor(colorScheme.outline.toArgb())
-                        .build()
-                )
+                .setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
                 .build()
                 .launchUrl(context, url)
         }.onFailure {

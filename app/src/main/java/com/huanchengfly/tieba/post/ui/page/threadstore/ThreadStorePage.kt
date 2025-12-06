@@ -1,8 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.threadstore
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -204,13 +203,13 @@ private fun StoreItem(
             ) {
                 Spacer(Modifier.weight(1.0f))
 
-                Box(
-                    modifier = Modifier
-                        .background(colorScheme.secondaryContainer, MaterialTheme.shapes.extraSmall)
-                        .padding(vertical = 4.dp, horizontal = 12.dp),
+                Surface (
+                    shape = MaterialTheme.shapes.extraSmall,
+                    color = colorScheme.secondaryContainer,
                 ) {
                     Text(
                         text = stringResource(id = R.string.title_forum_name, info.forumName),
+                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 12.dp),
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }

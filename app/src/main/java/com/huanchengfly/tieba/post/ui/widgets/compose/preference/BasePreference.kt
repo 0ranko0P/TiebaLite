@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
@@ -54,7 +55,7 @@ fun BasePreference(
     val summaryColor = if (enabled) colors.onSurfaceVariant else colors.onSurfaceVariant.copy(DisabledTextOpacity)
 
     Surface(
-        modifier = modifier,
+        modifier = Modifier.clip(shape = MaterialTheme.shapes.medium) then modifier,
         color = Color.Transparent,
         contentColor = titleColor,
     ) {

@@ -148,7 +148,9 @@ class OKSignRepositoryImp @Inject constructor(
             } finally {
                 progress++
             }
-            delay(getSignDelay(slowMode))
+            if (progress < forums.size) {
+                delay(getSignDelay(slowMode))
+            }
         }
         return succeed
     }
