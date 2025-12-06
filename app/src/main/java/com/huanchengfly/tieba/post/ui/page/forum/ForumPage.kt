@@ -72,6 +72,7 @@ import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadList
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
+import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
@@ -93,7 +94,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
@@ -272,9 +272,7 @@ fun ForumPage(
     }
 
     val topBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
-    // Listen scroll state changes to show/hide Fab
-    val scrollStateConnection = rememberScrollStateConnection()
+    val scrollOrientationConnection = rememberScrollOrientationConnection()
 
     val threadClickListeners = remember(navigator) {
         createThreadClickListeners(onNavigate = navigator::navigate)
@@ -405,12 +403,12 @@ fun ForumPage(
         floatingActionButton = {
             val fab = LocalHabitSettings.current.forumFAB
             if (fab == ForumFAB.HIDE || forumData == null) return@MyScaffold
-
-            val isFabVisible by remember {
-                derivedStateOf { uiState.error == null && !scrollStateConnection.isScrolling && !pagerState.isScrolling }
+            // FAB visibility: no error, scrolling forward, pager is not scrolling
+            val fabVisibilityState = remember {
+                derivedStateOf { uiState.error == null && scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling }
             }
 
-            ForumFab(fab = fab, visible = isFabVisible) {
+            ForumFab(fab = fab, visible = { fabVisibilityState.value }) {
                 viewModel.onFabClicked(fab, isGood = pagerState.currentPage == TAB_FORUM_GOOD)
             }
         }
@@ -418,7 +416,7 @@ fun ForumPage(
         StateScreen(
             modifier = Modifier
                 .fillMaxSize()
-                .nestedScroll(connection = scrollStateConnection)
+                .nestedScroll(connection = scrollOrientationConnection)
                 .nestedScroll(connection = topBarScrollBehavior.nestedScrollConnection),
             isEmpty = false,
             isError = uiState.error != null,
@@ -456,9 +454,9 @@ private fun ForumTitleText(modifier: Modifier = Modifier, name: String) =
     )
 
 @Composable
-private fun ForumFab(@ForumFAB fab: Int, visible: Boolean, onClick: () -> Unit) {
+private fun ForumFab(@ForumFAB fab: Int, visible: () -> Boolean, onClick: () -> Unit) {
     AnimatedVisibility(
-        visible = visible,
+        visible = visible(),
         enter = DefaultFabEnterTransition,
         exit = DefaultFabExitTransition
     ) {

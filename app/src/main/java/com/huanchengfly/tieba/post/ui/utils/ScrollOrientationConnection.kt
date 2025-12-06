@@ -1,4 +1,4 @@
-package com.huanchengfly.tieba.post.ui.widgets.compose
+package com.huanchengfly.tieba.post.ui.utils
 
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
@@ -11,24 +11,23 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 
 /**
- * [NestedScrollConnection] can determine attached scroll hierarchy is scrolling.
- *
- * @see isScrolling
+ * [NestedScrollConnection] can determine attached scroll hierarchy is scrolling forward on
+ * given [orientation].
  * */
-open class ScrollStateConnection(
-    val orientation: Orientation?
+class ScrollOrientationConnection(
+    val orientation: Orientation
 ): NestedScrollConnection {
 
-    var isScrolling by mutableStateOf(false)
+    var isScrollingForward by mutableStateOf(false)
         private set
 
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        isScrolling = when (orientation) {
-            null -> available != OffsetZero && available != Offset.Zero
+        if (available != OffsetZero && available != Offset.Zero) {
+            isScrollingForward = when (orientation) {
+                Orientation.Vertical -> available.y > 0f
 
-            Orientation.Vertical -> available.y != 0f
-
-            Orientation.Horizontal -> available.x != 0f
+                Orientation.Horizontal -> available.x < 0f
+            }
         }
 
         return Offset.Zero
@@ -39,7 +38,7 @@ open class ScrollStateConnection(
 private val OffsetZero = Offset(-0.0f, -0.0f)
 
 @Composable
-fun rememberScrollStateConnection(orientation: Orientation? = Orientation.Vertical) =
+fun rememberScrollOrientationConnection(orientation: Orientation = Orientation.Vertical) =
     remember(orientation) {
-        ScrollStateConnection(orientation = orientation)
+        ScrollOrientationConnection(orientation = orientation)
     }

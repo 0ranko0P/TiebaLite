@@ -68,6 +68,7 @@ import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadResult
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadResultKey
+import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -79,7 +80,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWith
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberScrollStateConnection
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import dev.chrisbanes.haze.ExperimentalHazeApi
@@ -192,6 +192,7 @@ fun ExplorePage() {
     val pagerState = rememberPagerState(initialPage = if (loggedIn) 1 else 0) { pages.size }
     val listStates = rememberPagerListStates(pages.size)
 
+    val scrollOrientationConnection = rememberScrollOrientationConnection()
     val scrollBehaviors = rememberTopAppBarScrollBehaviors(pages.size) {
         if (windowSize.isHeightAtLeastBreakpoint(HEIGHT_DP_MEDIUM_LOWER_BOUND)) {
             TopAppBarDefaults.pinnedScrollBehavior(state = it)
@@ -199,8 +200,6 @@ fun ExplorePage() {
             TopAppBarDefaults.enterAlwaysScrollBehavior(state = it)
         }
     }
-
-    val scrollStateConnection = rememberScrollStateConnection()
 
     // FAB visibility of each page
     var fabHideStates by remember(pages) { mutableStateOf(BooleanBitSet()) }
@@ -254,10 +253,10 @@ fun ExplorePage() {
         bottomBar = emptyBlurBottomNavigation, // MainPage workaround when enabling BottomBar blurring
         bottomHazeBlock = DefaultHazeBlock,
         floatingActionButton = {
-            // FAB visibility: not scrolling, pager not scrolling, current page not refreshing
+            // FAB visibility: scrolling forward, pager not scrolling, current page not refreshing
             val visible by remember {
                 derivedStateOf {
-                    !scrollStateConnection.isScrolling && !pagerState.isScrolling && !fabHideStates[pagerState.currentPage]
+                    scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling && !fabHideStates[pagerState.currentPage]
                 }
             }
 
@@ -284,17 +283,16 @@ fun ExplorePage() {
                 key = { pages[it].title },
                 modifier = Modifier
                     .fillMaxSize()
-                    .nestedScroll(scrollStateConnection),
+                    .nestedScroll(scrollOrientationConnection),
                 verticalAlignment = Alignment.Top,
                 flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
             ) { i ->
                 // Attach ScrollBehavior connections
                 val pageModifier = Modifier.nestedScroll(scrollBehaviors[i].nestedScrollConnection)
 
-                // Callbacks when page requesting FAB to hide
-                val onHideFab: (Boolean) -> Unit = { hide: Boolean -> fabHideStates = fabHideStates.set(i, hide) }
-
-                explorePages[i](pageModifier, contentPadding, onHideFab)
+                explorePages[i](pageModifier, contentPadding) { hideFab ->
+                    fabHideStates = fabHideStates.set(i, hideFab)
+                }
             }
         }
     }
