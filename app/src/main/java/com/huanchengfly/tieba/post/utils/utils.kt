@@ -48,15 +48,6 @@ fun launchUrl(
     }
     if (path.contains("android_asset", ignoreCase = true)) return
 
-    if (path == "/mo/q/checkurl") {
-        launchUrl(
-            context,
-            navigator,
-            uri.getQueryParameter("url")?.replace("http://https://", "https://").orEmpty()
-        )
-        return
-    }
-
     val blocked = TiebaWebView.interceptRequest(context, uri, onLaunchApp = null) { route ->
         navigator.navigate(route)
     }
