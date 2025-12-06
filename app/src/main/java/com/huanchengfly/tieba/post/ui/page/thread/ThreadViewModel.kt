@@ -167,13 +167,13 @@ class ThreadViewModel @Inject constructor(
         get() = _uiEvent
 
     init {
-        requestLoad(page = 0, postId)
+        requestLoad(page = 0, postId = postId, scrollToReply = params.scrollToReply)
         viewModelScope.launch {
             hideReply = settingsRepository.habitSettings.snapshot().hideReply
         }
     }
 
-    fun requestLoad(page: Int = 1, postId: Long) {
+    fun requestLoad(page: Int = 1, postId: Long, scrollToReply: Boolean = true) {
         if (isRefreshing) return // Check refreshing
 
         val oldState = _threadUiState.updateAndGet { it.copy(isRefreshing = true, error = null) }
@@ -197,7 +197,9 @@ class ThreadViewModel @Inject constructor(
             _threadUiState.update {
                 it.updateStateFrom(response).copy(pageData = pageData)
             }
-            sendUiEvent(ThreadUiEvent.LoadSuccess(page, postId))
+            if (scrollToReply) {
+                sendUiEvent(ThreadUiEvent.LoadSuccess(page, postId))
+            }
         }
     }
 

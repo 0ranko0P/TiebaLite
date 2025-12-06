@@ -192,7 +192,6 @@ fun ThreadPage(
     threadId: Long,
     postId: Long = 0,
     extra: ThreadFrom? = null,
-    scrollToReply: Boolean = false,
     navigator: NavController,
     viewModel: ThreadViewModel,
     onBackWithResult: (ThreadResult?) -> Unit
@@ -206,8 +205,6 @@ fun ThreadPage(
     val isEmpty by remember {
         derivedStateOf { state.data.isEmpty() && state.firstPost == null }
     }
-
-    var waitLoadSuccessAndScrollToFirstReply by remember { mutableStateOf(scrollToReply) }
 
     val lazyListState = rememberLazyListState()
     val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -252,9 +249,7 @@ fun ThreadPage(
                 }
 
                 is ThreadUiEvent.LoadSuccess -> {
-                    // loaded with postId || not first page || scrollToReply
-                    if (it.postId != 0L || it.page > 1 || waitLoadSuccessAndScrollToFirstReply) {
-                        waitLoadSuccessAndScrollToFirstReply = false
+                    if (it.postId != 0L || it.page > 1) {
                         lazyListState.animateScrollToItem(1)
                     } else {
                         // Scroll to bottom when sorting by DESC

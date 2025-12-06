@@ -153,7 +153,7 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
         ) { backStackEntry ->
             with(backStackEntry.toRoute<Destination.Thread>()) {
                 val vm: ThreadViewModel = hiltViewModel()
-                ThreadPage(threadId, postId, from, scrollToReply, navController, vm) { result ->
+                ThreadPage(threadId, postId, from, navController, vm) { result ->
                     if (result != null) {
                         navController.navigateBackWithResult(ThreadResultKey, result)
                     } else {
