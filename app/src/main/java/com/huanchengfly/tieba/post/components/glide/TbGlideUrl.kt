@@ -30,12 +30,14 @@ class TbGlideUrl: GlideUrl {
 
         // Remove scheme and query component
         // For URL 'http://tiebapic.baidu.com/forum/pic/item/d6.jpg?tbpicau=2025-12-13-05
-        // returns 'tiebapic.baidu.com/forum/pic/item/d6.jpg'
+        // returns URL    'tiebapic.baidu.com/forum/pic/item/d6.jpg'
         fun removeQueryComponent(url: String?): String? = when {
             url.isNullOrEmpty() -> null
 
-            url.startsWith("http") && url.contains("?") -> {
-                url.substring(url.indexOf("://") + 3, url.indexOf('?'))
+            url.startsWith("http") -> {
+                val schemeIndex = url.indexOf(':', 3) + 3
+                val queryIndex = url.indexOf('?', schemeIndex)
+                if (schemeIndex > 0 && queryIndex > 0) url.substring(schemeIndex, queryIndex) else url
             }
 
             else -> url
