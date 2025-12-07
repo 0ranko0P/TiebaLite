@@ -276,7 +276,9 @@ object ImageUtil {
      * @see HabitSettings.imageLoadType
      */
     fun getThumbnail(loadType: Int, originUrl: String, smallPicUrl: String): String {
-        return if (loadWorst(loadType)) smallPicUrl else originUrl
+        // Workaround for empty srcPic, originPic in OriginThreadInfo (v12.52.1.0)
+        val emptyOrigin = originUrl.isEmpty()
+        return if (emptyOrigin || loadWorst(loadType)) smallPicUrl else originUrl
     }
 
     private fun loadWorst(loadType: Int): Boolean {
