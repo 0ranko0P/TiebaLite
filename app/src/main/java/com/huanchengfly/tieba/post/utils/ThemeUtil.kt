@@ -26,21 +26,21 @@ import com.huanchengfly.tieba.post.theme.colorscheme.dynamicColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.monetColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
 import com.huanchengfly.tieba.post.theme.createTopAppBarColors
+import com.huanchengfly.tieba.post.theme.isDarkScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
-import com.huanchengfly.tieba.post.utils.ThemeUtil.darkModeState
+import com.huanchengfly.tieba.post.utils.ThemeUtil._darkConfigUiMode
 import com.huanchengfly.tieba.post.utils.ThemeUtil.onUpdateSystemUiMode
 import com.huanchengfly.tieba.post.utils.ThemeUtil.overrideDarkMode
-import com.huanchengfly.tieba.post.utils.ThemeUtil.shouldUseNightMode
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
@@ -51,14 +51,15 @@ object ThemeUtil {
     }
 
     /**
-     * App dark mode state, updated by [onUpdateSystemUiMode].
+     * Is current [Configuration.uiMode] dark.
+     *
+     * @see onUpdateSystemUiMode
      * */
-    private val _darkModeState: MutableStateFlow<Boolean> = MutableStateFlow(INSTANCE.isAppDark)
-    val darkModeState: StateFlow<Boolean> = _darkModeState.asStateFlow()
+    private val _darkConfigUiMode: MutableStateFlow<Boolean> = MutableStateFlow(INSTANCE.isAppDark)
 
     /**
      * User can (temporary) override it with [overrideDarkMode], this state has higher
-     * priority over [darkModeState] and [shouldUseNightMode]
+     * priority over [_darkConfigUiMode] and [DarkPreference]
      * */
     private val _darkModeOverride: MutableStateFlow<Boolean?> = MutableStateFlow(null)
 
@@ -66,7 +67,7 @@ object ThemeUtil {
      * Synced extend ColorScheme for old View UI
      * */
     private val _colorState: MutableState<ExtendedColorScheme> = mutableStateOf(
-        if (_darkModeState.value) DefaultDarkColors else DefaultColors
+        if (_darkConfigUiMode.value) DefaultDarkColors else DefaultColors
     )
     val colorState: State<ExtendedColorScheme>
         get() = _colorState
@@ -123,8 +124,10 @@ object ThemeUtil {
         else -> isAppDark // -1
     }
 
+    fun isDarkColorScheme(): Boolean = currentColorScheme().isDarkScheme
+
     fun onUpdateSystemUiMode(context: Context) {
-        _darkModeState.update { context.isAppDark }
+        _darkConfigUiMode.update { context.isAppDark }
         _darkModeOverride.update { null } // clear override
     }
 
@@ -168,6 +171,17 @@ object ThemeUtil {
         navigationContainer = colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.9f else 0.78f)
     )
 
+    fun getDarkModeFlow(settingsRepository: SettingsRepository) = combine(
+        flow = settingsRepository.uiSettings.map { it.darkPreference },
+        flow2 = _darkConfigUiMode,
+        flow3 = _darkModeOverride,
+        transform = { darkPreference, isAppDark, overrideDark -> // overrideDark has highest priority
+            overrideDark ?: shouldUseNightMode(darkPreference, isAppDark)
+        }
+    )
+    .distinctUntilChanged()
+    .flowOn(Dispatchers.Default)
+
     /**
      * Latest TiebaLite ColorScheme
      *
@@ -178,13 +192,10 @@ object ThemeUtil {
     fun getExtendedColorFlow(settingsRepository: SettingsRepository, context: Context): Flow<ExtendedColorScheme> {
         return combine(
             flow = savedColorSchemeFlow(settingsRepository.themeSettings, context),
-            flow2 = settingsRepository.uiSettings.map { it.darkPreference to it.reduceEffect }.distinctUntilChanged(),
-            flow3 = _darkModeState,
-            flow4 = _darkModeOverride,
-            transform = { colorSchemeDayNight, (darkPreference, reduceEffect), isAppDark, overrideDark ->
-                // [overrideDark] has highest priority
-                val isDark = overrideDark ?: shouldUseNightMode(darkPreference, isAppDark)
-                val colorScheme = colorSchemeDayNight.getColorScheme(isDark, isAmoled = false)
+            flow2 = settingsRepository.uiSettings.map { it.darkAmoled to it.reduceEffect }.distinctUntilChanged(),
+            flow3 = getDarkModeFlow(settingsRepository),
+            transform = { colorSchemeDayNight, (darkAmoled, reduceEffect), isDark ->
+                val colorScheme = colorSchemeDayNight.getColorScheme(isDark, darkAmoled)
                 when {
                     colorScheme.isTranslucent -> ExtendedColorScheme(colorScheme, isDark, navigationContainer = Color.Transparent)
 

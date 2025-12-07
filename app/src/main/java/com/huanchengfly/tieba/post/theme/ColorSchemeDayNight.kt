@@ -9,7 +9,7 @@ data class ColorSchemeDayNight(
 ) {
     fun getColorScheme(isDark: Boolean, isAmoled: Boolean): ColorScheme = when {
 
-        isAmoled -> darkColor.copy(
+        isDark && isAmoled -> darkColor.copy(
             background = Color.Black,
             onBackground = Color.White,
             surface = Color.Black,

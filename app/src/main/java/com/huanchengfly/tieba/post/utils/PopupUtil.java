@@ -30,7 +30,7 @@ public class PopupUtil {
             popupField.setAccessible(true);
             MenuPopupWindow menuPopupWindow = (MenuPopupWindow) popupField.get(obj);
 
-            boolean isDarkMode = ThemeUtil.INSTANCE.getDarkModeState().getValue();
+            boolean isDarkMode = ThemeUtil.INSTANCE.isDarkColorScheme();
             int backgroundColor = isDarkMode ? Color.BLACK : Color.WHITE;
             menuPopupWindow.setBackgroundDrawable(
                     ThemeUtils.tintDrawable(context.getDrawable(R.drawable.bg_popup), backgroundColor)

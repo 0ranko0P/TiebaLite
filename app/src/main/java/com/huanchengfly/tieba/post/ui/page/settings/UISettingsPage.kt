@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.BlurOn
 import androidx.compose.material.icons.outlined.ColorLens
+import androidx.compose.material.icons.outlined.Contrast
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.FontDownload
 import androidx.compose.material.icons.outlined.NightsStay
@@ -23,11 +24,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScope
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.ListPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SwitchPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AppFont
@@ -35,6 +31,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.ListPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScope
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SwitchPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
 import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.LauncherIcons
 import kotlinx.collections.immutable.persistentMapOf
@@ -72,6 +73,18 @@ fun UISettingsPage(
             }
 
             DarkThemeModePreference()
+
+            Item { uiSettings ->
+                SwitchPref(
+                    checked = uiSettings.darkAmoled,
+                    onCheckedChange = {
+                        updatePreference { old -> old.copy(darkAmoled = it) }
+                    },
+                    title = R.string.title_settings_dark_amoled,
+                    enabled = uiSettings.darkPreference != DarkPreference.DISABLED,
+                    leadingIcon = Icons.Outlined.Contrast
+                )
+            }
 
             DarkImagePreference()
 

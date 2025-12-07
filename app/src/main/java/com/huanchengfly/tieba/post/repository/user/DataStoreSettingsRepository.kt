@@ -234,6 +234,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
         UISettings(
             appIcon = LauncherIcons.entries[appIconOrdinal],
             appIconThemed = it[booleanPreferencesKey(KEY_APP_THEMED_ICON)] == true,
+            darkAmoled = it[booleanPreferencesKey(KEY_DARK_AMOLED)] == true,
             darkPreference = DarkPreference.entries[darkPrefOrdinal],
             darkenImage = it[booleanPreferencesKey(KEY_DARKEN_IMAGE_ON_NIGHT)] ?: true,
             liftBottomBar = it[booleanPreferencesKey(KEY_LIFT_BOTTOM_BAR)] ?: false,
@@ -246,6 +247,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
     override val set: (MutablePreferences, UISettings) -> Unit = { it, ui ->
         it[intPreferencesKey(KEY_APP_ICON)] = ui.appIcon.ordinal
         it[booleanPreferencesKey(KEY_APP_THEMED_ICON)] = ui.appIconThemed
+        it[booleanPreferencesKey(KEY_DARK_AMOLED)] = ui.darkAmoled
         it[intPreferencesKey(KEY_DARK_THEME_MODE)] = ui.darkPreference.ordinal
         it[booleanPreferencesKey(KEY_DARKEN_IMAGE_ON_NIGHT)] = ui.darkenImage
         it[booleanPreferencesKey(KEY_LIFT_BOTTOM_BAR)] = ui.liftBottomBar
@@ -257,6 +259,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
     const val KEY_APP_ICON = "app_icon"
     const val KEY_APP_THEMED_ICON = "app_themed_icon"
 
+    private const val KEY_DARK_AMOLED = "dark_amoled"
     /**
      * Dark mode preferences, Default mode is [DarkPreference.FOLLOW_SYSTEM]
      *
