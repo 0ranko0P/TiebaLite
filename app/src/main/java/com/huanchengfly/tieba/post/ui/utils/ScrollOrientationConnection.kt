@@ -18,24 +18,23 @@ class ScrollOrientationConnection(
     val orientation: Orientation
 ): NestedScrollConnection {
 
-    var isScrollingForward by mutableStateOf(false)
+    var isScrollingForward by mutableStateOf(true)
         private set
 
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        if (available != OffsetZero && available != Offset.Zero) {
-            isScrollingForward = when (orientation) {
-                Orientation.Vertical -> available.y > 0f
+        when {
+            orientation === Orientation.Vertical && available.y != 0.0f -> {
+                isScrollingForward = available.y > 0f
+            }
 
-                Orientation.Horizontal -> available.x < 0f
+            orientation === Orientation.Horizontal && available.x != 0.0f -> {
+                isScrollingForward = available.x < 0f
             }
         }
 
         return Offset.Zero
     }
 }
-
-// no comment
-private val OffsetZero = Offset(-0.0f, -0.0f)
 
 @Composable
 fun rememberScrollOrientationConnection(orientation: Orientation = Orientation.Vertical) =

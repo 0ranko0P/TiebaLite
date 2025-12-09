@@ -7,6 +7,8 @@ import com.huanchengfly.tieba.post.models.database.BlockKeyword
 import com.huanchengfly.tieba.post.models.database.BlockUser
 import kotlinx.coroutines.flow.Flow
 
+data class TypedKeyword(val keyword: String, val isRegex: Boolean)
+
 /**
  * Data Access Object for the block_keyword and block_user table.
  */
@@ -17,10 +19,11 @@ interface BlockDao {
      * Insert a keyword blocking rule in the database.
      *
      * @param keyword the keyword to be inserted
-     * @param whitelisted is this keyword whitelisted or blacklisted
+     * @param isRegex is [keyword] a regex pattern
+     * @param whitelisted is [keyword] whitelisted or blacklisted
      */
-    @Query("INSERT INTO block_keyword (keyword, whitelisted) VALUES (:keyword, :whitelisted)")
-    suspend fun addKeyword(keyword: String, whitelisted: Boolean)
+    @Query("INSERT INTO block_keyword (keyword, isRegex, whitelisted) VALUES (:keyword, :isRegex, :whitelisted)")
+    suspend fun addKeyword(keyword: String, isRegex: Boolean, whitelisted: Boolean)
 
     @Query("DELETE FROM block_keyword WHERE keyword = :keyword")
     suspend fun deleteKeyword(keyword: String): Int
@@ -33,15 +36,15 @@ interface BlockDao {
      *
      * @param whitelisted whitelist or blacklist
      * */
-    @Query("SELECT keyword FROM block_keyword WHERE whitelisted = :whitelisted")
-    fun observeKeywords(whitelisted: Boolean): Flow<List<String>>
+    @Query("SELECT keyword, isRegex FROM block_keyword WHERE whitelisted = :whitelisted")
+    fun observeTypedKeywords(whitelisted: Boolean): Flow<List<TypedKeyword>>
 
     /**
      * Observes list of keyword blocking rules
      *
      * @param whitelisted whitelist or blacklist
      * */
-    @Query("SELECT * FROM block_keyword WHERE whitelisted = :whitelisted")
+    @Query("SELECT * FROM block_keyword WHERE whitelisted = :whitelisted ORDER BY isRegex DESC, keyword")
     fun observeKeywordRules(whitelisted: Boolean): Flow<List<BlockKeyword>>
 
     /**

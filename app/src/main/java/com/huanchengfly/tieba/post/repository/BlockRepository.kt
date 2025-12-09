@@ -1,14 +1,18 @@
 package com.huanchengfly.tieba.post.repository
 
 import androidx.annotation.VisibleForTesting
+import androidx.core.util.Predicate
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
+import com.huanchengfly.tieba.post.arch.shareInBackground
+import com.huanchengfly.tieba.post.models.database.BlockKeyword
 import com.huanchengfly.tieba.post.models.database.BlockUser
 import com.huanchengfly.tieba.post.models.database.dao.BlockDao
+import com.huanchengfly.tieba.post.models.database.dao.TypedKeyword
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,25 +27,27 @@ class BlockRepository @Inject constructor(
     private val scope = AppBackgroundScope
 
     /**
-     * Blacklisted keywords
+     * Blacklisted predicates.
      * */
-    val blacklist: StateFlow<List<String>> = localDataSource.observeKeywords(whitelisted = false)
-        .stateIn(scope, started = SharingStarted.Eagerly, initialValue = emptyList())
+    val blacklist: SharedFlow<List<Predicate<String>>> = localDataSource.observeTypedKeywords(whitelisted = false)
+        .map(::mapToPredicates)
+        .shareInBackground(started = SharingStarted.Lazily)
 
     /**
-     * Whitelisted keywords
+     * Whitelisted predicates. Note that whitelist has highest priority.
      * */
-    val whitelist: StateFlow<List<String>> = localDataSource.observeKeywords(whitelisted = true)
-        .stateIn(scope, started = SharingStarted.Eagerly, initialValue = emptyList())
+    val whitelist: SharedFlow<List<Predicate<String>>> = localDataSource.observeTypedKeywords(whitelisted = true)
+        .map(::mapToPredicates)
+        .shareInBackground(started = SharingStarted.Lazily)
 
-    fun addKeyword(keyword: String, whitelisted: Boolean) {
+    fun addKeyword(keyword: String, isRegex: Boolean, whitelisted: Boolean) {
         scope.launch {
-            localDataSource.addKeyword(keyword, whitelisted)
+            localDataSource.addKeyword(keyword, isRegex, whitelisted)
         }
     }
 
-    fun deleteKeyword(keyword: String) {
-        scope.launch { localDataSource.deleteKeyword(keyword) }
+    fun deleteKeyword(keyword: BlockKeyword) {
+        scope.launch { localDataSource.deleteKeywordById(keyword.id) }
     }
 
     fun upsertUser(user: BlockUser) {
@@ -55,6 +61,8 @@ class BlockRepository @Inject constructor(
     fun observeUser(uid: Long): Flow<Boolean?> = localDataSource.observeUser(uid)
 
     fun observeUsers(whitelisted: Boolean): Flow<List<BlockUser>> = localDataSource.observeUsers(whitelisted)
+
+    fun observeKeyword(whitelisted: Boolean): Flow<List<BlockKeyword>> = localDataSource.observeKeywordRules(whitelisted)
 
     /**
      * @return is user or contents blocked
@@ -71,12 +79,37 @@ class BlockRepository @Inject constructor(
 
     companion object {
 
+        private class KeywordPredicate(val keyword: String): Predicate<String> {
+            override fun test(t: String?): Boolean {
+                return !t.isNullOrEmpty() && t.contains(keyword, ignoreCase = true)
+            }
+
+            override fun toString(): String = keyword
+        }
+
+        private class RegexPredicate(pattern: String): Predicate<String> {
+            private val regex = pattern.toRegex()
+
+            override fun test(t: String?): Boolean {
+                return !t.isNullOrEmpty() && regex.containsMatchIn(input = t)
+            }
+
+            override fun toString(): String = regex.pattern
+        }
+
+        // Convert Keywords to Predicates
+        private fun mapToPredicates(rules: List<TypedKeyword>): List<Predicate<String>> {
+            return rules.map {
+                if (it.isRegex) RegexPredicate(pattern = it.keyword) else KeywordPredicate(keyword = it.keyword)
+            }
+        }
+
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        fun Array<out String>.contains(keywords: List<String>): Boolean {
-            if (keywords.isEmpty()) return false
+        fun Array<out String>.anyMatches(predicates: List<Predicate<String>>): Boolean {
+            if (isEmpty() || predicates.isEmpty()) return false
 
             forEach { content ->
-                if (content.isNotEmpty() && keywords.any { content.contains(it, ignoreCase = true) }) {
+                if (predicates.any { it.test(content) }) {
                     return true
                 }
             }
@@ -84,12 +117,12 @@ class BlockRepository @Inject constructor(
         }
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        fun isBlocked(blacklist: List<String>, whitelist: List<String>, vararg contents: String): Boolean {
+        fun isBlocked(blacklist: List<Predicate<String>>, whitelist: List<Predicate<String>>, vararg contents: String): Boolean {
             // whitelist has highest priority
-            return if (contents.contains(whitelist)) {
+            return if (contents.anyMatches(predicates = whitelist)) {
                 false
             } else {
-                contents.contains(blacklist)
+                contents.anyMatches(predicates = blacklist)
             }
         }
     }

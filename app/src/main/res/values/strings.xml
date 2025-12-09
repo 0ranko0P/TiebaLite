@@ -462,6 +462,8 @@
     <string name="text_login_failed">登录失败 %s</string>
     <string name="text_login_success">登录成功，即将跳转</string>
     <string name="video_preview_not_supported">暂不支持视频预览</string>
+    <string name="button_add_keyword">关键词</string>
+    <string name="button_add_regex">正则表达式</string>
     <string name="button_ok">我知道了</string>
     <string name="button_submit">提交</string>
     <string name="button_sure">确定(%1$d)</string>
@@ -471,6 +473,8 @@
     <string name="desc_show">显示</string>
     <string name="dialog_add_blocklist">包含关键词的内容将会被屏蔽</string>
     <string name="dialog_add_whitelist">包含关键词的内容不会被屏蔽, 白名单优先级高于黑名单</string>
+    <string name="dialog_add_blocklist_regex">匹配的内容将会被屏蔽</string>
+    <string name="dialog_add_whitelist_regex">匹配的内容不会被屏蔽, 白名单优先级高于黑名单</string>
     <string name="dialog_permission_rationale">前往设置页面并手动授予“%1$s”权限</string>
     <string name="dialog_content_wait">请坐和放宽</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
