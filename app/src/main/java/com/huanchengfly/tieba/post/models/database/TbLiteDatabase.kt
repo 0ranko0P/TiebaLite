@@ -14,6 +14,7 @@ import com.huanchengfly.tieba.post.models.database.dao.SearchDao
 import com.huanchengfly.tieba.post.models.database.dao.SearchPostDao
 import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
+import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import java.util.concurrent.TimeUnit
 
 @Database(
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit
         ThreadHistory::class,
         TopForum::class,
         Timestamp::class,
+        UserProfile::class,
     ],
     version = 1
 )
@@ -51,6 +53,8 @@ abstract class TbLiteDatabase : RoomDatabase() {
     abstract fun threadHistoryDao(): ThreadHistoryDao
 
     abstract fun timestampDao(): TimestampDao
+
+    abstract fun userProfileDao(): UserProfileDao
 
     companion object {
 

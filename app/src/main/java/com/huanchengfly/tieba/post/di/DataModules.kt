@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.models.database.dao.SearchDao
 import com.huanchengfly.tieba.post.models.database.dao.SearchPostDao
 import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
+import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSourceImp
 import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
@@ -94,6 +95,9 @@ object DatabaseModule {
 
     @Provides
     fun provideTimestampDao(database: TbLiteDatabase): TimestampDao = database.timestampDao()
+
+    @Provides
+    fun provideUserProfileDao(database: TbLiteDatabase): UserProfileDao = database.userProfileDao()
 }
 
 @EntryPoint

@@ -1,12 +1,11 @@
 package com.huanchengfly.tieba.post.repository.source.local
 
 import android.content.Context
+import androidx.collection.MutableLongSet
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
-import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
-import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.decodeCache
+import com.huanchengfly.tieba.post.utils.FileUtil.isCacheExpired
 import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.decodeListCache
-import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.encodeCache
 import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.encodeListCache
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +18,6 @@ import javax.inject.Singleton
 
 private const val CACHE_DIR_NAME = "User"
 
-private const val PROFILE_EXPIRE_MILL = 0x240C8400 // 7 days
 private const val THREAD_POST_EXPIRE_MILL = 0x36EE80 // 1 hour
 
 @Singleton
@@ -61,36 +59,19 @@ class UserProfileLocalDataSource @Inject constructor(@ApplicationContext context
         }
     }
 
+    /**
+     * Remove all cached post and thread of this user
+     * */
+    suspend fun purgeByUid(uid: Long): Int = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            deleteWithPrefixSafe(cacheDir, prefix = "${uid}_")
+        }
+    }
+
     suspend fun purgeUserThreadPost(uid: Long, isThread: Boolean) = withContext(Dispatchers.IO) {
         mutex.withLock {
             val prefix = if (isThread) "${uid}_t_" else "${uid}_p_"
             deleteWithPrefixSafe(cacheDir, prefix)
-        }
-    }
-
-    suspend fun loadUserProfile(uid: Long): User? = withContext(Dispatchers.IO) {
-        val cacheFile = userCacheFile(uid)
-        mutex.withLock {
-            runCatching {
-                User.ADAPTER.decodeCache(cacheFile, PROFILE_EXPIRE_MILL.toLong())
-            }
-            .getOrNull()
-        }
-    }
-
-    suspend fun saveUserProfile(uid: Long, data: User) = withContext(Dispatchers.IO) {
-        val cacheFile = userCacheFile(uid)
-        mutex.withLock {
-            runCatching {
-                User.ADAPTER.encodeCache(cacheFile, data)
-            }
-            .isSuccess
-        }
-    }
-
-    suspend fun deleteUserProfile(uid: Long) = withContext(Dispatchers.IO) {
-        mutex.withLock {
-            runCatching { userCacheFile(uid).deleteQuietly() }
         }
     }
 
@@ -101,8 +82,30 @@ class UserProfileLocalDataSource @Inject constructor(@ApplicationContext context
         return File(cacheDir, prefix + page)
     }
 
-    private fun userCacheFile(uid: Long): File {
-        require(uid > 0) { "Invalid user ID: $uid." }
-        return File(cacheDir, uid.toString())
+    private val File.uid: Long
+        get() {
+            val index = name.indexOf('_')
+            return if (index > 0) name.substring(0, index).toLong() else name.toLong()
+        }
+
+    suspend fun cleanUpExpired(): Int = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            runCatching {
+                val caches = cacheDir.listFiles() ?: return@runCatching 0
+                var deleted = 0
+                val expiredUsers = MutableLongSet()
+                val expireMill = THREAD_POST_EXPIRE_MILL.toLong()
+                caches.forEach {
+                    val uid = it.uid
+                    if (uid in expiredUsers || it.length() <= 0 || it.isCacheExpired(expireMill)) {
+                        expiredUsers.add(uid)
+                        it.deleteQuietly()
+                        deleted++
+                    }
+                }
+                deleted
+            }
+            .getOrNull() ?: 0
+        }
     }
 }

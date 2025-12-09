@@ -451,12 +451,11 @@
     <string name="desc_forum_rule">吧规</string>
     <string name="text_stat_agrees">获赞</string>
     <string name="text_profile_ip_location">IP 属地：%s</string>
-    <string name="text_profile_tb_age">%1$.1f 年</string>
+    <string name="text_profile_tb_age">%s 年</string>
     <string name="text_profile_user_id">ID: %s</string>
     <string name="title_profile_threads">贴子 %s</string>
     <string name="title_profile_posts">回复 %s</string>
     <string name="title_profile_forums">关注吧 %s</string>
-    <string name="btn_block">屏蔽选项</string>
     <string name="text_official_account">官方账号</string>
     <string name="text_god_verify">%s领域大神</string>
     <string name="text_login_failed">登录失败 %s</string>

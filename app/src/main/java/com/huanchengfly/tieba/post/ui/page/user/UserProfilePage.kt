@@ -26,8 +26,9 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.rounded.NoAccounts
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -81,10 +82,10 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
-import com.huanchengfly.tieba.post.ui.models.user.UserProfile
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
@@ -204,18 +205,18 @@ fun UserProfilePage(
         errorScreen = { ErrorScreen(error = error) }
     ) {
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-        val userProfile = uiState.profile?: return@StateScreen
+        val userProfile = viewModel.userProfile.collectAsStateWithLifecycle().value ?: return@StateScreen
         val account = LocalAccount.current
         val isSelf = account?.uid == uid
 
         val tabs: List<TabWithTitle> = remember {
             Tab.entries.mapNotNull {
                 when(it) {
-                    Tab.THREADS -> it to it.formatTitle(userProfile.threadNum, context)
+                    Tab.THREADS -> it to it.formatTitle(userProfile.thread, context)
 
-                    Tab.POSTS -> (it to it.formatTitle(userProfile.postNum, context)).takeIf { isSelf }
+                    Tab.POSTS -> (it to it.formatTitle(userProfile.post, context)).takeIf { isSelf }
 
-                    Tab.FORUMS -> it to it.formatTitle(userProfile.forumNum, context)
+                    Tab.FORUMS -> it to it.formatTitle(userProfile.forum, context)
                 }
             }
         }
@@ -234,7 +235,7 @@ fun UserProfilePage(
                         Tab.FORUMS -> when {
                             userProfile.privateForum -> UserPageHide(hiddenTab = tab)
 
-                            userProfile.forumNum == 0 -> UserPageEmpty()
+                            userProfile.forum == 0 -> UserPageEmpty()
 
                             else -> UserLikeForumPage(uid, fluid, lazyListState)
                         }
@@ -286,6 +287,7 @@ fun UserProfilePage(
                     },
                     isSelf = isSelf,
                     isFollowing = userProfile.following,
+                    isRequestingFollow = uiState.isRequestingFollow,
                     onActionClicked = {
                         when {
                             isSelf -> context.goToActivity<EditProfileActivity>()
@@ -294,7 +296,8 @@ fun UserProfilePage(
 
                             else -> viewModel.onFollowClicked()
                         }
-                    }.takeUnless { uiState.isRequestingFollow || account == null },
+                    }.takeUnless { uiState.isRefreshing || account == null },
+                    onRefreshClicked = viewModel::onRefresh,
                     block = blockState,
                     onBlackListClicked = viewModel::onUserBlacklisted,
                     onWhiteListClicked = viewModel::onUserWhitelisted,
@@ -351,7 +354,9 @@ private fun UserProfileToolbar(
     block: UserBlockState,
     isSelf: Boolean = false,
     isFollowing: Boolean = false,
+    isRequestingFollow: Boolean = false,
     onActionClicked: (() -> Unit)? = null,
+    onRefreshClicked: () -> Unit = {},
     onBlackListClicked: () -> Unit = {},
     onWhiteListClicked: () -> Unit = {},
     onBack: () -> Unit = {},
@@ -359,7 +364,12 @@ private fun UserProfileToolbar(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val actionsMenu: @Composable RowScope.() -> Unit = {
-        if (onActionClicked != null) {
+        if (isRequestingFollow) {
+            CircularProgressIndicator(
+                modifier = Modifier.minimumInteractiveComponentSize(),
+                strokeWidth = 2.5.dp
+            )
+        } else if (onActionClicked != null) {
             TextButton(onClick = onActionClicked) {
                 Text(
                     text = when {
@@ -377,6 +387,10 @@ private fun UserProfileToolbar(
 
             ClickMenu(
                 menuContent = {
+                    TextMenuItem(
+                        text = R.string.btn_refresh,
+                        onClick = onRefreshClicked
+                    )
                     TextMenuItem (
                         text = if (isInBlackList) R.string.title_remove_black else R.string.title_add_black,
                         onClick = onBlackListClicked
@@ -386,12 +400,11 @@ private fun UserProfileToolbar(
                         onClick = onWhiteListClicked
                     )
                 },
-                modifier = Modifier.padding(end = 12.dp),
                 triggerShape = CircleShape
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.NoAccounts,
-                    contentDescription = stringResource(id = R.string.btn_block),
+                    imageVector = Icons.Rounded.MoreVert,
+                    contentDescription = stringResource(id = R.string.btn_more),
                     modifier = Modifier.minimumInteractiveComponentSize()
                 )
             }
@@ -517,17 +530,17 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
             ) {
                 SelectionContainer {
                     Text(
-                        text = profile.name,
+                        text = profile.nickname ?: profile.name,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                profile.userName?.let { userName -> // 同时显示用户名与昵称
+                if (profile.nickname != null && profile.name.isNotEmpty()) { // 同时显示用户名与昵称
                     SelectionContainer {
                         Text(
-                            text = userName,
+                            text = remember { "(${profile.name})" },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp,
                             maxLines = 1,
@@ -545,19 +558,19 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
                         // 关注
                         StatusText(
                             name = stringResource(id = R.string.text_stat_follow),
-                            status = profile.followNum,
+                            status = remember(profile.follow) { profile.follow.getShortNumString() },
                         )
                         // 粉丝
                         VerticalDivider()
                         StatusText(
                             name = stringResource(id = R.string.text_stat_fans),
-                            status = remember { profile.fans.getShortNumString() },
+                            status = remember(profile.fans) { profile.fans.getShortNumString() },
                         )
                         // 赞
                         VerticalDivider()
                         StatusText(
                             name = stringResource(id = R.string.text_stat_agrees),
-                            status = profile.agreeNum,
+                            status = remember(profile.agree) { profile.agree.getShortNumString() },
                         )
                         // 吧龄
                         VerticalDivider()
@@ -688,9 +701,10 @@ private fun UserProfileDetailPreview() = TiebaLiteTheme {
     UserProfileDetail(
         modifier = Modifier.padding(16.dp),
         profile = UserProfile(
-            name = "我是谁",
-            userName = "(我是0812)",
-            tbAge = 12.4f,
+            uid = -1,
+            name = "我是0812",
+            nickname = "我是谁",
+            tbAge = "12.4",
             address = "第二经济开发区",
             bazuDesc = "吃瓜吧吧主",
             newGod = "吃瓜"

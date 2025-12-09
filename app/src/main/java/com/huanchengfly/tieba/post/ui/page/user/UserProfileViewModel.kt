@@ -17,14 +17,15 @@ import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderEffectImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImageProcessor
 import com.huanchengfly.tieba.post.models.database.BlockUser
+import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
-import com.huanchengfly.tieba.post.ui.models.user.UserProfile
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -54,10 +55,9 @@ sealed interface UserProfileUiEvent : UiEvent {
 
 @Immutable
 data class UserProfileUiState(
-    val isRefreshing: Boolean = false,
+    val isRefreshing: Boolean = true,
     val isRequestingFollow: Boolean = false,
     val error: Throwable? = null,
-    val profile: UserProfile? = null,
 ) : UiState
 
 @HiltViewModel
@@ -80,6 +80,9 @@ class UserProfileViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), UserBlockState.None)
 
+    private val _uiState = MutableStateFlow(UserProfileUiState())
+    val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
+
     private val handler = CoroutineExceptionHandler { _, e ->
         if (e !is NoConnectivityException) {
             Log.e(TAG, "onError: ", e)
@@ -99,24 +102,24 @@ class UserProfileViewModel @Inject constructor(
         }
     }
 
-    private val _uiState = MutableStateFlow(UserProfileUiState())
-    val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
+    val userProfile: StateFlow<UserProfile?> = userProfileRepo.observeUserProfile(uid)
+        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = null)
 
     init {
-        refreshInternal(cached = true)
+        refreshInternal(forceRefresh = false)
     }
 
-    private fun refreshInternal(cached: Boolean) = viewModelScope.launch {
+    private fun refreshInternal(forceRefresh: Boolean) = viewModelScope.launch {
         _uiState.set { UserProfileUiState(isRefreshing = true) }
 
         viewModelScope.launch(handler) {
-            val profile = userProfileRepo.loadUserProfile(uid, cached)
-            _uiState.update { UserProfileUiState(profile = profile) }
+            userProfileRepo.refreshUserProfile(uid, forceRefresh)
+            _uiState.update { UserProfileUiState(isRefreshing = false, error = null) }
         }
     }
 
     fun onRefresh() {
-        if (!_uiState.value.isRefreshing) refreshInternal(cached = false)
+        if (!_uiState.value.isRefreshing) refreshInternal(forceRefresh = true)
     }
 
     /**
@@ -125,7 +128,7 @@ class UserProfileViewModel @Inject constructor(
      * @param newState 将该用户加入白名单, 黑名单或移除
      * */
     private fun updateBlockState(newState: UserBlockState) {
-        val name = _uiState.value.profile?.name ?: throw NullPointerException()
+        val name = userProfile.value?.name ?: throw NullPointerException()
         when (newState) {
             UserBlockState.Blacklisted -> blockRepo.upsertUser(BlockUser(uid, name, false))
 
@@ -139,57 +142,45 @@ class UserProfileViewModel @Inject constructor(
 
     fun onUserWhitelisted() = updateBlockState(UserBlockState.Whitelisted)
 
-    private fun updateRequestingFollowState(following: Boolean, requesting: Boolean) {
-        _uiState.update {
-            val profile = it.profile
-            val newProfile = if (profile?.following != following) { // adjust fans num
-                profile?.copy(following = following, fans = profile.fans + if (following) 1 else -1)
-            } else {
-                profile
-            }
-            it.copy(isRequestingFollow = requesting, profile = newProfile)
-        }
-    }
-
     fun onFollowClicked() {
         val oldUiState = _uiState.value
-        val profile = oldUiState.profile ?: return
-        if (oldUiState.isRequestingFollow || profile.following) return
+        val profile = userProfile.value
+        if (oldUiState.isRequestingFollow || profile!!.following) return
 
-        updateRequestingFollowState(following = true, requesting = true)
+        _uiState.update { it.copy(isRequestingFollow = true) }
+        val start = System.currentTimeMillis()
         viewModelScope.launch(handler) {
             runCatching {
                 userProfileRepo.requestFollowUser(profile)
             }
-            .onFailure { e ->
-                emitGlobalEvent(UserProfileUiEvent.FollowFailed(e))
-                updateRequestingFollowState(following = false, requesting = false) // reset unfollowed
-            }
-           .onSuccess {
+            .onFailure { e -> emitGlobalEvent(UserProfileUiEvent.FollowFailed(e)) }
+            .onSuccess {
                val message = it.toastText.takeUnless { toast -> toast.isEmpty() }
                emitGlobalEvent(UserProfileUiEvent.FollowSuccess(message))
-               updateRequestingFollowState(following = true, requesting = false)
-           }
+            }
+
+            if (System.currentTimeMillis() - start < 300) delay(250) // wait loading animation
+            _uiState.update { it.copy(isRequestingFollow = false) }
         }
     }
 
     fun onUnFollowClicked() {
         val oldUiState = _uiState.value
-        val profile = oldUiState.profile ?: return
-        if (oldUiState.isRequestingFollow || !profile.following) return
+        val profile = userProfile.value
+        if (oldUiState.isRequestingFollow || !profile!!.following) return
 
-        updateRequestingFollowState(following = false, requesting = true)
+        _uiState.update { it.copy(isRequestingFollow = true) }
+        val start = System.currentTimeMillis()
         viewModelScope.launch(handler) {
             runCatching {
                 userProfileRepo.requestUnfollowUser(profile)
             }
             .onFailure { e ->
                 emitGlobalEvent(UserProfileUiEvent.UnfollowFailed(e))
-                updateRequestingFollowState(following = true, requesting = false) // reset followed
             }
-            .onSuccess {
-                updateRequestingFollowState(following = false, requesting = false)
-            }
+
+            if (System.currentTimeMillis() - start < 300) delay(250) // wait loading animation
+            _uiState.update { it.copy(isRequestingFollow = false) }
         }
     }
 

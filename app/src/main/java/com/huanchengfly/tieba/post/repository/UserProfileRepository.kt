@@ -1,12 +1,16 @@
 package com.huanchengfly.tieba.post.repository
 
 import android.content.Context
+import android.util.Log
+import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.api.models.FollowBean
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.models.database.UserProfile
+import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.repository.source.local.UserProfileLocalDataSource
 import com.huanchengfly.tieba.post.repository.source.network.UserProfileNetworkDataSource
 import com.huanchengfly.tieba.post.ui.models.Author
@@ -16,17 +20,19 @@ import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.user.PostContent
 import com.huanchengfly.tieba.post.ui.models.user.PostListItem
-import com.huanchengfly.tieba.post.ui.models.user.UserProfile
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildThreadContent
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import com.huanchengfly.tieba.post.utils.StringUtil.normalized
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,10 +41,17 @@ import javax.inject.Singleton
 class UserProfileRepository @Inject constructor(
     @ApplicationContext val context: Context,
     private val threadRepo: PbPageRepository,
+    private val userProfileDao: UserProfileDao,
     private val localDataSource: UserProfileLocalDataSource
-){
+) {
 
     private val networkDataSource = UserProfileNetworkDataSource
+
+    private val scope = AppBackgroundScope
+
+    init {
+        scope.launch { localDataSource.cleanUpExpired() }
+    }
 
     private suspend fun requireTBS(): String {
         return AccountUtil.getInstance().currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
@@ -71,6 +84,8 @@ class UserProfileRepository @Inject constructor(
         return data
     }
 
+    fun observeUserProfile(uid: Long): Flow<UserProfile?> = userProfileDao.observeById(uid)
+
     suspend fun loadUserPost(uid: Long, page: Int, cached: Boolean): List<PostListItem> {
         return loadUserThreadPost(uid, page, cached, isThread = false).mapUiModelPost(context)
     }
@@ -79,30 +94,34 @@ class UserProfileRepository @Inject constructor(
         return loadUserThreadPost(uid, page, cached, isThread = true).mapUiModelThreads()
     }
 
-    suspend fun loadUserProfile(uid: Long, cached: Boolean): UserProfile {
-        var data: User? = null
-        if (cached) {
-            data = localDataSource.loadUserProfile(uid)
-        }
-
-        // no cache or expired, fetch from network
-        if (data == null) {
-            data = networkDataSource.loadUserProfile(uid)
-            localDataSource.saveUserProfile(uid, data)
-        }
-        currentCoroutineContext().ensureActive()
-        return mapToUser(data)
+    /**
+     * Refresh and cache user profile, this is non-cancellable.
+     * */
+    suspend fun refreshUserProfile(uid: Long, forceRefresh: Boolean) {
+        val start = System.currentTimeMillis()
+        scope.async {
+            // Force refresh or cache expired, load latest user profile from network
+            if (forceRefresh || checkUserCacheExpired(uid)) {
+                val data: User = networkDataSource.loadUserProfile(uid)
+                userProfileDao.upsert(profile = mapToEntity(data))
+                localDataSource.purgeByUid(uid)
+            } else {
+                userProfileDao.updateLastVisit(uid, timestamp = System.currentTimeMillis())
+            }
+            val cost = System.currentTimeMillis() - start
+            Log.i(TAG, "onRefreshUserProfile: Done, cost ${cost}ms on $uid")
+        }.await()
     }
 
     suspend fun requestFollowUser(profile: UserProfile): FollowBean.Info {
         val result = networkDataSource.requestFollowUser(portrait = profile.portrait, tbs = requireTBS())
-        localDataSource.deleteUserProfile(profile.uid)
+        userProfileDao.updateFollowState(uid = profile.uid, following = true, fans = profile.fans + 1)
         return result
     }
 
     suspend fun requestUnfollowUser(profile: UserProfile) {
         networkDataSource.requestUnfollowUser(portrait = profile.portrait, tbs = requireTBS())
-        localDataSource.deleteUserProfile(profile.uid)
+        userProfileDao.updateFollowState(uid = profile.uid, following = false, fans = profile.fans - 1)
     }
 
     suspend fun requestLikeThread(uid: Long, thread: ThreadItem) {
@@ -111,7 +130,16 @@ class UserProfileRepository @Inject constructor(
         localDataSource.purgeUserThreadPost(uid, isThread = true)
     }
 
+    private suspend fun checkUserCacheExpired(uid: Long): Boolean {
+        val lastUpdate = userProfileDao.getLastUpdate(uid) ?: return true
+        return lastUpdate + PROFILE_EXPIRE_MILL < System.currentTimeMillis()
+    }
+
     companion object {
+
+        private const val TAG = "UserProfileRepository"
+
+        private const val PROFILE_EXPIRE_MILL = 0x240C8400 // 7 days
 
         private suspend fun List<PostInfoList>.mapUiModelPost(context: Context): List<PostListItem> {
             if (isEmpty()) return emptyList()
@@ -171,31 +199,35 @@ class UserProfileRepository @Inject constructor(
             }
         }
 
-        private fun mapToUser(user: User): UserProfile = UserProfile(
-            uid = user.id,
-            portrait = user.portrait,
-            name = user.nameShow.trim(),
-            userName = user.name.takeUnless { it == user.nameShow || it.length <= 1 }?.trim()?.let { "($it)" },
-            tiebaUid = user.tieba_uid,
-            intro = user.intro.takeUnless { it.isEmpty() },
-            sex = when (user.sex) {
-                1 -> "♂"
-                2 -> "♀"
-                else -> "?"
-            },
-            tbAge = user.tb_age.toFloatOrNull() ?: 0f,
-            address = user.ip_address.takeUnless { it.isEmpty() },
-            following = user.has_concerned != 0,
-            threadNum = user.thread_num,
-            postNum = user.post_num,
-            forumNum = user.my_like_num,
-            followNum = user.concern_num.getShortNumString(),
-            fans = user.fans_num,
-            agreeNum = user.total_agree_num.getShortNumString(),
-            bazuDesc = user.bazhu_grade?.desc?.takeUnless { it.isEmpty() },
-            newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name,
-            privateForum = user.privSets?.like != 1,
-            isOfficial = user.is_guanfang == 1
-        )
+        private fun mapToEntity(user: User): UserProfile {
+            val name = user.name.trim().normalized()
+            val nickname = user.nameShow.takeUnless { it.isEmpty() || it.isBlank() }?.trim()?.normalized()
+            return UserProfile(
+                uid = user.id,
+                portrait = user.portrait,
+                name = name,
+                nickname = nickname?.takeUnless { it == name },
+                tiebaUid = user.tieba_uid,
+                intro = user.intro.takeUnless { it.isEmpty() },
+                sex = when (user.sex) {
+                    1 -> "♂"
+                    2 -> "♀"
+                    else -> "?"
+                },
+                tbAge = user.tb_age,
+                address = user.ip_address.takeUnless { it.isEmpty() },
+                following = user.has_concerned != 0,
+                thread = user.thread_num,
+                post = user.post_num,
+                forum = user.my_like_num,
+                follow = user.concern_num,
+                fans = user.fans_num,
+                agree = user.total_agree_num,
+                bazuDesc = user.bazhu_grade?.desc?.takeUnless { it.isEmpty() },
+                newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name,
+                privateForum = user.privSets?.like != 1,
+                isOfficial = user.is_guanfang == 1
+            )
+        }
     }
 }
