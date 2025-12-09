@@ -8,6 +8,7 @@ import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.models.database.ThreadHistory
 import com.huanchengfly.tieba.post.repository.HistoryRepository
+import com.huanchengfly.tieba.post.repository.UserHistory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -19,6 +20,9 @@ class HistoryViewModel @Inject constructor(private val historyRepo: HistoryRepos
         .cachedIn(viewModelScope)
 
     val threadHistory: Flow<PagingData<ThreadHistory>> = historyRepo.getThreadHistory()
+        .cachedIn(viewModelScope)
+
+    val userHistory: Flow<PagingData<UserHistory>> = historyRepo.getUserHistory()
         .cachedIn(viewModelScope)
 
     fun onDelete(history: History) = historyRepo.deleteHistory(history)

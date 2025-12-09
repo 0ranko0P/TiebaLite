@@ -41,6 +41,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.models.database.ThreadHistory
+import com.huanchengfly.tieba.post.repository.UserHistory
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -73,7 +74,8 @@ fun HistoryPage(
     val tabs = remember {
         listOf(
             R.string.title_history_thread,
-            R.string.title_history_forum
+            R.string.title_history_forum,
+            R.string.title_history_user,
         )
     }
 
@@ -88,6 +90,8 @@ fun HistoryPage(
             is ForumHistory -> {
                 navigator.navigate(route = Destination.Forum(forumName = it.name, avatar = it.avatar))
             }
+
+            is UserHistory -> navigator.navigate(route = Destination.UserProfile(uid = it.id))
         }
     }
 
@@ -99,6 +103,8 @@ fun HistoryPage(
                     R.string.title_history_thread -> viewModel.threadHistory.collectAsLazyPagingItems()
 
                     R.string.title_history_forum -> viewModel.forumHistory.collectAsLazyPagingItems()
+
+                    R.string.title_history_user -> viewModel.userHistory.collectAsLazyPagingItems()
 
                     else -> throw RuntimeException()
                 }
@@ -223,6 +229,18 @@ private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: Stri
 }
 
 @Composable
+private fun UserItem(modifier: Modifier = Modifier, avatar: String, name: String, time: String) {
+    UserHeader(
+        modifier = modifier.padding(16.dp),
+        avatar = { Avatar(data = avatar, size = Sizes.Small) },
+        name = { Text(text = name) },
+        content = {
+            Text(text = time, fontSize = 15.sp)
+        }
+    )
+}
+
+@Composable
 private fun <T : History> HistoryColumn(
     pagedItems: LazyPagingItems<T>,
     onDelete: (T) -> Unit,
@@ -251,6 +269,10 @@ private fun <T : History> HistoryColumn(
 
                         is ForumHistory -> {
                             ForumItem(avatar = item.avatar, forum = item.name, time = time)
+                        }
+
+                        is UserHistory -> {
+                            UserItem(avatar = item.avatar, name = item.name, time = time)
                         }
 
                         else -> throw RuntimeException()
