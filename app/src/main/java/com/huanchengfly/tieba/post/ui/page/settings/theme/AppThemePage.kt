@@ -270,7 +270,7 @@ fun AppThemePage(
     val currentScheme = MaterialTheme.colorScheme
 
     var themeWidgetLayoutData by remember { mutableStateOf<Pair<IntSize, Offset>?>(null) }
-    if (currentScheme.isTranslucent) {
+    if (currentScheme.isTranslucent && !isWindowHeightCompact()) {
         themeWidgetLayoutData?.let { (size, pos) ->
             TranslucentThemeOverlay(widgetPanelSize = size, positionInWindow = pos)
         }

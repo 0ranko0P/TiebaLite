@@ -121,11 +121,11 @@ fun Dislike(
                     .background(color = MaterialTheme.colorScheme.background.copy(alpha = 0.74f))
              },
         menuState = menuState,
+        menuShape = MaterialTheme.shapes.small,
         onDismiss = onDismiss
     ) {
         IconButton(
             onClick = { menuState.expanded = true },
-            modifier = Modifier.size(Sizes.Tiny)
         ) {
             Icon(
                 imageVector = Icons.Rounded.KeyboardArrowDown,

@@ -227,6 +227,7 @@ fun SearchPage(
                         onKeywordSubmit = onKeywordSubmit
                     ) {
                         coroutineScope.launch { // Clear SearchBox for transition animation
+                            keyboardController?.hide()
                             if (isKeywordNotEmpty && isInputKeywordNotEmpty) {
                                 onKeywordSubmit("")
                                 delay(150) // Wait keyboard animation

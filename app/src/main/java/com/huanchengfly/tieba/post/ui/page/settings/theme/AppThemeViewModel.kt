@@ -91,7 +91,7 @@ class AppThemeViewModel @Inject constructor(
         flow2 = themeSettings,
         // state.value vs settings.value
         transform = { a, b ->
-            a?.color != b.customColor || a?.variant != b.customVariant || b.theme != Theme.CUSTOM
+            a != null && (a.color != b.customColor || a.variant != b.customVariant || b.theme != Theme.CUSTOM)
         }
     )
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialValue = false)

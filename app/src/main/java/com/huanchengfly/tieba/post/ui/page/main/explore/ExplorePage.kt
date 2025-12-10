@@ -312,12 +312,10 @@ fun LaunchedFabStateEffect(
         }
     }
 
-    val isTop by remember {
-        derivedStateOf { listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset > 0 }
-    }
+    val noScrollBackward by remember { derivedStateOf { !listState.canScrollBackward } }
 
-    LaunchedEffect(isTop, onHideFab, isRefreshing, isError) {
-        onHideFab(!isTop || isRefreshing || isError)
+    LaunchedEffect(noScrollBackward, onHideFab, isRefreshing, isError) {
+        onHideFab(noScrollBackward || isRefreshing || isError)
     }
 }
 

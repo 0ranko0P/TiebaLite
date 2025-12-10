@@ -14,8 +14,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -46,6 +44,7 @@ import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
+import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
@@ -122,17 +121,15 @@ fun HistoryPage(
                     BackNavigationIcon(onBackPressed = navigator::navigateUp)
                 },
                 actions = {
-                    IconButton(onClick = {
+                    ActionItem(
+                        icon = Icons.Outlined.Delete,
+                        contentDescription = stringResource(id = R.string.title_history_delete)
+                    ) {
                         viewModel.onDeleteAll()
                         coroutineScope.launch {
                             val message = context.getString(R.string.toast_clear_success)
                             snackbarHostState.showSnackbar(message)
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = stringResource(id = R.string.title_history_delete)
-                        )
                     }
                 },
                 content = {

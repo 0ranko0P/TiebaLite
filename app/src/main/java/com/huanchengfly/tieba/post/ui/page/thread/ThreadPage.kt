@@ -43,6 +43,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -275,6 +276,11 @@ fun ThreadPage(
         viewModel.requestLoadMyLatestReply(event.newPostId)
     }
 
+    if (extra != null && extra is ThreadFrom.Store && extra.maxPid != postId) {
+        CollectionsUpdatedSnack(snackbarHostState, extra) {
+            viewModel.requestLoad(page = 0, postId = extra.maxPid)
+        }
+    }
 
     var newMarkedCollectionPost: PostData? by remember { mutableStateOf(null) }
 
@@ -316,20 +322,6 @@ fun ThreadPage(
             }
         }
     )
-
-    LaunchedEffect(Unit) {
-        if (extra is ThreadFrom.Store && extra.maxPid != postId) {
-            val result = snackbarHostState.showSnackbar(
-                context.getString(R.string.message_store_thread_update, extra.maxFloor),
-                context.getString(R.string.button_load_new),
-                true,
-                SnackbarDuration.Long
-            )
-            if (result == SnackbarResult.ActionPerformed) {
-                viewModel.requestLoad(page = 0, postId = extra.maxPid)
-            }
-        }
-    }
 
     val onBackPressedCallback: () -> Unit = {
         if (bottomSheetState.isVisible) { // Close bottom sheet now
@@ -746,6 +738,30 @@ private fun ThreadMenu(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CollectionsUpdatedSnack(
+    snackbarHostState: SnackbarHostState,
+    extra: ThreadFrom.Store,
+    onLoadLatest: () -> Unit
+) {
+    var showed by rememberSaveable { mutableStateOf(false) }
+    if (showed) return // Display only once
+
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        val result = snackbarHostState.showSnackbar(
+            context.getString(R.string.message_store_thread_update, extra.maxFloor),
+            context.getString(R.string.button_load_new),
+            true,
+            SnackbarDuration.Long
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            onLoadLatest()
+        }
+        showed = true
     }
 }
 

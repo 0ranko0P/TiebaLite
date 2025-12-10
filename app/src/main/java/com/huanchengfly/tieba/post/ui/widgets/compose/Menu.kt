@@ -127,6 +127,7 @@ fun ClickMenu(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     indication: Indication? = LocalIndication.current,
     triggerShape: Shape? = null,
+    menuShape: Shape = MenuDefaults.shape,
     onDismiss: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
@@ -159,6 +160,7 @@ fun ClickMenu(
                 expanded = menuState.expanded,
                 onDismissRequest = menuScope::dismiss,
                 modifier = modifier,
+                shape = menuShape,
                 containerColor = MaterialTheme.colorScheme.background,
             ) {
                 menuScope.menuContent()

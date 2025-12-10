@@ -403,9 +403,12 @@ fun ForumPage(
         floatingActionButton = {
             val fab = LocalHabitSettings.current.forumFAB
             if (fab == ForumFAB.HIDE || forumData == null) return@MyScaffold
-            // FAB visibility: no error, scrolling forward, pager is not scrolling
+            // FAB visibility: no error, not onTop, scrolling forward, pager is not scrolling
             val fabVisibilityState = remember {
-                derivedStateOf { uiState.error == null && scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling }
+                derivedStateOf {
+                    val notTop = listStates[pagerState.currentPage].canScrollBackward
+                    uiState.error == null && notTop && scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling
+                }
             }
 
             ForumFab(fab = fab, visible = { fabVisibilityState.value }) {
@@ -521,8 +524,8 @@ private fun ForumHeaderPlaceholder(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (avatarUrl != null) {
-                Avatar(data = avatarUrl, size = Sizes.Large, modifier = avatarModifier)
+            if (!avatarUrl.isNullOrEmpty()) {
+                Avatar(modifier = avatarModifier.size(Sizes.Large), data = TbGlideUrl(avatarUrl))
             } else {
                 AvatarPlaceholder(size = Sizes.Large, modifier = avatarModifier)
             }

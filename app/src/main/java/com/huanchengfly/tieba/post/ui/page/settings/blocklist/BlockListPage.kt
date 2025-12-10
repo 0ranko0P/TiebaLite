@@ -272,6 +272,7 @@ private fun <T> BlockListScaffold(
                 }
             )
         },
+        backgroundColor = MaterialTheme.colorScheme.background // Higher contrast on translucent theme
     ) { contentPadding ->
         HorizontalPager(
             state = pagerState,

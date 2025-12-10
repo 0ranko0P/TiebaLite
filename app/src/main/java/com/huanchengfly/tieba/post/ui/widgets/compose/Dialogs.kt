@@ -268,9 +268,8 @@ fun PromptDialog(
         onDismiss = onCancel,
         title = title,
         buttons = {
-            val padding = Modifier.padding(horizontal = 12.dp)
-            DialogNegativeButton(modifier = padding, text = cancelText, onClick = onCancel)
-            DialogPositiveButton(modifier = padding, text = confirmText, enabled = !isErrorState) {
+            DialogNegativeButton(text = cancelText, onClick = onCancel)
+            DialogPositiveButton(text = confirmText, enabled = !isErrorState) {
                 onConfirm(textVal)
             }
         },

@@ -9,7 +9,8 @@ data class ColorSchemeDayNight(
 ) {
     fun getColorScheme(isDark: Boolean, isAmoled: Boolean): ColorScheme = when {
 
-        isDark && isAmoled -> darkColor.copy(
+        // Create dark AMOLED background (except translucent theme)
+        isDark && isAmoled && !darkColor.isTranslucent -> darkColor.copy(
             background = Color.Black,
             onBackground = Color.White,
             surface = Color.Black,
