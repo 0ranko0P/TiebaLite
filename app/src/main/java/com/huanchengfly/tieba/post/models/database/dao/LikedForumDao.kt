@@ -52,6 +52,19 @@ interface LikedForumDao {
     fun observeAllSorted(uid: Long): Flow<List<LocalLikedForum>>
 
     /**
+     * Get user forums paging source.
+     *
+     * For top pinned forums, use [pagingSourcePinned].
+     *
+     * @param uid user id
+     */
+    @Query("SELECT * FROM liked_forum liked " +
+            "WHERE uid = :uid AND NOT EXISTS (SELECT forumId from top_forum WHERE top_forum.forumId = liked.id)" +
+            "ORDER BY level DESC"
+    )
+    fun pagingSource(uid: Long): PagingSource<Int, LocalLikedForum>
+
+    /**
      * Get pinned liked forums paging source.
      *
      * @param uid user id

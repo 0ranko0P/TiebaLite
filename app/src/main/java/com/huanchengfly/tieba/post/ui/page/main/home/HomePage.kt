@@ -25,7 +25,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -66,6 +66,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -110,6 +114,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import dev.chrisbanes.haze.ExperimentalHazeApi
+import kotlin.random.Random
 
 private val FORUM_AVATAR_SIZE = 40.dp
 
@@ -328,33 +333,42 @@ private fun ForumItemContent(forum: LikedForum, showAvatar: Boolean) {
     }
 }
 
-@Composable
-private fun ForumItem(
-    modifier: Modifier = Modifier,
-    forum: LikedForum,
+private fun LazyGridScope.forumItems(
+    forums: LazyPagingItems<LikedForum>,
+    isTopPinnedForum: Boolean,
     showAvatar: Boolean,
     onClick: (forum: LikedForum) -> Unit,
     onUnfollow: (forum: LikedForum) -> Unit,
     onPinnedForumChanged: (forum: LikedForum, isTop: Boolean) -> Unit,
-    isTopForum: Boolean = false,
 ) {
-    val context = LocalContext.current
-    LongClickMenu(
-        menuContent = {
-            TextMenuItem(text = if (isTopForum) R.string.menu_top_del else R.string.menu_top) {
-                onPinnedForumChanged(forum, !isTopForum)
+    val contentType: (index: Int) -> Any? = forums.itemContentType {
+        if (showAvatar) ForumType.ListItem else ForumType.GridItem
+    }
+
+    items(count = forums.itemCount, key = forums.itemKey { it.id }, contentType = contentType) {
+        val context = LocalContext.current
+        val forum = forums[it]
+        if (forum != null) {
+            LongClickMenu(
+                menuContent = {
+                    TextMenuItem(text = if (isTopPinnedForum) R.string.menu_top_del else R.string.menu_top) {
+                        onPinnedForumChanged(forum, !isTopPinnedForum)
+                    }
+                    TextMenuItem(text = R.string.title_copy_forum_name) {
+                        TiebaUtil.copyText(context, forum.name)
+                    }
+                    TextMenuItem(text = R.string.button_unfollow) {
+                        onUnfollow(forum)
+                    }
+                },
+                modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
+                onClick = { onClick(forum) }
+            ) {
+                ForumItemContent(forum, showAvatar)
             }
-            TextMenuItem(text = R.string.title_copy_forum_name) {
-                TiebaUtil.copyText(context, forum.name)
-            }
-            TextMenuItem(text = R.string.button_unfollow) {
-                onUnfollow(forum)
-            }
-        },
-        modifier = modifier,
-        onClick = { onClick(forum) }
-    ) {
-        ForumItemContent(forum, showAvatar)
+        } else {
+            ForumItemPlaceholder(showAvatar)
+        }
     }
 }
 
@@ -397,11 +411,6 @@ fun HomePage(
         }
     }
 
-    val forumLists by viewModel.forumListsFlow.collectAsStateWithLifecycle()
-    val (topForums, forums) = forumLists
-    val hasTopForum = !topForums.isNullOrEmpty()
-    val isEmpty = topForums.isNullOrEmpty() && forums.isNullOrEmpty()
-
     BlurScaffold(
         topBar = {
             TopAppBar(
@@ -436,24 +445,27 @@ fun HomePage(
             }
         },
         topHazeBlock = {
-            blurEnabled = !isEmpty && gridState.canScrollBackward
+            blurEnabled = gridState.canScrollBackward
             inputScale = DefaultInputScale
         },
         bottomBar = emptyBlurBottomNavigation, // MainPage workaround when enabling BottomBar blurring
         bottomHazeBlock = {
-            blurEnabled = !isEmpty && gridState.canScrollForward
+            blurEnabled = gridState.canScrollForward
             inputScale = DefaultInputScale
         },
     ) { contentPaddings ->
-
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        val forums = viewModel.forums.collectAsLazyPagingItems()
+        val pinnedForums = viewModel.pinnedForums.collectAsLazyPagingItems()
+        val historyForums by viewModel.historyFlow.collectAsStateWithLifecycle()
+
+        val isEmpty = pinnedForums.itemCount == 0 && forums.itemCount == 0
+        val isPinnedNotEmpty = pinnedForums.itemCount > 0
+        val isLoading = uiState.isLoading || historyForums == null
+
         val listSingle = LocalUISettings.current.homeForumList
         val gridCells = remember(listSingle) {
             if (listSingle) GridCells.Fixed(1) else GridCells.Adaptive(180.dp)
-        }
-
-        val contentType: (item: LikedForum) -> ForumType = {
-            if (listSingle) ForumType.ListItem else ForumType.GridItem
         }
 
         // Initialize click listeners now
@@ -473,7 +485,7 @@ fun HomePage(
         StateScreen(
             isEmpty = isEmpty,
             isError = uiState.error != null,
-            isLoading = forums == null || uiState.isLoading,
+            isLoading = uiState.isLoading,
             modifier = Modifier.fillMaxSize(),
             onReload = viewModel::onRefresh.takeIf { loggedIn },
             emptyScreen = {
@@ -492,10 +504,8 @@ fun HomePage(
                 }
             }
         ) {
-            val history by viewModel.historyFlow.collectAsStateWithLifecycle()
-
             PullToRefreshBox(
-                isRefreshing = uiState.isLoading,
+                isRefreshing = isLoading,
                 onRefresh = viewModel::onRefresh,
                 contentPadding = contentPaddings
             ) {
@@ -507,13 +517,13 @@ fun HomePage(
                     state = gridState,
                     contentPadding = contentPaddings,
                 ) {
-                    history?.takeUnless { it.isEmpty() }?.let {
+                    historyForums?.takeUnless { it.isEmpty() }?.let {
                         item(key = ForumType.History.hashCode(), DefaultGridSpan, { ForumType.History }) {
                             HistoryRow(history = it, onClick = onHistoryClickedListener)
                         }
                     }
 
-                    if (hasTopForum) {
+                    if (isPinnedNotEmpty) {
                         item(key = R.string.title_top_forum, DefaultGridSpan, { ForumType.Header }) {
                             Header(
                                 text = stringResource(id = R.string.title_top_forum),
@@ -521,29 +531,23 @@ fun HomePage(
                                 invert = true
                             )
                         }
-                        items(items = topForums, key = { it.id }, contentType = contentType) {
-                            ForumItem(
-                                modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
-                                forum = it,
-                                showAvatar = listSingle,
-                                onClick = onForumClickedListener,
-                                onUnfollow = onUnfollow,
-                                onPinnedForumChanged = viewModel::onPinnedForumChanged,
-                                isTopForum = true
-                            )
-                        }
+                        forumItems(
+                            forums = pinnedForums,
+                            isTopPinnedForum = true,
+                            showAvatar = listSingle,
+                            onClick = onForumClickedListener,
+                            onUnfollow = onUnfollow,
+                            onPinnedForumChanged = viewModel::onPinnedForumChanged,
+                        )
                     }
-                    if (!history.isNullOrEmpty() || hasTopForum) {
+
+                    if (!historyForums.isNullOrEmpty() || isPinnedNotEmpty) {
                         item(key = R.string.forum_list_title, DefaultGridSpan, { ForumType.Header }) {
                             Header(text = stringResource(id = R.string.forum_list_title))
                         }
-                    }
-
-                    if (forums == null) return@MyLazyVerticalGrid
-                    items(items = forums, key = { it.id }, contentType = contentType) {
-                        ForumItem(
-                            modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
-                            forum = it,
+                        forumItems(
+                            forums = forums,
+                            isTopPinnedForum = false,
                             showAvatar = listSingle,
                             onClick = onForumClickedListener,
                             onUnfollow = onUnfollow,
@@ -577,7 +581,8 @@ private fun HomePageSkeletonScreen(
 ) {
     MyLazyVerticalGrid(
         columns = gridCells,
-        modifier = modifier
+        modifier = modifier,
+        userScrollEnabled = false
     ) {
         items(24, key = { it }) {
             ForumItemPlaceholder(listSingle)
@@ -636,4 +641,27 @@ private fun EmptyScreen(modifier: Modifier = Modifier, onExploreClicked: () -> U
         },
         actions = { ExploreButton(modifier = Modifier.fillMaxWidth(), onClick = onExploreClicked) },
     )
+}
+
+@Preview("HomePageSkeletonScreen")
+@Composable
+private fun HomePageSkeletonScreenPreview() = TiebaLiteTheme {
+    Surface {
+        HomePageSkeletonScreen(listSingle = true, gridCells = GridCells.Fixed(1))
+    }
+}
+
+@Preview("ForumItemContent")
+@Composable
+private fun ForumItemContentPreview() = TiebaLiteTheme {
+    val forums = (0..15).map { i ->
+        LikedForum(id = i.toLong(), name = "Forum $i", level = "Lv.${Random.nextInt(1, 99)}")
+    }
+    Surface {
+        Column {
+            forums.forEach {
+                ForumItemContent(it, showAvatar = false)
+            }
+        }
+    }
 }

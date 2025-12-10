@@ -3,9 +3,10 @@ package com.huanchengfly.tieba.post.ui.page.main.home
 import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.UiState
@@ -19,29 +20,24 @@ import com.huanchengfly.tieba.post.ui.models.LikedForum
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-// Pinned Top Forums, Normal Forums
-private typealias ForumLists = Pair<List<LikedForum>?, List<LikedForum>?>
 
 private const val TAG = "HomeViewModel"
 
@@ -79,35 +75,23 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * Flow of pinned top forums and normal forums.
+     * PagingData of user forums.
+     * */
+    val forums: Flow<PagingData<LikedForum>> = homeRepo.getLikedForums(pinned = false)
+        .catch { e -> handler.handleException(currentCoroutineContext(), e) }
+        .cachedIn(viewModelScope)
+
+    /**
+     * PagingData of pinned top forums.
      *
      * @see onPinnedForumChanged
      * */
-    val forumListsFlow: StateFlow<ForumLists> = combine(
-        flow = homeRepo.getPinnedForumIds(),
-        flow2 = homeRepo.getLikedForums(),
-    ) { topForumIds, forumList->
-        when {
-            forumList.isEmpty() -> ForumLists(emptyList(), emptyList())
-
-            topForumIds.isEmpty() -> ForumLists(emptyList(), forumList)
-
-            else -> { // Split forums into pinned top forums and normal forums
-                val pinned = mutableListOf<LikedForum>()
-                val forums = mutableListOf<LikedForum>()
-                forumList.fastForEach {
-                    if (topForumIds.contains(it.id)) pinned.add(it) else forums.add(it)
-                }
-                ForumLists(pinned, forums)
-            }
-        }
-    }
-    .flowOn(Dispatchers.Default)
-    .catch { e -> handler.handleException(currentCoroutineContext(), e) }
-    .stateIn(viewModelScope, SharingStarted.Eagerly, ForumLists(null, null))
+    val pinnedForums: Flow<PagingData<LikedForum>> = homeRepo.getLikedForums(pinned = true)
+        .catch { e -> handler.handleException(currentCoroutineContext(), e) }
+        .cachedIn(viewModelScope)
 
     /**
-     * Recent forum history, ``null`` when show history is disabled in habit settings.
+     * Recent forum history.
      *
      * @see SettingsRepository.habitSettings
      * */
@@ -116,7 +100,7 @@ class HomeViewModel @Inject constructor(
         .map { it.showHistoryInHome }
         .distinctUntilChanged()
         .flatMapLatest { showHistory ->
-            if (showHistory) historyRepo.getForumHistoryTop10() else flowOf(null)
+            if (showHistory) historyRepo.getForumHistoryTop10() else flowOf(emptyList())
         }
         .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = null)
 

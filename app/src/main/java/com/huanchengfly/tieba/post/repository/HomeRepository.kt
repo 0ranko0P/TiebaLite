@@ -2,11 +2,16 @@ package com.huanchengfly.tieba.post.repository
 
 import android.util.Log
 import androidx.annotation.VisibleForTesting
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.models.MsgBean.MessageBean
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.LocalLikedForum
 import com.huanchengfly.tieba.post.models.database.Timestamp
@@ -27,6 +32,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -49,21 +55,30 @@ class HomeRepository @Inject constructor(
 
     private val forumNetworkDataSource = ForumNetworkDataSource
 
+    private val homePagingConfig by unsafeLazy {
+        PagingConfig(pageSize = 30, prefetchDistance = 4, maxSize = 60)
+    }
+
     suspend fun requireAccount(): Account {
        return AccountUtil.getInstance().currentAccount.first() ?: throw TiebaNotLoggedInException()
     }
 
     /**
-     * Observe the current user's liked forums.
+     * Get current user's liked forums paging source.
      * */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getLikedForums(): Flow<List<LikedForum>> = settingsRepo.accountUid
+    fun getLikedForums(pinned: Boolean): Flow<PagingData<LikedForum>> = settingsRepo.accountUid
         .flatMapLatest { uid ->
-            if (uid != -1L) localDataSource.observeAllSorted(uid) else throw TiebaNotLoggedInException()
+            if (uid <= 0) throw TiebaNotLoggedInException()
+            Pager(
+                config = homePagingConfig,
+                pagingSourceFactory = {
+                    if (pinned) localDataSource.pagingSourcePinned(uid) else localDataSource.pagingSource(uid)
+                }
+            ).flow
         }
-        .map { forums -> // Map to UI Model if not empty
-            if (forums.isNotEmpty()) forums.mapUiModel() else emptyList()
-        }
+        .map(transform = ::mapForumPagingData)
+        .flowOn(Dispatchers.Default)
 
     /**
      * Refresh the current user's liked forums
@@ -103,8 +118,6 @@ class HomeRepository @Inject constructor(
     }
 
     suspend fun onLikeForum() = refresh(cached = false)
-
-    fun getPinnedForumIds(): Flow<List<Long>> = localDataSource.observePinnedForums()
 
     suspend fun addTopForum(forum: LikedForum) {
         localDataSource.pinForum(forumId = forum.id)
@@ -179,9 +192,8 @@ class HomeRepository @Inject constructor(
         }
 
         // Map entity to ui model
-        private suspend fun List<LocalLikedForum>.mapUiModel() = withContext(Dispatchers.Default) {
+        private fun mapUiModel(forum: LocalLikedForum): LikedForum = forum.let {
             val today = DateTimeUtils.todayTimeMill()
-            map {
                 LikedForum(
                     avatar = it.avatar,
                     id = it.id,
@@ -189,7 +201,10 @@ class HomeRepository @Inject constructor(
                     signed = it.signInTimestamp >= today,
                     level = "Lv.${it.level}"
                 )
-            }
+        }
+
+        private fun mapForumPagingData(forums: PagingData<LocalLikedForum>): PagingData<LikedForum> {
+            return forums.map { mapUiModel(forum = it) }
         }
     }
 }
