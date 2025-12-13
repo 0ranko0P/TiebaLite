@@ -1,5 +1,4 @@
 import java.io.ByteArrayOutputStream
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -11,6 +10,8 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.wire)
 }
+
+apply(from = "${rootProject.projectDir}/signing.gradle")
 
 wire {
     sourcePath {
@@ -39,34 +40,18 @@ android {
         }
         resourceConfigurations.addAll(listOf("en", "zh-rCN"))
     }
+
     buildFeatures {
         compose = true
         buildConfig = true
     }
-    signingConfigs {
-        val properties = Properties()
-        val propFile = project.rootProject.file("signing.properties")
-        if (propFile.exists()) {
-            properties.load(propFile.inputStream())
-            create("config") {
-                storeFile = project.rootProject.file(properties.getProperty("KEYSTORE_FILE"))
-                storePassword = properties.getProperty("KEYSTORE_PASSWORD")
-                keyAlias = properties.getProperty("KEY_ALIAS")
-                keyPassword = properties.getProperty("KEY_PASSWORD")
-                enableV1Signing = true
-                enableV2Signing = true
-                enableV3Signing = true
-                enableV4Signing = true
-            }
-        }
-    }
+
     buildTypes {
         val gitVersionProvider = providers.of(GitVersionValueSource::class) {}
         val gitVersion = gitVersionProvider.get()
 
         all {
             signingConfig = signingConfigs.findByName("config") ?: signingConfigs.getByName("debug")
-
             buildConfigField("String", "BUILD_GIT", "\"${gitVersion}\"")
         }
 

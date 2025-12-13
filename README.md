@@ -14,6 +14,26 @@
 
 **本软件及源码仅供学习交流使用，严禁用于商业用途。**
 
+## 构建
+
+1. 克隆仓库
+```shell
+git clone https://github.com/0ranko0P/TiebaLite.git
+cd TiebaLite
+```
+
+2. 配置应用签名 (非必须)
+
+编辑 `signing.properties.example` 填写密钥库路径，密钥别名与密码。保存为 `signing.properties`
+
+3. 开始构建
+```shell
+./gradle assembleRelease
+```
+
+成功后，构建的产物在 `app/build/outputs/apk` 下。
+
+
 ## 友情链接
 
 + [Starry-OvO/aiotieba: Asynchronous I/O Client for Baidu Tieba](https://github.com/Starry-OvO/aiotieba)
