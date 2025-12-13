@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.huanchengfly.tieba.post.activities.BaseActivity
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.utils.ThemeUtil.setAppearanceLightNavigationBars
 
 abstract class BaseComposeActivity : BaseActivity() {
 
@@ -30,8 +31,8 @@ abstract class BaseComposeActivity : BaseActivity() {
                 val colorScheme = colorState.colorScheme
 
                 LaunchedEffect(colorScheme) {
-                    windowInsetsController.isAppearanceLightStatusBars = ThemeUtil.isStatusBarFontDark(colorScheme)
-                    windowInsetsController.isAppearanceLightNavigationBars = ThemeUtil.isNavigationBarFontDark(colorScheme)
+                    windowInsetsController.setAppearanceLightStatusBars(ThemeUtil.isStatusBarFontDark(colorScheme))
+                    windowInsetsController.setAppearanceLightNavigationBars(window, colorScheme)
                 }
             }
             Content()

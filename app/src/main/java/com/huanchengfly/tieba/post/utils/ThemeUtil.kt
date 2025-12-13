@@ -4,12 +4,14 @@ import android.app.UiModeManager
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
+import android.view.Window
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.view.WindowInsetsControllerCompat
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
@@ -99,6 +101,20 @@ object ThemeUtil {
             !ColorUtils.isColorLight(colorScheme.onSurface.toArgb())
         } else {
             ColorUtils.isColorLight(colorScheme.surface.toArgb())
+        }
+    }
+
+    /**
+     * Implement setAppearanceLightNavigationBars in [WindowInsetsControllerCompat.Impl23]
+     *
+     * Note: Remove this when minSdk bumped to 26
+     * */
+    fun WindowInsetsControllerCompat.setAppearanceLightNavigationBars(window: Window, colorScheme: ColorScheme) {
+        val isLight: Boolean = isNavigationBarFontDark(colorScheme)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            isAppearanceLightNavigationBars = isLight
+        } else {
+            window.navigationBarColor = (if (isLight) Color.Black else colorScheme.surfaceContainer).toArgb()
         }
     }
 
