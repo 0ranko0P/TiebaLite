@@ -49,8 +49,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.workers.NewMessageWorker
 import com.huanchengfly.tieba.post.workers.OKSignWorker
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
-import okhttp3.internal.immutableListOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +62,7 @@ fun WorkInfoPage(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     val workers = remember {
-        immutableListOf(OKSignWorker.TAG, NewMessageWorker.TAG)
+        persistentListOf(OKSignWorker.TAG, NewMessageWorker.TAG)
     }
     val pagerState = rememberPagerState { workers.size }
 
