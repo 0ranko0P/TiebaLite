@@ -51,7 +51,10 @@ android {
         val gitVersion = gitVersionProvider.get()
 
         all {
-            signingConfig = signingConfigs.findByName("config") ?: signingConfigs.getByName("debug")
+            // Apply signing config from signing.properties, see ../signing.gradle
+            signingConfigs.findByName("config")?.let { signingConfig = it }
+            // Replaced with buildConfigField#BUILD_GIT
+            vcsInfo.include = false
             buildConfigField("String", "BUILD_GIT", "\"${gitVersion}\"")
         }
 
