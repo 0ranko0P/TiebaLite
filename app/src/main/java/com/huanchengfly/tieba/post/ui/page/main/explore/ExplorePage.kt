@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
@@ -172,7 +171,7 @@ private fun ExplorePageTab(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalHazeApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalHazeApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ExplorePage() {
     val context = LocalContext.current

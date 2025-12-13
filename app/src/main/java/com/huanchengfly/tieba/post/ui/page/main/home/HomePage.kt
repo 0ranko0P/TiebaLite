@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.main.home
 
 import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -275,7 +274,6 @@ private fun HistoryRow(modifier: Modifier = Modifier, history: List<History>, on
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @NonRestartableComposable
 @Composable
 private fun ForumItemContent(forum: LikedForum, showAvatar: Boolean) {
@@ -383,7 +381,7 @@ private sealed interface ForumType {
     object GridItem: ForumType
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalHazeApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeApi::class)
 @Composable
 fun HomePage(
     viewModel: HomeViewModel = hiltViewModel<HomeViewModel>(),

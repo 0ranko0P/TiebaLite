@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.background
@@ -138,7 +137,6 @@ fun rememberNavigationItems(
     )
 }
 
-@OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 fun MainPage(
     navHostController: NavHostController,

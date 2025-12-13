@@ -69,11 +69,12 @@ android {
 
 dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
-    api(composeBom)
+    implementation(composeBom)
 
-    api(libs.kotlin.stdlib)
-    api(libs.androidx.compose.foundation)
-    api(libs.androidx.compose.ui)
-    api(libs.androidx.compose.ui.util)
-    api(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.util)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.kotlinx.coroutines.android)
 }

@@ -42,6 +42,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.annotation)
     implementation(libs.androidx.benchmark.junit)
     implementation(libs.androidx.junit)
     implementation(libs.androidx.test.espresso.core)

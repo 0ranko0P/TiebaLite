@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.background
@@ -295,7 +294,7 @@ private fun NavIcon(modifier: Modifier = Modifier, item: NavigationItem, atEnd: 
 }
 
 @Immutable
-data class NavigationItem @OptIn(ExperimentalAnimationGraphicsApi::class) constructor(
+data class NavigationItem(
     @StringRes val title: Int,
     val icon: @Composable () -> AnimatedImageVector,
     val badgeText: () -> String? = { null },

@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.history
 
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -202,7 +201,6 @@ private fun ThreadItem(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: String, time: String) {
     UserHeader(

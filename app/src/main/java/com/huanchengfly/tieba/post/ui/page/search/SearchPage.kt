@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.search
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -112,7 +111,7 @@ private enum class SearchPages(val titleRes: Int) {
     User(titleRes = R.string.title_search_user)
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchPage(
     navigator: NavController,

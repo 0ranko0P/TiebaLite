@@ -1,9 +1,6 @@
-@file:OptIn(ExperimentalSerializationApi::class)
-
 package com.huanchengfly.tieba.post.api.retrofit.converter.kotlinx.serialization
 
 import android.util.Log
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.StringFormat
 import okhttp3.ResponseBody
 import retrofit2.Converter

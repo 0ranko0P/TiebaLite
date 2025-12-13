@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page
 
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -55,7 +54,7 @@ import kotlin.reflect.typeOf
 
 const val TB_LITE_DOMAIN = "tblite"
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RootNavGraph(
     // bottomSheetNavigator: BottomSheetNavigator,

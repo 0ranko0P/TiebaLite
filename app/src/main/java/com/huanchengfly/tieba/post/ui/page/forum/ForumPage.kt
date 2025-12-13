@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -102,7 +101,6 @@ import kotlin.math.min
 
 private val ForumHeaderHeight = 90.dp
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ForumHeader(
     forum: ForumData,
@@ -176,7 +174,6 @@ private fun ForumHeader(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ForumTitle(
     modifier: Modifier = Modifier,
@@ -214,7 +211,7 @@ private fun ForumTitle(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForumPage(
     forumName: String,
@@ -502,7 +499,6 @@ private fun ClassifyTabs(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ForumHeaderPlaceholder(
     forumName: String,
