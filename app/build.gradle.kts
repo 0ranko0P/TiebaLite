@@ -105,6 +105,7 @@ android {
     }
 
     lint {
+        disable.addAll(listOf("LocalContextGetResourceValueCall", "UseKtx"))
         checkReleaseBuilds = false
     }
 
