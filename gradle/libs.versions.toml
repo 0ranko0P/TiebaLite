@@ -1,10 +1,10 @@
 [versions]
 accompanist = "0.37.3"
 agp = "8.13.2"
-hilt = "2.56.2"
-kotlin = "2.1.20"
+hilt = "2.57.2"
+kotlin = "2.2.21"
 coroutines = "1.10.2"
-ksp = "2.1.20-2.0.1"
+ksp = "2.2.21-2.0.4"
 wire = "5.2.1"
 
 compileSdk = "36"
@@ -21,7 +21,6 @@ androidx-paging = "3.3.6"
 androidx-perfetto = "1.0.0"
 androidx-room = "2.8.4"
 androidx-work = "2.11.0"
-material3 = "1.4.0"
 androidx-media3 = "1.8.0"
 glide = "5.0.5"
 glide-compose = "1.0.0-beta08"
@@ -105,7 +104,7 @@ kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.re
 kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version = "0.4.0" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.8.1" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.9.0" }
 
 lottie = { module = "com.airbnb.android:lottie", version.ref = "lottie" }
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottie" }
