@@ -17,7 +17,7 @@
         <item name="android:activityCloseExitAnimation">@anim/anim_fade_out</item>
     </style>
 
-    <style name="BaseTransparent" parent="Theme.AppCompat.NoActionBar">
+    <style name="BaseTransparent" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
@@ -33,11 +33,8 @@
         <item name="colorControlActivated">@color/tieba</item>
     </style>
 
-    <style name="Theme.NewAppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Theme.Transparent.NewAppTheme">
         <item name="android:windowIsTranslucent">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="actionOverflowMenuStyle">@style/OverflowMenu</item>
         <item name="dialogCornerRadius">@dimen/radius</item>
     </style>
@@ -49,7 +46,7 @@
         <item name="windowSplashScreenBackground">@color/colorSplashBg</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_screen_anim</item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
-        <item name="postSplashScreenTheme">@style/Theme.NewAppTheme</item>
+        <item name="postSplashScreenTheme">@style/Theme.Transparent.NewAppTheme</item>
     </style>
 
     <style name="OverflowMenu" parent="Widget.AppCompat.Light.PopupMenu.Overflow">

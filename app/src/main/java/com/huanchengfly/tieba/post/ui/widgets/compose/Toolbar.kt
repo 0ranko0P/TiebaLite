@@ -9,13 +9,11 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -37,6 +35,7 @@ import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
 import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
@@ -285,25 +284,6 @@ fun TitleCentredToolbar(
 @Composable
 fun Toolbar(
     modifier: Modifier = Modifier,
-    title: String,
-    navigationIcon: (@Composable () -> Unit)? = null,
-    actions: @Composable RowScope.() -> Unit = {},
-    content: (@Composable ColumnScope.() -> Unit)? = null,
-) {
-    Toolbar(
-        modifier = modifier,
-        title = {
-            Text(text = title)
-        },
-        navigationIcon = navigationIcon,
-        actions = actions,
-        content = content
-    )
-}
-
-@Composable
-fun Toolbar(
-    modifier: Modifier = Modifier,
     title: @Composable () -> Unit,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
@@ -352,7 +332,7 @@ fun TopAppBarContainer(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .windowInsetsPadding(TopAppBarDefaults.windowInsets)
                     .padding(horizontal = TopAppBarHorizontalPadding)
                     .height(AppBarHeight),
                 content = topBar

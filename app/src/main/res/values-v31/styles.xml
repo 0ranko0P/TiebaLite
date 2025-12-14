@@ -9,6 +9,6 @@
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_screen_anim</item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
         <item name="android:windowSplashScreenBrandingImage">@drawable/ic_splash_text</item>
-        <item name="postSplashScreenTheme">@style/Theme.NewAppTheme</item>
+        <item name="postSplashScreenTheme">@style/Theme.Transparent.NewAppTheme</item>
     </style>
 </resources>

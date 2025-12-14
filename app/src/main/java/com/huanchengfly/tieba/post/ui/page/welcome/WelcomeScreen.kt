@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -140,7 +139,6 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
     val onFinishClicked: () -> Unit = { finishSetup(login = false) }
 
     MyScaffold(
-        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         bottomBar = {
             BottomBar(
                 modifier = Modifier
@@ -151,12 +149,13 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
                 onFinish = onFinishClicked.takeIf { pagerState.isLastPage },
                 onProceed = onProceedClicked.takeIf { proceedBtnEnabled }
             )
-        }
+        },
     ) { contentPadding ->
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = contentPadding,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(contentPadding),
             beyondViewportPageCount = 1,
             userScrollEnabled = false,
             overscrollEffect = null,

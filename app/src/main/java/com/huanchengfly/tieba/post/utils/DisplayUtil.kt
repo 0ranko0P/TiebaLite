@@ -132,7 +132,6 @@ object DisplayUtil {
      * */
     inline fun View.doOnApplyWindowInsets(crossinline onApply: View.(insets: WindowInsetsCompat) -> Boolean) {
         ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
-            ViewCompat.setOnApplyWindowInsetsListener(v, null)
             if (onApply(insets)) WindowInsetsCompat.CONSUMED else insets
         }
     }

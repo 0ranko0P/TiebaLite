@@ -54,7 +54,7 @@
         android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_new_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.NewAppTheme"
+        android:theme="@style/Theme.Transparent.NewAppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="UnusedAttribute">
 
@@ -211,7 +211,7 @@
             android:name=".activities.CrashActivity"
             android:exported="false"
             android:process=":error_handler"
-            android:theme="@style/Theme.NewAppTheme" />
+            android:theme="@style/Theme.Transparent.NewAppTheme" />
 
         <activity
             android:name=".activities.VideoViewActivity"

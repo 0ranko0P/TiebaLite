@@ -114,7 +114,7 @@ object ThemeUtil {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             isAppearanceLightNavigationBars = isLight
         } else {
-            window.navigationBarColor = (if (isLight) Color.Black else colorScheme.surfaceContainer).toArgb()
+            window.navigationBarColor = (if (isLight) Color.Black else Color.Transparent).toArgb()
         }
     }
 

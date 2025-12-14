@@ -394,7 +394,11 @@ private fun SingleRowTopAppBar(
             height = expandedHeight,
         )
         if (content != null)  {
-            content()
+            Box(
+                modifier = Modifier.windowInsetsPadding(windowInsets.only(WindowInsetsSides.Horizontal))
+            ) {
+                this@Column.content()
+            }
         }
     }
 }
