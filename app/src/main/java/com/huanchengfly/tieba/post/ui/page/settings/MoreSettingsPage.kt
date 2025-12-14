@@ -133,7 +133,7 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
             onClick = {
                 navigator.navigate(About)
             },
-            summary = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME)
+            summary = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TYPE)
         )
     }
 }

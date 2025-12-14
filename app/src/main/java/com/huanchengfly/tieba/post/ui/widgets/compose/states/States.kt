@@ -41,9 +41,10 @@ val DefaultLoadingScreen: @Composable StateScreenScope.() -> Unit = {
 }
 
 @Composable
-fun StateScreenScope.DefaultEmptyScreen(modifier: Modifier = Modifier) {
+fun StateScreenScope.DefaultEmptyScreen(modifier: Modifier = Modifier, scrollable: Boolean = false) {
     TipScreen(
         title = { Text(text = stringResource(id = R.string.title_empty)) },
+        scrollable = scrollable,
         image = {
             val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_empty_box))
             LottieAnimation(

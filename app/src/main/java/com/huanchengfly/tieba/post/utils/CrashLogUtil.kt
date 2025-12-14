@@ -31,7 +31,8 @@ import java.io.PrintStream
 import java.nio.charset.StandardCharsets
 
 object CrashLogUtil {
-    suspend fun dumpLogs(context: Context, exception: Throwable? = null) {
+
+    suspend fun dumpLogs(context: Context, stackTrace: String? = null) {
         withContext(NonCancellable + Dispatchers.IO) {
             try {
                 val file = context.createFileInCacheDir("crash_logs.txt")
@@ -39,14 +40,14 @@ object CrashLogUtil {
                 PrintStream(file.outputStream(), true, StandardCharsets.UTF_8.name()).use {
                     it.println(getDebugInfo())
                     it.println()
-                    exception?.message?.let { msg -> it.println(msg) }
-                    // exception?.printStackTrace(it)
+                    stackTrace?.let { t -> it.println(t) }
                     it.println()
                 }
 
                 val uri = file.toSharedUri(context)
                 context.startActivity(uri.toShareIntent(context, "text/plain"))
             } catch (e: Throwable) {
+                e.printStackTrace()
                 withContext(Dispatchers.Main) { context.toastShort("Failed to get logs: ${e.message}") }
             }
         }
@@ -55,11 +56,9 @@ object CrashLogUtil {
     fun getDebugInfo(): String {
         return """
             App version: ${BuildConfig.VERSION_NAME} ${BuildConfig.VERSION_CODE} (${BuildConfig.BUILD_GIT})
-            Android version: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT}; build ${Build.DISPLAY})
-            Device brand: ${Build.BRAND}
-            Device manufacturer: ${Build.MANUFACTURER}
+            Build type: ${BuildConfig.BUILD_TYPE}
+            Android version: ${Build.VERSION.RELEASE}; (SDK ${Build.VERSION.SDK_INT}; Build/${Build.DISPLAY})
             Device name: ${Build.DEVICE} (${Build.PRODUCT})
-            Device model: ${Build.MODEL}
         """.trimIndent()
     }
 }

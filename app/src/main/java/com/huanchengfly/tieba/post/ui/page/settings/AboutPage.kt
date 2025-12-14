@@ -64,7 +64,7 @@ fun AboutPage(
         TextButton(
             shape = CircleShape,
             colors = ButtonDefaults.textButtonColors(
-                containerColor = colorScheme.primaryContainer.copy(alpha = 0.1f),
+                containerColor = colorScheme.primaryContainer.copy(alpha = 0.45f),
                 contentColor = colorScheme.onPrimaryContainer
             ),
             onClick = onHomePageClicked,
@@ -74,14 +74,14 @@ fun AboutPage(
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME),
-            style = MaterialTheme.typography.bodySmall,
+            text = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TYPE),
+            style = MaterialTheme.typography.labelMedium,
             color = colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = BuildConfig.BUILD_GIT,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelMedium,
             color = colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(48.dp))

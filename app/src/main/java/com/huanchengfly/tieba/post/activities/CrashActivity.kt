@@ -59,7 +59,7 @@ class CrashActivity : ComponentActivity() {
                         onClick = {
                             dumpLogJob = lifecycleScope
                                 .launch {
-                                    CrashLogUtil.dumpLogs(applicationContext, Throwable(stackTrace)) // Bug
+                                    CrashLogUtil.dumpLogs(applicationContext, stackTrace)
                                 }
                                 .apply { invokeOnCompletion { dumpLogJob = null } }
                         },

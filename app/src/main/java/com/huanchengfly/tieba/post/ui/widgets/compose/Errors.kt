@@ -58,7 +58,7 @@ fun TipScreen(
             .fillMaxHeight()
             .fillMaxWidth(fraction = widthFraction)
             .onCase(scrollable) { verticalScroll(rememberScrollState()) }
-            .padding(16.dp),
+            .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.CenterVertically)
     ) {
