@@ -76,7 +76,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
@@ -185,12 +184,10 @@ internal fun SubPostsContent(
 //    }
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
         isEmpty = uiState.subPosts.isEmpty(),
-        isError = uiState.error != null,
+        isLoading = uiState.isRefreshing,
+        error = uiState.error,
         onReload = viewModel::onRefresh,
-        errorScreen = { ErrorScreen(error = uiState.error) },
-        isLoading = uiState.isRefreshing
     ) {
         val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
         val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()

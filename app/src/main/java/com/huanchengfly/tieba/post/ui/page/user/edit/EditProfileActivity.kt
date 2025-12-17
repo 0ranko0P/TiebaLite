@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imeNestedScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -73,7 +72,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.OutlineCounterTextField
@@ -229,19 +227,15 @@ private fun EditProfileScaffold(
         backgroundColor = MaterialTheme.colorScheme.background,
     ) { contentPadding ->
         StateScreen(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPadding),
-            isError = uiState.error != null,
             isLoading = uiState.isLoading,
-            errorScreen = {
-                ErrorScreen(error = uiState.error, modifier = Modifier.safeContentPadding())
-            }
+            error = uiState.error,
+            screenPadding = contentPadding,
         ) {
             editProfile?.let { profile ->
                 Container(
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(contentPadding)
                         .imePadding()
                         .imeNestedScroll()
                         .nestedScroll(scrollBehavior.nestedScrollConnection)

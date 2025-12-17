@@ -479,7 +479,6 @@ fun HomePage(
             confirmUnfollowDialog.show()
         }
 
-        val screenModifier = Modifier.padding(contentPaddings)
         StateScreen(
             isEmpty = isEmpty,
             isError = uiState.error != null,
@@ -487,20 +486,21 @@ fun HomePage(
             modifier = Modifier.fillMaxSize(),
             onReload = viewModel::onRefresh.takeIf { loggedIn },
             emptyScreen = {
-                EmptyScreen(modifier = screenModifier, onExploreClicked = onOpenExplore)
+                EmptyScreen(onExploreClicked = onOpenExplore)
             },
             loadingScreen = {
-                HomePageSkeletonScreen(modifier = screenModifier, listSingle, gridCells)
+                HomePageSkeletonScreen(listSingle = listSingle, gridCells = gridCells)
             },
             errorScreen = {
                 if (uiState.error is TiebaNotLoggedInException) {
-                    GuestScreen(modifier = screenModifier, onExploreClicked = onOpenExplore) {
+                    GuestScreen(onExploreClicked = onOpenExplore) {
                         navigator.navigate(Destination.Login)
                     }
                 } else  {
-                    ErrorScreen(error = uiState.error, modifier = screenModifier)
+                    ErrorScreen(error = uiState.error)
                 }
-            }
+            },
+            screenPadding = contentPaddings
         ) {
             PullToRefreshBox(
                 isRefreshing = isLoading,

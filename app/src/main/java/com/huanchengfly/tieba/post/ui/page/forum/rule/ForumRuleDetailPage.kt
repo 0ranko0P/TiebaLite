@@ -22,7 +22,6 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -43,13 +42,9 @@ fun ForumRuleDetailPage(
 
     ProvideNavigator(navigator = navigator) {
         StateScreen(
-            modifier = Modifier.fillMaxSize(),
-            isError = error != null,
             isLoading = isLoading,
+            error = error,
             onReload = viewModel::reload,
-            errorScreen = {
-                error?.let { e -> ErrorScreen(e) }
-            }
         ) {
             Scaffold(
                 topBar = {

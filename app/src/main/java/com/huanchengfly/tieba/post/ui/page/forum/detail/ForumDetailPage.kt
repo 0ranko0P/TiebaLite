@@ -47,7 +47,6 @@ import com.huanchengfly.tieba.post.ui.models.forum.ForumManager
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
@@ -59,17 +58,12 @@ fun ForumDetailPage(
     onManagerClicked: (uid: Long) -> Unit,
     onBack: () -> Unit,
 ) {
-
     val uiState by viewModel.state.collectAsStateWithLifecycle()
 
     StateScreen(
-        isError = uiState.error != null,
+        error = uiState.error,
         isLoading = uiState.isLoading,
         onReload = viewModel::reload,
-        errorScreen = {
-            uiState.error?.let { ErrorScreen(error = it) }
-        },
-        modifier = Modifier.fillMaxSize(),
     ) {
         Scaffold(
             topBar = {

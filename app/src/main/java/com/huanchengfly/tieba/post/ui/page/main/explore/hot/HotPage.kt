@@ -54,7 +54,6 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
@@ -98,13 +97,10 @@ fun HotPage(
     ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
-        isError = isError,
         isLoading = isRefreshing,
+        error = error,
         onReload = viewModel::onRefresh,
-        errorScreen = {
-            ErrorScreen(error = error, modifier = Modifier.padding(contentPadding))
-        }
+        screenPadding = contentPadding
     ) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,

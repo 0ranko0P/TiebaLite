@@ -38,7 +38,6 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
@@ -143,13 +142,10 @@ fun ForumThreadList(
     )
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
         isEmpty = threadList.isEmpty(),
-        isError = error != null,
         isLoading = isLoading,
-        errorScreen = {
-            error?.let { ErrorScreen(it, modifier = Modifier.padding(contentPadding)) }
-        }
+        error = error,
+        screenPadding = contentPadding,
     ) {
         val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()
 

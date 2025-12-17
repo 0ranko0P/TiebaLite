@@ -23,7 +23,6 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
@@ -64,14 +63,11 @@ fun ConcernPage(
     ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
-        isError = isError,
         isLoading = isRefreshing,
+        error = error,
         onReload = viewModel::onRefresh,
-        errorScreen = {
-            ErrorScreen(error = error, modifier = Modifier.padding(contentPadding))
-        }
+        screenPadding = contentPadding,
     ) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,

@@ -37,6 +37,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import com.huanchengfly.tieba.post.utils.SofireException
@@ -51,14 +52,14 @@ fun TipScreen(
     actions: (@Composable () -> Unit)? = null,
 ) {
     val typography = MaterialTheme.typography
-    val widthFraction = if (isWindowWidthCompact()) 0.9f else 0.5f
+    val widthFraction = if (isWindowWidthCompact() || isWindowHeightCompact()) 0.9f else 0.5f
 
     Column(
         modifier = modifier
             .fillMaxHeight()
             .fillMaxWidth(fraction = widthFraction)
-            .onCase(scrollable) { verticalScroll(rememberScrollState()) }
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .onCase(scrollable) { verticalScroll(rememberScrollState()) },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.CenterVertically)
     ) {

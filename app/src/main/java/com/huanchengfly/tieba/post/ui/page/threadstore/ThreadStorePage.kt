@@ -13,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -32,7 +31,6 @@ import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
@@ -48,9 +46,6 @@ fun ThreadStorePage(
     navigator: NavController,
     viewModel: ThreadStoreViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
     MyScaffold(
         topBar = {
             TitleCentredToolbar(
@@ -60,7 +55,8 @@ fun ThreadStorePage(
                 },
             )
         },
-    ) { contentPaddings ->
+    ) { contentPadding ->
+        val context = LocalContext.current
         val snackbarHostState = LocalSnackbarHostState.current
 
         val isRefreshing by viewModel.uiState.collectPartialAsState(
@@ -95,15 +91,10 @@ fun ThreadStorePage(
 
         StateScreen(
             isEmpty = isEmpty,
-            isError = error != null,
             isLoading = isRefreshing,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPaddings),
+            error = error,
             onReload = viewModel::onRefresh,
-            errorScreen = {
-                error?.let { ErrorScreen(error = it) }
-            }
+            screenPadding = contentPadding,
         ) {
             val isLoadingMore by viewModel.uiState.collectPartialAsState(
                 prop1 = ThreadStoreUiState::isLoadingMore,
@@ -138,9 +129,12 @@ fun ThreadStorePage(
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
                 onRefresh = viewModel::onRefresh,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = contentPadding,
             ) {
                 SwipeUpLazyLoadColumn(
                     modifier = Modifier.fillMaxSize(),
+                    contentPadding = contentPadding,
                     isLoading = isLoadingMore,
                     onLazyLoad = viewModel::onLoadMore,
                     onLoad = null,

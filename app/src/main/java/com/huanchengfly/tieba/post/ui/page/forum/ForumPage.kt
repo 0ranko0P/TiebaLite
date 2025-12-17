@@ -61,6 +61,7 @@ import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.forum.GoodClassify
 import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
@@ -82,7 +83,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
@@ -419,12 +419,12 @@ fun ForumPage(
                 .nestedScroll(connection = scrollOrientationConnection)
                 .nestedScroll(connection = topBarScrollBehavior.nestedScrollConnection),
             isEmpty = false,
-            isError = uiState.error != null,
             isLoading = forumData == null,
+            error = uiState.error,
             loadingScreen = {
-                ForumThreadsPlaceholder(contentPadding = contentPadding)
+                ForumThreadsPlaceholder(threadCount = if (isWindowHeightCompact()) 4 else 8)
             },
-            errorScreen = { ErrorScreen(uiState.error, Modifier.padding(contentPadding)) }
+            screenPadding = contentPadding,
         ) {
             if (forumData == null) return@StateScreen
 
@@ -546,10 +546,10 @@ private fun ForumHeaderPlaceholder(
 }
 
 @Composable
-private fun ForumThreadsPlaceholder(modifier: Modifier = Modifier, contentPadding: PaddingValues) {
+private fun ForumThreadsPlaceholder(modifier: Modifier = Modifier, threadCount: Int) {
     Container(modifier = modifier) {
-        Column(Modifier.padding(contentPadding)) {
-            repeat(4) {
+        Column {
+            repeat(times = threadCount) {
                 FeedCardPlaceholder()
             }
         }

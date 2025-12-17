@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -107,7 +106,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultHazeBlock
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
@@ -346,13 +344,9 @@ fun ThreadPage(
     BackHandler(enabled = true, onBack = onBackPressedCallback)
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
         isEmpty =  isEmpty,
-        isError = state.error != null,
         isLoading = state.isRefreshing,
-        errorScreen = {
-            ErrorScreen(error = state.error, modifier = Modifier.safeContentPadding())
-        },
+        error = state.error,
         onReload = { viewModel.requestLoad(0, postId) }
     ) {
         BlurScaffold(

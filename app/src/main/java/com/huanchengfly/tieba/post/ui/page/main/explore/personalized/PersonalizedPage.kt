@@ -49,7 +49,6 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
@@ -131,14 +130,11 @@ fun PersonalizedPage(
     LaunchedFabStateEffect(ExplorePageItem.Personalized, listState, onHideFab, isRefreshing, isError)
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
-        isError = isError,
         isLoading = isRefreshing,
+        error = error,
         onReload = viewModel::onRefresh,
-        errorScreen = {
-            ErrorScreen(error = error, modifier = Modifier.padding(contentPadding))
-        }
+        screenPadding = contentPadding,
     ) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,

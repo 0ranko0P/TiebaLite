@@ -22,7 +22,6 @@ import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadItem
@@ -65,14 +64,11 @@ fun SearchThreadPage(
     )
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
-        isError = error != null,
         isLoading = isRefreshing,
+        error = error,
         onReload = viewModel::onRefresh,
-        errorScreen = {
-            ErrorScreen(error = error, Modifier.padding(contentPadding))
-        }
+        screenPadding = contentPadding,
     ) {
         val navigator = LocalNavController.current
 

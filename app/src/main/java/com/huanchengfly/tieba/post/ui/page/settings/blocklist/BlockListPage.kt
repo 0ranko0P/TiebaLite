@@ -210,15 +210,13 @@ private fun <T> BlockListScaffold(
             movableContentOf<PaddingValues> { contentPadding ->
                 val items = if (page == BlockType.Blacklist) blackList() else whitelist()
                 StateScreen(
+                    modifier = Modifier.nestedScroll(connection = scrollOrientationConnection),
                     isEmpty = items.isNullOrEmpty(),
                     isError = false,
                     isLoading = items == null,
-                    modifier = Modifier.fillMaxSize()
                 ) {
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .nestedScroll(connection = scrollOrientationConnection),
+                        modifier = Modifier.fillMaxSize(),
                         contentPadding = contentPadding
                     ) {
                         items(items ?: emptyList(), key = itemKeyProvider, itemContent = itemContent)

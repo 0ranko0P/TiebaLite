@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -35,7 +36,6 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadViewModel.Companion.UserThreadVmFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumInfoChip
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
@@ -77,12 +77,11 @@ fun UserThreadPage(
     }
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
-        isError = error != null,
         isLoading = isRefreshing,
+        error = error,
         onReload = viewModel::onRefresh,
-        errorScreen = { ErrorScreen(error = error) },
+        screenPadding = PaddingNone,
     ) {
         val threadClickListeners = remember(navigator) {
             createThreadClickListeners(onNavigate = navigator::navigate)

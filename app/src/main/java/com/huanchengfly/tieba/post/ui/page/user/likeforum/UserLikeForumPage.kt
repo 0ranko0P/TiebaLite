@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.api.models.UserLikeForumBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -80,10 +81,9 @@ fun UserLikeForumPage(
     }
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
         isEmpty = isEmpty,
-        isError = error != null,
         isLoading = isRefreshing,
+        error = error.getOrNull(),
         onReload = {
             viewModel.send(UserLikeForumUiIntent.Refresh(uid))
         },
@@ -91,6 +91,7 @@ fun UserLikeForumPage(
             val throwable = error.getOrNull()
             ErrorScreen(error = throwable, showReload = throwable !is TiebaNotLoggedInException)
         },
+        screenPadding = PaddingNone,
     ) {
 
         Container(fluid = fluid) {

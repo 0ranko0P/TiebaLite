@@ -95,7 +95,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -198,11 +197,9 @@ fun UserProfilePage(
     }
 
     StateScreen(
-        modifier = Modifier.fillMaxSize(),
-        isError = error != null,
         isLoading = isRefreshing,
+        error = error,
         onReload = viewModel::onRefresh,
-        errorScreen = { ErrorScreen(error = error) }
     ) {
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val userProfile = viewModel.userProfile.collectAsStateWithLifecycle().value ?: return@StateScreen

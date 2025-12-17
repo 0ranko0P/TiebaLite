@@ -63,7 +63,6 @@ import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
@@ -212,14 +211,11 @@ fun ForumSearchPostPage(
             }
         } else if (isKeywordNotEmpty) {
             StateScreen(
-                modifier = Modifier.fillMaxSize(),
                 isEmpty = data.isEmpty(),
-                isError = error != null,
                 isLoading = uiState.isRefreshing,
+                error = error,
                 onReload = viewModel::onRefresh,
-                errorScreen = {
-                    ErrorScreen(error = error, modifier = Modifier.padding(contentPadding))
-                }
+                screenPadding = contentPadding,
             ) {
                 PullToRefreshBox(
                     isRefreshing = uiState.isRefreshing,

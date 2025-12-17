@@ -393,12 +393,13 @@ private fun SingleRowTopAppBar(
             actions = actionsRow,
             height = expandedHeight,
         )
-        if (content != null)  {
-            Box(
-                modifier = Modifier.windowInsetsPadding(windowInsets.only(WindowInsetsSides.Horizontal))
-            ) {
-                this@Column.content()
-            }
+
+        if (content != null) {
+            Column (
+                modifier = Modifier.windowInsetsPadding(windowInsets.only(WindowInsetsSides.Horizontal)),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                content = content
+            )
         }
     }
 }
@@ -469,9 +470,7 @@ fun TwoRowsTopAppBar(
                 .semantics { isTraversalGroup = true }
                 .pointerInput(Unit) {}
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column {
             TopAppBarLayout(
                 modifier =
                     Modifier.windowInsetsPadding(windowInsets)
@@ -517,7 +516,11 @@ fun TwoRowsTopAppBar(
             )
 
             if (content != null) {
-                content()
+                Column (
+                    modifier = Modifier.windowInsetsPadding(windowInsets.only(WindowInsetsSides.Horizontal)),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    content = content
+                )
             }
         }
     }
