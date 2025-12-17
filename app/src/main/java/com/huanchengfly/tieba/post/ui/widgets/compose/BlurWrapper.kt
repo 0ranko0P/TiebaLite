@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.LocalUISettings
+import com.huanchengfly.tieba.post.theme.isDarkScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_3BUTTON
@@ -47,13 +47,20 @@ import dev.chrisbanes.haze.hazeSource
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
 @OptIn(ExperimentalHazeApi::class)
-val DefaultInputScale = HazeInputScale.Fixed(0.33f)
+val DefaultInputScale: HazeInputScale
+    // Disable input scale on dark ColorScheme
+    get() = if (ThemeUtil.isDarkColorScheme()) HazeInputScale.None else HazeInputScale.Fixed(0.33f)
 
 val defaultHazeStyle: HazeStyle
     @Composable get() {
-        val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
-        return remember(backgroundColor) {
-            HazeStyle(backgroundColor, tint = null, blurRadius = 28.dp, noiseFactor = 0f)
+        val colorScheme = MaterialTheme.colorScheme
+        return remember(colorScheme.surfaceContainer) {
+            HazeStyle(
+                backgroundColor = colorScheme.surfaceContainer,
+                tint = null,
+                blurRadius = 28.dp,
+                noiseFactor = if (colorScheme.isDarkScheme) 0.2f else 0f // Reduce banding artifact on dark mode
+            )
         }
     }
 
