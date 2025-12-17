@@ -55,9 +55,11 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
@@ -71,22 +73,24 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadList
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
@@ -96,6 +100,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
+import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlin.math.max
 import kotlin.math.min
 
@@ -211,7 +216,7 @@ private fun ForumTitle(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeApi::class)
 @Composable
 fun ForumPage(
     forumName: String,
@@ -256,6 +261,10 @@ fun ForumPage(
 
     val pagerState = rememberPagerState { ForumType.entries.size }
     val listStates = rememberPagerListStates(pagerState.pageCount)
+    val scrollBehaviors = rememberTopAppBarScrollBehaviors(pagerState.pageCount) {
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(state = it)
+    }
+    val scrollOrientationConnection = rememberScrollOrientationConnection()
 
     val unlikeDialogState = rememberDialogState()
     if (unlikeDialogState.show) {
@@ -267,9 +276,6 @@ fun ForumPage(
             }
         )
     }
-
-    val topBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val scrollOrientationConnection = rememberScrollOrientationConnection()
 
     val threadClickListeners = remember(navigator) {
         createThreadClickListeners(onNavigate = navigator::navigate)
@@ -291,15 +297,19 @@ fun ForumPage(
         }
     }
 
-    MyScaffold(
-        modifier = Modifier.fillMaxSize(),
+    BlurScaffold(
+        topHazeBlock = {
+            blurEnabled = (listStates[pagerState.currentPage].canScrollBackward ||
+                    scrollBehaviors.isOverlapping(pagerState)) && uiState.error == null
+            inputScale = DefaultInputScale
+        },
         topBar = {
             val onNavigateForumDetail: () -> Unit = {
                 uiState.forum?.let { navigator.navigate(route = ForumDetail(it.name)) }
             }
 
             val collapsed by remember {
-                derivedStateOf { topBarScrollBehavior.state.collapsedFraction == 1.0f }
+                derivedStateOf { scrollBehaviors[pagerState.currentPage].state.collapsedFraction == 1.0f }
             }
 
             TwoRowsTopAppBar(
@@ -344,20 +354,17 @@ fun ForumPage(
 
                     ClickMenu(
                         menuContent = {
-                            TextMenuItem(text = stringResource(R.string.title_share), onClick = viewModel::shareForum)
+                            TextMenuItem(text = R.string.title_share, onClick = viewModel::shareForum)
 
-                            TextMenuItem(text = stringResource(R.string.title_send_to_desktop), onClick = viewModel::sendToDesktop)
+                            TextMenuItem(text = R.string.title_send_to_desktop, onClick = viewModel::sendToDesktop)
 
-                            TextMenuItem(text = stringResource(R.string.title_refresh)) {
+                            TextMenuItem(text = R.string.title_refresh) {
                                 viewModel.onRefreshClicked(isGood = pagerState.currentPage == TAB_FORUM_GOOD)
                             }
 
                             // Is followed & logged in
                             if (forumData.liked && forumData.tbs != null) {
-                                TextMenuItem(
-                                    text = stringResource(R.string.title_unfollow),
-                                    onClick = unlikeDialogState::show
-                                )
+                                TextMenuItem(text = R.string.title_unfollow, onClick = unlikeDialogState::show)
                             }
                         },
                         triggerShape = CircleShape
@@ -373,7 +380,8 @@ fun ForumPage(
                         }
                     }
                 },
-                scrollBehavior = topBarScrollBehavior
+                colors = TiebaLiteTheme.topAppBarColors,
+                scrollBehavior = scrollBehaviors[pagerState.currentPage]
             )  {
                 val sortType by viewModel.sortType.collectAsStateWithLifecycle()
                 ForumTab(
@@ -399,7 +407,7 @@ fun ForumPage(
         snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
         floatingActionButton = {
             val fab = LocalHabitSettings.current.forumFAB
-            if (fab == ForumFAB.HIDE || forumData == null) return@MyScaffold
+            if (fab == ForumFAB.HIDE || forumData == null) return@BlurScaffold
             // FAB visibility: no error, not onTop, scrolling forward, pager is not scrolling
             val fabVisibilityState = remember {
                 derivedStateOf {
@@ -417,14 +425,13 @@ fun ForumPage(
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(connection = scrollOrientationConnection)
-                .nestedScroll(connection = topBarScrollBehavior.nestedScrollConnection),
-            isEmpty = false,
+                .nestedScroll(connection = scrollBehaviors[pagerState.currentPage].nestedScrollConnection),
             isLoading = forumData == null,
             error = uiState.error,
             loadingScreen = {
                 ForumThreadsPlaceholder(threadCount = if (isWindowHeightCompact()) 4 else 8)
             },
-            screenPadding = contentPadding,
+            screenPadding = contentPadding
         ) {
             if (forumData == null) return@StateScreen
 
