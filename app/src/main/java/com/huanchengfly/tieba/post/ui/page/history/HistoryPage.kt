@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
@@ -172,15 +174,16 @@ fun HistoryPage(
 }
 
 @Composable
-private fun ThreadItem(
+private fun HistoryItem(
     modifier: Modifier = Modifier,
     avatar: String,
     name: String,
     time: String,
-    title: String
+    title: String? = null
 ) {
     Row(
-        modifier = modifier.padding(16.dp)
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Avatar(data = avatar, size = Sizes.Small)
 
@@ -188,15 +191,17 @@ private fun ThreadItem(
 
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(2.dp, alignment = Alignment.CenterVertically)
         ) {
             Row {
-                Text(name, style = MaterialTheme.typography.labelLarge)
+                Text(text = name, style = MaterialTheme.typography.labelLarge)
                 Spacer(modifier = Modifier.weight(1.0f))
-                Text(time, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 15.sp)
+                Text(text = time, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             }
 
-            Text(text = title)
+            if (title != null) {
+                Text(text = title, style = MaterialTheme.typography.bodyMedium)
+            }
         }
     }
 }
@@ -204,7 +209,7 @@ private fun ThreadItem(
 @Composable
 private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: String, time: String) {
     UserHeader(
-        modifier = modifier.padding(16.dp),
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         avatar = {
             Avatar(
                 data = avatar,
@@ -224,57 +229,69 @@ private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: Stri
 }
 
 @Composable
-private fun UserItem(modifier: Modifier = Modifier, avatar: String, name: String, time: String) {
-    UserHeader(
-        modifier = modifier.padding(16.dp),
-        avatar = { Avatar(data = avatar, size = Sizes.Small) },
-        name = { Text(text = name) },
-        content = {
-            Text(text = time, fontSize = 15.sp)
-        }
+private fun DateHeader(modifier: Modifier = Modifier, time: String) {
+    Text(
+        text = time,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.labelLarge
     )
 }
 
 @Composable
-private fun <T : History> HistoryColumn(
+private fun <T : HistoryUiModel> HistoryColumn(
     pagedItems: LazyPagingItems<T>,
-    onDelete: (T) -> Unit,
-    onClick: (T) -> Unit,
+    onDelete: (History) -> Unit,
+    onClick: (History) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+
     LazyColumn(
         modifier = modifier.fillMaxSize()
     ) {
-        items(count = pagedItems.itemCount, key = pagedItems.itemKey { it.id }) {
-            val item = pagedItems[it]
-            if (item != null) {
-                LongClickMenu(
-                    menuContent = {
-                        TextMenuItem(text = R.string.title_delete, onClick = { onDelete(item) })
-                    },
-                    modifier = Modifier.animateItem(placementSpec = null),
-                    onClick = { onClick(item) }
-                ) {
-                    val context = LocalContext.current
-                    val time = remember { DateTimeUtils.getRelativeTimeString(context, item.timestamp) }
-                    when (item) {
-                        is ThreadHistory ->  {
-                            ThreadItem(avatar = item.avatar, name = item.name, title = item.title, time = time)
-                        }
+        items(
+            count = pagedItems.itemCount,
+            key = pagedItems.itemKey { if (it is HistoryUiModel.Item) it.history.id else it.hashCode() }
+        ) { i ->
+            when (val item = pagedItems[i]) {
+                is HistoryUiModel.Item -> {
+                    val history = item.history
+                    val time = remember {
+                        DateTimeUtils.getRelativeTimeString(context, history.timestamp)
+                    }
 
-                        is ForumHistory -> {
-                            ForumItem(avatar = item.avatar, forum = item.name, time = time)
-                        }
+                    LongClickMenu(
+                        menuContent = {
+                            TextMenuItem(text = R.string.title_delete, onClick = { onDelete(history) })
+                        },
+                        modifier = Modifier.animateItem(placementSpec = null),
+                        onClick = { onClick(history) }
+                    ) {
+                        when (history) {
+                            is ThreadHistory ->  {
+                                HistoryItem(avatar = history.avatar, name = history.name, time = time, title = history.title)
+                            }
 
-                        is UserHistory -> {
-                            UserItem(avatar = item.avatar, name = item.name, time = time)
-                        }
+                            is ForumHistory -> {
+                                ForumItem(avatar = history.avatar, forum = history.name, time = time)
+                            }
 
-                        else -> throw RuntimeException()
+                            is UserHistory -> {
+                                HistoryItem(avatar = history.avatar, name = history.name, time = time)
+                            }
+
+                            else -> throw RuntimeException()
+                        }
                     }
                 }
-            } else {
-                UserHeaderPlaceholder(modifier = modifier.padding(16.dp))
+
+                is HistoryUiModel.DateHeader -> DateHeader(time = item.date)
+
+                null -> UserHeaderPlaceholder(modifier = modifier.padding(16.dp))
             }
         }
     }

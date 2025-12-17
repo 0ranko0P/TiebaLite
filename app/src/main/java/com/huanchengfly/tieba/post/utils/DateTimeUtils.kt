@@ -66,14 +66,31 @@ object DateTimeUtils {
         }
     }
 
-    fun todayTimeMill(): Long {
-        return Calendar.getInstance().run {
+    fun getRelativeDayString(context: Context, timestamp: Long): String {
+        return if (isSameDay(timestamp, System.currentTimeMillis())) {
+            context.getString(R.string.relative_date_today, "").trim()
+        } else {
+            Calendar.getInstance()
+                .apply { timeInMillis = timestamp }
+                .format(pattern = "yyyy-MM-dd")
+        }
+    }
+
+    fun todayTimeMill(calendar: Calendar = Calendar.getInstance()): Long {
+        return calendar.run {
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
             timeInMillis
         }
+    }
+
+    fun isSameDay(a: Long, b: Long): Boolean {
+        val calendar = Calendar.getInstance()
+        val aDayMillis = todayTimeMill(calendar.apply { timeInMillis = a })
+        val bDayMillis = todayTimeMill(calendar.apply { timeInMillis = b })
+        return aDayMillis == bDayMillis
     }
 
     private fun Calendar.format(pattern: String): String {
