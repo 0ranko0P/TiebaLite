@@ -33,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -346,9 +347,12 @@ fun ThreadHeader(
         )
     }
 
-val SubPostBlockedTip: @Composable BoxScope.() -> Unit = {
+@NonRestartableComposable
+@Composable
+fun SubPostBlockedTip(modifier: Modifier = Modifier) {
     Text(
         text = stringResource(id = R.string.tip_blocked_sub_post),
+        modifier = modifier,
         style = MaterialTheme.typography.bodyMedium
     )
 }
@@ -470,7 +474,9 @@ fun PostCard(
                             post.subPosts.fastForEach { item ->
                                 BlockableContent(
                                     blocked = item.blocked,
-                                    blockedTip = SubPostBlockedTip,
+                                    blockedTip = {
+                                        SubPostBlockedTip(modifier = Modifier.padding(horizontal = 12.dp))
+                                    },
                                     hideBlockedContent = false // filtered in repository
                                 ) {
                                     SubPostItem(

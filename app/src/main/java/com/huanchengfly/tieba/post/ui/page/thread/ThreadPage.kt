@@ -230,6 +230,8 @@ fun ThreadPage(
             val message = when (it) {
                 is CommonUiEvent.Toast -> it.message.toString()
 
+                is CommonUiEvent.NavigateUp -> navigator.navigateUp()
+
                 is ThreadUiEvent.DeletePostFailed -> context.getString(R.string.toast_delete_failure, it.message)
 
                 is ThreadUiEvent.DeletePostSuccess -> context.getString(R.string.toast_delete_success)

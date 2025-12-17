@@ -22,12 +22,12 @@ fun BlockTip(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceDim, MaterialTheme.shapes.extraSmall)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.shapes.extraSmall)
             .padding(vertical = 8.dp, horizontal = 16.dp)
     ) {
         ProvideContentColorTextStyle(
             contentColor = MaterialTheme.colorScheme.onSurface,
-            textStyle = MaterialTheme.typography.bodySmall,
+            textStyle = MaterialTheme.typography.bodyMedium,
             content = text
         )
     }

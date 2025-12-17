@@ -33,7 +33,7 @@ class PrefsScope<T>(
 
     @PrefsDsl
     @Composable
-    fun Group(title: @Composable () -> Unit, content: @Composable PrefsScope<T>.() -> Unit) {
+    fun Group(title: @Composable () -> Unit, content: @Composable () -> Unit) {
         Box(
             modifier = Modifier.padding(vertical = 6.dp),
             contentAlignment = Alignment.CenterStart
@@ -51,7 +51,7 @@ class PrefsScope<T>(
     @PrefsDsl
     @NonRestartableComposable
     @Composable
-    fun Group(@StringRes titleRes: Int, content: @Composable PrefsScope<T>.() -> Unit) {
+    fun Group(@StringRes titleRes: Int, content: @Composable () -> Unit) {
         Group(
             title = {
                 Text(text = stringResource(id = titleRes))
@@ -67,7 +67,7 @@ class PrefsScope<T>(
      */
     @PrefsDsl
     @Composable
-    inline fun Item(drawDivider: Boolean = false, content: @Composable PrefsScope<T>.(T) -> Unit) {
+    inline fun Item(drawDivider: Boolean = false, content: @Composable (T) -> Unit) {
         content(preferenceState.value)
         if (drawDivider) {
             Divider()
@@ -81,7 +81,7 @@ class PrefsScope<T>(
      */
     @PrefsDsl
     @Composable
-    inline fun TextItem(drawDivider: Boolean = false, content: @Composable PrefsScope<T>.() -> Unit) {
+    inline fun TextItem(drawDivider: Boolean = false, content: @Composable () -> Unit) {
         content()
         if (drawDivider) {
             Divider()

@@ -83,6 +83,7 @@ private fun TopThreadItem(
 
 private val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
     BlockTip(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         text = {
             Text(text = stringResource(id = R.string.tip_blocked_thread))
         }
@@ -199,18 +200,18 @@ fun ForumThreadList(
                             onClick = { threadClickListeners.onClicked(thread) }
                         )
                     } else {
-                        BlockableContent(
-                            blocked = thread.blocked,
-                            blockedTip = ThreadBlockedTip,
-                            hideBlockedContent = hideBlocked
-                        ) {
-                            Column {
-                                if (index > 0) {
-                                    if (threadList[index - 1].isTop) {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                    }
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        Column {
+                            if (index > 0) {
+                                if (threadList[index - 1].isTop) {
+                                    Spacer(modifier = Modifier.height(8.dp))
                                 }
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                            }
+                            BlockableContent(
+                                blocked = thread.blocked,
+                                blockedTip = ThreadBlockedTip,
+                                hideBlockedContent = hideBlocked
+                            ) {
                                 FeedCard(
                                     thread = thread,
                                     onClick = threadClickListeners.onClicked,

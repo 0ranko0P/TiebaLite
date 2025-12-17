@@ -69,6 +69,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.DisplayUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.utils.ThemeUtil.setAppearanceLightNavigationBars
 import com.yalantis.ucrop.UCrop
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
@@ -131,8 +132,9 @@ class TranslucentThemeActivity : AppCompatActivity() {
             val colorSchemeExt = currentThemeNoTrans()
             LaunchedEffect(colorSchemeExt) {
                 windowInsetsController.run {
-                    isAppearanceLightStatusBars = ThemeUtil.isStatusBarFontDark(colorSchemeExt.colorScheme)
-                    isAppearanceLightNavigationBars = ThemeUtil.isNavigationBarFontDark(colorSchemeExt.colorScheme)
+                    val colorScheme = colorSchemeExt.colorScheme
+                    windowInsetsController.setAppearanceLightStatusBars(ThemeUtil.isStatusBarFontDark(colorScheme))
+                    windowInsetsController.setAppearanceLightNavigationBars(window, colorScheme)
                 }
             }
 

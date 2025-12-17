@@ -141,12 +141,18 @@ class UserProfileRepository @Inject constructor(
 
         private const val PROFILE_EXPIRE_MILL = 0x240C8400 // 7 days
 
+        private fun PostInfoList.getAuthor(): Author {
+            return Author(
+                id = user_id,
+                name = name_show.takeUnless { it.isEmpty() || it == user_name } ?: user_name,
+                avatarUrl = StringUtil.getAvatarUrl(user_portrait)
+            )
+        }
+
         private suspend fun List<PostInfoList>.mapUiModelPost(context: Context): List<PostListItem> {
             if (isEmpty()) return emptyList()
 
-            val author = with(this[0]) {
-                Author(user_id, user_name, avatarUrl = StringUtil.getAvatarUrl(user_portrait))
-            }
+            val author = this.first().getAuthor()
             return withContext(Dispatchers.Default) {
                 map {
                     PostListItem(
@@ -171,9 +177,7 @@ class UserProfileRepository @Inject constructor(
         private suspend fun List<PostInfoList>.mapUiModelThreads(): List<ThreadItem> {
             if (isEmpty()) return emptyList()
 
-            val author = with(this[0]) {
-                Author(user_id, user_name, avatarUrl = StringUtil.getAvatarUrl(user_portrait))
-            }
+            val author = this.first().getAuthor()
             return withContext(Dispatchers.Default) {
                 map {
                     ThreadItem(
@@ -200,12 +204,15 @@ class UserProfileRepository @Inject constructor(
         }
 
         private fun mapToEntity(user: User): UserProfile {
-            val name = user.name.trim().normalized()
-            val nickname = user.nameShow.takeUnless { it.isEmpty() || it.isBlank() }?.trim()?.normalized()
+            val nickname = user.nameShow.trim().takeUnless { it.isEmpty() || it.isBlank() }?.normalized()
+            val name = user.name.trim()
+                .takeUnless { it == "-"/* Server Bug? */ || it.isEmpty() || it.isBlank() }
+                ?.normalized() ?: nickname
+
             return UserProfile(
                 uid = user.id,
                 portrait = user.portrait,
-                name = name,
+                name = name.orEmpty(),
                 nickname = nickname?.takeUnless { it == name },
                 tiebaUid = user.tieba_uid,
                 intro = user.intro.takeUnless { it.isEmpty() },

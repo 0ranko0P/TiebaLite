@@ -425,7 +425,9 @@ private fun SubPostItem(
 ) =
     BlockableContent(
         blocked = item.blocked,
-        blockedTip = SubPostBlockedTip,
+        blockedTip = {
+            SubPostBlockedTip(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        },
         hideBlockedContent = false,
     )
 {

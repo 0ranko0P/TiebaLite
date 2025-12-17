@@ -279,7 +279,7 @@ fun UserProfilePage(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Avatar(data = avatarUrl, size = Sizes.Small)
-                            Text(text = userProfile.name, maxLines = 1)
+                            Text(text = userProfile.nickname ?: userProfile.name, maxLines = 1)
                         }
                     },
                     isSelf = isSelf,
