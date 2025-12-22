@@ -171,6 +171,7 @@ class MainActivityV2 : BaseComposeActivity() {
                 RootNavGraph(
                     // bottomSheetNavigator = bottomSheetNavigator,
                     navController = navController,
+                    settingsRepo = viewModel.settingsRepository,
                     startDestination = if (setupFinished) Destination.Main else Destination.Welcome
                 )
             }

@@ -43,7 +43,7 @@ data class MainUiState(
 @HiltViewModel
 class MainViewModel @Inject constructor(
     @ApplicationContext val context: Context,
-    settingsRepository: SettingsRepository,
+    val settingsRepository: SettingsRepository,
     private val forumRepo: ForumRepository,
     private val threadRepo: PbPageRepository
 ) : ViewModel() {

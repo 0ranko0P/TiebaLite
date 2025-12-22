@@ -22,6 +22,7 @@ import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
@@ -39,7 +40,7 @@ import com.huanchengfly.tieba.post.ui.page.main.notifications.list.Notifications
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPageBottomSheet
 import com.huanchengfly.tieba.post.ui.page.search.SearchPage
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
-import com.huanchengfly.tieba.post.ui.page.settings.settingsNestedGraphBuilder
+import com.huanchengfly.tieba.post.ui.page.settings.settingsGraph
 import com.huanchengfly.tieba.post.ui.page.settings.theme.AppThemePage
 import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsSheetPage
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
@@ -59,6 +60,7 @@ const val TB_LITE_DOMAIN = "tblite"
 fun RootNavGraph(
     // bottomSheetNavigator: BottomSheetNavigator,
     navController: NavHostController,
+    settingsRepo: SettingsRepository,
     startDestination: Destination = Destination.Main
 ) {
     SharedTransitionLayout {
@@ -69,7 +71,9 @@ fun RootNavGraph(
             // ) {
                 NavHost(
                     navController = navController,
-                    graph = remember { buildRootNavGraph(navController, startDestination) },
+                    graph = remember {
+                        buildRootNavGraph(navController, settingsRepo, startDestination)
+                    },
                     enterTransition = {
                         scaleIn(
                             animationSpec = tween(delayMillis = 35),
@@ -94,7 +98,11 @@ fun RootNavGraph(
     }
 }
 
-private fun buildRootNavGraph(navController: NavHostController, startDestination: Destination): NavGraph {
+private fun buildRootNavGraph(
+    navController: NavHostController,
+    settingsRepo: SettingsRepository,
+    startDestination: Destination
+): NavGraph {
     return navController.createGraph(startDestination) {
         composable<Destination.Main> {
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
@@ -207,10 +215,9 @@ private fun buildRootNavGraph(navController: NavHostController, startDestination
             WebViewPage(params.initialUrl, navController)
         }
 
-        navigation<Destination.Settings>(
-            startDestination = SettingsDestination.Settings,
-            builder = settingsNestedGraphBuilder(navController)
-        )
+        navigation<Destination.Settings>(startDestination = SettingsDestination.Settings) {
+            settingsGraph(navController, settingsRepo)
+        }
 
         composable<Destination.CopyText> { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.CopyText>()

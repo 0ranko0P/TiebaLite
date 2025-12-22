@@ -4,7 +4,6 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.page.settings.blocklist.KeywordBlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.blocklist.UserBlockListPage
@@ -55,10 +54,7 @@ sealed interface SettingsDestination {
     object WorkInfo: SettingsDestination
 }
 
-fun settingsNestedGraphBuilder(
-    navController: NavController,
-    settingsRepo: SettingsRepository = App.INSTANCE.settingRepository
-): NavGraphBuilder.() -> Unit = {
+fun NavGraphBuilder.settingsGraph(navController: NavController, settingsRepo: SettingsRepository) {
     composable<SettingsDestination.Settings> {
         SettingsPage(navController)
     }
