@@ -1,12 +1,12 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 
-import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastMap
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.arch.BaseStateViewModel
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.repository.ExploreRepository
@@ -17,13 +17,8 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -46,21 +41,25 @@ data class ConcernUiState(
 @HiltViewModel
 class ConcernViewModel @Inject constructor(
     private val exploreRepo: ExploreRepository
-) : ViewModel() {
+) : BaseStateViewModel<ConcernUiState>() {
 
-    private val handler = CoroutineExceptionHandler { _, e ->
-        Log.e(TAG, "onError: ", e)
-        _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
+    override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, suppressed ->
+        // Allow user browse existing content on suppressed exceptions
+        if (suppressed && currentState.isEmpty) {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = null) }
+            sendUiEvent(CommonUiEvent.ToastError(e))
+        } else {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
+        }
     }
 
-    private val _uiState = MutableStateFlow(ConcernUiState(isRefreshing = true))
-    val uiState: StateFlow<ConcernUiState> = _uiState.asStateFlow()
+    override fun createInitialState(): ConcernUiState = ConcernUiState(isRefreshing = true)
 
     init {
         refreshInternal(cached = true)
     }
 
-    private fun refreshInternal(cached: Boolean) = viewModelScope.launch(handler) {
+    private fun refreshInternal(cached: Boolean) = launchInVM(errorHandler) {
         var lastRequestUnix: Long? = null
         _uiState.set {
             lastRequestUnix = this.lastRequestUnix.takeUnless { it == 0L }
@@ -74,14 +73,14 @@ class ConcernViewModel @Inject constructor(
     }
 
     fun onRefresh() {
-        if (!_uiState.value.isRefreshing) refreshInternal(cached = false)
+        if (!currentState.isRefreshing) refreshInternal(cached = false)
     }
 
     fun onLoadMore() {
-        val oldState = _uiState.value
+        val oldState = currentState
         if (!oldState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
 
-        viewModelScope.launch(handler) {
+        launchInVM {
             val rec = exploreRepo.loadUserLike(oldState.nextPageTag, oldState.lastRequestUnix)
             val data = (oldState.data + rec.threads).distinctById()
             _uiState.update {
@@ -93,7 +92,7 @@ class ConcernViewModel @Inject constructor(
     /**
      * Called when user clicked like button on target [ThreadItem]
      * */
-    fun onThreadLikeClicked(thread: ThreadItem) = viewModelScope.launch(handler) {
+    fun onThreadLikeClicked(thread: ThreadItem) = launchInVM {
         updateLikeStatusUiStateCommon(
             thread = thread,
             onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Concern) },
@@ -110,9 +109,9 @@ class ConcernViewModel @Inject constructor(
      * @param like latest like status of target thread
      * */
     fun onThreadResult(threadId: Long, like: Like) {
-        viewModelScope.launch(handler) {
+         launchInVM {
             // compare and update with latest like status
-            val newData = _uiState.value.data.updateLikeStatus(threadId, like)
+            val newData = currentState.data.updateLikeStatus(threadId, like)
             if (newData != null) {
                 _uiState.update { it.copy(data = newData) }
                 exploreRepo.purgeCache(ExplorePageItem.Concern)

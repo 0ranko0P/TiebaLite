@@ -1,21 +1,17 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.personalized
 
-import android.util.Log
 import androidx.collection.ArraySet
 import androidx.collection.MutableScatterSet
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastForEach
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.huanchengfly.tieba.post.api.Error.ERROR_NETWORK
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Like
@@ -26,18 +22,10 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Collections
 import javax.inject.Inject
@@ -60,7 +48,7 @@ data class PersonalizedUiState(
 class PersonalizedViewModel @Inject constructor(
     private val exploreRepo: ExploreRepository,
     settingsRepository: SettingsRepository
-) : ViewModel() {
+) : BaseStateViewModel<PersonalizedUiState>() {
 
     companion object {
         private const val TAG = "PersonalizedViewModel"
@@ -78,35 +66,29 @@ class PersonalizedViewModel @Inject constructor(
         }
     }
 
-    private val _uiState = MutableStateFlow(PersonalizedUiState())
-    val uiState: StateFlow<PersonalizedUiState> = _uiState.asStateFlow()
-
-    /**
-     * One-off [UiEvent], but no guarantee to be received.
-     * */
-    private val _uiEvent: MutableSharedFlow<UiEvent?> = MutableSharedFlow()
-    val uiEvent: Flow<UiEvent?>
-        get() = _uiEvent
-
-    private val handler = CoroutineExceptionHandler { _, e ->
-        if (e !is TiebaNotLoggedInException) {
-            Log.e(TAG, "onError: ", e)
+    override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, suppressed ->
+        // Allow user browse existing content on suppressed exceptions
+        if (suppressed && !currentState.isEmpty) {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = null) }
+            sendUiEvent(CommonUiEvent.ToastError(e))
+        } else {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
         }
-
-        _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
     }
 
     private val blockedIds: MutableSet<Long> = Collections.synchronizedSet(ArraySet())
 
     val hideBlockedContent: StateFlow<Boolean> = settingsRepository.blockSettings
         .map { it.hideBlocked }
-        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), false)
+        .stateInViewModel(initialValue = false)
 
     init {
         refreshInternal(cached = true)
     }
 
-    private fun refreshInternal(cached: Boolean) = viewModelScope.launch(handler) {
+    override fun createInitialState(): PersonalizedUiState = PersonalizedUiState()
+
+    private fun refreshInternal(cached: Boolean): Unit = launchInVM {
         var showTip = false
         _uiState.set {
             showTip = !this.isEmpty
@@ -115,38 +97,27 @@ class PersonalizedViewModel @Inject constructor(
         val data = exploreRepo.loadPersonalized(1, cached).distinctById(blockedIds)
         _uiState.set { copy(isRefreshing = false, data = data) }
         if (showTip) {
-            _uiEvent.emit(PersonalizedUiEvent.RefreshSuccess(data.size))
+            sendUiEvent(PersonalizedUiEvent.RefreshSuccess(data.size))
         }
     }
 
     fun onRefresh() {
-        if (!_uiState.value.isRefreshing) refreshInternal(cached = false)
+        if (!currentState.isRefreshing) refreshInternal(cached = false)
     }
 
     fun onLoadMore() {
-        val oldState = _uiState.value
+        val oldState = currentState
         if (!oldState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
 
-        viewModelScope.launch(handler) {
-            runCatching {
-                val page = oldState.currentPage + 1
-                val data = exploreRepo.loadPersonalized(page, cached = true)
-                val newData = (oldState.data + data).distinctById(blockedIds)
-                _uiState.update { it.copy(isLoadingMore = false, currentPage = page, data = newData) }
-            }
-            .onFailure { e ->
-                // 网络错误, 继续浏览缓存的内容
-                if (e.getErrorCode() == ERROR_NETWORK && !oldState.isEmpty) {
-                    _uiState.update { it.copy(isLoadingMore = false) }
-                    _uiEvent.emit(CommonUiEvent.Toast(e.getErrorMessage()))
-                } else {
-                    _uiState.update { it.copy(isLoadingMore = false, error = e) }
-                }
-            }
+        launchInVM {
+            val page = oldState.currentPage + 1
+            val data = exploreRepo.loadPersonalized(page, cached = true)
+            val newData = (oldState.data + data).distinctById(blockedIds)
+            _uiState.update { it.copy(isLoadingMore = false, currentPage = page, data = newData) }
         }
     }
 
-    fun onThreadLikeClicked(thread: ThreadItem) = viewModelScope.launch(handler) {
+    fun onThreadLikeClicked(thread: ThreadItem): Unit = launchInVM {
         updateLikeStatusUiStateCommon(
             thread = thread,
             onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Personalized) },
@@ -159,13 +130,13 @@ class PersonalizedViewModel @Inject constructor(
     fun onThreadDislike(thread: ThreadItem, reasons: List<Dislike>) {
         if (!blockedIds.add(thread.id)) return
 
-        viewModelScope.launch(handler) {
+        launchInVM {
             _uiState.update { it.copy(data = it.data.distinctById(blockedIds)) }
             runCatching {
                 exploreRepo.onDislikeThread(thread, reasons)
             }
             .onFailure { // ignore errors and keep data changes
-                _uiEvent.emit(PersonalizedUiEvent.DislikeFailed(it))
+                sendUiEvent(PersonalizedUiEvent.DislikeFailed(it))
             }
         }
     }
@@ -174,18 +145,16 @@ class PersonalizedViewModel @Inject constructor(
      * Called when navigating back from thread page with the latest [Like] status
      *
      * @param threadId target thread ID
-     * @param like like status of target thread
+     * @param like latest thread like status
      * */
-    fun onThreadResult(threadId: Long, like: Like) {
-        viewModelScope.launch(handler) {
-            // compare and update with latest like status
-            val newData = _uiState.value.data.updateLikeStatus(threadId, like)
-            if (newData != null) {
-                _uiState.update { it.copy(data = newData) }
-                exploreRepo.purgeCache(ExplorePageItem.Personalized)
-            }
-            // else: empty or no status changes
+    fun onThreadResult(threadId: Long, like: Like): Unit = launchInVM {
+        // compare and update with latest like status
+        val newData = currentState.data.updateLikeStatus(threadId, like)
+        if (newData != null) {
+            _uiState.update { it.copy(data = newData) }
+            exploreRepo.purgeCache(ExplorePageItem.Personalized)
         }
+        // else -> empty or no status changes
     }
 }
 

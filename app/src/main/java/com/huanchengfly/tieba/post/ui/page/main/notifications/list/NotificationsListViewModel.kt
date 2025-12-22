@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.notifications.list
 
 import android.content.Context
-import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.MessageListBean
@@ -16,6 +15,7 @@ import com.huanchengfly.tieba.post.arch.PartialChangeProducer
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
@@ -35,7 +35,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
@@ -44,7 +43,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 
 @HiltViewModel(assistedFactory = NotificationsListVmFactory::class)
@@ -58,7 +56,7 @@ class NotificationsListViewModel @AssistedInject constructor(
 
     val hideBlocked: StateFlow<Boolean> = settingsRepo.blockSettings
         .map { it.hideBlocked }
-        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), false)
+        .stateInViewModel(initialValue = false)
 
     override fun createInitialState(): NotificationsListUiState = NotificationsListUiState()
 

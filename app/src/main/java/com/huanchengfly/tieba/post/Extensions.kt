@@ -108,7 +108,7 @@ inline fun <reified T : Activity> Context.goToActivity(pre: Intent.() -> Unit) {
     startActivity(Intent(this, T::class.java).apply(pre))
 }
 
-fun Context.toastShort(text: String) {
+fun Context.toastShort(text: CharSequence) {
     runCatching { Toast.makeText(this, text, Toast.LENGTH_SHORT).show() }
 }
 

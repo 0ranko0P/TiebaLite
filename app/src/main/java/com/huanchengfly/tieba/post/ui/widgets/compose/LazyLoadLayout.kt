@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,8 +38,8 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource.Companion.UserInput
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
@@ -299,35 +300,61 @@ private fun rememberSwipeUpRefreshConnection(
 }
 
 @Composable
+private fun TextIndicator(modifier: Modifier = Modifier, indicatorText: () -> String) {
+    Box(
+        modifier = modifier
+    ) {
+        HorizontalDivider(modifier = Modifier.align(Alignment.TopStart))
+
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .align(Alignment.Center),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HorizontalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
+
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .animateContentSize(animationSpec = TweenSpec()),
+            ) {
+                Text(
+                    text = indicatorText(),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
+        }
+    }
+}
+
+@Composable
 fun LoadMoreIndicator(
     modifier: Modifier = Modifier,
     isLoading: Boolean,
     noMore: Boolean,
     onThreshold: Boolean
-) = Box(modifier) {
-    HorizontalDivider(modifier = Modifier.align(Alignment.TopStart))
+) {
+    val context = LocalContext.current
+    TextIndicator(modifier = modifier.fillMaxWidth()) {
+        when {
+            isLoading -> context.getString(R.string.text_loading)
+            onThreshold -> context.getString(R.string.release_to_load)
+            noMore -> context.getString(R.string.tip_load_end)
+            else -> context.getString(R.string.pull_to_load)
+        }
+    }
+}
 
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 20.dp)
-            .align(Alignment.Center),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        HorizontalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
-
-        Text(
-            text = when {
-                isLoading -> stringResource(id = R.string.text_loading)
-                onThreshold -> stringResource(id = R.string.release_to_load)
-                noMore -> stringResource(id = R.string.tip_load_end)
-                else -> stringResource(id = R.string.pull_to_load)
-            },
-            modifier = Modifier
-                .padding(horizontal = 4.dp)
-                .animateContentSize(animationSpec = TweenSpec()),
-            style = MaterialTheme.typography.bodyLarge
-        )
-
-        HorizontalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
+@Composable
+fun LoadingIndicator(modifier: Modifier = Modifier, isLoading: Boolean) {
+    val context = LocalContext.current
+    TextIndicator(modifier = modifier.fillMaxWidth()) {
+        when {
+            isLoading -> context.getString(R.string.text_loading)
+            else -> context.getString(R.string.tip_load_end)
+        }
     }
 }

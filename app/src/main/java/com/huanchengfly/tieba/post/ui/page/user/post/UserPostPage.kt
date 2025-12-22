@@ -32,7 +32,7 @@ import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostViewModel.Companion.UserPostVmFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -98,14 +98,7 @@ fun UserPostPage(
                     if (hasMore) viewModel.onLoadMore()
                 },
                 onLoad = null,
-                bottomIndicator = {
-                    LoadMoreIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        isLoading = isLoadingMore,
-                        noMore = !hasMore,
-                        onThreshold = false
-                    )
-                }
+                bottomIndicator = { LoadingIndicator(isLoading = isLoadingMore) }
             ) {
                 itemsIndexed(data, key = { _, it -> it.lazyListKey }) { i, post ->
                     Column {

@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.photoview
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.iielse.imageviewer.adapter.ItemType
@@ -13,6 +12,7 @@ import com.huanchengfly.tieba.post.api.models.isGif
 import com.huanchengfly.tieba.post.api.models.isLongPic
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
+import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.models.PhotoViewData
@@ -21,27 +21,22 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.JobQueue
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.retryWhen
-import kotlinx.coroutines.flow.timeout
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.time.Duration.Companion.seconds
 
 class PhotoViewViewModel : ViewModel(), DataProvider {
 
     private val _state: MutableStateFlow<PhotoViewUiState> = MutableStateFlow(PhotoViewUiState())
     val state: StateFlow<PhotoViewUiState> get() = _state
 
-    private val handler = CoroutineExceptionHandler { _, e ->
-        Log.e(TAG, "onError: ", e)
+    private val handler = TbLiteExceptionHandler(TAG) { _, e, _ ->
         _state.update { it.copy(error = e) }
     }
 
@@ -73,7 +68,6 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
             viewModelScope.launch(Dispatchers.Default + handler) {
                 val picPageBean = viewData.data
                     .toPageFlow(viewData.data.picId, viewData.data.picIndex, prev = false)
-                    .retryWhen { cause, attempt -> cause !is TiebaApiException && attempt < 3 }
                     .firstOrThrow()
 
                 val stateSnapshot = _state.first()
@@ -193,7 +187,6 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
     companion object {
         private const val TAG = "PhotoViewViewModel"
 
-        @OptIn(FlowPreview::class)
         private fun LoadPicPageData.toPageFlow(picId: String, picIndex: Int, prev: Boolean): Flow<PicPageBean> {
             return TiebaApi.getInstance().picPageFlow(
                 forumId = forumId.toString(),
@@ -204,7 +197,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
                 picIndex = picIndex.toString(),
                 objType = objType,
                 prev = prev
-            ).timeout(4.seconds)
+            )
         }
 
         private fun PicPageBean.PicBean.toPhotoItem(): PhotoViewItem {

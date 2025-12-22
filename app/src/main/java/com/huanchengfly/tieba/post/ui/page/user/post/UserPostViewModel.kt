@@ -1,9 +1,9 @@
 package com.huanchengfly.tieba.post.ui.page.user.post
 
-import android.util.Log
 import androidx.compose.ui.util.fastDistinctBy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
 import com.huanchengfly.tieba.post.ui.models.user.PostListItem
@@ -13,7 +13,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,8 +41,7 @@ class UserPostViewModel @AssistedInject constructor(
     private val userProfileRepo: UserProfileRepository,
 ) : ViewModel() {
 
-    private val handler = CoroutineExceptionHandler { _, e ->
-        Log.e(TAG, "onError: ", e)
+    private val handler = TbLiteExceptionHandler(TAG) { _, e, _ ->
         _uiState.update { it.copy(isRefreshing = false, error = e) }
     }
 

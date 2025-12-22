@@ -83,6 +83,7 @@ import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.models.database.Account
@@ -96,6 +97,7 @@ import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStoreUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
@@ -203,7 +205,7 @@ fun ThreadPage(
     val snackbarHostState = rememberSnackbarHostState()
     val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
 
-    val state by viewModel.threadUiState.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val isEmpty by remember {
         derivedStateOf { state.data.isEmpty() && state.firstPost == null }
     }
@@ -225,53 +227,55 @@ fun ThreadPage(
             .invokeOnCompletion { showBottomSheet = false }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.uiEvent.collect {
-            val message = when (it) {
-                is CommonUiEvent.Toast -> it.message.toString()
+    viewModel.uiEvent.collectUiEventWithLifecycle {
+        val message = when (it) {
+            is CommonUiEvent.Toast -> it.message.toString()
 
-                is CommonUiEvent.NavigateUp -> navigator.navigateUp()
+            is CommonUiEvent.NavigateUp -> navigator.navigateUp()
 
-                is ThreadUiEvent.DeletePostFailed -> context.getString(R.string.toast_delete_failure, it.message)
+            is ThreadUiEvent.DeletePostFailed -> getString(R.string.toast_delete_failure, it.message)
 
-                is ThreadUiEvent.DeletePostSuccess -> context.getString(R.string.toast_delete_success)
+            is ThreadUiEvent.DeletePostSuccess -> getString(R.string.toast_delete_success)
 
-                is ThreadUiEvent.ScrollToFirstReply -> lazyListState.animateScrollToItem(1)
+            is ThreadUiEvent.ScrollToFirstReply -> lazyListState.scrollToItem(1)
 
-                is ThreadUiEvent.ScrollToLatestReply -> {
-                    if (state.sortType != ThreadSortType.BY_DESC) {
-                        lazyListState.animateScrollToItem(2 + state.data.size)
-                    } else {
-                        lazyListState.animateScrollToItem(1)
-                    }
+            is ThreadUiEvent.ScrollToLatestReply -> {
+                if (state.sortType != ThreadSortType.BY_DESC) {
+                    lazyListState.animateScrollToItem(2 + state.data.size)
+                } else {
+                    lazyListState.animateScrollToItem(1)
                 }
-
-                // Workaround for broken scroll position preservation
-                is ThreadUiEvent.LoadPreviousSuccess -> {
-                    val nonDataItems = if (state.pageData.hasPrevious) 3 else 2 // FirstPost + StickyHeader + PreviousButton
-                    lazyListState.scrollToItem(nonDataItems + it.previousIndex, it.offset)
-                }
-
-                is ThreadUiEvent.LoadSuccess -> {
-                    if (it.postId != 0L || it.page > 1) {
-                        lazyListState.animateScrollToItem(1)
-                    } else {
-                        // Scroll to bottom when sorting by DESC
-                        val index = if (state.sortType != ThreadSortType.BY_DESC) 1 else 2 + state.data.size
-                        lazyListState.animateScrollToItem(index)
-                    }
-                }
-
-                is ThreadUiEvent.ToReplyDestination -> navigator.navigate(it.direction)
-
-                is ThreadUiEvent.ToSubPostsDestination -> navigator.navigate(it.direction)
-
-                is ThreadLikeUiEvent -> it.toMessage(context)
-
-                else -> Unit
             }
 
-            if (message is String) snackbarHostState.showSnackbar(message)
+            // Workaround for broken scroll position preservation
+            is ThreadUiEvent.LoadPreviousSuccess -> {
+                val nonDataItems = if (state.pageData.hasPrevious) 3 else 2 // FirstPost + StickyHeader + PreviousButton
+                lazyListState.scrollToItem(nonDataItems + it.previousIndex, it.offset)
+            }
+
+            is ThreadUiEvent.LoadSuccess -> {
+                if (it.postId != 0L || it.page > 1) {
+                    lazyListState.animateScrollToItem(1)
+                } else {
+                    // Scroll to bottom when sorting by DESC
+                    val index = if (state.sortType != ThreadSortType.BY_DESC) 1 else 2 + state.data.size
+                    lazyListState.animateScrollToItem(index)
+                }
+            }
+
+            is ThreadUiEvent.ToReplyDestination -> navigator.navigate(it.direction)
+
+            is ThreadUiEvent.ToSubPostsDestination -> navigator.navigate(it.direction)
+
+            is ThreadLikeUiEvent -> it.toMessage(context)
+
+            is ThreadStoreUiEvent -> it.toMessage(context)
+
+            else -> Unit
+        }
+        if (message is String) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(message)
         }
     }
 

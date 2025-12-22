@@ -1,31 +1,22 @@
 package com.huanchengfly.tieba.post.ui.page.forum.searchpost
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.arch.UiEvent
+import com.huanchengfly.tieba.post.arch.BaseStateViewModel
+import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.repository.SearchRepository
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -50,43 +41,34 @@ data class ForumSearchPostUiState(
 class ForumSearchPostViewModel @Inject constructor(
     private val searchRepo: SearchRepository,
     savedStateHandle: SavedStateHandle
-) : ViewModel() {
+) : BaseStateViewModel<ForumSearchPostUiState>() {
 
     private val params = savedStateHandle.toRoute<Destination.ForumSearchPost>()
 
     val forumName: String = params.forumName
     val forumId: Long = params.forumId
 
-    /**
-     * One-off [UiEvent], but no guarantee to be received.
-     * */
-    private val _uiEvent: MutableSharedFlow<SearchUiEvent?> = MutableSharedFlow()
-    val uiEvent: Flow<SearchUiEvent?>
-        get() = _uiEvent
-
-    private var _uiState = MutableStateFlow(ForumSearchPostUiState())
-    val uiState: StateFlow<ForumSearchPostUiState> = _uiState.asStateFlow()
-
-    private val handler = CoroutineExceptionHandler { _, e ->
-        Log.e(TAG, "onError: ", e)
+    override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, _ ->
         _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
     }
 
     val searchHistories: StateFlow<List<String>> = searchRepo.getPostHistoryFlow(forumId)
         .catch { e ->
-            handler.handleException(currentCoroutineContext(), e)
+            errorHandler.handleException(currentCoroutineContext(), e)
         }
-        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateInViewModel(initialValue = emptyList())
 
-    fun onClearHistory() {
-        viewModelScope.launch(handler) {
-            runCatching {
-                require(searchHistories.value.isNotEmpty()) { "Empty History" }
-                searchRepo.clearPostHistory(forumId)
-            }
-            .onFailure { _uiEvent.emit(SearchUiEvent.ClearHistoryFailed(it)) }
-            .onSuccess { _uiEvent.emit(SearchUiEvent.ClearHistorySucceed) }
+    override fun createInitialState(): ForumSearchPostUiState = ForumSearchPostUiState()
+
+    fun onClearHistory(): Unit = launchInVM {
+        runCatching {
+            require(searchHistories.value.isNotEmpty()) { "Empty History" }
+            searchRepo.clearPostHistory(forumId)
         }
+        .onFailure { e ->
+            emitUiEvent(SearchUiEvent.ClearHistoryFailed(e))
+        }
+        .onSuccess { emitUiEvent(SearchUiEvent.ClearHistorySucceed) }
     }
 
     /**
@@ -94,13 +76,11 @@ class ForumSearchPostViewModel @Inject constructor(
      *
      * @param history search history
      * */
-    fun onDeleteHistory(history: String) {
-        viewModelScope.launch(handler) {
-            runCatching {
-                searchRepo.deletePostHistory(forumId, history)
-            }
-            .onFailure { e -> _uiEvent.emit(SearchUiEvent.DeleteHistoryFailed(e)) }
+    fun onDeleteHistory(history: String): Unit = launchInVM {
+        runCatching {
+            searchRepo.deletePostHistory(forumId, history)
         }
+        .onFailure { e -> emitUiEvent(SearchUiEvent.DeleteHistoryFailed(e)) }
     }
 
     private fun searchPostInternal(keyword: String, sort: Int? = null, filter: Int? = null) {
@@ -115,7 +95,7 @@ class ForumSearchPostViewModel @Inject constructor(
             ForumSearchPostUiState(keyword = keyword, sortType = sort ?: it.sortType, filterType = filter ?: it.filterType)
         }
 
-        viewModelScope.launch(handler) {
+        launchInVM {
             val sortType = uiStateSnapshot.sortType
             val filterType = uiStateSnapshot.filterType
             val (hasMore, posts) = searchRepo.searchPost(keyword, forumName, forumId, sortType, filterType, page = 1)
@@ -124,10 +104,10 @@ class ForumSearchPostViewModel @Inject constructor(
     }
 
     fun onLoadMore() {
-        if (_uiState.value.isLoadingMore) return
+        if (currentState.isLoadingMore) return
 
         val uiStateSnapshot = _uiState.updateAndGet { it.copy(isLoadingMore = true) }
-        viewModelScope.launch(handler) {
+        launchInVM {
             val page = uiStateSnapshot.currentPage + 1
             val (hasMore, threads) = searchRepo.searchPost(
                 keyword = uiStateSnapshot.keyword,
@@ -149,13 +129,13 @@ class ForumSearchPostViewModel @Inject constructor(
     }
 
     fun onRefresh() {
-        val uiStateSnapshot = _uiState.value
+        val uiStateSnapshot = currentState
         if (!uiStateSnapshot.isRefreshing) searchPostInternal(uiStateSnapshot.keyword) else return
     }
 
     fun onSubmitKeyword(keyword: String) {
-        if (keyword != _uiState.value.keyword) {
-            viewModelScope.launch(handler) {
+        if (keyword != currentState.keyword) {
+            launchInVM {
                 searchRepo.addPostHistory(forumId, keyword)
             }
             searchPostInternal(keyword)
@@ -163,14 +143,14 @@ class ForumSearchPostViewModel @Inject constructor(
     }
 
     fun onFilterTypeChanged(filterType: Int) {
-        val uiStateSnapshot = uiState.value
+        val uiStateSnapshot = currentState
         if (uiStateSnapshot.filterType != filterType) {
             searchPostInternal(keyword = uiStateSnapshot.keyword, filter = filterType)
         }
     }
 
     fun onSortTypeChanged(sortType: Int) {
-        val uiStateSnapshot = uiState.value
+        val uiStateSnapshot = currentState
         if (uiStateSnapshot.sortType != sortType) {
             searchPostInternal(keyword = uiStateSnapshot.keyword, sort = sortType)
         }

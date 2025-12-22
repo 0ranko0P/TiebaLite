@@ -10,6 +10,8 @@ import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.huanchengfly.tieba.post.activities.BaseActivity
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil.setAppearanceLightNavigationBars
@@ -62,10 +64,16 @@ abstract class BaseComposeActivity : BaseActivity() {
 
 sealed interface CommonUiEvent : UiEvent {
 
+    object FeatureUnavailable : CommonUiEvent
+
     object NavigateUp : CommonUiEvent
 
-    data class Toast(
-        val message: CharSequence,
+    class ToastError(override val message: CharSequence, val code: Int): Toast(message) {
+        constructor(e: Throwable) : this(message = e.getErrorMessage(), code = e.getErrorCode())
+    }
+
+    open class Toast(
+        open val message: CharSequence,
         val length: Int = android.widget.Toast.LENGTH_SHORT
     ) : CommonUiEvent
 }

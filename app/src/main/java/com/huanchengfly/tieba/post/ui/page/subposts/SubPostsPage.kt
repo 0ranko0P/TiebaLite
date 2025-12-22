@@ -49,6 +49,7 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
@@ -78,7 +79,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
@@ -136,30 +137,28 @@ internal fun SubPostsContent(
     val myUid = account?.uid
     val canReply = account != null && !LocalHabitSettings.current.hideReply
 
-    val uiState by viewModel.state.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isLoadingMore = uiState.isLoadingMore
     val hasMore = uiState.page.hasMore
     val forumName = uiState.forumName
 
     val lazyListState = rememberLazyListState()
 
-    LaunchedEffect(Unit) {
-        viewModel.uiEvent.collect {
-            when (it) {
-                is ThreadLikeUiEvent -> context.toastShort(it.toMessage(context))
+    viewModel.uiEvent.collectUiEventWithLifecycle {
+        when (it) {
+            is ThreadLikeUiEvent -> toastShort(text = it.toMessage(context))
 
-                is CommonUiEvent.Toast -> context.toastShort(it.message.toString())
+            is CommonUiEvent.Toast -> toastShort(text = it.message)
 
-                is SubPostsUiEvent.ScrollToSubPosts -> {
-                    val targetIndex = 2 + uiState.subPosts.indexOfFirst { s -> s.id == subPostId }
-                    delay(AnimationConstants.DefaultDurationMillis.toLong())
-                    lazyListState.animateScrollToItem(targetIndex.coerceIn(0, uiState.subPosts.lastIndex))
-                }
-
-                is SubPostsUiEvent.DeletePostFailed -> context.toastShort(R.string.toast_delete_failure, it.message)
-
-                else ->  {/* Unknown UI event */}
+            is SubPostsUiEvent.ScrollToSubPosts -> {
+                val targetIndex = 2 + uiState.subPosts.indexOfFirst { s -> s.id == subPostId }
+                delay(AnimationConstants.DefaultDurationMillis.toLong())
+                lazyListState.animateScrollToItem(targetIndex.coerceIn(0, uiState.subPosts.lastIndex))
             }
+
+            is SubPostsUiEvent.DeletePostFailed -> toastShort(R.string.toast_delete_failure, it.message)
+
+            else ->  {/* Unknown UI event */}
         }
     }
 
@@ -267,14 +266,7 @@ internal fun SubPostsContent(
                     }
                 },
                 onLoad = null,
-                bottomIndicator = {
-                    LoadMoreIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        isLoading = isLoadingMore,
-                        noMore = !hasMore,
-                        onThreshold = false
-                    )
-                }
+                bottomIndicator = { LoadingIndicator(isLoading = isLoadingMore) }
             ) {
                 val postItem = uiState.post ?: return@SwipeUpLazyLoadColumn
                 item(key = "Post$postId", contentType = PostContentType) {
@@ -305,11 +297,11 @@ internal fun SubPostsContent(
                 } // End of post card
 
                 if (useStickyHeaderWorkaround) {
-                    item(key = "SubPostsHeader", contentType = HeaderContentType) {
+                    item(contentType = HeaderContentType) {
                         SubPostsHeader(postNum = uiState.page.postCount)
                     }
                 } else {
-                    stickyHeader(key = "SubPostsHeader", contentType = HeaderContentType) {
+                    stickyHeader(contentType = HeaderContentType) {
                         SubPostsHeader(
                             modifier = Modifier.stickyHeaderBackground(topAppBarScrollBehavior.state, lazyListState),
                             postNum = uiState.page.postCount

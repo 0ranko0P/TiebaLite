@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -76,9 +77,8 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.components.glide.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.goToActivity
@@ -176,33 +176,32 @@ fun UserProfilePage(
     val context = LocalContext.current
     val snackbarHostState = rememberSnackbarHostState()
 
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = UserProfileUiState::isRefreshing,
-        initial = true
-    )
-    val error by viewModel.uiState.collectPartialAsState(
-        prop1 = UserProfileUiState::error,
-        initial = null
-    )
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    onGlobalEvent<UserProfileUiEvent> {
+    viewModel.uiEvent.collectUiEventWithLifecycle {
         val uiMessage = when (it) {
             is UserProfileUiEvent.FollowSuccess -> it.message
 
-            is UserProfileUiEvent.FollowFailed -> context.getString(R.string.toast_like_failed, it.e.getErrorMessage())
+            is UserProfileUiEvent.FollowFailed -> getString(R.string.toast_like_failed, it.message)
 
-            is UserProfileUiEvent.UnfollowFailed -> context.getString(R.string.toast_unlike_failed, it.e.getErrorMessage())
+            is UserProfileUiEvent.UnfollowFailed -> getString(R.string.toast_unlike_failed, it.message)
+
+            is CommonUiEvent.Toast -> it.message.toString()
+
+            else -> Unit
         }
-        uiMessage?.let { m -> snackbarHostState.showSnackbar(m) }
+        if (uiMessage is String) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(uiMessage)
+        }
     }
 
     StateScreen(
-        isLoading = isRefreshing,
-        error = error,
+        isLoading = uiState.isRefreshing || uiState.userProfile == null,
+        error = uiState.error,
         onReload = viewModel::onRefresh,
     ) {
-        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-        val userProfile = viewModel.userProfile.collectAsStateWithLifecycle().value ?: return@StateScreen
+        val userProfile = uiState.userProfile ?: return@StateScreen
         val account = LocalAccount.current
         val isSelf = account?.uid == uid
 
@@ -545,6 +544,8 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
                     Row(

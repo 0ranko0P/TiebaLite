@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.thread
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -108,7 +107,7 @@ fun StateScreenScope.ThreadContent(
     useStickyHeader: Boolean // Bug: StickyHeader doesn't respect content padding
 ) {
     val navigator = LocalNavController.current
-    val state by viewModel.threadUiState.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val collectPid = state.thread?.collectMarkPid ?: -1
     val latestPosts = state.latestPosts
     val isLoadingMore = state.isLoadingMore
@@ -132,12 +131,7 @@ fun StateScreenScope.ThreadContent(
             },
             onLazyLoad = { if (state.pageData.hasMore) viewModel.requestLoadMore() },
             bottomIndicator = { onThreshold ->
-                LoadMoreIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    isLoading = isLoadingMore,
-                    noMore = !state.pageData.hasMore,
-                    onThreshold = onThreshold
-                )
+                LoadMoreIndicator(isLoading = isLoadingMore, noMore = !state.pageData.hasMore, onThreshold = onThreshold)
             }
         ) {
             item(key = Type.FirstPost.key, contentType = Type.FirstPost) {
@@ -352,7 +346,7 @@ fun ThreadHeader(
 fun SubPostBlockedTip(modifier: Modifier = Modifier) {
     Text(
         text = stringResource(id = R.string.tip_blocked_sub_post),
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         style = MaterialTheme.typography.bodyMedium
     )
 }

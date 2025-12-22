@@ -20,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateSetOf
@@ -29,7 +28,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,18 +38,19 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
 import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
+import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -76,33 +75,22 @@ fun PersonalizedPage(
     onHideFab: (Boolean) -> Unit,
     viewModel: PersonalizedViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     var refreshCount by remember { mutableIntStateOf(0) }
-    val showRefreshTip = refreshCount > 0
 
-    LaunchedEffect(viewModel.uiEvent) {
-        viewModel.uiEvent.collect {
-            when(it) {
-                is PersonalizedUiEvent.RefreshSuccess -> {
-                    coroutineScope.launch {
-                        listState.scrollToItem(0, 0)
-                        delay(300)
-                        refreshCount = it.count
-                        delay(2000)
-                        refreshCount = 0
-                    }
-                }
-
-                is PersonalizedUiEvent.DislikeFailed -> {
-                    context.toastShort(R.string.toast_exception, it.e.getErrorMessage())
-                }
-
-                is CommonUiEvent.Toast -> context.toastShort(it.message.toString())
-
-                else -> {}
+    viewModel.uiEvent.collectUiEventWithLifecycle {
+        when (it) {
+            is PersonalizedUiEvent.RefreshSuccess -> coroutineScope.launch {
+                listState.scrollToItem(0, 0)
+                refreshCount = it.count // Show refresh tip
+                delay(2000)
+                refreshCount = 0        // Hide refresh tip
             }
+
+            is PersonalizedUiEvent.DislikeFailed -> toastShort(R.string.toast_exception, it.e.getErrorMessage())
+
+            is CommonUiEvent.ToastError -> toastShort(R.string.toast_exception, it.message)
         }
     }
 
@@ -127,7 +115,7 @@ fun PersonalizedPage(
     )
     val isError = error != null
 
-    LaunchedFabStateEffect(ExplorePageItem.Personalized, listState, onHideFab, isRefreshing, isError)
+    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
 
     StateScreen(
         isEmpty = isEmpty,
@@ -159,12 +147,7 @@ fun PersonalizedPage(
                 },
                 onLoad = null, // Disable manual load
                 bottomIndicator = {
-                    LoadMoreIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        isLoading = isLoadingMore,
-                        noMore = false, // Infinite
-                        onThreshold = false
-                    )
+                    LoadingIndicator(isLoading = isLoadingMore)
                 }
             ) {
                 itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { index, thread ->
@@ -221,18 +204,20 @@ fun PersonalizedPage(
                 }
             }
 
-            AnimatedVisibility(
-                visible = showRefreshTip,
-                enter = fadeIn() + slideInVertically(),
-                exit = slideOutVertically() + fadeOut(),
-                modifier = Modifier.align(Alignment.TopCenter)
-            ) {
-                RefreshTip(
-                    modifier = Modifier
-                        .padding(contentPadding)
-                        .padding(top = 12.dp),
-                    refreshCount = refreshCount
-                )
+            StrongBox {
+                AnimatedVisibility(
+                    visible = refreshCount > 0,
+                    enter = fadeIn() + slideInVertically(),
+                    exit = slideOutVertically() + fadeOut(),
+                    modifier = Modifier.align(Alignment.TopCenter)
+                ) {
+                    RefreshTip(
+                        modifier = Modifier
+                            .padding(contentPadding)
+                            .padding(top = 12.dp),
+                        refreshCount = refreshCount
+                    )
+                }
             }
         }
     }

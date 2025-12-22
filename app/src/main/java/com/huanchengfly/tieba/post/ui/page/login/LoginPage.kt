@@ -28,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.ui.page.webview.WebviewTopAppBar
@@ -44,7 +45,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-const val LOGIN_URL =
+private const val LOGIN_URL =
     "https://wappass.baidu.com/passport?login&u=https%3A%2F%2Ftieba.baidu.com%2Findex%2Ftbwise%2Fmine"
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -60,28 +61,26 @@ fun LoginPage(
     val webViewNavigator = rememberWebViewNavigator()
     val snackbarHostState = rememberSnackbarHostState()
 
-    LaunchedEffect(Unit) {
-        viewModel.uiEvent.collect {
-            snackbarHostState.currentSnackbarData?.dismiss()
-            when (it) {
-                is LoginUiEvent.Start -> coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = context.getString(R.string.text_please_wait),
-                        duration = SnackbarDuration.Indefinite
-                    )
-                }
+    viewModel.uiEvent.collectUiEventWithLifecycle {
+        snackbarHostState.currentSnackbarData?.dismiss()
+        when (it) {
+            is LoginUiEvent.Start -> coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.text_please_wait),
+                    duration = SnackbarDuration.Indefinite
+                )
+            }
 
-                is LoginUiEvent.Success -> {
-                    snackbarHostState.showSnackbar(context.getString(R.string.text_login_success))
-                    delay(300)
-                    onBack()
-                }
+            is LoginUiEvent.Success -> {
+                snackbarHostState.showSnackbar(context.getString(R.string.text_login_success))
+                delay(300)
+                onBack()
+            }
 
-                is LoginUiEvent.Error -> {
-                    val message = context.getString(R.string.text_login_failed, it.msg)
-                    snackbarHostState.showSnackbar(message)
-                    webViewNavigator.loadUrl(LOGIN_URL)
-                }
+            is LoginUiEvent.Error -> {
+                val message = context.getString(R.string.text_login_failed, it.msg)
+                snackbarHostState.showSnackbar(message)
+                webViewNavigator.loadUrl(LOGIN_URL)
             }
         }
     }

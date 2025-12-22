@@ -4,14 +4,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -23,8 +21,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
@@ -73,19 +72,17 @@ fun ThreadStorePage(
             initial = null
         )
 
-        LaunchedEffect(Unit) {
-            viewModel.uiEvent.collect { event ->
-                val message = when(event) {
-                    is ThreadStoreUiEvent.Delete.Failure -> context.getString(
-                        R.string.delete_store_failure,
-                        event.error.getErrorMessage()
-                    )
+        viewModel.uiEvent.collectUiEventWithLifecycle { event ->
+            val message = when(event) {
+                is ThreadStoreUiEvent -> event.toMessage(context)
 
-                    is ThreadStoreUiEvent.Delete.Success -> context.getString(R.string.delete_store_success)
+                is CommonUiEvent.Toast -> event.message.toString()
 
-                    else -> null
-                }
-                message?.let { snackbarHostState.showSnackbar(message) }
+                else -> Unit
+            }
+            if (message is String) {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(message)
             }
         }
 
@@ -137,14 +134,9 @@ fun ThreadStorePage(
                     contentPadding = contentPadding,
                     isLoading = isLoadingMore,
                     onLazyLoad = viewModel::onLoadMore,
-                    onLoad = null,
+                    onLoad = viewModel::onLoadMore,
                     bottomIndicator = {
-                        LoadMoreIndicator(
-                            modifier = Modifier.fillMaxWidth(),
-                            isLoading = isLoadingMore,
-                            noMore = !hasMore,
-                            onThreshold = it
-                        )
+                        LoadMoreIndicator(isLoading = isLoadingMore, noMore = !hasMore, onThreshold = it)
                     }
                 ) {
                     items(items = data, key = { it.id }) { info ->

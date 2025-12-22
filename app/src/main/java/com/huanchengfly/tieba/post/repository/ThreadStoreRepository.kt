@@ -32,10 +32,10 @@ class ThreadStoreRepository @Inject constructor(
     /**
      * 加载收藏的帖子
      * */
-    suspend fun load(page: Int = 0, limit: Int = LOAD_LIMIT): Result<List<ThreadStore>> = runCatching {
+    suspend fun load(page: Int = 0, limit: Int = LOAD_LIMIT): List<ThreadStore> {
         val data = networkDataSource.load(page, limit)
         val showBothName = settingsRepository.habitSettings.snapshot().showBothName
-        data.mapUiModel(showBothName)
+        return data.mapUiModel(showBothName)
     }
 
     suspend fun add(threadId: Long, postId: Long) = runCatching {

@@ -25,7 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
@@ -63,7 +63,7 @@ import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadItem
@@ -89,12 +89,11 @@ fun ForumSearchPostPage(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    LaunchedEffect(viewModel.uiEvent) {
-        viewModel.uiEvent.collect {
-            when (it) {
-                is SearchUiEvent -> snackbarHostState.showSnackbar(message = it.toMessage(context))
-                else -> {/* Unknown UI Event */}
-            }
+    viewModel.uiEvent.collectUiEventWithLifecycle {
+        snackbarHostState.currentSnackbarData?.dismiss()
+        when (it) {
+            is SearchUiEvent -> snackbarHostState.showSnackbar(message = it.toMessage(context))
+            else -> {/* Unknown UI Event */}
         }
     }
 
@@ -233,13 +232,8 @@ fun ForumSearchPostPage(
                                 if (hasMore) viewModel.onLoadMore()
                             },
                             onLoad = null, // Refuse manual load more!
-                            bottomIndicator = { onThreshold ->
-                                LoadMoreIndicator(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    isLoading = isLoadingMore,
-                                    noMore = !hasMore,
-                                    onThreshold = onThreshold
-                                )
+                            bottomIndicator = {
+                                LoadingIndicator(isLoading = isLoadingMore)
                             }
                         ) {
                             itemsIndexed(data) { index, item ->

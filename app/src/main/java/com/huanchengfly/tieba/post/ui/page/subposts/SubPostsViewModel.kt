@@ -1,17 +1,17 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.arch.BaseStateViewModel
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.repository.PageData
@@ -25,18 +25,14 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -69,34 +65,29 @@ class SubPostsViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val threadRepo: PbPageRepository,
     savedStateHandle: SavedStateHandle
-) : ViewModel() {
+) : BaseStateViewModel<SubPostsUiState>() {
 
     private val params = savedStateHandle.toRoute<Destination.SubPosts>()
 
     private val currentAccount = AccountUtil.getInstance().currentAccount
 
-    /**
-     * One-off [UiEvent], but no guarantee to be received.
-     * */
-    private val _uiEvent: MutableSharedFlow<UiEvent?> = MutableSharedFlow()
-    val uiEvent: Flow<UiEvent?>
-        get() = _uiEvent
-
-    private val _state = MutableStateFlow(SubPostsUiState())
-    val state: StateFlow<SubPostsUiState> = _state.asStateFlow()
-
-    private val handler = CoroutineExceptionHandler { _, e ->
-        Log.e(TAG, "onError: ", e)
-        _state.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
+    override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, suppressed ->
+        // Allow user browse existing posts on suppressed exceptions
+        if (suppressed && currentState.subPosts.isNotEmpty()) {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = null) }
+            sendUiEvent(CommonUiEvent.ToastError(e))
+        } else {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
+        }
     }
 
     private val threadId = params.threadId
 
     private val forumId: Long
-        get() = _state.value.thread?.simpleForum?.first ?: params.forumId
+        get() = currentState.thread?.simpleForum?.first ?: params.forumId
 
     private val postId: Long
-        get() = _state.value.post?.id ?: params.postId
+        get() = currentState.post?.id ?: params.postId
 
     /**
      * Post or SubPost marked for deletion.
@@ -111,11 +102,13 @@ class SubPostsViewModel @Inject constructor(
         refreshInternal()
     }
 
+    override fun createInitialState(): SubPostsUiState = SubPostsUiState()
+
     private fun refreshInternal() {
-        _state.set { SubPostsUiState(isRefreshing = true) }
-        viewModelScope.launch(handler) {
+        _uiState.set { SubPostsUiState(isRefreshing = true) }
+        launchInVM {
             val rec = threadRepo.pbFloor(threadId, postId, forumId, page = 1)
-            _state.update {
+            _uiState.update {
                 it.copy(
                     isRefreshing = false,
                     post = rec.post,
@@ -125,26 +118,26 @@ class SubPostsViewModel @Inject constructor(
                     thread = rec.thread
                 )
             }
-            sendUiEvent(SubPostsUiEvent.ScrollToSubPosts)
+            emitUiEvent(SubPostsUiEvent.ScrollToSubPosts)
         }
     }
 
     fun onRefresh() {
-        if (!_state.value.isRefreshing) refreshInternal()
+        if (!currentState.isRefreshing) refreshInternal()
     }
 
     fun onLoadMore() {
-        if (!_state.value.isLoadingMore) _state.set { copy(isLoadingMore = true) } else return
+        if (!currentState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
 
-        viewModelScope.launch(handler) {
-            val stateSnapshot = _state.value
+        launchInVM {
+            val stateSnapshot = currentState
             val page = stateSnapshot.page.current + 1
             val rec = threadRepo.pbFloor(threadId, postId, forumId, page)
             // Combine old and new SubPosts
             val data = withContext(Dispatchers.Default) {
                 (stateSnapshot.subPosts + rec.subPosts).distinctBy { it.id }
             }
-            _state.update {
+            _uiState.update {
                 it.copy(
                     isLoadingMore = false,
                     post = rec.post,
@@ -169,12 +162,12 @@ class SubPostsViewModel @Inject constructor(
      *
      * @see onDeleteConfirmed
      * */
-    fun onDeletePost() = _delete.update { _state.value.post!! }
+    fun onDeletePost() = _delete.update { currentState.post!! }
 
     fun onDeleteCancelled() = _delete.update { null }
 
-    fun onDeleteConfirmed(): Job = viewModelScope.launch(handler) {
-        val uiStateSnapshot = _state.value
+    fun onDeleteConfirmed(): Job = launchJobInVM {
+        val uiStateSnapshot = currentState
         val target = _delete.getAndUpdate { null }
         runCatching {
             val thread = uiStateSnapshot.thread!!
@@ -189,11 +182,11 @@ class SubPostsViewModel @Inject constructor(
             }
         }
         .onFailure { e ->
-            sendUiEvent(SubPostsUiEvent.DeletePostFailed(e.getErrorMessage()))
+            emitUiEvent(SubPostsUiEvent.DeletePostFailed(e.getErrorMessage()))
         }
         .onSuccess {
             if (target is SubPostItemData) { // remove deleted item now
-                _state.update { it.copy(subPosts = it.subPosts.fastFilter { s -> s.id != target.id }) }
+                _uiState.update { it.copy(subPosts = it.subPosts.fastFilter { s -> s.id != target.id }) }
             }
         }
     }
@@ -206,10 +199,10 @@ class SubPostsViewModel @Inject constructor(
             sendUiEvent(ThreadLikeUiEvent.Connecting); return
         }
 
-        viewModelScope.launch(handler) {
+        launchInVM {
             val subPostId = subPost.id
             val liked = subPost.like.liked
-            _state.update { it.updateLikesById(subPostId, !liked, loading = true) }
+            _uiState.update { it.updateLikesById(subPostId, !liked, loading = true) }
             runCatching {
                 threadRepo.requestLikeSubPost(threadId, subPost)
             }
@@ -219,15 +212,13 @@ class SubPostsViewModel @Inject constructor(
                 } else {
                     sendUiEvent(ThreadLikeUiEvent.Failed(e))
                 }
-                _state.update { it.updateLikesById(subPostId, liked, loading = false) } // revert changes
+                _uiState.update { it.updateLikesById(subPostId, liked, loading = false) } // revert changes
             }
             .onSuccess {
-                _state.update { it.updateLikesById(subPostId, !liked, loading = false) }
+                _uiState.update { it.updateLikesById(subPostId, !liked, loading = false) }
             }
         }
     }
-
-    private fun sendUiEvent(event: UiEvent?) = viewModelScope.launch { _uiEvent.emit(event) }
 
     companion object {
         private const val TAG = "SubPostsViewModel"

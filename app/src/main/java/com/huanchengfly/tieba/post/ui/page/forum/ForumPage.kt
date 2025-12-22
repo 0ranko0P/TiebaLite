@@ -35,11 +35,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -55,6 +55,8 @@ import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
@@ -71,6 +73,7 @@ import com.huanchengfly.tieba.post.ui.page.Destination.ForumDetail
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumSearchPost
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadList
+import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
@@ -101,6 +104,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import dev.chrisbanes.haze.ExperimentalHazeApi
+import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.math.min
 
@@ -226,38 +230,14 @@ fun ForumPage(
     viewModel: ForumViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = rememberSnackbarHostState()
-
-    LaunchedEffect(viewModel) {
-        viewModel.uiEvent.collect {
-            val message = when(it) {
-                is CommonUiEvent.Toast -> it.message.toString()
-
-                is ForumUiEvent.SignIn.Success -> {
-                    context.getString(R.string.toast_sign_success, it.signBonusPoint, it.userSignRank)
-                }
-                is ForumUiEvent.SignIn.Failure -> context.getString(R.string.toast_sign_failed, it.errorMsg)
-
-                is ForumUiEvent.Like.Success -> context.getString(R.string.toast_like_success, it.memberSum)
-
-                is ForumUiEvent.Like.Failure -> context.getString(R.string.toast_like_failed, it.errorMsg)
-
-                is ForumUiEvent.Dislike.Success -> context.getString(R.string.toast_unlike_success)
-
-                is ForumUiEvent.Dislike.Failure -> context.getString(R.string.toast_unlike_failed, it.errorMsg)
-
-                else -> it.toString() // not gonna happen
-            }
-            snackbarHostState.showSnackbar(message)
+    val onShowSnackbarShort: (CharSequence) -> Unit = {
+        coroutineScope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(message = it.toString())
         }
     }
-
-    onGlobalEvent<ThreadLikeUiEvent> {
-        snackbarHostState.showSnackbar(it.toMessage(context))
-    }
-
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val forumData = uiState.forum
 
     val pagerState = rememberPagerState { ForumType.entries.size }
     val listStates = rememberPagerListStates(pagerState.pageCount)
@@ -265,6 +245,51 @@ fun ForumPage(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(state = it)
     }
     val scrollOrientationConnection = rememberScrollOrientationConnection()
+
+    viewModel.uiEvent.collectUiEventWithLifecycle {
+        val message = when (it) {
+            is ForumUiEvent.SignIn.Success -> {
+                getString(R.string.toast_sign_success, it.signBonusPoint, it.userSignRank)
+            }
+
+            is ForumUiEvent.SignIn.Failure -> getString(R.string.toast_sign_failed, it.errorMsg)
+
+            is ForumUiEvent.Like.Success -> getString(R.string.toast_like_success, it.memberSum)
+
+            is ForumUiEvent.Like.Failure -> getString(R.string.toast_like_failed, it.errorMsg)
+
+            is ForumUiEvent.Dislike.Success -> getString(R.string.toast_unlike_success)
+
+            is ForumUiEvent.Dislike.Failure -> getString(R.string.toast_unlike_failed, it.errorMsg)
+
+            is ForumUiEvent.PinShortcut.Success -> getString(R.string.toast_send_to_desktop_success)
+
+            is ForumUiEvent.PinShortcut.Failure -> getString(R.string.toast_unlike_failed, it.errorMsg)
+
+            is ForumUiEvent.ScrollToTop -> {
+                listStates[it.type.ordinal].scrollToItem(0)
+                scrollBehaviors[it.type.ordinal].state.contentOffset = 0f
+                scrollBehaviors[it.type.ordinal].state.heightOffset = 0f
+            }
+
+            else -> it.toString()
+        }
+        if (message is String) {
+            onShowSnackbarShort(message)
+        }
+    }
+
+    viewModel.uiEvent.collectCommonUiEventWithLifecycle(
+        onToast = onShowSnackbarShort,
+        onNavigateUp = navigator::navigateUp
+    )
+
+    onGlobalEvent<ThreadLikeUiEvent> {
+        snackbarHostState.showSnackbar(it.toMessage(context))
+    }
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val forumData = uiState.forum
 
     val unlikeDialogState = rememberDialogState()
     if (unlikeDialogState.show) {
@@ -356,7 +381,9 @@ fun ForumPage(
                         menuContent = {
                             TextMenuItem(text = R.string.title_share, onClick = viewModel::shareForum)
 
-                            TextMenuItem(text = R.string.title_send_to_desktop, onClick = viewModel::sendToDesktop)
+                            TextMenuItem(text = R.string.title_send_to_desktop) {
+                                viewModel.sendToDesktop(context.getString(R.string.title_forum, forumData.name))
+                            }
 
                             TextMenuItem(text = R.string.title_refresh) {
                                 viewModel.onRefreshClicked(isGood = pagerState.currentPage == TAB_FORUM_GOOD)

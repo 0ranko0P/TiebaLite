@@ -44,8 +44,8 @@ sealed interface LoginUiEvent : UiEvent {
 @HiltViewModel
 class LoginViewModel @Inject constructor(@ApplicationContext val context: Context) : ViewModel() {
 
-    private val _uiEvent: MutableSharedFlow<UiEvent> = MutableSharedFlow()
-    val uiEvent: Flow<UiEvent> = _uiEvent.asSharedFlow()
+    private val _uiEvent: MutableSharedFlow<LoginUiEvent> = MutableSharedFlow()
+    val uiEvent: Flow<LoginUiEvent> = _uiEvent.asSharedFlow()
 
     private val _uiState: MutableStateFlow<LoginUiState> = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()

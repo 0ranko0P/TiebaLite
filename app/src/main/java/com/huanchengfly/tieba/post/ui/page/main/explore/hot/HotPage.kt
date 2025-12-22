@@ -41,6 +41,7 @@ import androidx.navigation.NavController
 import androidx.tracing.trace
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
@@ -50,7 +51,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.explore.HotTab
 import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
@@ -87,7 +87,9 @@ fun HotPage(
     )
     val isError = error != null
 
-    LaunchedFabStateEffect(ExplorePageItem.Hot, listState, onHideFab, isRefreshing, isError)
+    viewModel.uiEvent.collectCommonUiEventWithLifecycle()
+
+    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
 
     val threadClickListeners = remember(navigator) {
         createThreadClickListeners(onNavigate = navigator::navigate)

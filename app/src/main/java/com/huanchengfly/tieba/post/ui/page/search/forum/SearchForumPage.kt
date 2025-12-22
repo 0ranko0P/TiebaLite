@@ -23,12 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.models.search.SearchForum
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.search.UiState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
@@ -51,28 +50,19 @@ fun SearchForumPage(
         viewModel.onKeywordChanged(keyword)
     }
 
-    val isEmpty by viewModel.uiState.collectPartialAsState(
-        prop1 = UiState<SearchForum>::isEmpty,
-        initial = false
-    )
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = UiState<SearchForum>::isRefreshing,
-        initial = true
-    )
-    val error by viewModel.uiState.collectPartialAsState(
-        prop1 = UiState<SearchForum>::error,
-        initial = null
-    )
+    viewModel.uiEvent.collectCommonUiEventWithLifecycle()
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     StateScreen(
-        isEmpty = isEmpty,
-        isLoading = isRefreshing,
-        error = error,
+        isEmpty = uiState.isEmpty,
+        isLoading = uiState.isRefreshing,
+        error = uiState.error,
         onReload = viewModel::onRefresh,
         screenPadding = contentPadding,
     ) {
         PullToRefreshBox(
-            isRefreshing = isRefreshing,
+            isRefreshing = uiState.isRefreshing,
             onRefresh = viewModel::onRefresh,
             contentPadding = contentPadding,
         ) {

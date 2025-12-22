@@ -72,6 +72,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -124,20 +126,21 @@ fun SearchPage(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    LaunchedEffect(viewModel.uiEvent) {
-        viewModel.uiEvent.collect {
-            when (it) {
-                is SearchUiEvent -> snackbarHostState.showSnackbar(message = it.toMessage(context))
-                else -> {/* Unknown UI Event */}
-            }
+    viewModel.uiEvent.collectUiEventWithLifecycle {
+        val message = when (it) {
+            is SearchUiEvent -> it.toMessage(context)
+            is CommonUiEvent.Toast -> it.message.toString()
+            else -> it.toString()
         }
+        snackbarHostState.currentSnackbarData?.dismiss()
+        snackbarHostState.showSnackbar(message)
     }
 
     val sortTypes = remember {
         persistentMapOf(
-            SearchThreadSortType.SORT_TYPE_NEWEST to R.string.title_search_order_new,
-            SearchThreadSortType.SORT_TYPE_OLDEST to R.string.title_search_order_old,
-            SearchThreadSortType.SORT_TYPE_RELATIVE to R.string.title_search_order_relevant
+            SearchThreadSortType.NEWEST to R.string.title_search_order_new,
+            SearchThreadSortType.OLDEST to R.string.title_search_order_old,
+            SearchThreadSortType.RELATIVE to R.string.title_search_order_relevant
         )
     }
 
@@ -351,7 +354,7 @@ private fun SearchTabRow(
     pagerState: PagerState,
     pages: List<SearchPages>,
     sortTypes: Options<Int>,
-    selectedSortType: Int,
+    @SearchThreadSortType selectedSortType: Int,
     onSelectSortType: (Int) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()

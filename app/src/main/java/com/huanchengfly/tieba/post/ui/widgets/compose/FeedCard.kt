@@ -554,9 +554,7 @@ fun FeedCard(
             if (!thread.content.isNullOrEmpty()) {
                 PbContentText(
                     text = thread.content,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .then(modifier),
+                    modifier = Modifier.fillMaxWidth(),
                     fontSize = 15.sp,
                     lineSpacing = 0.8.sp,
                     overflow = TextOverflow.Ellipsis,

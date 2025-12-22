@@ -2,20 +2,16 @@ package com.huanchengfly.tieba.post.ui.page.threadstore
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.util.fastFilter
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.huanchengfly.tieba.post.arch.UiEvent
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.arch.BaseStateViewModel
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,71 +31,60 @@ data class ThreadStoreUiState(
         get() = data.isEmpty()
 }
 
-private val List<ThreadStore>.hasMore: Boolean
-    get() = this.size == ThreadStoreRepository.LOAD_LIMIT // Result reached limit
-
 @HiltViewModel
 class ThreadStoreViewModel @Inject constructor(
     private val threadStoreRepo: ThreadStoreRepository
-) : ViewModel() {
+) : BaseStateViewModel<ThreadStoreUiState>() {
 
-    private val _uiState: MutableStateFlow<ThreadStoreUiState> = MutableStateFlow(ThreadStoreUiState())
-    val uiState: StateFlow<ThreadStoreUiState> = _uiState.asStateFlow()
-
-    /**
-     * One-off [UiEvent], but no guarantee to be received.
-     * */
-    private val _uiEvent: MutableSharedFlow<UiEvent?> = MutableSharedFlow()
-    val uiEvent: Flow<UiEvent?>
-        get() = _uiEvent
+    override val errorHandler = TbLiteExceptionHandler(TAG) { context, e, suppressed ->
+        if (suppressed && !currentState.isEmpty) {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = null) }
+            sendUiEvent(CommonUiEvent.ToastError(e))
+        } else {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
+        }
+    }
 
     init {
         refreshInternal()
     }
 
-    private fun refreshInternal() = viewModelScope.launch {
+    override fun createInitialState(): ThreadStoreUiState = ThreadStoreUiState()
+
+    private fun refreshInternal(): Unit = launchInVM {
         _uiState.update { ThreadStoreUiState(isRefreshing = true) }
-        threadStoreRepo.load()
-            .onFailure { e ->
-                _uiState.update { it.copy(isLoadingMore = false, error = e) }
-            }
-            .onSuccess { data ->
-                _uiState.update { ThreadStoreUiState(data = data, hasMore = data.hasMore) }
-            }
+        val data = threadStoreRepo.load()
+        _uiState.update { ThreadStoreUiState(data = data, hasMore = data.hasMore) }
     }
 
     fun onRefresh() {
-        if (uiState.value.isRefreshing) return else refreshInternal()
+        if (currentState.isRefreshing) return else refreshInternal()
     }
 
     fun onLoadMore() {
-        if (uiState.value.isLoadingMore || !uiState.value.hasMore) {
+        val oldState = currentState
+        if (oldState.isLoadingMore || !oldState.hasMore) {
             return
         } else {
-            _uiState.update { it.copy(isLoadingMore = true) }
+            _uiState.update { oldState.copy(isLoadingMore = true) }
         }
-
-        viewModelScope.launch {
-            val oldState = _uiState.first()
+        launchInVM {
             val nextPage = oldState.currentPage + 1
-            threadStoreRepo.load(page = nextPage)
-                .onFailure { e -> _uiState.update { it.copy(isLoadingMore = false, error = e) } }
-                .onSuccess { data ->
-                    if (data.isEmpty()) {
-                        _uiState.update { it.copy(isLoadingMore = false, hasMore = false) }
-                    } else {
-                        val newData = withContext(Dispatchers.Default) { oldState.data + data }
-                        _uiState.update {
-                            ThreadStoreUiState(currentPage = nextPage, data = newData, hasMore = data.hasMore)
-                        }
-                    }
+            val data = threadStoreRepo.load(page = nextPage)
+            if (data.isEmpty()) {
+                _uiState.update { it.copy(isLoadingMore = false, hasMore = false) }
+            } else {
+                val newData = withContext(Dispatchers.Default) { oldState.data + data }
+                _uiState.update {
+                    ThreadStoreUiState(currentPage = nextPage, data = newData, hasMore = data.hasMore)
                 }
+            }
         }
     }
 
     fun onDelete(thread: ThreadStore) {
         viewModelScope.launch {
-            val oldThreads = _uiState.first().data
+            val oldThreads = currentState.data
             val newThreads = withContext(Dispatchers.Default) {
                 oldThreads.fastFilter { it.id != thread.id }
             }
@@ -107,20 +92,19 @@ class ThreadStoreViewModel @Inject constructor(
 
             threadStoreRepo.remove(thread)
                 .onFailure { e ->
-                    _uiEvent.emit(ThreadStoreUiEvent.Delete.Failure(e))
+                    emitUiEvent(ThreadStoreUiEvent.Delete.Failure(e.getErrorMessage()))
                     // Revert changes now
                     _uiState.update { it.copy(data = oldThreads) }
                 }
-                .onSuccess { _uiEvent.emit(ThreadStoreUiEvent.Delete.Success) }
+                .onSuccess { emitUiEvent(ThreadStoreUiEvent.Delete.Success) }
         }
     }
-}
 
-sealed interface ThreadStoreUiEvent : UiEvent {
-    sealed interface Delete : ThreadStoreUiEvent {
+    companion object {
 
-        object Success : Delete
+        private const val TAG = "ThreadStoreViewModel"
 
-        data class Failure(val error: Throwable) : Delete
+        private val List<ThreadStore>.hasMore: Boolean
+            get() = this.size == ThreadStoreRepository.LOAD_LIMIT // Result reached limit
     }
 }

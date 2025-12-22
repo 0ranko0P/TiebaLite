@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -18,13 +17,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
@@ -53,7 +52,9 @@ fun ConcernPage(
     )
     val isError = error != null
 
-    LaunchedFabStateEffect(ExplorePageItem.Concern, listState, onHideFab, isRefreshing, isError)
+    viewModel.uiEvent.collectCommonUiEventWithLifecycle()
+
+    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
 
     val threadClickListeners = remember(navigator) {
         createThreadClickListeners(onNavigate = navigator::navigate)
@@ -89,13 +90,8 @@ fun ConcernPage(
                     if (hasMore) viewModel.onLoadMore()
                 },
                 onLoad = null, // Disable manual load more
-                bottomIndicator = { onThreshold ->
-                    LoadMoreIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        isLoading = isLoadingMore,
-                        noMore = !hasMore,
-                        onThreshold = onThreshold
-                    )
+                bottomIndicator = {
+                    LoadingIndicator(isLoading = isLoadingMore)
                 }
             ) {
                 itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { i, thread ->

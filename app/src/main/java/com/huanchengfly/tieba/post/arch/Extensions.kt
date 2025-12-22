@@ -1,5 +1,8 @@
+@file:Suppress("NOTHING_TO_INLINE", "ComposableNaming")
+
 package com.huanchengfly.tieba.post.arch
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,11 +20,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
+import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
+import com.huanchengfly.tieba.post.toastShort
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -29,8 +36,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.firstOrNull
@@ -39,6 +48,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.reflect.KProperty1
 
@@ -76,6 +86,50 @@ fun <T> Flow<T>.shareInBackground(
     started: SharingStarted = SharingStarted.WhileSubscribed(5_000),
     replay: Int = 1
 ): SharedFlow<T> = shareIn(AppBackgroundScope, started, replay)
+
+context(vm: ViewModel)
+inline fun <T> Flow<T>.stateInViewModel(
+    started: SharingStarted = SharingStarted.WhileSubscribed(5_000),
+    initialValue: T
+): StateFlow<T> =
+    stateIn(scope = vm.viewModelScope, started, initialValue)
+
+@Composable
+inline fun <E: UiEvent> Flow<E>.collectUiEventWithLifecycle(
+    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
+    minActiveState: Lifecycle.State = Lifecycle.State.CREATED,
+    crossinline collector: suspend Context.(E) -> Unit
+) {
+    val context = LocalContext.current
+    LaunchedEffect(this) {
+        flowWithLifecycle(lifecycleOwner.lifecycle, minActiveState).collectLatest {
+            with(context) {
+                collector(it)
+            }
+        }
+    }
+}
+
+@Composable
+fun <E: UiEvent> Flow<E>.collectCommonUiEventWithLifecycle(
+    onToast: ((CharSequence) -> Unit)? = null,
+    onNavigateUp: (() -> Unit)? = null,
+) {
+    val context = LocalContext.current
+    collectUiEventWithLifecycle {
+        if (it !is CommonUiEvent) return@collectUiEventWithLifecycle
+        val showToast = onToast ?: context::toastShort
+        when (it) {
+            is CommonUiEvent.FeatureUnavailable -> showToast(context.getString(R.string.toast_feature_unavailable))
+
+            is CommonUiEvent.NavigateUp -> onNavigateUp?.invoke()
+
+            is CommonUiEvent.ToastError -> showToast(getString(R.string.toast_exception, it.message))
+
+            is CommonUiEvent.Toast -> showToast(it.message)
+        }
+    }
+}
 
 @Throws(NoConnectivityException::class)
 suspend inline fun <T> Flow<T>.firstOrThrow(): T = firstOrNull() ?: throw NoConnectivityException()
@@ -183,7 +237,6 @@ inline fun <INTENT : UiIntent, reified VM : BaseViewModel<INTENT, *, *, *>> page
 val TopAppBarScrollBehavior.isOverlapping: Boolean
     get() = state.overlappedFraction > 0.01f
 
-@Suppress("NOTHING_TO_INLINE")
 @OptIn(ExperimentalMaterial3Api::class)
 inline fun List<TopAppBarScrollBehavior>.isOverlapping(pagerState: PagerState): Boolean {
     return this.getOrNull(pagerState.currentPage)?.isOverlapping ?: false

@@ -2,18 +2,16 @@ package com.huanchengfly.tieba.post.ui.page.settings
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
+import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.utils.workManager
 import com.huanchengfly.tieba.post.workers.NewMessageWorker
 import com.huanchengfly.tieba.post.workers.OKSignWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -29,19 +27,19 @@ class WorkInfoViewModel @Inject constructor(@ApplicationContext context: Context
 
     val oKSignPeriodic: StateFlow<String> = workManager.getWorkInfosByTagFlow(OKSignWorker.TAG)
         .map(transform = ::format)
-        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), WORKER_NOT_ENQUEUE)
+        .stateInViewModel(initialValue = WORKER_NOT_ENQUEUE)
 
     val oKSignExpedited: StateFlow<String> = workManager.getWorkInfosByTagFlow(OKSignWorker.TAG_EXPEDITED)
         .map(transform = ::format)
-        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), WORKER_NOT_ENQUEUE)
+        .stateInViewModel(initialValue = WORKER_NOT_ENQUEUE)
 
     val newMessagePeriodic: StateFlow<String> = workManager.getWorkInfosByTagFlow(NewMessageWorker.TAG)
         .map(transform = ::format)
-        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), WORKER_NOT_ENQUEUE)
+        .stateInViewModel(initialValue = WORKER_NOT_ENQUEUE)
 
     val newMessageOneShot: StateFlow<String> = workManager.getWorkInfosByTagFlow(NewMessageWorker.TAG_ONE_SHOT)
         .map(transform = ::format)
-        .stateIn(viewModelScope, started = SharingStarted.WhileSubscribed(5_000), WORKER_NOT_ENQUEUE)
+        .stateInViewModel(initialValue = WORKER_NOT_ENQUEUE)
 
     private suspend fun format(workInfos: List<WorkInfo>): String {
         if (workInfos.isEmpty()) return WORKER_NOT_ENQUEUE

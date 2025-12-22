@@ -101,12 +101,7 @@ fun NotificationsListPage(
             },
             onLoad = null, // Disable manual load!
             bottomIndicator = {
-                LoadMoreIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    isLoading = isLoadingMore,
-                    noMore = !hasMore,
-                    onThreshold = false
-                )
+                LoadMoreIndicator(isLoading = isLoadingMore, noMore = !hasMore, onThreshold = false)
             }
         ) {
             items(items = data, key = { it.lazyListItemKey }) { info ->

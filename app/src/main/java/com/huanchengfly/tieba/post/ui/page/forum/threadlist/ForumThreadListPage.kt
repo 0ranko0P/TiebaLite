@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumRuleDetail
@@ -106,20 +107,15 @@ fun ForumThreadList(
         it.create(forumName, forumId, type = type)
     }
 ) {
-    val isGood = type == ForumType.Good
     val navigator = LocalNavController.current
 
-    onGlobalEvent<ForumThreadListUiEvent.BackToTop>(
-        filter = { it.isGood == isGood },
-    ) {
-        listState.scrollToItem(0)
-    }
+    viewModel.uiEvent.collectCommonUiEventWithLifecycle()
 
     onGlobalEvent<ForumThreadListUiEvent.Refresh> {
         viewModel.onRefresh()
     }
 
-    if (isGood) {
+    if (type == ForumType.Good) {
         onGlobalEvent<ForumThreadListUiEvent.ClassifyChanged> {
             viewModel.onClassifyIdChanged(classifyId = it.goodClassifyId)
         }
@@ -171,13 +167,8 @@ fun ForumThreadList(
                     }
                 },
                 onLoad = viewModel::loadMore.takeUnless{ threadList.isEmpty() },
-                bottomIndicator = { onThreshold ->
-                    LoadMoreIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        isLoading = isLoadingMore,
-                        noMore = !hasMore,
-                        onThreshold = onThreshold
-                    )
+                bottomIndicator = {
+                    LoadMoreIndicator(isLoading = isLoadingMore, noMore = !hasMore, onThreshold = it)
                 }
             ) {
                 forumRuleTitle?.let { rule ->

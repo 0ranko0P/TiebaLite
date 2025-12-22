@@ -37,7 +37,7 @@ import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadViewModel.Compa
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumInfoChip
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadMedia
@@ -100,14 +100,7 @@ fun UserThreadPage(
                     if (hasMore) viewModel.onLoadMore()
                 },
                 onLoad = null,
-                bottomIndicator = {
-                    LoadMoreIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        isLoading = isLoadingMore,
-                        noMore = !hasMore,
-                        onThreshold = false
-                    )
-                }
+                bottomIndicator = { LoadingIndicator(isLoading = isLoadingMore) }
             ) {
                 itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { i, thread ->
                     Column {

@@ -27,11 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.ui.models.search.SearchUser
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.search.UiState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
@@ -52,28 +51,19 @@ fun SearchUserPage(
         viewModel.onKeywordChanged(keyword)
     }
 
-    val isEmpty by viewModel.uiState.collectPartialAsState(
-        prop1 = UiState<SearchUser>::isEmpty,
-        initial = true
-    )
-    val error by viewModel.uiState.collectPartialAsState(
-        prop1 = UiState<SearchUser>::error,
-        initial = null
-    )
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = UiState<SearchUser>::isRefreshing,
-        initial = true
-    )
+    viewModel.uiEvent.collectCommonUiEventWithLifecycle()
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     StateScreen(
-        isEmpty = isEmpty,
-        isLoading = isRefreshing,
-        error = error,
+        isEmpty = uiState.isEmpty,
+        isLoading = uiState.isRefreshing,
+        error = uiState.error,
         onReload = viewModel::onRefresh,
         screenPadding = contentPadding,
     ) {
         PullToRefreshBox(
-            isRefreshing = isRefreshing,
+            isRefreshing = uiState.isRefreshing,
             onRefresh = viewModel::onRefresh,
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,

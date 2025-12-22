@@ -1,12 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.hot
 
-import android.util.Log
 import android.util.SparseArray
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.core.util.forEach
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.huanchengfly.tieba.post.arch.BaseStateViewModel
+import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.repository.ExploreRepository
@@ -20,13 +19,8 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -51,23 +45,25 @@ data class HotUiState(
 
 @Stable
 @HiltViewModel
-class HotViewModel @Inject constructor(private val exploreRepo: ExploreRepository) : ViewModel() {
+class HotViewModel @Inject constructor(
+    private val exploreRepo: ExploreRepository
+) : BaseStateViewModel<HotUiState>() {
 
     private val defaultTab = HotTab(name = "", tabCode = HOT_THREAD_TAB_ALL, isLoading = false)
-
-    private val _uiState = MutableStateFlow(HotUiState(isRefreshing = true, selectedTab = defaultTab))
-    val uiState: StateFlow<HotUiState> = _uiState.asStateFlow()
 
     private val memCache = SparseArray<WeakReference<List<ThreadItem>>>()
     private val memCacheMutex = Mutex()
 
-    private val handler = CoroutineExceptionHandler { _, e ->
-        Log.e(TAG, "onError: ", e)
+    override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, suppressed ->
         _uiState.update { it.copy(isRefreshing = false, error = e) }
     }
 
     init {
         refreshInternal(cached = true)
+    }
+
+    override fun createInitialState(): HotUiState {
+        return HotUiState(isRefreshing = true, selectedTab = defaultTab)
     }
 
     // Save or update In-Memory cache
@@ -85,7 +81,7 @@ class HotViewModel @Inject constructor(private val exploreRepo: ExploreRepositor
         memCache.clear()
     }
 
-    private fun refreshInternal(cached: Boolean) = viewModelScope.launch(handler) {
+    private fun refreshInternal(cached: Boolean): Unit = launchInVM {
         _uiState.update { it.copy(isRefreshing = true, selectedTab = defaultTab, error = null) }
         if (!cached) {
             memCache.clear() // force-refresh, clear in-memory cache
@@ -101,15 +97,15 @@ class HotViewModel @Inject constructor(private val exploreRepo: ExploreRepositor
     }
 
     fun onRefresh() {
-        if (!_uiState.value.isRefreshing) refreshInternal(cached = false)
+        if (!currentState.isRefreshing) refreshInternal(cached = false)
     }
 
     fun onTabSelected(tab: HotTab) {
         // Check/update tab selected, loading state
-        if (!_uiState.value.isTabSelected(tab)) _uiState.set { copy(selectedTab = tab, threads = null) } else return
+        if (!currentState.isTabSelected(tab)) _uiState.set { copy(selectedTab = tab, threads = null) } else return
         if (!tab.isLoading) tab.isLoading = true else return
 
-        viewModelScope.launch(handler) {
+        launchInVM {
             var topics: List<RecommendTopic>? = null
             var threads: List<ThreadItem>? = getCached(tab) // get from memory cache
             try {
@@ -132,8 +128,8 @@ class HotViewModel @Inject constructor(private val exploreRepo: ExploreRepositor
     }
 
     fun onThreadLikeClicked(thread: ThreadItem) {
-        viewModelScope.launch(handler) {
-            val stateSnapshot = _uiState.value
+        launchInVM {
+            val stateSnapshot = currentState
             val selectedTab = stateSnapshot.selectedTab
             val success = updateLikeStatusUiStateCommon(
                 thread = thread,
@@ -141,11 +137,10 @@ class HotViewModel @Inject constructor(private val exploreRepo: ExploreRepositor
                 onEvent = ::emitGlobalEventSuspend
             ) { threadId, liked, loading ->
                 _uiState.update {
-                    // update if tab not switched
                     if (it.isTabSelected(selectedTab) && it.threads != null) {
                         it.copy(threads = it.threads.updateLikeStatus(threadId, liked, loading))
                     } else {
-                        it // tab switched, do not update UI state
+                        it // tab switched, skip UI state update
                     }
                 }
             }
@@ -166,8 +161,8 @@ class HotViewModel @Inject constructor(private val exploreRepo: ExploreRepositor
      * @param like like status of target thread
      * */
     fun onThreadResult(threadId: Long, like: Like) {
-        viewModelScope.launch(handler) {
-            val stateSnapshot = _uiState.value
+        launchInVM {
+            val stateSnapshot = currentState
             // compare and update with latest like status
             val newThreads = stateSnapshot.threads?.updateLikeStatus(threadId, like)
             if (newThreads != null) {
@@ -182,7 +177,7 @@ class HotViewModel @Inject constructor(private val exploreRepo: ExploreRepositor
     }
 
     override fun onCleared() {
-        runBlocking(handler) { clearCached() }
+        runBlocking(errorHandler) { clearCached() }
         super.onCleared()
     }
 }

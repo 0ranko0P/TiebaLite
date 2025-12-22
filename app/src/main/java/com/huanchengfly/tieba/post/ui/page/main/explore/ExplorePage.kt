@@ -46,8 +46,6 @@ import androidx.navigation.Navigator
 import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_MEDIUM_LOWER_BOUND
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.toastShort
@@ -266,8 +264,10 @@ fun ExplorePage() {
             ) {
                 FloatingActionButton(
                     onClick = {
-                        val currentPageItem = pages[pagerState.currentPage]
-                        coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(currentPageItem))
+                        coroutineScope.launch {
+                            listStates[pagerState.currentPage].scrollToItem(0)
+                            scrollBehaviors[pagerState.currentPage].state.contentOffset = 0f
+                        }
                     },
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = Dp.Hairline)
                 ) {
@@ -299,18 +299,11 @@ fun ExplorePage() {
 
 @Composable
 fun LaunchedFabStateEffect(
-    item: ExplorePageItem,
     listState: LazyListState,
     onHideFab: (Boolean) -> Unit,
     isRefreshing: Boolean,
     isError: Boolean
 ) {
-    onGlobalEvent<GlobalEvent.ScrollToTop> {
-        if (item === it.tag) {
-            listState.scrollToItem(0)
-        }
-    }
-
     val noScrollBackward by remember { derivedStateOf { !listState.canScrollBackward } }
 
     LaunchedEffect(noScrollBackward, onHideFab, isRefreshing, isError) {

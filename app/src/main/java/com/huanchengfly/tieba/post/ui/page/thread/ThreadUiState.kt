@@ -15,7 +15,7 @@ data class ThreadUiState(
     val isLoadingLatestReply: Boolean = false,
     val error: Throwable? = null,
     val seeLz: Boolean = false,
-    val sortType: Int = ThreadSortType.DEFAULT,
+    @ThreadSortType val sortType: Int = ThreadSortType.DEFAULT,
     val user: UserData? = null,
     val firstPost: PostData? = null,
     val thread: ThreadInfoData? = null,
