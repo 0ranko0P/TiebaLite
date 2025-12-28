@@ -27,6 +27,9 @@ typealias GoodClassify = Pair<String, Int>
     val goodClassifies: List<GoodClassify>?,
 ) {
 
+    val levelProgress: Float
+        get() = score.toFloat() / scoreLevelUp.coerceAtLeast(1)
+
     fun copy(
         avatar: String = this.avatar,
         forumRuleTitle: String? = this.forumRuleTitle,

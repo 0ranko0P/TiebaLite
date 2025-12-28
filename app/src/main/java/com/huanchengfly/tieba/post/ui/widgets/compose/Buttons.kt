@@ -3,10 +3,15 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
@@ -17,6 +22,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -40,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 
 /**
@@ -145,3 +153,61 @@ fun FavoriteButton(
         }
     }
 }
+
+@NonRestartableComposable
+@Composable
+fun OutlinedIconTextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
+        contentColor = MaterialTheme.colorScheme.primary
+    ),
+    contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
+    icon: (@Composable BoxScope.() -> Unit)? = null,
+    content: @Composable RowScope.() -> Unit,
+) =
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        colors = colors,
+        contentPadding = contentPadding
+    ) {
+        if (icon != null) {
+            Box(
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+                contentAlignment = Alignment.Center,
+                content = icon
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+        }
+
+        content()
+    }
+
+@NonRestartableComposable
+@Composable
+fun OutlinedIconTextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
+        contentColor = MaterialTheme.colorScheme.primary
+    ),
+    contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
+    vectorIcon: ImageVector? = null,
+    text: String,
+) =
+    OutlinedIconTextButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        colors = colors,
+        contentPadding = contentPadding,
+        icon = vectorIcon?.let {
+            { Icon(vectorIcon, contentDescription = null, modifier = Modifier.matchParentSize()) }
+        }
+    ) {
+        Text(text = text, fontSize = 13.sp) // Button default: MaterialTheme.typography.labelLarge
+    }

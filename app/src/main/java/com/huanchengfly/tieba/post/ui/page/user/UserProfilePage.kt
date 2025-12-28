@@ -23,7 +23,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -34,9 +33,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,25 +49,31 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.compose.ui.util.lerp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -85,7 +92,11 @@ import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
@@ -95,18 +106,22 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingAvatarTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.DefaultLoadingScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
+import com.huanchengfly.tieba.post.utils.ColorUtils
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -124,7 +139,21 @@ private enum class Tab(val titleRes: Int) {
 
 private typealias TabWithTitle = Pair<Tab, String>
 
-private val UserProfileExpandHeight = 206.dp
+/** The default size of an avatar in [UserProfileDetail] */
+private val AvatarLandscapeSize: Dp
+    @Composable @ReadOnlyComposable get() = if (isWindowHeightCompact()) 96.dp else 144.dp
+
+/** The default expanded size of an avatar in [UserProfileTopAppBar] */
+private val AvatarExpandedSize: Dp
+    @Composable @ReadOnlyComposable get() = if (isWindowWidthCompact()) 96.dp else 128.dp
+
+/** The default expanded height of a [UserProfileTopAppBar] */
+private val UserAppbarExpandHeight: Dp
+    @Composable @ReadOnlyComposable get() = 160.dp + AvatarExpandedSize
+
+/** Whether to use landscape layout or not */
+private val ContentLandscapeLayout: Boolean
+    @Composable @ReadOnlyComposable get() = isLooseWindowWidth()
 
 // Blurry avatar background
 @OptIn(ExperimentalGlideComposeApi::class)
@@ -135,6 +164,10 @@ private fun AvatarBackground(
     collapseFraction: FloatProducer
 ) {
     val color = MaterialTheme.colorScheme.background
+    val collapsedAlpha = remember(color) {
+        if (ColorUtils.isColorLight(color.toArgb())) 0.9f else 0.8f
+    }
+
     GlideImage(
         model = avatar,
         contentDescription = null,
@@ -143,10 +176,9 @@ private fun AvatarBackground(
             .drawWithCache {
                 onDrawWithContent {
                     drawContent()
-                    // draw surface mask with alpha(0.8..0.98)
-                    // this looks way better than change alpha directly and no banding artifact
+                    // draw surface mask with alpha, this is better than change alpha directly
                     drawRect(
-                        color = color.copy(alpha = collapseFraction() * 0.18f + 0.8f)
+                        color = color.copy(lerp(collapsedAlpha, 1f, collapseFraction()))
                     )
                 }
             },
@@ -156,13 +188,17 @@ private fun AvatarBackground(
     }
 }
 
-@NonRestartableComposable
+/**
+ * Creates a transparent [TopAppBarColors] for displaying [AvatarBackground].
+ * */
 @Composable
 private fun rememberAvatarTopBarColors(): TopAppBarColors {
-    val colorScheme = MaterialTheme.colorScheme
     val defaultColors = TopAppBarDefaults.topAppBarColors()
-    return remember(colorScheme) {
-        defaultColors.copy(containerColor = colorScheme.surfaceContainer.copy(0.01f)) // Nearly transparent
+    return remember(defaultColors) {
+        defaultColors.copy(
+            containerColor = defaultColors.containerColor.copy(0.01f), // Nearly transparent
+            scrolledContainerColor = defaultColors.containerColor.copy(0.01f)
+        )
     }
 }
 
@@ -170,11 +206,18 @@ private fun rememberAvatarTopBarColors(): TopAppBarColors {
 @Composable
 fun UserProfilePage(
     uid: Long,
+    avatar: String?,
+    nickname: String?,
+    username: String?,
+    transitionKey: String?,
     navigator: NavController,
     viewModel: UserProfileViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val onBack: () -> Unit = navigator::navigateUp
     val snackbarHostState = rememberSnackbarHostState()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val collapseFraction = FloatProducer { scrollBehavior.state.collapsedFraction }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -196,10 +239,19 @@ fun UserProfilePage(
         }
     }
 
+    // Compose fullscreen avatar background when possible
+    val avatarUrl = avatar ?: uiState.userProfile?.let { remember { StringUtil.getAvatarUrl(it.portrait) } }
+    if (!avatarUrl.isNullOrEmpty()) {
+        AvatarBackground(viewModel.imageProcessor, avatar = avatarUrl, collapseFraction)
+    }
+
     StateScreen(
         isLoading = uiState.isRefreshing || uiState.userProfile == null,
         error = uiState.error,
         onReload = viewModel::onRefresh,
+        loadingScreen = {
+            LoadingScreen(Modifier, uid, avatar, nickname, username, transitionKey, onBack)
+        }
     ) {
         val userProfile = uiState.userProfile ?: return@StateScreen
         val account = LocalAccount.current
@@ -240,47 +292,27 @@ fun UserProfilePage(
             }
         }
 
-        val pagerMovableContent = remember(tabs.size) {
+        val movablePager = remember(tabs.size) {
             movableContentOf<Modifier, Boolean> { modifier, fluid ->
-                HorizontalPager(pagerState, Modifier.fillMaxSize() then modifier, key = { it }) {
-                    pagerContents[it](fluid)
+                Column {
+                    UserProfileTabRow(tabs, pagerState, collapseFraction)
+
+                    HorizontalPager(pagerState, Modifier.fillMaxSize() then modifier, key = { it }) {
+                        ProvideNavigator(navigator) {
+                            pagerContents[it](fluid)
+                        }
+                    }
                 }
             }
         }
 
-        val contentRowLayout = isLooseWindowWidth()
-
-        val userProfileDetail: @Composable () -> Unit = {
-            UserProfileDetail(profile = userProfile, columnLayout = contentRowLayout)
-        }
-
-        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-        val collapseFraction = FloatProducer { scrollBehavior.state.collapsedFraction }
-
-        val avatarUrl = remember { StringUtil.getAvatarUrl(portrait = userProfile.portrait) }
-
-        // Replace Scaffold's background with AvatarBackground()
-        var backgroundColor = MaterialTheme.colorScheme.surface
-        viewModel.imageProcessor?.let {
-            backgroundColor = Color.Transparent
-            AvatarBackground(imgProcessor = it, avatar = avatarUrl, collapseFraction)
-        }
-        // ?: power saver is on, do noting
-
+        val contentLandscapeLayout = ContentLandscapeLayout
         MyScaffold(
             topBar = {
                 val blockState by viewModel.blockState.collectAsStateWithLifecycle()
-                UserProfileToolbar(
-                    title = userProfileDetail.takeUnless { contentRowLayout },
-                    collapsedTitle = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Avatar(data = avatarUrl, size = Sizes.Small)
-                            Text(text = userProfile.nickname ?: userProfile.name, maxLines = 1)
-                        }
-                    },
+                UserProfileTopAppBar(
+                    transitionKey = transitionKey,
+                    profile = userProfile,
                     isSelf = isSelf,
                     isFollowing = userProfile.following,
                     isRequestingFollow = uiState.isRequestingFollow,
@@ -297,42 +329,44 @@ fun UserProfilePage(
                     block = blockState,
                     onBlackListClicked = viewModel::onUserBlacklisted,
                     onWhiteListClicked = viewModel::onUserWhitelisted,
-                    onBack = navigator::navigateUp,
-                    scrollBehavior = scrollBehavior
+                    onBack = onBack,
+                    scrollBehavior = scrollBehavior,
                 ) {
-                    if (contentRowLayout) return@UserProfileToolbar
-                    UserProfileTabRow(tabs, pagerState, collapseFraction)
+                    UserIntro(
+                        modifier = Modifier.padding(start = 16.dp),
+                        profile = userProfile,
+                        landscape = contentLandscapeLayout
+                    )
                 }
             },
             snackbarHostState = snackbarHostState,
-            backgroundColor = backgroundColor
         ) { paddingValues ->
-            ProvideNavigator(navigator = navigator) {
-                if (contentRowLayout) {
-                    Row(
-                        modifier = Modifier.padding(paddingValues),
-                    ) {
-                        Box(
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                if (contentLandscapeLayout) {
+                    Row {
+                        Column(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .fillMaxWidth(0.35f)
-                                .padding(start = 16.dp, bottom = 16.dp)
                                 .verticalScroll(rememberScrollState())
+                                .padding(start = 16.dp, bottom = 16.dp)
                         ) {
-                            userProfileDetail()
+                            UserProfileDetail(profile = userProfile, transitionKey = transitionKey, landscape = true)
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            UserIntro(profile = userProfile, landscape = true)
                         }
 
-                        Column(modifier = Modifier.weight(1.0f)) {
-                            UserProfileTabRow(tabs, pagerState, collapseFraction)
-                            // Make TopAppBar non-scrollable on row layout
-                            pagerMovableContent(Modifier, true/* fluid */)
-                        }
+                        movablePager(Modifier.weight(1.0f), true/* fluid */)
                     }
                 } else {
-                    pagerMovableContent(
-                        Modifier
-                            .nestedScroll(scrollBehavior.nestedScrollConnection)
-                            .padding(paddingValues),
+                    movablePager(
+                        Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                         false // fluid
                     )
                 }
@@ -343,10 +377,10 @@ fun UserProfilePage(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun UserProfileToolbar(
+private fun UserProfileTopAppBar(
     modifier: Modifier = Modifier,
-    title: (@Composable () -> Unit)?,
-    collapsedTitle: @Composable () -> Unit,
+    transitionKey: String? = null,
+    profile: UserProfile,
     block: UserBlockState,
     isSelf: Boolean = false,
     isFollowing: Boolean = false,
@@ -356,7 +390,7 @@ private fun UserProfileToolbar(
     onBlackListClicked: () -> Unit = {},
     onWhiteListClicked: () -> Unit = {},
     onBack: () -> Unit = {},
-    scrollBehavior: TopAppBarScrollBehavior? = null,
+    scrollBehavior: TopAppBarScrollBehavior,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val actionsMenu: @Composable RowScope.() -> Unit = {
@@ -407,16 +441,31 @@ private fun UserProfileToolbar(
         }
     }
 
-    if (title != null) {
-        TwoRowsTopAppBar(
+    if (!ContentLandscapeLayout) {
+        val titleModifier = Modifier.padding(start = 8.dp)
+        CollapsingAvatarTopAppBar(
             modifier = modifier,
-            title = title,
-            smallTitle = collapsedTitle,
+            avatar = {
+                UserAvatar(
+                    modifier = Modifier.matchParentSize(),
+                    avatar = remember { StringUtil.getBigAvatarUrl(profile.portrait) },
+                    uid = profile.uid,
+                    transitionKey = transitionKey
+                )
+            },
+            title = {
+                Nickname(modifier = titleModifier, nickname = profile.nickname ?: profile.name, transitionKey)
+            },
+            subtitle = {
+                UserProfileDetail(titleModifier, profile, transitionKey, landscape = false)
+            },
             navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
             actions = actionsMenu,
-            expandedHeight = UserProfileExpandHeight,
+            expandedHeight = UserAppbarExpandHeight,
+            avatarMax = AvatarExpandedSize,
             colors = rememberAvatarTopBarColors(),
             scrollBehavior = scrollBehavior,
+            collapsibleExtraContent = true,
             content = content
         )
     } else {
@@ -442,15 +491,15 @@ private fun UserProfileTabRow(
 
     PrimaryTabRow(
         selectedTabIndex = pagerState.currentPage,
+        modifier = modifier,
         indicator = {
             FancyAnimatedIndicatorWithModifier(pagerState.currentPage)
         },
+        containerColor = Color.Transparent,
+        contentColor = colorScheme.primary,
         divider = { // visible when collapsed
             HorizontalDivider(modifier = Modifier.graphicsLayer { alpha = collapseFraction() })
         },
-        containerColor = Color.Transparent,
-        contentColor = colorScheme.primary,
-        modifier = modifier,
     ) {
         tabs.fastForEachIndexed { i, (_, title) ->
             Tab(
@@ -472,15 +521,64 @@ private fun UserProfileTabRow(
 }
 
 @Composable
-private fun StatusText(modifier: Modifier = Modifier, name: String, status: String) {
+private fun UserAvatar(modifier: Modifier = Modifier, avatar: String?, uid: Long, transitionKey: String?) {
+    if (avatar.isNullOrEmpty()) {
+        Box(modifier = modifier.placeholder(shape = CircleShape))
+    } else {
+        Avatar(
+            modifier = modifier
+                .onNotNull(avatar) { sharedUserAvatar(uid = uid, extraKey = transitionKey) },
+            data = avatar
+        )
+    }
+}
+
+@NonRestartableComposable
+@Composable
+private fun NameText(modifier: Modifier = Modifier, name: String, style: TextStyle = LocalTextStyle.current) {
+    Text(
+        text = name,
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 1,
+        overflow = TextOverflow.MiddleEllipsis,
+        style = style
+    )
+}
+
+@Composable
+private fun Nickname(modifier: Modifier = Modifier, nickname: String?, transitionKey: String? = null) {
+    NameText(
+        modifier = modifier.block {
+            if (nickname.isNullOrEmpty()) {
+                placeholder()
+            } else {
+                sharedUserNickname(nickname = nickname, extraKey = transitionKey)
+            }
+        },
+        name = nickname ?: stringResource(R.string.app_name)
+    )
+}
+
+@Composable
+private fun Username(modifier: Modifier = Modifier, username: String, transitionKey: String? = null) {
+    NameText(
+        modifier = modifier.sharedUsername(username, extraKey = transitionKey),
+        name = remember { "(${username})" },
+        style = MaterialTheme.typography.titleMedium
+    )
+}
+
+@Composable
+private fun StatText(modifier: Modifier = Modifier, title: String, num: String) {
     Column (
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = name, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = title, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-        Text(text = status, color = LocalContentColor.current, fontWeight = FontWeight.Bold)
+        Text(text = num, color = LocalContentColor.current, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -510,102 +608,91 @@ private fun VerifiedText(modifier: Modifier = Modifier, verify: String) {
 }
 
 @Composable
-private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfile, columnLayout: Boolean) {
+private fun UserProfileDetail(
+    modifier: Modifier = Modifier,
+    profile: UserProfile,
+    transitionKey: String? = null,
+    landscape: Boolean
+) {
+    val isWindowHeightCompact = isWindowHeightCompact()
     val context = LocalContext.current
-    val avatarUrl: String = remember { StringUtil.getBigAvatarUrl(profile.portrait) }
-    val flowArrangement = Arrangement.spacedBy(8.dp)
 
-    val portraitMovableContent = remember {
-        movableContentOf {
-            Avatar(data = avatarUrl, size = 96.dp)
+    val userStats = remember(profile) {
+        persistentListOf(
+            context.getString(R.string.text_stat_follow) to profile.follow.getShortNumString(), // 关注
+            context.getString(R.string.text_stat_fans) to profile.fans.getShortNumString(),     // 粉丝
+            context.getString(R.string.text_stat_agrees) to profile.agree.getShortNumString(),  // 赞
+            context.getString(R.string.text_stat_tbage) to context.getString(R.string.text_profile_tb_age, profile.tbAge), // 吧龄
+        )
+    }
 
-            Column(
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(
+            space = 8.dp,
+            alignment = if (isWindowHeightCompact) Alignment.Top else Alignment.CenterVertically
+        ),
+    ) {
+        if (landscape) {
+            UserAvatar(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-            ) {
-                SelectionContainer {
-                    Text(
-                        text = profile.nickname ?: profile.name,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                if (profile.nickname != null && profile.name.isNotEmpty()) { // 同时显示用户名与昵称
-                    SelectionContainer {
-                        Text(
-                            text = remember { "(${profile.name})" },
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 16.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
+                    .size(AvatarLandscapeSize)
+                    .align(Alignment.CenterHorizontally),
+                avatar = remember { StringUtil.getBigAvatarUrl(profile.portrait) },
+                uid = profile.uid,
+                transitionKey = transitionKey,
+            )
+        }
 
-                Spacer(modifier = Modifier.height(8.dp))
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = if (landscape) Alignment.CenterHorizontally else Alignment.Start
+        ) {
+            if (landscape) {
+                Nickname(nickname = profile.nickname ?: profile.name, transitionKey = transitionKey)
+            }
 
-                ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.height(IntrinsicSize.Min)
-                    ) {
-                        // 关注
-                        StatusText(
-                            name = stringResource(id = R.string.text_stat_follow),
-                            status = remember(profile.follow) { profile.follow.getShortNumString() },
-                        )
-                        // 粉丝
-                        VerticalDivider()
-                        StatusText(
-                            name = stringResource(id = R.string.text_stat_fans),
-                            status = remember(profile.fans) { profile.fans.getShortNumString() },
-                        )
-                        // 赞
-                        VerticalDivider()
-                        StatusText(
-                            name = stringResource(id = R.string.text_stat_agrees),
-                            status = remember(profile.agree) { profile.agree.getShortNumString() },
-                        )
-                        // 吧龄
-                        VerticalDivider()
-                        StatusText(
-                            name = stringResource(id = R.string.text_stat_tbage),
-                            status = stringResource(id = R.string.text_profile_tb_age, profile.tbAge)
-                        )
+            if (profile.nickname != null && profile.name.isNotEmpty()) {
+                Username(username = profile.name, transitionKey = transitionKey)
+            }
+
+            ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(
+                        space = 8.dp,
+                        alignment = if (landscape) Alignment.CenterHorizontally else Alignment.Start
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
+                        .clipToBounds()
+                        .horizontalScroll(rememberScrollState())
+                ) {
+                    userStats.fastForEachIndexed { i, (title, number) ->
+                        StatText(title = title, num = number)
+                        if (i != userStats.lastIndex) {
+                            VerticalDivider()
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun UserIntro(modifier: Modifier = Modifier, profile: UserProfile, landscape: Boolean) {
+    val context = LocalContext.current
+    val flowArrangement = Arrangement.spacedBy(6.dp)
 
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = flowArrangement
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (columnLayout) {
-            Column(
-                modifier = Modifier.padding(bottom = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                content = { portraitMovableContent() }
-            )
-        } else {
-            Row(
-                modifier = Modifier.padding(bottom = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                content = { portraitMovableContent() }
-            )
-        }
-
         Text(
             text = profile.intro ?: stringResource(id = R.string.tip_no_intro),
             style = MaterialTheme.typography.bodyMedium,
-            maxLines = if (columnLayout) Int.MAX_VALUE else 1,
+            maxLines = if (landscape) Int.MAX_VALUE else 1,
             overflow = TextOverflow.Ellipsis
         )
 
@@ -644,6 +731,161 @@ private fun UserProfileDetail(modifier: Modifier = Modifier, profile: UserProfil
             profile.address?.let {
                 Chip(text = stringResource(id = R.string.text_profile_ip_location, it))
             }
+        }
+    }
+}
+
+@Composable
+private fun UserProfileDetailPlaceholder(
+    modifier: Modifier = Modifier,
+    uid: Long,
+    avatar: String? = null,
+    nickname: String? = null,
+    username: String? = null,
+    transitionKey: String? = null,
+    landscape: Boolean = false
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(
+            space = 8.dp,
+            alignment = if (isWindowHeightCompact()) Alignment.Top else Alignment.CenterVertically
+        ),
+        horizontalAlignment = if (landscape) Alignment.CenterHorizontally else Alignment.Start
+    ) {
+        if (landscape) {
+            UserAvatar(modifier = Modifier.size(AvatarLandscapeSize), avatar, uid, transitionKey)
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = if (landscape) Alignment.CenterHorizontally else Alignment.Start
+        ) {
+            if (landscape) {
+                Nickname(nickname = nickname, transitionKey = transitionKey)
+            }
+
+            if (!username.isNullOrEmpty()) {
+                Username(username = username, transitionKey = transitionKey)
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(
+                    space = 8.dp,
+                    alignment = if (landscape) Alignment.CenterHorizontally else Alignment.Start
+                ),
+            ) {
+                repeat(4) {
+                    Box(modifier = Modifier.size(width = 28.dp, height = 40.dp).placeholder())
+                    if (it < 3) {
+                        VerticalDivider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StateScreenScope.LoadingScreen(
+    modifier: Modifier = Modifier,
+    uid: Long = -1,
+    avatar: String? = null,
+    nickname: String? = null,
+    username: String? = null,
+    transitionKey: String? = null,
+    onBack: () -> Unit = {},
+) {
+    val landscapeLayout = ContentLandscapeLayout
+    val navIcon = remember {
+        movableContentOf { BackNavigationIcon(onBackPressed = onBack) }
+    }
+    val loadingLottieContent = remember {
+        movableContentOf<Modifier> {
+            Box(modifier = it, contentAlignment = Alignment.Center) {
+                DefaultLoadingScreen()
+            }
+        }
+    }
+    val introPlaceholderContent = remember {
+        movableContentOf<Modifier> {
+            Column(modifier = it) {
+                Text(
+                    text = stringResource(id = R.string.tip_no_intro),
+                    modifier = Modifier.placeholder(),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                // Sex, ID, IP
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(modifier = Modifier.size(38.dp, 24.dp).placeholder(shape = CircleShape))
+                    Box(modifier = Modifier.size(140.dp, 24.dp).placeholder(shape = CircleShape))
+                    Box(modifier = Modifier.size(86.dp, 24.dp).placeholder(shape = CircleShape))
+                }
+            }
+        }
+    }
+
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        if (!landscapeLayout) {
+            val titleModifier = Modifier.padding(start = 8.dp)
+            CollapsingAvatarTopAppBar(
+                avatar = {
+                    UserAvatar(Modifier.matchParentSize(), avatar, uid, transitionKey)
+                },
+                title = {
+                    Nickname(titleModifier, nickname, transitionKey)
+                },
+                subtitle = {
+                    UserProfileDetailPlaceholder(titleModifier, uid, avatar, nickname, username, transitionKey)
+                },
+                navigationIcon = navIcon,
+                expandedHeight = UserAppbarExpandHeight,
+                avatarMax = AvatarExpandedSize,
+                colors = rememberAvatarTopBarColors(),
+                collapsibleExtraContent = true
+            ) {
+                introPlaceholderContent(Modifier.padding(start = 16.dp))
+            }
+        } else {
+            TopAppBar(title = {}, navigationIcon = navIcon, colors = rememberAvatarTopBarColors())
+        }
+
+        if (landscapeLayout) {
+            Row {
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(0.35f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(start = 16.dp, bottom = 16.dp)
+                ) {
+                    UserProfileDetailPlaceholder(
+                        uid = uid,
+                        avatar = avatar,
+                        nickname = nickname,
+                        username = username,
+                        transitionKey = transitionKey,
+                        landscape = true
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    introPlaceholderContent(Modifier)
+                }
+
+                loadingLottieContent(Modifier.fillMaxSize())
+            }
+        } else {
+            loadingLottieContent(Modifier.fillMaxSize())
         }
     }
 }
@@ -707,6 +949,28 @@ private fun UserProfileDetailPreview() = TiebaLiteTheme {
             bazuDesc = "吃瓜吧吧主",
             newGod = "吃瓜"
         ),
-        columnLayout = false
+        landscape = false
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview("LoadingScreen")
+@Composable
+private fun LoadingScreenPreview() = TiebaLiteTheme {
+    Surface {
+        with(StateScreenScope()) {
+            LoadingScreen(nickname = "我是谁", username = "user(123)")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview("LoadingScreenLandscape", device = Devices.PIXEL_TABLET)
+@Composable
+private fun LoadingScreenLandscapePreview() = TiebaLiteTheme {
+    Surface {
+        with(StateScreenScope()) {
+            LoadingScreen(nickname = "我是谁", username = "user(123)")
+        }
+    }
 }

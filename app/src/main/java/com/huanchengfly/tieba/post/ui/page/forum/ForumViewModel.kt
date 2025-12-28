@@ -59,7 +59,7 @@ class ForumViewModel @Inject constructor(
 
     override fun createInitialState(): ForumUiState = ForumUiState()
 
-    private var singleJob: Job? = null
+    private var forumSignInJob: Job? = null
     private var forumLikeJob: Job? = null
 
     init {
@@ -112,9 +112,9 @@ class ForumViewModel @Inject constructor(
     }
 
     fun onSignIn() {
-        if (singleJob?.isActive == true || currentState.forum?.signed == true) return
+        if (forumSignInJob?.isActive == true || currentState.forum?.signed == true) return
 
-        singleJob = launchJobInVM {
+        forumSignInJob = launchJobInVM {
             val currentForum = currentState.forum!!
             runCatching {
                 forumRepo.forumSignIn(currentForum.id, forumName,  currentForum.tbs!!)
@@ -124,7 +124,7 @@ class ForumViewModel @Inject constructor(
                 emitUiEvent(ForumUiEvent.SignIn.Success(it.signBonusPoint!!, it.userSignRank!!))
                 _uiState.update { u -> u.copy(forum = currentForum.updateSignIn(info = it)) }
             }
-            singleJob = null
+            forumSignInJob = null
         }
     }
 

@@ -206,8 +206,11 @@ private fun buildRootNavGraph(
         }
 
         composable<Destination.UserProfile> { backStackEntry ->
-            val params = backStackEntry.toRoute<Destination.UserProfile>()
-            UserProfilePage(params.uid, navController)
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                backStackEntry.toRoute<Destination.UserProfile>().run {
+                    UserProfilePage(uid, avatar, nickname, username, transitionKey, navController)
+                }
+            }
         }
 
         composable<Destination.WebView> { backStackEntry ->

@@ -5,7 +5,7 @@ import android.os.Build
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.App
+import com.bumptech.glide.Glide
 import com.huanchengfly.tieba.post.api.models.FollowBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
@@ -22,6 +22,7 @@ import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.utils.StringUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -58,13 +59,14 @@ data class UserProfileUiState(
 
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
-    @ApplicationContext val context: Context,
+    @param:ApplicationContext val context: Context,
     private val userProfileRepo: UserProfileRepository,
     private val blockRepo: BlockRepository,
     savedStateHandle: SavedStateHandle
 ) : BaseStateViewModel<UserProfileUiState>() {
 
-    val uid: Long = savedStateHandle.toRoute<Destination.UserProfile>().uid
+    private val params = savedStateHandle.toRoute<Destination.UserProfile>()
+    val uid: Long = params.uid
 
     val blockState: StateFlow<UserBlockState> = blockRepo.observeUser(uid)
         .map {
@@ -80,6 +82,13 @@ class UserProfileViewModel @Inject constructor(
         flow = _uiState,
         flow2 = userProfileRepo.observeUserProfile(uid)
     ) { state, profile ->
+        // Wait transition animation
+        if (profile != null && state.userProfile == null && !params.avatar.isNullOrEmpty()) {
+            Glide.with(context)
+                .load(StringUtil.getBigAvatarUrl(profile.portrait))
+                .preload()
+            delay(400)
+        }
         state.copy(userProfile = profile)
     }
     .stateInViewModel(initialValue = createInitialState())
@@ -93,9 +102,7 @@ class UserProfileViewModel @Inject constructor(
         }
     }
 
-    // Null when power saver in on
-    val imageProcessor: ImageProcessor? by lazy {
-        if ((context as App).powerManager.isPowerSaveMode) return@lazy null
+    val imageProcessor: ImageProcessor by lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             RenderEffectImageProcessor()
         } else {
@@ -125,7 +132,7 @@ class UserProfileViewModel @Inject constructor(
      * @param newState 将该用户加入白名单, 黑名单或移除
      * */
     private fun updateBlockState(newState: UserBlockState) {
-        val name = currentState.userProfile?.name ?: throw NullPointerException()
+        val name = currentState.userProfile?.run { nickname ?: name } ?: throw NullPointerException()
         when (newState) {
             UserBlockState.Blacklisted -> blockRepo.upsertUser(BlockUser(uid, name, false))
 

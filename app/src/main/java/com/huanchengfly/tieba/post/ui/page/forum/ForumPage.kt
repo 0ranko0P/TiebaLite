@@ -1,18 +1,22 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationConstants
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -25,16 +29,15 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.VerticalAlignTop
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
@@ -42,29 +45,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
+import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.forum.GoodClassify
@@ -73,19 +79,17 @@ import com.huanchengfly.tieba.post.ui.page.Destination.ForumDetail
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumSearchPost
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadList
-import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
-import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingAvatarTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
@@ -94,9 +98,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.OutlinedIconTextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
-import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
@@ -104,118 +108,25 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import dev.chrisbanes.haze.ExperimentalHazeApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.max
-import kotlin.math.min
 
-private val ForumHeaderHeight = 90.dp
-
-@Composable
-private fun ForumHeader(
-    forum: ForumData,
-    transitionKey: String?,
-    onOpenForumInfo: () -> Unit,
-    onFollow: () -> Unit,
-    onSignIn: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .height(ForumHeaderHeight)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Avatar(
-                modifier = Modifier
-                    .size(Sizes.Large)
-                    .localSharedBounds(key = ForumAvatarSharedBoundsKey(forum.name, transitionKey))
-                    .clickable(onClick = onOpenForumInfo),
-                data = TbGlideUrl(forum.avatar),
-                contentDescription = forum.name,
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                ForumTitleText(
-                    modifier = Modifier
-                        .localSharedBounds(key = ForumTitleSharedBoundsKey(forum.name, transitionKey))
-                        .clickable(onClick = onOpenForumInfo),
-                    name = forum.name
-                )
-                AnimatedVisibility(visible = forum.liked) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        LinearProgressIndicator(
-                            progress = {
-                                max(0F, min(1F, forum.score / (max(1.0F, forum.scoreLevelUp * 1.0F))))
-                            },
-                            gapSize = Dp.Hairline,
-                            drawStopIndicator = {}
-                        )
-                        Text(
-                            text = stringResource(R.string.tip_forum_header_liked, forum.level, forum.levelName),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 10.sp,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-            }
-
-            if (LocalAccount.current != null) {
-                Button(
-                    onClick = if (forum.liked) onSignIn else onFollow,
-                    enabled = !forum.signed || !forum.liked
-                ) {
-                    val text = when {
-                        !forum.liked -> stringResource(R.string.button_follow)
-                        forum.signed -> stringResource(R.string.button_signed_in, forum.signedDays)
-                        else -> stringResource(R.string.button_sign_in)
-                    }
-                    Text(text = text, fontSize = 13.sp)
-                }
-            }
-        }
-    }
-}
+/** The default expanded height of a Forum TopAppBar */
+private val ForumAppbarExpandHeight: Dp = 144.dp
 
 @Composable
-private fun ForumTitle(
+private fun ForumAvatar(
     modifier: Modifier = Modifier,
-    title: String,
     avatar: String?,
-    transitionEnabled: Boolean,
+    forum: String,
     transitionKey: String?
 ) {
-    val avatarModifier = if (transitionEnabled) {
-        Modifier.localSharedBounds(key = ForumAvatarSharedBoundsKey(title, transitionKey))
+    if (avatar.isNullOrEmpty()) {
+        Box(modifier = modifier.placeholder(shape = CircleShape))
     } else {
-        Modifier
-    }
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (avatar == null) {
-            AvatarPlaceholder(size = Sizes.Small, modifier = avatarModifier)
-        } else {
-            Avatar(avatar, size = Sizes.Small, contentDescription = title, modifier = avatarModifier)
-        }
-
-        Text(
-            text = stringResource(R.string.title_forum, title),
-            modifier = Modifier
-                .onCase(condition = transitionEnabled) {
-                    localSharedBounds(key = ForumTitleSharedBoundsKey(title, transitionKey))
-                },
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+        Avatar(
+            data = TbGlideUrl(avatar),
+            modifier = modifier.localSharedBounds(ForumAvatarSharedBoundsKey(forum, transitionKey)),
         )
     }
 }
@@ -230,6 +141,7 @@ fun ForumPage(
     viewModel: ForumViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val loggedIn = LocalAccount.current != null
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = rememberSnackbarHostState()
     val onShowSnackbarShort: (CharSequence) -> Unit = {
@@ -241,9 +153,7 @@ fun ForumPage(
 
     val pagerState = rememberPagerState { ForumType.entries.size }
     val listStates = rememberPagerListStates(pagerState.pageCount)
-    val scrollBehaviors = rememberTopAppBarScrollBehaviors(pagerState.pageCount) {
-        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(state = it)
-    }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scrollOrientationConnection = rememberScrollOrientationConnection()
 
     viewModel.uiEvent.collectUiEventWithLifecycle {
@@ -268,8 +178,8 @@ fun ForumPage(
 
             is ForumUiEvent.ScrollToTop -> {
                 listStates[it.type.ordinal].scrollToItem(0)
-                scrollBehaviors[it.type.ordinal].state.contentOffset = 0f
-                scrollBehaviors[it.type.ordinal].state.heightOffset = 0f
+                scrollBehavior.state.contentOffset = 0f
+                scrollBehavior.state.heightOffset = 0f
             }
 
             else -> it.toString()
@@ -285,7 +195,7 @@ fun ForumPage(
     )
 
     onGlobalEvent<ThreadLikeUiEvent> {
-        snackbarHostState.showSnackbar(it.toMessage(context))
+        onShowSnackbarShort(it.toMessage(context))
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -325,52 +235,59 @@ fun ForumPage(
     BlurScaffold(
         topHazeBlock = {
             blurEnabled = (listStates[pagerState.currentPage].canScrollBackward ||
-                    scrollBehaviors.isOverlapping(pagerState)) && uiState.error == null
+                    scrollBehavior.isOverlapping) && uiState.error == null
             inputScale = DefaultInputScale
         },
         topBar = {
-            val onNavigateForumDetail: () -> Unit = {
-                uiState.forum?.let { navigator.navigate(route = ForumDetail(it.name)) }
-            }
-
-            val collapsed by remember {
-                derivedStateOf { scrollBehaviors[pagerState.currentPage].state.collapsedFraction == 1.0f }
-            }
-
-            TwoRowsTopAppBar(
-                title = {
-                    when {
-                        forumData == null -> ForumHeaderPlaceholder(forumName, avatarUrl, transitionKey)
-
-                        // remove from SharedBoundsNode when collapsed
-                        collapsed -> Box(Modifier.fillMaxWidth().height(ForumHeaderHeight))
-
-                        else -> {
-                            ForumHeader(
-                                forum = forumData,
-                                transitionKey = transitionKey,
-                                onOpenForumInfo = onNavigateForumDetail,
-                                onFollow = viewModel::onLikeForum,
-                                onSignIn = viewModel::onSignIn,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                },
-                smallTitle = {
-                    ForumTitle(
-                        modifier = Modifier.clickableNoIndication(onClick = onNavigateForumDetail) ,
-                        title = forumName,
+            CollapsingAvatarTopAppBar(
+                avatar = {
+                    ForumAvatar(
+                        modifier = Modifier.matchParentSize(),
                         avatar = avatarUrl ?: forumData?.avatar,
-                        transitionEnabled = collapsed,
+                        forum = forumName,
                         transitionKey = transitionKey
                     )
+                },
+                title = {
+                    Text(
+                        text = stringResource(id = R.string.title_forum, forumName),
+                        modifier = Modifier
+                            .localSharedBounds(ForumTitleSharedBoundsKey(forumName, transitionKey))
+                            .clickableNoIndication(enabled = forumData != null) {
+                                navigator.navigate(route = ForumDetail(forumName))
+                            },
+                        maxLines = 1,
+                        overflow = TextOverflow.MiddleEllipsis,
+                    )
+                },
+                subtitle = {
+                    AnimatedVisibility(
+                        visible = forumData != null,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically(),
+                    ) {
+                        if (loggedIn) {
+                            ForumExpProgress(forum = forumData!!)
+                        } else if (!forumData!!.slogan.isNullOrEmpty()) {
+                            Text(text = forumData.slogan, maxLines = 1)
+                        }
+                    }
                 },
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = navigator::navigateUp)
                 },
                 actions = {
-                    if (forumData == null) return@TwoRowsTopAppBar // Loading
+                    if (forumData == null) return@CollapsingAvatarTopAppBar // Loading
+
+                    if (loggedIn) {
+                        ForumSignFollowActionButton(
+                            forum = forumData,
+                            onFollow = viewModel::onLikeForum,
+                            onSignIn = viewModel::onSignIn,
+                            collapsedFraction = { scrollBehavior.state.collapsedFraction }
+                        )
+                    }
+
                     ActionItem(
                         icon = Icons.Rounded.Search,
                         contentDescription = R.string.btn_search_in_forum,
@@ -396,19 +313,16 @@ fun ForumPage(
                         },
                         triggerShape = CircleShape
                     ) {
-                        Box(
-                            modifier = Modifier.size(48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = stringResource(id = R.string.btn_more)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(id = R.string.btn_more),
+                            modifier = Modifier.minimumInteractiveComponentSize(),
+                        )
                     }
                 },
+                expandedHeight = ForumAppbarExpandHeight,
                 colors = TiebaLiteTheme.topAppBarColors,
-                scrollBehavior = scrollBehaviors[pagerState.currentPage]
+                scrollBehavior = scrollBehavior,
             )  {
                 val sortType by viewModel.sortType.collectAsStateWithLifecycle()
                 ForumTab(
@@ -419,7 +333,7 @@ fun ForumPage(
                 )
 
                 val classifyVisible by remember { derivedStateOf { pagerState.currentPage == TAB_FORUM_GOOD } }
-                val goodClassifies = uiState.forum?.goodClassifies ?: return@TwoRowsTopAppBar
+                val goodClassifies = uiState.forum?.goodClassifies ?: return@CollapsingAvatarTopAppBar
                 // Compose classify inside TopBar for background blur
                 AnimatedVisibility(visible = classifyVisible) {
                     ClassifyTabs(
@@ -452,7 +366,7 @@ fun ForumPage(
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(connection = scrollOrientationConnection)
-                .nestedScroll(connection = scrollBehaviors[pagerState.currentPage].nestedScrollConnection),
+                .nestedScroll(connection = scrollBehavior.nestedScrollConnection),
             isLoading = forumData == null,
             error = uiState.error,
             loadingScreen = {
@@ -477,15 +391,73 @@ fun ForumPage(
     }
 }
 
+private const val SignActionVisibilityThreshold = 0.1f // 10% Collapsing
+
 @Composable
-private fun ForumTitleText(modifier: Modifier = Modifier, name: String) =
-    Text(
-        text = stringResource(id = R.string.title_forum, name),
-        modifier = modifier,
-        style = MaterialTheme.typography.titleLarge,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
+private fun ForumSignFollowActionButton(
+    modifier: Modifier = Modifier,
+    forum: ForumData,
+    onFollow: () -> Unit,
+    onSignIn: () -> Unit,
+    collapsedFraction: FloatProducer,
+) {
+    val visibility by remember {
+        derivedStateOf { collapsedFraction() < SignActionVisibilityThreshold }
+    }
+    if (!visibility) return
+
+    OutlinedIconTextButton (
+        onClick = if (forum.liked) onSignIn else onFollow,
+        modifier = modifier.graphicsLayer {
+            alpha = lerp(1f, 0f, collapsedFraction() * (1 / SignActionVisibilityThreshold))
+        },
+        enabled = !forum.signed || !forum.liked,
+        vectorIcon = when {
+            !forum.liked -> ImageVector.vectorResource(id = R.drawable.ic_favorite)
+            forum.signed -> null
+            else -> ImageVector.vectorResource(id = R.drawable.ic_oksign)
+        },
+        text = when {
+            !forum.liked -> stringResource(R.string.button_follow)
+            forum.signed -> stringResource(R.string.button_signed_in, forum.signedDays)
+            else -> stringResource(R.string.button_sign_in)
+        }
     )
+}
+
+@Composable
+private fun ForumExpProgress(modifier: Modifier = Modifier, forum: ForumData) {
+    AnimatedVisibility(
+        visible = forum.liked,
+        modifier = modifier.fillMaxWidth(0.75f),
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+    ) {
+        val progressAnimatable = remember { Animatable(forum.levelProgress) }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            LinearProgressIndicator(
+                progress = { progressAnimatable.value },
+                modifier = Modifier.height(6.dp).clip(CircleShape),
+            )
+            Text(
+                text = stringResource(R.string.tip_forum_header_liked, forum.level, forum.levelName),
+            )
+        }
+
+        if (forum.signed) {
+            LaunchedEffect(Unit) {
+                if (forum.levelProgress != progressAnimatable.targetValue) { // Skip signed forum
+                    progressAnimatable.snapTo(0f)
+                    delay(AnimationConstants.DefaultDurationMillis.toLong())
+                    progressAnimatable.animateTo(forum.levelProgress, spring(stiffness = Spring.StiffnessLow))
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun ForumFab(@ForumFAB fab: Int, visible: () -> Boolean, onClick: () -> Unit) {
@@ -527,52 +499,6 @@ private fun ClassifyTabs(
             Chip(text = name, invertColor = selectedItem == id) {
                 if (selectedItem != id) {
                     onSelected(id)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ForumHeaderPlaceholder(
-    forumName: String,
-    avatarUrl: String?,
-    transitionKey: String?,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        val avatarModifier = Modifier.localSharedBounds(
-            key = ForumAvatarSharedBoundsKey(forumName = forumName, extraKey = transitionKey)
-        )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (!avatarUrl.isNullOrEmpty()) {
-                Avatar(modifier = avatarModifier.size(Sizes.Large), data = TbGlideUrl(avatarUrl))
-            } else {
-                AvatarPlaceholder(size = Sizes.Large, modifier = avatarModifier)
-            }
-
-            ForumTitleText(
-                modifier = Modifier.localSharedBounds(ForumTitleSharedBoundsKey(forumName, transitionKey)),
-                name = forumName
-            )
-
-            if (LocalAccount.current != null) {
-                Spacer(modifier = Modifier.weight(1.0f))
-                Box(
-                    modifier = Modifier
-                        .placeholder(shape = CircleShape)
-                        .padding(horizontal = 18.dp, vertical = 6.dp)
-                ) {
-                    Text(text = stringResource(id = R.string.button_sign_in), fontSize = 13.sp)
                 }
             }
         }

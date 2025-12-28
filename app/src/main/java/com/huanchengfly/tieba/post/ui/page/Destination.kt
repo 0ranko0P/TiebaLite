@@ -92,8 +92,21 @@ sealed interface Destination {
         val isDialog: Boolean = false,
     ): Destination
 
+    /**
+     * @param uid 用户ID
+     * @param avatar 用户头像Url
+     * @param nickname 昵称
+     * @param username 用户名
+     * @param transitionKey 过渡动画额外标识键. 确保推荐页, 搜索页中包含多个相同用户时过渡动画的唯一性
+     * */
     @Serializable
-    data class UserProfile(val uid: Long): Destination
+    data class UserProfile(
+        val uid: Long,
+        val avatar: String? = null,
+        val nickname: String? = null,
+        val username: String? = null,
+        val transitionKey: String? = null,
+    ): Destination
 
     @Serializable
     data class WebView(val initialUrl: String): Destination
