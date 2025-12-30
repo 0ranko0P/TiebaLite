@@ -19,7 +19,7 @@ value class UserAvatarSharedBoundsKey(val value: Int) {
      * @param uid 用户ID
      * @param extraKey 额外标识键. 确保推荐页, 搜索页中包含多个相同用户时过渡动画的唯一性
      * */
-    constructor(uid: Long, extraKey: Any?): this(Objects.hash(uid, extraKey))
+    constructor(uid: Long, extraKey: Any?): this(Objects.hash(uid, extraKey?.toString()))
 }
 
 /** 用户昵称过渡动画唯一标识键 */
@@ -31,7 +31,7 @@ value class UserNicknameSharedBoundsKey(val value: Int) {
      * @param nickname 用户昵称
      * @param extraKey 额外标识键. 确保推荐页, 搜索页中包含多个相同用户时过渡动画的唯一性
      * */
-    constructor(nickname: String, extraKey: Any?): this(Objects.hash(nickname, extraKey))
+    constructor(nickname: String, extraKey: Any?): this(Objects.hash(nickname, extraKey?.toString()))
 }
 
 /** 用户名过渡动画唯一标识键 */
@@ -43,7 +43,7 @@ value class UsernameSharedBoundsKey(val value: Int) {
      * @param name 用户名
      * @param extraKey 额外标识键. 确保推荐页, 搜索页中包含多个相同用户时过渡动画的唯一性
      * */
-    constructor(name: String, extraKey: Any?): this(Objects.hash(name, extraKey))
+    constructor(name: String, extraKey: Any?): this(Objects.hash(name, extraKey?.toString()))
 }
 
 fun Modifier.sharedUserAvatar(

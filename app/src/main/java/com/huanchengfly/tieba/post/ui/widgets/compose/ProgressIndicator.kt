@@ -35,7 +35,7 @@ fun LinearProgressIndicator(
 ) {
     LinearProgressIndicator(
         progress = progress,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         color = color,
         trackColor = trackColor,
         strokeCap = strokeCap,

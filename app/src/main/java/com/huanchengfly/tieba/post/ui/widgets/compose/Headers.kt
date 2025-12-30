@@ -31,14 +31,20 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.UserData
+import com.huanchengfly.tieba.post.ui.page.user.sharedUserAvatar
+import com.huanchengfly.tieba.post.ui.page.user.sharedUserNickname
 import com.huanchengfly.tieba.post.utils.ColorUtils.getIconColorByLevel
 
+@NonRestartableComposable
 @Composable
 fun UserHeaderPlaceholder(
     modifier: Modifier = Modifier,
@@ -97,6 +103,7 @@ fun UserHeader(
     }
 }
 
+@NonRestartableComposable
 @Composable
 fun UserHeader(
     modifier: Modifier = Modifier,
@@ -124,48 +131,124 @@ fun UserHeader(
 
 @NonRestartableComposable
 @Composable
-fun UserDataHeader(
+fun SharedTransitionUserHeader(
+    modifier: Modifier = Modifier,
+    uid: Long,
+    avatar: String?,
+    name: String,
+    extraKey: Any? = null,
+    desc: String? = null,
+    onClick: (() -> Unit)?,
+    content: (@Composable RowScope.() -> Unit)? = null,
+) {
+    UserHeader(
+        modifier = modifier,
+        avatar = {
+            SharedTransitionUserAvatar(uid = uid, avatar = avatar, extraKey = extraKey, onClick = onClick)
+        },
+        name = {
+            Text(
+                text = name,
+                modifier = Modifier
+                    .onCase(onClick != null && !LocalHabitSettings.current.showBothName) {
+                        sharedUserNickname(nickname = name, extraKey = extraKey)
+                    }
+            )
+        },
+        desc = desc?.let { { Text(text = desc) } },
+        content = content
+    )
+}
+
+@NonRestartableComposable
+@Composable
+fun SharedTransitionUserHeader(
+    modifier: Modifier = Modifier,
+    user: Author,
+    extraKey: Any? = null,
+    desc: String? = null,
+    onClick: (() -> Unit)?,
+    content: (@Composable RowScope.() -> Unit)? = null,
+) =
+    SharedTransitionUserHeader(
+        modifier = modifier,
+        uid = user.id,
+        avatar = user.avatarUrl,
+        name = user.name,
+        extraKey = extraKey,
+        desc = desc,
+        onClick = onClick,
+        content = content
+    )
+
+@NonRestartableComposable
+@Composable
+fun SharedTransitionUserHeader(
     modifier: Modifier = Modifier,
     author: UserData,
     desc: String,
+    extraKey: Any? = null,
     onClick: (() -> Unit)? = null,
     content: @Composable (RowScope.() -> Unit)? = null,
 ) = UserHeader(
     modifier = modifier,
     avatar = {
-        Avatar(
-            data = author.avatarUrl,
-            size = Sizes.Small,
-            modifier = Modifier.onNotNull(onClick) { clickableNoIndication(onClick = it) },
-            contentDescription = author.name
-        )
+        SharedTransitionUserAvatar(uid = author.id, avatar = author.avatarUrl, extraKey = extraKey, onClick = onClick)
     },
     name = {
-        UserNameText(
-            userName = author.userShowBothName ?: author.nameShow,
+        SharedTransitionUserName(
+            name = author.userShowBothName ?: author.nameShow,
             userLevel = author.levelId,
             isLz = author.isLz,
             bawuType = author.bawuType,
+            extraKey = extraKey
         )
     },
     desc = { Text(text = desc) },
     content = content
 )
 
+@NonRestartableComposable
 @Composable
-fun UserNameText(
+private fun SharedTransitionUserAvatar(
     modifier: Modifier = Modifier,
-    userName: String,
+    uid: Long,
+    avatar: String?,
+    extraKey: Any? = null,
+    size: Dp = Sizes.Small,
+    onClick: (() -> Unit)? = null,
+) {
+    Avatar(
+        data = avatar,
+        size = size,
+        modifier = modifier
+            .onNotNull(onClick) {
+                sharedUserAvatar(uid, extraKey)
+                .clickableNoIndication(onClick = it)
+            },
+    )
+}
+
+@Composable
+private fun SharedTransitionUserName(
+    modifier: Modifier = Modifier,
+    name: String,
     userLevel: Int,
     isLz: Boolean,
-    bawuType: String? = null
+    bawuType: String? = null,
+    extraKey: Any? = null,
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(text = userName)
+        Text(
+            text = name,
+            modifier = Modifier.onCase(!LocalHabitSettings.current.showBothName) {
+                sharedUserNickname(nickname = name, extraKey = extraKey)
+            }
+        )
 
         val levelColor = Color(getIconColorByLevel(userLevel))
 
@@ -216,10 +299,10 @@ private fun TextChip(
     style = LocalTextStyle.current.merge(DefaultChipTextStyle)
 )
 
-@Preview("UserNameText")
+@Preview("SharedTransitionUserName")
 @Composable
-private fun UserNameTextPreview() = TiebaLiteTheme {
+private fun SharedTransitionUserNamePreview() = TiebaLiteTheme {
     ProvideTextStyle(MaterialTheme.typography.labelLarge) {
-        UserNameText(Modifier.padding(10.dp), userName = "我是谁", userLevel = 5, isLz = true)
+        SharedTransitionUserName(Modifier.padding(10.dp), name = "我是谁", userLevel = 5, isLz = true)
     }
 }

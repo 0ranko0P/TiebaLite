@@ -179,13 +179,11 @@ class SearchRepository @Inject constructor(
         private fun mapUiModel(user: UserBean): SearchUser? = with(user) {
             val uid = id?.toLongOrNull() ?: return@with null // 用户已注销?
             val nickname = (showNickname ?: userNickname)!!
-            val userName = name?.takeUnless { it == nickname }
-            // show both nickname and username if possible
-            val formattedName = if (userName.isNullOrEmpty()) nickname else "$nickname ($userName)"
             return SearchUser(
                 id = uid,
                 avatar = StringUtil.getAvatarUrl(portrait!!),
-                formattedName = formattedName,
+                nickname = nickname,
+                username = name?.takeUnless { it.isEmpty() || it == nickname },
                 intro = intro
             )
         }

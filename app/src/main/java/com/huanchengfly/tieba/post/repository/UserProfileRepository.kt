@@ -97,7 +97,7 @@ class UserProfileRepository @Inject constructor(
     /**
      * Refresh and cache user profile, this is non-cancellable.
      * */
-    suspend fun refreshUserProfile(uid: Long, forceRefresh: Boolean) {
+    suspend fun refreshUserProfile(uid: Long, forceRefresh: Boolean, recordHistory: Boolean = true) {
         val start = System.currentTimeMillis()
         scope.async {
             // Force refresh or cache expired, load latest user profile from network
@@ -105,7 +105,7 @@ class UserProfileRepository @Inject constructor(
                 val data: User = networkDataSource.loadUserProfile(uid)
                 userProfileDao.upsert(profile = mapToEntity(data))
                 localDataSource.purgeByUid(uid)
-            } else {
+            } else if (recordHistory) {
                 userProfileDao.updateLastVisit(uid, timestamp = System.currentTimeMillis())
             }
             val cost = System.currentTimeMillis() - start
@@ -204,10 +204,11 @@ class UserProfileRepository @Inject constructor(
         }
 
         private fun mapToEntity(user: User): UserProfile {
-            val nickname = user.nameShow.trim().takeUnless { it.isEmpty() || it.isBlank() }?.normalized()
+            val nickname = user.nameShow.trim().normalized().takeUnless { it.isEmpty() || it.isBlank() }
             val name = user.name.trim()
+                .normalized()
                 .takeUnless { it == "-"/* Server Bug? */ || it.isEmpty() || it.isBlank() }
-                ?.normalized() ?: nickname
+                ?: nickname
 
             return UserProfile(
                 uid = user.id,

@@ -72,6 +72,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.models.Author
+import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
@@ -532,7 +533,7 @@ fun FeedCard(
     onLike: (ThreadItem) -> Unit,
     modifier: Modifier = Modifier,
     onClickReply: (ThreadItem) -> Unit = onClick,
-    onClickUser: (Author) -> Unit = {},
+    onClickUser: (ThreadItem) -> Unit = {},
     onClickForum: ((ThreadItem) -> Unit)? = null, // Parse Null to Hide ForumInfo
     onClickOriginThread: (OriginThreadInfo) -> Unit = {},
     dislikeAction: (@Composable RowScope.() -> Unit)? = null,
@@ -542,11 +543,11 @@ fun FeedCard(
 
     Card(
         header = {
-            UserHeader(
-                name = thread.author.name,
-                avatar = thread.author.avatarUrl,
-                onClick = { onClickUser(thread.author) },
+            SharedTransitionUserHeader(
+                user = thread.author,
+                extraKey = thread.id,
                 desc = remember { DateTimeUtils.getRelativeTimeString(context, thread.lastTimeMill) },
+                onClick = { onClickUser(thread) },
                 content = dislikeAction
             )
         },
@@ -586,7 +587,7 @@ fun FeedCard(
                 ForumInfoChip(
                     forumName = forumName,
                     avatarUrl = forumAvatar,
-                    transitionKey = thread.id.toString(),
+                    transitionKey = thread.id,
                     onClick = { onClickForum(thread) }
                 )
             }
@@ -640,7 +641,7 @@ private fun FeedCardPreview() = TiebaLiteTheme {
                 lastTimeMill = System.currentTimeMillis(),
                 replyNum = 99999,
                 shareNum = 20,
-                simpleForum = com.huanchengfly.tieba.post.ui.models.SimpleForum(-1, "Test", "")
+                simpleForum = SimpleForum(-1, "Test", "")
             ),
             onClick = {},
             onLike = {},

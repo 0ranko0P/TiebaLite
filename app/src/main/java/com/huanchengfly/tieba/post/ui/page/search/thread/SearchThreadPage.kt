@@ -88,7 +88,7 @@ fun SearchThreadPage(
                     LoadMoreIndicator(isLoading = isLoadingMore, noMore = !uiState.hasMore, onThreshold = it)
                 }
             ) {
-                itemsIndexed(uiState.data) { index, item ->
+                itemsIndexed(uiState.data, key = { _, it -> it.lazyListKey }) { index, item ->
                     if (index > 0) {
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     }
@@ -97,7 +97,8 @@ fun SearchThreadPage(
                         item = item,
                         onClick = threadClickListener,
                         onValidUserClick = {
-                            navigator.navigate(UserProfile(uid = item.author.id))
+                            val transitionKey = item.lazyListKey.toString()
+                            navigator.navigate(UserProfile(user = item.author, transitionKey))
                         },
                         onForumClick = forumClickListener
                     )

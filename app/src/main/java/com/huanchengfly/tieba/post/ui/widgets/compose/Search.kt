@@ -138,10 +138,9 @@ fun SearchThreadItem(
     Card(
         modifier = modifier,
         header = {
-            UserHeader(
-                modifier = modifier,
-                name = item.author.name,
-                avatar = item.author.avatarUrl,
+            SharedTransitionUserHeader(
+                user = item.author,
+                extraKey = item.lazyListKey,
                 desc = item.timeDesc,
                 onClick = onValidUserClick.takeUnless { item.author.id == -1L }
             )

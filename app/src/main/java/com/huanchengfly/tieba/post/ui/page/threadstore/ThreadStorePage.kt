@@ -24,6 +24,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
@@ -35,9 +36,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
+import com.huanchengfly.tieba.post.ui.widgets.compose.SharedTransitionUserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 
 @Composable
@@ -109,7 +110,11 @@ fun ThreadStorePage(
             val habit = LocalHabitSettings.current
 
             // Initialize click listeners now
-            val onUserClicked: (Long) -> Unit = { navigator.navigate(UserProfile(uid = it)) }
+            val onUserClicked: (Author) -> Unit = {
+                it.run {
+                    navigator.navigate(UserProfile(uid = id, avatar = avatarUrl, nickname = name))
+                }
+            }
 
             val onThreadClicked: (ThreadStore) -> Unit = { thread ->
                 navigator.navigate(
@@ -156,7 +161,7 @@ fun ThreadStorePage(
 @Composable
 private fun StoreItem(
     info: ThreadStore,
-    onUserClick: (uid: Long) -> Unit,
+    onUserClick: (Author) -> Unit,
     onDelete: (ThreadStore) -> Unit,
     onClick: (ThreadStore) -> Unit,
     modifier: Modifier = Modifier,
@@ -175,17 +180,14 @@ private fun StoreItem(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            UserHeader(
-                name = info.author.name,
-                avatar = info.author.avatarUrl,
-                onClick = {
-                    onUserClick(info.author.id)
-                },
+            SharedTransitionUserHeader(
+                user = info.author,
                 desc = if (hasUpdate) {
                     stringResource(id = R.string.tip_thread_store_update, info.postNo)
                 } else {
                     null
-                }
+                },
+                onClick = { onUserClick(info.author) },
             ) {
                 Spacer(Modifier.weight(1.0f))
 

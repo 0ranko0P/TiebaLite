@@ -10,6 +10,7 @@ import com.huanchengfly.tieba.post.api.models.SearchUserBean.UserBean
 class SearchUser(
     val id: Long,
     val avatar: String,
-    val formattedName: String,
+    val nickname: String,
+    val username: String?,
     val intro: String?
 )

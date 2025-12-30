@@ -49,7 +49,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -98,7 +97,7 @@ sealed class ExplorePageItem(val title: Int){
 class ThreadClickListeners(
     val onClicked: (ThreadItem) -> Unit,
     val onReplyClicked: (ThreadItem) -> Unit,
-    val onAuthorClicked: (Author) -> Unit,
+    val onAuthorClicked: (ThreadItem) -> Unit,
     val onForumClicked: (ThreadItem) -> Unit,
     val onNavigateHotTopicList: () -> Unit // Not a thread click listener, place here just for convenience
 )
@@ -114,8 +113,11 @@ fun createThreadClickListeners(
         val (forumId, _, _) = thread.simpleForum
         onNavigate(Destination.Thread(threadId = thread.id, forumId, scrollToReply = true), null, null)
     },
-    onAuthorClicked = { author ->
-        onNavigate(Destination.UserProfile(uid = author.id), null, null)
+    onAuthorClicked = { thread ->
+        val route = thread.run {
+            Destination.UserProfile(user = author, transitionKey = this.id.toString())
+        }
+        onNavigate(route, null, null)
     },
     onForumClicked = { thread ->
         val (_, forumName, forumAvatar) = thread.simpleForum

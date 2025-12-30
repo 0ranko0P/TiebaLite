@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
 import com.huanchengfly.tieba.post.ui.models.Author
+import java.util.Objects
 
 
 /**
@@ -37,4 +38,8 @@ import com.huanchengfly.tieba.post.ui.models.Author
     val mainPostContent: AnnotatedString? = null,
     val postInfoContent: AnnotatedString? = null,
     val timeDesc: String
-)
+) {
+
+    val lazyListKey: Int
+        get() = Objects.hash(tid, pid, cid, author.id)
+}

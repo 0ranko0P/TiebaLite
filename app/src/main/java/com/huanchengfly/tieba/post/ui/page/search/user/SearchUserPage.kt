@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -16,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -31,6 +34,9 @@ import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.ui.models.search.SearchUser
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.user.sharedUserAvatar
+import com.huanchengfly.tieba.post.ui.page.user.sharedUserNickname
+import com.huanchengfly.tieba.post.ui.page.user.sharedUsername
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
@@ -71,8 +77,11 @@ fun SearchUserPage(
             val navigator = LocalNavController.current
             val headerContentType = Integer.MAX_VALUE
 
-            val onUserClickedListener: (SearchUser) -> Unit = {
-                navigator.navigate(UserProfile(uid = it.id))
+            val onUserClickedListener: (SearchUser) -> Unit = { user ->
+                val transitionKey = user.id.toString()
+                user.run {
+                    navigator.navigate(UserProfile(id, avatar, nickname, username, transitionKey))
+                }
             }
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -122,19 +131,41 @@ private fun SearchUserItem(user: SearchUser, onClick: (SearchUser) -> Unit) {
             .clickable { onClick(user) }
             .semantics(mergeDescendants = true) {
                 role = Role.DropdownList
-                contentDescription = user.formattedName
+                contentDescription = user.nickname
             }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Avatar(data = user.avatar, size = Sizes.Medium)
+        val extraKey = user.id
+        Avatar(
+            modifier = Modifier.sharedUserAvatar(uid = user.id, extraKey = extraKey),
+            data = user.avatar,
+            size = Sizes.Medium
+        )
 
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(text = user.formattedName, style = MaterialTheme.typography.titleMedium)
+            Row(
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = user.nickname,
+                    modifier = Modifier.sharedUserNickname(user.nickname, extraKey = extraKey),
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                if (!user.username.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = remember { "(${user.username})" },
+                        modifier = Modifier.sharedUsername(user.username, extraKey = extraKey),
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                }
+            }
 
             if (!user.intro.isNullOrEmpty()) {
                 Text(

@@ -87,7 +87,7 @@ class UserProfileViewModel @Inject constructor(
             Glide.with(context)
                 .load(StringUtil.getBigAvatarUrl(profile.portrait))
                 .preload()
-            delay(400)
+            delay(300)
         }
         state.copy(userProfile = profile)
     }
@@ -118,7 +118,7 @@ class UserProfileViewModel @Inject constructor(
 
     private fun refreshInternal(forceRefresh: Boolean): Unit = launchInVM {
         _uiState.update { it.copy(isRefreshing = true, error = null) }
-        userProfileRepo.refreshUserProfile(uid, forceRefresh)
+        userProfileRepo.refreshUserProfile(uid, forceRefresh, params.recordHistory)
         _uiState.update { it.copy(isRefreshing = false, error = null) }
     }
 

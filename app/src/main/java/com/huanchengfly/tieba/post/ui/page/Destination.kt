@@ -5,6 +5,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
 import androidx.navigation.NavType
+import com.huanchengfly.tieba.post.ui.models.Author
+import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import kotlinx.serialization.Serializable
@@ -98,6 +100,7 @@ sealed interface Destination {
      * @param nickname 昵称
      * @param username 用户名
      * @param transitionKey 过渡动画额外标识键. 确保推荐页, 搜索页中包含多个相同用户时过渡动画的唯一性
+     * @param recordHistory 记录访问历史
      * */
     @Serializable
     data class UserProfile(
@@ -106,7 +109,25 @@ sealed interface Destination {
         val nickname: String? = null,
         val username: String? = null,
         val transitionKey: String? = null,
-    ): Destination
+        val recordHistory: Boolean = true,
+    ): Destination {
+
+        constructor(user: Author, transitionKey: String? = null, recordHistory: Boolean = true): this(
+            uid = user.id,
+            avatar = user.avatarUrl,
+            nickname = user.name,
+            transitionKey = transitionKey,
+            recordHistory = recordHistory
+        )
+
+        constructor(user: UserData, transitionKey: String? = null, recordHistory: Boolean = true): this(
+            uid = user.id,
+            avatar = user.avatarUrl,
+            nickname = user.nameShow,
+            transitionKey = transitionKey,
+            recordHistory = recordHistory
+        )
+    }
 
     @Serializable
     data class WebView(val initialUrl: String): Destination

@@ -112,14 +112,17 @@ class UserHistory(
     override val id: Long,
     override val avatar: String,
     override val name: String,
+    val username: String?,
     override val timestamp: Long
 ) : History()
 
 private fun mapUiModel(profile: UserProfile): UserHistory = with(profile) {
+    val displayName = nickname ?: name
     UserHistory(
         id = uid,
         avatar = StringUtil.getAvatarUrl(portrait),
-        name = if (!nickname.isNullOrEmpty() && nickname != name) "$nickname ($name)" else name,
+        name = displayName,
+        username = name.takeIf { it.isNotEmpty() && it != displayName },
         timestamp = lastVisit
     )
 }

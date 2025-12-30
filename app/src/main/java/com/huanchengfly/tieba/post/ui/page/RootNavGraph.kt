@@ -1,7 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page
 
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,12 +16,19 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDeepLink
 import androidx.navigation.NavGraph
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.ComposeNavigator
+import androidx.navigation.compose.ComposeNavigatorDestinationBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.createGraph
+import androidx.navigation.get
 import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
@@ -51,6 +62,8 @@ import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStorePage
 import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 const val TB_LITE_DOMAIN = "tblite"
@@ -104,22 +117,18 @@ private fun buildRootNavGraph(
     startDestination: Destination
 ): NavGraph {
     return navController.createGraph(startDestination) {
-        composable<Destination.Main> {
-            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                MainPage(navController)
-            }
+        animatedComposable<Destination.Main> {
+            MainPage(navController)
         }
 
         composable<Destination.AppTheme> {
             AppThemePage(navController)
         }
 
-        composable<Destination.History>(
+        animatedComposable<Destination.History>(
             deepLinks = listOf(navDeepLink<Destination.History>(basePath = "$TB_LITE_DOMAIN://history"))
         ) {
-            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                HistoryPage(navController)
-            }
+            HistoryPage(navController)
         }
 
         composable<Destination.Notification>(
@@ -129,12 +138,11 @@ private fun buildRootNavGraph(
             NotificationsPage(initialPage = NotificationsType.entries[type], navigator = navController)
         }
 
-        composable<Destination.Forum>(
+        animatedComposable<Destination.Forum>(
             deepLinks = listOf(navDeepLink<Destination.Forum>(basePath = "$TB_LITE_DOMAIN://forum"))
         ) { backStackEntry ->
-            val params = backStackEntry.toRoute<Destination.Forum>()
-            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                ForumPage(params.forumName, params.avatar, params.transitionKey, navController)
+            backStackEntry.toRoute<Destination.Forum>().run {
+                ForumPage(forumName, avatarUrl = avatar, transitionKey, navigator = navController)
             }
         }
 
@@ -145,18 +153,17 @@ private fun buildRootNavGraph(
             )
         }
 
-        composable<Destination.ForumRuleDetail> { backStackEntry ->
+        animatedComposable<Destination.ForumRuleDetail> { backStackEntry ->
             ForumRuleDetailPage(navController)
         }
 
-        composable<Destination.ForumSearchPost> { backStackEntry ->
+        animatedComposable<Destination.ForumSearchPost> { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.ForumSearchPost>()
             ForumSearchPostPage(params.forumName, navController)
         }
 
-        val threadTypeMap = mapOf(typeOf<ThreadFrom?>() to navTypeOf<ThreadFrom?>(isNullableAllowed = true))
-        composable<Destination.Thread>(
-            typeMap = threadTypeMap
+        animatedComposable<Destination.Thread>(
+            typeMap = mapOf(typeOf<ThreadFrom?>() to navTypeOf<ThreadFrom?>(isNullableAllowed = true))
         ) { backStackEntry ->
             with(backStackEntry.toRoute<Destination.Thread>()) {
                 val vm: ThreadViewModel = hiltViewModel()
@@ -170,13 +177,13 @@ private fun buildRootNavGraph(
             }
         }
 
-        composable<Destination.ThreadStore>(
+        animatedComposable<Destination.ThreadStore>(
             deepLinks = listOf(navDeepLink<Destination.ThreadStore>(basePath = "$TB_LITE_DOMAIN://favorite"))
         ) {
             ThreadStorePage(navController)
         }
 
-        composable<Destination.SubPosts> { backStackEntry ->
+        animatedComposable<Destination.SubPosts> { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.SubPosts>()
             SubPostsSheetPage(params, navController)
         }
@@ -197,19 +204,15 @@ private fun buildRootNavGraph(
             }
         }
 
-        composable<Destination.Search>(
+        animatedComposable<Destination.Search>(
             deepLinks = listOf(navDeepLink<Destination.Search>(basePath = "$TB_LITE_DOMAIN://search"))
         ) {
-            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                SearchPage(navController)
-            }
+            SearchPage(navController)
         }
 
-        composable<Destination.UserProfile> { backStackEntry ->
-            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                backStackEntry.toRoute<Destination.UserProfile>().run {
-                    UserProfilePage(uid, avatar, nickname, username, transitionKey, navController)
-                }
+        animatedComposable<Destination.UserProfile> { backStackEntry ->
+            backStackEntry.toRoute<Destination.UserProfile>().run {
+                UserProfilePage(uid, avatar, nickname, username, transitionKey, navController)
             }
         }
 
@@ -247,4 +250,64 @@ private fun buildRootNavGraph(
 
 private val DefaultFadeOut: ExitTransition by unsafeLazy {
     fadeOut(animationSpec = tween(100))
+}
+
+/**
+ * Add the [Composable] to the [NavGraphBuilder]
+ *
+ * @param T route from a [KClass] for the destination
+ * @param typeMap map of destination arguments' kotlin type [KType] to its respective custom
+ *   [NavType]. May be empty if [T] does not use custom NavTypes.
+ * @param deepLinks list of deep links to associate with the destinations
+ * @param enterTransition callback to determine the destination's enter transition
+ * @param exitTransition callback to determine the destination's exit transition
+ * @param popEnterTransition callback to determine the destination's popEnter transition
+ * @param popExitTransition callback to determine the destination's popExit transition
+ * @param sizeTransform callback to determine the destination's sizeTransform.
+ * @param content composable for the destination
+ */
+private inline fun <reified T : Any> NavGraphBuilder.animatedComposable(
+    typeMap: Map<KType, @JvmSuppressWildcards NavType<*>> = emptyMap(),
+    deepLinks: List<NavDeepLink> = emptyList(),
+    noinline enterTransition:
+        (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+            EnterTransition?)? =
+        null,
+    noinline exitTransition:
+        (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+            ExitTransition?)? =
+        null,
+    noinline popEnterTransition:
+        (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+            EnterTransition?)? =
+        enterTransition,
+    noinline popExitTransition:
+        (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+            ExitTransition?)? =
+        exitTransition,
+    noinline sizeTransform:
+        (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+            SizeTransform?)? =
+        null,
+    noinline content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit
+) {
+    destination(
+        ComposeNavigatorDestinationBuilder(
+            provider[ComposeNavigator::class],
+            T::class,
+            typeMap
+        ) {
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                content(it)
+            }
+        }
+        .apply {
+            deepLinks.forEach { deepLink -> deepLink(deepLink) }
+            this.enterTransition = enterTransition
+            this.exitTransition = exitTransition
+            this.popEnterTransition = popEnterTransition
+            this.popExitTransition = popExitTransition
+            this.sizeTransform = sizeTransform
+        }
+    )
 }

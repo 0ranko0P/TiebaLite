@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.forum.rule
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,8 +21,8 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.SharedTransitionUserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 
 @Composable
@@ -73,11 +72,10 @@ fun ForumRuleDetailPage(
 
                     forumRule.author?.let {
                         item(key = it.id) {
-                            UserHeader(
-                                name = it.name,
-                                avatar = it.avatarUrl,
-                                onClick = { navigator.navigate(Destination.UserProfile(uid = it.id)) },
-                                desc = forumRule.publishTime
+                            SharedTransitionUserHeader(
+                                user = it,
+                                desc = forumRule.publishTime,
+                                onClick = { navigator.navigate(Destination.UserProfile(user = it)) },
                             )
                         }
                     }

@@ -1,13 +1,15 @@
 package com.huanchengfly.tieba.post.ui.page.history
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -16,9 +18,11 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,10 +45,14 @@ import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.models.database.ThreadHistory
 import com.huanchengfly.tieba.post.repository.UserHistory
+import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
+import com.huanchengfly.tieba.post.ui.page.user.sharedUserAvatar
+import com.huanchengfly.tieba.post.ui.page.user.sharedUserNickname
+import com.huanchengfly.tieba.post.ui.page.user.sharedUsername
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -55,7 +63,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeaderPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
@@ -91,7 +98,17 @@ fun HistoryPage(
                 navigator.navigate(route = Destination.Forum(forumName = it.name, avatar = it.avatar))
             }
 
-            is UserHistory -> navigator.navigate(route = Destination.UserProfile(uid = it.id))
+            is UserHistory -> {
+                val route = Destination.UserProfile(
+                    uid = it.id,
+                    avatar = it.avatar,
+                    nickname = it.name,
+                    username = it.username,
+                    transitionKey = it.id.toString(), // Avoid duplicate nickname
+                    recordHistory = false
+                )
+                navigator.navigate(route = route)
+            }
         }
     }
 
@@ -139,7 +156,6 @@ fun HistoryPage(
                         indicator = {
                             FancyAnimatedIndicatorWithModifier(pagerState.currentPage)
                         },
-                        divider = {},
                         containerColor = Color.Transparent,
                     ) {
                         tabs.fastForEachIndexed { i, title ->
@@ -174,67 +190,121 @@ fun HistoryPage(
 }
 
 @Composable
-private fun HistoryItem(
+private fun HistoryBaseItem(
     modifier: Modifier = Modifier,
-    avatar: String,
-    name: String,
-    time: String,
-    title: String? = null
+    avatar: @Composable BoxScope.() -> Unit,
+    name: @Composable () -> Unit,
+    etc: (@Composable () -> Unit)? = null,
+    time: Long,
 ) {
+    val context = LocalContext.current
+    val relativeTimeString = remember {
+        DateTimeUtils.getRelativeTimeString(context, time)
+    }
+
     Row(
         modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Avatar(data = avatar, size = Sizes.Small)
+        Box(Modifier.size(Sizes.Small), contentAlignment = Alignment.Center, content = avatar)
 
         Spacer(modifier = Modifier.width(8.dp))
 
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp, alignment = Alignment.CenterVertically)
         ) {
             Row {
-                Text(text = name, style = MaterialTheme.typography.labelLarge)
-                Spacer(modifier = Modifier.weight(1.0f))
-                Text(text = time, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                ProvideTextStyle(MaterialTheme.typography.labelLarge, content = name)
+
+                Spacer(modifier = Modifier.weight(1.0f).widthIn(min = 8.dp))
+
+                Text(text = relativeTimeString, style = MaterialTheme.typography.bodyMedium)
             }
 
-            if (title != null) {
-                Text(text = title, style = MaterialTheme.typography.bodyMedium)
+            if (etc != null) {
+                ProvideContentColorTextStyle(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    content = etc
+                )
             }
         }
     }
 }
 
+@NonRestartableComposable
 @Composable
-private fun ForumItem(modifier: Modifier = Modifier, avatar: String, forum: String, time: String) {
-    UserHeader(
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+private fun ForumItem(modifier: Modifier = Modifier, item: ForumHistory) {
+    HistoryBaseItem(
+        modifier = modifier,
         avatar = {
             Avatar(
-                data = avatar,
-                size = Sizes.Small,
-                modifier = Modifier.localSharedBounds(key = ForumAvatarSharedBoundsKey(forum, null)),
+                modifier = Modifier
+                    .matchParentSize()
+                    .localSharedBounds(key = ForumAvatarSharedBoundsKey(item.name, null)),
+                data = item.avatar,
             )
         },
         name = {
             Text(
-                text = stringResource(R.string.title_forum, forum),
-                modifier = Modifier.localSharedBounds(key = ForumTitleSharedBoundsKey(forum, null)),
+                text = stringResource(R.string.title_forum, item.name),
+                modifier = Modifier.localSharedBounds(key = ForumTitleSharedBoundsKey(item.name, null)),
             )
         },
-    ) {
-        Text(text = time, fontSize = 15.sp)
-    }
+        time = item.timestamp
+    )
 }
 
+@NonRestartableComposable
+@Composable
+private fun ThreadItem(modifier: Modifier = Modifier, item: ThreadHistory) {
+    HistoryBaseItem(
+        modifier = modifier,
+        avatar = {
+            Avatar(modifier = Modifier.matchParentSize(), data = item.avatar)
+        },
+        name = { Text(text = item.name) },
+        etc = {
+            Text(text = item.title)
+        },
+        time = item.timestamp
+    )
+}
+
+@NonRestartableComposable
+@Composable
+private fun UserItem(modifier: Modifier = Modifier, item: UserHistory) {
+    val extraKey = item.id
+    HistoryBaseItem(
+        modifier = modifier,
+        avatar = {
+            Avatar(
+                modifier = Modifier.matchParentSize().sharedUserAvatar(uid = item.id, extraKey),
+                data = item.avatar,
+            )
+        },
+        name = {
+            Text(
+                text = item.name,
+                modifier = Modifier.sharedUserNickname(nickname = item.name, extraKey)
+            )
+        },
+        etc = item.username?.let { {
+            Text(
+                text = remember { "($it)" },
+                modifier = Modifier.sharedUsername(username = it, extraKey)
+            )
+        } },
+        time = item.timestamp
+    )
+}
+
+@NonRestartableComposable
 @Composable
 private fun DateHeader(modifier: Modifier = Modifier, time: String) {
     Text(
         text = time,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         fontWeight = FontWeight.Bold,
         style = MaterialTheme.typography.labelLarge
@@ -248,8 +318,6 @@ private fun <T : HistoryUiModel> HistoryColumn(
     onClick: (History) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-
     LazyColumn(
         modifier = modifier.fillMaxSize()
     ) {
@@ -258,31 +326,20 @@ private fun <T : HistoryUiModel> HistoryColumn(
             key = pagedItems.itemKey { if (it is HistoryUiModel.Item) it.history.id else it.hashCode() }
         ) { i ->
             when (val item = pagedItems[i]) {
-                is HistoryUiModel.Item -> {
-                    val history = item.history
-                    val time = remember {
-                        DateTimeUtils.getRelativeTimeString(context, history.timestamp)
-                    }
-
+                is HistoryUiModel.Item -> item.history.let { history ->
                     LongClickMenu(
                         menuContent = {
                             TextMenuItem(text = R.string.title_delete, onClick = { onDelete(history) })
                         },
-                        modifier = Modifier.animateItem(placementSpec = null),
+                        modifier = Modifier.animateItem(),
                         onClick = { onClick(history) }
                     ) {
                         when (history) {
-                            is ThreadHistory ->  {
-                                HistoryItem(avatar = history.avatar, name = history.name, time = time, title = history.title)
-                            }
+                            is ThreadHistory -> ThreadItem(item = history)
 
-                            is ForumHistory -> {
-                                ForumItem(avatar = history.avatar, forum = history.name, time = time)
-                            }
+                            is ForumHistory -> ForumItem(item = history)
 
-                            is UserHistory -> {
-                                HistoryItem(avatar = history.avatar, name = history.name, time = time)
-                            }
+                            is UserHistory -> UserItem(item = history)
 
                             else -> throw RuntimeException()
                         }

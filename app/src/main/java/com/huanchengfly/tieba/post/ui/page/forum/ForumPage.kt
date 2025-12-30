@@ -1,10 +1,13 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -113,6 +116,14 @@ import kotlinx.coroutines.launch
 
 /** The default expanded height of a Forum TopAppBar */
 private val ForumAppbarExpandHeight: Dp = 144.dp
+
+/** The default subtitle enter transition of a Forum TopAppBar */
+private val TopBarSubtitleEnterTransition: EnterTransition =
+    fadeIn(animationSpec = tween(delayMillis = 50)) + expandVertically(animationSpec = tween(delayMillis = 50))
+
+/** The default subtitle exit transition of a Forum TopAppBar */
+private val TopBarSubtitleExitTransition: ExitTransition
+    get() = ExitTransition.None
 
 @Composable
 private fun ForumAvatar(
@@ -239,6 +250,8 @@ fun ForumPage(
             inputScale = DefaultInputScale
         },
         topBar = {
+            val onTitleClicked: () -> Unit = { navigator.navigate(ForumDetail(forumName)) }
+
             CollapsingAvatarTopAppBar(
                 avatar = {
                     ForumAvatar(
@@ -253,9 +266,7 @@ fun ForumPage(
                         text = stringResource(id = R.string.title_forum, forumName),
                         modifier = Modifier
                             .localSharedBounds(ForumTitleSharedBoundsKey(forumName, transitionKey))
-                            .clickableNoIndication(enabled = forumData != null) {
-                                navigator.navigate(route = ForumDetail(forumName))
-                            },
+                            .clickableNoIndication(enabled = forumData != null, onClick = onTitleClicked),
                         maxLines = 1,
                         overflow = TextOverflow.MiddleEllipsis,
                     )
@@ -263,14 +274,11 @@ fun ForumPage(
                 subtitle = {
                     AnimatedVisibility(
                         visible = forumData != null,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically(),
+                        modifier = Modifier.clickableNoIndication(onClick = onTitleClicked),
+                        enter = TopBarSubtitleEnterTransition,
+                        exit = TopBarSubtitleExitTransition
                     ) {
-                        if (loggedIn) {
-                            ForumExpProgress(forum = forumData!!)
-                        } else if (!forumData!!.slogan.isNullOrEmpty()) {
-                            Text(text = forumData.slogan, maxLines = 1)
-                        }
+                        forumData?.let { ForumSubtitle(forum = it) }
                     }
                 },
                 navigationIcon = {
@@ -426,35 +434,44 @@ private fun ForumSignFollowActionButton(
 }
 
 @Composable
-private fun ForumExpProgress(modifier: Modifier = Modifier, forum: ForumData) {
-    AnimatedVisibility(
-        visible = forum.liked,
-        modifier = modifier.fillMaxWidth(0.75f),
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically(),
-    ) {
-        val progressAnimatable = remember { Animatable(forum.levelProgress) }
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+private fun ForumSubtitle(modifier: Modifier = Modifier, forum: ForumData) {
+    Column(modifier = modifier) {
+        AnimatedVisibility(
+            visible = forum.liked,
+            modifier = Modifier.fillMaxWidth(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
         ) {
-            LinearProgressIndicator(
-                progress = { progressAnimatable.value },
-                modifier = Modifier.height(6.dp).clip(CircleShape),
-            )
-            Text(
-                text = stringResource(R.string.tip_forum_header_liked, forum.level, forum.levelName),
-            )
-        }
+            val progressAnimatable = remember { Animatable(forum.levelProgress) }
 
-        if (forum.signed) {
-            LaunchedEffect(Unit) {
-                if (forum.levelProgress != progressAnimatable.targetValue) { // Skip signed forum
-                    progressAnimatable.snapTo(0f)
-                    delay(AnimationConstants.DefaultDurationMillis.toLong())
-                    progressAnimatable.animateTo(forum.levelProgress, spring(stiffness = Spring.StiffnessLow))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                LinearProgressIndicator(
+                    progress = { progressAnimatable.value },
+                    modifier = Modifier
+                        .height(6.dp)
+                        .fillMaxWidth(0.75f)
+                        .clip(CircleShape),
+                )
+                Text(
+                    text = stringResource(R.string.tip_forum_header_liked, forum.level, forum.levelName),
+                )
+            }
+
+            if (forum.signed) {
+                LaunchedEffect(Unit) {
+                    if (forum.levelProgress != progressAnimatable.targetValue) { // Skip signed forum
+                        progressAnimatable.snapTo(0f)
+                        delay(AnimationConstants.DefaultDurationMillis.toLong())
+                        progressAnimatable.animateTo(forum.levelProgress, spring(stiffness = Spring.StiffnessLow))
+                    }
                 }
             }
+        }
+
+        if (!forum.liked && !forum.slogan.isNullOrEmpty()) {
+            Text(text = forum.slogan, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

@@ -69,9 +69,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
+import com.huanchengfly.tieba.post.ui.widgets.compose.SharedTransitionUserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.DefaultEmptyScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
@@ -257,15 +257,16 @@ private fun LazyListScope.postTipItem(isDesc: Boolean) = this.item("LatestPostsT
 private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: Long?, collectPid: Long) {
     val navigator = LocalNavController.current
     val loggedIn = localUid != null
+    val onUserClickedListener: () -> Unit = {
+        navigator.navigate(UserProfile(user = post.author, transitionKey = post.id.toString()))
+    }
 
     if (loggedIn) {
         PostCard(
             post = post,
             immersiveMode = viewModel.isImmersiveMode,
             isCollected = post.id == collectPid,
-            onUserClick = {
-                navigator.navigate(UserProfile(post.author.id))
-            },
+            onUserClick = onUserClickedListener,
             onLikeClick = viewModel::onPostLikeClicked,
             onReplyClick = viewModel::onReplyClicked.takeUnless { viewModel.hideReply },
             onSubPostReplyClick = viewModel::onReplySubPost.takeUnless { viewModel.hideReply },
@@ -289,9 +290,7 @@ private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: L
         PostCard(
             post = post,
             immersiveMode = viewModel.isImmersiveMode,
-            onUserClick = {
-                navigator.navigate(UserProfile(post.author.id))
-            },
+            onUserClick = onUserClickedListener,
             onLikeClick = viewModel::onPostLikeClicked,
             onOpenSubPosts = { subPostId -> viewModel.onOpenSubPost(post, subPostId) },
             onMenuCopyClick = {
@@ -414,9 +413,10 @@ fun PostCard(
             Card(
                 header = {
                     if (immersiveMode) return@Card
-                    UserDataHeader(
+                    SharedTransitionUserHeader(
                         author = author,
                         desc = remember { post.getDescText(context) },
+                        extraKey = post.id,
                         onClick = onUserClick
                     ) {
                         if (post.floor > 1 && onLikeClick != null) {

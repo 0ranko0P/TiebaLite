@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
@@ -53,6 +54,7 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
@@ -81,10 +83,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.SharedTransitionUserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.UserDataHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.fixedTopBarPadding
@@ -207,6 +209,20 @@ internal fun SubPostsContent(
             )
         }.takeIf { canReply }
 
+        val onReplyPostClickedListener: ((PostData) -> Unit)? =  { it: PostData ->
+            navigator.navigate(
+                Reply(
+                    forumId = forumId,
+                    forumName = forumName.orEmpty(),
+                    threadId = threadId,
+                    postId = postId,
+                    replyUserId = it.author.id,
+                    replyUserName = it.author.nameShow,
+                    replyUserPortrait = it.author.portrait
+                )
+            )
+        }.takeIf { canReply }
+
         // non-nullable, initialize here for convenience
         val onCopyClickedListener: (String) -> Unit = { navigator.navigate(CopyText(it)) }
 
@@ -270,31 +286,19 @@ internal fun SubPostsContent(
             ) {
                 val postItem = uiState.post ?: return@SwipeUpLazyLoadColumn
                 item(key = "Post$postId", contentType = PostContentType) {
-                    Column {
-                        PostCard(
-                            post = postItem,
-                            onUserClick = {
-                                navigator.navigate(UserProfile(postItem.author.id))
-                            },
-                            onReplyClick = { it: PostData ->
-                                navigator.navigate(
-                                    Reply(
-                                        forumId = forumId,
-                                        forumName = forumName.orEmpty(),
-                                        threadId = threadId,
-                                        postId = postId,
-                                        replyUserId = it.author.id,
-                                        replyUserName = it.author.nameShow,
-                                        replyUserPortrait = it.author.portrait
-                                    )
-                                )
-                            }.takeIf { canReply },
-                            onMenuCopyClick = onCopyClickedListener,
-                            onMenuDeleteClick = viewModel::onDeletePost.takeIf { postItem.author.id == myUid } // Check is my Post
-                        )
-                        HorizontalDivider(thickness = 2.dp)
+                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides null) {
+                        Column {
+                            PostCard(
+                                post = postItem,
+                                onUserClick = { navigator.navigate(UserProfile(postItem.author)) },
+                                onReplyClick = onReplyPostClickedListener,
+                                onMenuCopyClick = onCopyClickedListener,
+                                onMenuDeleteClick = viewModel::onDeletePost.takeIf { postItem.author.id == myUid } // Check is my Post
+                            )
+                            HorizontalDivider(thickness = 2.dp)
+                        }
                     }
-                } // End of post card
+                }
 
                 if (useStickyHeaderWorkaround) {
                     item(contentType = HeaderContentType) {
@@ -313,7 +317,9 @@ internal fun SubPostsContent(
                     SubPostItem(
                         item = item,
                         onUserClick = {
-                            navigator.navigate(UserProfile(it.id))
+                            navigator.navigate(
+                                route = UserProfile(user = it, transitionKey = item.id.toString())
+                            )
                         },
                         onAgree = viewModel::onSubPostLikeClicked,
                         onMenuReplyClick = onReplySubPostClickedListener,
@@ -458,9 +464,10 @@ private fun SubPostItem(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            UserDataHeader(
+            SharedTransitionUserHeader(
                 author = item.author,
                 desc = remember { getRelativeTimeString(context, item.time) },
+                extraKey = item.id,
                 onClick = { onUserClick(item.author) }
             ) {
                 PostLikeButton(like = item.like, onClick = { onAgree(item) })

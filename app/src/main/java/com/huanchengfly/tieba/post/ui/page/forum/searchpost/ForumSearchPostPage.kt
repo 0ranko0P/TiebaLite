@@ -244,7 +244,8 @@ fun ForumSearchPostPage(
                                     item = item,
                                     onClick = threadClickListener,
                                     onValidUserClick = {
-                                        navigator.navigate(UserProfile(item.author.id))
+                                        val transitionKey = item.lazyListKey.toString()
+                                        navigator.navigate(UserProfile(item.author, transitionKey))
                                     },
                                     onForumClick = null, // Hide forum info
                                     onQuotePostClick = {
