@@ -60,6 +60,7 @@ import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.aspectRatio
 import com.huanchengfly.tieba.post.api.models.protos.buildRenders
 import com.huanchengfly.tieba.post.api.models.protos.getPicUrl
+import com.huanchengfly.tieba.post.api.models.protos.isExpired
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.arch.wrapImmutable
@@ -417,6 +418,8 @@ fun ThreadMedia(
                         }
                     }
                 )
+            } else if (medias.first().isExpired) {
+                ErrorImage(tip = stringResource(R.string.desc_expired_image))
             } else {
                 val hasMoreMedia = medias.size > MAX_PHOTO_IN_ROW
                 val mediaWidthFraction = if (isSinglePhoto) singlePhotoFraction else 1f

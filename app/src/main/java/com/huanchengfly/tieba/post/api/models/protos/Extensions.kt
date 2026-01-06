@@ -70,6 +70,9 @@ val PostInfoList.abstractText: String
         }
     }
 
+val Media.isExpired: Boolean
+    get() = type == 6 || srcPic.isEmpty()
+
 // Almost the same with PbContent.getPicUrl (OfficialProtobufTiebaApi v12.52.1.0)
 fun Media.getPicUrl(loadType: Int): String {
     return ImageUtil.getThumbnail(

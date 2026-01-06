@@ -1,10 +1,20 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.LocalHabitSettings
@@ -26,6 +36,29 @@ private fun shouldLoadImage(imageLoadSettings: Int): Boolean {
     return imageLoadSettings == ImageUtil.SETTINGS_SMART_ORIGIN
             || imageLoadSettings == ImageUtil.SETTINGS_ALL_ORIGIN
             || (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkObserver.isNetworkUnmetered)
+}
+
+@NonRestartableComposable
+@Composable
+fun ErrorImage(modifier: Modifier = Modifier, tip: String) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(painter = painterResource(R.drawable.ic_error), contentDescription = null)
+
+        Text(
+            text = tip,
+            modifier = Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.extraSmall
+                )
+                .padding(4.dp),
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
 }
 
 @OptIn(ExperimentalGlideComposeApi::class)
