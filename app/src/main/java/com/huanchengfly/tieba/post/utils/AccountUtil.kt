@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import android.webkit.CookieManager
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -8,8 +9,8 @@ import androidx.work.WorkRequest
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.arch.shareInBackground
+import com.huanchengfly.tieba.post.components.ShortcutInitializer
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
 import com.huanchengfly.tieba.post.models.database.dao.AccountDao
@@ -207,6 +208,10 @@ class AccountUtil private constructor(context: Context) {
         accountDao.upsert(account)
         if (currentAccount.first() == null) {
             accountUidSettings.set(account.uid)
+            // Init shortcuts that requires user login
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                ShortcutInitializer.initialize(loggedIn = true, context)
+            }
         }
         val workManager = context.workManager()
         NewMessageWorker.schedulePeriodically(workManager)
@@ -231,6 +236,10 @@ class AccountUtil private constructor(context: Context) {
             } else {
                 context.workManager().cancelAllWorkByTag(NewMessageWorker.TAG)
                 context.toastShort(R.string.toast_exit_account_success)
+                // Remove shortcuts that requires user login
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                    ShortcutInitializer.initialize(loggedIn = false, context)
+                }
             }
         }
     }

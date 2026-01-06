@@ -93,7 +93,7 @@
             android:exported="true"
             android:icon="@mipmap/ic_launcher_new"
             android:roundIcon="@mipmap/ic_launcher_new_round"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:resizeableActivity="true"
             android:theme="@style/Theme.Splash"
             android:windowSoftInputMode="adjustResize">
@@ -105,6 +105,7 @@
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="tblite" />
             </intent-filter>
@@ -130,29 +131,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
-
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcut_new" />
         </activity>
-
-        <activity-alias
-            android:name=".activities.MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_new"
-            android:roundIcon="@mipmap/ic_launcher_new_round"
-            android:targetActivity=".MainActivityV2">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcut_new" />
-        </activity-alias>
 
         <activity-alias
             android:name=".MainActivityIconThemed"
@@ -167,9 +146,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcut_new" />
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="tblite" />
+            </intent-filter>
         </activity-alias>
 
         <activity-alias
@@ -185,10 +167,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcut_new" />
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="tblite" />
+            </intent-filter>
         </activity-alias>
+
         <activity-alias
             android:name=".MainActivityIconOld"
             android:enabled="false"
@@ -202,9 +188,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcut_new" />
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="tblite" />
+            </intent-filter>
         </activity-alias>
 
         <activity
@@ -222,9 +211,11 @@
         <activity
             android:name=".activities.OKSignActivity"
             android:excludeFromRecents="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.huanchengfly.tieba.post.action.OKSIGN" />
+
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -299,6 +290,10 @@
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"
                 tools:node="remove" />
+
+            <meta-data
+                android:name="com.huanchengfly.tieba.post.components.ShortcutInitializer"
+                android:value="androidx.startup" />
 
             <meta-data
                 android:name="com.huanchengfly.tieba.post.components.WindowInitializer"

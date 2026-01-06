@@ -16,10 +16,14 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInExcept
 import com.huanchengfly.tieba.post.api.urlEncode
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.dialogs.LoadingDialog
+import com.huanchengfly.tieba.post.di.RepositoryEntryPoint
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import com.huanchengfly.tieba.post.workers.OKSignWorker
+import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 object TiebaUtil {
     private fun ClipData.setIsSensitive(isSensitive: Boolean): ClipData = apply {
@@ -41,7 +45,11 @@ object TiebaUtil {
 
     @JvmStatic
     fun startSign(context: Context) {
-        if (NotificationUtils.checkPermission(context)) {
+        val okSignRepo = EntryPointAccessors.fromApplication<RepositoryEntryPoint>(context).okSignRepository()
+        val isOKSignWorkerRunning = runBlocking { okSignRepo.isOKSignWorkerRunning.first() }
+        if (isOKSignWorkerRunning) {
+            context.toastShort(R.string.toast_oksign_start)
+        } else if (NotificationUtils.checkPermission(context)) {
             OKSignWorker.startExpedited(context.workManager())
         } else {
             context.toastShort(R.string.toast_no_permission_notification)

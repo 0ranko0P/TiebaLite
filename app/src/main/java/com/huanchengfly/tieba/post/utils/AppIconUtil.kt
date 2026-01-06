@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.utils
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
+import com.huanchengfly.tieba.post.components.ShortcutInitializer
 
 enum class LauncherIcons {
     NEW_ICON, NEW_ICON_THEMED, NEW_ICON_INVERT, OLD_ICON;
@@ -24,12 +25,15 @@ object AppIconUtil {
 
     fun setIcon(icon: LauncherIcons, ctx: Context) {
         val context = ctx.applicationContext
-        context.packageManager.enableComponent(getComponentName(icon, context))
+        val packageManager = context.packageManager
+        packageManager.enableComponent(getComponentName(icon, context))
         LauncherIcons.entries.forEach {
             if (it != icon) {
-                context.packageManager.disableComponent(getComponentName(it, context))
+                packageManager.disableComponent(getComponentName(it, context))
             }
         }
+        // 重新初始化快捷方式
+        ShortcutInitializer().create(context)
     }
 
     /**

@@ -31,6 +31,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -41,6 +42,8 @@ import androidx.navigation.compose.rememberNavController
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant.KEY_WELCOME_SETUP
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
+import com.huanchengfly.tieba.post.components.ShortcutInitializer
+import com.huanchengfly.tieba.post.components.ShortcutInitializer.Companion.TbShortcut
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
@@ -108,6 +111,7 @@ class MainActivityV2 : BaseComposeActivity() {
         }
         intent?.run {
             welcomeScreen = extras?.getBoolean(KEY_WELCOME_SETUP, false)
+            ShortcutInitializer.getTbShortcut(this)?.also { onNewShortcut(it) }
             data?.normalizeScheme()?.let { pendingAppLink = appLinkToNavRoute(uri = it) }
         }
     }
@@ -119,8 +123,13 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
+    private fun onNewShortcut(shortcut: TbShortcut) {
+        ShortcutManagerCompat.reportShortcutUsed(applicationContext, shortcut.id)
+    }
+
     override fun onNewIntent(intent: Intent) {
         if (intent.action == Intent.ACTION_VIEW) {
+            ShortcutInitializer.getTbShortcut(intent)?.also { onNewShortcut(it) }
             val uri = intent.data?.normalizeScheme() ?: return
             // Is TbLite DeepLink
             if (uri.scheme == TB_LITE_DOMAIN) {

@@ -105,5 +105,5 @@ object DatabaseModule {
 interface RepositoryEntryPoint {
     fun settingsRepository(): SettingsRepository
 
-    fun OKSignRepository(): OKSignRepository
+    fun okSignRepository(): OKSignRepository
 }
