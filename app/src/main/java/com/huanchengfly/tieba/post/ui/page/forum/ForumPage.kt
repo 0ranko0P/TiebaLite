@@ -97,7 +97,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
@@ -110,7 +109,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -142,7 +140,7 @@ private fun ForumAvatar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForumPage(
     forumName: String,
@@ -247,7 +245,6 @@ fun ForumPage(
         topHazeBlock = {
             blurEnabled = (listStates[pagerState.currentPage].canScrollBackward ||
                     scrollBehavior.isOverlapping) && uiState.error == null
-            inputScale = DefaultInputScale
         },
         topBar = {
             val onTitleClicked: () -> Unit = { navigator.navigate(ForumDetail(forumName)) }

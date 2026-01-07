@@ -19,6 +19,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -47,27 +48,24 @@ import dev.chrisbanes.haze.hazeSource
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
 @OptIn(ExperimentalHazeApi::class)
-val DefaultInputScale: HazeInputScale
-    // Disable input scale on dark ColorScheme
-    get() = if (ThemeUtil.isDarkColorScheme()) HazeInputScale.None else HazeInputScale.Fixed(0.33f)
+@ReadOnlyComposable
+@Composable
+fun defaultInputScale(): HazeInputScale {
+    // Disable input scale on dark ColorScheme to avoid banding artifact
+    return if (MaterialTheme.colorScheme.isDarkScheme) HazeInputScale.None else HazeInputScale.Fixed(0.33f)
+}
 
-val defaultHazeStyle: HazeStyle
-    @Composable get() {
-        val colorScheme = MaterialTheme.colorScheme
-        return remember(colorScheme.surfaceContainer) {
-            HazeStyle(
-                backgroundColor = colorScheme.surfaceContainer,
-                tint = null,
-                blurRadius = 28.dp,
-                noiseFactor = if (colorScheme.isDarkScheme) 0.2f else 0f // Reduce banding artifact on dark mode
-            )
-        }
+@Composable
+fun defaultHazeStyle(): HazeStyle {
+    val colorScheme = MaterialTheme.colorScheme
+    return remember(colorScheme.surfaceContainer) {
+        HazeStyle(
+            backgroundColor = colorScheme.surfaceContainer,
+            tint = null,
+            blurRadius = 28.dp,
+            noiseFactor = if (colorScheme.isDarkScheme) 0.2f else 0f // Reduce banding artifact on dark mode
+        )
     }
-
-@OptIn(ExperimentalHazeApi::class)
-val DefaultHazeBlock: HazeEffectScope.() -> Unit = {
-    blurEnabled = true
-    inputScale = DefaultInputScale
 }
 
 /**
@@ -76,7 +74,6 @@ val DefaultHazeBlock: HazeEffectScope.() -> Unit = {
 val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
     val navBarInsets = WindowInsets.navigationBars
     when(navBarInsets.gestureType(LocalDensity.current)) {
-
         // 全面屏手势: 透明背景
         GESTURE_DEFAULT -> Spacer(modifier = Modifier.windowInsetsBottomHeight(navBarInsets))
 
@@ -88,7 +85,7 @@ val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
                     .fillMaxWidth()
                     .windowInsetsBottomHeight(insets = navBarInsets)
                     .onNotNull(LocalHazeState.current) { haze ->
-                        hazeEffect(state = haze, style = defaultHazeStyle)
+                        hazeEffect(state = haze, style = defaultHazeStyle())
                     }
                     .background(color = trackedColorScheme.navigationContainer)
             )
@@ -103,9 +100,9 @@ val BlurNavigationBarPlaceHolder: @Composable () -> Unit = {
 inline fun BlurWrapper(
     modifier: Modifier = Modifier,
     state: HazeState? = LocalHazeState.current,
-    style: HazeStyle = defaultHazeStyle,
+    style: HazeStyle = defaultHazeStyle(),
+    content: @Composable () -> Unit,
     noinline hazeBlock: (HazeEffectScope.() -> Unit)? = null,
-    content: @Composable () -> Unit
 ) {
     Box(modifier = modifier.hazeEffect(state, style, hazeBlock)) {
         content()
@@ -135,11 +132,12 @@ inline fun BlurWrapper(
  *
  * @see LocalHazeState
  */
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun BlurScaffold(
     modifier: Modifier = Modifier,
     attachHazeContentState: Boolean = true,
-    hazeStyle: HazeStyle = defaultHazeStyle,
+    hazeStyle: HazeStyle = defaultHazeStyle(),
     topBar: @Composable () -> Unit = {},
     topHazeBlock: (HazeEffectScope.() -> Unit)? = null,
     bottomBar: @Composable () -> Unit = BlurNavigationBarPlaceHolder,
@@ -155,6 +153,8 @@ fun BlurScaffold(
     val isTranslucent = MaterialTheme.colorScheme.isTranslucent
     if (!isTranslucent && !LocalUISettings.current.reduceEffect) {
         val hazeState = remember { HazeState() }
+        val hazeInputScale = defaultInputScale()
+
         CompositionLocalProvider(
             LocalSnackbarHostState provides snackbarHostState,
             LocalHazeState provides hazeState,
@@ -162,12 +162,20 @@ fun BlurScaffold(
             Scaffold(
                 modifier = modifier,
                 topBar = {
-                    BlurWrapper(state = hazeState, style = hazeStyle, hazeBlock = topHazeBlock, content = topBar)
+                    BlurWrapper(state = hazeState, style = hazeStyle, content = topBar) {
+                        inputScale = hazeInputScale
+                        topHazeBlock?.invoke(this)
+                    }
                 },
                 bottomBar = if (bottomBar === BlurNavigationBarPlaceHolder) {
                     bottomBar
                 } else {
-                    { BlurWrapper(state = hazeState, style = hazeStyle, hazeBlock = bottomHazeBlock, content = bottomBar) }
+                    {
+                        BlurWrapper(state = hazeState, style = hazeStyle, content = bottomBar) {
+                            inputScale = hazeInputScale
+                            bottomHazeBlock?.invoke(this)
+                        }
+                    }
                 },
                 snackbarHost = snackbarHost,
                 floatingActionButton = floatingActionButton,

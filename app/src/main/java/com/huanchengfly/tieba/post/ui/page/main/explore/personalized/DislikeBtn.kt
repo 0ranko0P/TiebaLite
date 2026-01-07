@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.ButtonDefaults
@@ -31,18 +30,19 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultHazeBlock
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.containerColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.contentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.hazeEffect
 
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Dislike(
     dislikeResource: List<Dislike>,
@@ -52,6 +52,7 @@ fun Dislike(
     onDislikeClicked: () -> Unit
 ) {
     val hazeState = LocalHazeState.current
+    val hazeInputScale = defaultInputScale()
     val menuState = rememberMenuState()
     val buttonColors = ButtonDefaults.buttonColors(
         containerColor = MaterialTheme.colorScheme.tertiary,
@@ -117,7 +118,9 @@ fun Dislike(
         modifier = Modifier
             .onNotNull(hazeState) {
                 hazeSource(state = it, zIndex = 1f)
-                    .hazeEffect(state = it, style = defaultHazeStyle, block = DefaultHazeBlock)
+                    .hazeEffect(state = it, style = defaultHazeStyle()) {
+                        inputScale = hazeInputScale
+                    }
                     .background(color = MaterialTheme.colorScheme.background.copy(alpha = 0.74f))
              },
         menuState = menuState,

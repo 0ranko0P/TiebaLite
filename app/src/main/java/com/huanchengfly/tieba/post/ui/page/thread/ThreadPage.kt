@@ -84,6 +84,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.models.database.Account
@@ -104,8 +105,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultHazeBlock
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
@@ -130,7 +129,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.Job
@@ -190,7 +188,7 @@ private fun LazyListState.middleVisiblePost(uiState: ThreadUiState): PostData? =
     return uiState.data.fastFirstOrNull { p -> p.id == postId } ?: uiState.firstPost
 }
 
-@OptIn(ExperimentalHazeApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThreadPage(
     threadId: Long,
@@ -357,8 +355,7 @@ fun ThreadPage(
     ) {
         BlurScaffold(
             topHazeBlock = {
-                blurEnabled = lazyListState.canScrollBackward
-                inputScale = DefaultInputScale
+                blurEnabled = lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping
             },
             attachHazeContentState = false, // Attach manually since we're blurring the BottomSheet
             topBar = {
@@ -398,7 +395,6 @@ fun ThreadPage(
             },
             bottomHazeBlock = {
                 blurEnabled = lazyListState.canScrollForward
-                inputScale = DefaultInputScale
             },
             snackbarHostState = snackbarHostState,
             snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
@@ -487,7 +483,7 @@ fun ThreadPage(
                                 end = padding.calculateEndPadding(LocalLayoutDirection.current)
                             )
                             .onNotNull(hazeState) {
-                                hazeEffect(state = it, defaultHazeStyle, DefaultHazeBlock)
+                                hazeEffect(state = it, style = defaultHazeStyle())
                             }
                             .background(TiebaLiteTheme.extendedColorScheme.sheetContainerColor)
                             .padding(top = 16.dp)

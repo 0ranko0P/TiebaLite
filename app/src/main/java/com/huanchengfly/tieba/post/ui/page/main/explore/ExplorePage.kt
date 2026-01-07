@@ -70,15 +70,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultHazeBlock
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -171,7 +168,7 @@ private fun ExplorePageTab(
     }
 }
 
-@OptIn(ExperimentalHazeApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExplorePage() {
     val context = LocalContext.current
@@ -231,7 +228,6 @@ fun ExplorePage() {
     BlurScaffold(
         topHazeBlock = {
             blurEnabled = !fabHideStates[pagerState.currentPage] || pagerState.isScrolling
-            inputScale = DefaultInputScale
         },
         topBar = {
             TopAppBar(
@@ -250,7 +246,6 @@ fun ExplorePage() {
             }
         },
         bottomBar = emptyBlurBottomNavigation, // MainPage workaround when enabling BottomBar blurring
-        bottomHazeBlock = DefaultHazeBlock,
         floatingActionButton = {
             // FAB visibility: scrolling forward, pager not scrolling, current page not refreshing
             val visible by remember {

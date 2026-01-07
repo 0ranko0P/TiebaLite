@@ -51,6 +51,7 @@ import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
@@ -75,7 +76,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
@@ -228,8 +228,7 @@ internal fun SubPostsContent(
 
         BlurScaffold(
             topHazeBlock = {
-                blurEnabled = lazyListState.canScrollBackward
-                inputScale = DefaultInputScale
+                blurEnabled = lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping
             },
             topBar = {
                 TitleBar(
@@ -262,10 +261,7 @@ internal fun SubPostsContent(
                     )
                 }
             },
-            bottomHazeBlock = {
-                blurEnabled = lazyListState.canScrollForward
-                inputScale = DefaultInputScale
-            }
+            bottomHazeBlock = { blurEnabled = lazyListState.canScrollForward }
         ) { padding ->
             val contentPadding = padding.fixedTopBarPadding()
 

@@ -94,7 +94,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
@@ -112,7 +111,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlin.random.Random
 
 private val FORUM_AVATAR_SIZE = 40.dp
@@ -381,7 +379,7 @@ private sealed interface ForumType {
     object GridItem: ForumType
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePage(
     viewModel: HomeViewModel = hiltViewModel<HomeViewModel>(),
@@ -444,12 +442,10 @@ fun HomePage(
         },
         topHazeBlock = {
             blurEnabled = gridState.canScrollBackward
-            inputScale = DefaultInputScale
         },
         bottomBar = emptyBlurBottomNavigation, // MainPage workaround when enabling BottomBar blurring
         bottomHazeBlock = {
             blurEnabled = gridState.canScrollForward
-            inputScale = DefaultInputScale
         },
     ) { contentPaddings ->
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
