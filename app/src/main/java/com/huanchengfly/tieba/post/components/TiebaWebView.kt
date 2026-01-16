@@ -27,6 +27,9 @@ class TiebaWebView(context: Context): WebView(context) {
      * */
     private var lastValidRoute: String? = null
 
+    val isContentVerticalScrollable: Boolean
+        get() = measuredHeight < computeVerticalScrollRange()
+
     fun canNavigate(route: Destination): Boolean {
         val jsonRoute = Json.encodeToString(serializer(route::class.createType()), route)
         if (lastValidRoute == jsonRoute) {

@@ -25,13 +25,13 @@ import javax.inject.Inject
 /**
  * UI State for the Welcome Page
  *
- * @param disclaimerConfirmed whether user confirmed the disclaimer or not
+ * @param uaAccepted is User Agreement accepted
  * @param permissionEssential essential permissions
  * @param permissionOptional optional permissions
  */
 @Immutable
 data class WelcomeState(
-    val disclaimerConfirmed: Boolean = false,
+    val uaAccepted: Boolean = false,
     val permissionEssential: List<String>? = null,
     val permissionOptional: List<String>? = null,
 ) {
@@ -71,7 +71,7 @@ class WelcomeViewModel @Inject constructor(
         }
     }
 
-    fun onDisclaimerConfirmed() = _uiState.set { copy(disclaimerConfirmed = true) }
+    fun onUaAcceptStateChanged(state: Boolean) = _uiState.set { copy(uaAccepted = state) }
 
     fun onPermissionResult(permission: String) {
         if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
