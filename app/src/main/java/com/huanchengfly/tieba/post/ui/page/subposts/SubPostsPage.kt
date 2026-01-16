@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -91,6 +90,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProper
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.fixedTopBarPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.scrollToItemWithHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.stickyHeaderBackground
 import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
@@ -99,9 +99,7 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import dev.chrisbanes.haze.ExperimentalHazeApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @NonRestartableComposable
@@ -113,7 +111,7 @@ fun SubPostsSheetPage(
 ) {
     ProvideNavigator(navigator) {
         with(params) {
-            SubPostsContent(viewModel, forumId, threadId, postId, subPostId, true, navigator::navigateUp)
+            SubPostsContent(viewModel, forumId, threadId, postId, true, navigator::navigateUp)
         }
     }
 }
@@ -122,19 +120,19 @@ private const val PostContentType = 0
 private val HeaderContentType = Unit
 // SubpostContentType use Null by default
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SubPostsContent(
     viewModel: SubPostsViewModel,
     forumId: Long,
     threadId: Long,
     postId: Long,
-    subPostId: Long = 0L,
     isSheet: Boolean = false,
     onNavigateUp: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val navigator = LocalNavController.current
+    val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
     val account = LocalAccount.current
     val myUid = account?.uid
     val canReply = account != null && !LocalHabitSettings.current.hideReply
@@ -153,14 +151,19 @@ internal fun SubPostsContent(
             is CommonUiEvent.Toast -> toastShort(text = it.message)
 
             is SubPostsUiEvent.ScrollToSubPosts -> {
-                val targetIndex = 2 + uiState.subPosts.indexOfFirst { s -> s.id == subPostId }
-                delay(AnimationConstants.DefaultDurationMillis.toLong())
-                lazyListState.animateScrollToItem(targetIndex.coerceIn(0, uiState.subPosts.lastIndex))
+                val index = 2 + it.index // Post + Sticky Header + Subpost index
+                if (useStickyHeaderWorkaround) {
+                    lazyListState.scrollToItemWithHeader(index) { item ->
+                        item.contentType == HeaderContentType
+                    }
+                } else {
+                    lazyListState.animateScrollToItem(index)
+                }
             }
 
             is SubPostsUiEvent.DeletePostFailed -> toastShort(R.string.toast_delete_failure, it.message)
 
-            else ->  {/* Unknown UI event */}
+            else -> toastShort(it::class.java.simpleName) // or throw
         }
     }
 
@@ -190,7 +193,6 @@ internal fun SubPostsContent(
         error = uiState.error,
         onReload = viewModel::onRefresh,
     ) {
-        val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
         val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
         // Initialize nullable click listeners:

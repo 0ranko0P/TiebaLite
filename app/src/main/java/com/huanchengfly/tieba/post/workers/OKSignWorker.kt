@@ -102,23 +102,21 @@ class OKSignWorker @AssistedInject constructor(
         /**
          * Channel ID of signing notifications.
          *
-         * Note: Inherited from OKSignService, do not modify.
-         *
-         * @since 1.3.0
+         * @since 3.8.1 α
          * */
         private const val NOTIFICATION_CHANNEL_ID = "1"
 
         /**
          * ID of signing progress notification.
          *
-         * Note: Inherited from OKSignService, do not modify.
-         *
-         * @since 1.3.0
+         * @since 3.8.1 α
          * */
         private const val NOTIFICATION_ID = 1
 
         /**
          * ID of signing result notification.
+         *
+         * @since 4.0.0
          *
          * @see OKSignNotificationUpdater.onFinish
          * */
@@ -126,6 +124,8 @@ class OKSignWorker @AssistedInject constructor(
 
         /**
          * ID of official signing failed notification.
+         *
+         * @since 4.0.0
          *
          * @see OKSignNotificationUpdater.onMSignFailed
          * */

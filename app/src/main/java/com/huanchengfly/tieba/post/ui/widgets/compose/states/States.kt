@@ -5,11 +5,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
-import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -90,14 +91,16 @@ fun StateScreen(
     emptyScreen: @Composable StateScreenScope.() -> Unit = { DefaultEmptyScreen() },
     errorScreen: @Composable StateScreenScope.() -> Unit = DefaultErrorScreen,
     loadingScreen: @Composable StateScreenScope.() -> Unit = DefaultLoadingScreen,
-    screenPadding: PaddingValues = WindowInsets.safeContent.asPaddingValues(),
+    screenPadding: PaddingValues = WindowInsets.systemBars.asPaddingValues(),
     content: @Composable StateScreenScope.() -> Unit,
 ) {
     val stateScreenScope = remember(key1 = onReload) { StateScreenScope(onReload) }
     Box(
         modifier = modifier
             .fillMaxSize()
-            .onCase(isError || isLoading || isEmpty) { padding(screenPadding) },
+            .onCase(isError || isLoading || isEmpty) {
+                padding(screenPadding).consumeWindowInsets(screenPadding)
+            },
         contentAlignment = Alignment.Center
     ) {
         if (isError) {
@@ -123,12 +126,12 @@ fun StateScreen(
     emptyScreen: @Composable StateScreenScope.() -> Unit = { DefaultEmptyScreen() },
     errorScreen: @Composable StateScreenScope.() -> Unit = { ErrorScreen(error) },
     loadingScreen: @Composable StateScreenScope.() -> Unit = DefaultLoadingScreen,
-    screenPadding: PaddingValues = WindowInsets.safeContent.asPaddingValues(),
+    screenPadding: PaddingValues = WindowInsets.systemBars.asPaddingValues(),
     content: @Composable StateScreenScope.() -> Unit,
 ) =
     StateScreen(
-        modifier,
-        isEmpty,
+        modifier = modifier,
+        isEmpty = isEmpty,
         isError = error != null,
         isLoading = isLoading,
         onReload = onReload,

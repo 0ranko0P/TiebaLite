@@ -302,10 +302,11 @@ private fun UserItem(modifier: Modifier = Modifier, item: UserHistory) {
 @NonRestartableComposable
 @Composable
 private fun DateHeader(modifier: Modifier = Modifier, time: String) {
+    val isToday = time.length <= 5
     Text(
         text = time,
         modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = if (isToday) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
         fontWeight = FontWeight.Bold,
         style = MaterialTheme.typography.labelLarge
     )
@@ -346,9 +347,11 @@ private fun <T : HistoryUiModel> HistoryColumn(
                     }
                 }
 
-                is HistoryUiModel.DateHeader -> DateHeader(time = item.date)
+                is HistoryUiModel.DateHeader -> {
+                    DateHeader(modifier = Modifier.animateItem(), time = item.date)
+                }
 
-                null -> UserHeaderPlaceholder(modifier = modifier.padding(16.dp))
+                null -> UserHeaderPlaceholder(modifier = Modifier.padding(16.dp))
             }
         }
     }

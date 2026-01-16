@@ -54,7 +54,7 @@ class PrefsScope<T>(
     fun Group(@StringRes titleRes: Int, content: @Composable () -> Unit) {
         Group(
             title = {
-                Text(text = stringResource(id = titleRes))
+                Text(text = stringResource(id = titleRes), modifier = Modifier.padding(start = 20.dp))
             },
             content = content
         )

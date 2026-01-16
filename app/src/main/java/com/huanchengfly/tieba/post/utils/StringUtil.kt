@@ -126,5 +126,9 @@ object StringUtil {
     }
 
     // remove control chars
-    fun String.normalized(): String = replace(CONTROL_CHAR_REGEX_PATTERN, "")
+    fun String.normalized(): String = if (isNullOrEmpty()) {
+        this
+    } else {
+        replace(CONTROL_CHAR_REGEX_PATTERN, "")
+    }
 }

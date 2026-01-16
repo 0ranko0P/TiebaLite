@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
@@ -20,9 +21,11 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.util.fastFirstOrNull
 import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
+import kotlinx.coroutines.delay
 
 // Workaround to enable background blurring on StickyHeader
 @Composable @ReadOnlyComposable
@@ -78,5 +81,38 @@ fun Modifier.stickyHeaderBackground(appBarState: TopAppBarState, listState: Lazy
             }
             drawRect(color)
         }
+    }
+}
+
+/**
+ * Workaround for overlapped [StickyHeaderOverlay] when [fixedTopBarPadding] is enabled.
+ * */
+suspend fun LazyListState.scrollToItemWithHeader(
+    index: Int,
+    scrollOffset: Int = 0,
+    animate: Boolean = true,
+    isHeader: (LazyListItemInfo) -> Boolean
+) {
+    if (!canScrollBackward && index == 0 && scrollOffset == 0) {
+        return  // Skip unnecessary scrolling
+    }
+    // Laggy list, delay 100ms
+    if (layoutInfo.visibleItemsInfo.isEmpty()) delay(100)
+
+    val totalOffset = if (index <= 1 || layoutInfo.visibleItemsInfo.isEmpty()) {
+        scrollOffset
+    } else {
+        // First item occupied all the space, snap to header
+        if (layoutInfo.visibleItemsInfo.size == 1) {
+            scrollToItem(1, scrollOffset = 0)
+        }
+        val headerSize = layoutInfo.visibleItemsInfo.fastFirstOrNull(isHeader)?.size ?: 0
+        scrollOffset - headerSize
+    }
+
+    if (animate) {
+        animateScrollToItem(index, scrollOffset = totalOffset)
+    } else {
+        scrollToItem(index, scrollOffset = totalOffset)
     }
 }

@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
-import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastFilter
@@ -24,7 +23,6 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +37,7 @@ import javax.inject.Inject
 sealed interface SubPostsUiEvent : UiEvent {
     class DeletePostFailed(val message: String) : SubPostsUiEvent
 
-    object ScrollToSubPosts : SubPostsUiEvent
+    class ScrollToSubPosts(val id: Long?, val index: Int) : SubPostsUiEvent
 }
 
 @Immutable
@@ -62,12 +60,13 @@ data class SubPostsUiState(
 @Stable
 @HiltViewModel
 class SubPostsViewModel @Inject constructor(
-    @ApplicationContext val context: Context,
     private val threadRepo: PbPageRepository,
     savedStateHandle: SavedStateHandle
 ) : BaseStateViewModel<SubPostsUiState>() {
 
     private val params = savedStateHandle.toRoute<Destination.SubPosts>()
+
+    private var scrollToSubpostId: Long = params.subPostId
 
     private val currentAccount = AccountUtil.getInstance().currentAccount
 
@@ -104,6 +103,17 @@ class SubPostsViewModel @Inject constructor(
 
     override fun createInitialState(): SubPostsUiState = SubPostsUiState()
 
+    private suspend fun findScrollToSubpostIndex(subposts: List<SubPostItemData>): Int {
+        val index = if (scrollToSubpostId <= 0 || subposts.isEmpty()) {
+            0 // Scroll to top
+        } else {
+            withContext(Dispatchers.Default) {
+                subposts.indexOfFirst { it.id == scrollToSubpostId }.coerceIn(0, subposts.lastIndex)
+            }
+        }
+        return index
+    }
+
     private fun refreshInternal() {
         _uiState.set { SubPostsUiState(isRefreshing = true) }
         launchInVM {
@@ -118,7 +128,9 @@ class SubPostsViewModel @Inject constructor(
                     thread = rec.thread
                 )
             }
-            emitUiEvent(SubPostsUiEvent.ScrollToSubPosts)
+            val scrollToIndex = findScrollToSubpostIndex(rec.subPosts)
+            emitUiEvent(SubPostsUiEvent.ScrollToSubPosts(scrollToSubpostId, scrollToIndex))
+            scrollToSubpostId = 0 // Reset
         }
     }
 

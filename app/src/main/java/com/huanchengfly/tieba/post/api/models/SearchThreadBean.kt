@@ -35,6 +35,12 @@ data class SearchThreadBean(
         val postList: List<ThreadInfoBean> = emptyList(),
     )
 
+    /**
+     * Note: Server returns formatted Tieba short number, handle carefully.
+     *
+     * @see [com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString]
+     * @see [com.huanchengfly.tieba.post.utils.StringUtil.tiebaNumToLong]
+     * */
     @Immutable
     @Serializable
     data class ThreadInfoBean(
@@ -47,11 +53,11 @@ data class SearchThreadBean(
         @SerialName("modified_time")
         val modifiedTime: Long,
         @SerialName("post_num")
-        val postNum: Int,
+        val postNum: String,
         @SerialName("like_num")
-        val likeNum: Long,
+        val likeNum: String,
         @SerialName("share_num")
-        val shareNum: Long,
+        val shareNum: String,
         @SerialName("forum_id")
         val forumId: Long,
         @SerialName("forum_name")

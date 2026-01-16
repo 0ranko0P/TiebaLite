@@ -692,7 +692,7 @@ private fun UserIntro(modifier: Modifier = Modifier, profile: UserProfile, lands
         Text(
             text = profile.intro ?: stringResource(id = R.string.tip_no_intro),
             style = MaterialTheme.typography.bodyMedium,
-            maxLines = if (landscape) Int.MAX_VALUE else 1,
+            maxLines = if (landscape) Int.MAX_VALUE else 3,
             overflow = TextOverflow.Ellipsis
         )
 

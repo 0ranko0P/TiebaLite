@@ -214,6 +214,7 @@ private fun <T> BlockListScaffold(
                     isEmpty = items.isNullOrEmpty(),
                     isError = false,
                     isLoading = items == null,
+                    screenPadding = contentPadding,
                 ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),

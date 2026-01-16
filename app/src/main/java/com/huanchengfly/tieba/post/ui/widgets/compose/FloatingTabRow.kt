@@ -1,9 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -127,23 +124,7 @@ private fun TabTransition(
     selected: Boolean,
     content: @Composable () -> Unit
 ) {
-    val transition = updateTransition(selected)
-    val color by
-    transition.animateColor(
-        transitionSpec = {
-            if (false isTransitioningTo true) {
-                tween(
-                    durationMillis = TabFadeInAnimationDuration,
-                    delayMillis = TabFadeInAnimationDelay,
-                    easing = LinearEasing
-                )
-            } else {
-                tween(durationMillis = TabFadeOutAnimationDuration, easing = LinearEasing)
-            }
-        }
-    ) {
-        if (it) activeColor else inactiveColor
-    }
+    val color by animateColorAsState(if (selected) activeColor else inactiveColor)
     CompositionLocalProvider(LocalContentColor provides color, content = content)
 }
 
@@ -156,8 +137,3 @@ private fun defaultFloatingTabColors() = with(MaterialTheme.colorScheme) {
         disabledContentColor = onSurface
     )
 }
-
-// Tab transition specifications
-private const val TabFadeInAnimationDuration = 150
-private const val TabFadeInAnimationDelay = 100
-private const val TabFadeOutAnimationDuration = 100
