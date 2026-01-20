@@ -99,7 +99,7 @@ class HomeRepository @Inject constructor(
     }
 
     suspend fun updateLikedForums(uid: Long, forums: List<LocalLikedForum>) {
-        localDataSource.upsertAll(forums)
+        localDataSource.upsertAll(uid, forums)
         // save last update timestamp
         timestampDao.upsert(Timestamp(uid, TYPE_FORUM_LAST_UPDATED))
     }

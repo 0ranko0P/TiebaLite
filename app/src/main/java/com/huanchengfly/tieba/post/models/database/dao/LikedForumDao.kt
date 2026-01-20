@@ -18,13 +18,13 @@ interface LikedForumDao {
     suspend fun upsert(forum: LocalLikedForum)
 
     /**
-     * Replace user liked forums in the database.
+     * Insert or update user liked forums in the database.
      *
+     * @param uid user id
      * @param forums forums to be updated.
      */
     @Transaction
-    suspend fun upsertAll(forums: List<LocalLikedForum>) {
-        val uid = forums.firstOrNull()?.uid ?: return
+    suspend fun upsertAll(uid: Long, forums: List<LocalLikedForum>) {
         deleteAllByUid(uid)
         forums.forEach { forum -> upsert(forum) }
     }
