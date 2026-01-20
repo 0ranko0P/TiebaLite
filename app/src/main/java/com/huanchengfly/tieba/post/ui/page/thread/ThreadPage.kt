@@ -827,7 +827,7 @@ private fun ThreadOrPostDeleteDialog(
                                 deleting = false
                             }
                         },
-                        content = { Text(text = stringResource(R.string.button_sure_default)) }
+                        content = { Text(text = stringResource(R.string.button_sure)) }
                     )
                 }
             }

@@ -8,12 +8,6 @@
     <color name="ic_launcher_new_themed_foreground_1">#FFA7C5F0</color>
     <color name="ic_launcher_new_themed_foreground_2">#FF538ACE</color>
 
-    <color name="colorPrimary">#FFFFFFFF</color>
-    <color name="colorAccent">#FF4477E0</color>
-    <color name="transparent">#00000000</color>
-
-    <color name="white">#FFF</color>
-    <color name="black">#000</color>
     <color name="black_a70">#B3000000</color>
     <color name="tieba">#4477E0</color>
 
@@ -22,8 +16,6 @@
     <color name="default_color_text">#FF31343C</color>
     <color name="default_color_text_on_primary">#FFFFFFFF</color>
     <color name="default_color_text_secondary">#FF545967</color>
-    <color name="default_color_text_disabled">#FFA8ADBB</color>
-    <color name="default_color_background">#FFFFFFFF</color>
 
     <color name="theme_color_card_light">#FFFFFFFF</color>
 

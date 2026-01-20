@@ -159,9 +159,6 @@
     <string name="button_finish">完成</string>
     <string name="tip_primary_color">主题色</string>
     <string name="title_color_picker_primary">选择主题色</string>
-    <string name="cpv_select">选择</string>
-    <string name="cpv_custom">自定义</string>
-    <string name="cpv_presets">预设</string>
     <string name="title_dialog_unfollow_forum">确定要取消关注%s吧吗？</string>
     <string name="menu_save_audio">保存语音</string>
     <string name="title_hot_message_list">话题榜</string>
@@ -435,7 +432,6 @@
     <string name="title_settings_use_themed_icon">应用图标使用动态取色</string>
     <string name="tip_themed_icon_unsupported">当前正在使用的应用图标暂不支持动态取色</string>
     <string name="btn_copy_all">复制全部</string>
-    <string name="desc_photo">图片</string>
     <string name="btn_open_photos">查看图片 (%d)</string>
     <string name="title_hide_media">收起贴子列表的图片和视频</string>
     <string name="title_lift_up_bottom_bar">全面屏优化</string>
@@ -467,8 +463,7 @@
     <string name="button_add_regex">正则表达式</string>
     <string name="button_ok">我知道了</string>
     <string name="button_submit">提交</string>
-    <string name="button_sure">确定(%1$d)</string>
-    <string name="button_sure_default">确定</string>
+    <string name="button_sure">确定</string>
     <string name="button_back">返回</string>
     <string name="button_grant">授权</string>
     <string name="desc_show">显示</string>

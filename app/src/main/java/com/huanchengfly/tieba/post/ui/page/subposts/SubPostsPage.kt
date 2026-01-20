@@ -522,7 +522,7 @@ private fun DeletePostSubPostDialog(
                                 deleting = false
                             }
                         },
-                        content = { Text(text = stringResource(R.string.button_sure_default)) }
+                        content = { Text(text = stringResource(R.string.button_sure)) }
                     )
                 }
             }

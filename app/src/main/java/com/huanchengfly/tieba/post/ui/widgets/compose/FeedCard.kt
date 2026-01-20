@@ -396,7 +396,7 @@ fun ThreadMedia(
                     icon = {
                         Icon(
                             imageVector = if (isSinglePhoto) Icons.Rounded.Photo else Icons.Rounded.PhotoLibrary,
-                            contentDescription = stringResource(id = R.string.desc_photo)
+                            contentDescription = stringResource(id = R.string.desc_image)
                         )
                     },
                     text = {

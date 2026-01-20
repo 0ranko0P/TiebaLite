@@ -84,7 +84,7 @@ class TbWebChromeClient(
     override fun onJsAlert(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
         AlertDialog.Builder(view?.context ?: context)
             .setMessage(message)
-            .setPositiveButton(R.string.button_sure_default) { _, _ ->
+            .setPositiveButton(R.string.button_sure) { _, _ ->
                 result?.confirm()
             }
             .setCancelable(false)

@@ -118,7 +118,7 @@ fun TimePickerDialog(
     onConfirm: (TimePickerState) -> Unit,
     dialogState: DialogState = rememberDialogState(),
     onCancel: (() -> Unit)? = null,
-    confirmText: String = stringResource(id = R.string.button_sure_default),
+    confirmText: String = stringResource(id = R.string.button_sure),
     cancelText: String = stringResource(id = R.string.button_cancel),
 ) {
     val isWindowHeightCompact = isWindowHeightCompact()
@@ -213,7 +213,7 @@ fun ConfirmDialog(
     modifier: Modifier = Modifier,
     onCancel: (() -> Unit)? = null,
     onDismiss: (() -> Unit)? = null,
-    confirmText: String = stringResource(id = R.string.button_sure_default),
+    confirmText: String = stringResource(id = R.string.button_sure),
     cancelText: String = stringResource(id = R.string.button_cancel),
     title: @Composable (() -> Unit)? = null,
     content: @Composable (DialogScope.() -> Unit)? = null,
@@ -249,7 +249,7 @@ fun PromptDialog(
     onValueChange: (newVal: String, oldVal: String) -> Boolean = { _, _ -> true },
     isError: ((String) -> Boolean)? = null,
     onCancel: (() -> Unit)? = null,
-    confirmText: String = stringResource(id = R.string.button_sure_default),
+    confirmText: String = stringResource(id = R.string.button_sure),
     cancelText: String = stringResource(id = R.string.button_cancel),
     title: @Composable (() -> Unit)? = null,
     content: @Composable (DialogScope.() -> Unit) = {},
