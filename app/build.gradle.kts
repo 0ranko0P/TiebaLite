@@ -77,13 +77,12 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")
             applicationIdSuffix = ".benchmark"
-            versionNameSuffix = "-benchmark"
             isProfileable = true
             proguardFile("benchmark-rules.pro")
         }
 
         // Variant for composition tracing, auto-selected by benchmarkComposeTracing in Macrobenchmark
-        create("ComposeTracing") {
+        create("composeTracing") {
             initWith(getByName("benchmarkRelease"))
             proguardFiles.removeIf { it.name == "compose-rules.pro" } // Keep tracing API
         }

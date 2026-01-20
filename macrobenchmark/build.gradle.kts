@@ -20,7 +20,7 @@ android {
     }
 
     buildTypes {
-        create("ComposeTracing") {
+        create("composeTracing") {
             defaultConfig.testInstrumentationRunnerArguments["androidx.benchmark.fullTracing.enable"] = "true"
         }
     }
