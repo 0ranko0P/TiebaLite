@@ -1,0 +1,77 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build
+    if: github.repository == '0ranko0P/TiebaLite'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5.1.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Generate keystore
+        run: |
+          echo ${{ secrets.KEYSTORE }} | /usr/bin/base64 --decode > key.jks
+          echo KEYSTORE_FILE="key.jks" > signing.properties
+          echo KEYSTORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}" >> signing.properties
+          echo KEY_ALIAS="${{ secrets.RELEASE_KEY_ALIAS }}" >> signing.properties
+          echo KEY_PASSWORD="${{ secrets.RELEASE_KEY_PASSWORD }}" >> signing.properties
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+
+      - name: Build project
+        run: ./gradlew assembleRelease --no-configuration-cache
+
+      - name: Rename release apk
+        run: |
+          mv app/build/outputs/apk/release/app-release.apk "TiebaLite-${{ github.ref_name }}.apk"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: release-artifact
+          path: 'TiebaLite-*.apk'
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs: [build]
+
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: release-artifact
+          path: out
+          merge-multiple: true
+
+      - name: Delete release artifact
+        uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
+        with:
+          name: release-artifact
+          failOnError: false
+
+      - name: Github Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: true
+          prerelease: ${{ contains(github.ref_name, 'beta') }}
+          generate_release_notes: true
+          files: 'out/TiebaLite-*.apk'
