@@ -45,7 +45,7 @@ jobs:
       - name: Run local tests
         id: localtest
         continue-on-error: true
-        run: ./gradlew :app:testDebugUnitTest --no-configuration-cache --stacktrace
+        run: ./gradlew :app:testDebugUnitTest --no-scan --no-configuration-cache --stacktrace
 
       - name: Upload test report
         if: steps.localtest.outcome == 'failure'
