@@ -21,17 +21,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.DropDownPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.EditTextPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TipPref
 import com.huanchengfly.tieba.post.ui.page.Destination.Login
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.DropDownPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.EditTextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TipPref
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -53,7 +52,7 @@ fun AccountManagePage(
     ) { paddingValues ->
         val context = LocalContext.current
         val accountUtil = remember { AccountUtil.getInstance() }
-        val account = LocalAccount.current ?: throw TiebaNotLoggedInException()
+        val account = LocalAccount.current ?: return@MyScaffold
         val accounts by accountUtil.allAccounts.collectAsStateWithLifecycle(emptyList())
 
         PrefsScreen(

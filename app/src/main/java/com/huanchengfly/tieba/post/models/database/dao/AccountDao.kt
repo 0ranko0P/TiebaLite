@@ -43,7 +43,7 @@ interface AccountDao {
      * @param uid account id
      */
     @Query("SELECT * FROM account WHERE uid = :uid")
-    fun observeById(uid: Long): Flow<Account>
+    fun observeById(uid: Long): Flow<Account?>
 
     /**
      * Select all accounts from the account table.
