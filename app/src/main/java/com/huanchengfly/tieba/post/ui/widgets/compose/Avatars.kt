@@ -49,7 +49,7 @@ fun Avatar(
     if (!data.isNullOrEmpty()) {
         Avatar(modifier.size(size), data, contentDescription, shape)
     } else {
-        Avatar(R.drawable.ic_account, size, null, modifier)
+        Avatar(R.drawable.ic_error, size, null, modifier)
     }
 }
 
