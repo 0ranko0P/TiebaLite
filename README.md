@@ -1,14 +1,17 @@
 # <p align="center">Tieba Lite</p>
-<p align="center">
-    <a href="https://github.com/HuanCheng65/TiebaLite/actions/workflows/build.yml">
-        <img alt="Build Status" src="https://github.com/HuanCheng65/TiebaLite/actions/workflows/build.yml/badge.svg?branch=4.0-dev">
+<div align="center">
+    <a href="https://github.com/0ranko0P/TiebaLite/blob/main/LICENSE">
+        <img alt="License" src="https://img.shields.io/github/license/0ranko0P/TiebaLite">
+    </a>
+    <a href="https://github.com/0ranko0P/TiebaLite/actions/workflows/build.yml">
+        <img alt="Build Status" src="https://github.com/0ranko0P/TiebaLite/actions/workflows/build.yml/badge.svg?branch=main">
     </a>
     <a href="https://t.me/tblite_discuss">
         <img alt="Status" src="https://img.shields.io/badge/-Telegram-blue?logo=telegram&style=flat">
     </a>
-</p>
-
-贴吧 Lite 是一个**非官方**的贴吧客户端。
+    <p>极简的贴吧<strong>第三方</strong>客户端</p>
+    <img src="assets/Screenshots.png" alt="Screenshots" />
+</div>
 
 ## 说明
 
