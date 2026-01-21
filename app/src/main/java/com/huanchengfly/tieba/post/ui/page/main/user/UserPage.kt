@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.window.core.layout.WindowSizeClass
+import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.isDarkScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
@@ -262,6 +264,11 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     StatCardPlaceholder(modifier = Modifier.padding(16.dp))
                 } else {
                     LoginTipCard(modifier = Modifier.padding(16.dp))
+                }
+
+                val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
+                if (windowSize.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)) {
+                    Spacer(modifier = Modifier.height(48.dp))
                 }
                 if (account != null) {
                     ListMenuItem(
