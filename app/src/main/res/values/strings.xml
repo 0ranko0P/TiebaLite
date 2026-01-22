@@ -77,7 +77,6 @@
     <string name="tip_lz">楼主</string>
     <string name="tip_long_pic">长图</string>
     <string name="title_auto_sign_time">自动签到时间</string>
-    <string name="tip_about">当前版本：%1$s %2$s</string>
     <string name="tip_account_error">若您的账号登录失效，可点击“添加账号”，然后登录相同的账号即可更新登录信息。</string>
     <string name="tips_message_reply">你有 %1$d 条新回复</string>
     <string name="tips_message_at">有 %1$d 人提到了你</string>
@@ -305,7 +304,6 @@
     <string name="title_stat_posts_num">回贴</string>
     <string name="toast_feature_unavailable">该功能尚未实现</string>
     <string name="desc_permission_post_notifications">用于发送消息通知、显示一键签到进度</string>
-    <string name="source_code">开源代码</string>
     <string name="summary_now_account">已登录账号 %s</string>
     <string name="summary_not_logged_in">未登录，点击登录</string>
     <string name="title_settings_more">更多</string>
@@ -459,6 +457,10 @@
     <string name="text_login_failed">登录失败 %s</string>
     <string name="text_login_success">登录成功，即将跳转</string>
     <string name="video_preview_not_supported">暂不支持视频预览</string>
+    <string name="about_version">当前版本</string>
+    <string name="about_version_info">%1$s (%2$s #%3$s)</string>
+    <string name="about_license">开源许可证</string>
+    <string name="about_source_code">开源代码</string>
     <string name="button_add_keyword">关键词</string>
     <string name="button_add_regex">正则表达式</string>
     <string name="button_ok">我知道了</string>

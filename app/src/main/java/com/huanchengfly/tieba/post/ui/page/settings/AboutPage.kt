@@ -1,105 +1,182 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
-import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
-import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.page.welcome.UaWebView
+import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 
-@OptIn(ExperimentalGlideComposeApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutPage(
     modifier: Modifier = Modifier,
     onBackClicked: () -> Unit = {},
-    onHomePageClicked: () -> Unit = {}
+    onDisclaimerClicked: () -> Unit = {},
+    onHomePageClicked: () -> Unit = {},
+    onLicenseClicked: () -> Unit = {},
+    onVersionClicked: () -> Unit = {},
 ) {
-    val colorScheme = MaterialTheme.colorScheme
-    Column(
-        modifier = modifier.windowInsetsPadding(WindowInsets.navigationBars),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        TitleCentredToolbar(
-            title = {
-                Text(text = stringResource(id = R.string.title_about))
-            },
-            navigationIcon = { BackNavigationIcon(onBackPressed = onBackClicked) },
-            colors = TopAppBarDefaults.topAppBarColors()
+    val context = LocalContext.current
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val icons = remember {
+        listOf(
+            R.drawable.ic_launcher_new_round,
+            R.drawable.ic_launcher_new_invert_round,
+            R.drawable.ic_launcher_round,
         )
+    }
 
-        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-            GlideImage(
-                model = R.mipmap.ic_launcher_new,
-                contentDescription = null,
-                modifier = Modifier.size(100.dp)
+    val versionInfo = remember {
+        val buildType = BuildConfig.BUILD_TYPE.uppercase()
+        context.getString(R.string.about_version_info, BuildConfig.VERSION_NAME, buildType, BuildConfig.BUILD_GIT)
+    }
+
+    MyScaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(text = stringResource(id = R.string.title_about))
+                },
+                navigationIcon = { BackNavigationIcon(onBackPressed = onBackClicked) },
+                colors = TopAppBarDefaults.topAppBarColors(),
+                scrollBehavior = scrollBehavior
             )
         }
-
-        TextButton(
-            shape = CircleShape,
-            colors = ButtonDefaults.textButtonColors(
-                containerColor = colorScheme.primaryContainer.copy(alpha = 0.45f),
-                contentColor = colorScheme.onPrimaryContainer
-            ),
-            onClick = onHomePageClicked,
-            modifier = Modifier.fillMaxWidth(0.5f)
+    ) { contentPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(contentPadding)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(stringResource(id = R.string.source_code))
+            Spacer(modifier = Modifier.height(36.dp))
+
+            StrongBox {
+                var iconIndex by rememberSaveable { mutableIntStateOf(0) }
+                Image(
+                    painter = painterResource(id = icons[iconIndex]),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(96.dp)
+                        .clickableNoIndication {
+                            iconIndex = (iconIndex + 1).takeIf { it in icons.indices } ?: 0 // Loop icons
+                        }
+                )
+            }
+
+            Image(
+                painter = painterResource(R.drawable.ic_splash_text),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(240.dp, 96.dp)
+                    .offset(y = -24.dp),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+
+            Text(
+                text = stringResource(R.string.welcome_intro_subtitle),
+                modifier = Modifier.offset(y = -32.dp),
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            HorizontalDivider()
+            Container {
+                Column {
+                    TextPref(
+                        title = stringResource(id = R.string.about_version),
+                        summary = versionInfo,
+                        onClick = onVersionClicked
+                    )
+                    TextPref(
+                        title = stringResource(id = R.string.title_disclaimer),
+                        onClick = onDisclaimerClicked
+                    )
+                    TextPref(
+                        title = stringResource(id = R.string.about_source_code),
+                        onClick = onHomePageClicked,
+                    )
+                    TextPref(
+                        title = stringResource(id = R.string.about_license),
+                        summary = "GNU GENERAL PUBLIC LICENSE Version 3",
+                        onClick = onLicenseClicked,
+                    )
+                }
+            }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TYPE),
-            style = MaterialTheme.typography.labelMedium,
-            color = colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = BuildConfig.BUILD_GIT,
-            style = MaterialTheme.typography.labelMedium,
-            color = colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(48.dp))
     }
 }
 
 @Composable
 fun AboutPage(onBack: () -> Unit) {
     val context = LocalContext.current
+    val disclaimerDialogState = rememberDialogState()
+
+    fun launchCustomTab(url: String) {
+        TiebaWebView.launchCustomTab(context, Uri.parse(url))
+    }
 
     AboutPage(
         onBackClicked = onBack,
-        onHomePageClicked = {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/HuanCheng65/TiebaLite"))
-            )
-        }
+        onDisclaimerClicked = disclaimerDialogState::show,
+        onHomePageClicked = { launchCustomTab("https://github.com/0ranko0P/TiebaLite") },
+        onLicenseClicked = { launchCustomTab("https://github.com/0ranko0P/TiebaLite/blob/main/LICENSE") },
     )
+
+    AlertDialog(
+        dialogState = disclaimerDialogState,
+        buttons = {
+            NegativeButton(text = stringResource(R.string.btn_close)) {
+                disclaimerDialogState.show = false
+            }
+        }
+    ) {
+        UaWebView(modifier = Modifier.height(480.dp))
+    }
 }
 
 @Preview("AboutPage", showBackground = true, backgroundColor = Color.WHITE.toLong())

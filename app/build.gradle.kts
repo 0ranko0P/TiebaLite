@@ -265,17 +265,9 @@ abstract class GitVersionValueSource : ValueSource<String, ValueSourceParameters
 
     override fun obtain(): String = ByteArrayOutputStream().use { output ->
         execOperations.exec {
-            commandLine("git", "branch", "--show-current")
+            commandLine("git", "rev-parse", "--short", "HEAD")
             standardOutput = output
         }
-        val branch = output.toString().trim()
-        output.reset()
-
-        execOperations.exec {
-            commandLine("git", "rev-parse", "HEAD")
-            standardOutput = output
-        }
-        val shortHash = output.toString().trim().substring(0..7)
-        return@use "$branch#$shortHash"
+        output.toString().trim()
     }
 }

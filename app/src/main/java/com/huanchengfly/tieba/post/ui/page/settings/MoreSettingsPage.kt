@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.navigation.NavController
-import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView.Companion.dumpWebViewVersion
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
@@ -133,7 +132,6 @@ fun MoreSettingsPage(navigator: NavController) = MyScaffold(
             onClick = {
                 navigator.navigate(About)
             },
-            summary = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TYPE)
         )
     }
 }
