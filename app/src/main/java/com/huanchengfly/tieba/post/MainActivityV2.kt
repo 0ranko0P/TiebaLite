@@ -101,6 +101,7 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
+    @Suppress("KotlinConstantConditions")
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -109,8 +110,11 @@ class MainActivityV2 : BaseComposeActivity() {
             delay(2000L)
             requestNotificationPermission()
         }
+
         intent?.run {
-            welcomeScreen = extras?.getBoolean(KEY_WELCOME_SETUP, false)
+            if (BuildConfig.BUILD_TYPE != "release") {
+                welcomeScreen = extras?.getBoolean(KEY_WELCOME_SETUP, false)
+            }
             ShortcutInitializer.getTbShortcut(this)?.also { onNewShortcut(it) }
             data?.normalizeScheme()?.let { pendingAppLink = appLinkToNavRoute(uri = it) }
         }
