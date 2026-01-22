@@ -539,15 +539,15 @@ fun HomePage(
                         item(key = R.string.forum_list_title, DefaultGridSpan, { ForumType.Header }) {
                             Header(text = stringResource(id = R.string.forum_list_title))
                         }
-                        forumItems(
-                            forums = forums,
-                            isTopPinnedForum = false,
-                            showAvatar = listSingle,
-                            onClick = onForumClickedListener,
-                            onUnfollow = onUnfollow,
-                            onPinnedForumChanged = viewModel::onPinnedForumChanged,
-                        )
                     }
+                    forumItems(
+                        forums = forums,
+                        isTopPinnedForum = false,
+                        showAvatar = listSingle,
+                        onClick = onForumClickedListener,
+                        onUnfollow = onUnfollow,
+                        onPinnedForumChanged = viewModel::onPinnedForumChanged,
+                    )
                 }
             }
         }
