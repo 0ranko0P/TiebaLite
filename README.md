@@ -9,6 +9,8 @@
     <a href="https://t.me/tblite_discuss">
         <img alt="Status" src="https://img.shields.io/badge/-Telegram-blue?logo=telegram&style=flat">
     </a>
+    <br/>
+    <br/>
     <p>极简的贴吧<strong>第三方</strong>客户端</p>
     <img src="assets/Screenshots.png" alt="Screenshots" />
 </div>
