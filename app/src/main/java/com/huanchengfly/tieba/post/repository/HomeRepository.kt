@@ -32,6 +32,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -79,6 +80,15 @@ class HomeRepository @Inject constructor(
         }
         .map(transform = ::mapForumPagingData)
         .flowOn(Dispatchers.Default)
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    suspend fun getLikedForums(): Flow<List<LikedForum>> {
+        val uid = settingsRepo.accountUid.snapshot()
+        return localDataSource.observeAllSorted(uid)
+            .map {
+                it.map { forum -> mapUiModel(forum) }
+            }
+    }
 
     /**
      * Refresh the current user's liked forums
@@ -157,11 +167,11 @@ class HomeRepository @Inject constructor(
      * Observe the current user's new message count.
      * */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun observeNewMessage(): Flow<Long?> = settingsRepo.accountUid.flatMapLatest { uid ->
+    fun observeNewMessage(): Flow<Int> = settingsRepo.accountUid.flatMapLatest { uid ->
         if (uid != -1L) {
-            timestampDao.observe(uid, TYPE_NEW_MESSAGE_COUNT)
+            timestampDao.observe(uid, TYPE_NEW_MESSAGE_COUNT).map { it?.toInt() ?: 0 }
         } else {
-            throw TiebaNotLoggedInException()
+            flowOf(0)
         }
     }
 

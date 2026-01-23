@@ -3,7 +3,7 @@ package com.huanchengfly.tieba.post.utils
 import android.content.Context
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.shareInBackground
-import com.huanchengfly.tieba.post.coroutines.Dispatchers
+import com.huanchengfly.tieba.post.di.TestCoroutinesModule
 import com.huanchengfly.tieba.post.models.database.Account
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +33,7 @@ class AccountUtil {
         return _currentAccount.first() ?: throw TiebaNotLoggedInException()
     }
 
-    suspend fun fetchAccount(account: Account): Account = withContext(Dispatchers.Default) {
+    suspend fun fetchAccount(account: Account): Account = withContext(TestCoroutinesModule.providesDefaultDispatcher()) {
         delay(100)
         account
     }

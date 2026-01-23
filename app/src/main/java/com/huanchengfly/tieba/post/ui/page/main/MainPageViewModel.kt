@@ -9,7 +9,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,7 +19,6 @@ class MainPageViewModel @Inject constructor(
 ): ViewModel() {
 
     val messageCountFlow: StateFlow<Int> = homeRepo.observeNewMessage()
-        .map { it?.toInt() ?: 0 }
         .catch { /* Ignored */ }
         .stateInViewModel(initialValue = 0)
 

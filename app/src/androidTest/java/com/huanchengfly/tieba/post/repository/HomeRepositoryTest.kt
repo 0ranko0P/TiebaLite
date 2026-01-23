@@ -113,13 +113,13 @@ class HomeRepositoryTest {
         val messageCount = dummyMessage.replyMe + dummyMessage.atMe
         networkDataSource.nextMessage = dummyMessage
         homeRepository.fetchNewMessage()
-        assertEquals(messageCount, messageFlow.first())
+        assertEquals("Expected message count to be $messageCount", messageCount, messageFlow.first())
 
         // Prepare dummy message
         networkDataSource.nextMessage = MsgBean.MessageBean(replyMe = 1)
         homeRepository.fetchNewMessage()
         // Expect message count is 1
-        assertEquals(1L, messageFlow.first())
+        assertEquals("Expected message count to be 1",1, messageFlow.first())
     }
 
     @Test
@@ -129,8 +129,7 @@ class HomeRepositoryTest {
         networkDataSource.nextMessage = MsgBean.MessageBean(replyMe = 99, atMe = 1)
         homeRepository.fetchNewMessage()
 
-        // Expect message count cleared (null)
         homeRepository.clearNewMessage()
-        assertEquals(null, messageFlow.first())
+        assertEquals("Expected message count to be 0", 0, messageFlow.first())
     }
 }

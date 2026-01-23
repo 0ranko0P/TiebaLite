@@ -3,7 +3,7 @@
 package com.huanchengfly.tieba.post
 
 import android.app.Application
-import com.huanchengfly.tieba.post.coroutines.Dispatchers
+import com.huanchengfly.tieba.post.di.TestCoroutinesModule
 import kotlinx.coroutines.CoroutineScope
 
 open class App : Application() {
@@ -17,6 +17,6 @@ open class App : Application() {
         @JvmStatic
         lateinit var INSTANCE: App
 
-        val AppBackgroundScope: CoroutineScope = Dispatchers.testScope
+        val AppBackgroundScope: CoroutineScope = TestCoroutinesModule.testScope
     }
 }
