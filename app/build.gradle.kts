@@ -222,6 +222,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.paging)
+    androidTestImplementation(libs.androidx.room.testing)
 
     implementation(libs.google.gson)
 

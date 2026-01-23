@@ -98,6 +98,7 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "androidx-room" }
 androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "androidx-room" }
+androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "androidx-room" }
 
 jetbrains-annotations = { module = "org.jetbrains:annotations", version = "23.0.0" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
