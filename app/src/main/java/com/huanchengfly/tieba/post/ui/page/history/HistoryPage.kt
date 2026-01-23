@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.history
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
@@ -265,7 +268,32 @@ private fun ThreadItem(modifier: Modifier = Modifier, item: ThreadHistory) {
         },
         name = { Text(text = item.name) },
         etc = {
-            Text(text = item.title)
+            Row (
+                modifier = Modifier.padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = item.title,
+                    modifier = Modifier.weight(1.0f),
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                )
+
+                if (item.forum != null) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shape = MaterialTheme.shapes.extraSmall
+                    ) {
+                        Text(
+                            text = stringResource(R.string.title_forum, item.forum),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
         },
         time = item.timestamp
     )

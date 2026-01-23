@@ -14,6 +14,7 @@ import androidx.room.PrimaryKey
  * @param id thread ID
  * @param avatar avatar of thread author
  * @param name nickname of thread author
+ * @param forum forum name, nullable
  * @param title thread title
  * @param isSeeLz see lz mode
  * @param pid last visible post
@@ -29,6 +30,11 @@ class ThreadHistory(
     override val id: Long,
     override val avatar: String,
     override val name: String,
+    /**
+     * @since 4.0.0-beta.4
+     */
+    @ColumnInfo(defaultValue = "NULL")
+    val forum: String? = null,
     val title: String,
     @ColumnInfo(name = "is_see_lz")
     val isSeeLz: Boolean,
