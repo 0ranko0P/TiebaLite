@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
-import android.graphics.Color
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
@@ -47,6 +46,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,8 +71,11 @@ fun AboutPage(
     }
 
     val versionInfo = remember {
-        val buildType = BuildConfig.BUILD_TYPE.uppercase()
-        context.getString(R.string.about_version_info, BuildConfig.VERSION_NAME, buildType, BuildConfig.BUILD_GIT)
+        val buildDate = Date(BuildConfig.BUILD_TIME * 1000)
+        // DateTimeFormatter#ISO_INSTANT
+        val time = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(buildDate)
+        val type = BuildConfig.BUILD_TYPE.uppercase()
+        context.getString(R.string.about_version_info, BuildConfig.VERSION_NAME, type, BuildConfig.BUILD_GIT, time)
     }
 
     MyScaffold(
@@ -114,13 +119,13 @@ fun AboutPage(
                 contentDescription = null,
                 modifier = Modifier
                     .size(240.dp, 96.dp)
-                    .offset(y = -24.dp),
+                    .offset(y = (-24).dp),
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
             )
 
             Text(
                 text = stringResource(R.string.welcome_intro_subtitle),
-                modifier = Modifier.offset(y = -32.dp),
+                modifier = Modifier.offset(y = (-40).dp),
                 style = MaterialTheme.typography.titleMedium
             )
 
@@ -179,7 +184,7 @@ fun AboutPage(onBack: () -> Unit) {
     }
 }
 
-@Preview("AboutPage", showBackground = true, backgroundColor = Color.WHITE.toLong())
+@Preview("AboutPage", showBackground = true, backgroundColor = -1L)
 @Composable
 private fun AboutPagePreview() = TiebaLiteTheme {
     AboutPage()

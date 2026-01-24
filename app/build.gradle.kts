@@ -1,5 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.ByteArrayOutputStream
+import java.time.Clock
+import java.time.Instant
 
 plugins {
     alias(libs.plugins.android.application)
@@ -53,6 +55,7 @@ android {
     }
 
     buildTypes {
+        val epochSecond = Instant.now(Clock.systemUTC()).epochSecond
         val gitVersionProvider = providers.of(GitVersionValueSource::class) {}
         val gitVersion = gitVersionProvider.get()
 
@@ -62,6 +65,7 @@ android {
             // Replaced with buildConfigField#BUILD_GIT
             vcsInfo.include = false
             buildConfigField("String", "BUILD_GIT", "\"${gitVersion}\"")
+            buildConfigField("long", "BUILD_TIME", "${epochSecond}L")
         }
 
         release {
