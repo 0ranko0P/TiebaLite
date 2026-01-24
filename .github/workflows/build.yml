@@ -22,6 +22,8 @@ jobs:
     name: "Local tests and build"
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    outputs:
+      version_suffix: ${{ steps.get_version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -63,4 +65,59 @@ jobs:
 
       - name: Build with Gradle
         if: ${{ !cancelled() }}
-        run: ./gradlew assembleDebug --no-configuration-cache --stacktrace
+        run: ./gradlew assembleCi --no-configuration-cache --stacktrace
+
+      - name: Get version
+        id: get_version
+        run: |
+          set -e
+
+          sha=`echo ${{ github.sha }} | cut -c1-8`
+          version_code=`jq -r ".elements[0].versionCode" app/build/outputs/apk/ci/output-metadata.json`
+          version="${version_code}#${sha}"
+          echo "version=$version" >> "GITHUB_OUTPUT"
+
+      - name: Upload artifacts
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ci-artifact
+          path: 'app/build/outputs/apk/ci/app-ci-unsigned.apk'
+          if-no-files-found: error
+
+  sign:
+    name: "Sign and upload"
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    needs: test_build
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: ci-artifact
+          path: out
+          merge-multiple: true
+
+      - name: Delete artifact
+        uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
+        with:
+          name: ci-artifact
+          failOnError: false
+
+      - name: Sign CI app
+        uses: r0adkll/sign-android-release@f30bdd30588842ac76044ecdbd4b6d0e3e813478
+        id: sign_app
+        with:
+          releaseDirectory: out
+          signingKeyBase64: ${{ secrets.KEYSTORE }}
+          alias: ${{ secrets.RELEASE_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "36.0.0"
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: "TiebaLite-CI-${{ needs.test_build.outputs.version_suffix }}.apk"
+          path: 'out/app-ci-unsigned-signed.apk'

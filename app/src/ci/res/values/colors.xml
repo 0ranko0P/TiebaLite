@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_new_background">@android:color/holo_orange_dark</color>
+    <color name="ic_launcher_new_invert_background">@color/ic_launcher_new_background</color>
+    <color name="ic_launcher_background">@color/ic_launcher_new_background</color>
+</resources>

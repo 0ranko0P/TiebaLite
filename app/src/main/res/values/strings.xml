@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">贴吧 Lite</string>
     <string name="activity_translucent">透明主题</string>
     <string name="icon_new">新图标</string>
     <string name="icon_new_invert">新图标（反色）</string>

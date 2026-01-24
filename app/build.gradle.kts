@@ -95,6 +95,12 @@ android {
             initWith(getByName("benchmarkRelease"))
             proguardFiles.removeIf { it.name == "compose-rules.pro" } // Keep tracing API
         }
+
+        // Variant for CI, profileable
+        create("ci") {
+            initWith(getByName("benchmarkRelease"))
+            applicationIdSuffix = ".ci"
+        }
     }
 
     compileOptions {
