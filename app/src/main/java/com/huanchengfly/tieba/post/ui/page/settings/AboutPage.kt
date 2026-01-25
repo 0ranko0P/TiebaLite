@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -32,6 +33,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView
@@ -50,7 +53,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
 @Composable
 fun AboutPage(
     modifier: Modifier = Modifier,
@@ -58,24 +61,20 @@ fun AboutPage(
     onDisclaimerClicked: () -> Unit = {},
     onHomePageClicked: () -> Unit = {},
     onLicenseClicked: () -> Unit = {},
-    onVersionClicked: () -> Unit = {},
 ) {
-    val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val icons = remember {
         listOf(
-            R.drawable.ic_launcher_new_round,
-            R.drawable.ic_launcher_new_invert_round,
-            R.drawable.ic_launcher_round,
+            R.mipmap.ic_launcher_new_round,
+            R.mipmap.ic_launcher_new_invert_round,
+            R.mipmap.ic_launcher_round,
         )
     }
 
-    val versionInfo = remember {
+    val buildTime = remember {
         val buildDate = Date(BuildConfig.BUILD_TIME * 1000)
         // DateTimeFormatter#ISO_INSTANT
-        val time = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(buildDate)
-        val type = BuildConfig.BUILD_TYPE.uppercase()
-        context.getString(R.string.about_version_info, BuildConfig.VERSION_NAME, type, BuildConfig.BUILD_GIT, time)
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(buildDate)
     }
 
     MyScaffold(
@@ -103,8 +102,8 @@ fun AboutPage(
 
             StrongBox {
                 var iconIndex by rememberSaveable { mutableIntStateOf(0) }
-                Image(
-                    painter = painterResource(id = icons[iconIndex]),
+                GlideImage(
+                    model = icons[iconIndex],
                     contentDescription = null,
                     modifier = Modifier
                         .size(96.dp)
@@ -129,14 +128,20 @@ fun AboutPage(
                 style = MaterialTheme.typography.titleMedium
             )
 
+            ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
+                Column(
+                    modifier = Modifier.offset(y = -(20).dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(text = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+                    Text(text = "${BuildConfig.BUILD_TYPE}#${BuildConfig.BUILD_GIT}")
+                    Text(text = buildTime)
+                }
+            }
+
             HorizontalDivider()
             Container {
                 Column {
-                    TextPref(
-                        title = stringResource(id = R.string.about_version),
-                        summary = versionInfo,
-                        onClick = onVersionClicked
-                    )
                     TextPref(
                         title = stringResource(id = R.string.title_disclaimer),
                         onClick = onDisclaimerClicked
