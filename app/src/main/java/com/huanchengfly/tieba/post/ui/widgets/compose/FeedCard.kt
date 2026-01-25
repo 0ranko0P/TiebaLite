@@ -169,7 +169,12 @@ fun buildThreadContent(
     val showAbstract = abstractText.isNotBlank()
 
     if (showTitle) {
-        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+        withStyle(
+            style = SpanStyle(
+                fontSize = 16.sp, // TypeScaleTokens.BodyLargeSize
+                fontWeight = FontWeight.Bold
+            )
+        ) {
             if (isGood) {
                 withStyle(style = SpanStyle(color = colorScheme.tertiary)) {
                     append(App.INSTANCE.getString(R.string.tip_good))
@@ -255,7 +260,7 @@ value class ForumAvatarSharedBoundsKey(private val value: String) {
 value class ForumTitleSharedBoundsKey(private val value: String) {
 
     /**
-     * @param forumName 吧吧名
+     * @param forumName 吧名
      * @param extraKey 额外标识键. 确保推荐页, 搜索页中多个贴子来自同一个吧时过渡动画的唯一性
      * */
     constructor(forumName: String, extraKey: Any?): this(
