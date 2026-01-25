@@ -30,7 +30,7 @@ abstract class BaseStateViewModel<State>: ViewModel() {
     protected val _uiEvent: MutableSharedFlow<UiEvent> by lazy { MutableSharedFlow() }
     val uiEvent: SharedFlow<UiEvent> get() = _uiEvent
 
-    val currentState: State
+    open val currentState: State
         get() = _uiState.value
 
     protected abstract fun createInitialState(): State

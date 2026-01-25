@@ -93,6 +93,9 @@ class UserProfileViewModel @Inject constructor(
     }
     .stateInViewModel(initialValue = createInitialState())
 
+    override val currentState: UserProfileUiState
+        get() = uiState.value
+
     override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, suppressed ->
         if (suppressed && currentState.userProfile != null) {
             _uiState.update { it.copy(isRefreshing = false, error = null) }
@@ -134,11 +137,13 @@ class UserProfileViewModel @Inject constructor(
     private fun updateBlockState(newState: UserBlockState) {
         val name = currentState.userProfile?.run { nickname ?: name } ?: throw NullPointerException()
         when (newState) {
+            blockState.value -> blockRepo.deleteUser(uid)
+
             UserBlockState.Blacklisted -> blockRepo.upsertUser(BlockUser(uid, name, false))
 
             UserBlockState.Whitelisted -> blockRepo.upsertUser(BlockUser(uid, name, true))
 
-            UserBlockState.None -> blockRepo.deleteUser(uid)
+            else -> {}
         }
     }
 
