@@ -417,16 +417,15 @@ private fun UserProfileTopAppBar(
             }
         }
 
-        if (!isSelf) {
-            val isInBlackList = block == UserBlockState.Blacklisted
-            val isInWhiteList = block == UserBlockState.Whitelisted
-
-            ClickMenu(
-                menuContent = {
-                    TextMenuItem(
-                        text = R.string.btn_refresh,
-                        onClick = onRefreshClicked
-                    )
+        ClickMenu(
+            menuContent = {
+                TextMenuItem(
+                    text = R.string.btn_refresh,
+                    onClick = onRefreshClicked
+                )
+                if (!isSelf) {
+                    val isInBlackList = block == UserBlockState.Blacklisted
+                    val isInWhiteList = block == UserBlockState.Whitelisted
                     TextMenuItem (
                         text = if (isInBlackList) R.string.title_remove_black else R.string.title_add_black,
                         onClick = onBlackListClicked
@@ -435,15 +434,15 @@ private fun UserProfileTopAppBar(
                         text = if (isInWhiteList) R.string.title_remove_white else R.string.title_add_white,
                         onClick = onWhiteListClicked
                     )
-                },
-                triggerShape = CircleShape
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.MoreVert,
-                    contentDescription = stringResource(id = R.string.btn_more),
-                    modifier = Modifier.minimumInteractiveComponentSize()
-                )
-            }
+                }
+            },
+            triggerShape = CircleShape
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.MoreVert,
+                contentDescription = stringResource(id = R.string.btn_more),
+                modifier = Modifier.minimumInteractiveComponentSize()
+            )
         }
     }
 
