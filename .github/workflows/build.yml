@@ -23,7 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     outputs:
-      version_suffix: ${{ steps.get_version.outputs.version }}
+      commit_epoch: ${{ steps.get_version.outputs.commit_epoch }}
+      version_code: ${{ steps.get_version.outputs.version_code }}
 
     steps:
       - name: Checkout
@@ -72,10 +73,10 @@ jobs:
         run: |
           set -e
 
-          sha=`echo ${{ github.sha }} | cut -c1-8`
+          epoch=`git log -1 $commit --format=%cd --date=unix`
           version_code=`jq -r ".elements[0].versionCode" app/build/outputs/apk/ci/output-metadata.json`
-          version="${version_code}#${sha}"
-          echo "version=$version" >> "GITHUB_OUTPUT"
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "commit_epoch=$epoch" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifacts
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
@@ -117,7 +118,27 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: "36.0.0"
 
+      - name: Rename apk
+        env:
+          VERSION_CODE: ${{ needs.test_build.outputs.version_code }}
+        run: |
+          sha=`echo ${{ github.sha }} | cut -c1-8`
+          apk_name="TiebaLite.CI.$VERSION_CODE.$sha"
+          mv out/app-ci-unsigned-signed.apk "${apk_name}.apk"
+          echo "APK_NAME=$apk_name" >> "$GITHUB_ENV"
+
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: "TiebaLite-CI-${{ needs.test_build.outputs.version_suffix }}.apk"
-          path: 'out/app-ci-unsigned-signed.apk'
+          name: ${{ env.APK_NAME }}
+          path: 'TiebaLite.CI.*.apk'
+
+      - name: Print summary
+        run: |
+          commit=${{ github.sha }}
+          commit_time=`TZ=Asia/Shanghai date -Iseconds -d "@${{ needs.test_build.outputs.commit_epoch }}"`
+          {
+            echo "### 构建完成 :zap:"
+            echo ""
+            echo "提交哈希 \`$commit\`, 创建于 $commit_time"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
