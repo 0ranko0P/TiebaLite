@@ -39,4 +39,5 @@ data class LoadPicPageData(
     val picIndex: Int,
     val threadId: Long,
     val postId: Long,
+    val originUrl: String?,
 ) : Parcelable

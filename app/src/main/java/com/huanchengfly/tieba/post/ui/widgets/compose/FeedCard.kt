@@ -452,6 +452,7 @@ fun ThreadMedia(
                                     contentDescription = null,
                                     modifier = Modifier.matchParentSize(),
                                     contentScale = ContentScale.Crop,
+                                    enablePreview = true,
                                     photoViewDataProvider = {
                                         getPhotoViewData(
                                             medias = medias.toImmutableList(),
