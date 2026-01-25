@@ -277,7 +277,7 @@ private object BlockTransformer: PreferenceTransformer<BlockSettings> {
     override val get: (Preferences) -> BlockSettings = {
         BlockSettings(
             blockVideo = it[booleanPreferencesKey(KEY_BLOCK_VIDEO)] == true,
-            hideBlocked = it[booleanPreferencesKey(KEY_HIDE_BLOCKED)] ?: true
+            hideBlocked = it[booleanPreferencesKey(KEY_HIDE_BLOCKED)] == true
         )
     }
 
