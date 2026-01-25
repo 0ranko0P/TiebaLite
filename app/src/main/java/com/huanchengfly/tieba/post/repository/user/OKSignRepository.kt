@@ -5,12 +5,13 @@ import android.util.Log
 import androidx.collection.LongSet
 import androidx.collection.mutableLongSetOf
 import androidx.work.WorkInfo
-import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
+import com.huanchengfly.tieba.post.api.models.ForumRecommend
 import com.huanchengfly.tieba.post.api.models.GetForumListBean.ForumInfo
 import com.huanchengfly.tieba.post.api.models.MSignBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.shareInBackground
+import com.huanchengfly.tieba.post.di.ApplicationScope
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.LocalLikedForum
 import com.huanchengfly.tieba.post.repository.HomeRepository
@@ -22,6 +23,7 @@ import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.workManager
 import com.huanchengfly.tieba.post.workers.OKSignWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -59,6 +61,7 @@ interface OKSignRepository {
 
 @Singleton
 class OKSignRepositoryImp @Inject constructor(
+    @ApplicationScope private val scope: CoroutineScope,
     @ApplicationContext private val context: Context,
     private val homeRepo: HomeRepository,
     private val settingsRepo: SettingsRepository,
@@ -81,7 +84,7 @@ class OKSignRepositoryImp @Inject constructor(
     }
 
     init { // Observe config changes then reschedule OKSignWorker
-        AppBackgroundScope.launch {
+        scope.launch {
             settingsRepo.signConfig.collect {
                 scheduleWorkerInternal(signConfig = it)
             }
@@ -91,7 +94,7 @@ class OKSignRepositoryImp @Inject constructor(
     /**
      * 官方一键签到（实验性）
      * */
-    suspend fun officialSign(forums: List<ForumInfo>, tbs: String, listener: ProgressListener?): List<MSignBean.Info>? {
+    suspend fun officialSign(forums: List<ForumSignParam>, tbs: String, listener: ProgressListener?): List<MSignBean.Info>? {
         if (forums.isEmpty()) return emptyList()
 
         val mSignInfo = try {
@@ -102,7 +105,7 @@ class OKSignRepositoryImp @Inject constructor(
             return null
         }
 
-        val mSignFailed = mutableListOf<ForumInfo>()
+        val mSignFailed = mutableListOf<ForumSignParam>()
         var forumName: String
         mSignInfo.forEachIndexed { i, info ->
             forumName = info.forumName
@@ -123,7 +126,7 @@ class OKSignRepositoryImp @Inject constructor(
      * @return 签到成功吧 ID 列表
      * */
     suspend fun normalSign(
-        forums: List<ForumInfo>,
+        forums: List<ForumSignParam>,
         tbs: String,
         slowMode: Boolean,
         initialProgress: Int,
@@ -131,15 +134,13 @@ class OKSignRepositoryImp @Inject constructor(
     ): LongSet {
         val succeed = mutableLongSetOf()
         var progress = initialProgress
-        var forumName: String
 
-        forums.forEach {
-            forumName = it.forumName
+        forums.forEach { (forumName, forumId) ->
             try {
-                val result = networkDataSource.requestSign(it.forumId, forumName, tbs)
+                val result = networkDataSource.requestSign(forumId, forumName, tbs)
                 if (result.isSignIn == 1) {
                     listener?.onSigned(progress, forumName, result.signBonusPoint)
-                    succeed.add(it.forumId)
+                    succeed.add(forumId)
                 }
             } catch (e: TiebaException) {
                 val message = e.getErrorMessage()
@@ -158,34 +159,35 @@ class OKSignRepositoryImp @Inject constructor(
     private suspend fun signInternal(account: Account, signConfig: SignConfig, listener: ProgressListener?) {
         val start = System.currentTimeMillis()
         val forumListBean = networkDataSource.getForumList()
+        val forumRecommendList = networkDataSource.getForumRecommendList()
         val mSignMinLevel = forumListBean.level.toInt()
         val mSignStepNum = forumListBean.msignStepNum.toInt()
         val useMSign = signConfig.okSignOfficial
 
         // Normal Sign
-        val forums = mutableListOf<ForumInfo>()
+        val forums = mutableListOf<ForumSignParam>()
         // Official OkSign
-        val mSignForums = mutableListOf<ForumInfo>()
+        val mSignForums = mutableListOf<ForumSignParam>()
 
         // Split liked forums into NormalSign and MSign
-        forumListBean.forumInfo.forEach {
-            if (it.isSignIn != 1) {
-                val canUseMSign = useMSign && it.userLevel >= mSignMinLevel && mSignForums.size < mSignStepNum
+        forumRecommendList.forEach {
+            if (it.isSign.toInt() != 1) {
+                val canUseMSign = useMSign && it.levelId.toInt() >= mSignMinLevel && mSignForums.size < mSignStepNum
                 if (canUseMSign) {
-                    mSignForums.add(it)
+                    mSignForums.add(ForumSignParam(forum = it))
                 } else {
-                    forums.add(it)
+                    forums.add(ForumSignParam(forum = it))
                 }
             }
         }
-        val forumCount = forumListBean.forumInfo.size
+        val forumCount = forumRecommendList.size
         val totalCount = forums.size + mSignForums.size
         Log.i(TAG, "onSignInternal: Signing $totalCount/$forumCount forums.")
 
         // All forums are signed, return now
         if (totalCount == 0) {
             listener?.onFinish(succeed = 0)
-            notifyForumSignDataChanged(account.uid, forumListBean.forumInfo)
+            notifyForumSignDataChanged()
             return
         }
 
@@ -232,16 +234,13 @@ class OKSignRepositoryImp @Inject constructor(
         }
 
         if (succeed.isNotEmpty()) {
-            notifyForumSignDataChanged(account.uid, forumListBean.forumInfo, succeed)
+            notifyForumSignDataChanged()
         }
     }
 
-    private fun notifyForumSignDataChanged(uid: Long, forums: List<ForumInfo>, succeed: LongSet? = null) {
-        AppBackgroundScope.launch(Dispatchers.Default) {
-            val likedForums = forums.map {
-                it.mapEntity(uid, isSigned = it.isSignIn == 1 || succeed?.contains(it.forumId) ?: false)
-            }
-            homeRepo.updateLikedForums(uid, likedForums)
+    private fun notifyForumSignDataChanged() {
+        scope.launch(Dispatchers.Default) {
+            homeRepo.refresh(cached = false)
         }
     }
 
@@ -273,13 +272,23 @@ class OKSignRepositoryImp @Inject constructor(
     }
 
     override fun scheduleWorker() {
-        AppBackgroundScope.launch {
+        scope.launch {
             val signConfig = settingsRepo.signConfig.snapshot()
             scheduleWorkerInternal(signConfig)
         }
     }
 
     companion object {
+
+        data class ForumSignParam(val name: String, val forumId: Long, val signed: Boolean) {
+
+            constructor(forum: ForumRecommend.LikeForum): this(
+                name = forum.forumName,
+                forumId = forum.forumId.toLong(),
+                signed = forum.isSign.toInt() == 1
+            )
+        }
+
         private const val TAG = "OKSignRepository"
 
         private const val MAX_COMPOUNDING_ERROR_TIME = 10 * 60 * 1000 // 10 minutes
@@ -290,11 +299,6 @@ class OKSignRepositoryImp @Inject constructor(
             } else {
                 2000
             }
-        }
-
-        private fun ForumInfo.mapEntity(uid: Long, isSigned: Boolean): LocalLikedForum {
-            val signInTimestamp = if (isSigned) System.currentTimeMillis() else -1
-            return LocalLikedForum(forumId, uid, avatar, name = forumName, level = userLevel, signInTimestamp)
         }
     }
 }

@@ -1,11 +1,12 @@
 package com.huanchengfly.tieba.post.repository.source.network
 
 import com.huanchengfly.tieba.post.api.booleanToString
+import com.huanchengfly.tieba.post.api.models.ForumRecommend
 import com.huanchengfly.tieba.post.api.models.GetForumListBean
-import com.huanchengfly.tieba.post.api.models.GetForumListBean.ForumInfo
 import com.huanchengfly.tieba.post.api.models.MSignBean.Info
 import com.huanchengfly.tieba.post.api.models.SignResultBean.UserInfo
 import com.huanchengfly.tieba.post.repository.source.TestData
+import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp.Companion.ForumSignParam
 
 object OKSignFakeDataSource : OKSignNetworkDataSource {
 
@@ -38,16 +39,21 @@ object OKSignFakeDataSource : OKSignNetworkDataSource {
     }
 
     override suspend fun getForumList(): GetForumListBean = TestData.DummyGetForumListBean
+    override suspend fun getForumRecommendList(): List<ForumRecommend.LikeForum> {
+        return TestData.DummyGetForumListBean.forumInfo.map {
+            ForumRecommend.LikeForum(it.forumId.toString(), it.forumName, it.userLevel.toString(), it.isSignIn.toString(), it.avatar)
+        }
+    }
 
-    override suspend fun requestOfficialSign(forums: List<ForumInfo>, tbs: String): List<Info> {
+    override suspend fun requestOfficialSign(forums: List<ForumSignParam>, tbs: String): List<Info> {
         mSignError?.let { mSignError = null; throw it }
 
         val noError = Info.Error("0", "", "")
         val curScore = 8.toString()
-        return forums.map {
-            val isSigned = !mSignFailForums.contains(it.forumName)
-            val error = if (isSigned) noError else Info.Error("9", "err", "抱歉,根据相关法律法规和政策,${it.forumName}暂不开放")
-            Info(curScore, error, it.forumId, it.forumName, "0", "1", signDayCount = "1", signed = isSigned.booleanToString())
+        return forums.map { (forumName, forumId) ->
+            val isSigned = !mSignFailForums.contains(forumName)
+            val error = if (isSigned) noError else Info.Error("9", "err", "抱歉,根据相关法律法规和政策,${forumName}暂不开放")
+            Info(curScore, error, forumId, forumName, "0", "1", signDayCount = "1", signed = isSigned.booleanToString())
         }
     }
 

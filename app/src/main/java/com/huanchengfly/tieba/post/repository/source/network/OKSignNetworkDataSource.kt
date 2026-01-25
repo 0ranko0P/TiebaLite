@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.repository.source.network
 
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.CommonResponse
+import com.huanchengfly.tieba.post.api.models.ForumRecommend.LikeForum
 import com.huanchengfly.tieba.post.api.models.GetForumListBean
 import com.huanchengfly.tieba.post.api.models.GetForumListBean.ForumInfo
 import com.huanchengfly.tieba.post.api.models.MSignBean.Info
@@ -12,6 +13,8 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaMSignException
 import com.huanchengfly.tieba.post.arch.firstOrThrow
+import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp
+import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp.Companion.ForumSignParam
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -22,10 +25,12 @@ interface OKSignNetworkDataSource {
      */
     suspend fun getForumList(): GetForumListBean
 
+    suspend fun getForumRecommendList(): List<LikeForum>
+
     /**
      * 官方一键签到（实验性）
      * */
-    suspend fun requestOfficialSign(forums: List<ForumInfo>, tbs: String): List<Info>
+    suspend fun requestOfficialSign(forums: List<ForumSignParam>, tbs: String): List<Info>
 
     suspend fun requestSign(forumId: Long, forumName: String, tbs: String): UserInfo
 }
@@ -42,7 +47,21 @@ object OKSignNetworkDataSourceIml : OKSignNetworkDataSource {
             }
     }
 
-    override suspend fun requestOfficialSign(forums: List<ForumInfo>, tbs: String): List<Info> {
+    override suspend fun getForumRecommendList(): List<LikeForum> {
+        return TiebaApi.getInstance()
+            .forumRecommendFlow()
+            .firstOrThrow()
+            .run {
+                val errorCode = this.errorCode.toIntOrNull() ?: 0
+                if (errorCode != 0) {
+                    throw TiebaApiException(CommonResponse(errorCode, errorMsg))
+                } else {
+                    this.likeForum
+                }
+            }
+    }
+
+    override suspend fun requestOfficialSign(forums: List<ForumSignParam>, tbs: String): List<Info> {
         require(forums.isNotEmpty())
 
         val forumIds = withContext(Dispatchers.Default) {
