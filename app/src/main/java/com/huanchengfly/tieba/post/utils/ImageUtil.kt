@@ -283,7 +283,7 @@ object ImageUtil {
 
     private fun loadWorst(loadType: Int): Boolean {
         return if (loadType == SETTINGS_SMART_ORIGIN) {
-            !NetworkObserver.isNetworkUnmetered
+            !NetworkObserver.isNetworkUnmetered.value
         } else {
             loadType != SETTINGS_ALL_ORIGIN
         }

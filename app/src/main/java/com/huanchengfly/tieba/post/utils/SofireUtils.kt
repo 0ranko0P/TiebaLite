@@ -107,7 +107,7 @@ object SofireUtils {
             }
             .flowOn(Dispatchers.IO)
             .catch { e ->
-                if (NetworkObserver.isNetworkConnected) {
+                if (NetworkObserver.isNetworkConnected.value) {
                     throw SofireException(e)
                 } else {
                     throw ConnectivityInterceptor.wrapException(e)

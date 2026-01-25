@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.Glide
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -46,10 +47,17 @@ import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion
 import com.huanchengfly.tieba.post.utils.GlideUtil
 import com.huanchengfly.tieba.post.utils.ImageUtil
 
-private fun shouldLoadImage(imageLoadSettings: Int): Boolean {
-    return imageLoadSettings == ImageUtil.SETTINGS_SMART_ORIGIN
-            || imageLoadSettings == ImageUtil.SETTINGS_ALL_ORIGIN
-            || (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkObserver.isNetworkUnmetered)
+@Composable
+private fun shouldLoadImage(): Boolean {
+    return when (val loadType = LocalHabitSettings.current.imageLoadType) {
+        ImageUtil.SETTINGS_SMART_LOAD -> {
+            NetworkObserver.isNetworkUnmetered.collectAsStateWithLifecycle().value
+        }
+
+        ImageUtil.SETTINGS_SMART_ORIGIN, ImageUtil.SETTINGS_ALL_ORIGIN -> true
+
+        else -> throw IllegalArgumentException("Unknow image load type: $loadType")
+    }
 }
 
 @NonRestartableComposable
@@ -117,7 +125,7 @@ fun NetworkImage(
     photoViewDataProvider: (() -> PhotoViewData?)? = null,
 ) {
     val context = LocalContext.current
-    val imageLoadSettings = LocalHabitSettings.current.imageLoadType
+    val shouldLoadImage = shouldLoadImage()
     val darkenImage = LocalUISettings.current.darkenImage && LocalExtendedColorScheme.current.darkTheme
     var isLongPressing by remember { mutableStateOf(false) }
 
@@ -154,11 +162,7 @@ fun NetworkImage(
             failure = GlideUtil.DefaultErrorPlaceholder,
             // transition = CrossFade
         ) {
-            if (NetworkObserver.isNetworkConnected && shouldLoadImage(imageLoadSettings)) {
-                it
-            } else {
-                it.onlyRetrieveFromCache(true)
-            }
+            if (shouldLoadImage) it else it.onlyRetrieveFromCache(true)
         }
     }
 

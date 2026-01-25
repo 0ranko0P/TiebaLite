@@ -24,13 +24,13 @@ object ConnectivityInterceptor : Interceptor {
         return when (e) {
             is SocketTimeoutException,
             is SocketException,
-            is SSLHandshakeException -> if (isNetworkConnected) {
+            is SSLHandshakeException -> if (isNetworkConnected.value) {
                 NoConnectivityException(App.INSTANCE.getString(R.string.connectivity_timeout))
             } else {
                 e
             }
 
-            is IOException -> if (!isNetworkConnected) {
+            is IOException -> if (!isNetworkConnected.value) {
                 NoConnectivityException(App.INSTANCE.getString(R.string.no_internet_connectivity))
             } else {
                 e
