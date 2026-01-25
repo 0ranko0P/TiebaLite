@@ -82,7 +82,8 @@ class MainViewModel @Inject constructor(
 
     fun onCheckClipBoard() {
         viewModelScope.launch {
-            if (privacySettings.snapshot().readClipBoardLink) {
+            val setupFinished = uiState.value.uiSettings?.setupFinished == true
+            if (setupFinished && privacySettings.snapshot().readClipBoardLink) {
                 ClipBoardLinkDetector.checkClipBoard(context, forumRepo, threadRepo)
             }
         }
