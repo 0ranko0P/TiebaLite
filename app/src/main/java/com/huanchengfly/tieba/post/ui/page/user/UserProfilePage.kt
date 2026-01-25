@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -256,6 +257,7 @@ fun UserProfilePage(
         val userProfile = uiState.userProfile ?: return@StateScreen
         val account = LocalAccount.current
         val isSelf = account?.uid == uid
+        val blockState by viewModel.blockState.collectAsStateWithLifecycle()
 
         val tabs: List<TabWithTitle> = remember {
             Tab.entries.mapNotNull {
@@ -309,7 +311,6 @@ fun UserProfilePage(
         val contentLandscapeLayout = ContentLandscapeLayout
         MyScaffold(
             topBar = {
-                val blockState by viewModel.blockState.collectAsStateWithLifecycle()
                 UserProfileTopAppBar(
                     transitionKey = transitionKey,
                     profile = userProfile,
@@ -355,7 +356,12 @@ fun UserProfilePage(
                                 .verticalScroll(rememberScrollState())
                                 .padding(start = 16.dp, bottom = 16.dp)
                         ) {
-                            UserProfileDetail(profile = userProfile, transitionKey = transitionKey, landscape = true)
+                            UserProfileDetail(
+                                profile = userProfile,
+                                block = blockState,
+                                transitionKey = transitionKey,
+                                landscape = true
+                            )
 
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -454,10 +460,11 @@ private fun UserProfileTopAppBar(
                 )
             },
             title = {
-                Nickname(modifier = titleModifier, nickname = profile.nickname ?: profile.name, transitionKey)
+                val nickname = profile.nickname ?: profile.name
+                Nickname(modifier = titleModifier, nickname, transitionKey, block)
             },
             subtitle = {
-                UserProfileDetail(titleModifier, profile, transitionKey, landscape = false)
+                UserProfileDetail(titleModifier, profile, block, transitionKey, landscape = false)
             },
             navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
             actions = actionsMenu,
@@ -535,19 +542,30 @@ private fun UserAvatar(modifier: Modifier = Modifier, avatar: String?, uid: Long
 
 @NonRestartableComposable
 @Composable
-private fun NameText(modifier: Modifier = Modifier, name: String, style: TextStyle = LocalTextStyle.current) {
+private fun NameText(
+    modifier: Modifier = Modifier,
+    name: String,
+    block: UserBlockState = UserBlockState.None,
+    style: TextStyle = LocalTextStyle.current
+) {
     Text(
         text = name,
         modifier = modifier,
         color = MaterialTheme.colorScheme.onSurface,
         maxLines = 1,
         overflow = TextOverflow.MiddleEllipsis,
+        textDecoration = TextDecoration.LineThrough.takeIf { block == UserBlockState.Blacklisted },
         style = style
     )
 }
 
 @Composable
-private fun Nickname(modifier: Modifier = Modifier, nickname: String?, transitionKey: String? = null) {
+private fun Nickname(
+    modifier: Modifier = Modifier,
+    nickname: String?,
+    transitionKey: String? = null,
+    block: UserBlockState = UserBlockState.None
+) {
     NameText(
         modifier = modifier.block {
             if (nickname.isNullOrEmpty()) {
@@ -556,15 +574,22 @@ private fun Nickname(modifier: Modifier = Modifier, nickname: String?, transitio
                 sharedUserNickname(nickname = nickname, extraKey = transitionKey)
             }
         },
-        name = nickname ?: stringResource(R.string.app_name)
+        name = nickname ?: stringResource(R.string.app_name),
+        block = block,
     )
 }
 
 @Composable
-private fun Username(modifier: Modifier = Modifier, username: String, transitionKey: String? = null) {
+private fun Username(
+    modifier: Modifier = Modifier,
+    username: String,
+    transitionKey: String? = null,
+    block: UserBlockState = UserBlockState.None,
+) {
     NameText(
         modifier = modifier.sharedUsername(username, extraKey = transitionKey),
         name = remember { "(${username})" },
+        block = block,
         style = MaterialTheme.typography.titleMedium
     )
 }
@@ -611,6 +636,7 @@ private fun VerifiedText(modifier: Modifier = Modifier, verify: String) {
 private fun UserProfileDetail(
     modifier: Modifier = Modifier,
     profile: UserProfile,
+    block: UserBlockState = UserBlockState.None,
     transitionKey: String? = null,
     landscape: Boolean
 ) {
@@ -649,11 +675,12 @@ private fun UserProfileDetail(
             horizontalAlignment = if (landscape) Alignment.CenterHorizontally else Alignment.Start
         ) {
             if (landscape) {
-                Nickname(nickname = profile.nickname ?: profile.name, transitionKey = transitionKey)
+                val nickname = profile.nickname ?: profile.name
+                Nickname(nickname = nickname, transitionKey = transitionKey, block = block)
             }
 
             if (profile.nickname != null && profile.name.isNotEmpty()) {
-                Username(username = profile.name, transitionKey = transitionKey)
+                Username(username = profile.name, transitionKey = transitionKey, block = block)
             }
 
             ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
