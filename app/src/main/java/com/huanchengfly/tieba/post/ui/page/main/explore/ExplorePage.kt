@@ -43,7 +43,7 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import androidx.navigation.Navigator
-import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_MEDIUM_LOWER_BOUND
+import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_EXPANDED_LOWER_BOUND
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
@@ -60,7 +60,6 @@ import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
-import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadResult
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadResultKey
@@ -71,8 +70,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
-import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
+import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
 import com.huanchengfly.tieba.post.utils.LocalAccount
@@ -189,13 +189,7 @@ fun ExplorePage() {
     val listStates = rememberPagerListStates(pages.size)
 
     val scrollOrientationConnection = rememberScrollOrientationConnection()
-    val scrollBehaviors = rememberTopAppBarScrollBehaviors(pages.size) {
-        if (windowSize.isHeightAtLeastBreakpoint(HEIGHT_DP_MEDIUM_LOWER_BOUND)) {
-            TopAppBarDefaults.pinnedScrollBehavior(state = it)
-        } else {
-            TopAppBarDefaults.enterAlwaysScrollBehavior(state = it)
-        }
-    }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysOnLowerBoundScrollBehavior()
 
     // FAB visibility of each page
     var fabHideStates by remember(pages) { mutableStateOf(BooleanBitSet()) }
@@ -230,8 +224,8 @@ fun ExplorePage() {
             blurEnabled = !fabHideStates[pagerState.currentPage] || pagerState.isScrolling
         },
         topBar = {
-            TopAppBar(
-                titleRes = R.string.title_explore,
+            TopAppBarPaged(
+                title = { Text(text = stringResource(R.string.title_explore)) },
                 navigationIcon = accountNavIconIfCompact,
                 actions = {
                     ActionItem(
@@ -240,7 +234,10 @@ fun ExplorePage() {
                         onClick = { navigator.navigate(route = Search) }
                     )
                 },
-                scrollBehavior = scrollBehaviors[pagerState.currentPage]
+                scrollBehavior = scrollBehavior,
+                canScrollBackward = {
+                    listStates[pagerState.currentPage].canScrollBackward
+                }
             ) {
                 ExplorePageTab(pagerState = pagerState, pages = pages)
             }
@@ -263,7 +260,7 @@ fun ExplorePage() {
                     onClick = {
                         coroutineScope.launch {
                             listStates[pagerState.currentPage].scrollToItem(0)
-                            scrollBehaviors[pagerState.currentPage].state.contentOffset = 0f
+                            scrollBehavior.state.contentOffset = 0f
                         }
                     },
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = Dp.Hairline)
@@ -284,7 +281,7 @@ fun ExplorePage() {
                 flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
             ) { i ->
                 // Attach ScrollBehavior connections
-                val pageModifier = Modifier.nestedScroll(scrollBehaviors[i].nestedScrollConnection)
+                val pageModifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
 
                 explorePages[i](pageModifier, contentPadding) { hideFab ->
                     fabHideStates = fabHideStates.set(i, hideFab)

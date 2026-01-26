@@ -14,6 +14,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -28,15 +29,15 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
-import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
-import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
+import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,9 +49,8 @@ fun NotificationsPage(
 ) {
     val pages = NotificationsType.entries
     val pagerState = rememberPagerState(initialPage = initialPage.ordinal, pageCount = { pages.size })
-    val scrollBehaviors = rememberTopAppBarScrollBehaviors(pages.size) {
-        TopAppBarDefaults.pinnedScrollBehavior(state = it)
-    }
+    val listStates = rememberPagerListStates(pages.size)
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysOnLowerBoundScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
 
     MyScaffold(
@@ -59,7 +59,10 @@ fun NotificationsPage(
             NotificationsToolBar(
                 navigator = navigator,
                 fromHome = fromHome,
-                scrollBehavior = { scrollBehaviors[pagerState.currentPage] }
+                scrollBehavior = scrollBehavior,
+                canScrollBackward = {
+                    listStates[pagerState.currentPage].canScrollBackward
+                }
             ) {
                 PrimaryTabRow(
                     selectedTabIndex = pagerState.currentPage,
@@ -99,8 +102,9 @@ fun NotificationsPage(
                 key = { pages[it] }
             ) {
                 NotificationsListPage(
-                    modifier = Modifier.nestedScroll(scrollBehaviors[it].nestedScrollConnection),
+                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                     type = NotificationsType.entries[it],
+                    listState = listStates[pagerState.currentPage],
                     contentPadding = contentPadding
                 )
             }
@@ -113,12 +117,13 @@ fun NotificationsPage(
 private fun NotificationsToolBar(
     navigator: NavController,
     fromHome: Boolean,
-    scrollBehavior: () -> TopAppBarScrollBehavior?,
+    scrollBehavior: TopAppBarScrollBehavior?,
+    canScrollBackward: () -> Boolean,
     content: (@Composable ColumnScope.() -> Unit)?
 ) {
     if (fromHome) {
-        TopAppBar(
-            titleRes = R.string.title_notifications,
+        TopAppBarPaged(
+            title = { Text(text = stringResource(R.string.title_notifications)) },
             navigationIcon = accountNavIconIfCompact,
             actions = {
                 ActionItem(
@@ -127,16 +132,19 @@ private fun NotificationsToolBar(
                     onClick = { navigator.navigate(Search) }
                 )
             },
-            scrollBehavior = scrollBehavior(),
+            scrollBehavior = scrollBehavior,
+            canScrollBackward = canScrollBackward,
             content = content
         )
     } else {
-        CenterAlignedTopAppBar(
-            titleRes = R.string.title_notifications,
+        TopAppBarPaged(
+            title = { Text(text = stringResource(R.string.title_notifications)) },
+            titleHorizontalAlignment = Alignment.CenterHorizontally,
             navigationIcon = {
                 BackNavigationIcon(onBackPressed = navigator::navigateUp)
             },
-            scrollBehavior = scrollBehavior(),
+            scrollBehavior = scrollBehavior,
+            canScrollBackward = canScrollBackward,
             content = content
         )
     }

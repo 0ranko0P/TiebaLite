@@ -49,6 +49,7 @@ import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
@@ -97,6 +98,8 @@ import androidx.compose.ui.util.fastMaxOfOrNull
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.fastSumBy
 import androidx.compose.ui.util.lerp
+import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_EXPANDED_LOWER_BOUND
+import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -116,7 +119,26 @@ import kotlin.math.roundToInt
  *   3. Drop appBarDragModifier
  *   4. Drop subtitleContent
  *   5. Implement CollapsingAvatarTopAppBar
+ *   6. Implement TopAppBarPaged
+ *   7. Add enterAlwaysOnLowerBoundScrollBehavior
  */
+
+@Suppress("UnusedReceiverParameter")
+@ExperimentalMaterial3Api
+@Composable
+fun TopAppBarDefaults.enterAlwaysOnLowerBoundScrollBehavior(
+    state: TopAppBarState = rememberTopAppBarState(),
+): TopAppBarScrollBehavior {
+    return if (
+        LocalWindowAdaptiveInfo.current.windowSizeClass.isHeightAtLeastBreakpoint(
+            heightDpBreakpoint = HEIGHT_DP_EXPANDED_LOWER_BOUND
+        )
+    ) {
+        TopAppBarDefaults.pinnedScrollBehavior(state)
+    } else {
+        TopAppBarDefaults.enterAlwaysScrollBehavior(state)
+    }
+}
 
 /**
  * Represents the container color used for the top app bar.
@@ -231,6 +253,124 @@ fun TopAppBar(
         scrollBehavior = scrollBehavior,
         content = content
     )
+
+/**
+ * Top app bar for paged scrollable contents.
+ *
+ * Used in [BlurScaffold] to apply background blurring with [content]. For normal
+ * Scaffold with [TabRow], compose inside Scaffold with [Column] directly.
+ *
+ * @see androidx.compose.material3.TopAppBar
+ *
+ * @param title the title to be displayed in the top app bar
+ * @param modifier the [Modifier] to be applied to this top app bar
+ * @param navigationIcon the navigation icon displayed at the start of the top app bar. This should
+ *   typically be an [IconButton] or [IconToggleButton].
+ * @param actions the actions displayed at the end of the top app bar. This should typically be
+ *   [IconButton]s. The default layout here is a [Row], so icons inside will be placed horizontally.
+ * @param colors [TopAppBarColors] that will be used to resolve the colors used for this top app bar
+ *   in different states. See [TopAppBarDefaults.topAppBarColors].
+ * @param scrollBehavior a [TopAppBarScrollBehavior] which holds various offset values that will be
+ *   applied by this top app bar to set up its height and colors. A scroll behavior is designed to
+ *   work in conjunction with a scrolled content to change the top app bar appearance as the content
+ *   scrolls. See [TopAppBarScrollBehavior.nestedScrollConnection].
+ * @param canScrollBackward scroll backward state of current page, TopAppBar will use this instead
+ *   of `overlapFraction` to obtain the container color.
+ * @param content extra content displayed below the top app bar, mostly are [TabRow].
+ * */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopAppBarPaged(
+    modifier: Modifier = Modifier,
+    title: @Composable () -> Unit,
+    titleHorizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    navigationIcon: @Composable () -> Unit = {},
+    actions: @Composable RowScope.() -> Unit = {},
+    colors: TopAppBarColors = TiebaLiteTheme.topAppBarColors,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    canScrollBackward: () -> Boolean = { false },
+    content: (@Composable ColumnScope.() -> Unit)? = null,
+) {
+    val expandedHeight: Dp = TopAppBarDefaults.TopAppBarExpandedHeight
+
+    // Obtain the container color from the scroll state of current page using the `canScrollBackward`.
+    val targetColor by
+        remember(colors, scrollBehavior) {
+            derivedStateOf {
+                colors.containerColor(if (canScrollBackward()) 1f else 0f)
+            }
+        }
+
+    val appBarContainerColor =
+        animateColorAsState(
+            targetColor,
+            animationSpec = TopAppBarColorSpect
+        )
+
+    // Wrap the given actions in a Row.
+    val actionsRow =
+        @Composable {
+            Row(
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+                content = actions,
+            )
+        }
+
+    // Compose a Surface with a TopAppBarLayout content.
+    // The surface's background color is animated as specified above.
+    // The height of the app bar is determined by subtracting the bar's height offset from the
+    // app bar's defined constant height value (i.e. the ContainerHeight token).
+    Column(
+        modifier =
+            modifier
+                .drawWithCache {
+                    onDrawBehind {
+                        val color = appBarContainerColor.value
+                        if (color != Color.Unspecified) {
+                            drawRect(color = color)
+                        }
+                    }
+                }
+                .semantics { isTraversalGroup = true }
+                .pointerInput(Unit) {},
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        TopAppBarLayout(
+            modifier =
+                Modifier
+                    .windowInsetsPadding(TopAppBarDefaults.windowInsets)
+                    // clip after padding so we don't show the title over the inset area
+                    .clipToBounds()
+                    .heightIn(max = expandedHeight)
+                    .adjustHeightOffsetLimit(scrollBehavior),
+            scrolledOffset = { scrollBehavior?.state?.heightOffset ?: 0f },
+            navigationIconContentColor = colors.navigationIconContentColor,
+            titleContentColor = colors.titleContentColor,
+            actionIconContentColor = colors.actionIconContentColor,
+            title = title,
+            titleTextStyle = MaterialTheme.typography.titleLarge,
+            titleAlpha = { 1f },
+            titleVerticalArrangement = Arrangement.Center,
+            titleHorizontalAlignment = titleHorizontalAlignment,
+            titleBottomPadding = 0,
+            hideTitleSemantics = false,
+            navigationIcon = navigationIcon,
+            actions = actionsRow,
+            height = expandedHeight,
+        )
+
+        if (content != null) {
+            Column (
+                modifier = Modifier.windowInsetsPadding(
+                    TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Horizontal)
+                ),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                content = content
+            )
+        }
+    }
+}
 
 /**
  * A center aligned top app bar with non-collapsible [content].
