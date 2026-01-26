@@ -29,7 +29,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
@@ -338,18 +338,8 @@ private fun MediaPlaceholder(
 
 const val MAX_PHOTO_IN_ROW = 3
 
-val singleVideoFraction: Float
+val singleMediaFraction: Float
     @Composable @ReadOnlyComposable get() = if (isWindowWidthCompact()) 1.0f else 0.5f
-
-val singlePhotoFraction: Float
-    @Composable @ReadOnlyComposable get() = if (isWindowWidthCompact()) 0.75f else 0.5f
-
-private val Media.singlePhotoAspectRatio: Float
-    @Stable get() = if (width <= 0 || height <= 0) {
-        1f
-    } else {
-        (width / height.toFloat()).coerceAtLeast(0.6f) // Limit long pic height
-    }
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -386,7 +376,7 @@ fun ThreadMedia(
             } else {
                 VideoThumbnail(
                     modifier = Modifier
-                        .fillMaxWidth(singleVideoFraction)
+                        .fillMaxWidth(singleMediaFraction)
                         .aspectRatio(ratio = max(videoInfo.item.aspectRatio(), 16f / 9))
                         .clip(MaterialTheme.shapes.small),
                     thumbnailUrl = videoInfo.item.thumbnailUrl,
@@ -427,12 +417,12 @@ fun ThreadMedia(
                 ErrorImage(tip = stringResource(R.string.desc_expired_image))
             } else {
                 val hasMoreMedia = medias.size > MAX_PHOTO_IN_ROW
-                val mediaWidthFraction = if (isSinglePhoto) singlePhotoFraction else 1f
+                val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(mediaWidthFraction)
-                        .aspectRatio(if (isSinglePhoto) medias[0].singlePhotoAspectRatio else 3f)
+                        .aspectRatio(if (isSinglePhoto) 2f else 3f)
                 ) {
                     Row(
                         modifier = Modifier
@@ -448,11 +438,10 @@ fun ThreadMedia(
                                 contentAlignment = Alignment.BottomEnd
                             ) {
                                 NetworkImage(
-                                    imageUri = medias[index].getPicUrl(habitSettings.imageLoadType),
-                                    contentDescription = null,
                                     modifier = Modifier.matchParentSize(),
+                                    imageUrl = medias[index].getPicUrl(habitSettings.imageLoadType),
+                                    dimensions = IntSize(width = medias[index].width, height = medias[index].height),
                                     contentScale = ContentScale.Crop,
-                                    enablePreview = true,
                                     photoViewDataProvider = {
                                         getPhotoViewData(
                                             medias = medias.toImmutableList(),

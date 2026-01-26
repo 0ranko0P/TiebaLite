@@ -8,31 +8,35 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.Glide
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
+import com.bumptech.glide.load.model.GlideUrl
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
@@ -85,10 +89,21 @@ fun ErrorImage(modifier: Modifier = Modifier, tip: String) {
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-private fun PreviewImage(modifier: Modifier = Modifier, imageUri: String, originImageUri: String?) {
+private fun PreviewImage(
+    modifier: Modifier = Modifier,
+    model: GlideUrl,
+    originModelProvider: () -> GlideUrl?,
+    dimensions: IntSize,
+) {
     val context = LocalContext.current
-    val originRequest = remember {
-        if (originImageUri.isNullOrEmpty() || originImageUri == imageUri) imageUri else originImageUri
+    val originModel = remember {
+        originModelProvider()?.takeIf { it != model } ?: model
+    }
+
+    val aspectRatio = if (dimensions != IntSize.Zero && dimensions.width > 0) {
+        dimensions.width / dimensions.height.toFloat()
+    } else {
+        1f
     }
 
     FullScreen {
@@ -96,18 +111,21 @@ private fun PreviewImage(modifier: Modifier = Modifier, imageUri: String, origin
             modifier = modifier
                 .fillMaxSize()
                 .padding(WindowInsets.systemBars.asPaddingValues())
-                .clip(MaterialTheme.shapes.small),
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
         ) {
             GlideImage(
-                model = originRequest,
+                model = originModel,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(ratio = aspectRatio),
                 contentScale = ContentScale.Crop,
                 failure = placeholder(R.drawable.ic_error)
             ) {
-                if (originImageUri == imageUri) return@GlideImage it
+                if (originModel === model) return@GlideImage it
                 it.thumbnail(
-                    Glide.with(context).load(imageUri)
+                    Glide.with(context).load(model)
                 )
             }
         }
@@ -117,17 +135,18 @@ private fun PreviewImage(modifier: Modifier = Modifier, imageUri: String, origin
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun NetworkImage(
-    imageUri: String,
-    contentDescription: String?,
     modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Fit,
-    enablePreview: Boolean = false,
+    imageUrl: String,
+    dimensions: IntSize? = null,
+    contentDescription: String? = null,
+    contentScale: ContentScale = ContentScale.Crop,
     photoViewDataProvider: (() -> PhotoViewData?)? = null,
 ) {
     val context = LocalContext.current
     val shouldLoadImage = shouldLoadImage()
     val darkenImage = LocalUISettings.current.darkenImage && LocalExtendedColorScheme.current.darkTheme
     var isLongPressing by remember { mutableStateOf(false) }
+    val model = TbGlideUrl(imageUrl)
 
     Box(
         modifier = modifier
@@ -154,7 +173,7 @@ fun NetworkImage(
             }
     ) {
         GlideImage(
-            model = TbGlideUrl(imageUri),
+            model = model,
             contentDescription = contentDescription,
             modifier = Modifier.matchParentSize(),
             contentScale = contentScale,
@@ -166,16 +185,20 @@ fun NetworkImage(
         }
     }
 
-    if (enablePreview) {
+    if (dimensions != null) {
         val previewAlpha by animateFloatAsState(targetValue = if (isLongPressing) 1.0f else 0f)
+        val previewVisible by remember { derivedStateOf { isLongPressing || previewAlpha > 0.01f } }
 
-        if (isLongPressing) {
+        if (previewVisible) {
             PreviewImage(
                 modifier = Modifier.graphicsLayer {
                     alpha = previewAlpha
                 },
-                imageUri = imageUri,
-                originImageUri = photoViewDataProvider?.invoke()?.data?.originUrl
+                model = model,
+                originModelProvider = {
+                    photoViewDataProvider?.invoke()?.data?.originUrl?.let { TbGlideUrl(url = it) }
+                },
+                dimensions = dimensions,
             )
         }
     }

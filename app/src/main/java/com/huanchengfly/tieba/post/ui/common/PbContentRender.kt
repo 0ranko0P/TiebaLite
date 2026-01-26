@@ -50,6 +50,7 @@ import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayer
+import com.huanchengfly.tieba.post.ui.widgets.compose.singleMediaFraction
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.launchUrl
@@ -153,16 +154,12 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
 
     @Composable
     override fun Render() {
-        val widthFraction = if (isWindowWidthCompact()) 1f else 0.5f
-
         NetworkImage(
-            imageUri = picUrl,
-            contentDescription = null,
             modifier = Modifier
                 .clip(shape = MaterialTheme.shapes.small)
-                .fillMaxWidth(widthFraction)
+                .fillMaxWidth(singleMediaFraction)
                 .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f),
-            contentScale = ContentScale.Crop,
+            imageUrl = picUrl,
             photoViewDataProvider = { photoViewData },
         )
     }

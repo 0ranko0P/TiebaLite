@@ -107,8 +107,9 @@ private class FullScreenLayout(
 
             if (backgroundBlur) {
                 enableBackgroundBlur()
-                val bg = ColorUtils.setAlphaComponent(backgroundColor, 0xF5)
-                this@FullScreenLayout.setBackgroundColor(bg)
+                setBackgroundColor(ColorUtils.setAlphaComponent(backgroundColor, 153 /* 60% */))
+            } else {
+                setBackgroundColor(ColorUtils.setAlphaComponent(backgroundColor, 245 /* 96% */))
             }
         }
 

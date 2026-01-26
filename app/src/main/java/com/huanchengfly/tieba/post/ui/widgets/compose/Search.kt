@@ -40,7 +40,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -210,7 +209,7 @@ private fun SearchVideo(modifier: Modifier = Modifier, video: SearchMedia.Video)
     val context = LocalContext.current
     VideoThumbnail(
         modifier = modifier
-            .fillMaxWidth(singleVideoFraction)
+            .fillMaxWidth(singleMediaFraction)
             .aspectRatio(ratio = 2.0f)
             .clip(MaterialTheme.shapes.small),
         thumbnailUrl = video.thumbnail,
@@ -228,7 +227,7 @@ private fun SearchPhoto(modifier: Modifier = Modifier, pics: List<SearchMedia.Pi
 
     val picCount = pics.size
     val isSinglePhoto = picCount == 1
-    val mediaWidthFraction = if (isSinglePhoto) singlePhotoFraction else 1f
+    val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
     val mediaAspectRatio = if (isSinglePhoto) 2f else 3f
     val hasMoreMedia = picCount > MAX_PHOTO_IN_ROW
 
@@ -242,12 +241,10 @@ private fun SearchPhoto(modifier: Modifier = Modifier, pics: List<SearchMedia.Pi
         ) {
             for (i in 0 until min(picCount, MAX_PHOTO_IN_ROW)) {
                 NetworkImage(
-                    imageUri = pics[i].url,
-                    contentDescription = null,
                     modifier = Modifier
                         .fillMaxHeight()
                         .weight(1f),
-                    contentScale = ContentScale.Crop,
+                    imageUrl = pics[i].url,
                 )
             }
         }
