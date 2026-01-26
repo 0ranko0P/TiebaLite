@@ -32,6 +32,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -43,6 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -69,6 +71,17 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.launch
+
+private val statCardSpacerHeight: Dp
+    @Composable @ReadOnlyComposable get() {
+        val minHeightDp = LocalWindowAdaptiveInfo.current.windowSizeClass.minHeightDp
+        return when {
+            minHeightDp >= WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND -> 264.dp
+            minHeightDp > WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND -> 72.dp
+            minHeightDp < WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND / 2 -> Dp.Hairline
+            else -> 24.dp
+        }
+    }
 
 @Composable
 private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
@@ -265,11 +278,8 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                 } else {
                     LoginTipCard(modifier = Modifier.padding(16.dp))
                 }
+                Spacer(modifier = Modifier.height(height = statCardSpacerHeight))
 
-                val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
-                if (windowSize.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)) {
-                    Spacer(modifier = Modifier.height(48.dp))
-                }
                 if (account != null) {
                     ListMenuItem(
                         icon = ImageVector.vectorResource(id = R.drawable.ic_favorite),

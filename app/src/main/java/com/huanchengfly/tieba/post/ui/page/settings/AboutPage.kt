@@ -33,9 +33,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowSizeClass
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.BuildConfig
+import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -62,6 +64,10 @@ fun AboutPage(
     onHomePageClicked: () -> Unit = {},
     onLicenseClicked: () -> Unit = {},
 ) {
+    val windowSizeClass = LocalWindowAdaptiveInfo.current.windowSizeClass
+    val isWindowHeightExpanded = windowSizeClass.isHeightAtLeastBreakpoint(
+        heightDpBreakpoint = WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND
+    )
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val icons = remember {
         listOf(
@@ -98,7 +104,11 @@ fun AboutPage(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(modifier = Modifier.height(36.dp))
+            if (isWindowHeightExpanded) {
+                Spacer(modifier = Modifier.height(48.dp))
+            } else {
+                Spacer(modifier = Modifier.height(36.dp))
+            }
 
             StrongBox {
                 var iconIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -137,6 +147,12 @@ fun AboutPage(
                     Text(text = "${BuildConfig.BUILD_TYPE}#${BuildConfig.BUILD_GIT}")
                     Text(text = buildTime)
                 }
+            }
+
+            if (isWindowHeightExpanded){
+                Spacer(modifier = Modifier.height(96.dp))
+            } else {
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
             HorizontalDivider()
