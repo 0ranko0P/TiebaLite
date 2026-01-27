@@ -107,9 +107,11 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
     }
 
     override fun loadInitial(): List<Photo> {
-        if (data == null) throw RuntimeException("ViewModel is uninitialized!, call initData before load")
-
         val stateSnapshot = _state.value
+        require(data != null || stateSnapshot.data.isNotEmpty()) {
+            "ViewModel is uninitialized!, call initData before load"
+        }
+
         val items = stateSnapshot.data
         val initIndex = stateSnapshot.initialIndex
         return if (initIndex != 0) {

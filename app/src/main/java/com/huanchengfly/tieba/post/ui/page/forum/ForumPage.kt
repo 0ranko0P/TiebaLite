@@ -12,6 +12,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -84,6 +85,7 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadList
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
@@ -133,9 +135,14 @@ private fun ForumAvatar(
     if (avatar.isNullOrEmpty()) {
         Box(modifier = modifier.placeholder(shape = CircleShape))
     } else {
+        val context = LocalContext.current
         Avatar(
             data = TbGlideUrl(avatar),
-            modifier = modifier.localSharedBounds(ForumAvatarSharedBoundsKey(forum, transitionKey)),
+            modifier = modifier
+                .clickable {
+                    PhotoViewActivity.launchSinglePhoto(context, url = avatar)
+                }
+                .localSharedBounds(ForumAvatarSharedBoundsKey(forum, transitionKey)),
         )
     }
 }

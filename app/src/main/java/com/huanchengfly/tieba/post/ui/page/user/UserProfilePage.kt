@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.user
 
 import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -99,6 +100,7 @@ import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
@@ -531,8 +533,12 @@ private fun UserAvatar(modifier: Modifier = Modifier, avatar: String?, uid: Long
     if (avatar.isNullOrEmpty()) {
         Box(modifier = modifier.placeholder(shape = CircleShape))
     } else {
+        val context = LocalContext.current
         Avatar(
             modifier = modifier
+                .clickable {
+                    PhotoViewActivity.launchSinglePhoto(context, url = avatar, useTbGlideUrl = false)
+                }
                 .onNotNull(avatar) { sharedUserAvatar(uid = uid, extraKey = transitionKey) },
             data = avatar
         )

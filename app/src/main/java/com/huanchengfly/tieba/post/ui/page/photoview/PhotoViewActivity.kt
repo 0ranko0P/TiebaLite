@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.photoview
 
+import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.view.MenuItem
@@ -29,8 +30,11 @@ import com.github.iielse.imageviewer.utils.Config
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.collectIn
+import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.components.viewer.SimpleImageLoader
+import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
+import com.huanchengfly.tieba.post.models.PicItem
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.DisplayUtil.doOnApplyWindowInsets
 import com.huanchengfly.tieba.post.utils.ImageUtil
@@ -61,6 +65,8 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         val data: PhotoViewData = intent.getParcelableExtraCompat(EXTRA_PHOTO_VIEW_DATA)!!
+        val useTbGlideUrl: Boolean = intent.getBooleanExtra(EXTRA_LOAD_WITH_TB_GLIDE_URL, true)
+
         viewModel.initData(data)
         viewModel.state.collectIn(this) { uiState ->
             when {
@@ -83,6 +89,7 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
                 imageLoader = SimpleImageLoader(
                     glide = Glide.with(this),
                     onClick = this::onImageClicked,
+                    useTbGlideUrl = useTbGlideUrl,
                     onProgress = this::onProgress
                 ),
                 dataProvider = viewModel,
@@ -193,7 +200,33 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
     private fun getCurrentItem(): PhotoViewItem? = viewModel.state.value.data.getOrNull(currentPage)
 
     companion object {
+
+        /**
+         * Intent Extra: [PhotoViewData] data.
+         *
+         * @since 4.0.0 Dev 12
+         * */
         const val EXTRA_PHOTO_VIEW_DATA = "photo_view_data"
+
+        /**
+         * Intent Extra: Whether to use TbGlideUrl or not.
+         *
+         * @since 4.0.0-beta.4
+         * */
+        const val EXTRA_LOAD_WITH_TB_GLIDE_URL = "com.huanchengfly.tieba.post.USE_TB_GLIDE_URL"
+
+        fun launchSinglePhoto(context: Context, url: String, useTbGlideUrl: Boolean = true) {
+            if (url.isNotEmpty() && url.isNotBlank()) {
+                context.goToActivity<PhotoViewActivity> {
+                    val picItem = PicItem(picId = ImageUtil.getPicId(url), picIndex = 1, url)
+                    putExtra(
+                        EXTRA_PHOTO_VIEW_DATA,
+                        PhotoViewData(data = null, picItems = listOf(picItem))
+                    )
+                    putExtra(EXTRA_LOAD_WITH_TB_GLIDE_URL, useTbGlideUrl)
+                }
+            }
+        }
 
         class ImageViewerFragment : ImageViewerDialogFragment() {
 

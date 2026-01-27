@@ -18,16 +18,19 @@ import com.huanchengfly.tieba.post.utils.GlideUtil.addProgressListener
 class SimpleImageLoader(
     private val glide: RequestManager,
     private val onClick: View.OnClickListener,
+    private val useTbGlideUrl: Boolean,
     private val onProgress: (data: PhotoViewItem) -> Unit
 ) : ImageLoader {
 
     private var initialAnimation = true
 
+    private fun getGlideModel(url: String): Any = if (useTbGlideUrl) TbGlideUrl(url) else url
+
     override fun load(view: ImageView, data: Photo, viewHolder: RecyclerView.ViewHolder) {
         val it = (data as? PhotoViewItem?)?.originUrl ?: return
 
         view.setOnClickListener(onClick)
-        glide.load(TbGlideUrl(url = it))
+        glide.load(getGlideModel(url = it))
             .placeholder(view.drawable)
             .error(R.drawable.ic_error)
             .addProgressListener(data.originUrl, ProgressListenerOnUI { progress ->
@@ -55,7 +58,7 @@ class SimpleImageLoader(
         subsamplingView.setOnClickListener(onClick)
         glide.downloadOnly()
             .error(R.drawable.ic_error)
-            .load(TbGlideUrl(data.originUrl))
+            .load(getGlideModel(url = data.originUrl))
             .addProgressListener(data.originUrl, ProgressListenerOnUI { progress ->
                 data.progress = progress
                 onProgress(data)
