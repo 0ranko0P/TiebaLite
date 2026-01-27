@@ -142,6 +142,9 @@ fun ReplyPageBottomSheet(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomStart
     ) {
+        // Close when blank area clicked
+        Box(modifier = Modifier.matchParentSize().clickableNoIndication(onClick = onBack))
+
         Surface(
             color = MaterialTheme.colorScheme.background
         ) {
@@ -448,7 +451,15 @@ private fun ReplyPageContent(
         }
     }
 
-    ReplyWarningDialog(vm = viewModel, onBack = onBack)
+    // Show Keyboard or Reply warning
+    if (LocalHabitSettings.current.hideReplyWarning) {
+        LaunchedEffect(Unit) {
+            delay(200)
+            showKeyboard()
+        }
+    } else {
+        ReplyWarningDialog(vm = viewModel, onBack = onBack)
+    }
 }
 
 @Composable
@@ -673,9 +684,8 @@ private fun Context.launchOfficialApp(threadId: Long, postId: Long?) {
 @Composable
 private fun ReplyWarningDialog(vm: ReplyViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
-    val hideWarning = LocalHabitSettings.current.hideReplyWarning
     // Show warning dialog only once
-    var dismissed by rememberSaveable { mutableStateOf(hideWarning) }
+    var dismissed by rememberSaveable { mutableStateOf(false) }
     if (dismissed) return
 
     val warningDialogState = rememberDialogState()
