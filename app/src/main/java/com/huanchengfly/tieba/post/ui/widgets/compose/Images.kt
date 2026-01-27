@@ -13,12 +13,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,12 +35,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.Glide
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.Placeholder
 import com.bumptech.glide.integration.compose.placeholder
 import com.bumptech.glide.load.model.GlideUrl
 import com.huanchengfly.tieba.post.LocalHabitSettings
@@ -46,10 +54,49 @@ import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion.EXTRA_PHOTO_VIEW_DATA
 import com.huanchengfly.tieba.post.utils.GlideUtil
 import com.huanchengfly.tieba.post.utils.ImageUtil
+
+@OptIn(ExperimentalGlideComposeApi::class)
+val CircularLoadingPlaceholder: Placeholder = placeholder {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@OptIn(ExperimentalGlideComposeApi::class)
+fun placeholderRetry(onRetry: () -> Unit): Placeholder = placeholder {
+    Column (
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp)
+            .clickableNoIndication(onClick = onRetry),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Image(
+            painter = painterResource(R.drawable.ic_error),
+            contentDescription = stringResource(R.string.desc_image_failed),
+            modifier = Modifier.weight(1.0f).aspectRatio(1.0f)
+        )
+
+        Chip(
+            text = stringResource(R.string.button_retry),
+            prefixIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+        )
+    }
+}
 
 @Composable
 private fun shouldLoadImage(): Boolean {
@@ -121,12 +168,13 @@ private fun PreviewImage(
                     .fillMaxWidth()
                     .aspectRatio(ratio = aspectRatio),
                 contentScale = ContentScale.Crop,
-                failure = placeholder(R.drawable.ic_error)
+                failure = GlideUtil.DefaultErrorPlaceholder
             ) {
-                if (originModel === model) return@GlideImage it
-                it.thumbnail(
-                    Glide.with(context).load(model)
-                )
+                if (originModel === model) {
+                    it
+                } else {
+                    it.thumbnail(Glide.with(context).load(model))
+                }
             }
         }
     }
@@ -172,16 +220,22 @@ fun NetworkImage(
                 )
             }
     ) {
-        GlideImage(
-            model = model,
-            contentDescription = contentDescription,
-            modifier = Modifier.matchParentSize(),
-            contentScale = contentScale,
-            colorFilter = if (darkenImage) GlideUtil.DarkFilter else null,
-            failure = GlideUtil.DefaultErrorPlaceholder,
-            // transition = CrossFade
-        ) {
-            if (shouldLoadImage) it else it.onlyRetrieveFromCache(true)
+        // Note: 用户报告 'Glide 网络恢复时自动重试' 会在一加系统中失效.
+        // 添加 placeholderRetry 让用户手动重试加载图片
+        var retryCount by remember { mutableIntStateOf(0) }
+        key(model, retryCount) {
+            GlideImage(
+                model = model,
+                contentDescription = contentDescription,
+                modifier = Modifier.matchParentSize(),
+                contentScale = contentScale,
+                colorFilter = if (darkenImage) GlideUtil.DarkFilter else null,
+                loading = CircularLoadingPlaceholder,
+                failure = placeholderRetry { retryCount++ },
+                // transition = CrossFade
+            ) {
+                if (shouldLoadImage || retryCount > 0) it else it.onlyRetrieveFromCache(true)
+            }
         }
     }
 

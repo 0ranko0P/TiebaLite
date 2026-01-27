@@ -79,7 +79,7 @@ fun Chip(
                     background(color = containerColor, shape = CircleShape)
                 }
             }
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
