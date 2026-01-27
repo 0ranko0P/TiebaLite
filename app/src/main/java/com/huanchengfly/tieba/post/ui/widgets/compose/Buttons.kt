@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -163,6 +164,7 @@ fun OutlinedIconTextButton(
     colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
         contentColor = MaterialTheme.colorScheme.primary
     ),
+    border: BorderStroke? = ButtonDefaults.outlinedButtonBorder(enabled),
     contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
     icon: (@Composable BoxScope.() -> Unit)? = null,
     content: @Composable RowScope.() -> Unit,
@@ -172,6 +174,7 @@ fun OutlinedIconTextButton(
         modifier = modifier,
         enabled = enabled,
         colors = colors,
+        border = border,
         contentPadding = contentPadding
     ) {
         if (icon != null) {
@@ -195,6 +198,7 @@ fun OutlinedIconTextButton(
     colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
         contentColor = MaterialTheme.colorScheme.primary
     ),
+    border: BorderStroke? = ButtonDefaults.outlinedButtonBorder(enabled),
     contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
     vectorIcon: ImageVector? = null,
     text: String,
@@ -204,6 +208,7 @@ fun OutlinedIconTextButton(
         modifier = modifier,
         enabled = enabled,
         colors = colors,
+        border = border,
         contentPadding = contentPadding,
         icon = vectorIcon?.let {
             { Icon(vectorIcon, contentDescription = null, modifier = Modifier.matchParentSize()) }

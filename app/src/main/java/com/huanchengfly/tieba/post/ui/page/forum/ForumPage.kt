@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.VerticalAlignTop
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -433,7 +434,8 @@ private fun ForumSignFollowActionButton(
             !forum.liked -> stringResource(R.string.button_follow)
             forum.signed -> stringResource(R.string.button_signed_in, forum.signedDays)
             else -> stringResource(R.string.button_sign_in)
-        }
+        },
+        border = ButtonDefaults.outlinedButtonBorder(enabled = true),
     )
 }
 
