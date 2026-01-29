@@ -17,6 +17,8 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.CacheKeyFactory
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
+import com.huanchengfly.tieba.post.api.ClientVersion
+import com.huanchengfly.tieba.post.api.getUserAgent
 import java.io.File
 
 const val BD_VIDEO_HOST = "tb-video.bdstatic.com"
@@ -51,7 +53,10 @@ object MediaCache {
         val cacheSink = CacheDataSink.Factory()
             .setCache(downloadCache)
 
-        val upstreamFactory = DefaultDataSource.Factory(context, DefaultHttpDataSource.Factory())
+        val httpFactory = DefaultHttpDataSource.Factory().apply {
+            setUserAgent(getUserAgent("tieba/${ClientVersion.TIEBA_V12.version}"))
+        }
+        val upstreamFactory = DefaultDataSource.Factory(context, httpFactory)
         val downStreamFactory = FileDataSource.Factory()
 
         return CacheDataSource.Factory()
