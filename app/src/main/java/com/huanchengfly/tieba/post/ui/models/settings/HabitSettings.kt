@@ -53,6 +53,7 @@ annotation class WaterType {
  * @param hideReplyWarning 隐藏回贴风险提示
  * @param imageLoadType 图片加载设置
  * @param imageWatermarkType 图片上传水印设置
+ * @param predictiveBack 预测性返回设置, 需要 Android 13+
  * @param showBothName 同时显示用户名和昵称
  * @param showHistoryInHome 首页显示最近逛的吧
  * */
@@ -68,6 +69,7 @@ data class HabitSettings(
     val hideReplyWarning: Boolean = false,
     val imageLoadType: Int = ImageUtil.SETTINGS_SMART_ORIGIN,
     @WaterType val imageWatermarkType: Int = WaterType.FORUM_NAME,
+    val predictiveBack: Boolean = true,
     val showBothName: Boolean = false,
     val showHistoryInHome: Boolean = true
 )

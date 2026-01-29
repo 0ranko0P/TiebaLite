@@ -141,6 +141,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
             hideReplyWarning = it[booleanPreferencesKey(KEY_REPLY_HIDE_WARNING)] == true,
             imageLoadType = it[intPreferencesKey(KEY_IMAGE_LOAD_TYPE)] ?: ImageUtil.SETTINGS_SMART_ORIGIN,
             imageWatermarkType = it[intPreferencesKey(KEY_IMAGE_WATERMARK_TYPE)] ?: WaterType.FORUM_NAME,
+            predictiveBack = it[booleanPreferencesKey(KEY_PREDICTIVE_BACK)] ?: true,
             showBothName = it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true,
             showHistoryInHome = it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] ?: true,
         )
@@ -157,6 +158,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
         it[booleanPreferencesKey(KEY_REPLY_HIDE_WARNING)] = habit.hideReplyWarning
         it[intPreferencesKey(KEY_IMAGE_LOAD_TYPE)] = habit.imageLoadType
         it[intPreferencesKey(KEY_IMAGE_WATERMARK_TYPE)] = habit.imageWatermarkType
+        it[booleanPreferencesKey(KEY_PREDICTIVE_BACK)] = habit.predictiveBack
         it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] = habit.showBothName
         it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] = habit.showHistoryInHome
     }
@@ -171,6 +173,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
     private const val KEY_POST_HIDE_MEDIA = "ui_post_hide_media"
     private const val KEY_REPLY_HIDE = "ui_reply_hide"
     private const val KEY_REPLY_HIDE_WARNING = "ui_reply_hide_warn"
+    private const val KEY_PREDICTIVE_BACK = "ui_predictive_back"
     private const val KEY_SHOW_NICKNAME = "ui_show_both_name"
     private const val KEY_HOME_PAGE_SHOW_HISTORY = "ui_history_in_home"
 }

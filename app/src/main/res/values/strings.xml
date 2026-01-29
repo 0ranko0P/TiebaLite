@@ -436,6 +436,8 @@
     <string name="title_hide_media">收起贴子列表的图片和视频</string>
     <string name="title_lift_up_bottom_bar">全面屏优化</string>
     <string name="summary_lift_up_bottom_bar">略微抬起贴子页面底栏以方便点按</string>
+    <string name="title_predictive_back">预测性返回</string>
+    <string name="summary_predictive_back">返回主屏幕时是否使用预测性返回手势</string>
     <string name="button_open">打开</string>
     <string name="button_restart">重启</string>
     <string name="btn_hide">隐藏</string>

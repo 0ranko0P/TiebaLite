@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.home
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -74,10 +75,12 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.accompanist.placeholder.PlaceholderDefaults
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
+import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -553,6 +556,10 @@ fun HomePage(
         }
 
         ReportDrawnWhen { !uiState.isLoading }
+
+        BackHandler(enabled = !LocalHabitSettings.current.predictiveBack) {
+            context.findActivity()?.finish()
+        }
     }
 }
 
