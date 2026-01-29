@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Color
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Player.STATE_ENDED
@@ -20,7 +19,6 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
-import androidx.media3.ui.PlayerView
 import com.huanchengfly.tieba.post.components.MediaCache
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.FlowDebouncer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
@@ -79,14 +77,7 @@ internal class DefaultVideoPlayerController(
         )
     }
 
-    var videoPlayerBackgroundColor: Int = DefaultVideoPlayerBackgroundColor.value.toInt()
-        set(value) {
-            field = value
-            playerView?.setBackgroundColor(value)
-        }
-
     private lateinit var source: VideoPlayerSource
-    private var playerView: PlayerView? = null
 
     private var updateDurationAndPositionJob: Job? = null
     private var autoHideControllerJob: Job? = null
@@ -133,14 +124,8 @@ internal class DefaultVideoPlayerController(
     /**
      * Internal exoPlayer instance
      */
-    private var _exoPlayer: ExoPlayer? = null
-    private val exoPlayer: ExoPlayer
-        get() {
-            if (_exoPlayer == null) {
-                _exoPlayer = createExoPlayer()
-            }
-            return _exoPlayer!!
-        }
+    private val _exoPlayer: Lazy<ExoPlayer> = lazy { createExoPlayer() }
+    val exoPlayer: ExoPlayer by _exoPlayer
 
     private fun createExoPlayer() = ExoPlayer.Builder(context)
         .build()
@@ -152,14 +137,8 @@ internal class DefaultVideoPlayerController(
     /**
      * Not so efficient way of showing preview in video slider.
      */
-    private var _previewExoPlayer: ExoPlayer? = null
-    private val previewExoPlayer: ExoPlayer
-        get() {
-            if (_previewExoPlayer == null) {
-                _previewExoPlayer = createPreviewExoPlayer()
-            }
-            return _previewExoPlayer!!
-        }
+    private val _previewExoPlayer: Lazy<ExoPlayer> = lazy { createPreviewExoPlayer() }
+    val previewExoPlayer: ExoPlayer by _previewExoPlayer
 
     private fun createPreviewExoPlayer() = ExoPlayer.Builder(context)
         .build()
@@ -180,6 +159,7 @@ internal class DefaultVideoPlayerController(
     }
 
     fun initialize() {
+        require(!released.get())
         val currentState = _state.value
         exoPlayer.playWhenReady = currentState.isPlaying
         initialStateRunner = {
@@ -188,16 +168,8 @@ internal class DefaultVideoPlayerController(
         if (this::source.isInitialized) {
             setSource(source)
         }
-        if (playerView != null) {
-            playerViewAvailable(playerView!!)
-        }
+        prepare()
     }
-
-    /**
-     * A flag to indicate whether source is already set and waiting for
-     * playerView to become available.
-     */
-    private val waitPlayerViewToPrepare = AtomicBoolean(false)
 
     override fun play() {
         _state.set { copy(startedPlay = true) }
@@ -246,11 +218,7 @@ internal class DefaultVideoPlayerController(
 
     override fun setSource(source: VideoPlayerSource) {
         this.source = source
-        if (playerView == null) {
-            waitPlayerViewToPrepare.set(true)
-        } else {
-            prepare()
-        }
+        prepare()
     }
 
     fun enableGestures(isEnabled: Boolean) {
@@ -337,20 +305,6 @@ internal class DefaultVideoPlayerController(
         previewExoPlayer.prepare()
     }
 
-    fun playerViewAvailable(playerView: PlayerView) {
-        this.playerView = playerView
-        playerView.player = exoPlayer
-        playerView.setBackgroundColor(videoPlayerBackgroundColor)
-
-        if (waitPlayerViewToPrepare.compareAndSet(true, false)) {
-            prepare()
-        }
-    }
-
-    fun previewPlayerViewAvailable(playerView: PlayerView) {
-        playerView.player = previewExoPlayer
-    }
-
     fun previewSeekTo(position: Long) {
         // position is very accurate. Thumbnail doesn't have to be.
         // Roll to the nearest "even" integer.
@@ -368,10 +322,8 @@ internal class DefaultVideoPlayerController(
 
     override fun release() {
         if (released.compareAndSet(false, true)) {
-            exoPlayer.release()
-            previewExoPlayer.release()
-            _exoPlayer = null
-            _previewExoPlayer = null
+            _exoPlayer.release()
+            _previewExoPlayer.release()
         }
     }
 
@@ -383,6 +335,12 @@ internal class DefaultVideoPlayerController(
         require(fullScreenModeChangedListener != null) { "Full screen mode is not supported" }
         fullScreenModeChangedListener.onFullScreenModeChanged()
     }
-}
 
-val DefaultVideoPlayerBackgroundColor = Color.Black
+    companion object {
+        private fun Lazy<ExoPlayer>.release() {
+            if (isInitialized()) {
+                value.release()
+            }
+        }
+    }
+}

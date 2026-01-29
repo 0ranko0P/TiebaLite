@@ -42,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
+import androidx.media3.ui.compose.PlayerSurface
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
@@ -110,7 +111,6 @@ fun VideoPlayer(
     }
 
     SideEffect {
-        videoPlayerController.videoPlayerBackgroundColor = backgroundColor.value.toInt()
         videoPlayerController.enableControls(controlsEnabled)
         videoPlayerController.enableGestures(gesturesEnabled)
     }
@@ -151,11 +151,11 @@ fun VideoPlayer(
         ) {
             if (startedPlay) {
                 PlayerSurface(
+                    player = videoPlayerController.exoPlayer,
                     modifier = Modifier
+                        .fillMaxWidth()
                         .aspectRatio(aspectRatio)
-                ) {
-                    videoPlayerController.playerViewAvailable(it)
-                }
+                )
 
                 MediaController()
             } else {

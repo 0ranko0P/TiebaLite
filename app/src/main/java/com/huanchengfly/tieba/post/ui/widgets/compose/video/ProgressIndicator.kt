@@ -8,7 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-
+import androidx.media3.ui.compose.PlayerSurface
 
 @Composable
 fun ProgressIndicator(
@@ -33,13 +33,12 @@ fun ProgressIndicator(
             secondaryProgress = secondaryProgress,
             seekerPopup = {
                 PlayerSurface(
+                    player = controller.previewExoPlayer,
                     modifier = Modifier
                         .height(48.dp)
                         .width(48.dp * videoSize.first / videoSize.second)
                         .background(Color.DarkGray)
-                ) {
-                    controller.previewPlayerViewAvailable(it)
-                }
+                )
             },
             modifier = modifier
         )
