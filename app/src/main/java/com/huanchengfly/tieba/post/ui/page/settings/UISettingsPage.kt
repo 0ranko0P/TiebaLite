@@ -124,6 +124,8 @@ fun UISettingsPage(
                         checked = uiSettings.appIconThemed,
                         onCheckedChange = { checked ->
                             updatePreference { old -> old.copy(appIconThemed = checked) }
+                            if (!uiSettings.appIcon.supportThemedIcon()) return@SwitchPref
+
                             if (checked) {
                                 // Use mapped icon_name -> icon_name_themed when more themed icon added
                                 AppIconUtil.setIcon(LauncherIcons.NEW_ICON_THEMED, context)
@@ -132,7 +134,7 @@ fun UISettingsPage(
                             }
                         },
                         title = R.string.title_settings_use_themed_icon,
-                        enabled = uiSettings.appIcon.supportThemedIcon(),
+                        // enabled = uiSettings.appIcon.supportThemedIcon(),
                         leadingIcon = Icons.Outlined.ColorLens,
                         summary = R.string.tip_themed_icon_unsupported.takeIf {
                             !uiSettings.appIcon.supportThemedIcon()
