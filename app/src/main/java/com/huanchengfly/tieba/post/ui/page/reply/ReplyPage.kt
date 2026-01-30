@@ -206,22 +206,9 @@ private fun ReplyPageContent(
         initial = false
     )
 
-    val replyType by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::replyType,
-        initial = NONE
-    )
-    //threadId为0时切换为发主题帖
-    if (viewModel.forumId != 0L && viewModel.threadId == 0L) viewModel.send(ReplyUiIntent.SwitchReplyType(ReplyType.TOPIC_THREAD))
-
-    var topTitle = when (replyType) {
+    val topTitle = when (viewModel.replyType) {
         ReplyType.TOPIC_THREAD -> context.getString(R.string.title_thread)
         else -> context.getString(R.string.title_reply)
-    }
-    LaunchedEffect(replyType) {
-        topTitle = when (replyType) {
-            ReplyType.TOPIC_THREAD -> context.getString(R.string.title_thread)
-            else -> context.getString(R.string.title_reply)
-        }
     }
 
     var inputLength by remember { mutableIntStateOf(0) }
@@ -328,7 +315,7 @@ private fun ReplyPageContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "$topTitle",
+                text = topTitle,
                 modifier = Modifier.weight(1f),
                 fontWeight = FontWeight.Bold
             )

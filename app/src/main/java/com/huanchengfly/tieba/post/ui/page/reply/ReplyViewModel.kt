@@ -77,6 +77,9 @@ class ReplyViewModel @Inject constructor(
     val replyUserPortrait = params.replyUserPortrait
     val tbs = params.tbs
 
+    //threadId为0时切换为发主题帖
+    val replyType = if (forumId != 0L && threadId == 0L) ReplyType.TOPIC_THREAD else ReplyType.NONE
+
     var emoticons: List<Emoticon> = emptyList()
         private set
 
@@ -152,8 +155,6 @@ class ReplyViewModel @Inject constructor(
                 intentFlow.filterIsInstance<ReplyUiIntent.RemoveImage>()
                     .flatMapConcat { it.producePartialChange() },
                 intentFlow.filterIsInstance<ReplyUiIntent.ToggleIsOriginImage>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ReplyUiIntent.SwitchReplyType>()
                     .flatMapConcat { it.producePartialChange() },
             )
 
@@ -238,9 +239,6 @@ class ReplyViewModel @Inject constructor(
                         )
                     )
                 }
-
-        private fun ReplyUiIntent.SwitchReplyType.producePartialChange() =
-            flowOf(ReplyPartialChange.SwitchReplyType(replyType))
 
         private fun ReplyUiIntent.AddImage.producePartialChange() =
             flowOf(ReplyPartialChange.AddImage(imageUris))
@@ -359,8 +357,6 @@ sealed interface ReplyUiIntent : UiIntent {
         val replyUserId: Long? = null,
     ) : ReplyUiIntent
 
-    data class SwitchReplyType(val replyType: ReplyType) : ReplyUiIntent
-
     data class AddImage(val imageUris: List<String>) : ReplyUiIntent
 
     data class RemoveImage(val imageIndex: Int) : ReplyUiIntent
@@ -413,11 +409,6 @@ sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
         ) : Send()
     }
 
-    data class SwitchReplyType(val replyType: ReplyType) : ReplyPartialChange {
-        override fun reduce(oldState: ReplyUiState): ReplyUiState =
-            oldState.copy(replyType = replyType)
-    }
-
     data class AddImage(val imageUris: List<String>) : ReplyPartialChange {
         override fun reduce(oldState: ReplyUiState): ReplyUiState {
             // On device that don't support limited photo picker
@@ -444,7 +435,6 @@ sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
 data class ReplyUiState(
     val isSending: Boolean = false,
     val replySuccess: Boolean = false,
-    val replyType: ReplyType = ReplyType.NONE,
     val isUploading: Boolean = false,
     val isOriginImage: Boolean = false,
     val selectedImageList: ImmutableList<String> = persistentListOf(),
