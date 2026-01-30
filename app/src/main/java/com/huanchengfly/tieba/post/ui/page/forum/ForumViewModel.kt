@@ -5,13 +5,14 @@ import android.content.Intent
 import androidx.compose.runtime.Stable
 import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
-import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.models.database.ForumHistory
@@ -95,13 +96,15 @@ class ForumViewModel @Inject constructor(
         launchInVM {
             sendUiEvent(ForumUiEvent.ScrollToTop(isGood))
             delay(200) // wait ScrollToTop animation
-            emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh)
+            emitGlobalEventSuspend(ForumThreadListUiEvent.Refresh(isGood))
         }
     }
 
     fun onFabClicked(@ForumFAB fab: Int, isGood: Boolean) {
         when (fab) {
-            ForumFAB.POST -> sendUiEvent(CommonUiEvent.FeatureUnavailable)
+            ForumFAB.POST -> viewModelScope.emitGlobalEvent(
+                ForumThreadListUiEvent.AddThread(forumName)
+            )
 
             ForumFAB.REFRESH -> onRefreshClicked(isGood)
 

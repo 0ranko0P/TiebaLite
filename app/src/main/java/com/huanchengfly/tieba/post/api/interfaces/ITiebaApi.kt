@@ -1442,4 +1442,22 @@ interface ITiebaApi {
     fun getHistoryForumFlow(
         history: String,
     ): Flow<GetHistoryForumResponse>
+
+    /**
+     * 发帖
+     * @param threadContent 帖子内容
+     * @param kw 吧名
+     * @param fid 吧id
+     * @param title 标题(无标题是留空)
+     * @param isHide 个人主页显示(0,显示 1,仅自己可见)
+     * @param isTitle 是否有标题(0,有标题 1,无标题)
+     */
+    fun addThreadFlow(
+        threadContent: String,
+        kw: String,
+        fid: String,
+        title: String,
+        isHide: Int,
+        isTitle: Int,
+    ): Flow<AddThreadBean>
 }

@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.api.buildProtobufRequestBody
 import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
+import com.huanchengfly.tieba.post.api.models.AddThreadBean
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
 import com.huanchengfly.tieba.post.api.models.CollectDataBean
@@ -185,7 +186,8 @@ object MixedTiebaApiImpl : ITiebaApi {
         threadId: String,
         postId: String,
         opType: Int
-    ): Call<AgreeBean> = RetrofitTiebaApi.MINI_TIEBA_API.disagree(postId, threadId, op_type = opType)
+    ): Call<AgreeBean> =
+        RetrofitTiebaApi.MINI_TIEBA_API.disagree(postId, threadId, op_type = opType)
 
     override fun opAgreeFlow(
         threadId: String,
@@ -206,7 +208,8 @@ object MixedTiebaApiImpl : ITiebaApi {
         threadId: String,
         postId: String,
         opType: Int
-    ): Flow<AgreeBean> = RetrofitTiebaApi.MINI_TIEBA_API.disagreeFlow(postId, threadId, op_type = opType)
+    ): Flow<AgreeBean> =
+        RetrofitTiebaApi.MINI_TIEBA_API.disagreeFlow(postId, threadId, op_type = opType)
 
     override fun forumRecommend(): Call<ForumRecommend> =
         RetrofitTiebaApi.MINI_TIEBA_API.forumRecommend()
@@ -520,7 +523,8 @@ object MixedTiebaApiImpl : ITiebaApi {
     override fun atMeAsync(page: Int): Deferred<ApiResult<MessageListBean>> =
         RetrofitTiebaApi.NEW_TIEBA_API.atMeAsync(page)
 
-    override fun atMeFlow(page: Int): Flow<MessageListBean> = RetrofitTiebaApi.NEW_TIEBA_API.atMeFlow(page)
+    override fun atMeFlow(page: Int): Flow<MessageListBean> =
+        RetrofitTiebaApi.NEW_TIEBA_API.atMeFlow(page)
 
     override fun agreeMe(page: Int): Call<MessageListBean> =
         RetrofitTiebaApi.NEW_TIEBA_API.agreeMe(page)
@@ -577,7 +581,10 @@ object MixedTiebaApiImpl : ITiebaApi {
         dislikeBean: DislikeBean,
         stoken: String
     ): Call<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.submitDislike(listOf(dislikeBean).toJson(), stoken = stoken)
+        RetrofitTiebaApi.OFFICIAL_TIEBA_API.submitDislike(
+            listOf(dislikeBean).toJson(),
+            stoken = stoken
+        )
 
     override fun submitDislikeFlow(dislikeBean: DislikeBean): Flow<CommonResponse> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.submitDislikeFlow(listOf(dislikeBean).toJson())
@@ -1411,4 +1418,14 @@ object MixedTiebaApiImpl : ITiebaApi {
             )
         )
     }
+
+    override fun addThreadFlow(
+        threadContent: String,
+        kw: String,
+        fid: String,
+        title: String,
+        isHide: Int,
+        isTitle: Int
+    ): Flow<AddThreadBean> =
+    RetrofitTiebaApi.MINI_TIEBA_API.addThreadFlow(threadContent, kw, fid, title, isHide, isTitle)
 }

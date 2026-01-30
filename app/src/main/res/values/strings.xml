@@ -41,10 +41,13 @@
     <string name="title_see_lz">只看楼主</string>
     <string name="title_collect_on">取消收藏</string>
     <string name="title_reply">回复</string>
+    <string name="title_thread">发帖</string>
     <string name="tip_reply">评论一番，提高自己的姿势水平…</string>
     <string name="title_account_manage">账号管理</string>
     <string name="title_block_settings">屏蔽设置</string>
     <string name="toast_reply_success_default">回贴成功</string>
+    <string name="toast_add_thread_success_default">发帖成功</string>
+    <string name="toast_add_thread_failed">发帖失败</string>
     <string name="toast_reply_success">回贴成功，经验 +%s</string>
     <string name="title_black_list">黑名单</string>
     <string name="title_white_list">白名单</string>

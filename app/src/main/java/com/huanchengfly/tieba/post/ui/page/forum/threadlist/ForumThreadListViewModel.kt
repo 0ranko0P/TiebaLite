@@ -197,5 +197,14 @@ sealed interface ForumThreadListUiEvent : UiEvent {
 
     data class ClassifyChanged(val goodClassifyId: Int) : ForumThreadListUiEvent
 
-    object Refresh : ForumThreadListUiEvent
+    data class Refresh(
+        val type: ForumType,
+    ) : ForumThreadListUiEvent {
+
+        constructor(isGood: Boolean) : this(if (isGood) ForumType.Good else ForumType.Latest)
+    }
+
+    data class AddThread(
+        val forumName: String,
+    ):ForumThreadListUiEvent
 }

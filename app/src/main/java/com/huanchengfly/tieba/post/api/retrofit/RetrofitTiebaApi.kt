@@ -160,7 +160,8 @@ object RetrofitTiebaApi {
             CommonHeaderInterceptor(
                 Header.USER_AGENT to { "bdtb for Android 7.2.0.0" },
                 Header.CUID to { UIDUtil.finalCUID },
-                Header.CUID_GALAXY2 to { UIDUtil.finalCUID }
+                Header.CUID_GALAXY2 to { UIDUtil.finalCUID },
+                "client_logid" to { "$initTime" }
             ),
             defaultCommonParamInterceptor + CommonParamInterceptor(
                 Param.CUID to { UIDUtil.finalCUID },

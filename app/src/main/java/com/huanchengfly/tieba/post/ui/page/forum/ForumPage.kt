@@ -66,8 +66,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
@@ -80,10 +82,12 @@ import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompa
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.forum.GoodClassify
 import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumDetail
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumSearchPost
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadList
+import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumType
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
@@ -247,6 +251,32 @@ fun ForumPage(
                 )
             }
         }
+    }
+
+    onGlobalEvent<GlobalEvent.AddThreadSuccess>() {
+        coroutineScope.launch {
+            emitGlobalEventSuspend(
+                ForumThreadListUiEvent.Refresh(
+                    isGood = pagerState.currentPage == TAB_FORUM_GOOD,
+                )
+            )
+        }
+    }
+
+    onGlobalEvent<ForumThreadListUiEvent.AddThread>(
+        filter = { it.forumName == forumName },
+    ) {
+        if (!loggedIn) {
+            onShowSnackbarShort(context.getString(R.string.title_not_logged_in))
+        } else if (uiState.forum != null) {
+            navigator.navigate(
+                Destination.Reply(
+                    forumId = uiState.forum!!.id,
+                    forumName = forumName,
+                    threadId = 0L,
+                )
+            )
+        } else onShowSnackbarShort(context.getString(R.string.toast_add_thread_failed))
     }
 
     BlurScaffold(

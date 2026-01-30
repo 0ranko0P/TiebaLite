@@ -132,13 +132,18 @@ public class OperationManager implements TextWatcher {
     }
 
     public void importState(Bundle state) {
+        @SuppressWarnings("unchecked")
         Collection<EditOperation> savedUndoOpts = (Collection<EditOperation>) state.getSerializable(KEY_UNDO_OPTS);
-        undoOpts.clear();
-        undoOpts.addAll(savedUndoOpts);
-
+        if (savedUndoOpts != null) {
+            undoOpts.clear();
+            undoOpts.addAll(savedUndoOpts);
+        }
+        @SuppressWarnings("unchecked")
         Collection<EditOperation> savedRedoOpts = (Collection<EditOperation>) state.getSerializable(KEY_REDO_OPTS);
-        redoOpts.clear();
-        redoOpts.addAll(savedRedoOpts);
+        if (savedRedoOpts != null) {
+            redoOpts.clear();
+            redoOpts.addAll(savedRedoOpts);
+        }
     }
 
     private static class EditOperation implements Parcelable, Serializable {

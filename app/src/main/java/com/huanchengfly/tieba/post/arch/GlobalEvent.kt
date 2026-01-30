@@ -25,6 +25,12 @@ sealed interface GlobalEvent : UiEvent {
         val subPostId: Long? = null,
         val newSubPostId: Long? = null,
     ) : GlobalEvent
+
+    data class AddThreadSuccess(
+        val newThreadId: Long,
+        val newPostId: Long,
+        val msg: String?,
+    ) : GlobalEvent
 }
 
 private val globalEventSharedFlow: MutableSharedFlow<UiEvent> =

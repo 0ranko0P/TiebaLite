@@ -132,6 +132,11 @@ private enum class ReplyPanelType {
     VOICE
 }
 
+enum class ReplyType {
+    NONE, //回贴
+    TOPIC_THREAD, //发主题贴
+}
+
 @Composable
 fun ReplyPageBottomSheet(
     params: Reply,
@@ -201,6 +206,24 @@ private fun ReplyPageContent(
         initial = false
     )
 
+    val replyType by viewModel.uiState.collectPartialAsState(
+        prop1 = ReplyUiState::replyType,
+        initial = NONE
+    )
+    //threadId为0时切换为发主题帖
+    if (viewModel.forumId != 0L && viewModel.threadId == 0L) viewModel.send(ReplyUiIntent.SwitchReplyType(ReplyType.TOPIC_THREAD))
+
+    var topTitle = when (replyType) {
+        ReplyType.TOPIC_THREAD -> context.getString(R.string.title_thread)
+        else -> context.getString(R.string.title_reply)
+    }
+    LaunchedEffect(replyType) {
+        topTitle = when (replyType) {
+            ReplyType.TOPIC_THREAD -> context.getString(R.string.title_thread)
+            else -> context.getString(R.string.title_reply)
+        }
+    }
+
     var inputLength by remember { mutableIntStateOf(0) }
     var editTextView by remember { mutableStateOf<UndoableEditText?>(null) }
 
@@ -224,7 +247,7 @@ private fun ReplyPageContent(
 
     viewModel.onEvent<ReplyUiEvent.ReplySuccess> {
         if (it.expInc.isEmpty()) {
-            context.toastShort(R.string.toast_reply_success_default)
+            context.toastShort(R.string.toast_add_thread_success_default)
         } else {
             context.toastShort(R.string.toast_reply_success, it.expInc)
         }
@@ -305,7 +328,7 @@ private fun ReplyPageContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(id = R.string.title_reply),
+                text = "$topTitle",
                 modifier = Modifier.weight(1f),
                 fontWeight = FontWeight.Bold
             )

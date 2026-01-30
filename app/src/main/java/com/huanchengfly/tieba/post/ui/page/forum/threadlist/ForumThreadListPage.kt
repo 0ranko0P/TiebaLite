@@ -111,7 +111,9 @@ fun ForumThreadList(
 
     viewModel.uiEvent.collectCommonUiEventWithLifecycle()
 
-    onGlobalEvent<ForumThreadListUiEvent.Refresh> {
+    onGlobalEvent<ForumThreadListUiEvent.Refresh>(
+        filter = { it.type == type },
+    ) {
         viewModel.onRefresh()
     }
 
