@@ -15,9 +15,11 @@ import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
-import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSourceImp
+import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSourceImpl
+import com.huanchengfly.tieba.post.repository.source.network.HotTopicNetworkDataSource
+import com.huanchengfly.tieba.post.repository.source.network.HotTopicNetworkDataSourceImpl
 import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
-import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSourceIml
+import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSourceImpl
 import com.huanchengfly.tieba.post.repository.user.DataStoreSettingsRepository
 import com.huanchengfly.tieba.post.repository.user.OKSignRepository
 import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp
@@ -46,17 +48,19 @@ abstract class RepositoryModule {
 
 @Module
 @InstallIn(SingletonComponent::class)
-object DataSourceModule {
+abstract class DataSourceModule {
 
-    @Provides
-    fun provideHomeNetworkDataSource(): HomeNetworkDataSource {
-        return HomeNetworkDataSourceImp
-    }
+    @Singleton
+    @Binds
+    abstract fun bindHomeNetworkDataSource(dataSource: HomeNetworkDataSourceImpl): HomeNetworkDataSource
 
-    @Provides
-    fun provideOKSignNetworkDataSource(): OKSignNetworkDataSource {
-        return OKSignNetworkDataSourceIml
-    }
+    @Singleton
+    @Binds
+    abstract fun bindOKSignNetworkDataSource(dataSource: OKSignNetworkDataSourceImpl): OKSignNetworkDataSource
+
+    @Singleton
+    @Binds
+    abstract fun bindHotTopicNetworkDataSource(dataSource: HotTopicNetworkDataSourceImpl): HotTopicNetworkDataSource
 }
 
 @Module

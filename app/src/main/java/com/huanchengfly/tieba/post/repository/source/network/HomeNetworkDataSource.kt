@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterce
 import com.huanchengfly.tieba.post.arch.firstOrThrow
 import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataSource.commonResponse
 import kotlinx.coroutines.flow.catch
+import javax.inject.Inject
 
 /**
  * Main entry point for accessing liked forums and new message data from the network.
@@ -22,7 +23,7 @@ interface HomeNetworkDataSource {
     suspend fun fetchNewMessage(): MessageBean
 }
 
-object HomeNetworkDataSourceImp : HomeNetworkDataSource {
+class HomeNetworkDataSourceImpl @Inject constructor() : HomeNetworkDataSource {
 
     @Throws(NoConnectivityException::class, TiebaException::class)
     override suspend fun getLikedForums(): List<LikeForum> {

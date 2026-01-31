@@ -1,257 +1,140 @@
 package com.huanchengfly.tieba.post.ui.page.hottopic.detail
 
 import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.AgreeBean
-import com.huanchengfly.tieba.post.api.models.RelateForumBean
-import com.huanchengfly.tieba.post.api.models.TopicDetailBean
+import androidx.lifecycle.SavedStateHandle
+import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.api.models.TopicInfoBean
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
+import com.huanchengfly.tieba.post.arch.BaseStateViewModel
+import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.arch.stateInViewModel
+import com.huanchengfly.tieba.post.repository.HotTopicRepository
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
+import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
-
-val ThreadItem.feedId: Long
-    get() = id
 
 @Stable
 @HiltViewModel
 class TopicDetailViewModel @Inject constructor(
-    private val exploreRepo: ExploreRepository,
-) :
-    BaseViewModel<TopicDetailUiIntent, TopicDetailPartialChange, TopicDetailUiState, UiEvent>() {
+    private val hotTopicRepo: HotTopicRepository,
+    settingsRepo: SettingsRepository,
+    savedStateHandle: SavedStateHandle
+) : BaseStateViewModel<TopicDetailUiState>() {
+
+    private val param = savedStateHandle.toRoute<Destination.HotTopicDetail>()
+    val topicId: Long = param.topicId
+    val topicName: String = param.topicName
+
+    override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, suppressed ->
+        // Allow user browse existing content on suppressed exceptions
+        if (suppressed && !currentState.isEmpty) {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = null) }
+            sendUiEvent(CommonUiEvent.ToastError(e))
+        } else {
+            _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
+        }
+    }
+
+    val hideBlockedContent: StateFlow<Boolean> = settingsRepo.blockSettings
+        .map { it.hideBlocked }
+        .stateInViewModel(initialValue = false)
+
+    init {
+        refreshInternal()
+    }
+
     override fun createInitialState(): TopicDetailUiState = TopicDetailUiState()
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<TopicDetailUiIntent, TopicDetailPartialChange, TopicDetailUiState> =
-        TopicDetailPartialChangeProducer(exploreRepo)
-
-    private class TopicDetailPartialChangeProducer(
-        private val exploreRepo: ExploreRepository
-    ) :
-        PartialChangeProducer<TopicDetailUiIntent, TopicDetailPartialChange, TopicDetailUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<TopicDetailUiIntent>): Flow<TopicDetailPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<TopicDetailUiIntent.LoadMore>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<TopicDetailUiIntent.Refresh>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-                intentFlow.filterIsInstance<TopicDetailUiIntent.Agree>()
-                    .flatMapConcat { it.producePartialChange() }
-            )
-
-        private fun TopicDetailUiIntent.LoadMore.producePartialChange(): Flow<TopicDetailPartialChange.LoadMore> =
-            TiebaApi.getInstance().topicDetailFlow(
-                topicId.toString(),
-                topicName,
-                1,
-                1,
-                page,
-                pageSize,
-                (page - 1) * pageSize,
-                lastId.toString()
-            )
-                .map<TopicDetailBean, TopicDetailPartialChange.LoadMore> {
-                    TopicDetailPartialChange.LoadMore.Success(
-                        it.data.hasMore,
-                        it.data.wreq.page,
-                        it.data.topicInfo,
-                        it.data.relateForum,
-                        exploreRepo.mapToUiModel(it.data.relateThread.threadList),
-                    )
-                }
-                .onStart { emit(TopicDetailPartialChange.LoadMore.Start) }
-                .catch { emit(TopicDetailPartialChange.LoadMore.Failure(it)) }
-
-        private fun TopicDetailUiIntent.Refresh.produceLoadPartialChange(): Flow<TopicDetailPartialChange.Refresh> =
-            TiebaApi.getInstance().topicDetailFlow(
-                topicId.toString(),
-                topicName,
-                1,
-                1,
-                1,
-                pageSize,
-                0,
-                ""
-            )
-                .map<TopicDetailBean, TopicDetailPartialChange.Refresh> {
-                    TopicDetailPartialChange.Refresh.Success(
-                        it.data.hasMore,
-                        it.data.topicInfo,
-                        it.data.relateForum,
-                        exploreRepo.mapToUiModel(it.data.relateThread.threadList),
-                    )
-                }
-                .onStart { emit(TopicDetailPartialChange.Refresh.Start) }
-                .catch { emit(TopicDetailPartialChange.Refresh.Failure(it)) }
-
-        private fun TopicDetailUiIntent.Agree.producePartialChange(): Flow<TopicDetailPartialChange.Agree> =
-            TiebaApi.getInstance().opAgreeFlow(
-                threadId.toString(), postId.toString(), hasAgree, objType = 3
-            ).map<AgreeBean, TopicDetailPartialChange.Agree> {
-                TopicDetailPartialChange.Agree.Success(
-                    threadId,
-                    hasAgree xor 1
+    private fun refreshInternal() {
+        _uiState.set { createInitialState() }
+        launchInVM {
+            val data = hotTopicRepo.loadTopicDetail(topicId, topicName, lastId = null)
+            _uiState.set {
+                TopicDetailUiState(
+                    isRefreshing = false,
+                    hasMore = data.hasMore,
+                    currentPage = 1,
+                    topicInfo = data.topicInfo,
+                    threads = data.threads
                 )
             }
-                .catch { emit(TopicDetailPartialChange.Agree.Failure(threadId, hasAgree, it)) }
-                .onStart { emit(TopicDetailPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
+        }
     }
-}
 
-sealed interface TopicDetailUiIntent : UiIntent {
-    data class Refresh(
-        val topicId: Long,
-        val topicName: String,
-        val pageSize: Int
-    ) : TopicDetailUiIntent
+    fun onRefresh() {
+        if (!currentState.isRefreshing) refreshInternal()
+    }
 
-    data class LoadMore(
-        val topicId: Long,
-        val topicName: String,
-        val page: Int,
-        val pageSize: Int,
-        val lastId: Long,
-    ) : TopicDetailUiIntent
+    fun onLoadMore() {
+        val oldState = currentState
+        if (!oldState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
 
-    data class Agree(
-        val threadId: Long,
-        val postId: Long,
-        val hasAgree: Int,
-    ) : TopicDetailUiIntent
-}
-
-sealed interface TopicDetailPartialChange : PartialChange<TopicDetailUiState> {
-    sealed class Agree private constructor() : TopicDetailPartialChange {
-
-        override fun reduce(oldState: TopicDetailUiState): TopicDetailUiState =
-            when (this) {
-                is Start -> {
-                    oldState.copy(
-                        relateThread = runBlocking {
-                            oldState.relateThread.updateLikeStatus(threadId, hasAgree == 1, loading = true)
-                        },
-                    )
-                }
-
-                is Success -> {
-                    oldState.copy(
-                        relateThread = runBlocking {
-                            oldState.relateThread.updateLikeStatus(threadId, hasAgree == 1, loading = false)
-                        },
-                    )
-                }
-
-                is Failure -> {
-                    oldState.copy(
-                        relateThread = runBlocking {
-                            oldState.relateThread.updateLikeStatus(threadId, hasAgree == 1, loading = false)
-                        },
-                    )
-                }
+        launchInVM {
+            val page = oldState.currentPage + 1
+            val lastId = oldState.threads.last().feedId
+            val data = hotTopicRepo.loadTopicDetailMore(topicId, topicName, page, lastId = lastId)
+            val threads = withContext(Dispatchers.Default) {
+                (oldState.threads + data.threads).distinctBy { it.feedId }
             }
-
-        data class Start(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
-
-        data class Success(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
-
-        data class Failure(
-            val threadId: Long,
-            val hasAgree: Int,
-            val error: Throwable
-        ) : Agree()
-    }
-
-    sealed class LoadMore : TopicDetailPartialChange {
-        override fun reduce(oldState: TopicDetailUiState): TopicDetailUiState = when (this) {
-            Start -> oldState.copy(isLoadingMore = true)
-            is Success -> oldState.copy(
-                isLoadingMore = false,
-                currentPage = currentPage,
-                hasMore = hasMore,
-                topicInfo = topicInfo,
-                relateForum = (oldState.relateForum + relateForum).distinctBy { it.forumId },
-                relateThread = (oldState.relateThread + relateThread).distinctBy { it.feedId },
-            )
-
-            is Failure -> oldState.copy(isLoadingMore = false)
+            _uiState.update {
+                oldState.copy(
+                    isLoadingMore = false,
+                    currentPage = page,
+                    hasMore = data.hasMore,
+                    topicInfo = data.topicInfo,
+                    threads = threads,
+                )
+            }
         }
-
-        object Start : LoadMore()
-
-        data class Success(
-            val hasMore: Boolean,
-            val currentPage: Int,
-            val topicInfo: TopicInfoBean,
-            val relateForum: List<RelateForumBean>,
-            val relateThread: List<ThreadItem>
-        ) : LoadMore()
-
-        data class Failure(
-            val error: Throwable
-        ) : LoadMore()
     }
 
-
-    sealed class Refresh : TopicDetailPartialChange {
-        override fun reduce(oldState: TopicDetailUiState): TopicDetailUiState = when (this) {
-            Start -> oldState.copy(isRefreshing = true)
-            is Success -> oldState.copy(
-                isRefreshing = false,
-                currentPage = 1,
-                hasMore = hasMore,
-                topicInfo = topicInfo,
-                relateForum = relateForum.distinctBy { it.forumId },
-                relateThread = relateThread.distinctBy { it.feedId },
-            )
-
-            is Failure -> oldState.copy(isRefreshing = false)
+    fun onThreadLikeClicked(thread: ThreadItem): Unit = launchInVM {
+        updateLikeStatusUiStateCommon(
+            thread = thread,
+            onRequestLikeThread = { hotTopicRepo.onLikeThread(thread) },
+            onEvent = ::sendUiEvent
+        ) { threadId, liked, loading ->
+            _uiState.update { it.copy(threads = it.threads.updateLikeStatus(threadId, liked, loading)) }
         }
-
-        object Start : Refresh()
-
-        data class Success(
-            val hasMore: Boolean,
-            val topicInfo: TopicInfoBean,
-            val relateForum: List<RelateForumBean>,
-            val relateThread: List<ThreadItem>
-        ) : Refresh()
-
-        data class Failure(
-            val error: Throwable
-        ) : Refresh()
     }
+
+    companion object {
+
+        private const val TAG = "TopicDetailViewModel"
+
+        val ThreadItem.feedId: Long
+            get() = id
+    }
+}
+
+sealed interface TopicDetailUiEvent : UiEvent {
+    object RefreshSuccess : TopicDetailUiEvent
 }
 
 data class TopicDetailUiState(
-    val isRefreshing: Boolean = false,
+    val isRefreshing: Boolean = true,
     val isLoadingMore: Boolean = false,
-    val isError: Boolean = false,
+    val error: Throwable? = null,
     val hasMore: Boolean = true,
     val currentPage: Int = 1,
     val topicInfo: TopicInfoBean? = null,
-    val relateForum: List<RelateForumBean> = emptyList(),
-    val relateThread: List<ThreadItem> = emptyList(),
-) : UiState
+    val threads: List<ThreadItem> = emptyList(),
+) : UiState {
+
+    val isEmpty: Boolean
+        get() = topicInfo == null || threads.isEmpty()
+}

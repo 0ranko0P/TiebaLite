@@ -4,7 +4,6 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.ForumRecommend.LikeForum
 import com.huanchengfly.tieba.post.api.models.GetForumListBean
-import com.huanchengfly.tieba.post.api.models.GetForumListBean.ForumInfo
 import com.huanchengfly.tieba.post.api.models.MSignBean.Info
 import com.huanchengfly.tieba.post.api.models.MSignFailed
 import com.huanchengfly.tieba.post.api.models.MSignSuccess
@@ -13,10 +12,10 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaMSignException
 import com.huanchengfly.tieba.post.arch.firstOrThrow
-import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp
 import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp.Companion.ForumSignParam
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
 interface OKSignNetworkDataSource {
 
@@ -35,7 +34,7 @@ interface OKSignNetworkDataSource {
     suspend fun requestSign(forumId: Long, forumName: String, tbs: String): UserInfo
 }
 
-object OKSignNetworkDataSourceIml : OKSignNetworkDataSource {
+class OKSignNetworkDataSourceImpl @Inject constructor() : OKSignNetworkDataSource {
 
     override suspend fun getForumList(): GetForumListBean {
         return TiebaApi.getInstance()

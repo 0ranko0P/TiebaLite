@@ -703,11 +703,11 @@ fun TwoRowsTopAppBar(
     smallTitle: @Composable () -> Unit,
     titleHorizontalAlignment: Alignment.Horizontal = Alignment.Start,
     navigationIcon: @Composable () -> Unit,
-    actions: @Composable RowScope.() -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
     collapsedHeight: Dp = TopAppBarDefaults.LargeAppBarCollapsedHeight,
     expandedHeight: Dp = TopAppBarDefaults.LargeAppBarExpandedHeight,
     windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
-    colors: TopAppBarColors = TopAppBarDefaults.topAppBarColors(),
+    colors: TopAppBarColors = TiebaLiteTheme.topAppBarColors,
     scrollBehavior: TopAppBarScrollBehavior? = null,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {

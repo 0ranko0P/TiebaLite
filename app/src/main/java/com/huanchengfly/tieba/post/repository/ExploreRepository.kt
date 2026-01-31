@@ -3,9 +3,6 @@ package com.huanchengfly.tieba.post.repository
 import android.util.SparseArray
 import androidx.collection.LruCache
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
-import com.huanchengfly.tieba.post.api.models.ThreadBean
-import com.huanchengfly.tieba.post.api.models.ThreadInfoBean
-import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponseData
@@ -190,17 +187,6 @@ class ExploreRepository @Inject constructor(
         }
     }
 
-    suspend fun mapToUiModel(threads: List<ThreadBean>): List<ThreadItem> {
-        if (threads.isEmpty()) return emptyList()
-
-        return withContext(Dispatchers.Default) {
-            val habit = habitSettings.snapshot()
-            threads.map {
-                it.threadInfo.mapUiModel(showBothName = habit.showBothName)
-            }
-        }
-    }
-
     companion object {
         const val HOT_THREAD_TAB_ALL = "all"
 
@@ -266,42 +252,6 @@ class ExploreRepository @Inject constructor(
                     simpleForum = getCachedSimpleForum()
                 )
             }
-        }
-
-        /**
-         * Convert ThreadInfoBean to UI Model.
-         *
-         * @param showBothName show both username and nickname
-         * */
-        fun ThreadInfoBean.mapUiModel(showBothName: Boolean): ThreadItem {
-            val author = with(author) {
-                val nameShow = StringUtil.getUserNameString(showBothName, name, nameShow)
-                Author(id = this.id, name = nameShow, avatarUrl = StringUtil.getAvatarUrl(portrait))
-            }
-
-            return ThreadItem(
-                id = this.id,
-                firstPostId = this.firstPostId,
-                author = author,
-                content = buildThreadContent(this.title ?: "", abstractText),
-                title = this.title ?: "",
-                lastTimeMill = DateTimeUtils.fixTimestamp(lastTimeInt),
-                like = this.agree.run { Like(liked = hasAgree == 1, count = agreeNum.toLong()) },
-                replyNum = this.replyNum,
-                shareNum = this.shareNum,
-                medias = this.media.map {
-                    Media(
-                        type = it.type.toIntOrNull() ?: 0,
-                        bigPic = it.smallPic, // Use Protobuf Media quality level: srcPic > bigPic
-                        srcPic = it.bigPic,
-                        originPic = it.bigPic,
-                        width = it.width.toIntOrNull() ?: 0,
-                        height = it.height.toIntOrNull() ?: 0,
-                        isLongPic = it.isLongPic
-                    )
-                },
-                simpleForum = SimpleForum(forumId, forumName, null),
-            )
         }
 
         private suspend fun HotThreadListResponseData.mapUiModel(

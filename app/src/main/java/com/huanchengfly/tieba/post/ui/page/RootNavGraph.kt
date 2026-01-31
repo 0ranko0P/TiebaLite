@@ -193,13 +193,8 @@ private fun buildRootNavGraph(
             HotTopicListPage(navigator = navController)
         }
 
-        composable<Destination.HotTopicDetail> { backStackEntry ->
-            val params = backStackEntry.toRoute<Destination.HotTopicDetail>()
-            TopicDetailPage(
-                topicId = params.topicId,
-                topicName = params.topicName,
-                navigator = navController
-            )
+        composable<Destination.HotTopicDetail> {
+            TopicDetailPage(navigator = navController)
         }
 
         composable<Destination.Login> {

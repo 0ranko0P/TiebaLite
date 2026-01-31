@@ -57,7 +57,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
+val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
     BlockTip(modifier = Modifier.padding(vertical = 4.dp)) {
         Text(
             text = stringResource(id = R.string.tip_blocked_thread),
