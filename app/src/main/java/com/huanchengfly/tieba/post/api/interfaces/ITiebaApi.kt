@@ -1483,4 +1483,25 @@ interface ITiebaApi {
         isHide: Int,
         isTitle: Int,
     ): Flow<AddThreadBean>
+
+    /**
+     * 禁止用户互动（转、评、赞踩、@）
+     * @param blackUid 用户id
+     * @param tbs tbs（长）
+     * @param permList 参数列表：关注，互动，私信。(0,允许 1,禁止)
+     */
+    fun setUserBlack(
+        blackUid: Long,
+        tbs: String,
+        permList: PermissionListBean,
+    ): Flow<CommonResponse>
+
+
+    /**
+     * 查询单个用户的拉黑信息
+     * @param blackUid 被查询用户portrait
+     */
+    fun getUserBlackInfo(
+        blackUid: Long
+    ): Flow<GetUserBlackInfoBean>
 }

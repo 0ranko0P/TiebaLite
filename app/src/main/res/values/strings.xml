@@ -472,6 +472,7 @@
     <string name="video_preview_not_supported">暂不支持视频预览</string>
     <string name="about_license">开源许可证</string>
     <string name="about_source_code">开源代码</string>
+    <string name="ban_interact">拉黑</string>
     <string name="button_add_keyword">关键词</string>
     <string name="button_add_regex">正则表达式</string>
     <string name="button_ok">我知道了</string>
@@ -503,6 +504,7 @@
     <string name="theme_tab_custom">定制</string>
     <string name="toast_connecting">连接中请稍候..</string>
     <string name="toast_exception">出错了 %1$s</string>
+    <string name="toast_ban_interact_failed">更改拉黑配置失败 %1$s</string>
     <string name="welcome_intro">欢迎使用贴吧 Lite</string>
     <string name="welcome_intro_subtitle">极简的贴吧第三方客户端</string>
     <string name="welcome_permission">隐私与权限</string>

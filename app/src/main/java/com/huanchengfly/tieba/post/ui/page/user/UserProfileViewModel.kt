@@ -4,9 +4,12 @@ import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.bumptech.glide.Glide
 import com.huanchengfly.tieba.post.api.models.FollowBean
+import com.huanchengfly.tieba.post.api.models.PermissionListBean
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 sealed interface UserBlockState {
@@ -47,6 +51,8 @@ sealed interface UserProfileUiEvent : UiEvent {
     class FollowFailed(val message: String) : UserProfileUiEvent
 
     class UnfollowFailed(val message: String) : UserProfileUiEvent
+
+    class PermissionListException(val message: String): UserProfileUiEvent
 }
 
 @Immutable
@@ -54,6 +60,7 @@ data class UserProfileUiState(
     val isRefreshing: Boolean = true,
     val isRequestingFollow: Boolean = false,
     val userProfile: UserProfile? = null,
+    val permList: PermissionListBean? = null,
     val error: Throwable? = null,
 ) : UiState
 
@@ -122,7 +129,8 @@ class UserProfileViewModel @Inject constructor(
     private fun refreshInternal(forceRefresh: Boolean): Unit = launchInVM {
         _uiState.update { it.copy(isRefreshing = true, error = null) }
         userProfileRepo.refreshUserProfile(uid, forceRefresh, params.recordHistory)
-        _uiState.update { it.copy(isRefreshing = false, error = null) }
+        val permList = getUserBlackInfoSafe()
+        _uiState.update { it.copy(isRefreshing = false, permList = permList, error = null) }
     }
 
     fun onRefresh() {
@@ -190,6 +198,30 @@ class UserProfileViewModel @Inject constructor(
             sendUiEvent(UserProfileUiEvent.UnfollowFailed(message = e.getErrorMessage()))
         }
         _uiState.update { it.copy(isRequestingFollow = false) }
+    }
+
+    private suspend fun getUserBlackInfoSafe(): PermissionListBean? {
+        return runCatching {
+            userProfileRepo.getUserBlackInfo(uid)
+        }
+        .onFailure { e ->
+            if (e !is TiebaNotLoggedInException) {
+                sendUiEvent(UserProfileUiEvent.PermissionListException(e.getErrorMessage()))
+            }
+        }
+        .getOrNull()
+    }
+
+    fun setUserBlack(permList: PermissionListBean) = viewModelScope.launch {
+        runCatching {
+            userProfileRepo.setUserBlack(uid, permList)
+        }
+        .onFailure { e ->
+            sendUiEvent(UserProfileUiEvent.PermissionListException(e.getErrorMessage()))
+        }
+        .onSuccess {
+            _uiState.update { it.copy(permList = permList) }
+        }
     }
 
     override fun onCleared() {

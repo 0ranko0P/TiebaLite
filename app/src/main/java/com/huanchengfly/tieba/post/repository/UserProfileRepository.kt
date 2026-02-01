@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.api.models.FollowBean
+import com.huanchengfly.tieba.post.api.models.PermissionListBean
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
@@ -128,6 +129,15 @@ class UserProfileRepository @Inject constructor(
         threadRepo.requestLikeThread(thread)
         // update local data is costly, purge caches instead
         localDataSource.purgeUserThreadPost(uid, isThread = true)
+    }
+
+    suspend fun getUserBlackInfo(uid: Long): PermissionListBean {
+        requireTBS()
+        return networkDataSource.getUserBlackInfo(uid)
+    }
+
+    suspend fun setUserBlack(uid: Long, permList: PermissionListBean) {
+        networkDataSource.setUserBlack(uid, tbs = requireTBS(), permList)
     }
 
     private suspend fun checkUserCacheExpired(uid: Long): Boolean {

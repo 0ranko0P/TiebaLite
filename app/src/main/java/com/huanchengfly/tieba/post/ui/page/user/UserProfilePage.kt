@@ -26,9 +26,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -53,8 +55,10 @@ import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -68,6 +72,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Devices
@@ -86,6 +91,7 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.models.PermissionListBean
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.components.glide.BlurTransformation
@@ -112,8 +118,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingAvatarTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.DefaultLoadingScreen
@@ -232,6 +240,8 @@ fun UserProfilePage(
 
             is UserProfileUiEvent.UnfollowFailed -> getString(R.string.toast_unlike_failed, it.message)
 
+            is UserProfileUiEvent.PermissionListException -> getString(R.string.toast_ban_interact_failed, it.message)
+
             is CommonUiEvent.Toast -> it.message.toString()
 
             else -> Unit
@@ -260,6 +270,18 @@ fun UserProfilePage(
         val account = LocalAccount.current
         val isSelf = account?.uid == uid
         val blockState by viewModel.blockState.collectAsStateWithLifecycle()
+
+        var showPermissionSettingDialogDialog by remember { mutableStateOf(false) }
+
+        if (showPermissionSettingDialogDialog) {
+            PermissionSettingDialogM2(
+                initialPermissionList = uiState.permList ?: PermissionListBean(),
+                onDismissRequest = { showPermissionSettingDialogDialog = false },
+                onConfirm = { updatedBean ->
+                    viewModel.setUserBlack(updatedBean)
+                }
+            )
+        }
 
         val tabs: List<TabWithTitle> = remember {
             Tab.entries.mapNotNull {
@@ -316,7 +338,7 @@ fun UserProfilePage(
                 UserProfileTopAppBar(
                     transitionKey = transitionKey,
                     profile = userProfile,
-                    isSelf = isSelf,
+                    myUid = account?.uid,
                     isFollowing = userProfile.following,
                     isRequestingFollow = uiState.isRequestingFollow,
                     onActionClicked = {
@@ -332,6 +354,7 @@ fun UserProfilePage(
                     block = blockState,
                     onBlackListClicked = viewModel::onUserBlacklisted,
                     onWhiteListClicked = viewModel::onUserWhitelisted,
+                    onSetUserBlack = { showPermissionSettingDialogDialog = true },
                     onBack = onBack,
                     scrollBehavior = scrollBehavior,
                 ) {
@@ -390,17 +413,19 @@ private fun UserProfileTopAppBar(
     transitionKey: String? = null,
     profile: UserProfile,
     block: UserBlockState,
-    isSelf: Boolean = false,
+    myUid: Long? = null,
     isFollowing: Boolean = false,
     isRequestingFollow: Boolean = false,
     onActionClicked: (() -> Unit)? = null,
     onRefreshClicked: () -> Unit = {},
     onBlackListClicked: () -> Unit = {},
     onWhiteListClicked: () -> Unit = {},
+    onSetUserBlack: () -> Unit,
     onBack: () -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val isSelf = myUid == profile.uid
     val actionsMenu: @Composable RowScope.() -> Unit = {
         if (isRequestingFollow) {
             CircularProgressIndicator(
@@ -436,6 +461,9 @@ private fun UserProfileTopAppBar(
                         text = if (isInWhiteList) R.string.title_remove_white else R.string.title_add_white,
                         onClick = onWhiteListClicked
                     )
+                    if (myUid != null) {
+                        TextMenuItem(text = R.string.ban_interact, onClick = onSetUserBlack)
+                    }
                 }
             },
             triggerShape = CircleShape
@@ -966,6 +994,111 @@ private fun UserPageEmpty() {
         },
     )
 }
+
+@Composable
+fun PermissionSettingDialogM2(
+    modifier: Modifier = Modifier,
+    initialPermissionList: PermissionListBean,
+    onDismissRequest: () -> Unit,
+    onConfirm: (PermissionListBean) -> Unit
+) {
+    // 维护对话框内部的临时状态
+    var currentBean by remember { mutableStateOf(initialPermissionList.copy()) }
+
+    AlertDialog(
+        modifier = modifier,
+        onDismissRequest = onDismissRequest,
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "拉黑范围",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                // 1. 禁止关注
+                val followChecked = currentBean.follow == 1
+                TextPref(
+                    title = "禁止TA关注我",
+                    leadingIcon = Icons.Outlined.Block,
+                    onClick = {
+                        val next = !followChecked
+                        currentBean = currentBean.copy(follow = if (next) 1 else 0)
+                    }
+                ) {
+                    Switch(
+                        checked = followChecked,
+                        onCheckedChange = { isChecked ->
+                            currentBean = currentBean.copy(follow = if (isChecked) 1 else 0)
+                        }
+                    )
+                }
+                // 2. 禁止互动
+                val interactChecked = currentBean.interact == 1
+                TextPref(
+                    title = "禁止TA互动",
+                    leadingIcon = Icons.Outlined.Block,
+                    summary = "包含转,评,赞踩,@",
+                    onClick = {
+                        val next = !interactChecked
+                        currentBean = currentBean.copy(interact = if (next) 1 else 0)
+                    }
+                ) {
+                    Switch(
+                        checked = interactChecked,
+                        onCheckedChange = { isChecked ->
+                            currentBean = currentBean.copy(interact = if (isChecked) 1 else 0)
+                        }
+                    )
+                }
+
+                // 3. 禁止私信
+                val chatChecked = currentBean.chat == 1
+                TextPref(
+                    title = "禁止TA私信",
+                    leadingIcon = Icons.Outlined.Block,
+                    onClick = {
+                        val next = !chatChecked
+                        currentBean = currentBean.copy(chat = if (next) 1 else 0)
+                    }
+                ) {
+                    Switch(
+                        checked = chatChecked,
+                        onCheckedChange = { isChecked ->
+                            currentBean = currentBean.copy(chat = if (isChecked) 1 else 0)
+                        }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(currentBean)
+                onDismissRequest()
+            }) {
+                Text("确定", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewPermissionDialog() {
+    TiebaLiteTheme {
+        PermissionSettingDialogM2(
+            initialPermissionList = PermissionListBean(1, 1, 1),
+            onDismissRequest = {},
+            onConfirm = {}
+        )
+    }
+}
+
 
 @Preview("UserProfileDetail", showBackground = true, backgroundColor = 0xFFFFFFFF)
 @Composable

@@ -557,4 +557,22 @@ interface OfficialTiebaApi {
         @Field("spid") subPostId: String?,
         @Field("rn") rn: Int = 20
     ): Call<SubFloorListBean>
+
+    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
+    @POST("/c/c/user/setUserBlack")
+    @FormUrlEncoded
+    fun setUserBlack(
+        @Field("black_uid") blackUid: Long = -1,
+        @Field("tbs") tbs: String,
+        @Field("perm_list") permList: String,
+        @Field("stoken") stoken: String = AccountUtil.getSToken()!!
+    ): Flow<CommonResponse>
+
+    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
+    @POST("/c/u/user/getUserBlackInfo")
+    @FormUrlEncoded
+    fun getUserBlack(
+        @Field("black_uid") blackUid: Long = -1,
+        @Field("stoken") stoken: String = AccountUtil.getSToken()!!
+    ): Flow<GetUserBlackInfoBean>
 }
