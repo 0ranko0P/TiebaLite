@@ -40,7 +40,7 @@ jobs:
         run: |
           sha=`echo ${{ github.sha }} | cut -c1-8`
           version_code=`jq -r ".elements[0].versionCode" app/build/outputs/apk/release/output-metadata.json`
-          version="TiebaLite-${{ github.ref_name }}+${ sha }.$version_code"
+          version="TiebaLite-${{ github.ref_name }}+${sha}.$version_code"
           mv app/build/outputs/apk/release/app-release.apk "$version.apk"
 
       - name: Upload mapping
