@@ -178,7 +178,7 @@ object RetrofitTiebaApi {
         createJsonApi<OfficialTiebaApi>(
             "http://c.tieba.baidu.com/",
             CommonHeaderInterceptor(
-                Header.USER_AGENT to { "bdtb for Android 12.25.1.0" },
+                Header.USER_AGENT to { "bdtb for Android 12.41.7.1" },
                 Header.COOKIE to { "CUID=${CuidUtils.getNewCuid()};ka=open;TBBRAND=${Build.MODEL};BAIDUID=${ClientUtils.baiduId};" },
                 Header.CUID to { CuidUtils.getNewCuid() },
                 Header.CUID_GALAXY2 to { CuidUtils.getNewCuid() },
@@ -216,7 +216,7 @@ object RetrofitTiebaApi {
                 Param.START_SCHEME to { "" },
                 Param.START_TYPE to { "1" },
                 Param.SWAN_GAME_VER to { "1038000" },
-                Param.CLIENT_VERSION to { "12.25.1.0" },
+                Param.CLIENT_VERSION to { "12.41.7.1" },
                 Param.CUID_GALAXY3 to { UIDUtil.getAid() },
                 Param.OAID to { OAID().toJson() },
             ),

@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.api.retrofit.interfaces
 import android.os.Build
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.ScreenInfo
+import com.huanchengfly.tieba.post.api.ClientVersion
 import com.huanchengfly.tieba.post.api.Header
 import com.huanchengfly.tieba.post.api.Param
 import com.huanchengfly.tieba.post.api.getScreenHeight
@@ -127,7 +128,7 @@ interface OfficialTiebaApi {
     fun unfollowFlow(
         @Field("portrait") portrait: String,
         @Field("tbs") tbs: String,
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("authsid") authsid: String = "null",
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
@@ -142,7 +143,7 @@ interface OfficialTiebaApi {
     fun followFlow(
         @Field("portrait") portrait: String,
         @Field("tbs") tbs: String,
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("authsid") authsid: String = "null",
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
@@ -160,7 +161,7 @@ interface OfficialTiebaApi {
         @Field("BDUSS") bduss: String = AccountUtil.getBduss()!!,
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
         @Field("user_id") userId: String = AccountUtil.getUid()!!,
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
     ): Flow<GetForumListBean>
 
@@ -170,7 +171,7 @@ interface OfficialTiebaApi {
     fun mSignFlow(
         @Field("forum_ids") forumIds: String,
         @Field("tbs") tbs: String,
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("authsid") authsid: String = "null",
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
@@ -187,7 +188,7 @@ interface OfficialTiebaApi {
     fun initNickNameFlow(
         @Field("BDUSS") bduss: String = AccountUtil.getBduss()!!,
         @Field("stoken") sToken: String = AccountUtil.getSToken()!!,
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version"
     ): Flow<InitNickNameBean>
 
@@ -204,7 +205,7 @@ interface OfficialTiebaApi {
         @Field("user_id") userId: String? = AccountUtil.getUid(),
         @Field("channel_id") channelId: String = "",
         @Field("channel_uid") channelUid: String = "",
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("authsid") authsid: String = "null",
     ): Flow<LoginBean>
@@ -223,7 +224,7 @@ interface OfficialTiebaApi {
         @Field("need_post_count") needPostCount: String = "1",
         @Field("page") page: String = "1",
         @Field("pn") pn: String = "1",
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
     ): Flow<Profile>
 
@@ -254,7 +255,7 @@ interface OfficialTiebaApi {
     @POST("/c/c/img/portrait")
     fun imgPortrait(
         @Body body: MyMultipartBody,
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android 11.10.8.6",
+        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android ${ClientVersion.TIEBA_V12.version}",
     ): Flow<CommonResponse>
 
     @POST("/c/f/excellent/personalized")
@@ -263,7 +264,7 @@ interface OfficialTiebaApi {
         @Field("load_type") load_type: Int,
         @Field("pn") page: Int = 1,
         @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("cuid_gid") cuid_gid: String = "",
         @Field("need_tags") need_tags: Int = 0,
@@ -295,7 +296,7 @@ interface OfficialTiebaApi {
         @Field("kw") forumName: String,
         @Field("tbs") tbs: String,
         @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
     ): Flow<SignResultBean>
 
@@ -312,7 +313,7 @@ interface OfficialTiebaApi {
         @Field("kw") forumName: String,
         @Field("tbs") tbs: String,
         @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("stoken") stoken: String? = AccountUtil.getSToken(),
     ): Flow<CommonResponse>
@@ -329,7 +330,7 @@ interface OfficialTiebaApi {
         @Field("rn") pageSize: Int,
         @Field("offset") offset: Int,
         @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("stoken") stoken: String? = AccountUtil.getSToken(),
         @Field("user_id") user_id: String? = AccountUtil.getUid(),
@@ -402,7 +403,7 @@ interface OfficialTiebaApi {
         @Field("v_fid") v_fid: String = "",
         @Field("v_fname") v_fname: String = "",
         @Field("vcode_tag") vcode_tag: String = "12",
-        @Field("_client_version") client_version: String = "11.10.8.6",
+        @Field("_client_version") client_version: String = ClientVersion.TIEBA_V11.version,
         @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("stoken") sToken: String? = AccountUtil.getSToken(),
         @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
