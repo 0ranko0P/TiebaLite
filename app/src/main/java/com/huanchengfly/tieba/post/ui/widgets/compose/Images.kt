@@ -194,7 +194,15 @@ fun NetworkImage(
     val shouldLoadImage = shouldLoadImage()
     val darkenImage = LocalUISettings.current.darkenImage && LocalExtendedColorScheme.current.darkTheme
     var isLongPressing by remember { mutableStateOf(false) }
-    val model = TbGlideUrl(imageUrl)
+
+    val model = remember {
+        if (imageUrl.isNotEmpty() && imageUrl.isNotBlank()) TbGlideUrl(imageUrl) else null
+    }
+
+    if (model == null) {
+        ErrorImage(modifier, tip = stringResource(R.string.desc_image_empty_url))
+        return
+    }
 
     Box(
         modifier = modifier
