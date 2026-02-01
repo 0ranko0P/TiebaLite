@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.LocalUISettings
-import com.huanchengfly.tieba.post.theme.isDarkScheme
+import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_3BUTTON
@@ -52,18 +52,18 @@ val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 @Composable
 fun defaultInputScale(): HazeInputScale {
     // Disable input scale on dark ColorScheme to avoid banding artifact
-    return if (MaterialTheme.colorScheme.isDarkScheme) HazeInputScale.None else HazeInputScale.Fixed(0.33f)
+    return if (LocalExtendedColorScheme.current.darkTheme) HazeInputScale.None else HazeInputScale.Fixed(0.33f)
 }
 
+@ReadOnlyComposable
 @Composable
 fun defaultHazeStyle(): HazeStyle {
-    val colorScheme = MaterialTheme.colorScheme
-    return remember(colorScheme.surfaceContainer) {
+    return with(LocalExtendedColorScheme.current) {
         HazeStyle(
             backgroundColor = colorScheme.surfaceContainer,
             tint = null,
             blurRadius = 28.dp,
-            noiseFactor = if (colorScheme.isDarkScheme) 0.2f else 0f // Reduce banding artifact on dark mode
+            noiseFactor = if (darkTheme) 0.2f else 0f // Reduce banding artifact on dark mode
         )
     }
 }
