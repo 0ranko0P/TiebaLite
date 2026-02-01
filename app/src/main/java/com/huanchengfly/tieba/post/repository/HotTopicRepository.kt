@@ -6,6 +6,7 @@ import com.huanchengfly.tieba.post.api.models.ThreadBean
 import com.huanchengfly.tieba.post.api.models.ThreadInfoBean
 import com.huanchengfly.tieba.post.api.models.TopicInfoBean
 import com.huanchengfly.tieba.post.api.models.protos.Media
+import com.huanchengfly.tieba.post.api.models.protos.topicList.NewTopicList
 import com.huanchengfly.tieba.post.repository.source.network.HotTopicNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
@@ -14,7 +15,6 @@ import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildThreadContent
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -33,6 +33,10 @@ class HotTopicRepository @Inject constructor(
 
     val habitSettings: Settings<HabitSettings>
         get() = settingsRepo.habitSettings
+
+    suspend fun loadTopicList(): List<NewTopicList> {
+        return networkDataSource.topicList().topic_list
+    }
 
     suspend fun loadTopicDetail(
         topicId: Long,

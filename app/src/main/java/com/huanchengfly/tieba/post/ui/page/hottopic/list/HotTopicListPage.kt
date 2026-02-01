@@ -14,25 +14,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.topicList.NewTopicList
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
+import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.theme.Grey300
 import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
@@ -41,11 +44,14 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.TopicTag
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 
 @Composable
@@ -127,82 +133,106 @@ private fun TopicBody(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HotTopicListPage(
-    viewModel: HotTopicListViewModel = pageViewModel<HotTopicListUiIntent, HotTopicListViewModel>(
-        listOf(HotTopicListUiIntent.Load)
-    ),
-    navigator: NavController
+private fun HotTopicList(
+    uiState: HotTopicListUiState,
+    onRefresh: () -> Unit = {},
+    onTopicClicked: (NewTopicList) -> Unit = {},
+    navigateUp: () -> Unit = {},
 ) {
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = HotTopicListUiState::isRefreshing,
-        initial = false
-    )
-    val topicList by viewModel.uiState.collectPartialAsState(
-        prop1 = HotTopicListUiState::topicList,
-        initial = emptyList()
-    )
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    Scaffold(
-        topBar = {
-            TitleCentredToolbar(
-                title = stringResource(id = R.string.title_hot_message_list),
-                navigationIcon = {
-                    BackNavigationIcon(onBackPressed = navigator::navigateUp)
-                }
-            )
-        },
-        containerColor = Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.onSurface
-    ) { contentPaddings ->
-        PullToRefreshBox(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            isRefreshing = isRefreshing,
-            onRefresh = {
-                viewModel.send(HotTopicListUiIntent.Load)
+    StateScreen(
+        isEmpty = uiState.topicList.isEmpty(),
+        isLoading = uiState.isRefreshing,
+        error = uiState.error,
+        onReload = onRefresh
+    ) {
+        BlurScaffold(
+            topHazeBlock = {
+                blurEnabled = scrollBehavior.isOverlapping
             },
-            contentPadding = contentPaddings,
-        ) {
-            MyLazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = contentPaddings
-            ) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                itemsIndexed(
-                    items = topicList,
-                    key = { _, item -> item.topic_id },
-                ) { index, item ->
-                    if (index < 3) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                                .clickable {
-                                    navigator.navigate(Destination.HotTopicDetail(item.topic_id, item.topic_name))
-                                },
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            TopicImage(index = index, imageUri = item.topic_image)
-                            TopicBody(index = index, item = item)
+            topBar = {
+                CenterAlignedTopAppBar(
+                    titleRes = R.string.title_hot_message_list,
+                    navigationIcon = {
+                        BackNavigationIcon(onBackPressed = navigateUp)
+                    },
+                    scrollBehavior = scrollBehavior
+                )
+            },
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ) { contentPaddings ->
+            Container {
+                PullToRefreshBox(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    isRefreshing = false,
+                    onRefresh = onRefresh,
+                    contentPadding = contentPaddings,
+                ) {
+                    MyLazyColumn(
+                        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = contentPaddings,
+                    ) {
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth()
-                                .clickable {
-                                    navigator.navigate(Destination.HotTopicDetail(item.topic_id, item.topic_name))
-                                },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            TopicImage(index = index, imageUri = item.topic_image)
-                            TopicBody(index = index, item = item)
+
+                        itemsIndexed(
+                            items = uiState.topicList,
+                            key = { _, item -> item.topic_id },
+                        ) { index, item ->
+                            val topicClickedListener: () -> Unit = { onTopicClicked(item) }
+
+                            if (index < 3) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(onClick = topicClickedListener),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    TopicImage(index = index, imageUri = item.topic_image)
+                                    TopicBody(index = index, item = item)
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(onClick = topicClickedListener),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    TopicImage(index = index, imageUri = item.topic_image)
+                                    TopicBody(index = index, item = item)
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+fun HotTopicListPage(
+    viewModel: HotTopicListViewModel = hiltViewModel<HotTopicListViewModel>(),
+    navigator: NavController
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    viewModel.uiEvent.collectCommonUiEventWithLifecycle()
+
+    HotTopicList(
+        uiState = uiState,
+        onRefresh = viewModel::onRefresh,
+        onTopicClicked = { item ->
+            navigator.navigate(Destination.HotTopicDetail(item.topic_id, item.topic_name))
+        },
+        navigateUp = navigator::navigateUp,
+    )
 }
