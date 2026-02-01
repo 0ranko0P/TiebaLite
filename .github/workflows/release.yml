@@ -38,9 +38,19 @@ jobs:
 
       - name: Rename release apk
         run: |
-          mv app/build/outputs/apk/release/app-release.apk "TiebaLite-${{ github.ref_name }}.apk"
+          sha=`echo ${{ github.sha }} | cut -c1-8`
+          version_code=`jq -r ".elements[0].versionCode" app/build/outputs/apk/release/output-metadata.json`
+          version="TiebaLite-${{ github.ref_name }}+${ sha }.$version_code"
+          mv app/build/outputs/apk/release/app-release.apk "$version.apk"
 
-      - name: Upload artifacts
+      - name: Upload mapping
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: mapping
+          path: ./app/build/outputs/mapping/release
+          compression-level: 9
+
+      - name: Upload release
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: release-artifact

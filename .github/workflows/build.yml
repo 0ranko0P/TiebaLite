@@ -73,7 +73,7 @@ jobs:
         run: |
           set -e
 
-          epoch=`git log -1 $commit --format=%cd --date=unix`
+          epoch=`git log -1 ${{ github.sha }} --format=%cd --date=unix`
           version_code=`jq -r ".elements[0].versionCode" app/build/outputs/apk/ci/output-metadata.json`
           echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
           echo "commit_epoch=$epoch" >> "$GITHUB_OUTPUT"
@@ -134,11 +134,10 @@ jobs:
 
       - name: Print summary
         run: |
-          commit=${{ github.sha }}
           commit_time=`TZ=Asia/Shanghai date -Iseconds -d "@${{ needs.test_build.outputs.commit_epoch }}"`
           {
             echo "### 构建完成 :zap:"
             echo ""
-            echo "提交哈希 \`$commit\`, 创建于 $commit_time"
+            echo "提交哈希 \`${{ github.sha }}\`, 创建于 $commit_time"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
