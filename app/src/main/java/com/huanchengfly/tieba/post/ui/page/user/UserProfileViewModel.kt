@@ -216,9 +216,12 @@ class UserProfileViewModel @Inject constructor(
     fun setUserBlack(permList: PermissionList) = viewModelScope.launch {
         if (currentState.permList == permList) return@launch // Double check
 
+        val start = System.currentTimeMillis()
         _uiState.update { it.copy(isLoadingPermList = true) }
         runCatching {
             userProfileRepo.setUserBlack(uid, permList)
+            // Show loading animation longer
+            if (System.currentTimeMillis() - start < 200) delay(400)
         }
         .onFailure { e ->
             sendUiEvent(UserProfileUiEvent.PermissionListException(e.getErrorMessage()))
