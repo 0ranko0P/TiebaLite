@@ -191,7 +191,7 @@ fun NetworkImage(
     photoViewDataProvider: (() -> PhotoViewData?)? = null,
 ) {
     val context = LocalContext.current
-    val shouldLoadImage = shouldLoadImage()
+    val shouldLoadImage = true // shouldLoadImage()
     val darkenImage = LocalUISettings.current.darkenImage && LocalExtendedColorScheme.current.darkTheme
     var isLongPressing by remember { mutableStateOf(false) }
 
