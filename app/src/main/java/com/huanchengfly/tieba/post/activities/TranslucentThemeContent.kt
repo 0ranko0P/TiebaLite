@@ -74,6 +74,7 @@ import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.bumptech.glide.request.RequestListener
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.settings.AboutPage
@@ -308,18 +309,9 @@ private fun WallpaperOverlay(
     primary: Color,
     isDarkColor: Boolean
 ) {
-    // Simulate color mode changes for AboutPage
-    val colorScheme = MaterialTheme.colorScheme
     val colors = remember(primary, isDarkColor) {
-        val onSurface = if (isDarkColor) Color.Black else Color.White
-        colorScheme.copy(
-            primaryContainer = primary.copy(0.75f),
-            onPrimaryContainer = onSurface,
-            surface = Color.Transparent,
-            onSurface = onSurface
-        )
+        translucentColorScheme(primary, colorMode = isDarkColor).lightColor
     }
-
     val typography = MaterialTheme.typography.run { // Scale font size up
         copy(
             labelLarge = labelLarge.copy(fontSize = labelLarge.fontSize * 1.3f),
