@@ -303,6 +303,18 @@ private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: L
     }
 }
 
+@NonRestartableComposable
+@Composable
+private fun SelectableText(modifier: Modifier = Modifier, text: String, selected: Boolean) {
+    Text(
+        text = text,
+        modifier = modifier,
+        fontSize = 13.sp,
+        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        color = MaterialTheme.colorScheme.run { if (selected) onSurface else onSurfaceVariant },
+    )
+}
+
 @Composable
 fun ThreadHeader(
     modifier: Modifier = Modifier,
@@ -317,7 +329,6 @@ fun ThreadHeader(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val colors = MaterialTheme.colorScheme
         Text(
             text = stringResource(R.string.title_thread_header, replyNum.toString()),
             fontSize = 13.sp,
@@ -326,38 +337,32 @@ fun ThreadHeader(
 
         VerticalDivider(modifier = Modifier.padding(horizontal = 8.dp))
 
-        Text(
+        SelectableText(
             text = stringResource(R.string.title_see_lz),
             modifier = Modifier.clickableNoIndication(enabled = !isSeeLz, onClick = onSeeLzChanged),
-            fontSize = 13.sp,
-            fontWeight = if (isSeeLz) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isSeeLz) colors.onSurface else colors.onSurfaceVariant,
+            selected = isSeeLz,
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(
+        SelectableText(
             text = stringResource(R.string.title_asc),
             modifier = Modifier.clickableNoIndication(
                 enabled = sortType == ThreadSortType.BY_DESC,
                 onClick = { onSortTypeChanged(ThreadSortType.BY_ASC) }
             ),
-            fontSize = 13.sp,
-            fontWeight = if (sortType == 0) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (sortType == 0) colors.onSurface else colors.onSurfaceVariant,
+            selected = sortType == ThreadSortType.BY_ASC ,
         )
 
         VerticalDivider(modifier = Modifier.padding(horizontal = 8.dp))
 
-        Text(
+        SelectableText(
             text = stringResource(R.string.title_desc),
             modifier = Modifier.clickableNoIndication(
                 enabled = sortType == ThreadSortType.BY_ASC,
                 onClick = { onSortTypeChanged(ThreadSortType.BY_DESC) }
             ),
-            fontSize = 13.sp,
-            fontWeight = if (sortType == 1) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (sortType == 1) colors.onSurface else colors.onSurfaceVariant,
+            selected = sortType == ThreadSortType.BY_DESC,
         )
     }
 
