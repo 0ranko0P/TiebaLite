@@ -130,6 +130,7 @@
     <string name="topic_index">贴吧话题榜 No.%1$d</string>
     <string name="forum_post_num">帖子数 %1$s</string>
     <string name="forum_concern_num">关注数 %1$s</string>
+    <string name="menu_ban_user">拉黑设置</string>
     <string name="menu_edit_info">编辑资料</string>
     <string name="button_allow">允许</string>
     <string name="button_denied">禁止</string>
@@ -472,7 +473,10 @@
     <string name="video_preview_not_supported">暂不支持视频预览</string>
     <string name="about_license">开源许可证</string>
     <string name="about_source_code">开源代码</string>
-    <string name="ban_interact">拉黑</string>
+    <string name="ban_chat">禁止TA私信</string>
+    <string name="ban_follow">禁止TA关注我</string>
+    <string name="ban_interact">禁止TA互动</string>
+    <string name="ban_interact_summary">包含转,评,赞踩,@</string>
     <string name="button_add_keyword">关键词</string>
     <string name="button_add_regex">正则表达式</string>
     <string name="button_ok">我知道了</string>
@@ -485,6 +489,8 @@
     <string name="dialog_add_whitelist">包含关键词的内容不会被屏蔽, 白名单优先级高于黑名单</string>
     <string name="dialog_add_blocklist_regex">匹配的内容将会被屏蔽</string>
     <string name="dialog_add_whitelist_regex">匹配的内容不会被屏蔽, 白名单优先级高于黑名单</string>
+    <string name="dialog_ban">拉黑范围</string>
+    <string name="dialog_ban_requesting">正在请求更新拉黑设置</string>
     <string name="dialog_permission_rationale">前往设置页面并手动授予“%1$s”权限</string>
     <string name="dialog_content_wait">请坐和放宽</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>

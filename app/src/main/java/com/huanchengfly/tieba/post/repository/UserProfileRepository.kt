@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.repository
 import android.content.Context
 import android.util.Log
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
+import com.huanchengfly.tieba.post.api.booleanToInt
 import com.huanchengfly.tieba.post.api.models.FollowBean
 import com.huanchengfly.tieba.post.api.models.PermissionListBean
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
@@ -19,6 +20,7 @@ import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.LikeZero
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
+import com.huanchengfly.tieba.post.ui.models.user.PermissionList
 import com.huanchengfly.tieba.post.ui.models.user.PostContent
 import com.huanchengfly.tieba.post.ui.models.user.PostListItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildThreadContent
@@ -131,13 +133,20 @@ class UserProfileRepository @Inject constructor(
         localDataSource.purgeUserThreadPost(uid, isThread = true)
     }
 
-    suspend fun getUserBlackInfo(uid: Long): PermissionListBean {
+    suspend fun getUserBlackInfo(uid: Long): PermissionList {
         requireTBS()
-        return networkDataSource.getUserBlackInfo(uid)
+        val bean = networkDataSource.getUserBlackInfo(uid)
+        return PermissionList(bean)
     }
 
-    suspend fun setUserBlack(uid: Long, permList: PermissionListBean) {
-        networkDataSource.setUserBlack(uid, tbs = requireTBS(), permList)
+    suspend fun setUserBlack(uid: Long, permList: PermissionList) {
+        // Convert UI Model to Network Model
+        val bean = PermissionListBean(
+            follow = permList.follow.booleanToInt(),
+            interact = permList.interact.booleanToInt(),
+            chat = permList.chat.booleanToInt()
+        )
+        networkDataSource.setUserBlack(uid, tbs = requireTBS(), bean)
     }
 
     private suspend fun checkUserCacheExpired(uid: Long): Boolean {

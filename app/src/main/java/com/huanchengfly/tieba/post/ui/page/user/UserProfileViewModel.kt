@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.bumptech.glide.Glide
 import com.huanchengfly.tieba.post.api.models.FollowBean
-import com.huanchengfly.tieba.post.api.models.PermissionListBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
@@ -24,6 +23,7 @@ import com.huanchengfly.tieba.post.models.database.BlockUser
 import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
+import com.huanchengfly.tieba.post.ui.models.user.PermissionList
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.StringUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -59,8 +59,9 @@ sealed interface UserProfileUiEvent : UiEvent {
 data class UserProfileUiState(
     val isRefreshing: Boolean = true,
     val isRequestingFollow: Boolean = false,
+    val isLoadingPermList: Boolean = true,
     val userProfile: UserProfile? = null,
-    val permList: PermissionListBean? = null,
+    val permList: PermissionList? = null,
     val error: Throwable? = null,
 ) : UiState
 
@@ -105,10 +106,10 @@ class UserProfileViewModel @Inject constructor(
 
     override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, suppressed ->
         if (suppressed && currentState.userProfile != null) {
-            _uiState.update { it.copy(isRefreshing = false, error = null) }
+            _uiState.update { it.copy(isRefreshing = false, isLoadingPermList = false, error = null) }
             sendUiEvent(CommonUiEvent.ToastError(e))
         } else {
-            _uiState.update { it.copy(isRefreshing = false, error = e) }
+            _uiState.update { it.copy(isRefreshing = false, isLoadingPermList = false, error = e) }
         }
     }
 
@@ -127,10 +128,10 @@ class UserProfileViewModel @Inject constructor(
     override fun createInitialState(): UserProfileUiState = UserProfileUiState()
 
     private fun refreshInternal(forceRefresh: Boolean): Unit = launchInVM {
-        _uiState.update { it.copy(isRefreshing = true, error = null) }
+        _uiState.update { it.copy(isRefreshing = true, isLoadingPermList = true, error = null) }
         userProfileRepo.refreshUserProfile(uid, forceRefresh, params.recordHistory)
         val permList = getUserBlackInfoSafe()
-        _uiState.update { it.copy(isRefreshing = false, permList = permList, error = null) }
+        _uiState.update { it.copy(isRefreshing = false, isLoadingPermList = false, permList = permList, error = null) }
     }
 
     fun onRefresh() {
@@ -200,7 +201,7 @@ class UserProfileViewModel @Inject constructor(
         _uiState.update { it.copy(isRequestingFollow = false) }
     }
 
-    private suspend fun getUserBlackInfoSafe(): PermissionListBean? {
+    private suspend fun getUserBlackInfoSafe(): PermissionList? {
         return runCatching {
             userProfileRepo.getUserBlackInfo(uid)
         }
@@ -212,15 +213,19 @@ class UserProfileViewModel @Inject constructor(
         .getOrNull()
     }
 
-    fun setUserBlack(permList: PermissionListBean) = viewModelScope.launch {
+    fun setUserBlack(permList: PermissionList) = viewModelScope.launch {
+        if (currentState.permList == permList) return@launch // Double check
+
+        _uiState.update { it.copy(isLoadingPermList = true) }
         runCatching {
             userProfileRepo.setUserBlack(uid, permList)
         }
         .onFailure { e ->
             sendUiEvent(UserProfileUiEvent.PermissionListException(e.getErrorMessage()))
+            _uiState.update { it.copy(isLoadingPermList = false) }
         }
         .onSuccess {
-            _uiState.update { it.copy(permList = permList) }
+            _uiState.update { it.copy(isLoadingPermList = false, permList = permList) }
         }
     }
 

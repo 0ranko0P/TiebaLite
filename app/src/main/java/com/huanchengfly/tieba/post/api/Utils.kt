@@ -1,6 +1,7 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.huanchengfly.tieba.post.api
 
-import android.os.Build
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.ScreenInfo
 
@@ -22,4 +23,6 @@ fun getScreenHeight(): Int = ScreenInfo.EXACT_SCREEN_HEIGHT
 
 fun getScreenWidth(): Int = ScreenInfo.EXACT_SCREEN_WIDTH
 
-fun Boolean.booleanToString(): String = if (this) "1" else "0"
+inline fun Boolean.booleanToString(): String = if (this) "1" else "0"
+
+inline fun Boolean.booleanToInt(): Int = if (this) 1 else 0
