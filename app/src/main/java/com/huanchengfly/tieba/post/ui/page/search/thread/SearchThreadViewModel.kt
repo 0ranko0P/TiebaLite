@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.search.thread
 import androidx.annotation.IntDef
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.util.fastDistinctBy
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
@@ -11,8 +12,10 @@ import com.huanchengfly.tieba.post.repository.SearchRepository
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @Immutable
@@ -74,7 +77,10 @@ class SearchThreadViewModel @Inject constructor(
             val page = uiStateSnapshot.currentPage + 1
             val sortType = uiStateSnapshot.sortType
             val (hasMore, threads) = searchRepo.searchThread(uiStateSnapshot.keyword, page, sortType)
-            val newData = uiStateSnapshot.data + threads
+            // Old threads + new threads
+            val newData = withContext(Dispatchers.Default) {
+                (uiStateSnapshot.data + threads).fastDistinctBy { it.lazyListKey }
+            }
             _uiState.update {
                 if (it === uiStateSnapshot) {
                     it.copy(isLoadingMore = false, currentPage = page, hasMore = hasMore, data = newData)
