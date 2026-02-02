@@ -158,8 +158,8 @@ class PbPageRepository @Inject constructor(
         )
     }
 
-    suspend fun pbFloor(threadId: Long, postId: Long, forumId: Long, page: Int): PbFloorUiResponse {
-        val data = networkDataSource.pbFloor(threadId, postId, forumId, page)
+    suspend fun pbFloor(threadId: Long, postId: Long, forumId: Long, page: Int, subPostId: Long = 0): PbFloorUiResponse {
+        val data = networkDataSource.pbFloor(threadId, postId, forumId, page, subPostId)
         val post = data.post ?: throw TiebaException("Null post")
         val pageData = data.page ?: throw TiebaException("Null page data")
         val lzId = data.thread?.author?.id ?: -1L

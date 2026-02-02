@@ -117,7 +117,7 @@ class SubPostsViewModel @Inject constructor(
     private fun refreshInternal() {
         _uiState.set { SubPostsUiState(isRefreshing = true) }
         launchInVM {
-            val rec = threadRepo.pbFloor(threadId, postId, forumId, page = 1)
+            val rec = threadRepo.pbFloor(threadId, postId, forumId, page = 1, subPostId = params.subPostId)
             _uiState.update {
                 it.copy(
                     isRefreshing = false,

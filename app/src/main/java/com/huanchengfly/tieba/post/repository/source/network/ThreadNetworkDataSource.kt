@@ -177,12 +177,12 @@ object ThreadNetworkDataSource {
             }
     }
 
-    suspend fun pbFloor(threadId: Long, postId: Long, forumId: Long, page: Int = 1): PbFloorResponseData {
+    suspend fun pbFloor(threadId: Long, postId: Long, forumId: Long, page: Int = 1, subPostId: Long): PbFloorResponseData {
         require(threadId > 0) { "Illegal Thread ID $threadId" }
         require(page > 0) { "Illegal Page: $page" }
 
         return TiebaApi.getInstance()
-            .pbFloorFlow(threadId, postId, forumId, page, subPostId = 0)
+            .pbFloorFlow(threadId, postId, forumId, page, subPostId)
             .firstOrThrow()
             .run {
                 if (data_ == null) throw TiebaApiException(commonResponse = this.error.commonResponse)
