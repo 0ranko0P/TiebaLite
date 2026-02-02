@@ -109,6 +109,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.color
+import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -393,7 +394,7 @@ fun HomePage(
     val context = LocalContext.current
     val navigator = LocalNavController.current
     val gridState = rememberLazyGridState()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysOnLowerBoundScrollBehavior()
 
     var unfollowForum by remember { mutableStateOf<LikedForum?>(null) }
     val confirmUnfollowDialog = rememberDialogState()
