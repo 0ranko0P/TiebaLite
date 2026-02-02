@@ -32,7 +32,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -44,7 +43,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,6 +53,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.isDarkScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
@@ -71,17 +70,6 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.launch
-
-private val statCardSpacerHeight: Dp
-    @Composable @ReadOnlyComposable get() {
-        val minHeightDp = LocalWindowAdaptiveInfo.current.windowSizeClass.minHeightDp
-        return when {
-            minHeightDp >= WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND -> 264.dp
-            minHeightDp > WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND -> 72.dp
-            minHeightDp < WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND / 2 -> Dp.Hairline
-            else -> 24.dp
-        }
-    }
 
 @Composable
 private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
@@ -228,11 +216,11 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
 
 @Composable
 fun UserPage(viewModel: UserViewModel = viewModel()) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val navigator = LocalNavController.current
     val colorScheme = MaterialTheme.colorScheme
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val windowSizeClass = LocalWindowAdaptiveInfo.current.windowSizeClass
+    val isWindowHeightExpanded = windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND)
 
     MyScaffold(
         modifier = Modifier.fillMaxSize(),
@@ -240,7 +228,6 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
         bottomBar = emptyBlurBottomNavigation, // MainPage workaround
     ) { contentPaddings ->
         val account = LocalAccount.current
-        val snackbarHostState = LocalSnackbarHostState.current
 
         PullToRefreshBox(
             isRefreshing = isLoading,
@@ -248,9 +235,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
             contentPadding = contentPaddings,
         ) {
             Column(
-                modifier = Modifier
-                    .padding(contentPaddings)
-                    .verticalScroll(state = rememberScrollState())
+                modifier = Modifier.padding(contentPaddings)
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 if (account != null) {
@@ -278,92 +263,131 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                 } else {
                     LoginTipCard(modifier = Modifier.padding(16.dp))
                 }
-                Spacer(modifier = Modifier.height(height = statCardSpacerHeight))
 
-                if (account != null) {
-                    ListMenuItem(
-                        icon = ImageVector.vectorResource(id = R.drawable.ic_favorite),
-                        text = stringResource(id = R.string.title_my_collect),
-                        onClick = {
-                            navigator.navigate(Destination.ThreadStore)
-                        }
-                    )
+                if (isWindowHeightExpanded) {
+                    Spacer(modifier = Modifier.weight(0.7f))
                 }
-                ListMenuItem(
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_outline_watch_later_24),
-                    text = stringResource(id = R.string.title_history),
-                    onClick = {
+                UserMenu(
+                    modifier = Modifier.onCase(!isWindowHeightExpanded) {
+                        verticalScroll(state = rememberScrollState()) // Scrollable on compact screen
+                    },
+                    onThreadStoreClicked = { navigator.navigate(Destination.ThreadStore) }.takeIf { account != null },
+                    onHistoryClicked = {
                         navigator.navigate(Destination.History)
-                    }
-                )
-
-                ListMenuItem(
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_brush_24),
-                    text = stringResource(id = R.string.title_theme),
-                    onClick = { navigator.navigate(Destination.AppTheme) }
-                ) {
-                    if (colorScheme.isTranslucent) return@ListMenuItem // Translucent theme has no dark/light mode
-                    val isDarkMode = colorScheme.isDarkScheme
-
-                    val switchEnabled by remember {
-                        derivedStateOf { snackbarHostState.currentSnackbarData == null }
-                    }
-
-                    Text(text = stringResource(id = R.string.my_info_night), fontSize = 12.sp)
-
-                    Switch(
-                        checked = isDarkMode,
-                        onCheckedChange = { checked ->
-                            // Override night mode temporary
-                            ThemeUtil.overrideDarkMode(darkMode = checked)
-                            // Show night mode settings tip
-                            coroutineScope.launch {
-                                val result = snackbarHostState.showSnackbar(
-                                    message = context.getString(R.string.message_find_tip),
-                                    actionLabel = context.getString(R.string.title_settings_night_mode),
-                                    duration = SnackbarDuration.Short
-                                )
-                                if (result == SnackbarResult.ActionPerformed) {
-                                    navigator.navigate(route = SettingsDestination.UI)
-                                }
-                            }
-                        },
-                        thumbContent = {
-                            if (isDarkMode) {
-                                Icon(Icons.Filled.DarkMode, contentDescription = null)
-                            }
-                        },
-                        enabled = switchEnabled
-                    )
-                }
-
-                if (account != null) {
-                    ListMenuItem(
-                        icon = ImageVector.vectorResource(id = R.drawable.ic_help_outline_black_24),
-                        text = stringResource(id = R.string.my_info_service_center),
-                        onClick = {
-                            navigator.navigate(
-                                Destination.WebView(
-                                    initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
-                                )
+                    },
+                    onThemeClicked = { navigator.navigate(Destination.AppTheme) },
+                    onServiceCenterClicked = {
+                        navigator.navigate(
+                            Destination.WebView(
+                                initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
                             )
-                        },
-                    )
+                        )
+                    },
+                    onSettingsClicked = { navigator.navigate(SettingsDestination.Settings) },
+                    onAboutClicked = { navigator.navigate(SettingsDestination.About) },
+                    onNavigateUiSettings = {
+                        navigator.navigate(route = SettingsDestination.UI)
+                    }
+                )
+                if (isWindowHeightExpanded) {
+                    Spacer(modifier = Modifier.weight(0.2f))
                 }
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)
-                )
-                ListMenuItem(
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_settings_24),
-                    text = stringResource(id = R.string.title_settings),
-                    onClick = { navigator.navigate(SettingsDestination.Settings) },
-                )
-                ListMenuItem(
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_info_black_24),
-                    text = stringResource(id = R.string.my_info_about),
-                    onClick = { navigator.navigate(SettingsDestination.About) },
-                )
             }
         }
+    }
+}
+
+@Composable
+private fun UserMenu(
+    modifier: Modifier = Modifier,
+    onThreadStoreClicked: (() -> Unit)? = null,
+    onHistoryClicked: () -> Unit,
+    onThemeClicked: () -> Unit,
+    onServiceCenterClicked: (() -> Unit)? = null,
+    onSettingsClicked: () -> Unit,
+    onAboutClicked: () -> Unit,
+    onNavigateUiSettings: () -> Unit,
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(
+        modifier = modifier
+    ) {
+        if (onThreadStoreClicked != null) {
+            ListMenuItem(
+                icon = ImageVector.vectorResource(id = R.drawable.ic_favorite),
+                text = stringResource(id = R.string.title_my_collect),
+                onClick = onThreadStoreClicked
+            )
+        }
+
+        ListMenuItem(
+            icon = ImageVector.vectorResource(id = R.drawable.ic_outline_watch_later_24),
+            text = stringResource(id = R.string.title_history),
+            onClick = onHistoryClicked
+        )
+
+        ListMenuItem(
+            icon = ImageVector.vectorResource(id = R.drawable.ic_brush_24),
+            text = stringResource(id = R.string.title_theme),
+            onClick = onThemeClicked
+        ) {
+            val snackbarHostState = LocalSnackbarHostState.current
+            val colorScheme = MaterialTheme.colorScheme
+            if (colorScheme.isTranslucent) return@ListMenuItem // Translucent theme has no dark/light mode
+            val isDarkMode = colorScheme.isDarkScheme
+
+            val switchEnabled by remember {
+                derivedStateOf { snackbarHostState.currentSnackbarData == null }
+            }
+
+            Text(text = stringResource(id = R.string.my_info_night), fontSize = 12.sp)
+
+            Switch(
+                checked = isDarkMode,
+                onCheckedChange = { checked ->
+                    // Override night mode temporary
+                    ThemeUtil.overrideDarkMode(darkMode = checked)
+                    // Show night mode settings tip
+                    coroutineScope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.message_find_tip),
+                            actionLabel = context.getString(R.string.title_settings_night_mode),
+                            duration = SnackbarDuration.Short
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            onNavigateUiSettings()
+                        }
+                    }
+                },
+                thumbContent = {
+                    if (isDarkMode) {
+                        Icon(Icons.Filled.DarkMode, contentDescription = null)
+                    }
+                },
+                enabled = switchEnabled
+            )
+        }
+
+        if (onServiceCenterClicked != null) {
+            ListMenuItem(
+                icon = ImageVector.vectorResource(id = R.drawable.ic_help_outline_black_24),
+                text = stringResource(id = R.string.my_info_service_center),
+                onClick = onServiceCenterClicked,
+            )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
+        ListMenuItem(
+            icon = ImageVector.vectorResource(id = R.drawable.ic_settings_24),
+            text = stringResource(id = R.string.title_settings),
+            onClick = onSettingsClicked,
+        )
+        ListMenuItem(
+            icon = ImageVector.vectorResource(id = R.drawable.ic_info_black_24),
+            text = stringResource(id = R.string.my_info_about),
+            onClick = onAboutClicked,
+        )
     }
 }
