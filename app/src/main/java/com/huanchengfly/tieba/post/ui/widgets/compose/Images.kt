@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
@@ -54,6 +56,7 @@ import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion.EXTRA_PHOTO_VIEW_DATA
@@ -143,6 +146,7 @@ private fun PreviewImage(
     dimensions: IntSize,
 ) {
     val context = LocalContext.current
+    val windowSize = currentWindowSize()
     val originModel = remember {
         originModelProvider()?.takeIf { it != model } ?: model
     }
@@ -165,7 +169,10 @@ private fun PreviewImage(
                 model = originModel,
                 contentDescription = null,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .block {
+                        // Fill width/height based on current orientation
+                        if (windowSize.height > windowSize.width) fillMaxWidth() else fillMaxHeight()
+                    }
                     .aspectRatio(ratio = aspectRatio),
                 contentScale = ContentScale.Crop,
                 failure = GlideUtil.DefaultErrorPlaceholder
