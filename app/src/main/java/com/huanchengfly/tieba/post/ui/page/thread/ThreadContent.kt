@@ -339,7 +339,7 @@ fun ThreadHeader(
 
         SelectableText(
             text = stringResource(R.string.title_see_lz),
-            modifier = Modifier.clickableNoIndication(enabled = !isSeeLz, onClick = onSeeLzChanged),
+            modifier = Modifier.clickableNoIndication(onClick = onSeeLzChanged),
             selected = isSeeLz,
         )
 
