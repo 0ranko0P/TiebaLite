@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "ForumCreateInfo.proto";
+import "ForumGuide/HotSearch.proto";
+import "ForumGuide/LikeForum.proto";
+import "ThreadInfo.proto";
+
+package tieba.forumGuide;
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.forumGuide";
+
+message ForumGuideResponseData {
+    repeated HotSearch hot_search = 1;
+    repeated LikeForum like_forum = 2;
+    ForumCreateInfo forum_create_info = 3;
+    uint32 is_login = 4;
+    uint32 msign_valid = 5;
+    string msign_text = 6;
+    uint32 msign_level = 7;
+    repeated ThreadInfo voice_room_list = 8;
+}

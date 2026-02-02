@@ -5,16 +5,15 @@ import android.util.Log
 import androidx.collection.LongSet
 import androidx.collection.mutableLongSetOf
 import androidx.work.WorkInfo
-import com.huanchengfly.tieba.post.api.models.ForumRecommend
-import com.huanchengfly.tieba.post.api.models.GetForumListBean.ForumInfo
+import com.huanchengfly.tieba.post.api.models.ForumGuideBean
 import com.huanchengfly.tieba.post.api.models.MSignBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.shareInBackground
 import com.huanchengfly.tieba.post.di.ApplicationScope
 import com.huanchengfly.tieba.post.models.database.Account
-import com.huanchengfly.tieba.post.models.database.LocalLikedForum
 import com.huanchengfly.tieba.post.repository.HomeRepository
+import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.OKSignRepository.ProgressListener
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
@@ -65,7 +64,8 @@ class OKSignRepositoryImp @Inject constructor(
     @ApplicationContext private val context: Context,
     private val homeRepo: HomeRepository,
     private val settingsRepo: SettingsRepository,
-    private val networkDataSource: OKSignNetworkDataSource
+    private val networkDataSource: OKSignNetworkDataSource,
+    private val homeDataSource: HomeNetworkDataSource,
 ): OKSignRepository {
 
     // Lazy init for instrumented test
@@ -159,7 +159,7 @@ class OKSignRepositoryImp @Inject constructor(
     private suspend fun signInternal(account: Account, signConfig: SignConfig, listener: ProgressListener?) {
         val start = System.currentTimeMillis()
         val forumListBean = networkDataSource.getForumList()
-        val forumRecommendList = networkDataSource.getForumRecommendList()
+        val forumRecommendList = homeDataSource.getLikedForums()
         val mSignMinLevel = forumListBean.level.toInt()
         val mSignStepNum = forumListBean.msignStepNum.toInt()
         val useMSign = signConfig.okSignOfficial
@@ -171,8 +171,8 @@ class OKSignRepositoryImp @Inject constructor(
 
         // Split liked forums into NormalSign and MSign
         forumRecommendList.forEach {
-            if (it.isSign.toInt() != 1) {
-                val canUseMSign = useMSign && it.levelId.toInt() >= mSignMinLevel && mSignForums.size < mSignStepNum
+            if (it.isSign != 1) {
+                val canUseMSign = useMSign && it.levelId >= mSignMinLevel && mSignForums.size < mSignStepNum
                 if (canUseMSign) {
                     mSignForums.add(ForumSignParam(forum = it))
                 } else {
@@ -282,10 +282,10 @@ class OKSignRepositoryImp @Inject constructor(
 
         data class ForumSignParam(val name: String, val forumId: Long, val signed: Boolean) {
 
-            constructor(forum: ForumRecommend.LikeForum): this(
+            constructor(forum: ForumGuideBean.LikeForum): this(
                 name = forum.forumName,
-                forumId = forum.forumId.toLong(),
-                signed = forum.isSign.toInt() == 1
+                forumId = forum.forumId,
+                signed = forum.isSign == 1
             )
         }
 

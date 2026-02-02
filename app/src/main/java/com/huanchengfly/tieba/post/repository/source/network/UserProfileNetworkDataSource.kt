@@ -95,7 +95,7 @@ object UserProfileNetworkDataSource {
      */
     suspend fun getUserBlackInfo(uid: Long): PermissionListBean {
         return TiebaApi.getInstance()
-            .getUserBlackInfo(uid)
+            .getUserBlackInfoFlow(uid)
             .firstOrThrow()
             .run {
                 if (errorCode != 0 || permList == null) {
@@ -114,7 +114,7 @@ object UserProfileNetworkDataSource {
      */
     suspend fun setUserBlack(uid: Long, tbs: String, permList: PermissionListBean) {
         TiebaApi.getInstance()
-            .setUserBlack(uid, tbs, permList)
+            .setUserBlackFlow(uid, tbs, permList)
             .firstOrThrow()
             .run {
                 if (errorCode != 0) throw TiebaApiException(commonResponse = this)

@@ -9,7 +9,7 @@ import androidx.paging.map
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.models.MsgBean.MessageBean
-import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
+import com.huanchengfly.tieba.post.api.models.ForumGuideBean.LikeForum
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.models.database.Account
@@ -191,12 +191,12 @@ class HomeRepository @Inject constructor(
             val now = System.currentTimeMillis()
             map {
                 LocalLikedForum(
-                    id = it.forum_id,
+                    id = it.forumId,
                     uid = uid,
                     avatar = it.avatar,
-                    name = it.forum_name,
-                    level = it.level_id,
-                    signInTimestamp = if (it.is_sign == 1) now else -1, // set timestamp to now if signed
+                    name = it.forumName,
+                    level = it.levelId,
+                    signInTimestamp = if (it.isSign == 1) now else -1, // set timestamp to now if signed
                 )
             }
         }

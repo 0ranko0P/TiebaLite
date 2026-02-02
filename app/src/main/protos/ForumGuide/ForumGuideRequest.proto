@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "ForumGuide/ForumGuideRequestData.proto";
+
+package tieba.forumGuide;
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.forumGuide";
+
+message ForumGuideRequest {
+    ForumGuideRequestData data = 1;
+}

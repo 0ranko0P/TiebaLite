@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "ThemeColorInfo.proto";
+
+package tieba.forumGuide;
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.forumGuide";
+
+message LikeForum {
+    uint64 forum_id = 1;
+    string forum_name = 2;
+    string avatar = 3;
+    uint32 hot_num = 4;
+    uint32 member_count = 5;
+    uint32 thread_num = 6;
+    uint64 sort_value = 7;
+    ThemeColorInfo theme_color = 8;
+    bool need_trans = 9;
+    int32 level_id = 10;
+    string level_name = 11;
+    int32 is_sign = 12;
+}

@@ -561,7 +561,7 @@ interface OfficialTiebaApi {
     @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
     @POST("/c/c/user/setUserBlack")
     @FormUrlEncoded
-    fun setUserBlack(
+    fun setUserBlackFlow(
         @Field("black_uid") blackUid: Long = -1,
         @Field("tbs") tbs: String,
         @Field("perm_list") permList: String,
@@ -571,8 +571,21 @@ interface OfficialTiebaApi {
     @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
     @POST("/c/u/user/getUserBlackInfo")
     @FormUrlEncoded
-    fun getUserBlack(
+    fun getUserBlackFlow(
         @Field("black_uid") blackUid: Long = -1,
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!
     ): Flow<GetUserBlackInfoBean>
+
+    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
+    @POST("/c/f/forum/forumGuide")
+    @FormUrlEncoded
+    fun forumGuideFlow(
+        @Field("sort_type") sortType: Int? = 3,
+        @Field("call_from") callFrom: Int? = 4,
+        @Field("page_no") pageNo: Int = 0,
+        @Field("res_num") resNum: Int = 50,
+        @Field("top_forum_num") topForumNum: Int? = 0,
+        @Field("tbs") tbs: String? = AccountUtil.getLoginInfo()?.tbs,
+        @Field("stoken") stoken: String = AccountUtil.getSToken()!!
+    ): Flow<ForumGuideBean>
 }

@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.api.retrofit.interfaces
 
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
+import com.huanchengfly.tieba.post.api.models.protos.forumGuide.ForumGuideResponse
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.ForumRecommendResponse
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
@@ -51,6 +52,11 @@ interface OfficialProtobufTiebaApi {
     fun forumRecommendFlow(
         @Body body: MyMultipartBody,
     ): Flow<ForumRecommendResponse>
+
+    @POST("/c/f/forum/forumGuide?cmd=309683&format=protobuf")
+    fun forumGuideFlow(
+        @Body body: MyMultipartBody,
+    ): Flow<ForumGuideResponse>
 
     @POST("/c/f/frs/page?cmd=301001")
     fun frsPageFlow(

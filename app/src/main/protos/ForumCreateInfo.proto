@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package tieba;
+
+option java_package = "com.huanchengfly.tieba.post.api.models.protos";
+
+message ForumCreateInfo {
+    int32 is_show_create = 1;
+    int32 is_can_create = 2;
+    int32 can_create_errno = 3;
+    string can_create_errdata = 4;
+}

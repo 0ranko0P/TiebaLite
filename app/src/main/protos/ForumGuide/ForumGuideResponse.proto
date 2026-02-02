@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "Error.proto";
+import "ForumGuide/ForumGuideResponseData.proto";
+
+package tieba.forumGuide;
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.forumGuide";
+
+message ForumGuideResponse {
+    Error error = 1;
+    ForumGuideResponseData data = 2;
+}

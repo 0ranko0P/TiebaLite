@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package tieba.forumGuide;
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.forumGuide";
+
+message HotSearch {
+    uint64 forum_id = 1;
+    string forum_name = 2;
+    string slogan = 3;
+    string search_title = 4;
+}
