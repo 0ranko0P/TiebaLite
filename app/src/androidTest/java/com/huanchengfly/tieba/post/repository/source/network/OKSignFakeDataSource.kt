@@ -7,8 +7,9 @@ import com.huanchengfly.tieba.post.api.models.MSignBean.Info
 import com.huanchengfly.tieba.post.api.models.SignResultBean.UserInfo
 import com.huanchengfly.tieba.post.repository.source.TestData
 import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp.Companion.ForumSignParam
+import javax.inject.Inject
 
-object OKSignFakeDataSource : OKSignNetworkDataSource {
+class OKSignFakeDataSource @Inject constructor() : OKSignNetworkDataSource {
 
     private val mSignFailForums = hashSetOf<String>()
     private var mSignError: Throwable? = null

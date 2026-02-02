@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TY
 import com.huanchengfly.tieba.post.repository.HomeRepository
 import com.huanchengfly.tieba.post.repository.source.TestData
 import com.huanchengfly.tieba.post.repository.source.network.OKSignFakeDataSource
+import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -37,10 +38,13 @@ class OKSignRepositoryImpTest {
     @ApplicationContext @Inject lateinit var context: Context
     @Inject lateinit var tbLiteDatabase: TbLiteDatabase
     @Inject lateinit var timestampDao: TimestampDao
-    @Inject lateinit var networkDataSource: OKSignFakeDataSource
     @Inject lateinit var settingsRepo: SettingsRepository
     @Inject lateinit var homeRepository: HomeRepository
     @Inject lateinit var okSignRepository: OKSignRepository
+
+    @Inject lateinit var _networkDataSource: OKSignNetworkDataSource
+    val networkDataSource: OKSignFakeDataSource
+        get() = _networkDataSource as OKSignFakeDataSource
 
     @Before
     fun setUp() {

@@ -18,6 +18,8 @@ import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkFakeDataSource
+import com.huanchengfly.tieba.post.repository.source.network.HotTopicFakeNetworkDataSource
+import com.huanchengfly.tieba.post.repository.source.network.HotTopicNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.OKSignFakeDataSource
 import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.FakeSettingsRepository
@@ -53,19 +55,19 @@ abstract class FakeRepositoryModule {
     components = [SingletonComponent::class],
     replaces = [DataSourceModule::class]
 )
-object FakeDataSourceModule {
+abstract class FakeDataSourceModule {
 
-    @Provides
-    fun provideHomeNetworkDataSource(): HomeNetworkDataSource = HomeNetworkFakeDataSource
+    @Singleton
+    @Binds
+    abstract fun bindHomeNetworkDataSource(dataSource: HomeNetworkFakeDataSource): HomeNetworkDataSource
 
-    @Provides
-    fun provideHomeFakeNetworkDataSource(): HomeNetworkFakeDataSource = HomeNetworkFakeDataSource
+    @Singleton
+    @Binds
+    abstract fun bindOKSignNetworkDataSource(dataSource: OKSignFakeDataSource): OKSignNetworkDataSource
 
-    @Provides
-    fun provideOKSignNetworkDataSource(): OKSignNetworkDataSource = OKSignFakeDataSource
-
-    @Provides
-    fun provideOKSignFakeNetworkDataSource(): OKSignFakeDataSource = OKSignFakeDataSource
+    @Singleton
+    @Binds
+    abstract fun bindHotTopicNetworkDataSource(dataSource: HotTopicFakeNetworkDataSource): HotTopicNetworkDataSource
 }
 
 @Module

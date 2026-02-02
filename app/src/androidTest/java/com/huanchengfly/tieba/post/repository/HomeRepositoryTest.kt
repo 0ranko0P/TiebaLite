@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TYPE_FORUM_LAST_UPDATED
 import com.huanchengfly.tieba.post.repository.HomeRepository.Companion.mapEntity
 import com.huanchengfly.tieba.post.repository.source.TestData
+import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkFakeDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.LikedForum
@@ -35,9 +36,12 @@ class HomeRepositoryTest {
 
     @Inject lateinit var tbLiteDatabase: TbLiteDatabase
     @Inject lateinit var timestampDao: TimestampDao
-    @Inject lateinit var networkDataSource: HomeNetworkFakeDataSource
     @Inject lateinit var settingsRepo: SettingsRepository
     @Inject lateinit var homeRepository: HomeRepository
+
+    @Inject lateinit var _networkDataSource: HomeNetworkDataSource
+    val networkDataSource: HomeNetworkFakeDataSource
+        get() = _networkDataSource as HomeNetworkFakeDataSource
 
     private val dummyAccount = TestData.DummyAccount
 

@@ -2,11 +2,12 @@ package com.huanchengfly.tieba.post.repository.source.network
 
 import com.huanchengfly.tieba.post.api.models.GetForumListBean.ForumInfo
 import com.huanchengfly.tieba.post.api.models.MsgBean
-import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.LikeForum
+import com.huanchengfly.tieba.post.api.models.ForumGuideBean.LikeForum
 import com.huanchengfly.tieba.post.repository.source.TestData
+import javax.inject.Inject
 import kotlin.random.Random
 
-object HomeNetworkFakeDataSource: HomeNetworkDataSource {
+class HomeNetworkFakeDataSource @Inject constructor(): HomeNetworkDataSource {
 
     var nextMessage: MsgBean.MessageBean? = null
 
@@ -15,7 +16,7 @@ object HomeNetworkFakeDataSource: HomeNetworkDataSource {
     override suspend fun getLikedForums(): List<LikeForum> {
         val signForumList: List<ForumInfo> = nextLikedForums
         val forums = signForumList.map {
-            LikeForum(forum_id = it.forumId, forum_name = it.forumName, avatar = "", is_sign = it.isSignIn, level_id = it.userLevel)
+            LikeForum(forumId = it.forumId, forumName = it.forumName, avatar = "", isSign = it.isSignIn, levelId = it.userLevel)
         }
         return forums
     }
