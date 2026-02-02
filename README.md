@@ -19,6 +19,10 @@
 
 **本软件及源码仅供学习交流使用，严禁用于商业用途。**
 
+## 下载
+* [Github Releases](https://github.com/0ranko0P/TiebaLite/releases)
+* 下载每夜版: [Github Actions](https://github.com/0ranko0P/TiebaLite/actions/workflows/build.yml)
+
 ## 构建
 
 1. 克隆仓库
