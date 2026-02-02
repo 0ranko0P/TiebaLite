@@ -43,7 +43,6 @@ object NetworkObserver: ConnectivityManager.NetworkCallback(), DefaultLifecycleO
         isObserving = true
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
             .build()
         connectivityManager.registerNetworkCallback(networkRequest, this)
     }
