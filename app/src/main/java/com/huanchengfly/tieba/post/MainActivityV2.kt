@@ -108,7 +108,9 @@ class MainActivityV2 : BaseComposeActivity() {
         lifecycleScope.launch {
             ClientUtils.refreshActiveTimestamp()
             delay(2000L)
-            requestNotificationPermission()
+            runCatching {
+                requestNotificationPermission()
+            }
         }
 
         intent?.run {
