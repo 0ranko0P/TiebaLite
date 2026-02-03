@@ -84,7 +84,6 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -1288,14 +1287,15 @@ private class CollapsingAvatarTopBarMeasurePolicy(
             if (constraints.maxWidth == Constraints.Infinity) {
                 constraints.maxWidth
             } else {
-                var actionWidth = actionIconsPlaceable.width
-                if (actionWidth >= 48.dp.roundToPx()) {
-                    // Allow title overlapping the action row (a little bit) when collapsed
-                    actionWidth = actionWidth - 12.dp.roundToPx()
-                }
-                val max = (constraints.maxWidth - avatarWidth - avatarPadding.width * 2).coerceAtLeast(0)
-                val min = (constraints.maxWidth - navigationIconPlaceable.width - avatarWidth - actionWidth).coerceAtLeast(0)
-                lerp(max, min, slowInCollapseFraction)
+                // Allow title overlapping the action row (a little bit) when collapsed
+                val actionWidth = actionIconsPlaceable.width - 12.dp.roundToPx()
+                // Snap title width instead of lerp
+                if (collapsedFraction > 0.6f) {
+                    constraints.maxWidth - navigationIconPlaceable.width - avatarMinSize - actionWidth
+                } else {
+                    val expandedHorizontalPadding = (CollapsedAvatarHorizontalPadding + TopAppBarHorizontalPadding).roundToPx()
+                    constraints.maxWidth - avatarMaxSize - expandedHorizontalPadding
+                }.coerceAtLeast(0)
             }
 
         val titlePlaceable =
@@ -1439,7 +1439,9 @@ private class CollapsingAvatarTopBarMeasurePolicy(
 
             // Title and Subtitle composable
             titlePlaceable.let {
-                start = start + avatarPlaceable.width
+                // Add extra padding between avatar and title
+                val titlePadding = lerp(TopAppBarHorizontalPadding.roundToPx() * 2, 0, collapsedFraction)
+                start = start + avatarPlaceable.width + titlePadding
                 val end = actionIconsPlaceable.width
                 // Align using the maxWidth. We will adjust the position later according to the
                 // start and end. This is done to ensure that a center alignment is still maintained
@@ -1497,7 +1499,7 @@ private class CollapsingAvatarTopBarMeasurePolicy(
 
                 it.placeRelative(titleX, titleY)
 
-                val subtitleX = avatarPadding.width + avatarMax.roundToPx()
+                val subtitleX = avatarPadding.width + avatarMax.roundToPx() + titlePadding
                 // Subtitle composable
                 subtitlePlaceable?.placeRelative(
                     x = lerp(subtitleX, (subtitleX * 0.85f).fastRoundToInt(), collapsedFraction),
@@ -1530,7 +1532,8 @@ private fun ProvideCollapseColorTextStyle(
 ) {
     val textStyle by remember {
         derivedStateOf {
-            lerp(expandedTextStyle, collapsedTextStyle, collapseFraction())
+            if (collapseFraction() > 0.6f) collapsedTextStyle else expandedTextStyle
+            // lerp(expandedTextStyle, collapsedTextStyle, collapseFraction())
         }
     }
 

@@ -57,7 +57,6 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
@@ -489,7 +488,7 @@ private fun UserProfileTopAppBar(
     }
 
     if (!ContentLandscapeLayout) {
-        val titleModifier = Modifier.padding(start = 8.dp)
+        val titleModifier = Modifier.padding(start = 2.dp)
         CollapsingAvatarTopAppBar(
             modifier = modifier,
             avatar = {
