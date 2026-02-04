@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.main
 import androidx.annotation.StringRes
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,16 +10,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -36,13 +37,11 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -255,7 +254,7 @@ fun BottomNavigation(
                 },
                 icon = {
                     NavIcon(
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(Sizes.Tiny),
                         item = navigationItem,
                         atEnd = index == currentPosition
                     )
@@ -268,28 +267,24 @@ fun BottomNavigation(
 
 @Composable
 private fun NavIcon(modifier: Modifier = Modifier, item: NavigationItem, atEnd: Boolean) {
-    Box(modifier = modifier) {
+    BadgedBox(
+        modifier = modifier,
+        badge = {
+            val badgeText = item.badgeText() ?: return@BadgedBox
+            Badge {
+                Text(
+                    text = badgeText,
+                    // 6.sp ~ BadgeTokens.LargeLabelTextFont.fontSize
+                    autoSize = TextAutoSize.StepBased(6.sp, LocalTextStyle.current.fontSize),
+                    maxLines = 1
+                )
+            }
+        },
+    ) {
         Icon(
-            painter = rememberAnimatedVectorPainter(
-                animatedImageVector = item.icon(),
-                atEnd = atEnd
-            ),
-            contentDescription = stringResource(item.title),
-            modifier = Modifier.fillMaxSize()
+            painter = rememberAnimatedVectorPainter(animatedImageVector = item.icon(), atEnd = atEnd),
+            contentDescription = null,
         )
-        item.badgeText()?.let { badge ->
-            Text(
-                textAlign = TextAlign.Center,
-                fontSize = 10.sp,
-                color = Color.White,
-                text = badge,
-                modifier = Modifier
-                    .size(14.dp)
-                    .align(Alignment.TopEnd)
-                    .background(color = TiebaLiteTheme.colorScheme.tertiary)
-                    .clip(shape = CircleShape)
-            )
-        }
     }
 }
 
