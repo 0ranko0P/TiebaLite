@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
-import android.os.Build
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
@@ -10,7 +9,6 @@ import androidx.compose.material.icons.outlined.PhotoSizeSelectActual
 import androidx.compose.material.icons.outlined.SecurityUpdateWarning
 import androidx.compose.material.icons.outlined.SpeakerNotesOff
 import androidx.compose.material.icons.outlined.StarOutline
-import androidx.compose.material.icons.outlined.Swipe
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material.icons.rounded.UnfoldLess
@@ -147,20 +145,6 @@ fun HabitSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () -> Unit
                     enabled = !habit.hideReply,
                     leadingIcon = Icons.Outlined.SecurityUpdateWarning
                 )
-            }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                Item { habit ->
-                    SwitchPref(
-                        checked = habit.predictiveBack,
-                        onCheckedChange = {
-                            updatePreference { old -> old.copy(predictiveBack = it) }
-                        },
-                        title = R.string.title_predictive_back,
-                        summary = R.string.summary_predictive_back,
-                        leadingIcon = Icons.Outlined.Swipe
-                    )
-                }
             }
         }
     }
