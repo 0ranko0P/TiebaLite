@@ -145,15 +145,16 @@ sealed interface NotificationsListPartialChange : PartialChange<NotificationsLis
     sealed class Refresh() : NotificationsListPartialChange {
         override fun reduce(oldState: NotificationsListUiState): NotificationsListUiState =
             when (this) {
-                Start -> oldState.copy(isRefreshing = true)
+                Start -> oldState.copy(isRefreshing = true, error = null)
                 is Success -> oldState.copy(
                     isRefreshing = false,
+                    error = null,
                     currentPage = 1,
                     data = data.toImmutableList(),
                     hasMore = hasMore
                 )
 
-                is Failure -> oldState.copy(isRefreshing = false)
+                is Failure -> oldState.copy(isRefreshing = false, error = error)
             }
 
         data object Start : Refresh()
@@ -184,7 +185,7 @@ sealed interface NotificationsListPartialChange : PartialChange<NotificationsLis
                     )
                 }
 
-                is Failure -> oldState.copy(isLoadingMore = false)
+                is Failure -> oldState.copy(isLoadingMore = false, error = error)
             }
 
         object Start : LoadMore()
@@ -275,6 +276,7 @@ private suspend fun List<MessageInfoBean>.mapUiModel(
 data class NotificationsListUiState(
     val isRefreshing: Boolean = true,
     val isLoadingMore: Boolean = false,
+    val error: Throwable? = null,
     val currentPage: Int = 1,
     val hasMore: Boolean = true,
     val data: List<MessageItemData> = emptyList(),

@@ -27,7 +27,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.api.Error
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListViewModel.Companion.NotificationsListVmFactory
@@ -39,8 +40,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import kotlinx.collections.immutable.persistentListOf
+import com.huanchengfly.tieba.post.utils.LocalAccount
+import java.util.Objects
 
 @Composable
 fun NotificationsListPage(
@@ -49,7 +52,7 @@ fun NotificationsListPage(
     listState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingNone,
     viewModel: NotificationsListViewModel = hiltViewModel<NotificationsListViewModel, NotificationsListVmFactory>(
-        key = type.name
+        key = Objects.hash(type.name, LocalAccount.current?.uid).toString()
     ) {
         it.create(type)
     }
@@ -58,37 +61,60 @@ fun NotificationsListPage(
         viewModel.send(NotificationsListUiIntent.Refresh)
         viewModel.initialized = true
     }
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val error = uiState.error
+
+    val onRefresh: () -> Unit = {
+        viewModel.send(NotificationsListUiIntent.Refresh)
+    }
+
+    StateScreen(
+        isLoading = uiState.isRefreshing,
+        error = error,
+        onReload = onRefresh.takeIf { error?.getErrorCode() != Error.ERROR_NOT_LOGGED_IN },
+        screenPadding = contentPadding,
+    ) {
+        val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()
+
+        NotificationsListContent(
+            modifier = modifier,
+            type = type,
+            listState = listState,
+            hideBlocked = hideBlocked,
+            contentPadding = contentPadding,
+            uiState = uiState,
+            onRefresh = onRefresh,
+            onLoadMore = {
+                if (uiState.hasMore && uiState.data.isNotEmpty()) {
+                    viewModel.send(NotificationsListUiIntent.LoadMore(uiState.currentPage + 1))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun NotificationsListContent(
+    modifier: Modifier = Modifier,
+    type: NotificationsType,
+    listState: LazyListState = rememberLazyListState(),
+    hideBlocked: Boolean = false,
+    contentPadding: PaddingValues = PaddingNone,
+    uiState: NotificationsListUiState,
+    onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
+) {
     val navigator = LocalNavController.current
     val context = LocalContext.current
-
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::isRefreshing,
-        initial = false
-    )
-    val isLoadingMore by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::isLoadingMore,
-        initial = false
-    )
-    val hasMore by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::hasMore,
-        initial = true
-    )
-    val data by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::data,
-        initial = persistentListOf()
-    )
-    val currentPage by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::currentPage,
-        initial = 1
-    )
+    val isLoadingMore = uiState.isLoadingMore
 
     PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = { viewModel.send(NotificationsListUiIntent.Refresh) },
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = onRefresh,
         modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding,
     ) {
-        val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()
         val blockedTip: @Composable BoxScope.() -> Unit = {
             BlockTip { Text(text = stringResource(id = R.string.tip_blocked_message)) }
         }
@@ -98,17 +124,13 @@ fun NotificationsListPage(
             state = listState,
             contentPadding = contentPadding,
             isLoading = isLoadingMore,
-            onLazyLoad = {
-                if (hasMore && data.isNotEmpty()) {
-                    viewModel.send(NotificationsListUiIntent.LoadMore(currentPage + 1))
-                }
-            },
+            onLazyLoad = onLoadMore,
             onLoad = null, // Disable manual load!
             bottomIndicator = {
-                LoadMoreIndicator(isLoading = isLoadingMore, noMore = !hasMore, onThreshold = false)
+                LoadMoreIndicator(isLoading = isLoadingMore, noMore = !uiState.hasMore, onThreshold = false)
             }
         ) {
-            items(items = data, key = { it.lazyListItemKey }) { info ->
+            items(items = uiState.data, key = { it.lazyListItemKey }) { info ->
                 BlockableContent(
                     blocked = info.isBlocked,
                     blockedTip = blockedTip,

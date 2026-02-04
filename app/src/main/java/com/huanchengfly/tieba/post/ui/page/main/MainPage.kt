@@ -51,7 +51,6 @@ import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationSuiteScaffold
-import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
@@ -107,10 +106,9 @@ fun isBottomNavigation(): Boolean {
 
 @Composable
 fun rememberNavigationItems(
-    loggedIn: Boolean,
-    messageCount: () -> Int
-): List<NavigationItem> = remember(loggedIn) {
-    listOfNotNull(
+    messageCount: () -> Int = { 0 }
+): List<NavigationItem> = remember {
+    listOf(
         NavigationItem(
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_inventory_2) },
             title = R.string.title_main,
@@ -119,17 +117,13 @@ fun rememberNavigationItems(
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_toy_fans) },
             title = R.string.title_explore,
         ),
-        if (loggedIn) { // hide notifications when not logged-in
-            NavigationItem(
-                icon = {
-                    AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)
-                },
-                title = R.string.title_notifications,
-                badgeText = { messageCount().takeIf { it > 0 }?.toString() },
-            )
-        } else {
-            null
-        },
+        NavigationItem(
+            icon = {
+                AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)
+            },
+            title = R.string.title_notifications,
+            badgeText = { messageCount().takeIf { it > 0 }?.toString() },
+        ),
         NavigationItem(
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_person) },
             title = R.string.title_user,
@@ -143,11 +137,9 @@ fun MainPage(
     vm: MainPageViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val loggedIn = LocalAccount.current != null
-
     val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
 
-    val navigationItems = rememberNavigationItems(loggedIn, messageCount = { messageCount })
+    val navigationItems = rememberNavigationItems(messageCount = { messageCount })
     val pagerState = rememberPagerState { navigationItems.size }
 
     val onItemClicked: (position: Int) -> Unit = {

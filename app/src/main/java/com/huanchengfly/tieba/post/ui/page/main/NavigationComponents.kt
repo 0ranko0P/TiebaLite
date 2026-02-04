@@ -303,7 +303,7 @@ data class NavigationItem(
 @Preview("NavigationDrawerContent", device = Devices.PIXEL_TABLET)
 @Composable
 private fun NavigationDrawerContentPreview() = TiebaLiteTheme {
-    val navItems = rememberNavigationItems(loggedIn = false, messageCount = { 0 })
+    val navItems = rememberNavigationItems()
     CompositionLocalProvider(LocalAccount provides null) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
