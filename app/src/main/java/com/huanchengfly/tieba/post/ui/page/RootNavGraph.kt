@@ -54,6 +54,7 @@ import com.huanchengfly.tieba.post.ui.page.search.SearchPage
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.page.settings.settingsGraph
 import com.huanchengfly.tieba.post.ui.page.settings.theme.AppThemePage
+import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsPage
 import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsSheetPage
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPage
@@ -186,7 +187,11 @@ private fun buildRootNavGraph(
 
         animatedComposable<Destination.SubPosts> { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.SubPosts>()
-            SubPostsSheetPage(params, navController)
+            if (params.isSheet) {
+                SubPostsSheetPage(params, navController)
+            } else {
+                SubPostsPage(params, navController)
+            }
         }
 
         composable<Destination.HotTopicList> {

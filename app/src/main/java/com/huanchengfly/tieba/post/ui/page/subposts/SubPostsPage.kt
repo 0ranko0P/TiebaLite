@@ -116,6 +116,20 @@ fun SubPostsSheetPage(
     }
 }
 
+@NonRestartableComposable
+@Composable
+fun SubPostsPage(
+    params: SubPosts,
+    navigator: NavController,
+    viewModel: SubPostsViewModel = hiltViewModel()
+) {
+    ProvideNavigator(navigator) {
+        with(params) {
+            SubPostsContent(viewModel, threadId, postId, isSheet = false, navigator::navigateUp)
+        }
+    }
+}
+
 private const val PostContentType = 0
 private val HeaderContentType = Unit
 // SubpostContentType use Null by default

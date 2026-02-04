@@ -77,7 +77,8 @@ sealed interface Destination {
         val threadId: Long,
         val forumId: Long = 0L,
         val postId: Long = 0L,
-        val subPostId: Long = 0L
+        val subPostId: Long = 0L,
+        val isSheet: Boolean = true,
     ): Destination
 
     @Serializable

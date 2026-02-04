@@ -146,6 +146,7 @@ private fun NotificationsListContent(
                                         //先传0，在子楼页面获取正确的postId
                                         postId = 0,
                                         subPostId = info.postId,
+                                        isSheet = false,
                                     )
                                 } else {
                                     Destination.Thread(threadId = info.threadId, postId = info.postId)
@@ -185,7 +186,8 @@ private fun NotificationsListContent(
                                         Destination.SubPosts(
                                             threadId = info.threadId,
                                             postId = info.quotePid ?: 0,
-                                            subPostId = info.postId
+                                            subPostId = info.postId,
+                                            isSheet = false,
                                         )
                                     } else {
                                         Destination.Thread(info.threadId)
