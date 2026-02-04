@@ -43,6 +43,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
@@ -108,6 +109,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
+import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.OutlinedIconTextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
@@ -322,7 +324,10 @@ fun ForumPage(
                 actions = {
                     if (forumData == null) return@CollapsingAvatarTopAppBar // Loading
 
-                    if (loggedIn) {
+                    val forumSignFollowVisibility by remember {
+                        derivedStateOf { scrollBehavior.state.collapsedFraction < SignActionVisibilityThreshold }
+                    }
+                    if (loggedIn && forumSignFollowVisibility) {
                         ForumSignFollowActionButton(
                             forum = forumData,
                             onFollow = viewModel::onLikeForum,
@@ -349,9 +354,12 @@ fun ForumPage(
                                 viewModel.onRefreshClicked(isGood = pagerState.currentPage == TAB_FORUM_GOOD)
                             }
 
-                            // Is followed & logged in
-                            if (forumData.liked && forumData.tbs != null) {
+                            if (loggedIn && forumData.liked) {
                                 TextMenuItem(text = R.string.title_unfollow, onClick = unlikeDialogState::show)
+                            }
+
+                            if (loggedIn && !forumSignFollowVisibility) {
+                                ForumSignFollowMenuItem(forumData, viewModel::onLikeForum, viewModel::onSignIn)
                             }
                         },
                         triggerShape = CircleShape
@@ -444,11 +452,6 @@ private fun ForumSignFollowActionButton(
     onSignIn: () -> Unit,
     collapsedFraction: FloatProducer,
 ) {
-    val visibility by remember {
-        derivedStateOf { collapsedFraction() < SignActionVisibilityThreshold }
-    }
-    if (!visibility) return
-
     OutlinedIconTextButton (
         onClick = if (forum.liked) onSignIn else onFollow,
         modifier = modifier.graphicsLayer {
@@ -466,6 +469,18 @@ private fun ForumSignFollowActionButton(
             else -> stringResource(R.string.button_sign_in)
         },
         border = ButtonDefaults.outlinedButtonBorder(enabled = true),
+    )
+}
+
+/** Menu item version of [ForumSignFollowActionButton] */
+@NonRestartableComposable
+@Composable
+private fun MenuScope.ForumSignFollowMenuItem(forum: ForumData, onFollow: () -> Unit, onSignIn: () -> Unit) {
+    if (forum.liked && forum.signed) return // No thing to do
+
+    TextMenuItem(
+        text = stringResource(if (!forum.liked) R.string.button_follow else R.string.button_sign_in),
+        onClick = if (forum.liked) onSignIn else onFollow,
     )
 }
 
