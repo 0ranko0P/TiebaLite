@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,6 +52,7 @@ import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationSuiteScaffold
+import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
@@ -106,7 +108,7 @@ fun isBottomNavigation(): Boolean {
 
 @Composable
 fun rememberNavigationItems(
-    messageCount: () -> Int = { 0 }
+    messageCount: () -> String? = { null }
 ): List<NavigationItem> = remember {
     listOf(
         NavigationItem(
@@ -122,7 +124,7 @@ fun rememberNavigationItems(
                 AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)
             },
             title = R.string.title_notifications,
-            badgeText = { messageCount().takeIf { it > 0 }?.toString() },
+            badgeText = messageCount,
         ),
         NavigationItem(
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_person) },
@@ -137,6 +139,7 @@ fun MainPage(
     vm: MainPageViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val loggedIn = LocalAccount.current != null
     val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
 
     val navigationItems = rememberNavigationItems(messageCount = { messageCount })
@@ -144,8 +147,24 @@ fun MainPage(
 
     val onItemClicked: (position: Int) -> Unit = {
         coroutineScope.launch { pagerState.scrollToPage(it) }
-        if (navigationItems[it].title == R.string.title_notifications && messageCount > 0) {
+        if (navigationItems[it].title == R.string.title_notifications && messageCount != null) {
             vm.onNavigateNotification()
+        }
+    }
+
+    val movablePagerContent = remember(loggedIn) {
+        navigationItems.fastMap {
+            movableContentOf {
+                when(it.title) {
+                    R.string.title_main -> HomePage(onOpenExplore = { onItemClicked(1) })
+
+                    R.string.title_explore -> ExplorePage()
+
+                    R.string.title_notifications -> NotificationsPage(fromHome = true)
+
+                    R.string.title_user -> UserPage()
+                }
+            }
         }
     }
 
@@ -161,18 +180,11 @@ fun MainPage(
                 modifier = Modifier
                     .windowInsetsPadding(NavigationBarDefaults.windowInsets.only(WindowInsetsSides.End)),
                 key = { navigationItems[it].title },
+                beyondViewportPageCount = 3,
                 verticalAlignment = Alignment.Top,
                 userScrollEnabled = false
             ) {
-                when(navigationItems[it].title) {
-                    R.string.title_main -> HomePage(onOpenExplore = { onItemClicked(1) })
-
-                    R.string.title_explore -> ExplorePage()
-
-                    R.string.title_notifications -> NotificationsPage(fromHome = true)
-
-                    R.string.title_user -> UserPage()
-                }
+                movablePagerContent[it]()
             }
         }
     }

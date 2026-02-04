@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,9 +19,16 @@ class MainPageViewModel @Inject constructor(
     private val homeRepo: HomeRepository,
 ): ViewModel() {
 
-    val messageCountFlow: StateFlow<Int> = homeRepo.observeNewMessage()
+    val messageCountFlow: StateFlow<String?> = homeRepo.observeNewMessage()
         .catch { /* Ignored */ }
-        .stateInViewModel(initialValue = 0)
+        .map {
+            when {
+                it > 99 -> "99+"
+                it <= 0 -> null
+                else -> it.toString()
+            }
+        }
+        .stateInViewModel(initialValue = null)
 
     fun onNavigateNotification() = viewModelScope.launch {
         homeRepo.clearNewMessage()
