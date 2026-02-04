@@ -43,8 +43,6 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import androidx.navigation.Navigator
-import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_EXPANDED_LOWER_BOUND
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
@@ -175,8 +173,7 @@ fun ExplorePage() {
     val coroutineScope = rememberCoroutineScope()
     val account = LocalAccount.current
     val navigator = LocalNavController.current
-    val loggedIn by remember { derivedStateOf { account != null } }
-    val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
+    val loggedIn = account != null
 
     val pages = remember(loggedIn) {
         listOfNotNull(

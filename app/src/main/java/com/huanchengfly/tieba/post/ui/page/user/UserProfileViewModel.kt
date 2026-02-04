@@ -214,7 +214,8 @@ class UserProfileViewModel @Inject constructor(
     }
 
     fun setUserBlack(permList: PermissionList) = viewModelScope.launch {
-        if (currentState.permList == permList) return@launch // Double check
+        // Double check: PermissionList changed && Not loading
+        if (currentState.let { it.permList == permList || it.isLoadingPermList}) return@launch
 
         val start = System.currentTimeMillis()
         _uiState.update { it.copy(isLoadingPermList = true) }
