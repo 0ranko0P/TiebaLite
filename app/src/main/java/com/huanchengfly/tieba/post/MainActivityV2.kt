@@ -114,7 +114,7 @@ class MainActivityV2 : BaseComposeActivity() {
         }
 
         intent?.run {
-            if (BuildConfig.BUILD_TYPE != "release") {
+            if (BuildConfig.BUILD_TYPE != "release" && BuildConfig.BUILD_TYPE != "ci") {
                 welcomeScreen = extras?.getBoolean(KEY_WELCOME_SETUP, false)
             }
             ShortcutInitializer.getTbShortcut(this)?.also { onNewShortcut(it) }
