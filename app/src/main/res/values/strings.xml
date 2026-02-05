@@ -212,6 +212,8 @@
     <string name="title_search_thread">搜贴</string>
     <string name="title_search_user">搜人</string>
     <string name="title_search_history">搜索历史</string>
+    <string name="title_search_post_num">帖子 · %1$s</string>
+    <string name="title_search_concern_num">关注 · %1$s</string>
     <string name="title_exact_match">推荐</string>
     <string name="title_fuzzy_match">相关吧</string>
     <string name="title_search_filter_only_thread">只看主题贴</string>
