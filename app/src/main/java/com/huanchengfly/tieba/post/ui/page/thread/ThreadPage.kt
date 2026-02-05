@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.thread
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,7 +64,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -99,6 +102,7 @@ import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStoreUiEvent
+import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
@@ -210,6 +214,7 @@ fun ThreadPage(
 
     val lazyListState = rememberLazyListState()
     val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollOrientationConnection = rememberScrollOrientationConnection()
 
     var showBottomSheet by rememberSaveable { mutableStateOf(false) }
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -353,6 +358,12 @@ fun ThreadPage(
         error = state.error,
         onReload = { viewModel.requestLoad(0, postId) }
     ) {
+        val bottomBarVisible by remember {
+            derivedStateOf { !lazyListState.canScrollForward || scrollOrientationConnection.isScrollingForward }
+        }
+        // Use AnimatedOffset instead of AnimatedVisibility
+        val bottomBarOffsetRatio by animateFloatAsState(if (bottomBarVisible) 0f else 1f)
+
         BlurScaffold(
             topHazeBlock = {
                 blurEnabled = lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping
@@ -384,7 +395,9 @@ fun ThreadPage(
             },
             bottomBar = {
                 BottomBar(
-                    modifier = Modifier.clickableNoIndication { /* Block click event */ },
+                    modifier = Modifier
+                        .clickableNoIndication { /* Block click event */ }
+                        .graphicsLayer { translationY = size.height * bottomBarOffsetRatio },
                     onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
                     onClickMore = {
                         if (bottomSheetState.isVisible) closeBottomSheet() else openBottomSheet()
@@ -394,7 +407,7 @@ fun ThreadPage(
                 )
             },
             bottomHazeBlock = {
-                blurEnabled = lazyListState.canScrollForward
+                blurEnabled = bottomBarOffsetRatio < 0.15f
             },
             snackbarHostState = snackbarHostState,
             snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
@@ -417,6 +430,7 @@ fun ThreadPage(
                     contentPadding = contentPadding
                 ) {
                     ThreadContent(
+                        modifier = Modifier.nestedScroll(scrollOrientationConnection),
                         viewModel = viewModel,
                         lazyListState = lazyListState,
                         contentPadding = contentPadding,

@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -69,6 +72,7 @@ import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.PostCard
 import com.huanchengfly.tieba.post.ui.page.thread.SubPostBlockedTip
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
+import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
@@ -209,6 +213,12 @@ internal fun SubPostsContent(
         onReload = viewModel::onRefresh,
     ) {
         val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        val scrollOrientationConnection = rememberScrollOrientationConnection()
+        val bottomBarVisible by remember {
+            derivedStateOf { !lazyListState.canScrollForward || scrollOrientationConnection.isScrollingForward }
+        }
+        // Use AnimatedOffset instead of AnimatedVisibility
+        val bottomBarOffsetRatio by animateFloatAsState(if (bottomBarVisible) 0f else 1f)
 
         // Initialize nullable click listeners:
         val onReplySubPostClickedListener: ((SubPostItemData) -> Unit)? = { item: SubPostItemData ->
@@ -269,6 +279,8 @@ internal fun SubPostsContent(
                     BlurNavigationBarPlaceHolder()
                 } else {
                     BottomBar(
+                        modifier = Modifier
+                            .graphicsLayer { translationY = size.height * bottomBarOffsetRatio },
                         account = account,
                         onReply = {
                             if (forumName != null ) {
@@ -278,13 +290,14 @@ internal fun SubPostsContent(
                     )
                 }
             },
-            bottomHazeBlock = { blurEnabled = lazyListState.canScrollForward }
+            bottomHazeBlock = { blurEnabled = bottomBarOffsetRatio < 0.15f }
         ) { padding ->
             val contentPadding = padding.fixedTopBarPadding()
 
             SwipeUpLazyLoadColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .nestedScroll(scrollOrientationConnection)
                     .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                 state = lazyListState,
                 contentPadding = contentPadding,
