@@ -259,7 +259,9 @@ fun BottomNavigation(
                         atEnd = index == currentPosition
                     )
                 },
-                alwaysShowLabel = false
+                label = {
+                    Text(text = stringResource(navigationItem.title))
+                },
             )
         }
     }
