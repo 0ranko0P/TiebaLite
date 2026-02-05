@@ -1293,7 +1293,7 @@ private class CollapsingAvatarTopBarMeasurePolicy(
                 if (collapsedFraction > 0.6f) {
                     constraints.maxWidth - navigationIconPlaceable.width - avatarMinSize - actionWidth
                 } else {
-                    val expandedHorizontalPadding = (CollapsedAvatarHorizontalPadding + TopAppBarHorizontalPadding).roundToPx()
+                    val expandedHorizontalPadding = (CollapsedAvatarHorizontalPadding + TopAppBarHorizontalPadding * 2).roundToPx()
                     constraints.maxWidth - avatarMaxSize - expandedHorizontalPadding
                 }.coerceAtLeast(0)
             }
