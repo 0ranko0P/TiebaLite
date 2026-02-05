@@ -12,7 +12,7 @@ import kotlinx.coroutines.runBlocking
 
 object ClientUtils {
 
-    private var clientConfigSettings: Settings<ClientConfig>? = null
+    var clientConfigSettings: Settings<ClientConfig>? = null
 
     var clientId: String? = null
         private set

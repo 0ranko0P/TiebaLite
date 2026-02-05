@@ -25,6 +25,7 @@ class ConfigInitializer @Inject constructor(
     val clientSettings = settingsRepository.clientConfig
 
     fun init(reload: Boolean = false) = with(App.Config) {
+        ClientUtils.clientConfigSettings = clientSettings
         if (reload || !inited) {
             isOAIDSupported = DeviceID.supportedOAID(context)
             if (isOAIDSupported) {
