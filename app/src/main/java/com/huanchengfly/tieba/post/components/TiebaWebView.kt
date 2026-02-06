@@ -104,7 +104,7 @@ class TiebaWebView(context: Context): WebView(context) {
             onNavigate: ((Destination) -> Unit)?
         ): Boolean {
             // Check is tieba link & deeplink
-            val tiebaDeepLink = ClipBoardLinkDetector.parseDeepLink(url)
+            val tiebaDeepLink = ClipBoardLinkDetector.parseDeepLink(url).getOrNull()
             val isTieba = tiebaDeepLink != null
 
             when {

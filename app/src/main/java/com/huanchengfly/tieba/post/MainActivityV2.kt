@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -40,6 +41,7 @@ import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.rememberNavController
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant.KEY_WELCOME_SETUP
+import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.ShortcutInitializer
@@ -255,8 +257,13 @@ class MainActivityV2 : BaseComposeActivity() {
 
     companion object {
 
-        private fun appLinkToNavRoute(uri: Uri): Destination? {
-            return ClipBoardLinkDetector.parseDeepLink(uri)?.toRoute()
+        private fun Context.appLinkToNavRoute(uri: Uri): Destination? {
+            return ClipBoardLinkDetector.parseDeepLink(uri)
+                .onFailure {
+                    toastShort(it.getErrorMessage())
+                }
+                .getOrNull()
+                ?.toRoute()
         }
 
         @Composable

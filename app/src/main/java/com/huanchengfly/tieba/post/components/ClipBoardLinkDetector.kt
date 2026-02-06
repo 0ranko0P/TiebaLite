@@ -88,20 +88,23 @@ object ClipBoardLinkDetector {
         return null
     }
 
-    fun parseDeepLink(uri: Uri): ClipBoardLink? {
-        return if (uri.scheme == "com.baidu.tieba" && uri.host == "unidispatch") {
-            when (uri.path.orEmpty().lowercase()) {
+    fun parseDeepLink(uri: Uri): Result<ClipBoardLink?> = runCatching {
+        if (uri.scheme == "com.baidu.tieba" && uri.host == "unidispatch") {
+            when (val path = uri.path?.lowercase()) {
                 "/frs" -> {
-                    val forumName = uri.getQueryParameter("kw") ?: return null
-                    return ClipBoardLink.Forum("https://tieba.baidu.com/f?kw=$forumName", forumName)
+                    val forumName = uri.getQueryParameter("kw") ?: throw IllegalArgumentException("kw not found")
+                    ClipBoardLink.Forum("https://tieba.baidu.com/f?kw=$forumName", forumName)
                 }
 
                 "/pb" -> {
-                    val threadId = uri.getQueryParameter("tid") ?: return null
-                    return ClipBoardLink.Forum("https://tieba.baidu.com/p/$threadId", threadId)
+                    val threadId = uri.getQueryParameter("tid") ?: throw IllegalArgumentException("tid not found")
+                    ClipBoardLink.Thread(
+                        url = "https://tieba.baidu.com/p/$threadId",
+                        threadId = threadId.toLongOrNull() ?: throw IllegalArgumentException("Illegal tid $threadId")
+                    )
                 }
 
-                else -> null
+                else -> throw IllegalArgumentException("Unsupported unidispatch path: $path.")
             }
         } else {
             parseLink(uri.toString().urlDecode())
