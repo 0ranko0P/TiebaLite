@@ -16,11 +16,6 @@
 
 plugins {
     id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.android.get().pluginId)
-}
-
-kotlin {
-    explicitApi()
 }
 
 android {
@@ -32,12 +27,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = "11"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     lint.checkReleaseBuilds = false
@@ -55,5 +46,4 @@ android {
 
 dependencies {
     api(libs.androidx.annotation)
-    api(libs.kotlin.stdlib)
 }
