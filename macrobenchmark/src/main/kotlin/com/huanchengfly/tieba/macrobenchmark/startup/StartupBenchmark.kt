@@ -25,6 +25,7 @@ import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner
 import androidx.test.uiautomator.uiAutomator
 import com.huanchengfly.tieba.macrobenchmark.DEFAULT_ITERATIONS
 import com.huanchengfly.tieba.macrobenchmark.TARGET_PACKAGE
+import com.huanchengfly.tieba.macrobenchmark.startActivityAndSetup
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -85,7 +86,7 @@ abstract class AbstractStartupBenchmark(private val startupMode: StartupMode) {
         startupMode = startupMode,
     ) {
         uiAutomator {
-            startApp(TARGET_PACKAGE)
+            startActivityAndSetup()
             Thread.sleep(3000/*ms*/)
         }
     }
