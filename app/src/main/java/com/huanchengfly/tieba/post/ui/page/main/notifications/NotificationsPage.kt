@@ -5,7 +5,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -40,7 +39,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScr
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsPage(
     initialPage: NotificationsType = NotificationsType.ReplyMe,
@@ -112,7 +110,6 @@ fun NotificationsPage(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NotificationsToolBar(
     navigator: NavController,

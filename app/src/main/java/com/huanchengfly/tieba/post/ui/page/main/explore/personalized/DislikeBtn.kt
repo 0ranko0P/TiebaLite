@@ -39,10 +39,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
-import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.hazeEffect
 
-@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Dislike(
     dislikeResource: List<Dislike>,

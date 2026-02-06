@@ -33,7 +33,6 @@ import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
@@ -113,7 +112,6 @@ private enum class SearchPages(val titleRes: Int) {
     User(titleRes = R.string.title_search_user)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchPage(
     navigator: NavController,

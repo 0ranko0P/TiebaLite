@@ -34,7 +34,6 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -154,7 +153,6 @@ private fun ForumAvatar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForumPage(
     forumName: String,

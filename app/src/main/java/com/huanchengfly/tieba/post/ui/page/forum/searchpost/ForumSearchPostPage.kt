@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -75,7 +74,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentMapOf
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForumSearchPostPage(
     forumName: String,

@@ -10,7 +10,6 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.unit.IntSize
 import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestBuilder
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.Placeholder
 import com.bumptech.glide.integration.compose.placeholder
 import com.bumptech.glide.load.DataSource
@@ -33,7 +32,6 @@ import kotlin.coroutines.resumeWithException
 
 object GlideUtil {
 
-    @OptIn(ExperimentalGlideComposeApi::class)
     val DefaultErrorPlaceholder: Placeholder = placeholder(R.drawable.ic_error)
 
     private val ErrorListener by lazy {

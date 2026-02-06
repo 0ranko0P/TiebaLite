@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose.preference
 
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
@@ -21,7 +20,6 @@ import com.huanchengfly.tieba.post.utils.HmTime
  * @param dialogTitle Title shown in the dialog. No title if null.
  * @param enabled controls the enabled state of this preference
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @NonRestartableComposable
 @Composable
 fun TimePickerPerf(

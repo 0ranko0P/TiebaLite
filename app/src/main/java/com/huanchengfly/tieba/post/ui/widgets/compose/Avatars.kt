@@ -15,7 +15,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
@@ -53,7 +52,6 @@ fun Avatar(
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun Avatar(
     modifier: Modifier = Modifier,

@@ -42,7 +42,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.Glide
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.Placeholder
 import com.bumptech.glide.integration.compose.placeholder
@@ -63,7 +62,6 @@ import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion
 import com.huanchengfly.tieba.post.utils.GlideUtil
 import com.huanchengfly.tieba.post.utils.ImageUtil
 
-@OptIn(ExperimentalGlideComposeApi::class)
 val CircularLoadingPlaceholder: Placeholder = placeholder {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -73,7 +71,6 @@ val CircularLoadingPlaceholder: Placeholder = placeholder {
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 fun placeholderRetry(onRetry: () -> Unit): Placeholder = placeholder {
     Column (
         modifier = Modifier
@@ -137,7 +134,6 @@ fun ErrorImage(modifier: Modifier = Modifier, tip: String) {
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun PreviewImage(
     modifier: Modifier = Modifier,
@@ -187,7 +183,6 @@ private fun PreviewImage(
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun NetworkImage(
     modifier: Modifier = Modifier,

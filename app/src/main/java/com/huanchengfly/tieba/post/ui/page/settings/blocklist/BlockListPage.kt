@@ -24,7 +24,6 @@ import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
@@ -188,7 +187,6 @@ fun KeywordBlockListPage(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun <T> BlockListScaffold(
     title: Int = R.string.settings_block_keyword,
@@ -284,7 +282,6 @@ private fun <T> BlockListScaffold(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BlockFloatingActionButtonMenu(
     modifier: Modifier = Modifier,

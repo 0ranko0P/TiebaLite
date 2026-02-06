@@ -23,7 +23,6 @@ import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bumptech.glide.Glide
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -142,7 +141,6 @@ object EmoticonManager {
         )
     }
 
-    @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
     fun EmoticonInlineImage(modifier: Modifier = Modifier, id: String, description: String = id) {
         val uri = remember { getEmoticonUri(id) }

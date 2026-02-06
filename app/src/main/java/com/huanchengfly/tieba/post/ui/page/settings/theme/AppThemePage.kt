@@ -57,7 +57,6 @@ import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material3.Button
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -110,7 +109,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.bumptech.glide.Glide
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -466,7 +464,6 @@ private fun UserStatWidgetRow(
 }
 
 // Sliders and some tiny Widgets
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SlidersWidgetRow(
     modifier: Modifier = Modifier,
@@ -767,7 +764,6 @@ private fun ColorSchemeItem(
         }
     }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun TranslucentThemeBackground(modifier: Modifier = Modifier, file: File?) {
     GlideImage(

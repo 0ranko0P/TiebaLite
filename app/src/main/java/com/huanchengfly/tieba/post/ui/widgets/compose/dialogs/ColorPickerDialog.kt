@@ -22,7 +22,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DoubleArrow
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -61,7 +60,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.RoundedSlider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.extension.toHexString
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColorPickerDialog(
     state: DialogState = rememberDialogState(),

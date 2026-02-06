@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -196,7 +195,6 @@ fun MainPage(
 /**
  * Creates a list of [TopAppBarState] that is remembered across compositions.
  * */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun rememberTopAppBarScrollBehaviors(
     size: Int,

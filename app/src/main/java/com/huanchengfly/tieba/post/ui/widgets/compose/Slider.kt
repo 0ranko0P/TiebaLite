@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Slider
@@ -119,7 +118,6 @@ private fun DefaultThumb(
  *   to this range.
  */
 @Composable
-@ExperimentalMaterial3Api
 fun RoundedSlider(
     value: Float,
     onValueChange: (Float) -> Unit,

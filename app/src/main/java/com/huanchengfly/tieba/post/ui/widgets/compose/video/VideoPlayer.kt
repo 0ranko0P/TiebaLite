@@ -43,7 +43,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.PlayerSurface
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.Grey100
@@ -252,7 +251,6 @@ private fun FullScreenButton() {
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun VideoThumbnail(modifier: Modifier = Modifier, thumbnailUrl: String?, onClick: () -> Unit) {
     Box(

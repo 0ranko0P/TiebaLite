@@ -123,7 +123,6 @@ import kotlin.math.roundToInt
  */
 
 @Suppress("UnusedReceiverParameter")
-@ExperimentalMaterial3Api
 @Composable
 fun TopAppBarDefaults.enterAlwaysOnLowerBoundScrollBehavior(
     state: TopAppBarState = rememberTopAppBarState(),

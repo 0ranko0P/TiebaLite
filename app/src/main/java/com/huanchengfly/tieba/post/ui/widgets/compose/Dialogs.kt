@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EditCalendar
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -109,7 +108,6 @@ fun DialogScope.DialogNegativeButton(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimePickerDialog(
     modifier: Modifier = Modifier,

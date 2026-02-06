@@ -11,7 +11,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.VerticalAlignTop
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -166,7 +165,6 @@ private fun ExplorePageTab(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExplorePage() {
     val context = LocalContext.current

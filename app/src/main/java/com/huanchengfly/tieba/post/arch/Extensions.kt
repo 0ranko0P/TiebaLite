@@ -5,7 +5,6 @@ package com.huanchengfly.tieba.post.arch
 import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -232,12 +231,9 @@ inline fun <INTENT : UiIntent, reified VM : BaseViewModel<INTENT, *, *, *>> page
     }
 }
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 val TopAppBarScrollBehavior.isOverlapping: Boolean
     get() = state.overlappedFraction > 0.01f
 
-@OptIn(ExperimentalMaterial3Api::class)
 inline fun List<TopAppBarScrollBehavior>.isOverlapping(pagerState: PagerState): Boolean {
     return this.getOrNull(pagerState.currentPage)?.isOverlapping ?: false
 }

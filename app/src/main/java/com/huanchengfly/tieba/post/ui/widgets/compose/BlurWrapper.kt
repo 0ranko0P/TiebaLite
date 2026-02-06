@@ -37,7 +37,6 @@ import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_DEFAULT
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_NONE
 import com.huanchengfly.tieba.post.utils.DisplayUtil.gestureType
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeEffectScope
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
@@ -47,7 +46,6 @@ import dev.chrisbanes.haze.hazeSource
 
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
-@OptIn(ExperimentalHazeApi::class)
 @ReadOnlyComposable
 @Composable
 fun defaultInputScale(): HazeInputScale {
@@ -132,7 +130,6 @@ inline fun BlurWrapper(
  *
  * @see LocalHazeState
  */
-@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun BlurScaffold(
     modifier: Modifier = Modifier,

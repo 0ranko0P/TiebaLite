@@ -20,7 +20,6 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -138,7 +137,6 @@ private const val PostContentType = 0
 private val HeaderContentType = Unit
 // SubpostContentType use Null by default
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SubPostsContent(
     viewModel: SubPostsViewModel,
@@ -358,7 +356,6 @@ internal fun SubPostsContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TitleBar(
     isSheet: Boolean,

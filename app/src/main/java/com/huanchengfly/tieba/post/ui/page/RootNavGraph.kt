@@ -10,7 +10,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -70,7 +69,6 @@ import kotlin.reflect.typeOf
 
 const val TB_LITE_DOMAIN = "tblite"
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RootNavGraph(
     // bottomSheetNavigator: BottomSheetNavigator,

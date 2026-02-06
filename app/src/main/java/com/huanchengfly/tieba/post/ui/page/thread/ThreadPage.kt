@@ -39,7 +39,6 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -192,7 +191,6 @@ private fun LazyListState.middleVisiblePost(uiState: ThreadUiState): PostData? =
     return uiState.data.fastFirstOrNull { p -> p.id == postId } ?: uiState.firstPost
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThreadPage(
     threadId: Long,

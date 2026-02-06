@@ -84,7 +84,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
@@ -585,7 +584,6 @@ private fun EmoticonPanel(
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun ImagePanel(
     selectedImages: List<String>,

@@ -111,7 +111,13 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_17
-            freeCompilerArgs.add("-Xcontext-parameters")
+            freeCompilerArgs.addAll(
+                "-Xcontext-parameters",
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi",
+                "-opt-in=dev.chrisbanes.haze.ExperimentalHazeApi",
+            )
         }
     }
 

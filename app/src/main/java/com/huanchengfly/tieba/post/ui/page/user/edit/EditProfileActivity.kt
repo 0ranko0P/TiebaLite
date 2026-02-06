@@ -27,7 +27,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -55,7 +54,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity.Companion.currentThemeNoTrans
@@ -181,7 +179,7 @@ class EditProfileActivity : BaseComposeActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EditProfileScaffold(
     viewModel: EditProfileViewModel,
@@ -264,7 +262,6 @@ private fun EditProfileScaffold(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SexDropdownMenuBox(modifier: Modifier = Modifier, sex: Int, onSexChange: (Int) -> Unit) {
     val context = LocalContext.current
@@ -317,7 +314,6 @@ private fun SexDropdownMenuBox(modifier: Modifier = Modifier, sex: Int, onSexCha
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun UserAvatarPicker(modifier: Modifier = Modifier, avatar: String, onPick: () -> Unit) {
     Box(

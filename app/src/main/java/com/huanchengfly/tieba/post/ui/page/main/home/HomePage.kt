@@ -34,7 +34,6 @@ import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -380,7 +379,6 @@ private sealed interface ForumType {
     object GridItem: ForumType
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePage(
     viewModel: HomeViewModel = hiltViewModel<HomeViewModel>(),

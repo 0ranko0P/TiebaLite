@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
@@ -206,7 +205,6 @@ class VideoContentRender(
         require(picUrl.isNotBlank() && picUrl.isNotEmpty()) { "Invalid video cover url" }
     }
 
-    @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
     override fun Render() {
         val widthFraction = if (isWindowWidthCompact()) 1f else 0.5f

@@ -48,7 +48,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.LocalHabitSettings
@@ -341,7 +340,6 @@ const val MAX_PHOTO_IN_ROW = 3
 val singleMediaFraction: Float
     @Composable @ReadOnlyComposable get() = if (isWindowWidthCompact()) 1.0f else 0.5f
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun ThreadMedia(
     modifier: Modifier = Modifier,

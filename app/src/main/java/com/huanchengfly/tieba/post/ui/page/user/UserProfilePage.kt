@@ -37,7 +37,6 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -93,7 +92,6 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -178,7 +176,6 @@ private val ContentLandscapeLayout: Boolean
     @Composable @ReadOnlyComposable get() = isLooseWindowWidth()
 
 // Blurry avatar background
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun AvatarBackground(
     imgProcessor: ImageProcessor,
@@ -224,7 +221,6 @@ private fun rememberAvatarTopBarColors(): TopAppBarColors {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfilePage(
     uid: Long,
@@ -419,7 +415,6 @@ fun UserProfilePage(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UserProfileTopAppBar(
     modifier: Modifier = Modifier,
@@ -863,7 +858,6 @@ private fun UserProfileDetailPlaceholder(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StateScreenScope.LoadingScreen(
     modifier: Modifier = Modifier,
@@ -1102,7 +1096,6 @@ private fun UserProfileDetailPreview() = TiebaLiteTheme {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview("LoadingScreen")
 @Composable
 private fun LoadingScreenPreview() = TiebaLiteTheme {
@@ -1113,7 +1106,6 @@ private fun LoadingScreenPreview() = TiebaLiteTheme {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview("LoadingScreenLandscape", device = Devices.PIXEL_TABLET)
 @Composable
 private fun LoadingScreenLandscapePreview() = TiebaLiteTheme {
