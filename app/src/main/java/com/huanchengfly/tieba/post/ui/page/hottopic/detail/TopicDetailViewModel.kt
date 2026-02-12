@@ -14,8 +14,10 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.repository.HotTopicRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
@@ -110,6 +112,22 @@ class TopicDetailViewModel @Inject constructor(
         ) { threadId, liked, loading ->
             _uiState.update { it.copy(threads = it.threads.updateLikeStatus(threadId, liked, loading)) }
         }
+    }
+
+    /**
+     * Called when navigating back from thread page with the latest [Like] status
+     *
+     * @param threadId target thread ID
+     * @param like like status of target thread
+     * */
+    fun onThreadResult(threadId: Long, like: Like) = launchInVM {
+        val stateSnapshot = currentState
+        // compare and update with latest like status
+        val newThreads = stateSnapshot.threads.updateLikeStatus(threadId, like)
+        if (newThreads != null) {
+            _uiState.update { stateSnapshot.copy(threads = newThreads) }
+        }
+        // else: empty or no status changes
     }
 
     companion object {

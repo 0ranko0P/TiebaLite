@@ -37,6 +37,7 @@ import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.feedId
+import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.ThreadBlockedTip
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
@@ -76,6 +77,8 @@ fun TopicDetailPage(
             is CommonUiEvent.ToastError -> toastShort(R.string.toast_exception, it.message)
         }
     }
+
+    ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
