@@ -110,9 +110,9 @@ fun ThreadStorePage(
             val habit = LocalHabitSettings.current
 
             // Initialize click listeners now
-            val onUserClicked: (Author) -> Unit = {
-                it.run {
-                    navigator.navigate(UserProfile(uid = id, avatar = avatarUrl, nickname = name))
+            val onUserClicked: (Author, String) -> Unit = { author, extraKey ->
+                author.run {
+                    navigator.navigate(UserProfile(uid = id, avatarUrl, name, transitionKey = extraKey))
                 }
             }
 
@@ -161,7 +161,7 @@ fun ThreadStorePage(
 @Composable
 private fun StoreItem(
     info: ThreadStore,
-    onUserClick: (Author) -> Unit,
+    onUserClick: (Author, transitionKey: String) -> Unit,
     onDelete: (ThreadStore) -> Unit,
     onClick: (ThreadStore) -> Unit,
     modifier: Modifier = Modifier,
@@ -182,12 +182,13 @@ private fun StoreItem(
         ) {
             SharedTransitionUserHeader(
                 user = info.author,
+                extraKey = info.id,
                 desc = if (hasUpdate) {
                     stringResource(id = R.string.tip_thread_store_update, info.postNo)
                 } else {
                     null
                 },
-                onClick = { onUserClick(info.author) },
+                onClick = { onUserClick(info.author, info.id.toString()) },
             ) {
                 Spacer(Modifier.weight(1.0f))
 
