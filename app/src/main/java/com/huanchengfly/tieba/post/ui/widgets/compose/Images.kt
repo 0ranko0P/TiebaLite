@@ -260,7 +260,8 @@ fun NetworkImage(
                 },
                 model = model,
                 originModelProvider = {
-                    photoViewDataProvider?.invoke()?.data?.originUrl?.let { TbGlideUrl(url = it) }
+                    val url = photoViewDataProvider?.invoke()?.data?.originUrl
+                    if (url.isNullOrEmpty()) null else TbGlideUrl(url = url)
                 },
                 dimensions = dimensions,
             )

@@ -70,17 +70,27 @@ val PostInfoList.abstractText: String
         }
     }
 
+private val Media.anyUrl: String?
+    get() = when {
+        bigPic.isNotEmpty() -> bigPic
+        srcPic.isNotEmpty() -> srcPic
+        originPic.isNotEmpty() -> originPic
+        else -> null
+    }
+
 val Media.isExpired: Boolean
-    get() = type == 6 || srcPic.isEmpty()
+    get() = type == 6 || type == 5 || anyUrl == null
 
 // Almost the same with PbContent.getPicUrl (OfficialProtobufTiebaApi v12.52.1.0)
 fun Media.getPicUrl(loadType: Int): String {
-    return ImageUtil.getThumbnail(
+    val url = ImageUtil.getThumbnail(
         loadType = loadType,
         // originUrl = originPic,   // Best quality in [Media]
         originUrl = srcPic,         // Medium
         smallPicUrl = bigPic        // Worst quality in [Media]
     )
+    // Edge case: Empty srcPic in repost thread
+    return url.ifEmpty { anyUrl.orEmpty() }
 }
 
 private fun PbContent.getPicUrl(loadType: Int): String {
