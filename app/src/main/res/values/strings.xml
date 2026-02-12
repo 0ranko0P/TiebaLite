@@ -511,6 +511,7 @@
     <string name="toast_connecting">连接中请稍候..</string>
     <string name="toast_exception">出错了 %1$s</string>
     <string name="toast_ban_interact_failed">更新拉黑配置失败 %1$s</string>
+    <string name="toast_preview_image_too_large">无法预览超大图</string>
     <string name="welcome_intro">欢迎使用贴吧 Lite</string>
     <string name="welcome_intro_subtitle">极简的贴吧第三方客户端</string>
     <string name="welcome_permission">隐私与权限</string>

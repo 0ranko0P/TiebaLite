@@ -49,6 +49,7 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.aspectRatio
 import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.goToActivity
@@ -147,12 +148,6 @@ private fun PreviewImage(
         originModelProvider()?.takeIf { it != model } ?: model
     }
 
-    val aspectRatio = if (dimensions != IntSize.Zero && dimensions.width > 0) {
-        dimensions.width / dimensions.height.toFloat()
-    } else {
-        1f
-    }
-
     FullScreen {
         Box(
             modifier = modifier
@@ -169,7 +164,7 @@ private fun PreviewImage(
                         // Fill width/height based on current orientation
                         if (windowSize.height > windowSize.width) fillMaxWidth() else fillMaxHeight()
                     }
-                    .aspectRatio(ratio = aspectRatio),
+                    .aspectRatio(ratio = dimensions.aspectRatio ?: 1f),
                 contentScale = ContentScale.Crop,
                 failure = GlideUtil.DefaultErrorPlaceholder
             ) {
@@ -210,7 +205,13 @@ fun NetworkImage(
         modifier = modifier
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onLongPress = { isLongPressing = true },
+                    onLongPress = {
+                        if ((dimensions?.aspectRatio ?: 1f) <= 0.1f) {
+                            context.toastShort(R.string.toast_preview_image_too_large)
+                        } else {
+                            isLongPressing = true
+                        }
+                    },
                     onPress = {
                         tryAwaitRelease()
                         isLongPressing = false

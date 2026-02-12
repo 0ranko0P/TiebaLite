@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.util.fastIsFinite
 import androidx.core.content.ContextCompat
 import com.google.gson.reflect.TypeToken
 import com.huanchengfly.tieba.post.utils.GsonUtil
@@ -75,6 +77,9 @@ fun Int.pxToSpFloat(): Float = this.toFloat().pxToSpFloat()
 
 fun Int.pxToDpFloat(): Float =
     this.toFloat().pxToDpFloat()
+
+val IntSize.aspectRatio: Float?
+    get() = (width / height.toFloat()).takeIf { it.fastIsFinite() }
 
 inline fun <reified Data> String.fromJson(): Data {
     val type = object : TypeToken<Data>() {}.type
