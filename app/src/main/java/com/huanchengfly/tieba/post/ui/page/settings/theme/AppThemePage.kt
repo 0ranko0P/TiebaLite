@@ -46,6 +46,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
@@ -103,6 +104,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -728,7 +730,12 @@ private fun ThemeItem(
             content = content
         )
 
-        Text(text = name, maxLines = 1, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = name,
+            autoSize = TextAutoSize.StepBased(10.sp, MaterialTheme.typography.titleMedium.fontSize),
+            maxLines = 1,
+            style = MaterialTheme.typography.titleMedium
+        )
     }
 }
 
