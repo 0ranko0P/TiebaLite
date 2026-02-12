@@ -52,14 +52,12 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.aspectRatio
 import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
-import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
-import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion.EXTRA_PHOTO_VIEW_DATA
 import com.huanchengfly.tieba.post.utils.GlideUtil
 import com.huanchengfly.tieba.post.utils.ImageUtil
 
@@ -205,6 +203,7 @@ fun NetworkImage(
         modifier = modifier
             .pointerInput(Unit) {
                 detectTapGestures(
+                    onDoubleTap = {/* Block Double Tap */},
                     onLongPress = {
                         if ((dimensions?.aspectRatio ?: 1f) <= 0.1f) {
                             context.toastShort(R.string.toast_preview_image_too_large)
@@ -223,9 +222,7 @@ fun NetworkImage(
                         if (photos.data != null && photos.data.forumName.isEmpty()) {
                             context.toastShort(R.string.title_unknown_error)
                         } else {
-                            context.goToActivity<PhotoViewActivity> {
-                                putExtra(EXTRA_PHOTO_VIEW_DATA, photos)
-                            }
+                            PhotoViewActivity.launch(context, photos)
                         }
                     }
                 )

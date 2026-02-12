@@ -85,6 +85,7 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
             Config.VIEWER_BACKGROUND_COLOR = Color.TRANSPARENT
             Config.SWIPE_DISMISS = false
 
+            if (Components.working) finish()
             Components.initialize(
                 imageLoader = SimpleImageLoader(
                     glide = Glide.with(this),
@@ -215,8 +216,17 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
          * */
         const val EXTRA_LOAD_WITH_TB_GLIDE_URL = "com.huanchengfly.tieba.post.USE_TB_GLIDE_URL"
 
+        fun launch(context: Context, data: PhotoViewData) {
+            if (Components.working) return
+
+            context.goToActivity<PhotoViewActivity> {
+                putExtra(EXTRA_PHOTO_VIEW_DATA, data)
+            }
+        }
+
         fun launchSinglePhoto(context: Context, url: String, useTbGlideUrl: Boolean = true) {
             if (url.isNotEmpty() && url.isNotBlank()) {
+                if (Components.working) return
                 context.goToActivity<PhotoViewActivity> {
                     val picItem = PicItem(picId = ImageUtil.getPicId(url), picIndex = 1, url)
                     putExtra(
@@ -225,6 +235,8 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
                     )
                     putExtra(EXTRA_LOAD_WITH_TB_GLIDE_URL, useTbGlideUrl)
                 }
+            } else {
+                context.toastShort(R.string.desc_image_empty_url)
             }
         }
 
@@ -235,6 +247,7 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
              * */
             override fun onBackPressed() {
                 requireActivity().finish()
+                Components.release() // Do not wait onDestroyView, release it now
             }
         }
 

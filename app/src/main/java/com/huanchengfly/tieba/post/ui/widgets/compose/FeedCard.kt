@@ -63,7 +63,6 @@ import com.huanchengfly.tieba.post.api.models.protos.isExpired
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.PbContentText
@@ -397,18 +396,8 @@ fun ThreadMedia(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        context.goToActivity<PhotoViewActivity> {
-                            putExtra(
-                                PhotoViewActivity.EXTRA_PHOTO_VIEW_DATA,
-                                getPhotoViewData(
-                                    medias = medias,
-                                    forumId = forumId,
-                                    forumName = forumName,
-                                    threadId = threadId,
-                                    index = 0
-                                )
-                            )
-                        }
+                        val data = getPhotoViewData(medias, forumId, forumName, threadId, index = 0)
+                        PhotoViewActivity.launch(context, data)
                     }
                 )
             } else if (medias.first().isExpired) {
