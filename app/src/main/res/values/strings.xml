@@ -253,7 +253,6 @@
     <string name="text_oksign_fallback">切换至普通签到模式</string>
     <string name="text_oksign_no_signable">没有可签到的吧</string>
     <string name="title_forum_info">关于本吧</string>
-    <string name="settings_forum_fab_function">吧页面悬浮按钮功能</string>
     <string name="btn_post">发贴</string>
     <string name="btn_refresh">刷新</string>
     <string name="btn_back_to_top">回到顶部</string>
@@ -450,7 +449,6 @@
     <string name="summary_lift_up_bottom_bar">略微抬起贴子页面底栏以方便点按</string>
     <string name="button_open">打开</string>
     <string name="button_restart">重启</string>
-    <string name="btn_hide">隐藏</string>
     <string name="desc_search_sug">搜索联想：%s</string>
     <string name="title_permission_essential">必要权限</string>
     <string name="title_permission_optional">可选权限</string>

@@ -47,7 +47,6 @@ annotation class WaterType {
  * @param favoriteDesc 收藏贴自动开启倒序浏览
  * @param favoriteSeeLz 从收藏进入的贴子将自动切换至只看楼主
  * @param forumSortType 吧页面默认排序方式
- * @param forumFAB 吧页面悬浮按钮功能
  * @param hideMedia 隐藏贴子列表的图片和视频
  * @param hideReply 隐藏回贴入口
  * @param hideReplyWarning 隐藏回贴风险提示
@@ -62,7 +61,6 @@ data class HabitSettings(
     val favoriteDesc: Boolean = false,
     val favoriteSeeLz: Boolean = true,
     @ForumSortType val forumSortType: Int = ForumSortType.BY_REPLY,
-    @ForumFAB val forumFAB: Int = ForumFAB.BACK_TO_TOP,
     val hideMedia: Boolean = false,
     val hideReply: Boolean = false,
     val hideReplyWarning: Boolean = false,

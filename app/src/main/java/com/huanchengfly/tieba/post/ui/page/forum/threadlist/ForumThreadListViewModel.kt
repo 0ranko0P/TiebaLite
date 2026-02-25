@@ -203,8 +203,4 @@ sealed interface ForumThreadListUiEvent : UiEvent {
 
         constructor(isGood: Boolean) : this(if (isGood) ForumType.Good else ForumType.Latest)
     }
-
-    data class AddThread(
-        val forumName: String,
-    ):ForumThreadListUiEvent
 }

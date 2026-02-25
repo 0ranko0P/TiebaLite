@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,11 +16,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -30,11 +33,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -43,13 +51,16 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.widgets.compose.ToggleFloatingActionButtonDefaults.animateIcon
 
 /**
  * Represents the container color for this button, depending on [enabled].
@@ -216,3 +227,39 @@ fun OutlinedIconTextButton(
     ) {
         Text(text = text, fontSize = 13.sp) // Button default: MaterialTheme.typography.labelLarge
     }
+
+
+@ExperimentalMaterial3Api
+@NonRestartableComposable
+@Composable
+fun DefaultToggleFloatingActionButton(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    focusRequester: FocusRequester = remember { FocusRequester() }
+) {
+    ToggleFloatingActionButton(
+        modifier = modifier
+            .semantics {
+                traversalIndex = -1f
+            }
+            .focusRequester(focusRequester)
+            .focusable(),
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+    ) {
+        Box(
+            Modifier.animateIcon({ checkedProgress })
+        ) {
+            Icon(
+                painter = rememberVectorPainter(Icons.Filled.Add),
+                contentDescription = null,
+                modifier = Modifier.graphicsLayer {
+                    rotationZ = checkedProgress * 45
+                    scaleX = lerp(1f, 1.25f, checkedProgress)
+                    scaleY = scaleX
+                },
+            )
+        }
+    }
+}

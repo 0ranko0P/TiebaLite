@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -12,6 +13,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,14 +31,12 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.PostAdd
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -46,8 +47,11 @@ import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,11 +64,11 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.lerp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
@@ -102,9 +106,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingAvatarTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultToggleFloatingActionButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
+import com.huanchengfly.tieba.post.ui.widgets.compose.FloatingActionButtonMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.FloatingActionButtonMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
@@ -117,6 +122,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -179,6 +185,16 @@ fun ForumPage(
 
     viewModel.uiEvent.collectUiEventWithLifecycle {
         val message = when (it) {
+            is ForumUiEvent.AddThread -> when {
+                !loggedIn -> getString(R.string.title_not_logged_in)
+
+                it.forumId != null -> navigator.navigate(
+                    route = Destination.Reply(forumId = it.forumId, forumName, threadId = 0L)
+                )
+
+                else -> getString(R.string.toast_add_thread_failed)
+            }
+
             is ForumUiEvent.SignIn.Success -> {
                 getString(R.string.toast_sign_success, it.signBonusPoint, it.userSignRank)
             }
@@ -263,22 +279,6 @@ fun ForumPage(
         }
     }
 
-    onGlobalEvent<ForumThreadListUiEvent.AddThread>(
-        filter = { it.forumName == forumName },
-    ) {
-        if (!loggedIn) {
-            onShowSnackbarShort(context.getString(R.string.title_not_logged_in))
-        } else if (uiState.forum != null) {
-            navigator.navigate(
-                Destination.Reply(
-                    forumId = uiState.forum!!.id,
-                    forumName = forumName,
-                    threadId = 0L,
-                )
-            )
-        } else onShowSnackbarShort(context.getString(R.string.toast_add_thread_failed))
-    }
-
     BlurScaffold(
         topHazeBlock = {
             blurEnabled = (listStates[pagerState.currentPage].canScrollBackward ||
@@ -348,10 +348,6 @@ fun ForumPage(
                                 viewModel.sendToDesktop(context.getString(R.string.title_forum, forumData.name))
                             }
 
-                            TextMenuItem(text = R.string.title_refresh) {
-                                viewModel.onRefreshClicked(isGood = pagerState.currentPage == TAB_FORUM_GOOD)
-                            }
-
                             if (loggedIn && forumData.liked) {
                                 TextMenuItem(text = R.string.title_unfollow, onClick = unlikeDialogState::show)
                             }
@@ -396,17 +392,15 @@ fun ForumPage(
         snackbarHostState = snackbarHostState,
         snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            val fab = LocalHabitSettings.current.forumFAB
-            if (fab == ForumFAB.HIDE || forumData == null) return@BlurScaffold
-            // FAB visibility: no error, not onTop, scrolling forward, pager is not scrolling
-            val fabVisibilityState = remember {
+            if (forumData == null) return@BlurScaffold
+            // FAB visibility: no error, scrolling forward, pager is not scrolling
+            val fabVisible by remember {
                 derivedStateOf {
-                    val notTop = listStates[pagerState.currentPage].canScrollBackward
-                    uiState.error == null && notTop && scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling
+                    uiState.error == null && scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling
                 }
             }
 
-            ForumFab(fab = fab, visible = { fabVisibilityState.value }) {
+            ForumFAB(visible = fabVisible) { fab ->
                 viewModel.onFabClicked(fab, isGood = pagerState.currentPage == TAB_FORUM_GOOD)
             }
         }
@@ -526,28 +520,52 @@ private fun ForumSubtitle(modifier: Modifier = Modifier, forum: ForumData) {
 }
 
 @Composable
-private fun ForumFab(@ForumFAB fab: Int, visible: () -> Boolean, onClick: () -> Unit) {
+private fun ForumFAB(modifier: Modifier = Modifier, visible: Boolean, onClick: (Int) -> Unit) {
+    val context = LocalContext.current
+    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
+
+    val items = remember {
+        persistentListOf(
+            Triple(ForumFAB.POST, Icons.Rounded.PostAdd, context.getString(R.string.btn_post)),
+            Triple(ForumFAB.REFRESH, Icons.Rounded.Refresh, context.getString(R.string.btn_refresh)),
+            Triple(ForumFAB.BACK_TO_TOP, Icons.Rounded.VerticalAlignTop, context.getString(R.string.btn_back_to_top)),
+        )
+    }
+
+    BackHandler(fabMenuExpanded) {
+        fabMenuExpanded = false
+    }
+
     AnimatedVisibility(
-        visible = visible(),
-        enter = DefaultFabEnterTransition,
-        exit = DefaultFabExitTransition
+        visible = visible,
+        enter = fadeIn() + slideInHorizontally { it },
+        exit = fadeOut() + slideOutHorizontally { it }
     ) {
-        FloatingActionButton(
-            onClick = onClick,
-            elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = Dp.Hairline // Buggy shadow when visibility changes
-            ),
+        FloatingActionButtonMenu(
+            modifier = modifier,
+            expanded = fabMenuExpanded,
+            button = {
+                DefaultToggleFloatingActionButton(
+                    checked = fabMenuExpanded,
+                    onCheckedChange = { fabMenuExpanded = !fabMenuExpanded },
+                )
+            },
         ) {
-            Icon(
-                imageVector = when (fab) {
-                    ForumFAB.REFRESH-> Icons.Rounded.Refresh
-                    ForumFAB.BACK_TO_TOP -> Icons.Rounded.VerticalAlignTop
-                    ForumFAB.POST -> Icons.Rounded.Add
-                    else -> throw IllegalStateException()
-                },
-                contentDescription = null
-            )
+            items.fastForEachIndexed { i, (forumFab, icon, menuText) ->
+                FloatingActionButtonMenuItem(
+                    onClick = {
+                        fabMenuExpanded = false
+                        onClick(forumFab)
+                    },
+                    icon = { Icon(imageVector = icon, contentDescription = null) },
+                    text = { Text(text = menuText) },
+                )
+            }
         }
+    }
+
+    if (!visible && fabMenuExpanded) {
+        LaunchedEffect(Unit) { fabMenuExpanded = false }
     }
 }
 

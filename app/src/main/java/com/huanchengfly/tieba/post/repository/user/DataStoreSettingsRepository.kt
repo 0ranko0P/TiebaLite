@@ -29,7 +29,6 @@ import com.huanchengfly.tieba.post.theme.TiebaBlue
 import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
-import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
@@ -135,7 +134,6 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
             favoriteDesc = it[booleanPreferencesKey(KEY_FAVORITE_DESC)] == true,
             favoriteSeeLz = it[booleanPreferencesKey(KEY_FAVORITE_SEE_LZ)] ?: true,
             forumSortType = it[intPreferencesKey(KEY_FORUM_SORT_DEFAULT)] ?: ForumSortType.BY_REPLY,
-            forumFAB = it[intPreferencesKey(KEY_FORUM_FAB_FUNCTION)] ?: ForumFAB.BACK_TO_TOP,
             hideMedia = it[booleanPreferencesKey(KEY_POST_HIDE_MEDIA)] == true,
             hideReply = it[booleanPreferencesKey(KEY_REPLY_HIDE)] == true,
             hideReplyWarning = it[booleanPreferencesKey(KEY_REPLY_HIDE_WARNING)] == true,
@@ -151,7 +149,6 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
         it[booleanPreferencesKey(KEY_FAVORITE_DESC)] = habit.favoriteDesc
         it[booleanPreferencesKey(KEY_FAVORITE_SEE_LZ)] = habit.favoriteSeeLz
         it[intPreferencesKey(KEY_FORUM_SORT_DEFAULT)] = habit.forumSortType
-        it[intPreferencesKey(KEY_FORUM_FAB_FUNCTION)] = habit.forumFAB
         it[booleanPreferencesKey(KEY_POST_HIDE_MEDIA)] = habit.hideMedia
         it[booleanPreferencesKey(KEY_REPLY_HIDE)] = habit.hideReply
         it[booleanPreferencesKey(KEY_REPLY_HIDE_WARNING)] = habit.hideReplyWarning
@@ -159,12 +156,20 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
         it[intPreferencesKey(KEY_IMAGE_WATERMARK_TYPE)] = habit.imageWatermarkType
         it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] = habit.showBothName
         it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] = habit.showHistoryInHome
+        it -= intPreferencesKey(KEY_FORUM_FAB_FUNCTION)
     }
 
     private const val KEY_COLLECTED_DESC = "ui_fav_desc"
     private const val KEY_FAVORITE_DESC = "ui_fav_desc_sort"
     private const val KEY_FAVORITE_SEE_LZ = "ui_fav_see_lz"
+
+    /**
+     * 吧页面悬浮按钮功能, 4.0.0 Beta 4.3 中移除
+     *
+     * @since 4.0.0 dev 5
+     * */
     private const val KEY_FORUM_FAB_FUNCTION = "forum_fab"
+
     private const val KEY_FORUM_SORT_DEFAULT = "forum_sort_type"
     private const val KEY_IMAGE_LOAD_TYPE = "img_load_type"
     private const val KEY_IMAGE_WATERMARK_TYPE = "img_watermark"

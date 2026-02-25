@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.settings
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
-import androidx.compose.material.icons.automirrored.outlined.ExitToApp
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.outlined.CalendarViewDay
 import androidx.compose.material.icons.outlined.PhotoSizeSelectActual
@@ -18,17 +17,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScope
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.ListPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SwitchPref
-import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.WaterType
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.ListPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScope
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SwitchPref
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import kotlinx.collections.immutable.persistentMapOf
 
@@ -67,23 +65,6 @@ fun HabitSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () -> Unit
             }
 
             DefaultSortPreference()
-
-            Item { habit ->
-                ListPref(
-                    value = habit.forumFAB,
-                    title = R.string.settings_forum_fab_function,
-                    onValueChange = {
-                        updatePreference { old -> old.copy(forumFAB = it) }
-                    },
-                    leadingIcon = Icons.AutoMirrored.Outlined.ExitToApp,
-                    options = persistentMapOf(
-                        ForumFAB.POST to R.string.btn_post,
-                        ForumFAB.REFRESH to R.string.btn_refresh,
-                        ForumFAB.BACK_TO_TOP to R.string.btn_back_to_top,
-                        ForumFAB.HIDE to R.string.btn_hide
-                    )
-                )
-            }
 
             Item { habit ->
                 SwitchPref(
