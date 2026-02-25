@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -101,6 +102,7 @@ import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.IMAGE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.NONE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyViewModel.Companion.MAX_SELECTABLE_IMAGE
 import com.huanchengfly.tieba.post.ui.utils.imeNestedScroll
+import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogContentPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
@@ -115,6 +117,7 @@ import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager.EmoticonInlineImage
 import com.huanchengfly.tieba.post.utils.EmoticonUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
+import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.keyboardAnimationHeight
 import com.huanchengfly.tieba.post.utils.keyboardMaxHeight
@@ -313,6 +316,14 @@ private fun ReplyPageContent(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (account != null) {
+                Avatar(
+                    data = remember { StringUtil.getAvatarUrl(account.portrait) },
+                    size = Sizes.Tiny,
+                    contentDescription = account.name,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Text(
                 text = topTitle,
                 modifier = Modifier.weight(1f),
@@ -321,7 +332,7 @@ private fun ReplyPageContent(
             Text(
                 text = inputLength.toString(),
                 color = colors.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.labelMedium,
             )
         }
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
