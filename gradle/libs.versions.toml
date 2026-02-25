@@ -41,7 +41,7 @@ androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constr
 androidx-compose-animation = { module = "androidx.compose.animation:animation" }
 androidx-compose-animation-graphics = { module = "androidx.compose.animation:animation-graphics" }
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "androidx-compose-bom" }
-androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3", version = "1.5.0-alpha14" }
 androidx-compose-material3-navsuite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite" }
 androidx-compose-material-iconsCore = { module = "androidx.compose.material:material-icons-core" }
 androidx-compose-material-iconsExtended = { module = "androidx.compose.material:material-icons-extended" }

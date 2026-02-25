@@ -57,7 +57,6 @@ import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsPage
 import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsSheetPage
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPage
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadResultKey
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadViewModel
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStorePage
 import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
@@ -167,13 +166,7 @@ private fun buildRootNavGraph(
         ) { backStackEntry ->
             with(backStackEntry.toRoute<Destination.Thread>()) {
                 val vm: ThreadViewModel = hiltViewModel()
-                ThreadPage(threadId, postId, from, navController, vm) { result ->
-                    if (result != null) {
-                        navController.navigateBackWithResult(ThreadResultKey, result)
-                    } else {
-                        navController.navigateUp()
-                    }
-                }
+                ThreadPage(threadId, postId, from, navController, vm)
             }
         }
 

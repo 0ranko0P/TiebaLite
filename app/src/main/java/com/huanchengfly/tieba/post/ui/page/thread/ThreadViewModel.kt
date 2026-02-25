@@ -554,10 +554,10 @@ class ThreadViewModel @Inject constructor(
         requestLoadFirstPage()
     }
 
-    fun onSaveHistory(lastVisiblePost: PostData?) {
+    fun onSaveHistory(lastVisiblePost: PostData?) = launchInVM {
         val state = currentState
-        val author = state.lz ?: return
-        val title = state.thread?.title ?: return
+        val author = state.lz ?: return@launchInVM
+        val title = state.thread?.title ?: return@launchInVM
 
         val history = ThreadHistory(
             id = threadId,
@@ -586,6 +586,9 @@ class ThreadViewModel @Inject constructor(
     }
 
     fun onImmersiveModeChanged() {
+        if (!isImmersiveMode && !currentState.seeLz) {
+            onSeeLzChanged()
+        }
         isImmersiveMode = !isImmersiveMode
     }
 

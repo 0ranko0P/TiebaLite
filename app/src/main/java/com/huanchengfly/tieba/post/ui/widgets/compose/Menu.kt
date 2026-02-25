@@ -18,6 +18,7 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,7 @@ class MenuScope(
         menuState.expanded = false
     }
 
+    @NonRestartableComposable
     @Composable
     fun TextMenuItem(modifier: Modifier = Modifier, @StringRes text: Int, onClick: () -> Unit) =
         TextMenuItem(modifier, stringResource(id = text), onClick)

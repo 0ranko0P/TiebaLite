@@ -20,23 +20,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
@@ -74,6 +70,21 @@ val accountNavIconIfCompact: @Composable () -> Unit = {
         AccountNavIcon(modifier = Modifier.padding(start = 12.dp))
     }
 }
+
+val MoreMenuItem: @Composable () -> Unit = {
+    val contentDescription = stringResource(id = R.string.btn_more)
+    PlainTooltipBox(
+        contentDescription = contentDescription,
+        hasAction = true,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.MoreVert,
+            contentDescription = contentDescription,
+            modifier = Modifier.minimumInteractiveComponentSize(),
+        )
+    }
+}
+
 
 @Composable
 private fun AccountDropdownMenuItem(
@@ -188,18 +199,20 @@ fun ActionItem(
     icon: ImageVector,
     contentDescription: String,
     enabled: Boolean = true,
+    activated: Boolean = false,
     onClick: () -> Unit
 ) {
-    TooltipBox(
+    PlainTooltipBox(
         modifier = modifier,
-        positionProvider = rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
-        tooltip = {
-            PlainTooltip { Text(text = contentDescription) }
-        },
-        state = rememberTooltipState(),
+        contentDescription = contentDescription,
+        hasAction = true,
     ) {
         IconButton(onClick = onClick, enabled = enabled) {
-            Icon(imageVector = icon, contentDescription = contentDescription)
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = if (activated) MaterialTheme.colorScheme.tertiary else LocalContentColor.current,
+            )
         }
     }
 }
@@ -211,12 +224,14 @@ fun ActionItem(
     icon: ImageVector,
     @StringRes contentDescription: Int,
     enabled: Boolean = true,
+    activated: Boolean = false,
     onClick: () -> Unit
 ) = ActionItem(
     modifier = modifier,
     icon = icon,
     contentDescription = LocalContext.current.getString(contentDescription),
     enabled = enabled,
+    activated = activated,
     onClick = onClick
 )
 

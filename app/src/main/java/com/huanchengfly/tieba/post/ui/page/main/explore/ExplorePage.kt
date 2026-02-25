@@ -303,7 +303,7 @@ fun LaunchedFabStateEffect(
 @Composable
 fun ConsumeThreadPageResult(navigator: NavController, onThreadResult: (threadId: Long, Like) -> Unit) {
     LaunchedEffect(Unit) {
-        navigator.consumeResult<ThreadResult>(ThreadResultKey)?.run {
+        navigator.consumeResult<Destination.Main, ThreadResult>(Destination.Main::class, ThreadResultKey)?.run {
             onThreadResult(threadId, Like(liked, likes))
         }
     }
