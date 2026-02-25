@@ -41,6 +41,9 @@
                 android:host="unidispatch"
                 android:scheme="com.baidu.tieba" />
         </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
     </queries>
 
     <application

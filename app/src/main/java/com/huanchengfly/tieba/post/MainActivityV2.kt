@@ -44,6 +44,7 @@ import com.huanchengfly.tieba.post.MacrobenchmarkConstant.KEY_WELCOME_SETUP
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
+import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isHttp
 import com.huanchengfly.tieba.post.components.ShortcutInitializer
 import com.huanchengfly.tieba.post.components.ShortcutInitializer.Companion.TbShortcut
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
@@ -144,6 +145,11 @@ class MainActivityV2 : BaseComposeActivity() {
                 pendingDeepLink = NavDeepLinkRequest.Builder.fromUri(uri).build()
             } else {
                 pendingAppLink = appLinkToNavRoute(uri)
+            }
+            if (pendingDeepLink == null && pendingAppLink == null && uri.isHttp()) {
+                // TODO: Bug in Firefox custom Tab
+                // TiebaWebView.launchCustomTab(this, uri)
+                pendingAppLink = Destination.WebView(initialUrl = uri.toString(), customClient = false)
             }
         } else {
             super.onNewIntent(intent)

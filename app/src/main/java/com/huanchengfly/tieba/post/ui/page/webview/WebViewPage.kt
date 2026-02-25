@@ -45,6 +45,7 @@ import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.createTopAppBarColors
 import com.huanchengfly.tieba.post.theme.isTranslucent
+import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebViewClient
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
@@ -153,7 +154,7 @@ private fun WebviewTopAppBar(
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun WebViewPage(initialUrl: String, navigator: NavController) {
+fun WebViewPage(initialUrl: String, customClient: Boolean, navigator: NavController) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val webViewState = rememberSaveableWebViewState()
@@ -215,6 +216,8 @@ fun WebViewPage(initialUrl: String, navigator: NavController) {
                 },
                 onDispose = TiebaWebView::dispose,
                 client = remember {
+                    if (!customClient) return@remember AccompanistWebViewClient()
+
                     TbWebViewClient(context, coroutineScope) { route ->
                         if ((webViewState.webView as TiebaWebView).canNavigate(route)) {
                             navigator.navigate(route = route)

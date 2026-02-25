@@ -134,7 +134,7 @@ sealed interface Destination {
     }
 
     @Serializable
-    data class WebView(val initialUrl: String): Destination
+    data class WebView(val initialUrl: String, val customClient: Boolean = true): Destination
 
     @Serializable
     object Welcome: Destination

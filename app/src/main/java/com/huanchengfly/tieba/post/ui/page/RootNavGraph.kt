@@ -219,7 +219,7 @@ private fun buildRootNavGraph(
 
         composable<Destination.WebView> { backStackEntry ->
             val params = backStackEntry.toRoute<Destination.WebView>()
-            WebViewPage(params.initialUrl, navController)
+            WebViewPage(params.initialUrl, params.customClient, navController)
         }
 
         navigation<Destination.Settings>(startDestination = SettingsDestination.Settings) {

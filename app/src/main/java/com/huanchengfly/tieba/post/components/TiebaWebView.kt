@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.webkit.WebBackForwardList
 import android.webkit.WebView
 import androidx.annotation.RequiresApi
+import androidx.browser.customtabs.CustomTabsClient
 import androidx.browser.customtabs.CustomTabsIntent
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isBaidu
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isHttp
@@ -73,10 +74,14 @@ class TiebaWebView(context: Context): WebView(context) {
         }
 
         fun launchCustomTab(context: Context, url: Uri): Result<Unit> = runCatching {
+            val packageName = CustomTabsClient.getPackageName(context, null)!!
             CustomTabsIntent.Builder()
                 .setShowTitle(true)
                 .setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
                 .build()
+                .also {
+                    it.intent.setPackage(packageName)
+                }
                 .launchUrl(context, url)
         }.onFailure {
             Intent(Intent.ACTION_VIEW, url).apply {

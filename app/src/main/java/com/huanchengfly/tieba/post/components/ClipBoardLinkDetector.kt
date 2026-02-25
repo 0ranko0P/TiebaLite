@@ -179,7 +179,7 @@ object ClipBoardLinkDetector {
                 isTopPrivateDomain -> "baidu.com" == host
 
                 isUnderPublicSuffix -> {
-                    "baidu.com" == parent().toString() && !isBaiduShortLink() && path?.endsWith("checkurl") != true
+                    parent().toString().endsWith("baidu.com") && !isBaiduShortLink() && path?.endsWith("checkurl") != true
                 }
 
                 else -> false
