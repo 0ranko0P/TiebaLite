@@ -1,31 +1,30 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.OpenInBrowser
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -38,7 +37,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -53,9 +51,9 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
-import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.FadedVisibility
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.PostData
@@ -73,20 +71,17 @@ import com.huanchengfly.tieba.post.ui.page.thread.SubPostBlockedTip
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
-import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
-import com.huanchengfly.tieba.post.ui.widgets.compose.LiftUpSpacer
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.PlainTooltipBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SharedTransitionUserHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
@@ -99,7 +94,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.stickyHeaderBackground
 import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.coroutines.Job
@@ -138,7 +132,7 @@ private val HeaderContentType = Unit
 // SubpostContentType use Null by default
 
 @Composable
-internal fun SubPostsContent(
+private fun SubPostsContent(
     viewModel: SubPostsViewModel,
     threadId: Long,
     postId: Long,
@@ -210,13 +204,14 @@ internal fun SubPostsContent(
         error = uiState.error,
         onReload = viewModel::onRefresh,
     ) {
+        val coroutineScope = rememberCoroutineScope()
         val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         val scrollOrientationConnection = rememberScrollOrientationConnection()
-        val bottomBarVisible by remember {
-            derivedStateOf { !lazyListState.canScrollForward || scrollOrientationConnection.isScrollingForward }
+
+        val onScrollToTopClicked: () -> Unit = {
+            coroutineScope.launch { lazyListState.scrollToItem(0) }
+            topAppBarScrollBehavior.state.contentOffset = 0f
         }
-        // Use AnimatedOffset instead of AnimatedVisibility
-        val bottomBarOffsetRatio by animateFloatAsState(if (bottomBarVisible) 0f else 1f)
 
         // Initialize nullable click listeners:
         val onReplySubPostClickedListener: ((SubPostItemData) -> Unit)? = { item: SubPostItemData ->
@@ -248,6 +243,10 @@ internal fun SubPostsContent(
             )
         }.takeIf { canReply && forumId > 0 }
 
+        val onOpenThreadClickedListener: (() -> Unit)? = {
+            navigator.navigate(route = Thread(threadId, forumId, postId = postId))
+        }
+
         // non-nullable, initialize here for convenience
         val onCopyClickedListener: (String) -> Unit = { navigator.navigate(CopyText(it)) }
 
@@ -257,12 +256,10 @@ internal fun SubPostsContent(
             },
             topBar = {
                 TitleBar(
-                    isSheet = isSheet,
                     post = uiState.post,
                     onBack = onNavigateUp,
-                    onAction = {
-                        navigator.navigate(route = Thread(threadId, forumId, postId = postId))
-                    },
+                    onOpenThread = onOpenThreadClickedListener.takeIf { !isSheet },
+                    onScrollToTop = onScrollToTopClicked.takeIf { lazyListState.canScrollBackward && canReply },
                     scrollBehavior = topAppBarScrollBehavior
                 ) {
                     if (useStickyHeaderWorkaround) {
@@ -272,23 +269,28 @@ internal fun SubPostsContent(
                     }
                 }
             },
-            bottomBar = {
-                if (account == null || !canReply) {
-                    BlurNavigationBarPlaceHolder()
-                } else {
-                    BottomBar(
-                        modifier = Modifier
-                            .graphicsLayer { translationY = size.height * bottomBarOffsetRatio },
-                        account = account,
-                        onReply = {
-                            if (forumName != null ) {
-                                navigator.navigate(Reply(forumId, forumName, threadId, postId))
-                            }
+            bottomHazeBlock = { blurEnabled = lazyListState.canScrollForward },
+            floatingActionButton = {
+                if (forumName.isNullOrEmpty()) return@BlurScaffold
+                val fabVisible by remember {
+                    derivedStateOf {
+                        if (canReply) {
+                            !lazyListState.canScrollBackward || scrollOrientationConnection.isScrollingForward
+                        } else {
+                            lazyListState.canScrollBackward && scrollOrientationConnection.isScrollingForward
                         }
-                    )
+                    }
                 }
-            },
-            bottomHazeBlock = { blurEnabled = bottomBarOffsetRatio < 0.15f }
+                SubpostsFAB(
+                    visible = fabVisible,
+                    onScrollToTop = onScrollToTopClicked,
+                    onReply = {
+                        if (uiState.post != null && onReplyPostClickedListener != null) {
+                            onReplyPostClickedListener(uiState.post!!)
+                        }
+                    }.takeIf { canReply }
+                )
+            }
         ) { padding ->
             val contentPadding = padding.fixedTopBarPadding()
 
@@ -348,6 +350,11 @@ internal fun SubPostsContent(
                         onAgree = viewModel::onSubPostLikeClicked,
                         onMenuReplyClick = onReplySubPostClickedListener,
                         onMenuCopyClick = onCopyClickedListener,
+                        onMenuReportClick = {
+                            coroutineScope.launch {
+                                TiebaUtil.reportPost(context, navigator, postId = it.id.toString())
+                            }
+                        },
                         onMenuDeleteClick = viewModel::onDeleteSubPost.takeIf { item.authorId == myUid } // Check is my SubPost
                     )
                 }
@@ -358,10 +365,11 @@ internal fun SubPostsContent(
 
 @Composable
 private fun TitleBar(
-    isSheet: Boolean,
     post: PostData?,
     onBack: () -> Unit,
-    onAction: () -> Unit,
+    onOpenThread: (() -> Unit)? = null,
+    onScrollToTop: (() -> Unit)? = null,
+    isSheet: Boolean = onOpenThread != null,
     scrollBehavior: TopAppBarScrollBehavior?,
     content: (@Composable ColumnScope.() -> Unit)? = null
 ) {
@@ -383,11 +391,19 @@ private fun TitleBar(
             )
         },
         actions = {
-            if (!isSheet) {
+            FadedVisibility(visible = onScrollToTop != null) {
                 ActionItem(
-                    icon = Icons.Rounded.OpenInBrowser,
+                    icon = Icons.Rounded.VerticalAlignTop,
+                    contentDescription = R.string.btn_back_to_top,
+                    onClick = onScrollToTop ?: {}
+                )
+            }
+
+            if (onOpenThread != null) {
+                ActionItem(
+                    icon = Icons.AutoMirrored.Rounded.OpenInNew,
                     contentDescription = R.string.btn_open_origin_thread,
-                    onClick = onAction
+                    onClick = onOpenThread
                 )
             }
         },
@@ -397,43 +413,28 @@ private fun TitleBar(
 }
 
 @Composable
-private fun BottomBar(modifier: Modifier = Modifier, account: Account, onReply: () -> Unit) =
-    Column(
-        modifier = modifier
-            .background(TiebaLiteTheme.extendedColorScheme.navigationContainer)
-            .windowInsetsPadding(WindowInsets.navigationBars)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Avatar(
-                data = remember { StringUtil.getAvatarUrl(account.portrait) },
-                size = Sizes.Tiny,
-                contentDescription = account.name,
-            )
-            Surface(
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .weight(1f),
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                tonalElevation = 2.dp,
-                onClick = onReply
-            ) {
-                Text(
-                    text = stringResource(id = R.string.tip_reply_thread),
-                    modifier = Modifier.padding(8.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
+private fun SubpostsFAB(
+    modifier: Modifier = Modifier,
+    visible: Boolean,
+    onScrollToTop: () -> Unit,
+    onReply: (() -> Unit)?,
+) {
+    val canReply = onReply != null
+    val tip = stringResource(if (canReply) R.string.tip_reply_thread else R.string.btn_back_to_top)
+    val icon = if (canReply) Icons.Rounded.Edit else Icons.Rounded.VerticalAlignTop
 
-        LiftUpSpacer()
+    PlainTooltipBox(
+        modifier = modifier,
+        contentDescription = tip,
+    ) {
+        FloatingActionButton(
+            modifier = Modifier.animateFloatingActionButton(visible, alignment = Alignment.Center),
+            onClick = if (canReply) onReply else onScrollToTop
+        ) {
+            Icon(imageVector = icon, contentDescription = tip)
+        }
     }
+}
 
 @Composable
 private fun SubPostItem(
@@ -442,6 +443,7 @@ private fun SubPostItem(
     onAgree: (SubPostItemData) -> Unit = {},
     onMenuReplyClick: ((SubPostItemData) -> Unit)?,
     onMenuCopyClick: ((String) -> Unit)? = null,
+    onMenuReportClick: (SubPostItemData) -> Unit = {},
     onMenuDeleteClick: ((SubPostItemData) -> Unit)? = null,
 ) =
     BlockableContent(
@@ -453,8 +455,6 @@ private fun SubPostItem(
     )
 {
     val context = LocalContext.current
-    val navigator = LocalNavController.current
-    val coroutineScope = rememberCoroutineScope()
 
     LongClickMenu(
         indication = null,
@@ -472,9 +472,7 @@ private fun SubPostItem(
             }
 
             TextMenuItem(text = stringResource(id = R.string.title_report)) {
-                coroutineScope.launch {
-                    TiebaUtil.reportPost(context, navigator, item.id.toString())
-                }
+                onMenuReportClick(item)
             }
 
             if (onMenuDeleteClick != null) {
