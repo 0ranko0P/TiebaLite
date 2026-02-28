@@ -240,7 +240,7 @@
 
         <activity
             android:name=".activities.VideoViewActivity"
-            android:configChanges="uiMode|screenSize|screenLayout|navigation"
+            android:configChanges="uiMode|screenSize|screenLayout|orientation|navigation"
             android:theme="@style/Theme.Transparent.PhotoView"
             android:exported="false" />
 

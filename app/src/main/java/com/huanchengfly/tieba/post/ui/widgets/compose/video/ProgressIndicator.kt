@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.media3.ui.compose.PlayerSurface
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 
 @Composable
 fun ProgressIndicator(
@@ -18,19 +19,19 @@ fun ProgressIndicator(
     val videoPlayerUiState by controller.collect()
 
     with(videoPlayerUiState) {
-        SeekBar(
-            progress = currentPosition,
-            max = duration,
+        VideoSeekBar(
+            progress = { currentPosition / duration.toFloat() },
             enabled = controlsVisible && controlsEnabled,
-            onSeek = {
+            modifier = modifier,
+            onSeek = { seekProgress ->
                 controller.showControls(autoHide = false)
-                controller.previewSeekTo(it)
+                controller.previewSeekTo(position = (seekProgress * duration).toLong())
             },
-            onSeekStopped = {
+            onSeekStopped = { stoppedProgress ->
                 controller.showControls(autoHide = true)
-                controller.seekTo(it)
+                controller.seekTo(position = (stoppedProgress * duration).toLong())
             },
-            secondaryProgress = secondaryProgress,
+            secondaryProgress = { secondaryProgress / duration.toFloat() },
             seekerPopup = {
                 PlayerSurface(
                     player = controller.previewExoPlayer,
@@ -40,7 +41,9 @@ fun ProgressIndicator(
                         .background(Color.DarkGray)
                 )
             },
-            modifier = modifier
+            seekerDurationProvider = { seekProgress ->
+                getDurationString((seekProgress * duration).toLong(), negativePrefix = false)
+            }
         )
     }
 }

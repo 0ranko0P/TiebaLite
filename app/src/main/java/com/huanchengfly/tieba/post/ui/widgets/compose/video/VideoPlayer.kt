@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -46,6 +47,7 @@ import androidx.media3.ui.compose.PlayerSurface
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.Grey100
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 import com.huanchengfly.tieba.post.utils.DisplayUtil
@@ -133,8 +135,8 @@ fun VideoPlayer(
             (videoSize.first / videoSize.second).takeUnless { it.isNaN() || it == 0f } ?: 2f
         }
 
+        val isFullScreen = DisplayUtil.isLandscape
         if (videoPlayerController.supportFullScreen()) {
-            val isFullScreen = DisplayUtil.isLandscape
 
             BackHandler(enabled = isFullScreen) {
                 videoPlayerController.toggleFullScreen()
@@ -148,12 +150,16 @@ fun VideoPlayer(
                 .then(modifier),
             contentAlignment = Alignment.Center
         ) {
+            val aspectModifier = Modifier
+                .block {
+                    if (isFullScreen) fillMaxHeight() else fillMaxWidth()
+                }
+                .aspectRatio(aspectRatio)
+
             if (startedPlay) {
                 PlayerSurface(
                     player = videoPlayerController.exoPlayer,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(aspectRatio)
+                    modifier = aspectModifier,
                 )
 
                 MediaController()
@@ -161,9 +167,7 @@ fun VideoPlayer(
                 val thumbnailUrl by videoPlayerController.collect { thumbnailUrl }
 
                 VideoThumbnail(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(aspectRatio),
+                    modifier = aspectModifier,
                     thumbnailUrl = thumbnailUrl,
                     onClick = { videoPlayerController.play() }
                 )
@@ -186,8 +190,9 @@ fun BoxScope.MediaController() {
     if (controlsVisible) {
         Column(
             modifier = Modifier
-                .padding(vertical = 8.dp)
                 .safeContentPadding()
+                .clickableNoIndication {/** Block Gestures */}
+                .padding(vertical = 8.dp)
                 .align(Alignment.BottomCenter),
         ) {
             ProgressIndicator(modifier = Modifier.padding(horizontal = 16.dp))

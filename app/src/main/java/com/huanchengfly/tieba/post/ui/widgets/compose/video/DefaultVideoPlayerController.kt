@@ -212,8 +212,8 @@ internal class DefaultVideoPlayerController(
     }
 
     override fun seekTo(position: Long) {
+        updateDurationAndPosition(forcedUiPosition = position)
         exoPlayer.seekTo(position)
-        updateDurationAndPosition()
     }
 
     override fun setSource(source: VideoPlayerSource) {
@@ -262,12 +262,16 @@ internal class DefaultVideoPlayerController(
         _state.set { copy(quickSeekAction = quickSeekAction) }
     }
 
-    private fun updateDurationAndPosition() {
+    private fun updateDurationAndPosition(forcedUiPosition: Long = -1L) {
         if (exoPlayer.playbackState == STATE_READY || exoPlayer.playbackState == STATE_ENDED) {
             _state.set {
                 copy(
                     duration = exoPlayer.duration.coerceAtLeast(0),
-                    currentPosition = exoPlayer.currentPosition.coerceAtLeast(0),
+                    currentPosition = if (forcedUiPosition >= 0) {
+                        forcedUiPosition
+                    } else {
+                        exoPlayer.currentPosition.coerceAtLeast(0)
+                    },
                     secondaryProgress = exoPlayer.bufferedPosition.coerceAtLeast(0),
                     isPlaying = exoPlayer.isPlaying
                 )
