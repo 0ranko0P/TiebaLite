@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.BlurOn
 import androidx.compose.material.icons.outlined.ColorLens
@@ -24,6 +25,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.repository.user.Settings
+import com.huanchengfly.tieba.post.ui.models.settings.BottomNavigationLabel
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AppFont
@@ -141,6 +143,22 @@ fun UISettingsPage(
                         }
                     )
                 }
+            }
+
+            Item { uiSettings ->
+                ListPref(
+                    value = uiSettings.bottomNavLabel,
+                    title = R.string.settings_nav_label,
+                    leadingIcon = Icons.AutoMirrored.Outlined.Label,
+                    options = persistentMapOf(
+                        BottomNavigationLabel.ALWAYS to R.string.title_nav_label_always,
+                        BottomNavigationLabel.SELECTED to R.string.title_nav_label_selected,
+                        BottomNavigationLabel.NONE to R.string.title_nav_label_none
+                    ),
+                    onValueChange = { label ->
+                        updatePreference { old -> old.copy(bottomNavLabel = label) }
+                    },
+                )
             }
 
             ForumListPreference()

@@ -8,10 +8,20 @@ enum class DarkPreference {
 }
 
 /**
+ * 主页底部导航栏标签显示模式
+ *
+ * @since 4.0.0-beta.4.3
+ * */
+enum class BottomNavigationLabel {
+    ALWAYS, SELECTED, NONE
+}
+
+/**
  * User UI Settings
  *
  * @param appIcon 应用图标
  * @param appIconThemed 应用图标使用动态取色
+ * @param bottomNavLabel 主页底部导航栏标签显示模式
  * @param darkAmoled 纯黑背景颜色
  * @param darkPreference 夜间模式偏好
  * @param darkenImage 夜间模式压暗缩略图
@@ -24,6 +34,7 @@ enum class DarkPreference {
 data class UISettings(
     val appIcon: LauncherIcons = LauncherIcons.NEW_ICON,
     val appIconThemed: Boolean = false,
+    val bottomNavLabel: BottomNavigationLabel = BottomNavigationLabel.ALWAYS,
     val darkAmoled: Boolean = false,
     val darkPreference: DarkPreference = DarkPreference.FOLLOW_SYSTEM,
     val darkenImage: Boolean = true,

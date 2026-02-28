@@ -47,8 +47,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
+import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.models.settings.BottomNavigationLabel
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -244,6 +246,7 @@ fun BottomNavigation(
         containerColor = containerColor,
         contentColor = contentColor,
     ) {
+        val labelSettings = LocalUISettings.current.bottomNavLabel
         navigationItems.fastForEachIndexed { index, navigationItem ->
             NavigationBarItem(
                 selected = index == currentPosition,
@@ -259,8 +262,11 @@ fun BottomNavigation(
                         atEnd = index == currentPosition
                     )
                 },
-                label = {
-                    Text(text = stringResource(navigationItem.title))
+                alwaysShowLabel = labelSettings == BottomNavigationLabel.ALWAYS,
+                label = if (labelSettings != BottomNavigationLabel.NONE) {
+                    { Text(text = stringResource(navigationItem.title)) }
+                } else {
+                    null
                 },
             )
         }
