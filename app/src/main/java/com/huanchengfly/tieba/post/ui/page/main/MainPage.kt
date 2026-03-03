@@ -39,6 +39,7 @@ import androidx.compose.ui.util.fastMap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.isTranslucent
@@ -107,9 +108,10 @@ fun isBottomNavigation(): Boolean {
 
 @Composable
 fun rememberNavigationItems(
+    hideExplore: Boolean = LocalUISettings.current.hideExplore,
     messageCount: () -> String? = { null }
-): List<NavigationItem> = remember {
-    listOf(
+): List<NavigationItem> = remember(hideExplore) {
+    listOfNotNull(
         NavigationItem(
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_inventory_2) },
             title = R.string.title_main,
@@ -117,7 +119,7 @@ fun rememberNavigationItems(
         NavigationItem(
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_toy_fans) },
             title = R.string.title_explore,
-        ),
+        ).takeUnless { hideExplore },
         NavigationItem(
             icon = {
                 AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)

@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
 import android.os.Build
+import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -162,6 +164,18 @@ fun UISettingsPage(
             }
 
             ForumListPreference()
+
+            Item { uiSettings ->
+                SwitchPref(
+                    checked = uiSettings.hideExplore,
+                    onCheckedChange = {
+                        updatePreference { old -> old.copy(hideExplore = it) }
+                    },
+                    title = R.string.title_hide_explore,
+                    leadingIcon = AnimatedImageVector
+                        .animatedVectorResource(id = R.drawable.ic_animated_toy_fans).imageVector,
+                )
+            }
 
             Item { uiSettings ->
                 SwitchPref(

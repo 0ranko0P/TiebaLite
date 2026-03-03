@@ -25,6 +25,7 @@ enum class BottomNavigationLabel {
  * @param darkAmoled 纯黑背景颜色
  * @param darkPreference 夜间模式偏好
  * @param darkenImage 夜间模式压暗缩略图
+ * @param hideExplore 隐藏主页「动态」入口
  * @param liftBottomBar 略微抬起贴子页底栏
  * @param reduceEffect 降低模糊效果
  * @param setupFinished 设置向导已完成
@@ -38,6 +39,7 @@ data class UISettings(
     val darkAmoled: Boolean = false,
     val darkPreference: DarkPreference = DarkPreference.FOLLOW_SYSTEM,
     val darkenImage: Boolean = true,
+    val hideExplore: Boolean = false,
     val liftBottomBar: Boolean = true,
     val reduceEffect: Boolean = false,
     val setupFinished: Boolean = false,
