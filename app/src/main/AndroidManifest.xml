@@ -65,6 +65,7 @@
             android:name=".ui.page.photoview.PhotoViewActivity"
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
             android:theme="@style/Theme.Transparent.PhotoView"
+            android:launchMode="singleInstance"
             android:windowSoftInputMode="adjustResize" />
 
         <meta-data

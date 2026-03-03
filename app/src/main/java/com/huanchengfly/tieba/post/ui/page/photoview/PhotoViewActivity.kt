@@ -30,7 +30,6 @@ import com.github.iielse.imageviewer.utils.Config
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.collectIn
-import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.components.viewer.SimpleImageLoader
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
@@ -66,6 +65,7 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
 
         val data: PhotoViewData = intent.getParcelableExtraCompat(EXTRA_PHOTO_VIEW_DATA)!!
         val useTbGlideUrl: Boolean = intent.getBooleanExtra(EXTRA_LOAD_WITH_TB_GLIDE_URL, true)
+        val glideRequestManager = Glide.with(this)
 
         viewModel.initData(data)
         viewModel.state.collectIn(this) { uiState ->
@@ -88,7 +88,7 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
             if (Components.working) finish()
             Components.initialize(
                 imageLoader = SimpleImageLoader(
-                    glide = Glide.with(this),
+                    glide = glideRequestManager,
                     onClick = this::onImageClicked,
                     useTbGlideUrl = useTbGlideUrl,
                     onProgress = this::onProgress
@@ -217,8 +217,6 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         const val EXTRA_LOAD_WITH_TB_GLIDE_URL = "com.huanchengfly.tieba.post.USE_TB_GLIDE_URL"
 
         fun launch(context: Context, data: PhotoViewData) {
-            if (Components.working) return
-
             context.goToActivity<PhotoViewActivity> {
                 putExtra(EXTRA_PHOTO_VIEW_DATA, data)
             }
@@ -226,7 +224,6 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
 
         fun launchSinglePhoto(context: Context, url: String, useTbGlideUrl: Boolean = true) {
             if (url.isNotEmpty() && url.isNotBlank()) {
-                if (Components.working) return
                 context.goToActivity<PhotoViewActivity> {
                     val picItem = PicItem(picId = ImageUtil.getPicId(url), picIndex = 1, url)
                     putExtra(

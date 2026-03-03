@@ -203,7 +203,6 @@ fun NetworkImage(
         modifier = modifier
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onDoubleTap = {/* Block Double Tap */},
                     onLongPress = {
                         if ((dimensions?.aspectRatio ?: 1f) <= 0.1f) {
                             context.toastShort(R.string.toast_preview_image_too_large)
