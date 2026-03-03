@@ -64,7 +64,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
-import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
@@ -115,7 +114,7 @@ fun StateScreenScope.ThreadContent(
         if (!state.isLoadingMore) viewModel.requestLoadLatestPosts()
     }
 
-    Container {
+    // Container {
         SwipeUpLazyLoadColumn(
             modifier = modifier
                 .fillMaxSize()
@@ -202,7 +201,7 @@ fun StateScreenScope.ThreadContent(
                 }
             }
         }
-    }
+    // }
 }
 
 @Composable

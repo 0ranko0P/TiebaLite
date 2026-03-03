@@ -15,14 +15,14 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.semantics.Role
 
-inline fun Modifier.block(modifier: Modifier.() -> Modifier?): Modifier = this then (modifier(Modifier) ?: Modifier)
+inline fun Modifier.block(modifier: Modifier.() -> Modifier?): Modifier = this then (Modifier.modifier() ?: Modifier)
 
 inline fun Modifier.onCase(condition: Boolean, modifier: Modifier.() -> Modifier): Modifier {
-    return if (condition) this then (modifier(Modifier)) else this
+    return if (condition) this then (Modifier.modifier()) else this
 }
 
 inline fun <T> Modifier.onNotNull(obj: T?, modifier: Modifier.(T) -> Modifier): Modifier {
-    return if (obj != null) this then (modifier(obj)) else this
+    return if (obj != null) this then (Modifier.modifier(obj)) else this
 }
 
 /**

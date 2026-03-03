@@ -30,6 +30,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -52,6 +54,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.window.PopupPositionProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
@@ -198,21 +201,21 @@ fun ActionItem(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     contentDescription: String,
+    positionProvider: PopupPositionProvider = rememberTooltipPositionProvider(
+        positioning = TooltipAnchorPosition.Above,
+        spacingBetweenTooltipAndAnchor = SpacingBetweenTooltipAndAnchor
+    ),
     enabled: Boolean = true,
-    activated: Boolean = false,
     onClick: () -> Unit
 ) {
     PlainTooltipBox(
         modifier = modifier,
+        positionProvider = positionProvider,
         contentDescription = contentDescription,
         hasAction = true,
     ) {
         IconButton(onClick = onClick, enabled = enabled) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = if (activated) MaterialTheme.colorScheme.tertiary else LocalContentColor.current,
-            )
+            Icon(imageVector = icon, contentDescription = contentDescription)
         }
     }
 }
@@ -223,15 +226,18 @@ fun ActionItem(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     @StringRes contentDescription: Int,
+    positionProvider: PopupPositionProvider = rememberTooltipPositionProvider(
+        positioning = TooltipAnchorPosition.Above,
+        spacingBetweenTooltipAndAnchor = SpacingBetweenTooltipAndAnchor
+    ),
     enabled: Boolean = true,
-    activated: Boolean = false,
     onClick: () -> Unit
 ) = ActionItem(
     modifier = modifier,
     icon = icon,
     contentDescription = LocalContext.current.getString(contentDescription),
+    positionProvider = positionProvider,
     enabled = enabled,
-    activated = activated,
     onClick = onClick
 )
 

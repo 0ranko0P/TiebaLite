@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupPositionProvider
 
-private val SpacingBetweenTooltipAndAnchor = (-12).dp
+val SpacingBetweenTooltipAndAnchor = (-12).dp
 
 /**
  * Material TooltipBox that wraps a composable with a tooltip.
