@@ -163,6 +163,7 @@
     <string name="tip_collect_thread_desc_sort">从收藏进入贴子将自动切换至倒序浏览</string>
     <string name="tip_collect_thread_desc_sort_on">从收藏进入的贴子将自动切换至倒序浏览</string>
     <string name="toast_feed_refresh">更新了 %1$d 条动态</string>
+    <string name="button_submit_dislike">不感兴趣</string>
     <string name="title_dislike">不喜欢推荐用户的理由</string>
     <string name="button_next">继续</string>
     <string name="button_previous">上一步</string>
@@ -478,7 +479,6 @@
     <string name="button_add_keyword">关键词</string>
     <string name="button_add_regex">正则表达式</string>
     <string name="button_ok">我知道了</string>
-    <string name="button_submit">提交</string>
     <string name="button_sure">确定</string>
     <string name="button_back">返回</string>
     <string name="button_grant">授权</string>
