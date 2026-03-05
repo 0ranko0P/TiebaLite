@@ -37,7 +37,6 @@ import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_LZ
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
-import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
 import com.huanchengfly.tieba.post.ui.page.Destination.Reply
@@ -90,9 +89,6 @@ class ThreadViewModel @Inject constructor(
     private val historyTimeStamp = System.currentTimeMillis()
 
     private var from: String = params.from?.tag ?: ""
-
-    val info: ThreadInfoData?
-        get() = currentState.thread
 
     /**
      * Post or Thread(FirstPost) marked for deletion.
@@ -478,11 +474,13 @@ class ThreadViewModel @Inject constructor(
         }
         .onFailure { e ->
             sendUiEvent(ThreadLikeUiEvent.Failed(e))
-            _uiState.update { it.copy(thread = oldThread) } // Reset to old thread
+            _uiState.update {
+                it.copy(thread = it.thread!!.updateLikeStatus(liked = like.liked, loading = false))
+            }
         }
         .onSuccess { _ ->
             _uiState.update { // Update like loading status
-                it.copy(thread = oldThread.updateLikeStatus(liked = !like.liked, loading = false))
+                it.copy(thread = it.thread!!.updateLikeStatus(liked = !like.liked, loading = false))
             }
         }
     }
@@ -572,7 +570,7 @@ class ThreadViewModel @Inject constructor(
         historyRepo.saveHistory(history)
     }
 
-    fun onShareThread() = TiebaUtil.shareThread(context, info?.title?: "", threadId)
+    fun onShareThread() = TiebaUtil.shareThread(context, currentState.thread?.title?: "", threadId)
 
     fun onCopyThreadLink() {
         val seeLz = currentState.seeLz
@@ -648,6 +646,7 @@ class ThreadViewModel @Inject constructor(
             hideReply = true
         }
 
+        val firstPost = this.firstPost ?: response.firstPost // use old firstPost if possible
         return this.copy(
             isRefreshing = false,
             isLoadingMore = false,
@@ -655,9 +654,9 @@ class ThreadViewModel @Inject constructor(
             error = null,
             user = response.user,
             data = response.posts,
-            firstPost = this.firstPost ?: response.firstPost, // use old firstPost if possible
+            firstPost = firstPost,
             tbs = response.tbs,
-            thread = response.thread,
+            thread = response.thread.copy(firstPostId = firstPost?.id ?: firstPostId),
             latestPosts = null,
         )
     }

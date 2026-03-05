@@ -40,6 +40,7 @@ typealias SimpleForum = Triple<Long, String, String?>
     fun copy(
         title: String = this.title,
         collectMarkPid: Long? = this.collectMarkPid,
+        firstPostId: Long = this.firstPostId,
         like: Like = this.like,
         originThreadInfo: ImmutableHolder<OriginThreadInfo>? = this.originThreadInfo,
         replyNum: Int = this.replyNum,
@@ -48,7 +49,7 @@ typealias SimpleForum = Triple<Long, String, String?>
         id = this.id,
         title = title,
         collectMarkPid = collectMarkPid,
-        firstPostId = this.firstPostId,
+        firstPostId = firstPostId,
         like = like,
         originThreadInfo = originThreadInfo,
         replyNum = replyNum,

@@ -364,7 +364,7 @@ fun ThreadPage(
         } else {
             val lastVisiblePost = lazyListState.middleVisiblePost(state)
             // 更新收藏楼层
-            val collectMarkPid: Long? = viewModel.info?.collectMarkPid
+            val collectMarkPid: Long? = state.thread?.collectMarkPid
             val newCollectMarkPid: Long? = lastVisiblePost?.id
             if (collectMarkPid != null && collectMarkPid != newCollectMarkPid) {
                 // Show CollectionsUpdateDialog now
@@ -471,7 +471,7 @@ fun ThreadPage(
                     onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
                     onClickMore =  openBottomSheet,
                     onJumpPage = jumpToPageDialogState::show,
-                    like = viewModel.info?.like ?: LikeZero,
+                    like = state.thread?.like ?: LikeZero,
                     onLiked = viewModel::onThreadLikeClicked,
                     scrollBehavior = toolbarScrollBehavior
                 )
@@ -507,14 +507,14 @@ fun ThreadPage(
 
                     ThreadMenu(
                         isSeeLz = state.seeLz,
-                        isCollected = viewModel.info?.collected == true,
+                        isCollected = state.thread?.collected == true,
                         isImmersiveMode = viewModel.isImmersiveMode,
                         isDesc = isDesc,
                         onSeeLzClick = viewModel::onSeeLzChanged,
                         onCollectClick = {
                             if (state.user == null) {
                                 context.toastShort(R.string.title_not_logged_in)
-                            } else if (viewModel.info!!.collected) {
+                            } else if (state.thread!!.collected) {
                                 viewModel.removeFromCollections()
                             } else {
                                 lazyListState.middleVisiblePost(state)?.let { post ->
