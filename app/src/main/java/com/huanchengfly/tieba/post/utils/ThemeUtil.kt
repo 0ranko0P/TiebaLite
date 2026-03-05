@@ -28,7 +28,6 @@ import com.huanchengfly.tieba.post.theme.colorscheme.dynamicColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.monetColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
 import com.huanchengfly.tieba.post.theme.createTopAppBarColors
-import com.huanchengfly.tieba.post.theme.isDarkScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
@@ -140,7 +139,7 @@ object ThemeUtil {
         else -> isAppDark // -1
     }
 
-    fun isDarkColorScheme(): Boolean = currentColorScheme().isDarkScheme
+    fun isDarkColorScheme(): Boolean = colorState.value.darkTheme
 
     fun onUpdateSystemUiMode(context: Context) {
         _darkConfigUiMode.update { context.isAppDark }

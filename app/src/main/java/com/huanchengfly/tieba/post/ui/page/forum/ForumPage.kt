@@ -80,6 +80,7 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
@@ -185,7 +186,7 @@ fun ForumPage(
     viewModel.uiEvent.collectUiEventWithLifecycle {
         val message = when (it) {
             is ForumUiEvent.AddThread -> when {
-                !loggedIn -> getString(R.string.title_not_logged_in)
+                !loggedIn -> toastShort(R.string.title_not_logged_in)
 
                 it.forumId != null -> navigator.navigate(
                     route = Destination.Reply(forumId = it.forumId, forumName, threadId = 0L)

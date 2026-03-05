@@ -493,7 +493,7 @@
     <string name="dialog_permission_rationale">前往设置页面并手动授予“%1$s”权限</string>
     <string name="dialog_content_wait">请坐和放宽</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
-    <string name="settings_nav_label">底部导航栏标签显示模式</string>
+    <string name="settings_nav_label">首页底部导航栏标签显示模式</string>
     <string name="brightness">亮度</string>
     <string name="channel_at">提到我的</string>
     <string name="channel_reply">回复我的</string>

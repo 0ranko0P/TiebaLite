@@ -70,7 +70,7 @@ val AppBarHeight: Dp = 56.dp
 
 val accountNavIconIfCompact: @Composable () -> Unit = {
     if (isWindowWidthCompact()) {
-        AccountNavIcon(modifier = Modifier.padding(start = 12.dp))
+        AccountNavIcon(modifier = Modifier.padding(start = 12.dp), size = 32.dp)
     }
 }
 

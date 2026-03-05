@@ -18,9 +18,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -54,7 +56,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -96,10 +97,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.util.trace
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -141,6 +144,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
+import com.huanchengfly.tieba.post.ui.widgets.compose.collapsedFraction
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
@@ -436,8 +440,7 @@ fun ThreadPage(
                     },
                     scrollBehavior = topAppBarScrollBehavior
                 ) {
-                    val replyNum = state.thread?.replyNum
-                    if (useStickyHeaderWorkaround && replyNum != null) {
+                    if (useStickyHeaderWorkaround && state.thread?.replyNum != null) {
                         Container {
                             StickyHeaderOverlay(state = lazyListState) {
                                 ThreadHeader(uiState = state, viewModel = viewModel)
@@ -447,11 +450,20 @@ fun ThreadPage(
                 }
             },
             bottomBar = {
-                Spacer(modifier = Modifier.windowInsetsPadding(NavigationBarDefaults.windowInsets))
+                Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             },
             bottomHazeBlock = { blurEnabled = false },
             snackbarHostState = snackbarHostState,
-            snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
+            snackbarHost = {
+                SwipeToDismissSnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier.graphicsLayer { // Offset up based on the collapsed fraction
+                        translationY = toolbarScrollBehavior.state.run {
+                            lerp(start = offsetLimit, stop = 0f, fraction = collapsedFraction)
+                        }
+                    }
+                )
+            },
         ) { padding ->
             val hazeState: HazeState? = LocalHazeState.current
 
@@ -840,7 +852,7 @@ private fun ThreadFloatingToolbar(
     val colorScheme = MaterialTheme.colorScheme
     // Default: FloatingToolbarTokens.VibrantContainerColor
     val toolbarContainerColor = colorScheme.primaryContainer.let {
-        if (!colorScheme.isTranslucent) it.copy(alpha = 0.7f) else it
+        if (!colorScheme.isTranslucent && !LocalUISettings.current.reduceEffect) it.copy(alpha = 0.7f) else it
     }
 
     ProvideContentColor(colorScheme.onPrimaryContainer) {

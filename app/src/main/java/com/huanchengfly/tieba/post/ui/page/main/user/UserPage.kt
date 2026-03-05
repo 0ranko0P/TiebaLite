@@ -282,7 +282,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                                 initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
                             )
                         )
-                    },
+                    }.takeIf { account != null },
                     onSettingsClicked = { navigator.navigate(SettingsDestination.Settings) },
                     onAboutClicked = { navigator.navigate(SettingsDestination.About) },
                     onNavigateUiSettings = {

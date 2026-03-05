@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.offset
 import kotlinx.coroutines.launch
 
 @Composable
-fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
+fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifier) {
     val coroutineScope = rememberCoroutineScope()
     val dismissState = rememberSwipeToDismissBoxState()
     val isVisible by remember { derivedStateOf { hostState.currentSnackbarData != null } }
@@ -69,6 +69,7 @@ fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
         SwipeToDismissBox(
             state = dismissState,
             backgroundContent = {},
+            modifier = modifier,
             onDismiss = { direction ->
                 if (direction != SwipeToDismissBoxValue.Settled) {
                     hostState.currentSnackbarData?.dismiss()

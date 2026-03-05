@@ -577,7 +577,7 @@ private fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account?,
 @Composable
 private fun CompactNavigationDrawer(modifier: Modifier = Modifier) {
     var selected by remember { mutableIntStateOf(0) }
-    val navItems = rememberNavigationItems()
+    val navItems = rememberNavigationItems(hideExplore = false)
 
     Column(
         modifier = modifier
