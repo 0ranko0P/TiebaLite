@@ -186,7 +186,11 @@ fun StateScreenScope.ThreadContent(
 
             if (state.data.isEmpty()) {
                 item(key = "EmptyTip") {
-                    DefaultEmptyScreen(modifier = Modifier.fillParentMaxHeight(fraction = 0.75f))
+                    DefaultEmptyScreen(
+                        modifier = Modifier.fillParentMaxHeight(fraction = 0.9f),
+                        titleRes = if (state.seeLz) R.string.title_lz_empty else R.string.title_empty,
+                        messageRes = R.string.message_turn_off_see_lz.takeIf { state.seeLz },
+                    )
                 }
             } else {
                 items(items = state.data, key = { it.id }, contentType = { Type.Post }) { item ->

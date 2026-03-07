@@ -364,6 +364,7 @@
     <string name="button_dont_remind_again">不再提示</string>
     <string name="link">链接</string>
     <string name="title_empty">这里什么都没有</string>
+    <string name="title_lz_empty">楼主还没有回贴</string>
     <string name="home_empty_login">请登录之后查看你的关注。\n或者你也可以先去逛逛发现？</string>
     <string name="button_login">登录</string>
     <string name="button_no_login">以游客身份浏览</string>
@@ -376,6 +377,7 @@
     <string name="title_unknown_error">发生了一个奇怪的错误…</string>
     <string name="message_no_internet_connectivity">%s。请检查你的网络连接是否正常</string>
     <string name="message_unknown_error">哦我的老伙计，我向你保证这真的是一个奇怪的错误……</string>
+    <string name="message_turn_off_see_lz">您可以关闭只看楼主或刷新</string>
     <string name="btn_open_settings">前往设置</string>
     <string name="btn_reload">重新加载</string>
     <string name="title_not_logged_in">你尚未登录</string>

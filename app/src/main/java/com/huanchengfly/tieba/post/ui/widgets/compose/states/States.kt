@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose.states
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -47,9 +48,14 @@ val DefaultLoadingScreen: @Composable StateScreenScope.() -> Unit = {
 }
 
 @Composable
-fun StateScreenScope.DefaultEmptyScreen(modifier: Modifier = Modifier, scrollable: Boolean = false) {
+fun StateScreenScope.DefaultEmptyScreen(
+    modifier: Modifier = Modifier,
+    scrollable: Boolean = false,
+    @StringRes titleRes: Int = R.string.title_empty,
+    @StringRes messageRes: Int? = null,
+) {
     TipScreen(
-        title = { Text(text = stringResource(id = R.string.title_empty)) },
+        title = { Text(text = stringResource(id = titleRes)) },
         scrollable = scrollable,
         image = {
             val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_empty_box))
@@ -61,6 +67,7 @@ fun StateScreenScope.DefaultEmptyScreen(modifier: Modifier = Modifier, scrollabl
                     .aspectRatio(2f)
             )
         },
+        message = messageRes?.let { { Text(text = stringResource(id = it)) } },
         actions = {
             if (canReload) {
                 FilledTonalButton(
