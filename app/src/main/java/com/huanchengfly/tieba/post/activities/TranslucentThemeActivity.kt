@@ -13,7 +13,6 @@ import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.activity.viewModels
 import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,7 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Save
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +33,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -56,13 +57,13 @@ import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.FadedVisibility
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.Scaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
@@ -130,6 +131,8 @@ class TranslucentThemeActivity : AppCompatActivity() {
 
         setContent {
             val colorSchemeExt = currentThemeNoTrans()
+            val savingDialogState = rememberDialogState()
+
             LaunchedEffect(colorSchemeExt) {
                 windowInsetsController.run {
                     val colorScheme = colorSchemeExt.colorScheme
@@ -139,8 +142,6 @@ class TranslucentThemeActivity : AppCompatActivity() {
             }
 
             TiebaLiteTheme(colorSchemeExt = colorSchemeExt) {
-                val savingDialogState = rememberDialogState()
-
                 Scaffold(
                     topBar = {
                         TitleCentredToolbar(
@@ -148,14 +149,10 @@ class TranslucentThemeActivity : AppCompatActivity() {
                             navigationIcon = { BackNavigationIcon(onBackPressed = ::finish) },
                             actions = {
                                 val configChanged by vm.configChanged.collectAsStateWithLifecycle()
-                                AnimatedVisibility(
-                                    visible = configChanged,
-                                    enter = DefaultFabEnterTransition,
-                                    exit = DefaultFabExitTransition
-                                ) {
+                                FadedVisibility(visible = configChanged) {
                                     ActionItem(
                                         icon = Icons.Rounded.Save,
-                                        contentDescription = stringResource(R.string.button_save_profile)
+                                        contentDescription = R.string.button_save_profile
                                     ) {
                                         savingDialogState.show()
                                         onSavingTheme()
@@ -166,10 +163,10 @@ class TranslucentThemeActivity : AppCompatActivity() {
                     },
                 ) { paddingValues ->
                     val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
+                    val state by vm.uiState.collectAsStateWithLifecycle()
 
-                    val contents = remember(windowSize) {
+                    val wallpaperContent = remember(windowSize) {
                         movableContentOf<Modifier> {
-                            val state by vm.uiState.collectAsStateWithLifecycle()
                             SideBySideWallpaper(
                                 modifier = it.padding(16.dp),
                                 wallpaper = state.wallpaper,
@@ -180,10 +177,16 @@ class TranslucentThemeActivity : AppCompatActivity() {
                                 placeHolder = { placeHolder },
                                 listener = glideWallpaperListener
                             )
+                        }
+                    }
 
+                    val themeContent = remember {
+                        movableContentOf<Modifier, Shape> { modifier, shape ->
                             Surface(
-                                modifier = it.verticalScroll(rememberScrollState()),
-                                tonalElevation = 6.dp
+                                modifier = modifier.verticalScroll(rememberScrollState()),
+                                shape = shape,
+                                tonalElevation = 6.dp,
+                                shadowElevation = BottomSheetDefaults.Elevation,
                             ) {
                                 TranslucentThemeContent(
                                     modifier = Modifier.padding(16.dp),
@@ -201,15 +204,16 @@ class TranslucentThemeActivity : AppCompatActivity() {
 
                     if (windowSize.isLooseWindowWidth()) {
                         Row(modifier = Modifier.padding(paddingValues)) {
-                            contents(Modifier
-                                .weight(1.0f)
-                                .fillMaxHeight())
+                            wallpaperContent(Modifier.weight(1.0f).fillMaxHeight())
+                            themeContent(Modifier.weight(1.0f).fillMaxHeight(), RectangleShape)
                         }
                     } else {
                         Column(modifier = Modifier.padding(paddingValues)) {
-                            contents(Modifier
-                                .weight(1.0f)
-                                .fillMaxWidth())
+                            wallpaperContent(Modifier.weight(1.0f).fillMaxWidth())
+                            themeContent(
+                                Modifier.weight(1.0f).fillMaxWidth(),
+                                BottomSheetDefaults.ExpandedShape
+                            )
                         }
                     }
                 }

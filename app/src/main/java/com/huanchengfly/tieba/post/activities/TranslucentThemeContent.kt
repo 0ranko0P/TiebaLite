@@ -10,10 +10,9 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,15 +22,15 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Palette
@@ -40,23 +39,30 @@ import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.IconToggleButtonColors
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -71,19 +77,22 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.bumptech.glide.request.RequestListener
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.theme.Grey800
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
-import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.page.settings.AboutPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Measurer
-import com.huanchengfly.tieba.post.ui.widgets.compose.RoundedSlider
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.ColorPickerDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.utils.ColorUtils
 import com.huanchengfly.tieba.post.utils.DisplayUtil
 import com.huanchengfly.tieba.post.utils.DisplayUtil.toDpSize
 import kotlin.math.abs
+
+private val ColorThumbSize = DpSize(4.dp, 38.dp)
 
 @Composable
 fun TranslucentThemeContent(
@@ -95,7 +104,7 @@ fun TranslucentThemeContent(
     val colorPickerState = rememberDialogState()
 
     TranslucentThemeContent(
-        modifier = modifier.fillMaxHeight(),
+        modifier = modifier,
         accent = state.primaryColor,
         onColorPicked = viewModel::onColorPicked,
         colorPalette = state.colorPalette,
@@ -180,7 +189,7 @@ private fun TranslucentThemeContent(
                     text = stringResource(R.string.title_select_color),
                     style = MaterialTheme.typography.titleSmall
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 ColorPanel(colorPalette, accent, onColorPicked, onLaunchColorPicker)
             }
         }
@@ -193,7 +202,7 @@ private fun TranslucentThemeContent(
             onBlurChanged = onBlurChanged,
         )
 
-        Spacer(modifier = Modifier.weight(1.0f))
+        Spacer(modifier = Modifier.height(16.dp))
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
             shape = MaterialTheme.shapes.small
@@ -242,12 +251,14 @@ fun SideBySideWallpaper(
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
     ) {
 
         // Constraint size by screen aspect ratio
         val wallpaperModifier = Modifier
-            .fillMaxHeight()
+            .block {
+                if (sideBySide) weight(1f, false) else fillMaxHeight()
+            }
             .aspectRatio(ratio = screen.width / screen.height)
             .background(Color.Black, shape = cornerShape)
             .shadow(6.dp, shape = cornerShape)
@@ -368,6 +379,16 @@ private fun SelectableTextButton(
 }
 
 @Composable
+private fun ColorSliderResetButton(modifier: Modifier = Modifier, tint: Color, onClick: () -> Unit) {
+    Box(
+        modifier = modifier.size(ColorThumbSize.height).clip(CircleShape).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = tint)
+    }
+}
+
+@Composable
 private fun ImageFilterPanel(
     color: Color,
     alpha: Float,
@@ -377,44 +398,63 @@ private fun ImageFilterPanel(
 ) {
     val titleStyle = MaterialTheme.typography.titleSmall
     val accentColorAnim by animateColorAsState(color, spring(stiffness = Spring.StiffnessLow))
-    val sliderColors = SliderDefaults.colors()
-    val sliderColorsAnimated = sliderColors.copy(
+    val sliderColors = SliderDefaults.colors(
         activeTrackColor = accentColorAnim,
         inactiveTrackColor = accentColorAnim.copy(0.3f),
-        thumbColor = Color.White
+        thumbColor = remember(color) { Color(ColorUtils.getDarkerColor(color.toArgb())) }
     )
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = stringResource(R.string.title_translucent_theme_alpha), style = titleStyle)
-        RoundedSlider(
-            value = alpha,
-            onValueChange = onAlphaChanged,
-            modifier = Modifier.padding(start = 10.dp),
-            valueRange = 0.1f..1.0f,
-            colors = sliderColorsAnimated
-        )
+    // Delay blur progress changes until onValueChangeFinished
+    val blurState = rememberSliderState(value = blur, steps = 124, valueRange = 0f..125.0f)
+    LaunchedEffect(onBlurChanged, blurState) {
+        blurState.onValueChangeFinished = { onBlurChanged(blurState.value) }
     }
 
-    // Delay blur progress changes until onValueChangeFinished
-    var blurProgress by remember { mutableFloatStateOf(blur) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        val interactionSource = remember { MutableInteractionSource() }
+
+        Text(text = stringResource(R.string.title_translucent_theme_alpha), style = titleStyle)
+        Slider(
+            value = alpha,
+            onValueChange = onAlphaChanged,
+            modifier = Modifier.weight(1.0f).padding(start = 8.dp),
+            colors = sliderColors,
+            interactionSource = interactionSource,
+            thumb = {
+                SliderDefaults.Thumb(interactionSource, colors = sliderColors, thumbSize = ColorThumbSize)
+            },
+            track = { sliderState ->
+                SliderDefaults.Track(sliderState, colors = sliderColors)
+            },
+        )
+        ColorSliderResetButton(tint = sliderColors.thumbColor) {
+            onAlphaChanged(1.0f)
+        }
+    }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
+        val interactionSource = remember { MutableInteractionSource() }
+
         Text(text = stringResource(R.string.title_translucent_theme_blur), style = titleStyle)
-        RoundedSlider(
-            value = blurProgress,
-            onValueChange = { blurProgress = it },
-            modifier = Modifier.padding(start = 10.dp),
-            onValueChangeFinished = {
-                onBlurChanged(blurProgress)
+        Slider(
+            state = blurState,
+            modifier = Modifier.weight(1.0f).padding(start = 8.dp),
+            colors = sliderColors,
+            interactionSource = interactionSource,
+            thumb = {
+                SliderDefaults.Thumb(interactionSource, colors = sliderColors, thumbSize = ColorThumbSize)
             },
-            valueRange = 0f..125.0f,
-            steps = 124,
-            colors = sliderColorsAnimated
+            track = {
+                SliderDefaults.Track(it, colors = sliderColors, drawTick = { _, _ -> /* NoTick */ })
+            }
         )
+        ColorSliderResetButton(tint = sliderColors.thumbColor) {
+            onBlurChanged(0f)
+        }
 
         // Sync after vm initialize saved blur value
         LaunchedEffect(blur) {
-            if (abs(blur - blurProgress) > 0.01f) blurProgress = blur
+            if (abs(blur - blurState.value) > 0.01f) blurState.value = blur
         }
     }
 }
@@ -427,51 +467,50 @@ private fun ColorPanel(
     onColorPickerClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier.fillMaxWidth()) {
-        Icon(
-            imageVector = Icons.Rounded.Palette,
-            contentDescription = stringResource(R.string.title_custom_color),
-            modifier = Modifier
-                .padding(end = 10.dp)
-                .size(size = Sizes.Medium)
-                .background(Color.LightGray, MaterialTheme.shapes.medium)
-                .clickable(onClick = onColorPickerClicked),
-            tint = Color.White
-        )
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            items(list, key = { item: Color -> item.value.toString() }) {
-                ColorBox(
-                    modifier = Modifier.clickableNoIndication { onSelect(it) },
-                    color = it,
-                    selected = it.value == selected.value
-                )
-            }
+    val shapes = IconButtonDefaults.toggleableShapes(
+        shape = MaterialTheme.shapes.small,
+        pressedShape = MaterialTheme.shapes.medium,
+        checkedShape = CircleShape
+    )
+    val colorsList = remember(list) {
+        list.map {
+            val contentColor = if (ColorUtils.isColorLight(it.toArgb())) Grey800 else Color.White
+            IconToggleButtonColors(it, contentColor, Color.Transparent, Color.Transparent, it, contentColor)
         }
     }
-}
 
-@Composable
-private fun ColorBox(modifier: Modifier = Modifier, color: Color, selected: Boolean = false) {
-    Box(
-        modifier = modifier
-            .size(size = Sizes.Medium)
-            .background(color, shape = MaterialTheme.shapes.medium)
-    ) {
-        if (!selected) return
-        Icon(
-            imageVector = Icons.Rounded.Check,
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .size(12.dp)
-                .offset(x = 4.dp, y = 4.dp)
-                .background(color = color, shape = CircleShape)
-                .border(BorderStroke(1.dp, Color.White), shape = CircleShape),
-            tint = Color.White
-        )
+    Row(modifier = modifier.fillMaxWidth()) {
+        IconButton(
+            onClick = onColorPickerClicked,
+            shapes = IconButtonShapes(shape = shapes.shape, pressedShape = shapes.pressedShape),
+            modifier = Modifier.padding(end = 4.dp),
+            colors = IconButtonDefaults.filledIconButtonColors(),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Palette,
+                contentDescription = stringResource(R.string.title_custom_color),
+                modifier = Modifier.size(size = Sizes.Tiny)
+            )
+        }
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            itemsIndexed(list, key = { _, item -> item.value.toString() }) { i, item ->
+                IconToggleButton(
+                    checked = item == selected,
+                    onCheckedChange = {
+                        if (it) onSelect(item)
+                    },
+                    shapes = shapes,
+                    colors = colorsList.getOrNull(i) ?: IconButtonDefaults.iconToggleButtonVibrantColors(),
+                ) {
+                    if (item == selected) {
+                        Icon(Icons.Rounded.Check, contentDescription = null, Modifier.size(Sizes.Tiny))
+                    }
+                }
+            }
+        }
     }
 }
 
