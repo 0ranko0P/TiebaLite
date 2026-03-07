@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -41,10 +40,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastRoundToInt
 import com.huanchengfly.tieba.post.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -102,9 +99,11 @@ fun SwipeUpLazyLoadColumn(
         modifier = Modifier.nestedScroll(refreshState) then modifier
     ) {
         LazyColumn(
-            modifier = Modifier.offset {
-                IntOffset(x = 0, y = refreshState.position.fastRoundToInt())
-            },
+            modifier = Modifier
+                .graphicsLayer {
+                    this.clip = true
+                    this.translationY = refreshState.position
+                },
             state = state,
             contentPadding = contentPadding,
             verticalArrangement = verticalArrangement,
