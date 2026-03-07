@@ -10,26 +10,35 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.rounded.VerticalAlignTop
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +52,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.models.database.ThreadHistory
@@ -55,17 +65,19 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.page.user.sharedUserAvatar
 import com.huanchengfly.tieba.post.ui.page.user.sharedUserNickname
 import com.huanchengfly.tieba.post.ui.page.user.sharedUsername
+import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeaderPlaceholder
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.coroutines.launch
@@ -113,9 +125,13 @@ fun HistoryPage(
         }
     }
 
+    val scrollOrientationConnection = rememberScrollOrientationConnection()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    val listStates = rememberPagerListStates(tabs.size)
     val pagerState = rememberPagerState { tabs.size }
     val pageMovableContent = remember {
-        tabs.map { type ->
+        tabs.mapIndexed { i, type ->
             movableContentOf {
                 val pagedItems = when (type) {
                     R.string.title_history_thread -> viewModel.threadHistory.collectAsLazyPagingItems()
@@ -127,15 +143,24 @@ fun HistoryPage(
                     else -> throw RuntimeException()
                 }
 
-                HistoryColumn(pagedItems, onDelete = viewModel::onDelete, onClick = onHistoryClickedListener)
+                HistoryColumn(
+                    modifier = Modifier
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .nestedScroll(scrollOrientationConnection),
+                    state = listStates[i],
+                    pagedItems = pagedItems,
+                    onDelete = viewModel::onDelete,
+                    onClick = onHistoryClickedListener,
+                )
             }
         }
     }
 
     MyScaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                titleRes = R.string.title_history,
+            TopAppBarPaged(
+                title = { Text(text = stringResource(R.string.title_history)) },
+                titleHorizontalAlignment = Alignment.CenterHorizontally,
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = navigator::navigateUp)
                 },
@@ -150,6 +175,10 @@ fun HistoryPage(
                             snackbarHostState.showSnackbar(message)
                         }
                     }
+                },
+                scrollBehavior = scrollBehavior,
+                canScrollBackward = {
+                    listStates[pagerState.currentPage].canScrollBackward
                 },
                 content = {
                     PrimaryTabRow(
@@ -172,10 +201,30 @@ fun HistoryPage(
                             )
                         }
                     }
-                }
+                },
             )
         },
-        snackbarHostState = snackbarHostState
+        snackbarHostState = snackbarHostState,
+        floatingActionButton = {
+            // FAB visibility: scrolling forward, pager not scrolling, not top
+            val visible by remember {
+                derivedStateOf {
+                    scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling && listStates[pagerState.currentPage].canScrollBackward
+                }
+            }
+
+            FloatingActionButton(
+                onClick = {
+                    coroutineScope.launch {
+                        listStates[pagerState.currentPage].scrollToItem(0)
+                        scrollBehavior.state.contentOffset = 0f
+                    }
+                },
+                modifier = Modifier.animateFloatingActionButton(visible, alignment = Alignment.Center),
+            ) {
+                Icon(Icons.Rounded.VerticalAlignTop, stringResource(R.string.btn_back_to_top))
+            }
+        }
     ) { contentPadding ->
         ProvideNavigator(navigator = navigator) {
             HorizontalPager(
@@ -215,11 +264,15 @@ private fun HistoryBaseItem(
             modifier = Modifier.weight(1f),
         ) {
             Row {
-                ProvideTextStyle(MaterialTheme.typography.labelLarge, content = name)
+                Box(modifier = Modifier.weight(1.0f)) {
+                    ProvideTextStyle(MaterialTheme.typography.labelLarge, content = name)
+                }
 
-                Spacer(modifier = Modifier.weight(1.0f).widthIn(min = 8.dp))
-
-                Text(text = relativeTimeString, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = relativeTimeString,
+                    modifier = Modifier.padding(start = 6.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
 
             if (etc != null) {
@@ -250,6 +303,8 @@ private fun ForumItem(modifier: Modifier = Modifier, item: ForumHistory) {
             Text(
                 text = stringResource(R.string.title_forum, item.name),
                 modifier = Modifier.localSharedBounds(key = ForumTitleSharedBoundsKey(item.name, null)),
+                maxLines = 1,
+                overflow = TextOverflow.MiddleEllipsis,
             )
         },
         time = item.timestamp
@@ -264,7 +319,7 @@ private fun ThreadItem(modifier: Modifier = Modifier, item: ThreadHistory) {
         avatar = {
             Avatar(modifier = Modifier.matchParentSize(), data = item.avatar)
         },
-        name = { Text(text = item.name) },
+        name = { Text(text = item.name, maxLines = 1) },
         etc = {
             Row (
                 modifier = Modifier.padding(top = 4.dp),
@@ -280,12 +335,12 @@ private fun ThreadItem(modifier: Modifier = Modifier, item: ThreadHistory) {
 
                 if (item.forum != null) {
                     Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
                         shape = MaterialTheme.shapes.extraSmall
                     ) {
                         Text(
                             text = stringResource(R.string.title_forum, item.forum),
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             fontWeight = FontWeight.Medium,
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -312,7 +367,9 @@ private fun UserItem(modifier: Modifier = Modifier, item: UserHistory) {
         name = {
             Text(
                 text = item.name,
-                modifier = Modifier.sharedUserNickname(nickname = item.name, extraKey)
+                modifier = Modifier.sharedUserNickname(nickname = item.name, extraKey),
+                maxLines = 1,
+                overflow = TextOverflow.MiddleEllipsis,
             )
         },
         etc = item.username?.let { {
@@ -340,13 +397,15 @@ private fun DateHeader(modifier: Modifier = Modifier, time: String) {
 
 @Composable
 private fun <T : HistoryUiModel> HistoryColumn(
+    modifier: Modifier = Modifier,
+    state: LazyListState = rememberLazyListState(),
     pagedItems: LazyPagingItems<T>,
     onDelete: (History) -> Unit,
     onClick: (History) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
+        state = state,
     ) {
         items(
             count = pagedItems.itemCount,
