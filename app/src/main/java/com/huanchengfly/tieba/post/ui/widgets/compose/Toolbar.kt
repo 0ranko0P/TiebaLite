@@ -323,8 +323,8 @@ fun Toolbar(
                     navigationIcon?.invoke()
                 }
 
-                ProvideTextStyle(MaterialTheme.typography.titleLarge) {
-                    Box(Modifier.weight(1.0f)) { title() }
+                Box(modifier = Modifier.weight(1.0f)) {
+                    ProvideTextStyle(MaterialTheme.typography.titleLarge, content = title)
                 }
 
                 actions()

@@ -169,16 +169,16 @@ fun WebViewPage(initialUrl: String, customClient: Boolean, navigator: NavControl
     MyScaffold(
         topBar = {
             WebviewTopAppBar(state = webViewState, onBack = navigator::navigateUp) {
-                val url = webViewState.webView?.url ?: return@WebviewTopAppBar
+                val webview = webViewState.webView ?: return@WebviewTopAppBar
                 ClickMenu(
                     menuContent = {
                         TextMenuItem(text = R.string.title_copy_link) {
-                            TiebaUtil.copyText(context, url)
+                            TiebaUtil.copyText(context, webview.url.orEmpty())
                         }
 
                         TextMenuItem(text = R.string.title_open_in_browser) {
                             runCatching {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+                                context.startActivity(Intent(Intent.ACTION_VIEW, webview.url!!.toUri()))
                             }
                         }
 

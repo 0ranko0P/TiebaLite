@@ -422,7 +422,7 @@ fun ThreadMedia(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .weight(1f),
-                                contentAlignment = Alignment.BottomEnd
+                                contentAlignment = Alignment.TopEnd
                             ) {
                                 NetworkImage(
                                     modifier = Modifier.matchParentSize(),

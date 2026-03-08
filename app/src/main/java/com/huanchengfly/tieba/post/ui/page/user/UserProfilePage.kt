@@ -103,6 +103,7 @@ import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
@@ -572,7 +573,7 @@ private fun UserAvatar(modifier: Modifier = Modifier, avatar: String?, uid: Long
         val context = LocalContext.current
         Avatar(
             modifier = modifier
-                .clickable {
+                .clickableNoIndication {
                     PhotoViewActivity.launchSinglePhoto(context, url = avatar, useTbGlideUrl = false)
                 }
                 .onNotNull(avatar) { sharedUserAvatar(uid = uid, extraKey = transitionKey) },

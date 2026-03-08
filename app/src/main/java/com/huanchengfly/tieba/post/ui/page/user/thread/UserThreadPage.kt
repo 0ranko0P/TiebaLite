@@ -141,7 +141,6 @@ private fun UserThread(
                 ForumInfoChip(
                     forumName = forumName,
                     avatarUrl = forumAvatar,
-                    transitionKey = thread.id.toString(),
                     onClick = { onClickForum(thread) }
                 )
             }
