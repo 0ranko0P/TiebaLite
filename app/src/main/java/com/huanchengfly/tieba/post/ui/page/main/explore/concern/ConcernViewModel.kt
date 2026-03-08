@@ -103,10 +103,10 @@ class ConcernViewModel @Inject constructor(
     }
 
     /**
-     * Called when navigating back from thread page with the latest [Like] status
+     * Called when navigating back from thread page.
      *
      * @param threadId target thread ID
-     * @param like latest like status of target thread
+     * @param like latest like status
      * */
     fun onThreadResult(threadId: Long, like: Like) {
          launchInVM {
@@ -114,7 +114,7 @@ class ConcernViewModel @Inject constructor(
             val newData = currentState.data.updateLikeStatus(threadId, like)
             if (newData != null) {
                 _uiState.update { it.copy(data = newData) }
-                exploreRepo.purgeCache(ExplorePageItem.Concern)
+                exploreRepo.updateCachedThreadLike(threadId, like, from = ExplorePageItem.Concern)
             }
             // else: empty or no status changes
         }
@@ -157,8 +157,8 @@ class ConcernViewModel @Inject constructor(
                 var changed = false
                 fastMap {
                     if (it.id == threadId) {
-                        // no status changes, return null directly
-                        if (it.liked == like.liked/* && it.like.count == like.count */) return@withContext null
+                        // Unchanged, return null
+                        if (it.liked == like.liked && it.like.count == like.count) return@withContext null
                         changed = true
                         it.copy(like = like)
                     } else {

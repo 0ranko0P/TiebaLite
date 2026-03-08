@@ -142,17 +142,16 @@ class PersonalizedViewModel @Inject constructor(
     }
 
     /**
-     * Called when navigating back from thread page with the latest [Like] status
+     * Called when navigating back from thread page.
      *
      * @param threadId target thread ID
      * @param like latest thread like status
      * */
     fun onThreadResult(threadId: Long, like: Like): Unit = launchInVM {
-        // compare and update with latest like status
         val newData = currentState.data.updateLikeStatus(threadId, like)
         if (newData != null) {
             _uiState.update { it.copy(data = newData) }
-            exploreRepo.purgeCache(ExplorePageItem.Personalized)
+            exploreRepo.updateCachedThreadLike(threadId, like, from = ExplorePageItem.Personalized)
         }
         // else -> empty or no status changes
     }

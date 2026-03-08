@@ -42,6 +42,7 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
@@ -98,8 +99,7 @@ fun PersonalizedPage(
         createThreadClickListeners(onNavigate = navigator::navigate)
     }
 
-    // result from ThreadPage
-    ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
+    ConsumeThreadPageResult<Destination.Main>(navigator, viewModel::onThreadResult)
 
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = PersonalizedUiState::isRefreshing,

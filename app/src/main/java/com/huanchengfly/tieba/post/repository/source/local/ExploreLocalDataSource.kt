@@ -3,10 +3,14 @@ package com.huanchengfly.tieba.post.repository.source.local
 import android.content.Context
 import android.util.Log
 import com.huanchengfly.tieba.post.BuildConfig
+import com.huanchengfly.tieba.post.api.booleanToInt
+import com.huanchengfly.tieba.post.api.models.protos.Agree
+import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponseData
 import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponseData
 import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponseData
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.FileUtil.isCacheExpired
 import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.decodeCache
@@ -17,6 +21,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +33,8 @@ private const val CACHE_HOT_PREFIX = "hot_"
 
 private const val HOT_THREAD_EXPIRE_MILL = 0x36EE80 // 1 hour
 private const val PERSONALIZED_EXPIRE_MILL = 0x5265C00 // 1 day
+
+private const val TAG = "ExploreLocalDataSource"
 
 @Singleton
 class ExploreLocalDataSource @Inject constructor(@ApplicationContext context: Context) {
@@ -53,6 +60,23 @@ class ExploreLocalDataSource @Inject constructor(@ApplicationContext context: Co
         }
     }
 
+    suspend fun updateHotThreadLike(tabCode: String, threadId: Long, like: Like) = withContext(Dispatchers.IO) {
+        val cacheFile = hotCacheFile(tabCode)
+        mutex.withLock {
+            try {
+                val lastModified: Long = cacheFile.lastModified()
+                val data = HotThreadListResponseData.ADAPTER.decodeCache(cacheFile) ?: return@withLock
+                val threadInfo = withContext(Dispatchers.Default) {
+                    data.threadInfo.map { if (it.id == threadId) it.setLikeStatus(like) else it }
+                }
+                HotThreadListResponseData.ADAPTER.encodeCache(cacheFile, data.copy(threadInfo = threadInfo))
+                cacheFile.setLastModified(lastModified)
+            } catch (e: Throwable) {
+                Log.e(TAG, "onUpdateHotThreadLikeStatus", e)
+            }
+        }
+    }
+
     suspend fun purgeHotThread() = withContext(Dispatchers.IO) {
         mutex.withLock {
             deleteWithPrefixSafe(cacheDir, CACHE_HOT_PREFIX)
@@ -65,12 +89,13 @@ class ExploreLocalDataSource @Inject constructor(@ApplicationContext context: Co
     suspend fun loadPersonalized(page: Int): PersonalizedResponseData? = withContext(Dispatchers.IO) {
         val cacheFile = personalizedCacheFile(page)
         mutex.withLock {
-            // only first page can expire
-            val cacheExpireMill = if (page == 1) PERSONALIZED_EXPIRE_MILL.toLong() else null
-            runCatching {
+            val cacheExpireMill = PERSONALIZED_EXPIRE_MILL.takeIf { page == 1 }?.toLong()
+            try {
                 PersonalizedResponseData.ADAPTER.decodeCache(cacheIn = cacheFile, cacheExpireMill)
+            } catch (e: Throwable) {
+                Log.e(TAG, "onLoadPersonalized", e)
+                null
             }
-            .getOrNull()
         }
     }
 
@@ -81,6 +106,31 @@ class ExploreLocalDataSource @Inject constructor(@ApplicationContext context: Co
                 PersonalizedResponseData.ADAPTER.encodeCache(cacheOut = cacheFile, data)
             }
             .isSuccess
+        }
+    }
+
+    suspend fun dislikePersonalized(threadId: Long) = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            try {
+                // Remove target thread from local cache
+                updatePersonalized { threadInfo -> threadInfo.takeUnless { threadInfo.id == threadId } }
+            } catch (e: Throwable) {
+                Log.e(TAG, "onDislikePersonalized", e)
+                purgePersonalized()
+            }
+        }
+    }
+
+    suspend fun updatePersonalizedLike(threadId: Long, like: Like) = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            try {
+                updatePersonalized { threadInfo ->
+                    if (threadInfo.id == threadId) threadInfo.setLikeStatus(like) else threadInfo
+                }
+            } catch (e: Throwable) {
+                Log.e(TAG, "onUpdatePersonalizedLikeStatus", e)
+                purgePersonalized()
+            }
         }
     }
 
@@ -114,7 +164,7 @@ class ExploreLocalDataSource @Inject constructor(@ApplicationContext context: Co
 
             if (BuildConfig.DEBUG && lastRequestUnix > 0) {
                 val duration = System.currentTimeMillis() / 1000 - lastRequestUnix
-                Log.i(CACHE_DIR_NAME, "onLoadUserLikeData: LastRequest: $lastRequestUnix, ${duration}s ago")
+                Log.i(TAG, "onLoadUserLikeData: LastRequest: $lastRequestUnix, ${duration}s ago")
             }
             Pair(lastRequestUnix, data)
         }
@@ -124,6 +174,27 @@ class ExploreLocalDataSource @Inject constructor(@ApplicationContext context: Co
         val cacheFile = userLikeCacheFile(uid)
         mutex.withLock {
             runCatching { UserLikeResponseData.ADAPTER.encodeCache(cacheFile, data) }.isSuccess
+        }
+    }
+
+    suspend fun updateUserLike(uid: Long, threadId: Long, like: Like) = withContext(Dispatchers.IO) {
+        val cacheFile = userLikeCacheFile(uid)
+        mutex.withLock {
+            try {
+                val lastModified: Long = cacheFile.lastModified()
+                val data = UserLikeResponseData.ADAPTER.decodeCache(cacheFile) ?: return@withLock
+                val threadInfo = withContext(Dispatchers.Default) {
+                    // Update target thread like status
+                    data.threadInfo.map {
+                        val thread: ThreadInfo = it.threadList!!
+                        if (thread.id == threadId) it.copy(threadList = thread.setLikeStatus(like)) else it
+                    }
+                }
+                UserLikeResponseData.ADAPTER.encodeCache(cacheFile, data.copy(threadInfo = threadInfo))
+                cacheFile.setLastModified(lastModified)
+            } catch (e: Throwable) {
+                Log.e(TAG, "onUpdateUserLikeStatus", e)
+            }
         }
     }
 
@@ -150,6 +221,54 @@ class ExploreLocalDataSource @Inject constructor(@ApplicationContext context: Co
         return File(cacheDir, "$CACHE_PERSONALIZED_PREFIX$page")
     }
 
+    // Update local file cache of personalized threads
+    // Migrate to Room Database?
+    @Throws(IOException::class)
+    private suspend fun updatePersonalized(transform: (ThreadInfo) -> ThreadInfo?) {
+        val start = System.currentTimeMillis()
+        val cachedPages = cacheDir.listFiles { it.name.startsWith(CACHE_PERSONALIZED_PREFIX) } ?: return
+        for (cacheFile in cachedPages) {
+            val page = PersonalizedResponseData.ADAPTER.decodeCache(cacheFile) ?: continue
+            val newData = withContext(Dispatchers.Default) {
+                // Associate thread_personalized by thread id
+                val threadPersonalizedMap = page.thread_personalized.associateByTo(hashMapOf()) { it.tid }
+                val threads = mutableListOf<ThreadInfo>()
+                var changed = false
+                for (thread in page.thread_list) {
+                    when (val updatedThread = transform(thread)) {
+                        null -> {
+                            threadPersonalizedMap -= thread.id
+                            changed = true
+                            Log.i(TAG, "onUpdatePersonalized: Thread ${thread.id} removed")
+                        }
+
+                        thread -> threads.add(thread)
+
+                        else -> {
+                            threads.add(updatedThread)
+                            changed = true
+                            Log.i(TAG, "onUpdatePersonalized: Thread ${thread.id} updated")
+                        }
+                    }
+                }
+                return@withContext if (changed) {
+                    PersonalizedResponseData(threads, threadPersonalizedMap.values.toList())
+                } else {
+                    null
+                }
+            }
+
+            if (newData != null) {
+                val lastModified: Long = cacheFile.lastModified()
+                PersonalizedResponseData.ADAPTER.encodeCache(cacheFile, newData)
+                cacheFile.setLastModified(lastModified)
+                Log.w(TAG, "onUpdatePersonalized: Cached page ${cacheFile.name} updated")
+                break
+            }
+        }
+        val cost = System.currentTimeMillis() - start
+        Log.w(TAG, "onUpdatePersonalized: Done, cost: $cost ms")
+    }
 }
 
 fun deleteWithPrefixSafe(dir: File, prefix: String): Int {
@@ -173,4 +292,8 @@ fun deleteWithPrefixSafe(dir: File, prefix: String): Int {
         Log.i(CACHE_DIR_NAME, "Delete $deleted files of $prefix, cost ${cost}ms")
     }
     return deleted
+}
+
+private fun ThreadInfo.setLikeStatus(like: Like): ThreadInfo {
+    return copy(agree = Agree(agreeNum = like.count, hasAgree = like.liked.booleanToInt()))
 }

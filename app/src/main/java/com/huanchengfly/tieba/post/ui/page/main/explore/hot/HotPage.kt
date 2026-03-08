@@ -97,8 +97,7 @@ fun HotPage(
         createThreadClickListeners(onNavigate = navigator::navigate)
     }
 
-    // result from ThreadPage
-    ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
+    ConsumeThreadPageResult<Destination.Main>(navigator, viewModel::onThreadResult)
 
     StateScreen(
         isLoading = isRefreshing,

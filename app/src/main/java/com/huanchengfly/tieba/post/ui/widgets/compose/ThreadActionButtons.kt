@@ -140,7 +140,7 @@ private fun rememberShortNumString(number: Long, @StringRes defaultRes: Int): St
     } else if (number <= 999) {
         number.toString()
     } else {
-        remember { number.getShortNumString() }
+        remember(number) { number.getShortNumString() }
     }
 }
 

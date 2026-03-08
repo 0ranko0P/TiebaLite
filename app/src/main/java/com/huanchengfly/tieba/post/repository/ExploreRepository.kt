@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.repository
 
 import android.util.SparseArray
 import androidx.collection.LruCache
-import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponseData
@@ -12,6 +11,7 @@ import com.huanchengfly.tieba.post.api.models.protos.userLike.ConcernData
 import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponseData
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.di.ApplicationScope
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalDataSource
 import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
@@ -29,7 +29,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.buildThreadContent
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -45,6 +47,7 @@ class UserLikeThreads(
 
 @Singleton
 class ExploreRepository @Inject constructor(
+    @ApplicationScope private val scope: CoroutineScope,
     private val localDataSource: ExploreLocalDataSource,
     private val blockRepo: BlockRepository,
     private val threadRepo: PbPageRepository,
@@ -148,25 +151,29 @@ class ExploreRepository @Inject constructor(
         return UserLikeThreads(data.requestUnix, data.pageTag, data.hasMore == 1, threads)
     }
 
-    suspend fun onLikeThread(thread: ThreadItem, from: ExplorePageItem) {
+    suspend fun onLikeThread(thread: ThreadItem, from: ExplorePageItem, hotTab: HotTab? = null) {
         threadRepo.requestLikeThread(thread)
-        // update local data is costly, purge caches instead
-        purgeCache(targetPage = from)
+        updateCachedThreadLike(threadId = thread.id, like = !thread.like, from, hotTab)
     }
 
-    fun purgeCache(targetPage: ExplorePageItem) {
-        AppBackgroundScope.launch {
-            when (targetPage) {
-                ExplorePageItem.Concern -> localDataSource.purgeUserLike(uid = requireUid())
+    suspend fun updateCachedThreadLike(threadId: Long, like: Like, from: ExplorePageItem, hotTab: HotTab? = null) {
+        scope.async {
+            // Update local cache, this is non-cancellable
+            when (from) {
+                ExplorePageItem.Concern -> localDataSource.updateUserLike(uid = requireUid(), threadId, like)
 
-                ExplorePageItem.Personalized -> localDataSource.purgePersonalized()
+                ExplorePageItem.Personalized -> localDataSource.updatePersonalizedLike(threadId, like)
 
-                ExplorePageItem.Hot -> localDataSource.purgeHotThread()
+                ExplorePageItem.Hot -> localDataSource.updateHotThreadLike(hotTab!!.tabCode, threadId, like)
             }
-        }
+        }.await()
     }
 
     suspend fun onDislikeThread(thread: ThreadItem, reasons: List<Dislike>) {
+        scope.launch {
+            localDataSource.dislikePersonalized(threadId = thread.id)
+        }
+
         val clickTimeMill = System.currentTimeMillis()
         val (forumId, _, _) = thread.simpleForum
         val dislikeIds = reasons.joinToString(",") { it.id.toString() }

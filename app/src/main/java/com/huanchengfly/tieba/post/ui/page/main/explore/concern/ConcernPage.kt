@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
@@ -60,8 +61,7 @@ fun ConcernPage(
         createThreadClickListeners(onNavigate = navigator::navigate)
     }
 
-    // result from ThreadPage
-    ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
+    ConsumeThreadPageResult<Destination.Main>(navigator, viewModel::onThreadResult)
 
     StateScreen(
         isEmpty = isEmpty,

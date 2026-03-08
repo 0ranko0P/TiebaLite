@@ -12,6 +12,7 @@ import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distin
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListViewModel.Companion.ForumVMFactory
@@ -163,6 +164,19 @@ class ForumThreadListViewModel @AssistedInject constructor(
             onEvent = ::emitGlobalEventSuspend
         ) { threadId, liked, loading ->
             _uiState.update { it.copy(threads = it.threads.updateLikeStatus(threadId, liked, loading)) }
+        }
+    }
+
+    /**
+     * Called when navigating back from thread page.
+     *
+     * @param threadId target thread ID
+     * @param like latest thread like
+     * */
+    fun onThreadResult(threadId: Long, like: Like): Unit = launchInVM {
+        val newThreads = currentState.threads.updateLikeStatus(threadId, like)
+        if (newThreads != null) {
+            _uiState.update { it.copy(threads = newThreads) }
         }
     }
 

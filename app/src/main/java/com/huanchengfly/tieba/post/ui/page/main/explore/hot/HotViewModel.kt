@@ -133,7 +133,7 @@ class HotViewModel @Inject constructor(
             val selectedTab = stateSnapshot.selectedTab
             val success = updateLikeStatusUiStateCommon(
                 thread = thread,
-                onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Hot) },
+                onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Hot, selectedTab) },
                 onEvent = ::emitGlobalEventSuspend
             ) { threadId, liked, loading ->
                 _uiState.update {
@@ -155,7 +155,7 @@ class HotViewModel @Inject constructor(
     }
 
     /**
-     * Called when navigating back from thread page with the latest [Like] status
+     * Called when navigating back from thread page.
      *
      * @param threadId target thread ID
      * @param like like status of target thread
@@ -163,14 +163,13 @@ class HotViewModel @Inject constructor(
     fun onThreadResult(threadId: Long, like: Like) {
         launchInVM {
             val stateSnapshot = currentState
-            // compare and update with latest like status
+            val selectedTab = stateSnapshot.selectedTab
             val newThreads = stateSnapshot.threads?.updateLikeStatus(threadId, like)
+            // Like data changed, update in-memory and local cache
             if (newThreads != null) {
                 _uiState.update { it.copy(threads = newThreads) }
-                // update in-memory cache too
-                updateCache(stateSnapshot.selectedTab, newThreads)
-                // purge local cache
-                exploreRepo.purgeCache(ExplorePageItem.Hot)
+                updateCache(selectedTab, newThreads)
+                exploreRepo.updateCachedThreadLike(threadId, like, from = ExplorePageItem.Hot, selectedTab)
             }
             // else: empty or no status changes
         }

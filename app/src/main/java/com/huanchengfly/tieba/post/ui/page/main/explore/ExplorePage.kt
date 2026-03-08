@@ -301,9 +301,12 @@ fun LaunchedFabStateEffect(
 }
 
 @Composable
-fun ConsumeThreadPageResult(navigator: NavController, onThreadResult: (threadId: Long, Like) -> Unit) {
+inline fun <reified Route : Any> ConsumeThreadPageResult(
+    navigator: NavController,
+    crossinline onThreadResult: (threadId: Long, Like) -> Unit
+) {
     LaunchedEffect(Unit) {
-        navigator.consumeResult<Destination.Main, ThreadResult>(Destination.Main::class, ThreadResultKey)?.run {
+        navigator.consumeResult<Route, ThreadResult>(ThreadResultKey)?.run {
             onThreadResult(threadId, Like(liked, likes))
         }
     }

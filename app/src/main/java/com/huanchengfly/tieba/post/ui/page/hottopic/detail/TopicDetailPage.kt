@@ -35,6 +35,7 @@ import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.feedId
 import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
@@ -78,7 +79,7 @@ fun TopicDetailPage(
         }
     }
 
-    ConsumeThreadPageResult(navigator, viewModel::onThreadResult)
+    ConsumeThreadPageResult<Destination.HotTopicDetail>(navigator, viewModel::onThreadResult)
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
