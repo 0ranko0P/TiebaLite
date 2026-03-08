@@ -2,7 +2,9 @@ package com.huanchengfly.tieba.post.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.Typography
@@ -34,7 +36,13 @@ fun TiebaLiteTheme(
         LocalExtendedColorScheme provides colorSchemeExt,
         LocalWindowAdaptiveInfo provides currentWindowAdaptiveInfo(),
     ) {
-        MaterialTheme(colorSchemeExt.colorScheme, shapes, typography, content)
+        MaterialExpressiveTheme(
+            colorScheme = colorSchemeExt.colorScheme,
+            motionScheme = MotionScheme.expressive(),
+            shapes = shapes,
+            typography = typography,
+            content = content
+        )
     }
 }
 

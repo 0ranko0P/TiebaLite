@@ -103,6 +103,7 @@ fun PositiveButton(
 ) =
     Button(
         onClick = onClick,
+        shapes = ButtonDefaults.shapes(),
         modifier = modifier,
         enabled = enabled,
         colors = colors
@@ -120,6 +121,7 @@ fun PositiveButton(
 ) =
     Button(
         onClick = onClick,
+        shapes = ButtonDefaults.shapes(),
         modifier = modifier,
         enabled = enabled,
         colors = colors
@@ -183,6 +185,7 @@ fun OutlinedIconTextButton(
 ) =
     OutlinedButton(
         onClick = onClick,
+        shapes = ButtonDefaults.shapes(),
         modifier = modifier,
         enabled = enabled,
         colors = colors,
