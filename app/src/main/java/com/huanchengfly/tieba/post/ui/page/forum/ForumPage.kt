@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -280,6 +281,11 @@ fun ForumPage(
         }
     }
 
+    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    val onFabExpandChanged: (Boolean) -> Unit = {
+        fabMenuExpanded = it
+    }
+
     BlurScaffold(
         topHazeBlock = {
             blurEnabled = (listStates[pagerState.currentPage].canScrollBackward ||
@@ -396,7 +402,7 @@ fun ForumPage(
                 }
             }
 
-            ForumFAB(visible = fabVisible) { fab ->
+            ForumFAB(expanded = fabMenuExpanded, onExpandChanged = onFabExpandChanged, visible = fabVisible) { fab ->
                 viewModel.onFabClicked(fab, isGood = pagerState.currentPage == TAB_FORUM_GOOD)
             }
         }
@@ -426,6 +432,10 @@ fun ForumPage(
                     forumThreadPages[page](Modifier, contentPadding, forumData)
                 }
             }
+        }
+
+        if (fabMenuExpanded) {
+            Spacer(modifier = Modifier.fillMaxSize().clickableNoIndication { onFabExpandChanged(false) })
         }
     }
 }
@@ -516,9 +526,14 @@ private fun ForumSubtitle(modifier: Modifier = Modifier, forum: ForumData) {
 }
 
 @Composable
-private fun ForumFAB(modifier: Modifier = Modifier, visible: Boolean, onClick: (Int) -> Unit) {
+private fun ForumFAB(
+    modifier: Modifier = Modifier,
+    expanded: Boolean,
+    onExpandChanged: (Boolean) -> Unit,
+    visible: Boolean,
+    onClick: (Int) -> Unit
+) {
     val context = LocalContext.current
-    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
     val items = remember {
         persistentListOf(
@@ -528,29 +543,22 @@ private fun ForumFAB(modifier: Modifier = Modifier, visible: Boolean, onClick: (
         )
     }
 
-    BackHandler(fabMenuExpanded) {
-        fabMenuExpanded = false
-    }
+    BackHandler(expanded) { onExpandChanged(false) }
 
     AnimatedVisibility(
         visible = visible,
+        modifier = modifier,
         enter = fadeIn() + slideInHorizontally { it },
         exit = fadeOut() + slideOutHorizontally { it }
     ) {
         FloatingActionButtonMenu(
-            modifier = modifier,
-            expanded = fabMenuExpanded,
-            button = {
-                DefaultToggleFloatingActionButton(
-                    checked = fabMenuExpanded,
-                    onCheckedChange = { fabMenuExpanded = !fabMenuExpanded },
-                )
-            },
+            expanded = expanded,
+            button = { DefaultToggleFloatingActionButton(expanded, onExpandChanged) },
         ) {
             items.fastForEachIndexed { i, (forumFab, icon, menuText) ->
                 FloatingActionButtonMenuItem(
                     onClick = {
-                        fabMenuExpanded = false
+                        onExpandChanged(false)
                         onClick(forumFab)
                     },
                     icon = { Icon(imageVector = icon, contentDescription = null) },
@@ -560,8 +568,8 @@ private fun ForumFAB(modifier: Modifier = Modifier, visible: Boolean, onClick: (
         }
     }
 
-    if (!visible && fabMenuExpanded) {
-        LaunchedEffect(Unit) { fabMenuExpanded = false }
+    if (!visible && expanded) {
+        LaunchedEffect(Unit) { onExpandChanged(false) }
     }
 }
 
