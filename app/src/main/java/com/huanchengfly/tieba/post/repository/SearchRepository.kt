@@ -90,14 +90,16 @@ class SearchRepository @Inject constructor(
     ): SearchThreadResult {
         val data = networkDataSource.searchPost(keyword, forumName, forumId, sortType, filterType, page)
         val showBothName = settingsRepo.habitSettings.snapshot().showBothName
-        val posts = data.postList.mapUiModel(keyword, context, showBothName)
+        val keywordPatterns = keyword.toKeywordPatterns()
+        val posts = data.postList.mapUiModel(keywordPatterns, context, showBothName)
         return SearchThreadResult(data.hasMore == 1, posts)
     }
 
     suspend fun searchThread(keyword: String, page: Int, sortType: Int): SearchThreadResult {
         val data = networkDataSource.searchThread(keyword, page, sortType)
         val showBothName = settingsRepo.habitSettings.snapshot().showBothName
-        val threads = data.postList.mapUiModel(keyword, context, showBothName)
+        val keywordPatterns = keyword.toKeywordPatterns()
+        val threads = data.postList.mapUiModel(keywordPatterns, context, showBothName)
         return SearchThreadResult(data.hasMore == 1, threads)
     }
 
@@ -228,24 +230,28 @@ class SearchRepository @Inject constructor(
             append(content)
         }
 
+        private fun String.toKeywordPatterns(): List<Pattern> {
+            return if (isNotEmpty() && isNotBlank()) {
+                split(" ").map {
+                    Regex.escape(it).toPattern(Pattern.CASE_INSENSITIVE)
+                }
+            } else {
+                emptyList()
+            }
+        }
+
         /**
          * Map thread info to UI Model.
          *
-         * @param keyword search keyword
+         * @param keywordPatterns regex pattern of search keywords
          * @param context application context
          * @param showBothName show both username and nickname
          * */
         private suspend fun List<ThreadInfoBean>.mapUiModel(
-            keyword: String,
+            keywordPatterns: List<Pattern>,
             context: Context,
             showBothName: Boolean
         ): List<SearchThreadInfo> = withContext(Dispatchers.Default) {
-            val keywords = if (keyword.isNotEmpty()) {
-                keyword.split(" ").map { it.toPattern(Pattern.CASE_INSENSITIVE) }
-            } else {
-                emptyList()
-            }
-
             map { info ->
                 val author = with(info.user) {
                     Author(
@@ -260,17 +266,11 @@ class SearchRepository @Inject constructor(
                 }
 
                 val postHighlightContent: AnnotatedString? = info.postInfo?.run {
-                    buildHighlightContent(
-                        content = buildAnnotatedString(author, content),
-                        patterns = keywords
-                    )
+                    buildHighlightContent(buildAnnotatedString(author, content), keywordPatterns)
                 }
 
                 val mainPostTitleHighlight: AnnotatedString? = info.mainPost?.run {
-                    buildHighlightContent(
-                        content = buildAnnotatedString(author, title),
-                        patterns = keywords
-                    )
+                    buildHighlightContent(buildAnnotatedString(author, title), keywordPatterns)
                 }
 
                 val mainPostHighlight: AnnotatedString? = info.mainPost?.run {
@@ -282,7 +282,7 @@ class SearchRepository @Inject constructor(
                         title = info.title.takeIf { info.mainPost == null },
                         abstractText = info.content
                     ),
-                    patterns = keywords
+                    patterns = keywordPatterns
                 )
 
                 val video: SearchMedia.Video? = info.media?.getOrNull(0)?.let {
