@@ -50,6 +50,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.isDarkScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
@@ -242,7 +243,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     InfoCard(
                         modifier = Modifier
                             .clickable {
-                                navigator.navigate(Destination.UserProfile(uid = account.uid))
+                                navigator.navigateDebounced(Destination.UserProfile(uid = account.uid))
                             }
                             .padding(horizontal = 16.dp, vertical = 16.dp),
                         userName = account.nickname ?: account.name,
@@ -271,22 +272,22 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     modifier = Modifier.onCase(!isWindowHeightExpanded) {
                         verticalScroll(state = rememberScrollState()) // Scrollable on compact screen
                     },
-                    onThreadStoreClicked = { navigator.navigate(Destination.ThreadStore) }.takeIf { account != null },
+                    onThreadStoreClicked = { navigator.navigateDebounced(Destination.ThreadStore) }.takeIf { account != null },
                     onHistoryClicked = {
-                        navigator.navigate(Destination.History)
+                        navigator.navigateDebounced(Destination.History)
                     },
-                    onThemeClicked = { navigator.navigate(Destination.AppTheme) },
+                    onThemeClicked = { navigator.navigateDebounced(Destination.AppTheme) },
                     onServiceCenterClicked = {
-                        navigator.navigate(
+                        navigator.navigateDebounced(
                             Destination.WebView(
                                 initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
                             )
                         )
                     }.takeIf { account != null },
-                    onSettingsClicked = { navigator.navigate(SettingsDestination.Settings) },
-                    onAboutClicked = { navigator.navigate(SettingsDestination.About) },
+                    onSettingsClicked = { navigator.navigateDebounced(SettingsDestination.Settings) },
+                    onAboutClicked = { navigator.navigateDebounced(SettingsDestination.About) },
                     onNavigateUiSettings = {
-                        navigator.navigate(route = SettingsDestination.UI)
+                        navigator.navigateDebounced(route = SettingsDestination.UI)
                     }
                 )
                 if (isWindowHeightExpanded) {

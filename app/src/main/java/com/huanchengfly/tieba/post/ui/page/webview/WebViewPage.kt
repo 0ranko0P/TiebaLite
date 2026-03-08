@@ -12,14 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarColors
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -42,6 +38,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TbWebChromeClient
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.createTopAppBarColors
 import com.huanchengfly.tieba.post.theme.isTranslucent
@@ -50,6 +47,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingState
+import com.huanchengfly.tieba.post.ui.widgets.compose.MoreMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
@@ -186,14 +184,9 @@ fun WebViewPage(initialUrl: String, customClient: Boolean, navigator: NavControl
 
                         TextMenuItem(text = R.string.title_refresh, onClick = webViewNavigator::reload)
                     },
-                    triggerShape = CircleShape
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.MoreVert,
-                        contentDescription = stringResource(id = R.string.btn_more),
-                        modifier = Modifier.minimumInteractiveComponentSize()
-                    )
-                }
+                    triggerShape = CircleShape,
+                    content = MoreMenuItem
+                )
             }
         }
     ) { paddingValues ->
@@ -220,7 +213,7 @@ fun WebViewPage(initialUrl: String, customClient: Boolean, navigator: NavControl
 
                     TbWebViewClient(context, coroutineScope) { route ->
                         if ((webViewState.webView as TiebaWebView).canNavigate(route)) {
-                            navigator.navigate(route = route)
+                            navigator.navigateDebounced(route = route)
                         }
                     }
                 },

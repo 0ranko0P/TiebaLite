@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
@@ -58,7 +59,7 @@ fun ConcernPage(
     LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
 
     val threadClickListeners = remember(navigator) {
-        createThreadClickListeners(onNavigate = navigator::navigate)
+        createThreadClickListeners(onNavigate = navigator::navigateDebounced)
     }
 
     ConsumeThreadPageResult<Destination.Main>(navigator, viewModel::onThreadResult)

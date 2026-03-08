@@ -31,6 +31,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumRuleDetail
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
@@ -182,7 +183,7 @@ fun ForumThreadList(
                     item(key = "ForumRule") {
                         TopThreadItem(
                             title = rule,
-                            onClick = { navigator.navigate(ForumRuleDetail(forumId)) },
+                            onClick = { navigator.navigateDebounced(ForumRuleDetail(forumId)) },
                             modifier = Modifier.fillMaxWidth(),
                             type = stringResource(id = R.string.desc_forum_rule)
                         )
@@ -216,7 +217,7 @@ fun ForumThreadList(
                                     onClickReply = threadClickListeners.onReplyClicked,
                                     onClickUser = threadClickListeners.onAuthorClicked,
                                     onClickOriginThread = {
-                                        navigator.navigate(
+                                        navigator.navigateDebounced(
                                             Thread(threadId = it.tid.toLong(), forumId = it.fid)
                                         )
                                     },

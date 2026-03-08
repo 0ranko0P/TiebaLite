@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.models.user.PostContent
 import com.huanchengfly.tieba.post.ui.models.user.PostListItem
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
@@ -74,15 +75,16 @@ fun UserPostPage(
         val onPostContentClicked: (PostListItem, PostContent) -> Unit = { post, content ->
             val threadId = post.threadId
             val forumId = post.forumId
-            if (content.isSubPost) {
-                navigator.navigate(SubPosts(threadId, forumId, subPostId = content.postId))
+            val route = if (content.isSubPost) {
+                SubPosts(threadId, forumId, subPostId = content.postId)
             } else {
-                navigator.navigate(Thread(threadId, forumId, postId = content.postId, scrollToReply = true))
+                Thread(threadId, forumId, postId = content.postId, scrollToReply = true)
             }
+            navigator.navigateDebounced(route)
         }
 
         val onOriginThreadClicked: (PostListItem) -> Unit = {
-            navigator.navigate(Thread(threadId = it.threadId))
+            navigator.navigateDebounced(Thread(threadId = it.threadId))
         }
 
         Container(fluid = fluid) {

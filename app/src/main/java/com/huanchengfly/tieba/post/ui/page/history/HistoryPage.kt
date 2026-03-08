@@ -56,6 +56,7 @@ import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.models.database.ThreadHistory
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.repository.UserHistory
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
@@ -100,19 +101,15 @@ fun HistoryPage(
     }
 
     val onHistoryClickedListener: (History) -> Unit = {
-        when(it) {
+        val route = when(it) {
             is ThreadHistory -> {
-                navigator.navigate(
-                    Destination.Thread(threadId = it.id, postId = it.pid, seeLz = it.isSeeLz, from = ThreadFrom.History)
-                )
+                Destination.Thread(threadId = it.id, postId = it.pid, seeLz = it.isSeeLz, from = ThreadFrom.History)
             }
 
-            is ForumHistory -> {
-                navigator.navigate(route = Destination.Forum(forumName = it.name, avatar = it.avatar))
-            }
+            is ForumHistory -> Destination.Forum(forumName = it.name, avatar = it.avatar)
 
             is UserHistory -> {
-                val route = Destination.UserProfile(
+                Destination.UserProfile(
                     uid = it.id,
                     avatar = it.avatar,
                     nickname = it.name,
@@ -120,9 +117,11 @@ fun HistoryPage(
                     transitionKey = it.id.toString(), // Avoid duplicate nickname
                     recordHistory = false
                 )
-                navigator.navigate(route = route)
             }
+
+            else -> throw RuntimeException("Unknow history type: ${ it::class.simpleName }")
         }
+        navigator.navigateDebounced(route = route)
     }
 
     val scrollOrientationConnection = rememberScrollOrientationConnection()

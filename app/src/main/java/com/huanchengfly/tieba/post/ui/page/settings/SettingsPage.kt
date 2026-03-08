@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPrefsScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
 import com.huanchengfly.tieba.post.ui.page.Destination.Login
@@ -40,7 +41,7 @@ private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
             title = stringResource(id = R.string.title_account_manage),
             summary = stringResource(id = R.string.summary_now_account, account.nickname ?: account.name),
             onClick = {
-                navigator.navigate(route = AccountManage)
+                navigator.navigateDebounced(route = AccountManage)
             },
             leadingContent = {
                 Avatar(
@@ -55,7 +56,7 @@ private fun NowAccountItem(modifier: Modifier = Modifier, account: Account?) {
             title = stringResource(id = R.string.title_account_manage),
             summary = stringResource(id = R.string.summary_not_logged_in),
             onClick = {
-                navigator.navigate(route = Login)
+                navigator.navigateDebounced(route = Login)
             },
             leadingIcon = Icons.Rounded.AccountCircle
         )
@@ -82,7 +83,7 @@ fun SettingsPage(navigator: NavController) {
                     title = stringResource(id = R.string.title_block_settings),
                     summary = stringResource(id = R.string.summary_block_settings),
                     onClick = {
-                        navigator.navigate(SettingsDestination.BlockSettings)
+                        navigator.navigateDebounced(SettingsDestination.BlockSettings)
                     },
                     leadingIcon = Icons.Rounded.DoNotDisturbOff
                 )
@@ -91,7 +92,7 @@ fun SettingsPage(navigator: NavController) {
                     title = stringResource(id = R.string.title_settings_custom),
                     summary = stringResource(id = R.string.summary_settings_custom),
                     onClick = {
-                        navigator.navigate(SettingsDestination.UI)
+                        navigator.navigateDebounced(SettingsDestination.UI)
                     },
                     leadingIcon = Icons.Outlined.FormatPaint
                 )
@@ -100,7 +101,7 @@ fun SettingsPage(navigator: NavController) {
                     title = stringResource(id = R.string.title_settings_read_habit),
                     summary = stringResource(id = R.string.summary_settings_habit),
                     onClick = {
-                        navigator.navigate(SettingsDestination.Habit)
+                        navigator.navigateDebounced(SettingsDestination.Habit)
                     },
                     leadingIcon = Icons.Outlined.DashboardCustomize
                 )
@@ -109,7 +110,7 @@ fun SettingsPage(navigator: NavController) {
                     title = stringResource(id = R.string.title_settings_privacy),
                     summary = stringResource(id = R.string.summary_settings_privacy),
                     onClick = {
-                        navigator.navigate(SettingsDestination.Privacy)
+                        navigator.navigateDebounced(SettingsDestination.Privacy)
                     },
                     leadingIcon = Icons.Outlined.Shield
                 )
@@ -118,7 +119,7 @@ fun SettingsPage(navigator: NavController) {
                     title = stringResource(id = R.string.title_oksign),
                     summary = stringResource(id = R.string.summary_settings_oksign),
                     onClick = {
-                        navigator.navigate(SettingsDestination.OKSign)
+                        navigator.navigateDebounced(SettingsDestination.OKSign)
                     },
                     leadingIcon = Icons.Rounded.Checklist,
                     enabled = LocalAccount.current != null
@@ -128,7 +129,7 @@ fun SettingsPage(navigator: NavController) {
                     title = stringResource(id = R.string.title_settings_more),
                     summary = stringResource(id = R.string.summary_settings_more),
                     onClick = {
-                        navigator.navigate(SettingsDestination.More)
+                        navigator.navigateDebounced(SettingsDestination.More)
                     },
                     leadingIcon =  Icons.Rounded.MoreHoriz
                 )

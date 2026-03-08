@@ -45,6 +45,7 @@ import androidx.navigation.Navigator
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
@@ -226,7 +227,7 @@ fun ExplorePage() {
                     ActionItem(
                         icon = Icons.Rounded.Search,
                         contentDescription = R.string.title_search,
-                        onClick = { navigator.navigate(route = Search) }
+                        onClick = { navigator.navigateDebounced(route = Search) }
                     )
                 },
                 scrollBehavior = scrollBehavior,

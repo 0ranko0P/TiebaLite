@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -75,7 +76,7 @@ fun ForumRuleDetailPage(
                             SharedTransitionUserHeader(
                                 user = it,
                                 desc = forumRule.publishTime,
-                                onClick = { navigator.navigate(Destination.UserProfile(user = it)) },
+                                onClick = { navigator.navigateDebounced(Destination.UserProfile(user = it)) },
                             )
                         }
                     }

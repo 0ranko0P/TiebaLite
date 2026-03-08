@@ -234,7 +234,7 @@ class MainActivityV2 : BaseComposeActivity() {
 
         LaunchedEffect(pendingAppLink) {
             pendingAppLink?.let {
-                navController.navigate(route = it)
+                navController.navigateDebounced(route = it)
                 pendingAppLink = null
             }
         }

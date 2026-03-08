@@ -34,6 +34,7 @@ import com.huanchengfly.tieba.post.api.models.TopicInfoBean
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -90,7 +91,7 @@ fun TopicDetailPage(
     ) {
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
         val threadClickListeners = remember(navigator) {
-            createThreadClickListeners(onNavigate = navigator::navigate)
+            createThreadClickListeners(onNavigate = navigator::navigateDebounced)
         }
 
         val hideBlockedContent by viewModel.hideBlockedContent.collectAsStateWithLifecycle()

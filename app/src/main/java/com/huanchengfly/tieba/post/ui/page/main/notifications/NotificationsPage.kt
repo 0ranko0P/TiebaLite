@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -126,7 +127,7 @@ private fun NotificationsToolBar(
                 ActionItem(
                     icon = Icons.Rounded.Search,
                     contentDescription = stringResource(id = R.string.title_search),
-                    onClick = { navigator.navigate(Search) }
+                    onClick = { navigator.navigateDebounced(Search) }
                 )
             },
             scrollBehavior = scrollBehavior,

@@ -24,6 +24,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
@@ -111,13 +112,12 @@ fun ThreadStorePage(
 
             // Initialize click listeners now
             val onUserClicked: (Author, String) -> Unit = { author, extraKey ->
-                author.run {
-                    navigator.navigate(UserProfile(uid = id, avatarUrl, name, transitionKey = extraKey))
-                }
+                val route = author.run { UserProfile(id, avatarUrl, name, transitionKey = extraKey) }
+                navigator.navigateDebounced(route)
             }
 
             val onThreadClicked: (ThreadStore) -> Unit = { thread ->
-                navigator.navigate(
+                navigator.navigateDebounced(
                     route = Thread(
                         threadId = thread.id,
                         postId = thread.markPid,

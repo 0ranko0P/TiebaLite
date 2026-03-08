@@ -75,6 +75,7 @@ import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
@@ -283,7 +284,7 @@ fun SearchPage(
                         keyboardController?.hide()
                         focusManager.clearFocus(force = true)
                         val transitionKey = f.id.toString() // use forum ID as transition animation key
-                        navigator.navigate(Destination.Forum(forumName = f.name, avatar = f.avatar, transitionKey))
+                        navigator.navigateDebounced(Destination.Forum(forumName = f.name, avatar = f.avatar, transitionKey))
                     },
                     onItemClick = onKeywordSubmit
                 )

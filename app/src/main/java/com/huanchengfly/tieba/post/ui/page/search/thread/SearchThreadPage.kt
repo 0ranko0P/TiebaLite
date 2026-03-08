@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean.ForumInfo
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
@@ -59,10 +60,10 @@ fun SearchThreadPage(
         val navigator = LocalNavController.current
 
         val threadClickListener: (SearchThreadInfo) -> Unit = {
-            navigator.navigate(Thread(threadId = it.tid))
+            navigator.navigateDebounced(Thread(threadId = it.tid))
         }
         val forumClickListener: (ForumInfo, String) -> Unit = { forum, transitionKey ->
-            navigator.navigate(Forum(forum.forumName, forum.avatar, transitionKey))
+            navigator.navigateDebounced(Forum(forum.forumName, forum.avatar, transitionKey))
         }
 
         PullToRefreshBox(
@@ -98,7 +99,7 @@ fun SearchThreadPage(
                         onClick = threadClickListener,
                         onValidUserClick = {
                             val transitionKey = item.lazyListKey.toString()
-                            navigator.navigate(UserProfile(user = item.author, transitionKey))
+                            navigator.navigateDebounced(UserProfile(user = item.author, transitionKey))
                         },
                         onForumClick = forumClickListener
                     )

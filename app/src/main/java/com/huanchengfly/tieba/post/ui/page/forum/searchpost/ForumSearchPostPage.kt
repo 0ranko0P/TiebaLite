@@ -51,6 +51,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
@@ -127,17 +128,14 @@ fun ForumSearchPostPage(
     }
 
     val threadClickListener: (SearchThreadInfo) -> Unit = {
-        when {
-            it.postInfoContent != null -> {
-                navigator.navigate(SubPosts(threadId = it.tid, subPostId = it.cid))
-            }
+        val route = when {
+            it.postInfoContent != null -> SubPosts(threadId = it.tid, subPostId = it.cid)
 
-            it.mainPostTitle != null -> {
-                navigator.navigate(Thread(threadId = it.tid, postId = it.pid, scrollToReply = true))
-            }
+            it.mainPostTitle != null -> Thread(threadId = it.tid, postId = it.pid, scrollToReply = true)
 
-            else -> navigator.navigate(Thread(threadId = it.tid))
+            else -> Thread(threadId = it.tid)
         }
+        navigator.navigateDebounced(route)
     }
 
     BlurScaffold(
@@ -243,16 +241,16 @@ fun ForumSearchPostPage(
                                     onClick = threadClickListener,
                                     onValidUserClick = {
                                         val transitionKey = item.lazyListKey.toString()
-                                        navigator.navigate(UserProfile(item.author, transitionKey))
+                                        navigator.navigateDebounced(UserProfile(item.author, transitionKey))
                                     },
                                     onForumClick = null, // Hide forum info
                                     onQuotePostClick = {
-                                        navigator.navigate(
+                                        navigator.navigateDebounced(
                                             Thread(threadId = item.tid, postId = item.pid, scrollToReply = true)
                                         )
                                     },
                                     onMainPostClick = {
-                                        navigator.navigate(Thread(threadId = item.tid))
+                                        navigator.navigateDebounced(Thread(threadId = item.tid))
                                     }
                                 )
                             }

@@ -41,6 +41,7 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
@@ -227,7 +228,7 @@ class VideoContentRender(
                 model  = picUrl,
                 contentDescription = stringResource(id = R.string.desc_video),
                 modifier = picModifier.clickable {
-                    navigator.navigate(Destination.WebView(webUrl))
+                    navigator.navigateDebounced(Destination.WebView(webUrl))
                 },
                 contentScale = ContentScale.Crop
             )
@@ -286,7 +287,7 @@ fun PbContentText(
 
                             TAG_USER -> {
                                 val uid = annotation.item.toLong()
-                                navigator.navigate(Destination.UserProfile(uid))
+                                navigator.navigateDebounced(Destination.UserProfile(uid))
                             }
                         }
                     }

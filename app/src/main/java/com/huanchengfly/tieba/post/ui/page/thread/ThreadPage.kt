@@ -111,6 +111,7 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
@@ -289,9 +290,9 @@ fun ThreadPage(
                 }
             }
 
-            is ThreadUiEvent.ToReplyDestination -> navigator.navigate(it.direction)
+            is ThreadUiEvent.ToReplyDestination -> navigator.navigateDebounced(it.direction)
 
-            is ThreadUiEvent.ToSubPostsDestination -> navigator.navigate(it.direction)
+            is ThreadUiEvent.ToSubPostsDestination -> navigator.navigateDebounced(it.direction)
 
             is ThreadLikeUiEvent -> it.toMessage(context)
 
@@ -413,7 +414,7 @@ fun ThreadPage(
                     title = {
                         state.forum?.let { forum ->
                             ForumTitleChip(forum = forum) {
-                                navigator.navigate(route = Forum(forumName = forum.second))
+                                navigator.navigateDebounced(route = Forum(forumName = forum.second))
                             }
                         }
                     },

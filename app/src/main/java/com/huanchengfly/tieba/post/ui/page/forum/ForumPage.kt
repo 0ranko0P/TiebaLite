@@ -78,6 +78,7 @@ import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
@@ -188,7 +189,7 @@ fun ForumPage(
             is ForumUiEvent.AddThread -> when {
                 !loggedIn -> toastShort(R.string.title_not_logged_in)
 
-                it.forumId != null -> navigator.navigate(
+                it.forumId != null -> navigator.navigateDebounced(
                     route = Destination.Reply(forumId = it.forumId, forumName, threadId = 0L)
                 )
 
@@ -250,7 +251,7 @@ fun ForumPage(
     }
 
     val threadClickListeners = remember(navigator) {
-        createThreadClickListeners(onNavigate = navigator::navigate)
+        createThreadClickListeners(onNavigate = navigator::navigateDebounced)
     }
     val forumThreadPages = remember(threadClickListeners) {
         ForumType.entries.map { forumType ->
@@ -285,7 +286,7 @@ fun ForumPage(
                     scrollBehavior.isOverlapping) && uiState.error == null
         },
         topBar = {
-            val onTitleClicked: () -> Unit = { navigator.navigate(ForumDetail(forumName)) }
+            val onTitleClicked: () -> Unit = { navigator.navigateDebounced(ForumDetail(forumName)) }
 
             CollapsingAvatarTopAppBar(
                 avatar = {
@@ -337,7 +338,7 @@ fun ForumPage(
                     ActionItem(
                         icon = Icons.Rounded.Search,
                         contentDescription = R.string.btn_search_in_forum,
-                        onClick = { navigator.navigate(ForumSearchPost(forumName, forumData.id)) }
+                        onClick = { navigator.navigateDebounced(ForumSearchPost(forumName, forumData.id)) }
                     )
 
                     ClickMenu(

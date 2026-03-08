@@ -31,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.models.search.SearchUser
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
@@ -79,9 +80,8 @@ fun SearchUserPage(
 
             val onUserClickedListener: (SearchUser) -> Unit = { user ->
                 val transitionKey = user.id.toString()
-                user.run {
-                    navigator.navigate(UserProfile(id, avatar, nickname, username, transitionKey))
-                }
+                val route = user.run { UserProfile(id, avatar, nickname, username, transitionKey) }
+                navigator.navigateDebounced(route)
             }
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()

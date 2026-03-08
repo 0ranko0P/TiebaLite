@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.models.search.SearchForum
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
@@ -70,7 +71,7 @@ fun SearchForumPage(
             val headerContentType = Integer.MAX_VALUE
 
             val onForumClickedListener: (SearchForum) -> Unit = {
-                navigator.navigate(route = Forum(forumName = it.name, avatar = it.avatar))
+                navigator.navigateDebounced(route = Forum(forumName = it.name, avatar = it.avatar))
             }
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()

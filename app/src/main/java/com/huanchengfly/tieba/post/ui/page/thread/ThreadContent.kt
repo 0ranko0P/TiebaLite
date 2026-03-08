@@ -50,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant.testColumn
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
@@ -142,7 +143,7 @@ fun StateScreenScope.ThreadContent(
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                         ) {
                             val threadId = info.item.tid.toLong()
-                            navigator.navigate(route = Thread(threadId, forumId = info.get { fid }))
+                            navigator.navigateDebounced(route = Thread(threadId, forumId = info.get { fid }))
                         }
                     }
 
@@ -262,7 +263,9 @@ private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: L
     val navigator = LocalNavController.current
     val loggedIn = localUid != null
     val onUserClickedListener: () -> Unit = {
-        navigator.navigate(UserProfile(user = post.author, transitionKey = post.id.toString()))
+        navigator.navigateDebounced(
+            route = UserProfile(user = post.author, transitionKey = post.id.toString())
+        )
     }
 
     if (loggedIn) {

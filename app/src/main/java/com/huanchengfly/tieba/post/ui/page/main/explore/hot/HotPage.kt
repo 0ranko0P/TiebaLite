@@ -44,6 +44,7 @@ import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -94,7 +95,7 @@ fun HotPage(
     LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
 
     val threadClickListeners = remember(navigator) {
-        createThreadClickListeners(onNavigate = navigator::navigate)
+        createThreadClickListeners(onNavigate = navigator::navigateDebounced)
     }
 
     ConsumeThreadPageResult<Destination.Main>(navigator, viewModel::onThreadResult)
@@ -141,7 +142,7 @@ fun HotPage(
                                     modifier = Modifier
                                         .padding(vertical = 8.dp)
                                         .clickable {
-                                            navigator.navigate(Destination.HotTopicDetail(topicId, topicName))
+                                            navigator.navigateDebounced(Destination.HotTopicDetail(topicId, topicName))
                                         }
                                 ) {
                                     Text(

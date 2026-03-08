@@ -29,6 +29,7 @@ import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.Error
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListViewModel.Companion.NotificationsListVmFactory
@@ -151,7 +152,7 @@ private fun NotificationsListContent(
                                 } else {
                                     Destination.Thread(threadId = info.threadId, postId = info.postId)
                                 }
-                                navigator.navigate(route)
+                                navigator.navigateDebounced(route)
                             }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -160,7 +161,7 @@ private fun NotificationsListContent(
                             name = info.replyUser.nameShow,
                             avatar = info.replyUser.avatarUrl,
                             onClick = {
-                                navigator.navigate(Destination.UserProfile(info.replyUser.id))
+                                navigator.navigateDebounced(Destination.UserProfile(info.replyUser.id))
                             },
                             desc = remember { DateTimeUtils.getRelativeTimeString(context, info.time) }
                         )
@@ -192,7 +193,7 @@ private fun NotificationsListContent(
                                     } else {
                                         Destination.Thread(info.threadId)
                                     }
-                                    navigator.navigate(route)
+                                    navigator.navigateDebounced(route)
                                 }
                                 .background(MaterialTheme.colorScheme.secondaryContainer)
                                 .padding(8.dp),

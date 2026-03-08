@@ -78,6 +78,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.models.database.History
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
@@ -435,7 +436,7 @@ fun HomePage(
                     modifier = Modifier
                         .padding(bottom = 4.dp)
                         .localSharedBounds(key = SearchToolbarSharedBoundsKey),
-                    onClick = { navigator.navigate(Destination.Search) }
+                    onClick = { navigator.navigateDebounced(route = Destination.Search) }
                 )
             }
         },
@@ -463,10 +464,10 @@ fun HomePage(
 
         // Initialize click listeners now
         val onForumClickedListener: (LikedForum) -> Unit = {
-            navigator.navigate(route = Destination.Forum(forumName = it.name, avatar = it.avatar))
+            navigator.navigateDebounced(route = Destination.Forum(forumName = it.name, avatar = it.avatar))
         }
         val onHistoryClickedListener: (History) -> Unit = {
-            navigator.navigate(route = Destination.Forum(forumName = it.name))
+            navigator.navigateDebounced(route = Destination.Forum(forumName = it.name))
         }
 
         val onUnfollow: (LikedForum) -> Unit = {
@@ -489,7 +490,7 @@ fun HomePage(
             errorScreen = {
                 if (uiState.error is TiebaNotLoggedInException) {
                     GuestScreen(onExploreClicked = onOpenExplore) {
-                        navigator.navigate(Destination.Login)
+                        navigator.navigateDebounced(Destination.Login)
                     }
                 } else  {
                     ErrorScreen(error = uiState.error)

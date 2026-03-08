@@ -35,6 +35,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.topicList.NewTopicList
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.Grey300
 import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
@@ -229,7 +230,9 @@ fun HotTopicListPage(
         uiState = uiState,
         onRefresh = viewModel::onRefresh,
         onTopicClicked = { item ->
-            navigator.navigate(Destination.HotTopicDetail(item.topic_id, item.topic_name))
+            navigator.navigateDebounced(
+                route = Destination.HotTopicDetail(item.topic_id, item.topic_name)
+            )
         },
         navigateUp = navigator::navigateUp,
     )

@@ -39,6 +39,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
@@ -96,7 +97,7 @@ fun PersonalizedPage(
     }
 
     val threadClickListeners = remember(navigator) {
-        createThreadClickListeners(onNavigate = navigator::navigate)
+        createThreadClickListeners(onNavigate = navigator::navigateDebounced)
     }
 
     ConsumeThreadPageResult<Destination.Main>(navigator, viewModel::onThreadResult)

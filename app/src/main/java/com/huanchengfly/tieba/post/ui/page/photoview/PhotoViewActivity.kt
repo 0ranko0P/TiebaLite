@@ -31,7 +31,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.components.viewer.SimpleImageLoader
-import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.goToActivityDebounced
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
 import com.huanchengfly.tieba.post.toastShort
@@ -217,14 +217,14 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         const val EXTRA_LOAD_WITH_TB_GLIDE_URL = "com.huanchengfly.tieba.post.USE_TB_GLIDE_URL"
 
         fun launch(context: Context, data: PhotoViewData) {
-            context.goToActivity<PhotoViewActivity> {
+            context.goToActivityDebounced<PhotoViewActivity> {
                 putExtra(EXTRA_PHOTO_VIEW_DATA, data)
             }
         }
 
         fun launchSinglePhoto(context: Context, url: String, useTbGlideUrl: Boolean = true) {
             if (url.isNotEmpty() && url.isNotBlank()) {
-                context.goToActivity<PhotoViewActivity> {
+                context.goToActivityDebounced<PhotoViewActivity> {
                     val picItem = PicItem(picId = ImageUtil.getPicId(url), picIndex = 1, url)
                     putExtra(
                         EXTRA_PHOTO_VIEW_DATA,

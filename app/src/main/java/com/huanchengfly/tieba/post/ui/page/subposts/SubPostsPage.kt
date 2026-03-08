@@ -55,6 +55,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
@@ -219,7 +220,7 @@ private fun SubPostsContent(
 
         // Initialize nullable click listeners:
         val onReplySubPostClickedListener: ((SubPostItemData) -> Unit)? = { item: SubPostItemData ->
-            navigator.navigate(
+            navigator.navigateDebounced(
                 Reply(
                     forumId = forumId,
                     forumName = forumName.orEmpty(),
@@ -234,7 +235,7 @@ private fun SubPostsContent(
         }.takeIf { canReply && forumId > 0 }
 
         val onReplyPostClickedListener: ((PostData) -> Unit)? =  { it: PostData ->
-            navigator.navigate(
+            navigator.navigateDebounced(
                 Reply(
                     forumId = forumId,
                     forumName = forumName.orEmpty(),
@@ -248,7 +249,7 @@ private fun SubPostsContent(
         }.takeIf { canReply && forumId > 0 }
 
         val onOpenThreadClickedListener: (() -> Unit)? = {
-            navigator.navigate(route = Thread(threadId, forumId, postId = postId))
+            navigator.navigateDebounced(route = Thread(threadId, forumId, postId = postId))
         }
 
         // non-nullable, initialize here for convenience
@@ -323,7 +324,9 @@ private fun SubPostsContent(
                         Column {
                             PostCard(
                                 post = postItem,
-                                onUserClick = { navigator.navigate(UserProfile(postItem.author)) },
+                                onUserClick = {
+                                    navigator.navigateDebounced(UserProfile(postItem.author))
+                                },
                                 onReplyClick = onReplyPostClickedListener,
                                 onMenuCopyClick = onCopyClickedListener,
                                 onMenuDeleteClick = viewModel::onDeletePost.takeIf { postItem.author.id == myUid } // Check is my Post
@@ -350,7 +353,7 @@ private fun SubPostsContent(
                     SubPostItem(
                         item = item,
                         onUserClick = {
-                            navigator.navigate(
+                            navigator.navigateDebounced(
                                 route = UserProfile(user = it, transitionKey = item.id.toString())
                             )
                         },

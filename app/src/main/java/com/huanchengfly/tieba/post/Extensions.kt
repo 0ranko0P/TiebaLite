@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Build
+import android.os.SystemClock
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.ColorRes
@@ -18,6 +19,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.fastIsFinite
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
+import androidx.navigation.NavOptions
+import androidx.navigation.Navigator
 import com.google.gson.reflect.TypeToken
 import com.huanchengfly.tieba.post.utils.GsonUtil
 import com.huanchengfly.tieba.post.utils.MD5Util
@@ -25,6 +29,10 @@ import java.io.File
 import kotlin.math.roundToInt
 
 val PaddingNone = PaddingValues(Dp.Hairline)
+
+private const val NAVIGATION_MIN_DELAY_MS = 500
+
+private var lastClickTime = -1L
 
 fun PaddingValues.copy(
     direction: LayoutDirection,
@@ -111,6 +119,26 @@ inline fun <reified T : Activity> Context.goToActivity() {
 
 inline fun <reified T : Activity> Context.goToActivity(pre: Intent.() -> Unit) {
     startActivity(Intent(this, T::class.java).apply(pre))
+}
+
+internal inline fun <reified T : Activity> Context.goToActivityDebounced(pre: Intent.() -> Unit = {}) {
+    val currentTime = SystemClock.elapsedRealtime()
+    if (currentTime - lastClickTime > NAVIGATION_MIN_DELAY_MS) {
+        lastClickTime = currentTime
+        startActivity(Intent(this, T::class.java).apply(pre))
+    }
+}
+
+internal fun <T : Any> NavController.navigateDebounced(
+    route: T,
+    navOptions: NavOptions? = null,
+    navigatorExtras: Navigator.Extras? = null,
+) {
+    val currentTime = SystemClock.elapsedRealtime()
+    if (currentTime - lastClickTime > NAVIGATION_MIN_DELAY_MS) {
+        lastClickTime = currentTime
+        navigate(route, navOptions, navigatorExtras)
+    }
 }
 
 fun Context.toastShort(text: CharSequence) {
