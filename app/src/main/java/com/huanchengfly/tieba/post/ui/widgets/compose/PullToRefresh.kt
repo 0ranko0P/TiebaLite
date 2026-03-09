@@ -6,9 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -26,32 +24,14 @@ import com.huanchengfly.tieba.post.PaddingNone
  * 0Ranko0p changes:
  *   1. Add ability to enable/disable pullToRefresh
  *   2. Apply content paddings to indicator
- *   3. Change default indicator to custom [TopPullToRefreshIndicator]
+ *   3. Use M3 Expressive LoadingIndicator by default
  */
-
-/**
- * Indicator for [PullToRefreshBox] with primary color background.
- * */
-@Composable
-fun TopPullToRefreshIndicator(
-    modifier: Modifier = Modifier,
-    state: PullToRefreshState,
-    isRefreshing: Boolean
-) {
-    Indicator(
-        modifier = modifier,
-        state = state,
-        isRefreshing = isRefreshing,
-        containerColor = MaterialTheme.colorScheme.primary,
-        color = MaterialTheme.colorScheme.onPrimary
-    )
-}
 
 /**
  * [PullToRefreshBox] is a container that expects a scrollable layout as content and adds gesture
  * support for manually refreshing when the user swipes downward at the beginning of the content. By
- * default, it uses [PullToRefreshDefaults.Indicator] as the refresh indicator, but you may also
- * choose to set your own indicator or use [TopPullToRefreshIndicator].
+ * default, it uses [PullToRefreshDefaults.LoadingIndicator] as the refresh indicator, but you may also
+ * choose to set your own indicator.
  *
  * @param isRefreshing whether a refresh is occurring
  * @param onRefresh callback invoked when the user gesture crosses the threshold, thereby requesting
@@ -74,9 +54,10 @@ fun PullToRefreshBox(
     contentAlignment: Alignment = Alignment.TopCenter,
     contentPadding: PaddingValues = PaddingNone,
     indicator: @Composable BoxScope.() -> Unit = {
-        TopPullToRefreshIndicator(
-            isRefreshing = isRefreshing,
+        PullToRefreshDefaults.LoadingIndicator(
             state = state,
+            isRefreshing = isRefreshing,
+            elevation = PullToRefreshDefaults.Elevation,
         )
     },
     content: @Composable BoxScope.() -> Unit,
