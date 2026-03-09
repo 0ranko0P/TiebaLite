@@ -19,18 +19,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
+import androidx.compose.material3.animateFloatingActionButton
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.Stable
@@ -232,6 +240,32 @@ fun OutlinedIconTextButton(
         Text(text = text, fontSize = 13.sp) // Button default: MaterialTheme.typography.labelLarge
     }
 
+@Composable
+fun DefaultBackToTopFAB(
+    modifier: Modifier = Modifier,
+    visible: Boolean,
+    onClick: () -> Unit,
+) {
+    TooltipBox(
+        positionProvider = rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
+        tooltip = {
+            PlainTooltip { Text(text = stringResource(R.string.btn_back_to_top)) }
+        },
+        state = rememberTooltipState(),
+        modifier = modifier,
+        hasAction = true,
+    ) {
+        FloatingActionButton(
+            onClick = onClick,
+            modifier = Modifier.animateFloatingActionButton(visible, alignment = Alignment.Center),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.VerticalAlignTop,
+                contentDescription = stringResource(R.string.btn_back_to_top)
+            )
+        }
+    }
+}
 
 @ExperimentalMaterial3Api
 @NonRestartableComposable

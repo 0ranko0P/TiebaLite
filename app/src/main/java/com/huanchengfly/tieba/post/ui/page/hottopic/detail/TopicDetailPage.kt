@@ -16,6 +16,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,11 +44,13 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.ThreadBlockedTip
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
+import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
@@ -85,11 +88,13 @@ fun TopicDetailPage(
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = uiState.isEmpty,
-        isLoading = uiState.isRefreshing,
+        isLoading = uiState.isRefreshing && uiState.isEmpty,
         error = uiState.error,
         onReload = viewModel::onRefresh
     ) {
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+        val scrollOrientationConnection = rememberScrollOrientationConnection()
+
         val threadClickListeners = remember(navigator) {
             createThreadClickListeners(onNavigate = navigator::navigateDebounced)
         }
@@ -106,7 +111,18 @@ fun TopicDetailPage(
                     onBack = navigator::navigateUp,
                     scrollBehavior = scrollBehavior
                 )
-            }
+            },
+            floatingActionButton = {
+                val fabVisible by remember {
+                    derivedStateOf { lazyListState.canScrollBackward && scrollOrientationConnection.isScrollingForward }
+                }
+                DefaultBackToTopFAB(visible = fabVisible) {
+                    coroutineScope.launch {
+                        lazyListState.animateScrollToItem(0)
+                        scrollBehavior.state.contentOffset = 0f
+                    }
+                }
+            },
         ) { contentPadding ->
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,
@@ -114,7 +130,9 @@ fun TopicDetailPage(
                 contentPadding = contentPadding,
             ) {
                 Container (
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                    modifier = Modifier
+                        .nestedScroll(connection = scrollOrientationConnection)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
                 ) {
                     ProvideNavigator(navigator) {
                         SwipeUpLazyLoadColumn(

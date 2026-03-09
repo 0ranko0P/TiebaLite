@@ -36,7 +36,10 @@ class HotTopicListViewModel @Inject constructor(
     override fun createInitialState(): HotTopicListUiState = HotTopicListUiState()
 
     private fun refreshInternal(): Unit = launchInVM {
-        _uiState.update { HotTopicListUiState(isRefreshing = true) }
+        _uiState.update {
+            // Allow user browse existing contents
+            if (it.topicList.isEmpty()) createInitialState() else it.copy(isRefreshing = true, error = null)
+        }
         val data = hotTopicRepo.loadTopicList()
         _uiState.update { it.copy(isRefreshing = false, topicList = data) }
     }

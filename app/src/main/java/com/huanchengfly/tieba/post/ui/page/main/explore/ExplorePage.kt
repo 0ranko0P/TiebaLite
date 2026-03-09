@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
@@ -10,10 +9,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.VerticalAlignTop
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
@@ -36,7 +31,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
@@ -65,8 +59,7 @@ import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
@@ -246,22 +239,10 @@ fun ExplorePage() {
                     scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling && !fabHideStates[pagerState.currentPage]
                 }
             }
-
-            AnimatedVisibility(
-                visible = visible,
-                enter = DefaultFabEnterTransition,
-                exit = DefaultFabExitTransition
-            ) {
-                FloatingActionButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            listStates[pagerState.currentPage].scrollToItem(0)
-                            scrollBehavior.state.contentOffset = 0f
-                        }
-                    },
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = Dp.Hairline)
-                ) {
-                    Icon(Icons.Rounded.VerticalAlignTop, stringResource(R.string.btn_back_to_top))
+            DefaultBackToTopFAB(visible = visible) {
+                coroutineScope.launch {
+                    listStates[pagerState.currentPage].scrollToItem(0)
+                    scrollBehavior.state.contentOffset = 0f
                 }
             }
         }

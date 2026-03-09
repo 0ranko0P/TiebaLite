@@ -124,6 +124,7 @@ import com.huanchengfly.tieba.post.theme.colorscheme.BlueColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.GreenColorScheme
 import com.huanchengfly.tieba.post.theme.isDarkScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
+import com.huanchengfly.tieba.post.ui.common.FadedVisibility
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
@@ -141,8 +142,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ChipText
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
@@ -287,18 +286,13 @@ fun AppThemePage(
                         ThemePage.Custom -> viewModel.isCustomThemeChanged.collectAsStateWithLifecycle()
                     }
 
-                    AnimatedVisibility(
-                        visible = themeChanged,
-                        enter = DefaultFabEnterTransition,
-                        exit = DefaultFabExitTransition
-                    ) {
+                    FadedVisibility(visible = themeChanged) {
                         ActionItem(
                             icon = Icons.Rounded.Save,
                             contentDescription = R.string.button_save_profile,
                             onClick = onSaveThemeClicked
                         )
                     }
-
                     BackHandler(enabled = themeChanged, onBack = saveThemeDialogState::show)
                 }
             )

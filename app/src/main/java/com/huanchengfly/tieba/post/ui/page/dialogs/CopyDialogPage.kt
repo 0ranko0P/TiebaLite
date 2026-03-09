@@ -31,6 +31,8 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -123,6 +125,7 @@ fun CopyTextDialogPage(
 
                 val shareContentDescription = stringResource(R.string.title_share)
                 PlainTooltipBox(
+                    positionProvider = rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
                     contentDescription = shareContentDescription,
                 ) {
                     FloatingActionButton(

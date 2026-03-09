@@ -8,16 +8,13 @@ import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.repository.HotTopicRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
@@ -62,7 +59,10 @@ class TopicDetailViewModel @Inject constructor(
     override fun createInitialState(): TopicDetailUiState = TopicDetailUiState()
 
     private fun refreshInternal() {
-        _uiState.set { createInitialState() }
+        _uiState.set {
+            // Allow user browse existing contents
+            if (isEmpty) TopicDetailUiState() else TopicDetailUiState(hasMore = false, topicInfo = topicInfo, threads = threads)
+        }
         launchInVM {
             val data = hotTopicRepo.loadTopicDetail(topicId, topicName, lastId = null)
             _uiState.set {
@@ -83,8 +83,9 @@ class TopicDetailViewModel @Inject constructor(
 
     fun onLoadMore() {
         val oldState = currentState
-        if (!oldState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
+        if (oldState.isLoadingMore || oldState.isRefreshing) return
 
+        _uiState.set { copy(isLoadingMore = true) }
         launchInVM {
             val page = oldState.currentPage + 1
             val lastId = oldState.threads.last().feedId

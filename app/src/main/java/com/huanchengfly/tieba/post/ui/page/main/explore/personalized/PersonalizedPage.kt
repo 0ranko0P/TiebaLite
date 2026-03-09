@@ -108,7 +108,7 @@ fun PersonalizedPage(
     )
     val isEmpty by viewModel.uiState.collectPartialAsState(
         prop1 = PersonalizedUiState::isEmpty,
-        initial = false
+        initial = true
     )
     val error by viewModel.uiState.collectPartialAsState(
         prop1 = PersonalizedUiState::error,
@@ -120,7 +120,7 @@ fun PersonalizedPage(
 
     StateScreen(
         isEmpty = isEmpty,
-        isLoading = isRefreshing,
+        isLoading = isRefreshing && isEmpty, // Only initial load, allow browse existing content on refresh
         error = error,
         onReload = viewModel::onRefresh,
         screenPadding = contentPadding,

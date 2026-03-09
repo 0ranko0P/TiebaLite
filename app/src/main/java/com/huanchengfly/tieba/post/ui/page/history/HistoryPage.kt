@@ -17,9 +17,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.rounded.VerticalAlignTop
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.ProvideTextStyle
@@ -27,7 +24,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
@@ -70,6 +66,7 @@ import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
@@ -211,17 +208,11 @@ fun HistoryPage(
                     scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling && listStates[pagerState.currentPage].canScrollBackward
                 }
             }
-
-            FloatingActionButton(
-                onClick = {
-                    coroutineScope.launch {
-                        listStates[pagerState.currentPage].scrollToItem(0)
-                        scrollBehavior.state.contentOffset = 0f
-                    }
-                },
-                modifier = Modifier.animateFloatingActionButton(visible, alignment = Alignment.Center),
-            ) {
-                Icon(Icons.Rounded.VerticalAlignTop, stringResource(R.string.btn_back_to_top))
+            DefaultBackToTopFAB(visible = visible) {
+                coroutineScope.launch {
+                    listStates[pagerState.currentPage].scrollToItem(0)
+                    scrollBehavior.state.contentOffset = 0f
+                }
             }
         }
     ) { contentPadding ->
@@ -334,7 +325,7 @@ private fun ThreadItem(modifier: Modifier = Modifier, item: ThreadHistory) {
 
                 if (item.forum != null) {
                     Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        color = MaterialTheme.colorScheme.secondary,
                         shape = MaterialTheme.shapes.extraSmall
                     ) {
                         Text(

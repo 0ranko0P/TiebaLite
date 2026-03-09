@@ -7,7 +7,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.activity.viewModels
 import androidx.annotation.ColorInt
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,13 +62,12 @@ import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.FadedVisibility
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabEnterTransition
-import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultFabExitTransition
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.OutlineCounterTextField
@@ -206,11 +204,7 @@ private fun EditProfileScaffold(
                            !uiState.isSubmitting && !editProfile?.nickName.isNullOrEmpty() && editProfile != uiState.edit
                         }
                     }
-                    AnimatedVisibility(
-                        visible = allowSubmit,
-                        enter = DefaultFabEnterTransition,
-                        exit = DefaultFabExitTransition
-                    ) {
+                    FadedVisibility(visible = allowSubmit) {
                         ActionItem(
                             icon = Icons.Rounded.Save,
                             contentDescription = R.string.button_save_profile,

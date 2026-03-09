@@ -18,6 +18,8 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -53,6 +55,8 @@ class ConcernViewModel @Inject constructor(
         }
     }
 
+    private var loadMoreJob: Job? = null
+
     override fun createInitialState(): ConcernUiState = ConcernUiState(isRefreshing = true)
 
     init {
@@ -61,10 +65,12 @@ class ConcernViewModel @Inject constructor(
 
     private fun refreshInternal(cached: Boolean) = launchInVM(errorHandler) {
         var lastRequestUnix: Long? = null
-        _uiState.set {
-            lastRequestUnix = this.lastRequestUnix.takeUnless { it == 0L }
-            ConcernUiState(isRefreshing = true)
+        _uiState.update {
+            lastRequestUnix = it.lastRequestUnix.takeUnless { time -> time == 0L }
+            // Allow user browse existing content and disable loadMore
+            it.copy(isRefreshing = true, hasMore = false, error = null)
         }
+        loadMoreJob?.cancel()
         val rec = exploreRepo.refreshUserLike(lastRequestUnix, cached)
         val data = rec.threads.distinctById()
         _uiState.set {
@@ -78,11 +84,14 @@ class ConcernViewModel @Inject constructor(
 
     fun onLoadMore() {
         val oldState = currentState
-        if (!oldState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
+        if (oldState.isLoadingMore || oldState.isRefreshing) return
 
-        launchInVM {
+        _uiState.set { copy(isLoadingMore = true) }
+        loadMoreJob?.cancel()
+        loadMoreJob = launchJobInVM {
             val rec = exploreRepo.loadUserLike(oldState.nextPageTag, oldState.lastRequestUnix)
             val data = (oldState.data + rec.threads).distinctById()
+            ensureActive()
             _uiState.update {
                 it.copy(isLoadingMore = false, hasMore = rec.hasMore, lastRequestUnix = rec.requestUnix, nextPageTag = rec.pageTag, data = data)
             }
@@ -98,7 +107,8 @@ class ConcernViewModel @Inject constructor(
             onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Concern) },
             onEvent = ::emitGlobalEventSuspend
         ) { threadId, liked, loading ->
-            _uiState.update { it.copy(data = it.data.updateLikeStatus(threadId, liked, loading)) }
+            val newData = currentState.data.updateLikeStatus(threadId, liked, loading)
+            _uiState.update { it.copy(data = newData) }
         }
     }
 

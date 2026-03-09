@@ -23,6 +23,8 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -82,6 +84,8 @@ class PersonalizedViewModel @Inject constructor(
         .map { it.hideBlocked }
         .stateInViewModel(initialValue = false)
 
+    private var loadMoreJob: Job? = null
+
     init {
         refreshInternal(cached = true)
     }
@@ -90,12 +94,14 @@ class PersonalizedViewModel @Inject constructor(
 
     private fun refreshInternal(cached: Boolean): Unit = launchInVM {
         var showTip = false
-        _uiState.set {
-            showTip = !this.isEmpty
-            PersonalizedUiState(isRefreshing = true)
+        loadMoreJob?.cancel()
+        _uiState.update {
+            showTip = !it.isEmpty
+            // Allow user browse existing content and disable loadMore
+            it.copy(isRefreshing = true, isLoadingMore = true, error = null)
         }
         val data = exploreRepo.loadPersonalized(1, cached).distinctById(blockedIds)
-        _uiState.set { copy(isRefreshing = false, data = data) }
+        _uiState.set { PersonalizedUiState(isRefreshing = false, data = data) }
         if (showTip) {
             sendUiEvent(PersonalizedUiEvent.RefreshSuccess(data.size))
         }
@@ -107,12 +113,15 @@ class PersonalizedViewModel @Inject constructor(
 
     fun onLoadMore() {
         val oldState = currentState
-        if (!oldState.isLoadingMore) _uiState.set { copy(isLoadingMore = true) } else return
+        if (oldState.isLoadingMore || oldState.isRefreshing) return
 
-        launchInVM {
+        _uiState.update { it.copy(isLoadingMore = true) }
+        loadMoreJob?.cancel()
+        loadMoreJob = launchJobInVM {
             val page = oldState.currentPage + 1
             val data = exploreRepo.loadPersonalized(page, cached = true)
             val newData = (oldState.data + data).distinctById(blockedIds)
+            ensureActive()
             _uiState.update { it.copy(isLoadingMore = false, currentPage = page, data = newData) }
         }
     }
@@ -123,7 +132,8 @@ class PersonalizedViewModel @Inject constructor(
             onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Personalized) },
             onEvent = ::emitGlobalEventSuspend
         ) { threadId, liked, loading ->
-            _uiState.update { it.copy(data = it.data.updateLikeStatus(threadId, liked, loading)) }
+            val newData = currentState.data.updateLikeStatus(threadId, liked, loading)
+            _uiState.update { it.copy(data = newData) }
         }
     }
 

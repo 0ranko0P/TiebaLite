@@ -14,11 +14,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,16 +47,19 @@ import com.huanchengfly.tieba.post.theme.YellowA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.TopicTag
+import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import kotlinx.coroutines.launch
 
 @Composable
 private fun TopicImage(
@@ -141,13 +148,17 @@ private fun HotTopicList(
     navigateUp: () -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val coroutineScope = rememberCoroutineScope()
 
     StateScreen(
         isEmpty = uiState.topicList.isEmpty(),
-        isLoading = uiState.isRefreshing,
+        isLoading = uiState.isRefreshing && uiState.topicList.isEmpty(),
         error = uiState.error,
         onReload = onRefresh
     ) {
+        val lazyListState = rememberLazyListState()
+        val scrollOrientationConnection = rememberScrollOrientationConnection()
+
         BlurScaffold(
             topHazeBlock = {
                 blurEnabled = scrollBehavior.isOverlapping
@@ -161,19 +172,31 @@ private fun HotTopicList(
                     scrollBehavior = scrollBehavior
                 )
             },
-            contentColor = MaterialTheme.colorScheme.onSurface
+            floatingActionButton = {
+                val fabVisible by remember {
+                    derivedStateOf { lazyListState.canScrollBackward && scrollOrientationConnection.isScrollingForward }
+                }
+                DefaultBackToTopFAB(visible = fabVisible) {
+                    coroutineScope.launch {
+                        lazyListState.animateScrollToItem(0)
+                        scrollBehavior.state.contentOffset = 0f
+                    }
+                }
+            },
         ) { contentPaddings ->
             Container {
                 PullToRefreshBox(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
-                    isRefreshing = false,
+                    isRefreshing = uiState.isRefreshing,
                     onRefresh = onRefresh,
                     contentPadding = contentPaddings,
                 ) {
                     MyLazyColumn(
-                        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                        modifier = Modifier
+                            .nestedScroll(connection = scrollOrientationConnection)
+                            .nestedScroll(scrollBehavior.nestedScrollConnection),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         contentPadding = contentPaddings,
                     ) {

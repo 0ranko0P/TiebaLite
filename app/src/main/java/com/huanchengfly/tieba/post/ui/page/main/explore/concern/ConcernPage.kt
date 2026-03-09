@@ -42,21 +42,20 @@ fun ConcernPage(
 ) {
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = ConcernUiState::isRefreshing,
-        initial = false
+        initial = true
     )
     val isEmpty by viewModel.uiState.collectPartialAsState(
         prop1 = ConcernUiState::isEmpty,
-        initial = false
+        initial = true
     )
     val error by viewModel.uiState.collectPartialAsState(
         prop1 = ConcernUiState::error,
         initial = null
     )
-    val isError = error != null
 
     viewModel.uiEvent.collectCommonUiEventWithLifecycle()
 
-    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
+    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError = error != null)
 
     val threadClickListeners = remember(navigator) {
         createThreadClickListeners(onNavigate = navigator::navigateDebounced)
@@ -66,7 +65,7 @@ fun ConcernPage(
 
     StateScreen(
         isEmpty = isEmpty,
-        isLoading = isRefreshing,
+        isLoading = isRefreshing && isEmpty,
         error = error,
         onReload = viewModel::onRefresh,
         screenPadding = contentPadding,
