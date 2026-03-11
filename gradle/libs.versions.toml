@@ -9,7 +9,7 @@ wire = "5.2.1"
 
 compileSdk = "36"
 targetSdk = "35"
-minSdk = "24"
+minSdk = "23"
 
 androidx-appcompat = "1.7.1"
 androidx-activity-compose = "1.10.1"
