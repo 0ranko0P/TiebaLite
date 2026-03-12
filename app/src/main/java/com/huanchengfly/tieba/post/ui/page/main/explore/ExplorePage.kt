@@ -1,6 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -19,13 +19,14 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -40,7 +41,9 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -48,7 +51,7 @@ import com.huanchengfly.tieba.post.ui.page.Destination.HotTopicList
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.consumeResult
-import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
+import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
@@ -56,17 +59,23 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadResult
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadResultKey
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
+import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
-import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
-import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
+import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
-import com.huanchengfly.tieba.post.utils.LocalAccount
+import dev.chrisbanes.haze.HazeEffectScope
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -159,13 +168,13 @@ private fun ExplorePageTab(
     }
 }
 
+// Note: Obtain Root AnimatedVisibilityScope by LocalAnimatedVisibilityScope.current
 @Composable
-fun ExplorePage() {
+fun AnimatedContentScope.ExplorePage(loggedIn: Boolean) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val account = LocalAccount.current
     val navigator = LocalNavController.current
-    val loggedIn = account != null
+    val hazeState: HazeState? = LocalHazeState.current
 
     val pages = remember(loggedIn) {
         listOfNotNull(
@@ -187,35 +196,19 @@ fun ExplorePage() {
     onGlobalEvent<ThreadLikeUiEvent>(coroutineScope) {
         context.toastShort(it.toMessage(context))
     }
-    val explorePages = remember(pages.size, account?.uid) {
-        pages.mapIndexed { index, page: ExplorePageItem ->
-            movableContentOf<Modifier, PaddingValues, (Boolean) -> Unit> { modifier, contentPadding, onHideFab ->
-                val listState = listStates[index]
-                when (page) {
-                    ExplorePageItem.Concern -> {
-                        ConcernPage(modifier, contentPadding, listState, navigator, onHideFab)
-                    }
 
-                    ExplorePageItem.Personalized -> {
-                        PersonalizedPage(modifier, contentPadding, listState, navigator, onHideFab)
-                    }
-
-                    ExplorePageItem.Hot -> {
-                        HotPage(modifier, contentPadding, listState, navigator, onHideFab)
-                    }
-                }
-            }
-        }
-    }
-
-    BlurScaffold(
-        topHazeBlock = {
-            blurEnabled = !fabHideStates[pagerState.currentPage] || pagerState.isScrolling
-        },
+    MyScaffold(
+        useMD2Layout = hazeState == null,
         topBar = {
             TopAppBarPaged(
+                modifier = Modifier
+                    .topAppBarBlurEffect(hazeState, block = null) {
+                        !fabHideStates[pagerState.currentPage] || pagerState.isScrolling
+                    },
                 title = { Text(text = stringResource(R.string.title_explore)) },
-                navigationIcon = accountNavIconIfCompact,
+                navigationIcon = {
+                    AccountNavIconIfCompact(onLoginClicked = { navigator.navigate(Destination.Login) })
+                },
                 actions = {
                     ActionItem(
                         icon = Icons.Rounded.Search,
@@ -231,7 +224,7 @@ fun ExplorePage() {
                 ExplorePageTab(pagerState = pagerState, pages = pages)
             }
         },
-        bottomBar = emptyBlurBottomNavigation, // MainPage workaround when enabling BottomBar blurring
+        bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
         floatingActionButton = {
             // FAB visibility: scrolling forward, pager not scrolling, current page not refreshing
             val visible by remember {
@@ -247,7 +240,9 @@ fun ExplorePage() {
             }
         }
     ) { contentPadding ->
-        Container {
+        Container(
+            modifier = Modifier.onNotNull(hazeState) { hazeSource(state = it) }
+        ) {
             HorizontalPager(
                 state = pagerState,
                 key = { pages[it].title },
@@ -256,15 +251,48 @@ fun ExplorePage() {
                     .nestedScroll(scrollOrientationConnection),
                 verticalAlignment = Alignment.Top,
                 flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
-            ) { i ->
+            ) { index ->
                 // Attach ScrollBehavior connections
-                val pageModifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                val modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                val onHideFab: (Boolean) -> Unit = { hideFab ->
+                    fabHideStates = fabHideStates.set(index, hideFab)
+                }
+                val listState = listStates[index]
 
-                explorePages[i](pageModifier, contentPadding) { hideFab ->
-                    fabHideStates = fabHideStates.set(i, hideFab)
+                when (pages[index]) {
+                    ExplorePageItem.Concern -> {
+                        ConcernPage(modifier, contentPadding, listState, navigator, onHideFab)
+                    }
+
+                    ExplorePageItem.Personalized -> {
+                        PersonalizedPage(modifier, contentPadding, listState, navigator, onHideFab)
+                    }
+
+                    ExplorePageItem.Hot -> {
+                        HotPage(modifier, contentPadding, listState, navigator, onHideFab)
+                    }
                 }
             }
         }
+    }
+}
+
+context(mainAnimatedContentScope: AnimatedContentScope)
+fun Modifier.topAppBarBlurEffect(
+    hazeState: HazeState?,
+    block: (HazeEffectScope.() -> Unit)?,
+    isEnabled: () -> Boolean,
+): Modifier = this.onNotNull(hazeState) {
+    Modifier.composed {
+        val hazeInputScale = defaultInputScale()
+        val containerColor = TiebaLiteTheme.topAppBarColors.containerColor
+        hazeEffect(state = it, defaultHazeStyle()) {
+            // Disable background blur when MainNavHost transition is running
+            blurEnabled = !mainAnimatedContentScope.transition.isRunning && isEnabled()
+            inputScale = hazeInputScale
+            if (block != null) block()
+        }
+        .drawBehind { if (mainAnimatedContentScope.transition.isRunning) drawRect(containerColor) }
     }
 }
 

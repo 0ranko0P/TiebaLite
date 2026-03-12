@@ -1,48 +1,41 @@
 package com.huanchengfly.tieba.post.ui.utils
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.window.core.layout.WindowSizeClass
-
-/**
- * Different type of navigation supported by app depending on device size and state.
- */
-enum class MainNavigationType {
-    BOTTOM_NAVIGATION, NAVIGATION_RAIL, PERMANENT_NAVIGATION_DRAWER
-}
-
-/**
- * Different position of navigation content inside Navigation Rail, Navigation Drawer depending on device size and state.
- */
-enum class MainNavigationContentPosition {
-    TOP, CENTER
-}
 
 /**
  * Content inside Navigation Rail/Drawer can also be positioned at top, bottom or center for
  * ergonomics and reachability depending upon the height of the device.
  */
-fun calculateNavigationPosition(windowInfo: WindowAdaptiveInfo): MainNavigationContentPosition {
-    return when {
-        windowInfo.windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND) -> {
-            MainNavigationContentPosition.CENTER
+fun calculateNavigationPosition(adaptiveInfo: WindowAdaptiveInfo): Arrangement.Vertical = with(adaptiveInfo) {
+    when {
+        windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND) -> {
+            Arrangement.Center
         }
 
-        else -> MainNavigationContentPosition.TOP
+        else -> NavigationSuiteDefaults.verticalArrangement
     }
 }
 
-fun calculateNavigationType(windowInfo: WindowAdaptiveInfo): MainNavigationType = with(windowInfo) {
+fun calculateNavigationType(adaptiveInfo: WindowAdaptiveInfo): NavigationSuiteType = with(adaptiveInfo) {
     when {
-        windowPosture.isTabletop -> MainNavigationType.BOTTOM_NAVIGATION
+        windowPosture.isTabletop -> NavigationSuiteType.ShortNavigationBarMedium
+
+        !windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND) -> {
+            NavigationSuiteType.NavigationRail
+        }
+
+        windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_LARGE_LOWER_BOUND) -> {
+            NavigationSuiteType.NavigationDrawer
+        }
 
         windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND) -> {
-            MainNavigationType.PERMANENT_NAVIGATION_DRAWER
+            NavigationSuiteType.NavigationRail
         }
 
-        windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND) -> {
-            MainNavigationType.NAVIGATION_RAIL
-        }
-
-        else -> MainNavigationType.BOTTOM_NAVIGATION
+        else -> NavigationSuiteType.NavigationBar
     }
 }

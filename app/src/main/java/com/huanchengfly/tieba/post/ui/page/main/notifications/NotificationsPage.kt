@@ -23,19 +23,20 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
+import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
+import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
-import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import kotlinx.coroutines.launch
@@ -93,7 +94,7 @@ fun NotificationsPage(
                 }
             }
         },
-        bottomBar = if (fromHome) emptyBlurBottomNavigation else BlurNavigationBarPlaceHolder,
+        bottomBar = if (fromHome) bottomNavigationPlaceholder else BlurNavigationBarPlaceHolder,
     ) { contentPadding ->
         ProvideNavigator(navigator = navigator) {
             HorizontalPager(
@@ -122,7 +123,9 @@ private fun NotificationsToolBar(
     if (fromHome) {
         TopAppBarPaged(
             title = { Text(text = stringResource(R.string.title_notifications)) },
-            navigationIcon = accountNavIconIfCompact,
+            navigationIcon = {
+                AccountNavIconIfCompact(onLoginClicked = { navigator.navigate(Destination.Login) })
+            },
             actions = {
                 ActionItem(
                     icon = Icons.Rounded.Search,

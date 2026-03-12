@@ -56,21 +56,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
-import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 
 val AppBarHeight: Dp = 56.dp
 
-val accountNavIconIfCompact: @Composable () -> Unit = {
-    if (isWindowWidthCompact()) {
-        AccountNavIcon(modifier = Modifier.padding(start = 12.dp), size = 32.dp)
+@Composable
+fun AccountNavIconIfCompact(onLoginClicked: () -> Unit) {
+    if (calculateNavigationType(LocalWindowAdaptiveInfo.current).isNavigationBar) {
+        AccountNavIcon(
+            onLoginClicked = onLoginClicked,
+            modifier = Modifier.padding(start = 12.dp),
+            size = 32.dp
+        )
     }
 }
 
@@ -132,13 +136,13 @@ private fun AccountDropdownMenuItem(
 
 @Composable
 fun AccountNavIcon(
+    onLoginClicked: () -> Unit,
     modifier: Modifier = Modifier,
     size: Dp = Sizes.Small
 ) = Box(
     modifier = modifier,
     contentAlignment = Alignment.Center
 ) {
-    val navigator = LocalNavController.current
     val currentAccount = LocalAccount.current
 
     if (currentAccount == null) {
@@ -169,7 +173,7 @@ fun AccountNavIcon(
                     text = { Text(text = addTitleText) },
                     onClick = {
                         menuState.expanded = false
-                        navigator.navigate(Destination.Login)
+                        onLoginClicked()
                     },
                     leadingIcon = {
                         Icon(

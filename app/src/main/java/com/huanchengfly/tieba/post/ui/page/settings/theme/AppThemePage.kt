@@ -14,7 +14,9 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -133,9 +135,11 @@ import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompac
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.NavigationDrawerItem
 import com.huanchengfly.tieba.post.ui.page.main.home.HistoryItem
-import com.huanchengfly.tieba.post.ui.page.main.rememberNavigationItems
+import com.huanchengfly.tieba.post.ui.page.main.iconRes
+import com.huanchengfly.tieba.post.ui.page.main.titleRes
 import com.huanchengfly.tieba.post.ui.page.main.user.StatCard
 import com.huanchengfly.tieba.post.ui.page.subposts.PostLikeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
@@ -571,7 +575,7 @@ private fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account?,
 @Composable
 private fun CompactNavigationDrawer(modifier: Modifier = Modifier) {
     var selected by remember { mutableIntStateOf(0) }
-    val navItems = rememberNavigationItems(hideExplore = false)
+    val navItems = listOf(MainDestination.Home, MainDestination.Explore, MainDestination.Notification, MainDestination.User)
 
     Column(
         modifier = modifier
@@ -582,11 +586,11 @@ private fun CompactNavigationDrawer(modifier: Modifier = Modifier) {
             NavigationDrawerItem(
                 selected = index == selected,
                 onClick = { if (index != selected) { selected = index } },
-                label = { Text(text = stringResource(navigationItem.title)) },
+                label = { Text(text = stringResource(navigationItem.titleRes)) },
                 icon = {
                     Icon(
                         painter = rememberAnimatedVectorPainter(
-                            animatedImageVector = navigationItem.icon(),
+                            animatedImageVector = AnimatedImageVector.animatedVectorResource(navigationItem.iconRes),
                             atEnd = index == selected
                         ),
                         contentDescription = null,

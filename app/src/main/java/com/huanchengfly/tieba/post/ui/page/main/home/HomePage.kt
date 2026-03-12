@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.main.home
 
 import androidx.activity.compose.ReportDrawnWhen
+import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -76,6 +77,7 @@ import com.google.accompanist.placeholder.PlaceholderDefaults
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.navigateDebounced
@@ -84,27 +86,30 @@ import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.LikedForum
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
+import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
+import com.huanchengfly.tieba.post.ui.page.main.explore.topAppBarBlurEffect
 import com.huanchengfly.tieba.post.ui.page.search.SearchToolbarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
-import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.color
 import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
@@ -112,6 +117,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import kotlin.random.Random
 
 private val FORUM_AVATAR_SIZE = 40.dp
@@ -134,9 +141,10 @@ private fun DummySearchBoxPreview() {
 private fun DummySearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        modifier = modifier
+        modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .then(modifier),
         shape = MaterialTheme.shapes.small,
         tonalElevation = 6.dp
     ) {
@@ -380,13 +388,14 @@ private sealed interface ForumType {
     object GridItem: ForumType
 }
 
+// Note: Obtain Root AnimatedVisibilityScope by LocalAnimatedVisibilityScope.current
 @Composable
-fun HomePage(
+fun AnimatedContentScope.HomePage(
     viewModel: HomeViewModel = hiltViewModel<HomeViewModel>(),
     onOpenExplore: () -> Unit = {},
 ) {
-    val account = LocalAccount.current
-    val loggedIn = account != null
+    val loggedIn = LocalAccount.current != null
+    val hazeState: HazeState? = LocalHazeState.current
     val context = LocalContext.current
     val navigator = LocalNavController.current
     val gridState = rememberLazyGridState()
@@ -407,11 +416,18 @@ fun HomePage(
         }
     }
 
-    BlurScaffold(
+    MyScaffold(
+        useMD2Layout = hazeState == null,
         topBar = {
             TopAppBar(
+                modifier = Modifier
+                    .topAppBarBlurEffect(hazeState, block = null) {
+                        gridState.canScrollBackward || scrollBehavior.isOverlapping
+                    },
                 titleRes = R.string.title_main,
-                navigationIcon = accountNavIconIfCompact,
+                navigationIcon = {
+                    AccountNavIconIfCompact(onLoginClicked = { navigator.navigate(Destination.Login) })
+                },
                 actions = {
                     if (loggedIn) {
                         val isSinging by viewModel.isOkSignWorkerRunning.collectAsStateWithLifecycle(true)
@@ -433,20 +449,13 @@ fun HomePage(
                 scrollBehavior = scrollBehavior
             ) {
                 DummySearchBox(
-                    modifier = Modifier
-                        .padding(bottom = 4.dp)
-                        .localSharedBounds(key = SearchToolbarSharedBoundsKey),
+                    modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
                     onClick = { navigator.navigateDebounced(route = Destination.Search) }
                 )
+                Spacer(modifier = Modifier.height(4.dp))
             }
         },
-        topHazeBlock = {
-            blurEnabled = gridState.canScrollBackward
-        },
-        bottomBar = emptyBlurBottomNavigation, // MainPage workaround when enabling BottomBar blurring
-        bottomHazeBlock = {
-            blurEnabled = gridState.canScrollForward
-        },
+        bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
     ) { contentPaddings ->
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val forums = viewModel.forums.collectAsLazyPagingItems()
@@ -507,6 +516,7 @@ fun HomePage(
                     columns = gridCells,
                     modifier = Modifier
                         .fillMaxSize()
+                        .onNotNull(hazeState) { hazeSource(state = it) }
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                     state = gridState,
                     contentPadding = contentPaddings,

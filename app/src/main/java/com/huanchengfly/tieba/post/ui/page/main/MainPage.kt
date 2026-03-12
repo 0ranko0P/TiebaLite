@@ -1,196 +1,450 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
-import androidx.activity.compose.BackHandler
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.foundation.background
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material3.Badge
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.NavigationItemColors
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuite
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteColors
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldState
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
+import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastFirstOrNull
+import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.rememberNavController
+import androidx.window.embedding.SplitAttributes.LayoutDirection
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePage
-import com.huanchengfly.tieba.post.ui.page.main.home.HomePage
-import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
-import com.huanchengfly.tieba.post.ui.page.main.user.UserPage
-import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
+import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
+import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.ui.models.settings.BottomNavigationLabel
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.utils.calculateNavigationPosition
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
-import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationSuiteScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarHeight
+import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationSuiteScaffoldLayout
+import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.TallNavigationBarHeight
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
+import com.huanchengfly.tieba.post.ui.widgets.compose.isNavigationBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.navigationSuiteScaffoldConsumeWindowInsets
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import com.huanchengfly.tieba.post.utils.ThemeUtil
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 
-/**
- * Workaround to enable background blurring since MainPage's BottomBar is outside the [BlurScaffold].
- *
- * This requires compose [emptyBlurBottomNavigation] inside the BlurScaffold.
- * */
-@NonRestartableComposable
-@Composable
-fun BlurBottomNavigation(
-    modifier: Modifier = Modifier,
-    currentPosition: Int,
-    onChangePosition: (position: Int) -> Unit,
-    navigationItems: List<NavigationItem>,
-) = BottomNavigation(
-    modifier = modifier,
-    currentPosition = currentPosition,
-    onChangePosition = onChangePosition,
-    navigationItems = navigationItems,
-    containerColor = Color.Transparent,
-    contentColor = MaterialTheme.colorScheme.onSurface
-)
+@Stable
+val MainDestination.titleRes: Int
+    @StringRes get() = when(this) {
+        MainDestination.Home -> R.string.title_main
+        MainDestination.Explore -> R.string.title_explore
+        MainDestination.Notification -> R.string.title_notifications
+        MainDestination.User -> R.string.title_user
+    }
 
-val emptyBlurBottomNavigation: @Composable () -> Unit = {
-    val colorSchemeExt by ThemeUtil.colorState
+@Stable
+val MainDestination.iconRes: Int
+    @DrawableRes get() = when(this) {
+        MainDestination.Home -> R.drawable.ic_animated_rounded_inventory_2
+        MainDestination.Explore -> R.drawable.ic_animated_toy_fans
+        MainDestination.Notification -> R.drawable.ic_animated_rounded_notifications
+        MainDestination.User -> R.drawable.ic_animated_rounded_person
+    }
 
-    when {
-        colorSchemeExt.colorScheme.isTranslucent -> {}
-
-        isBottomNavigation() -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(color = colorSchemeExt.navigationContainer)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .height(BottomNavigationHeight)
-            )
-        }
-        else -> {
-            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-        }
+val bottomNavigationPlaceholder: @Composable () -> Unit = {
+    val navigationSuiteType = calculateNavigationType(LocalWindowAdaptiveInfo.current)
+    if (navigationSuiteType.isNavigationBar) {
+        Spacer(
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .height(
+                    if (navigationSuiteType == NavigationSuiteType.NavigationBar) {
+                        TallNavigationBarHeight
+                    } else {
+                        NavigationBarHeight
+                    }
+                )
+        )
+    } else {
+        Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
 }
 
+/**
+ * Gets the current navigation [MainDestination] as a [MutableState]. When the given navController
+ * changes the back stack due to a [NavController.navigate] or [NavController.popBackStack] this
+ * will trigger a recompose and return the top destination on the back stack.
+ *
+ * @return a mutable state of the current [MainDestination]
+ */
 @Composable
-@ReadOnlyComposable
-fun isBottomNavigation(): Boolean {
-    val windowInfo = LocalWindowAdaptiveInfo.current
-    return calculateNavigationType(windowInfo) == MainNavigationType.BOTTOM_NAVIGATION
-}
-
-@Composable
-fun rememberNavigationItems(
-    hideExplore: Boolean = LocalUISettings.current.hideExplore,
-    messageCount: () -> String? = { null }
-): List<NavigationItem> = remember(hideExplore) {
-    listOfNotNull(
-        NavigationItem(
-            icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_inventory_2) },
-            title = R.string.title_main,
-        ),
-        NavigationItem(
-            icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_toy_fans) },
-            title = R.string.title_explore,
-        ).takeUnless { hideExplore },
-        NavigationItem(
-            icon = {
-                AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)
-            },
-            title = R.string.title_notifications,
-            badgeText = messageCount,
-        ),
-        NavigationItem(
-            icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_person) },
-            title = R.string.title_user,
-        )
-    )
+private fun NavController.currentMainDestinationAsState(destinations: List<MainDestination>): State<MainDestination?> {
+    return currentBackStackEntryFlow
+        .map { destinations.fastFirstOrNull { dest -> it.destination.hasRoute(dest::class) } }
+        .collectAsStateWithLifecycle(null, context = Dispatchers.Default)
 }
 
 @Composable
 fun MainPage(
     navHostController: NavHostController,
+    startDestination: MainDestination = MainDestination.Home,
     vm: MainPageViewModel = hiltViewModel()
 ) {
-    val coroutineScope = rememberCoroutineScope()
+    val nestedNavController = rememberNavController()
+    val scaffoldState = rememberNavigationSuiteScaffoldState()
+    val uiSettings = LocalUISettings.current
+    val windowAdaptiveInfo = LocalWindowAdaptiveInfo.current
+
+    val colorSchemeExt = TiebaLiteTheme.extendedColorScheme
+    // Override NavBar color for background blurring
+    val navigationSuiteColors = NavigationSuiteDefaults.colors(
+        shortNavigationBarContainerColor = colorSchemeExt.navigationContainer,
+        navigationBarContainerColor = colorSchemeExt.navigationContainer
+    )
+    var navigationSuiteType = calculateNavigationType(windowAdaptiveInfo)
+    val isNavigationBar = navigationSuiteType.isNavigationBar
+    // Use compact ShortNavigationBarCompact when label turned off
+    if (isNavigationBar && uiSettings.bottomNavLabel == BottomNavigationLabel.NONE) {
+        navigationSuiteType = NavigationSuiteType.ShortNavigationBarCompact
+    }
+
     val loggedIn = LocalAccount.current != null
-    val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
-
-    val navigationItems = rememberNavigationItems(messageCount = { messageCount })
-    val pagerState = rememberPagerState { navigationItems.size }
-
-    val onItemClicked: (position: Int) -> Unit = {
-        coroutineScope.launch { pagerState.scrollToPage(it) }
-        if (navigationItems[it].title == R.string.title_notifications && messageCount != null) {
-            vm.onNavigateNotification()
-        }
+    val destinations = remember(loggedIn, uiSettings.hideExplore) {
+        listOfNotNull(
+            MainDestination.Home,
+            MainDestination.Explore.takeUnless { uiSettings.hideExplore },
+            MainDestination.Notification.takeIf { loggedIn },
+            MainDestination.User,
+        )
     }
 
-    val movablePagerContent = remember(loggedIn) {
-        navigationItems.fastMap {
-            movableContentOf {
-                when(it.title) {
-                    R.string.title_main -> HomePage(onOpenExplore = { onItemClicked(1) })
+    val isTranslucent = colorSchemeExt.colorScheme.isTranslucent
+    val hazeState = if (!isTranslucent && !uiSettings.reduceEffect) remember { HazeState() } else null
 
-                    R.string.title_explore -> ExplorePage()
+    MainNavigationSuiteScaffold(
+        state = scaffoldState,
+        hazeState = hazeState.takeIf { isNavigationBar },
+        navigationItems = {
+            val currentDestination by nestedNavController.currentMainDestinationAsState(destinations)
+            val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
 
-                    R.string.title_notifications -> NotificationsPage(fromHome = true)
-
-                    R.string.title_user -> UserPage()
+            MainNavigationItems(
+                items = destinations,
+                isSelected = { dest -> dest === currentDestination },
+                onClick = { dest ->
+                    nestedNavController.navigate(route = dest) {
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(route = startDestination) {
+                            saveState = true
+                        }
+                    }
+                    if (dest == MainDestination.Notification) vm.onNavigateNotification()
+                },
+                navigationSuiteType = navigationSuiteType,
+                bottomNavLabel = uiSettings.bottomNavLabel,
+                messageCount = { messageCount },
+            )
+        },
+        navigationSuiteType = navigationSuiteType,
+        navigationBarAtop = hazeState != null,
+        navigationSuiteColors = navigationSuiteColors,
+        navigationVerticalArrangement = calculateNavigationPosition(windowAdaptiveInfo),
+        primaryActionContent = {
+            val onLoginClicked: () -> Unit = { navHostController.navigate(Destination.Login) }
+            when (navigationSuiteType) {
+                NavigationSuiteType.WideNavigationRailCollapsed,
+                NavigationSuiteType.WideNavigationRailExpanded -> {
+                    AccountNavIcon(onLoginClicked, modifier = Modifier.padding(start = 32.dp))
                 }
+                NavigationSuiteType.NavigationRail -> {
+                    AccountNavIcon(onLoginClicked, modifier = Modifier.padding(top = 10.dp))
+                }
+                NavigationSuiteType.NavigationDrawer -> TbDrawerNavigationAction(onLoginClicked)
+                else -> null // NavigationBar or None
             }
         }
-    }
+    ) {
+        val parentAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current
+        val parentSharedTransitionScope = LocalSharedTransitionScope.current
+        val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+            mainEnterTransition(navigationSuiteType, destinations)
+        }
+        val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+            mainExitTransition(navigationSuiteType, destinations)
+        }
 
-    ProvideNavigator(navigator = navHostController) {
-        NavigationSuiteScaffold(
-            currentPosition = pagerState.currentPage,
-            onChangePosition = onItemClicked,
-            navigationItems = navigationItems,
-            navigationBarAtop = !ThemeUtil.isTranslucentTheme(),
+        NavHost(
+            navController = nestedNavController,
+            startDestination = startDestination,
+            modifier = Modifier.onNotNull(hazeState) {
+                hazeSource(state = it, zIndex = 1f)
+            },
+            enterTransition = enterTransition,
+            exitTransition = exitTransition,
+            popEnterTransition = enterTransition,
+            popExitTransition = exitTransition
         ) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .windowInsetsPadding(NavigationBarDefaults.windowInsets.only(WindowInsetsSides.End)),
-                key = { navigationItems[it].title },
-                beyondViewportPageCount = 3,
-                verticalAlignment = Alignment.Top,
-                userScrollEnabled = false
-            ) {
-                movablePagerContent[it]()
-            }
+            mainNavGraph(
+                navController = navHostController,
+                hazeState = hazeState,
+                parentAnimatedVisibilityScope = parentAnimatedVisibilityScope,
+                parentSharedTransitionScope = parentSharedTransitionScope,
+            )
         }
     }
-    BackHandler(enabled = pagerState.currentPage != 0) {
-        onItemClicked(0)
+}
+
+/**
+ * [NavigationSuiteScaffold] with Haze blur support
+ *
+ * @see NavigationSuiteScaffoldLayout
+ * @see Modifier.navigationSuiteScaffoldConsumeWindowInsets
+ * */
+@Composable
+private fun MainNavigationSuiteScaffold(
+    navigationItems: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    hazeState: HazeState? = null,
+    navigationSuiteType: NavigationSuiteType =
+        NavigationSuiteScaffoldDefaults.navigationSuiteType(LocalWindowAdaptiveInfo.current),
+    navigationBarAtop: Boolean = true,
+    navigationSuiteColors: NavigationSuiteColors = NavigationSuiteDefaults.colors(),
+    navigationVerticalArrangement: Arrangement.Vertical = NavigationSuiteDefaults.verticalArrangement,
+    state: NavigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState(),
+    primaryActionContent: @Composable (() -> Unit) = {},
+    primaryActionContentHorizontalAlignment: Alignment.Horizontal =
+        NavigationSuiteScaffoldDefaults.primaryActionContentAlignment,
+    content: @Composable () -> Unit = {},
+) {
+    NavigationSuiteScaffoldLayout(
+        modifier = modifier,
+        navigationSuite = {
+            NavigationSuite(
+                navigationSuiteType = navigationSuiteType,
+                modifier = Modifier.onNotNull(hazeState) {
+                    val hazeInputScale = defaultInputScale()
+                    hazeEffect(state = it, style = defaultHazeStyle()) {
+                        inputScale = hazeInputScale
+                    }
+                },
+                colors = navigationSuiteColors,
+                verticalArrangement = navigationVerticalArrangement,
+                primaryActionContent = primaryActionContent,
+                content = navigationItems,
+            )
+        },
+        state = state,
+        navigationSuiteType = navigationSuiteType,
+        primaryActionContent = primaryActionContent,
+        primaryActionContentHorizontalAlignment = primaryActionContentHorizontalAlignment,
+        content = {
+            Box(
+                Modifier.navigationSuiteScaffoldConsumeWindowInsets(
+                    navigationSuiteType,
+                    navigationBarAtop,
+                    state,
+                ),
+            ) {
+                content()
+            }
+        },
+    )
+}
+
+@Stable
+private fun BottomNavigationLabel.visible(selected: Boolean): Boolean {
+    return when(this) {
+        BottomNavigationLabel.ALWAYS -> true
+        BottomNavigationLabel.SELECTED -> selected
+        BottomNavigationLabel.NONE -> false
+    }
+}
+
+@Composable
+private fun MainNavigationItems(
+    items: List<MainDestination>,
+    isSelected: (MainDestination) -> Boolean,
+    modifier: Modifier = Modifier,
+    onClick: (MainDestination) -> Unit = {},
+    navigationSuiteType: NavigationSuiteType =
+        NavigationSuiteScaffoldDefaults.navigationSuiteType(LocalWindowAdaptiveInfo.current),
+    bottomNavLabel: BottomNavigationLabel = BottomNavigationLabel.ALWAYS,
+    messageCount: () -> String? = { null },
+) {
+    val isNavigationBar = navigationSuiteType.isNavigationBar
+    items.fastForEachIndexed { index, destination ->
+        val selected = isSelected(destination)
+        MainNavigationSuiteItem(
+            selected = selected,
+            onClick = {
+                if (selected) return@MainNavigationSuiteItem else onClick(destination)
+            },
+            icon = {
+                Icon(
+                    painter = rememberAnimatedVectorPainter(
+                        animatedImageVector = AnimatedImageVector.animatedVectorResource(destination.iconRes),
+                        atEnd = selected
+                    ),
+                    modifier = Modifier.size(Sizes.Tiny),
+                    contentDescription = null,
+                )
+            },
+            label = if (navigationSuiteType != NavigationSuiteType.NavigationRail &&
+                (!isNavigationBar || bottomNavLabel.visible(selected))
+            ) {
+                { Text(stringResource(id = destination.titleRes)) }
+            } else {
+                null
+            },
+            modifier = modifier
+                .onCase(navigationSuiteType == NavigationSuiteType.NavigationDrawer) {
+                    padding(horizontal = 16.dp)
+                },
+            navigationSuiteType = navigationSuiteType,
+            badge = if (destination === MainDestination.Notification) {
+                {
+                    messageCount()?.let { messageCountText ->
+                        Badge {
+                            Text(
+                                text = messageCountText, // 6.sp ~ BadgeTokens.LargeLabelTextFont.fontSize
+                                autoSize = TextAutoSize.StepBased(6.sp, LocalTextStyle.current.fontSize),
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            } else null,
+        )
+    }
+}
+
+// Override NavigationDrawer to use our old custom NavigationDrawerItem
+@Composable
+private fun MainNavigationSuiteItem(
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    label: @Composable (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    navigationSuiteType: NavigationSuiteType =
+        NavigationSuiteScaffoldDefaults.navigationSuiteType(LocalWindowAdaptiveInfo.current),
+    enabled: Boolean = true,
+    badge: @Composable (() -> Unit)? = null,
+    colors: NavigationItemColors? = null,
+    interactionSource: MutableInteractionSource? = null,
+) {
+    if (navigationSuiteType != NavigationSuiteType.NavigationDrawer) {
+        androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem(
+            selected = selected,
+            onClick = onClick,
+            icon = icon,
+            label = label,
+            modifier = modifier,
+            navigationSuiteType = navigationSuiteType,
+            enabled = enabled,
+            badge = badge,
+            colors = colors,
+            interactionSource = interactionSource,
+        )
+    } else {
+        val actualColors = if (colors != null) {
+            NavigationDrawerItemDefaults.colors(
+                selectedIconColor = colors.selectedIconColor,
+                selectedTextColor = colors.selectedTextColor,
+                unselectedIconColor = colors.unselectedIconColor,
+                unselectedTextColor = colors.unselectedTextColor,
+                selectedContainerColor = colors.selectedIndicatorColor,
+            )
+        } else {
+            NavigationSuiteDefaults.itemColors().navigationDrawerItemColors
+        }
+
+        NavigationDrawerItem(
+            modifier = modifier,
+            selected = selected,
+            onClick = onClick,
+            icon = icon,
+            badge = badge,
+            label = { label?.invoke() ?: Text("") },
+            colors = actualColors,
+            interactionSource = interactionSource,
+        )
     }
 }
 
@@ -241,3 +495,122 @@ private val Saver: Saver<List<TopAppBarState>, *> = listSaver(
         states.toImmutableList()
     }
 )
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainTransitionDirection(
+    navigationSuiteType: NavigationSuiteType,
+    items: List<MainDestination>,
+): LayoutDirection? {
+    var from = -1
+    var to = -1
+    items.fastForEachIndexed { i, dest ->
+        if (from == -1 && initialState.destination.hasRoute(dest::class)) {
+            from = i
+        } else if (to == -1 && targetState.destination.hasRoute(dest::class)) {
+            to = i
+        }
+    }
+    return when {
+        from == -1 || to == -1 -> null // Edge case: initialize
+
+        navigationSuiteType.isNavigationBar ->
+            if (from > to) LayoutDirection.RIGHT_TO_LEFT else LayoutDirection.LEFT_TO_RIGHT
+
+        navigationSuiteType == NavigationSuiteType.None -> null
+
+        else -> if (from > to) LayoutDirection.BOTTOM_TO_TOP else LayoutDirection.TOP_TO_BOTTOM
+    }
+}
+
+// Pager style enter transition
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainEnterTransition(
+    navigationSuiteType: NavigationSuiteType,
+    items: List<MainDestination>,
+): EnterTransition {
+    return when(val direction = mainTransitionDirection(navigationSuiteType, items)) {
+        LayoutDirection.RIGHT_TO_LEFT, LayoutDirection.LEFT_TO_RIGHT -> {
+            slideInHorizontally(
+                animationSpec = MAIN_TRANSITION_SPEC,
+                initialOffsetX = { if (direction == LayoutDirection.LEFT_TO_RIGHT) it else -it }
+            ) + MAIN_FADE_IN_TRANSITION
+        }
+        LayoutDirection.TOP_TO_BOTTOM, LayoutDirection.BOTTOM_TO_TOP -> {
+            slideInVertically(
+                animationSpec = MAIN_TRANSITION_SPEC,
+                initialOffsetY = { if (direction == LayoutDirection.TOP_TO_BOTTOM) it else -it }
+            ) + MAIN_FADE_IN_TRANSITION
+        }
+        else -> MAIN_FADE_IN_TRANSITION
+    }
+}
+
+// Pager style exit transition
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainExitTransition(
+    navigationSuiteType: NavigationSuiteType,
+    items: List<MainDestination>,
+): ExitTransition {
+    return when(val direction = mainTransitionDirection(navigationSuiteType, items)) {
+        LayoutDirection.RIGHT_TO_LEFT, LayoutDirection.LEFT_TO_RIGHT -> {
+            slideOutHorizontally(
+                animationSpec = MAIN_TRANSITION_SPEC,
+                targetOffsetX = { if (direction == LayoutDirection.LEFT_TO_RIGHT) -it else it }
+            ) + MAIN_FADE_OUT_TRANSITION
+        }
+        LayoutDirection.TOP_TO_BOTTOM, LayoutDirection.BOTTOM_TO_TOP -> {
+            slideOutVertically(
+                animationSpec = MAIN_TRANSITION_SPEC,
+                targetOffsetY = { if (direction == LayoutDirection.TOP_TO_BOTTOM) -it else it }
+            ) + MAIN_FADE_OUT_TRANSITION
+        }
+        else -> MAIN_FADE_OUT_TRANSITION
+    }
+}
+
+private val MAIN_TRANSITION_SPEC: FiniteAnimationSpec<IntOffset> =
+    tween(durationMillis = 250, easing = FastOutSlowInEasing)
+
+private val MAIN_FADE_IN_TRANSITION: EnterTransition =
+    fadeIn(tween(durationMillis = 300, easing = FastOutSlowInEasing))
+
+private val MAIN_FADE_OUT_TRANSITION: ExitTransition =
+    fadeOut(tween(durationMillis = 300, easing = FastOutSlowInEasing))
+
+@Preview("MainNavigationItems", device = Devices.PIXEL_TABLET)
+@Composable
+private fun MainNavigationItemsPreview() = TiebaLiteTheme {
+    val destinations = listOf(MainDestination.Home, MainDestination.Explore, MainDestination.Notification, MainDestination.User)
+    val isSelected: (MainDestination) -> Boolean = { it == MainDestination.Home }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(
+            NavigationSuiteType.WideNavigationRailCollapsed,
+            NavigationSuiteType.WideNavigationRailExpanded,
+            NavigationSuiteType.NavigationRail,
+            NavigationSuiteType.NavigationDrawer,
+        )
+        .forEach { type ->
+            NavigationSuite(navigationSuiteType = type, verticalArrangement = Arrangement.Center) {
+                MainNavigationItems(destinations, isSelected, navigationSuiteType = type)
+            }
+        }
+    }
+}
+
+@Preview("MainBottomNavigationItems", device = Devices.PIXEL_9)
+@Composable
+private fun MainBottomNavigationItemsPreview() = TiebaLiteTheme {
+    val destinations = listOf(MainDestination.Home, MainDestination.Explore, MainDestination.Notification, MainDestination.User)
+    val isSelected: (MainDestination) -> Boolean = { it == MainDestination.Home }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(
+            NavigationSuiteType.ShortNavigationBarCompact,
+            NavigationSuiteType.ShortNavigationBarMedium,
+            NavigationSuiteType.NavigationBar,
+        )
+        .forEach { type ->
+            NavigationSuite(navigationSuiteType = type, verticalArrangement = Arrangement.Center) {
+                MainNavigationItems(destinations, isSelected, navigationSuiteType = type)
+            }
+        }
+    }
+}

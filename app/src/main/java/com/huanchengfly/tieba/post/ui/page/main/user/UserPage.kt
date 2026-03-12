@@ -57,7 +57,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.main.emptyBlurBottomNavigation
+import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
@@ -226,7 +226,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
     MyScaffold(
         modifier = Modifier.fillMaxSize(),
         useMD2Layout = true,
-        bottomBar = emptyBlurBottomNavigation, // MainPage workaround
+        bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
     ) { contentPaddings ->
         val account = LocalAccount.current
 

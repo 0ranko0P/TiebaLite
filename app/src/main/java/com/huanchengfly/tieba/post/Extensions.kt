@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.ui.unit.Dp
@@ -29,6 +30,8 @@ import java.io.File
 import kotlin.math.roundToInt
 
 val PaddingNone = PaddingValues(Dp.Hairline)
+
+val NoWindowInsets = WindowInsets(0, 0, 0, 0)
 
 private const val NAVIGATION_MIN_DELAY_MS = 500
 
