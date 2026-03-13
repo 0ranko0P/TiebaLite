@@ -404,7 +404,7 @@ private fun ScaffoldLayout(
 @Immutable private class FabPlacement(val left: Int, val width: Int, val height: Int)
 
 // FAB spacing above the bottom bar / bottom of the Scaffold
-private val FabSpacing = 16.dp
+internal val FabSpacing = 16.dp
 
 private enum class ScaffoldLayoutContent {
     TopBar,

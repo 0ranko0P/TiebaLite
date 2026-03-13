@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
@@ -9,6 +10,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
@@ -32,6 +34,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
@@ -43,6 +47,7 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
@@ -51,7 +56,11 @@ import com.huanchengfly.tieba.post.ui.page.Destination.HotTopicList
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.consumeResult
+import com.huanchengfly.tieba.post.ui.page.main.FloatingNavigationBarScreenOffset
+import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType
+import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.FloatingNavigationBarCompact
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
+import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
@@ -63,6 +72,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
+import com.huanchengfly.tieba.post.ui.widgets.compose.FabSpacing
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -174,6 +184,7 @@ fun AnimatedContentScope.ExplorePage(loggedIn: Boolean) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val navigator = LocalNavController.current
+    val isFloatingNavBarCompat = calculateMainNavigationSuiteType() === FloatingNavigationBarCompact
     val hazeState: HazeState? = LocalHazeState.current
 
     val pages = remember(loggedIn) {
@@ -229,16 +240,23 @@ fun AnimatedContentScope.ExplorePage(loggedIn: Boolean) {
             // FAB visibility: scrolling forward, pager not scrolling, current page not refreshing
             val visible by remember {
                 derivedStateOf {
-                    scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling && !fabHideStates[pagerState.currentPage]
+                    !transition.isRunning && scrollOrientationConnection.isScrollingForward &&
+                    !pagerState.isScrolling && !fabHideStates[pagerState.currentPage]
                 }
             }
-            DefaultBackToTopFAB(visible = visible) {
+            DefaultBackToTopFAB(
+                modifier = Modifier.onCase(isFloatingNavBarCompat) {
+                    fabWithCompatFloatingNavBarOffset(loggedIn)
+                },
+                visible = visible
+            ) {
                 coroutineScope.launch {
                     listStates[pagerState.currentPage].scrollToItem(0)
                     scrollBehavior.state.contentOffset = 0f
                 }
             }
-        }
+        },
+        floatingActionButtonPosition = if (isFloatingNavBarCompat) FabPosition.EndOverlay else FabPosition.End,
     ) { contentPadding ->
         Container(
             modifier = Modifier.onNotNull(hazeState) { hazeSource(state = it) }
@@ -295,6 +313,15 @@ fun Modifier.topAppBarBlurEffect(
         .drawBehind { if (mainAnimatedContentScope.transition.isRunning) drawRect(containerColor) }
     }
 }
+
+/**
+ * Offset from the edge of the screen used for [MainNavigationSuiteType.FloatingNavigationBarCompact].
+ */
+private fun Modifier.fabWithCompatFloatingNavBarOffset(loggedIn: Boolean) =
+    this then Modifier.offset(
+        x = if (loggedIn) 4.dp else (-40).dp,
+        y = FabSpacing - FloatingNavigationBarScreenOffset
+    )
 
 @Composable
 fun LaunchedFabStateEffect(

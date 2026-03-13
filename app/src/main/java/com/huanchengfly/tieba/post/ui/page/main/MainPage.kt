@@ -32,10 +32,14 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalShortNavigationBarOverride
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.NavigationItemColors
+import androidx.compose.material3.ShortNavigationBarDefaults
+import androidx.compose.material3.ShortNavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
@@ -48,7 +52,10 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -87,7 +94,7 @@ import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
-import com.huanchengfly.tieba.post.ui.models.settings.BottomNavigationLabel
+import com.huanchengfly.tieba.post.ui.models.settings.NavigationLabel
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationPosition
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
@@ -171,17 +178,7 @@ fun MainPage(
     val windowAdaptiveInfo = LocalWindowAdaptiveInfo.current
 
     val colorSchemeExt = TiebaLiteTheme.extendedColorScheme
-    // Override NavBar color for background blurring
-    val navigationSuiteColors = NavigationSuiteDefaults.colors(
-        shortNavigationBarContainerColor = colorSchemeExt.navigationContainer,
-        navigationBarContainerColor = colorSchemeExt.navigationContainer
-    )
-    var navigationSuiteType = calculateNavigationType(windowAdaptiveInfo)
-    val isNavigationBar = navigationSuiteType.isNavigationBar
-    // Use compact ShortNavigationBarCompact when label turned off
-    if (isNavigationBar && uiSettings.bottomNavLabel == BottomNavigationLabel.NONE) {
-        navigationSuiteType = NavigationSuiteType.ShortNavigationBarCompact
-    }
+    val navigationSuiteType = calculateMainNavigationSuiteType()
 
     val loggedIn = LocalAccount.current != null
     val destinations = remember(loggedIn, uiSettings.hideExplore) {
@@ -195,10 +192,11 @@ fun MainPage(
 
     val isTranslucent = colorSchemeExt.colorScheme.isTranslucent
     val hazeState = if (!isTranslucent && !uiSettings.reduceEffect) remember { HazeState() } else null
+    val navigationSuiteColors = mainNavigationSuiteColors(uiSettings.bottomNavFloating, blur = hazeState != null)
 
     MainNavigationSuiteScaffold(
         state = scaffoldState,
-        hazeState = hazeState.takeIf { isNavigationBar },
+        hazeState = hazeState.takeIf { navigationSuiteType.isNavigationBar },
         navigationItems = {
             val currentDestination by nestedNavController.currentMainDestinationAsState(destinations)
             val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
@@ -216,26 +214,26 @@ fun MainPage(
                     }
                     if (dest == MainDestination.Notification) vm.onNavigateNotification()
                 },
-                navigationSuiteType = navigationSuiteType,
+                mainNavigationSuiteType = navigationSuiteType,
                 bottomNavLabel = uiSettings.bottomNavLabel,
                 messageCount = { messageCount },
             )
         },
-        navigationSuiteType = navigationSuiteType,
+        mainNavSuiteType = navigationSuiteType,
         navigationBarAtop = hazeState != null,
         navigationSuiteColors = navigationSuiteColors,
         navigationVerticalArrangement = calculateNavigationPosition(windowAdaptiveInfo),
         primaryActionContent = {
             val onLoginClicked: () -> Unit = { navHostController.navigate(Destination.Login) }
             when (navigationSuiteType) {
-                NavigationSuiteType.WideNavigationRailCollapsed,
-                NavigationSuiteType.WideNavigationRailExpanded -> {
+                MainNavigationSuiteType.WideNavigationRailCollapsed,
+                MainNavigationSuiteType.WideNavigationRailExpanded -> {
                     AccountNavIcon(onLoginClicked, modifier = Modifier.padding(start = 32.dp))
                 }
-                NavigationSuiteType.NavigationRail -> {
+                MainNavigationSuiteType.NavigationRail -> {
                     AccountNavIcon(onLoginClicked, modifier = Modifier.padding(top = 10.dp))
                 }
-                NavigationSuiteType.NavigationDrawer -> TbDrawerNavigationAction(onLoginClicked)
+                MainNavigationSuiteType.NavigationDrawer -> TbDrawerNavigationAction(onLoginClicked)
                 else -> null // NavigationBar or None
             }
         }
@@ -270,6 +268,33 @@ fun MainPage(
     }
 }
 
+@NonRestartableComposable
+@Composable
+private fun MainNavigationSuite(
+    mainNavigationSuiteType: MainNavigationSuiteType,
+    modifier: Modifier = Modifier,
+    colors: NavigationSuiteColors = NavigationSuiteDefaults.colors(),
+    verticalArrangement: Arrangement.Vertical = NavigationSuiteDefaults.verticalArrangement,
+    primaryActionContent: @Composable (() -> Unit) = {},
+    content: @Composable () -> Unit,
+) {
+    val shortNavBarOverride = when (mainNavigationSuiteType) {
+        MainNavigationSuiteType.FloatingNavigationBar -> FloatingNavigationBarOverride
+        MainNavigationSuiteType.FloatingNavigationBarCompact -> FloatingIconNavigationBarOverride
+        else -> androidx.compose.material3.DefaultShortNavigationBarOverride
+    }
+    CompositionLocalProvider(LocalShortNavigationBarOverride provides shortNavBarOverride) {
+        NavigationSuite(
+            navigationSuiteType = mainNavigationSuiteType.toNavigationSuiteType(),
+            modifier = modifier,
+            colors = colors,
+            verticalArrangement = verticalArrangement,
+            primaryActionContent = primaryActionContent,
+            content = content,
+        )
+    }
+}
+
 /**
  * [NavigationSuiteScaffold] with Haze blur support
  *
@@ -281,8 +306,7 @@ private fun MainNavigationSuiteScaffold(
     navigationItems: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     hazeState: HazeState? = null,
-    navigationSuiteType: NavigationSuiteType =
-        NavigationSuiteScaffoldDefaults.navigationSuiteType(LocalWindowAdaptiveInfo.current),
+    mainNavSuiteType: MainNavigationSuiteType = calculateMainNavigationSuiteType(),
     navigationBarAtop: Boolean = true,
     navigationSuiteColors: NavigationSuiteColors = NavigationSuiteDefaults.colors(),
     navigationVerticalArrangement: Arrangement.Vertical = NavigationSuiteDefaults.verticalArrangement,
@@ -292,11 +316,12 @@ private fun MainNavigationSuiteScaffold(
         NavigationSuiteScaffoldDefaults.primaryActionContentAlignment,
     content: @Composable () -> Unit = {},
 ) {
+    val navigationSuiteType = mainNavSuiteType.toNavigationSuiteType()
     NavigationSuiteScaffoldLayout(
         modifier = modifier,
         navigationSuite = {
-            NavigationSuite(
-                navigationSuiteType = navigationSuiteType,
+            MainNavigationSuite(
+                mainNavigationSuiteType = mainNavSuiteType,
                 modifier = Modifier.onNotNull(hazeState) {
                     val hazeInputScale = defaultInputScale()
                     hazeEffect(state = it, style = defaultHazeStyle()) {
@@ -328,11 +353,11 @@ private fun MainNavigationSuiteScaffold(
 }
 
 @Stable
-private fun BottomNavigationLabel.visible(selected: Boolean): Boolean {
+private fun NavigationLabel.visible(selected: Boolean): Boolean {
     return when(this) {
-        BottomNavigationLabel.ALWAYS -> true
-        BottomNavigationLabel.SELECTED -> selected
-        BottomNavigationLabel.NONE -> false
+        NavigationLabel.ALWAYS -> true
+        NavigationLabel.SELECTED -> selected
+        NavigationLabel.NONE -> false
     }
 }
 
@@ -342,12 +367,11 @@ private fun MainNavigationItems(
     isSelected: (MainDestination) -> Boolean,
     modifier: Modifier = Modifier,
     onClick: (MainDestination) -> Unit = {},
-    navigationSuiteType: NavigationSuiteType =
-        NavigationSuiteScaffoldDefaults.navigationSuiteType(LocalWindowAdaptiveInfo.current),
-    bottomNavLabel: BottomNavigationLabel = BottomNavigationLabel.ALWAYS,
+    mainNavigationSuiteType: MainNavigationSuiteType = calculateMainNavigationSuiteType(),
+    bottomNavLabel: NavigationLabel = NavigationLabel.ALWAYS,
     messageCount: () -> String? = { null },
 ) {
-    val isNavigationBar = navigationSuiteType.isNavigationBar
+    val isNavigationBar = mainNavigationSuiteType.isNavigationBar
     items.fastForEachIndexed { index, destination ->
         val selected = isSelected(destination)
         MainNavigationSuiteItem(
@@ -365,7 +389,7 @@ private fun MainNavigationItems(
                     contentDescription = null,
                 )
             },
-            label = if (navigationSuiteType != NavigationSuiteType.NavigationRail &&
+            label = if (mainNavigationSuiteType != MainNavigationSuiteType.NavigationRail &&
                 (!isNavigationBar || bottomNavLabel.visible(selected))
             ) {
                 { Text(stringResource(id = destination.titleRes)) }
@@ -373,10 +397,10 @@ private fun MainNavigationItems(
                 null
             },
             modifier = modifier
-                .onCase(navigationSuiteType == NavigationSuiteType.NavigationDrawer) {
+                .onCase(mainNavigationSuiteType == MainNavigationSuiteType.NavigationDrawer) {
                     padding(horizontal = 16.dp)
                 },
-            navigationSuiteType = navigationSuiteType,
+            mainNavigationSuiteType = mainNavigationSuiteType,
             badge = if (destination === MainDestination.Notification) {
                 {
                     messageCount()?.let { messageCountText ->
@@ -402,21 +426,36 @@ private fun MainNavigationSuiteItem(
     icon: @Composable () -> Unit,
     label: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
-    navigationSuiteType: NavigationSuiteType =
-        NavigationSuiteScaffoldDefaults.navigationSuiteType(LocalWindowAdaptiveInfo.current),
+    mainNavigationSuiteType: MainNavigationSuiteType,
     enabled: Boolean = true,
     badge: @Composable (() -> Unit)? = null,
     colors: NavigationItemColors? = null,
     interactionSource: MutableInteractionSource? = null,
 ) {
-    if (navigationSuiteType != NavigationSuiteType.NavigationDrawer) {
+    if (mainNavigationSuiteType == MainNavigationSuiteType.FloatingNavigationBarCompact) {
+        IconNavigationItem(
+            selected = selected,
+            onClick = onClick,
+            icon = {
+                if (badge != null) {
+                    BadgedBox(badge = { badge.invoke() }, content = { icon() })
+                } else {
+                    icon()
+                }
+            },
+            colors = colors ?: ShortNavigationBarItemDefaults.colors(),
+            enabled = enabled,
+            modifier = modifier,
+            interactionSource = interactionSource,
+        )
+    } else if (mainNavigationSuiteType != MainNavigationSuiteType.NavigationDrawer) {
         androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem(
             selected = selected,
             onClick = onClick,
             icon = icon,
             label = label,
             modifier = modifier,
-            navigationSuiteType = navigationSuiteType,
+            navigationSuiteType = mainNavigationSuiteType.toNavigationSuiteType(),
             enabled = enabled,
             badge = badge,
             colors = colors,
@@ -444,6 +483,28 @@ private fun MainNavigationSuiteItem(
             label = { label?.invoke() ?: Text("") },
             colors = actualColors,
             interactionSource = interactionSource,
+        )
+    }
+}
+
+/**
+ * @return [NavigationSuiteColors] for background blurring
+ *  */
+@Composable
+private fun mainNavigationSuiteColors(floatingNavBar: Boolean, blur: Boolean): NavigationSuiteColors {
+    return TiebaLiteTheme.extendedColorScheme.run {
+        NavigationSuiteDefaults.colors(
+            shortNavigationBarContainerColor = if (floatingNavBar) {
+                colorScheme.vibrantFloatingNavigationBarColor.copy(if (blur) 0.86f else 1f)
+            } else {
+                navigationContainer
+            },
+            shortNavigationBarContentColor = if (floatingNavBar) {
+                colorScheme.vibrantFloatingNavigationBarContentColor
+            } else {
+                ShortNavigationBarDefaults.contentColor
+            },
+            navigationBarContainerColor = navigationContainer
         )
     }
 }
@@ -497,7 +558,7 @@ private val Saver: Saver<List<TopAppBarState>, *> = listSaver(
 )
 
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainTransitionDirection(
-    navigationSuiteType: NavigationSuiteType,
+    navigationSuiteType: MainNavigationSuiteType,
     items: List<MainDestination>,
 ): LayoutDirection? {
     var from = -1
@@ -515,7 +576,7 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainTransitionDire
         navigationSuiteType.isNavigationBar ->
             if (from > to) LayoutDirection.RIGHT_TO_LEFT else LayoutDirection.LEFT_TO_RIGHT
 
-        navigationSuiteType == NavigationSuiteType.None -> null
+        navigationSuiteType == MainNavigationSuiteType.None -> null
 
         else -> if (from > to) LayoutDirection.BOTTOM_TO_TOP else LayoutDirection.TOP_TO_BOTTOM
     }
@@ -523,7 +584,7 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainTransitionDire
 
 // Pager style enter transition
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainEnterTransition(
-    navigationSuiteType: NavigationSuiteType,
+    navigationSuiteType: MainNavigationSuiteType,
     items: List<MainDestination>,
 ): EnterTransition {
     return when(val direction = mainTransitionDirection(navigationSuiteType, items)) {
@@ -545,7 +606,7 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainEnterTransitio
 
 // Pager style exit transition
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainExitTransition(
-    navigationSuiteType: NavigationSuiteType,
+    navigationSuiteType: MainNavigationSuiteType,
     items: List<MainDestination>,
 ): ExitTransition {
     return when(val direction = mainTransitionDirection(navigationSuiteType, items)) {
@@ -574,6 +635,41 @@ private val MAIN_FADE_IN_TRANSITION: EnterTransition =
 private val MAIN_FADE_OUT_TRANSITION: ExitTransition =
     fadeOut(tween(durationMillis = 300, easing = FastOutSlowInEasing))
 
+@ReadOnlyComposable
+@Composable
+fun calculateMainNavigationSuiteType(): MainNavigationSuiteType {
+    val uiSettings = LocalUISettings.current
+    return MainNavigationSuiteType.fromNavigationSuiteType(
+        type = calculateNavigationType(LocalWindowAdaptiveInfo.current),
+        floating = uiSettings.bottomNavFloating,
+        noLabel = uiSettings.bottomNavLabel == NavigationLabel.NONE
+    )
+}
+
+private val MainNavigationSuiteType.isNavigationBar
+    get() = when (this) {
+        MainNavigationSuiteType.FloatingNavigationBar,
+        MainNavigationSuiteType.FloatingNavigationBarCompact,
+        MainNavigationSuiteType.ShortNavigationBarCompact,
+        MainNavigationSuiteType.ShortNavigationBarMedium,
+        MainNavigationSuiteType.NavigationBar -> true
+        else -> false
+    }
+
+@Stable
+private fun MainNavigationSuiteType.toNavigationSuiteType(): NavigationSuiteType = when (this) {
+    MainNavigationSuiteType.FloatingNavigationBar,
+    MainNavigationSuiteType.FloatingNavigationBarCompact,
+    MainNavigationSuiteType.ShortNavigationBarCompact -> NavigationSuiteType.ShortNavigationBarCompact
+    MainNavigationSuiteType.ShortNavigationBarMedium -> NavigationSuiteType.ShortNavigationBarMedium
+    MainNavigationSuiteType.WideNavigationRailCollapsed -> NavigationSuiteType.WideNavigationRailCollapsed
+    MainNavigationSuiteType.WideNavigationRailExpanded -> NavigationSuiteType.WideNavigationRailExpanded
+    MainNavigationSuiteType.NavigationBar -> NavigationSuiteType.NavigationBar
+    MainNavigationSuiteType.NavigationRail -> NavigationSuiteType.NavigationRail
+    MainNavigationSuiteType.NavigationDrawer -> NavigationSuiteType.NavigationDrawer
+    MainNavigationSuiteType.None -> NavigationSuiteType.None
+}
+
 @Preview("MainNavigationItems", device = Devices.PIXEL_TABLET)
 @Composable
 private fun MainNavigationItemsPreview() = TiebaLiteTheme {
@@ -582,14 +678,14 @@ private fun MainNavigationItemsPreview() = TiebaLiteTheme {
 
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
-            NavigationSuiteType.WideNavigationRailCollapsed,
-            NavigationSuiteType.WideNavigationRailExpanded,
-            NavigationSuiteType.NavigationRail,
-            NavigationSuiteType.NavigationDrawer,
+            MainNavigationSuiteType.WideNavigationRailCollapsed,
+            MainNavigationSuiteType.WideNavigationRailExpanded,
+            MainNavigationSuiteType.NavigationRail,
+            MainNavigationSuiteType.NavigationDrawer,
         )
         .forEach { type ->
-            NavigationSuite(navigationSuiteType = type, verticalArrangement = Arrangement.Center) {
-                MainNavigationItems(destinations, isSelected, navigationSuiteType = type)
+            MainNavigationSuite(mainNavigationSuiteType = type, verticalArrangement = Arrangement.Center) {
+                MainNavigationItems(destinations, isSelected, mainNavigationSuiteType = type)
             }
         }
     }
@@ -603,13 +699,15 @@ private fun MainBottomNavigationItemsPreview() = TiebaLiteTheme {
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
-            NavigationSuiteType.ShortNavigationBarCompact,
-            NavigationSuiteType.ShortNavigationBarMedium,
-            NavigationSuiteType.NavigationBar,
+            MainNavigationSuiteType.FloatingNavigationBar,
+            MainNavigationSuiteType.FloatingNavigationBarCompact,
+            MainNavigationSuiteType.ShortNavigationBarCompact,
+            MainNavigationSuiteType.ShortNavigationBarMedium,
+            MainNavigationSuiteType.NavigationBar,
         )
         .forEach { type ->
-            NavigationSuite(navigationSuiteType = type, verticalArrangement = Arrangement.Center) {
-                MainNavigationItems(destinations, isSelected, navigationSuiteType = type)
+            MainNavigationSuite(mainNavigationSuiteType = type, verticalArrangement = Arrangement.Center) {
+                MainNavigationItems(destinations, isSelected, mainNavigationSuiteType = type)
             }
         }
     }

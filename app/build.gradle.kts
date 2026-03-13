@@ -115,6 +115,7 @@ android {
                 "-Xcontext-parameters",
                 "-opt-in=kotlin.RequiresOptIn",
                 "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi",
                 "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
                 "-opt-in=com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi",
                 "-opt-in=dev.chrisbanes.haze.ExperimentalHazeApi",

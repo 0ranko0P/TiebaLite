@@ -1,30 +1,81 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItemColors
 import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.NavigationItemColors
+import androidx.compose.material3.ShortNavigationBarOverride
+import androidx.compose.material3.ShortNavigationBarOverrideScope
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuite
+import androidx.compose.material3.ripple
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.HorizontalRuler
+import androidx.compose.ui.layout.VerticalRuler
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.page.main.FloatingIconNavigationBarOverride.ShortNavigationBar
+import com.huanchengfly.tieba.post.ui.page.main.FloatingNavigationBarOverride.ShortNavigationBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
+import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.LocalAccount
+
+val FloatingNavigationBarScreenOffset = FloatingToolbarDefaults.ScreenOffset / 4
+
+private val FloatingNavigationBarElevation: Dp = 1.dp
+
+private val FloatingIconNavigationBarHeight = 56.dp
+
+val ColorScheme.vibrantFloatingNavigationBarColor: Color
+    get() = surfaceColorAtElevation(4.dp)
+
+val ColorScheme.vibrantFloatingNavigationBarContentColor: Color
+    get() = onSurface
 
 /**
  * Drawer primary action used in [NavigationSuite]
@@ -92,3 +143,185 @@ fun NavigationDrawerItem(
         interactionSource = interactionSource,
     )
 }
+
+/**
+ * Icon only short navigation bar item.
+ *
+ * @param selected whether this item is selected
+ * @param onClick called when this item is clicked
+ * @param icon icon for this item, typically an [Icon]
+ * @param colors [NavigationItemColors] that will be used to resolve the colors used for this item
+ *   in different states
+ * @param enabled controls the enabled state of this item. When `false`, this component will not
+ *   respond to user input, and it will appear visually disabled and disabled to accessibility
+ *   services
+ * @param modifier the [Modifier] to be applied to this item
+ * @param interactionSource the [MutableInteractionSource] representing the stream of [Interaction]s
+ *   for this item. You can create and pass in your own `remember`ed instance to observe
+ *   [Interaction]s and customize the appearance / behavior of this item in different states
+ */
+@Composable
+internal fun IconNavigationItem(
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    colors: NavigationItemColors,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    interactionSource: MutableInteractionSource? = null,
+) {
+    @Suppress("NAME_SHADOWING")
+    val interactionSource = interactionSource ?: remember { MutableInteractionSource() }
+    val iconColor = colors.iconColor(selected = selected, enabled = enabled)
+    Box(
+        modifier
+            .selectable(
+                selected = selected,
+                onClick = onClick,
+                enabled = enabled,
+                role = Role.Tab,
+                interactionSource = interactionSource,
+                indication = null,
+            )
+            .size(LocalMinimumInteractiveComponentSize.current),
+    ) {
+        val indicatorAnimationProgress = animateFloatAsState(
+            targetValue = if (selected) 1f else 0f,
+            animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
+        )
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .badgeBounds(),
+            contentAlignment = Alignment.Center,
+            content = {
+                // Create the indicator ripple.
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(CircleShape)
+                        .indication(interactionSource, ripple())
+                )
+                // Create the indicator. The indicator has a expansion animation which interferes
+                // with the timing of the ripple, which is why they are separate composables.
+                Indicator(colors.selectedIndicatorColor) {
+                    indicatorAnimationProgress.value.coerceAtLeast(0f)
+                }
+
+                CompositionLocalProvider(LocalContentColor provides iconColor, content = icon)
+            },
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.Indicator(
+    indicatorColor: Color,
+    indicatorAnimationProgress: () -> Float,
+) {
+    Box(
+        Modifier
+            .matchParentSize()
+            .drawBehind {
+                drawCircle(indicatorColor, size.minDimension / 2 * indicatorAnimationProgress())
+            }
+    )
+}
+
+@Composable
+private fun ShortNavigationBarOverrideScope.FloatingContainer(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .windowInsetsPadding(windowInsets)
+            .fillMaxWidth()
+            .clickableNoIndication(onClick = {})
+            .offset(y = -FloatingNavigationBarScreenOffset),
+        contentAlignment = Alignment.Center,
+    ) {
+        CompositionLocalProvider(LocalContentColor provides contentColor, content)
+    }
+}
+
+/**
+ * This override provides the default behavior of the [ShortNavigationBar] component.
+ */
+@ExperimentalMaterial3ComponentOverrideApi
+object FloatingNavigationBarOverride : ShortNavigationBarOverride {
+    @Composable
+    override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
+        FloatingContainer(
+            modifier = Modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = NavigationBarHeight)
+                    .graphicsLayer {
+                        shape = CircleShape
+                        clip = true
+                        shadowElevation = FloatingNavigationBarElevation.toPx()
+                    }
+                    .then(modifier)
+                    .background(containerColor)
+                    .padding(start = 24.dp, top = 6.dp, end = 24.dp, bottom = 4.dp)
+                    .selectableGroup(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+/**
+ * This override provides the default behavior of the [ShortNavigationBar] component.
+ */
+@ExperimentalMaterial3ComponentOverrideApi
+object FloatingIconNavigationBarOverride : ShortNavigationBarOverride {
+    @Composable
+    override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
+        FloatingContainer {
+            Row(
+                modifier = Modifier
+                    .height(FloatingIconNavigationBarHeight)
+                    .graphicsLayer {
+                        shape = CircleShape
+                        clip = true
+                        shadowElevation = FloatingNavigationBarElevation.toPx()
+                    }
+                    .then(modifier)
+                    .background(containerColor)
+                    .padding(4.dp)
+                    .selectableGroup(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+private val BadgeTopRuler = HorizontalRuler()
+private val BadgeEndRuler = VerticalRuler()
+
+internal fun Modifier.badgeBounds() =
+    this.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(
+            width = placeable.width,
+            height = placeable.height,
+            rulers = {
+                // use provides instead of provideRelative cause we will place relative
+                // in the badge code
+                BadgeEndRuler provides coordinates.size.width.toFloat()
+                BadgeTopRuler provides 0f
+            },
+        ) {
+            placeable.place(0, 0)
+        }
+    }

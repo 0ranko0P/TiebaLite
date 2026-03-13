@@ -27,11 +27,11 @@ import com.huanchengfly.tieba.post.putLong
 import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.theme.TiebaBlue
 import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
-import com.huanchengfly.tieba.post.ui.models.settings.BottomNavigationLabel
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.NavigationLabel
 import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
@@ -238,12 +238,13 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
         val darkPrefOrdinal = it[intPreferencesKey(KEY_DARK_THEME_MODE)] ?: DarkPreference.FOLLOW_SYSTEM.ordinal
         val appIconOrdinal = it[intPreferencesKey(KEY_APP_ICON)] ?: LauncherIcons.NEW_ICON.ordinal
         val bottomNavLabelOrdinal =
-            it[intPreferencesKey(KEY_BOTTOM_NAV_LABEL)] ?: BottomNavigationLabel.ALWAYS.ordinal
+            it[intPreferencesKey(KEY_BOTTOM_NAV_LABEL)] ?: NavigationLabel.ALWAYS.ordinal
 
         UISettings(
             appIcon = LauncherIcons.entries[appIconOrdinal],
             appIconThemed = it[booleanPreferencesKey(KEY_APP_THEMED_ICON)] == true,
-            bottomNavLabel = BottomNavigationLabel.entries[bottomNavLabelOrdinal],
+            bottomNavFloating = it[booleanPreferencesKey(KEY_BOTTOM_NAV_FLOATING)] ?: true,
+            bottomNavLabel = NavigationLabel.entries[bottomNavLabelOrdinal],
             darkAmoled = it[booleanPreferencesKey(KEY_DARK_AMOLED)] == true,
             darkPreference = DarkPreference.entries[darkPrefOrdinal],
             darkenImage = it[booleanPreferencesKey(KEY_DARKEN_IMAGE_ON_NIGHT)] ?: true,
@@ -258,6 +259,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
     override val set: (MutablePreferences, UISettings) -> Unit = { it, ui ->
         it[intPreferencesKey(KEY_APP_ICON)] = ui.appIcon.ordinal
         it[booleanPreferencesKey(KEY_APP_THEMED_ICON)] = ui.appIconThemed
+        it[booleanPreferencesKey(KEY_BOTTOM_NAV_FLOATING)] = ui.bottomNavFloating
         it[intPreferencesKey(KEY_BOTTOM_NAV_LABEL)] = ui.bottomNavLabel.ordinal
         it[booleanPreferencesKey(KEY_DARK_AMOLED)] = ui.darkAmoled
         it[intPreferencesKey(KEY_DARK_THEME_MODE)] = ui.darkPreference.ordinal
@@ -271,6 +273,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
 
     private const val KEY_APP_ICON = "app_icon"
     private const val KEY_APP_THEMED_ICON = "app_themed_icon"
+    private const val KEY_BOTTOM_NAV_FLOATING = "ui_bottom_nav_floating"
     private const val KEY_BOTTOM_NAV_LABEL = "ui_bottom_nav_label"
 
     private const val KEY_DARK_AMOLED = "dark_amoled"

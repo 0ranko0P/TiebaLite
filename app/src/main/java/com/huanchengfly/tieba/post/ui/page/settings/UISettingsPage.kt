@@ -13,6 +13,8 @@ import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.Contrast
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.FontDownload
+import androidx.compose.material.icons.outlined.House
+import androidx.compose.material.icons.outlined.Houseboat
 import androidx.compose.material.icons.outlined.NightsStay
 import androidx.compose.material.icons.outlined.Upcoming
 import androidx.compose.material.icons.outlined.ViewAgenda
@@ -27,8 +29,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.ui.models.settings.BottomNavigationLabel
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
+import com.huanchengfly.tieba.post.ui.models.settings.NavigationLabel
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AppFont
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -148,14 +150,27 @@ fun UISettingsPage(
             }
 
             Item { uiSettings ->
+                val leadingIcon =
+                    if (uiSettings.bottomNavFloating) Icons.Outlined.Houseboat else Icons.Outlined.House
+                SwitchPref(
+                    checked = uiSettings.bottomNavFloating,
+                    onCheckedChange = {
+                        updatePreference { old -> old.copy(bottomNavFloating = it) }
+                    },
+                    title = R.string.settings_nav_floating,
+                    leadingIcon = leadingIcon
+                )
+            }
+
+            Item { uiSettings ->
                 ListPref(
                     value = uiSettings.bottomNavLabel,
                     title = R.string.settings_nav_label,
                     leadingIcon = Icons.AutoMirrored.Outlined.Label,
                     options = persistentMapOf(
-                        BottomNavigationLabel.ALWAYS to R.string.title_nav_label_always,
-                        BottomNavigationLabel.SELECTED to R.string.title_nav_label_selected,
-                        BottomNavigationLabel.NONE to R.string.title_nav_label_none
+                        NavigationLabel.ALWAYS to R.string.title_nav_label_always,
+                        NavigationLabel.SELECTED to R.string.title_nav_label_selected,
+                        NavigationLabel.NONE to R.string.title_nav_label_none
                     ),
                     onValueChange = { label ->
                         updatePreference { old -> old.copy(bottomNavLabel = label) }
