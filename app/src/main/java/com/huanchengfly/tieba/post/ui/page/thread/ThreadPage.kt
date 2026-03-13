@@ -104,6 +104,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
+import com.huanchengfly.tieba.post.NoWindowInsets
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -422,15 +423,15 @@ fun ThreadPage(
                         BackNavigationIcon(onBackPressed = onBackPressedCallback)
                     },
                     actions = {
-                        val scrollToTopVisible by remember {
-                            derivedStateOf { lazyListState.canScrollBackward }
+                        val scrollToTopVisible by remember { // Not on top or Toolbar is collapsed
+                            derivedStateOf { lazyListState.canScrollBackward || toolbarScrollBehavior.state.collapsedFraction >= 0.9f }
                         }
                         FadedVisibility(visible = scrollToTopVisible) {
                             ActionItem(
                                 icon = Icons.Rounded.VerticalAlignTop,
                                 contentDescription = R.string.btn_back_to_top
                             ) {
-                                if (lazyListState.canScrollBackward) {
+                                if (scrollToTopVisible) {
                                     coroutineScope.launch { lazyListState.scrollToItem(0) }
                                     topAppBarScrollBehavior.state.contentOffset = 0f
                                     toolbarScrollBehavior.state.contentOffset = 0f
@@ -511,7 +512,7 @@ fun ThreadPage(
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     scrimColor = Color.Transparent,
                     dragHandle = null,
-                    contentWindowInsets = { WindowInsets() } // Handle it inside the content for blurring
+                    contentWindowInsets = { NoWindowInsets } // Handle it inside the content for blurring
                 ) {
                     val isMyThread by remember(state.lz) {
                         derivedStateOf { state.user != null && state.lz?.id == state.user?.id }
