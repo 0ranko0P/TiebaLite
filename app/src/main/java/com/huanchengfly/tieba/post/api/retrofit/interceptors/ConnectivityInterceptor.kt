@@ -3,7 +3,7 @@ package com.huanchengfly.tieba.post.api.retrofit.interceptors
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
-import com.huanchengfly.tieba.post.components.NetworkObserver.isNetworkConnected
+import com.huanchengfly.tieba.post.components.NetworkObserver
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException
@@ -24,13 +24,13 @@ object ConnectivityInterceptor : Interceptor {
         return when (e) {
             is SocketTimeoutException,
             is SocketException,
-            is SSLHandshakeException -> if (isNetworkConnected.value) {
+            is SSLHandshakeException -> if (NetworkObserver.isValidatedNetworkConnectionSnapshot()) {
                 NoConnectivityException(App.INSTANCE.getString(R.string.connectivity_timeout))
             } else {
                 e
             }
 
-            is IOException -> if (!isNetworkConnected.value) {
+            is IOException -> if (!NetworkObserver.isValidatedNetworkConnectionSnapshot()) {
                 NoConnectivityException(App.INSTANCE.getString(R.string.no_internet_connectivity))
             } else {
                 e

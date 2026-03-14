@@ -72,4 +72,10 @@ object NetworkObserver: ConnectivityManager.NetworkCallback(), DefaultLifecycleO
         connectivityManager.unregisterNetworkCallback(this)
         isObserving = false
     }
+
+    fun isValidatedNetworkConnectionSnapshot(): Boolean {
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
 }
