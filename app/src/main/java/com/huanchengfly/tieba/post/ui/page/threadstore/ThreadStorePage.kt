@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,9 +28,13 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
+import com.huanchengfly.tieba.post.ui.page.consumeResult
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadResult
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadResultKey
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
@@ -153,6 +158,12 @@ fun ThreadStorePage(
                         )
                     }
                 }
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            navigator.consumeResult<Destination.ThreadStore, ThreadResult>(ThreadResultKey)?.run {
+                viewModel.onThreadResult(threadId, markedPostId)
             }
         }
     }

@@ -2,6 +2,8 @@ package com.huanchengfly.tieba.post.ui.page.threadstore
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.util.fastFilter
+import androidx.compose.ui.util.fastMap
+import androidx.compose.ui.util.fastMapNotNull
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
@@ -97,6 +99,28 @@ class ThreadStoreViewModel @Inject constructor(
                     _uiState.update { it.copy(data = oldThreads) }
                 }
                 .onSuccess { emitUiEvent(ThreadStoreUiEvent.Delete.Success) }
+        }
+    }
+
+    fun onThreadResult(threadId: Long, markedPostId: Long?) = launchInVM {
+        val newData = withContext(Dispatchers.Default) {
+            if (markedPostId != null) {
+                // Update
+                currentState.data.fastMap {
+                    when {
+                        // No changes, return null list
+                        it.id == threadId && it.markPid == markedPostId -> return@withContext null
+                        it.id == threadId -> it.copy(markPid = markedPostId)
+                        else -> it
+                    }
+                }
+            } else {
+                // Filter out
+                currentState.data.fastMapNotNull { if (it.id != threadId) it else null }
+            }
+        }
+        if (newData != null) {
+            _uiState.update { it.copy(data = newData) }
         }
     }
 

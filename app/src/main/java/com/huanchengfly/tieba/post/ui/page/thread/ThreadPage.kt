@@ -167,9 +167,9 @@ private val ThreadToolbarContainerHeight = 48.dp
 
 const val ThreadResultKey = "THREAD_PAGE"
 
-private fun createResult(threadId: Long, like: Like?, markedPost: PostData?): ThreadResult? {
+private fun createResult(threadId: Long, like: Like?, markedPostId: Long?): ThreadResult? {
     return if (like != null) {
-        ThreadResult(threadId, like.liked, like.count, markedPostId = markedPost?.id)
+        ThreadResult(threadId, liked = like.liked, likes = like.count, markedPostId = markedPostId)
     } else {
         null
     }
@@ -192,18 +192,16 @@ private fun ToggleButton(
         color = if (checked) colorScheme.secondaryContainer else colorScheme.surfaceContainerHigh,
         contentColor = if (checked) colorScheme.onSecondaryContainer else colorScheme.onSurface,
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Icon(imageVector = icon, contentDescription = text)
-                Text(
-                    text = text,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp, alignment = Alignment.CenterHorizontally)
+        ) {
+            Icon(imageVector = icon, contentDescription = text)
+            Text(
+                text = text,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelLarge
+            )
         }
     }
 }
@@ -357,10 +355,10 @@ fun ThreadPage(
         viewModel.requestLoad(0, postId)
     }
 
-    state.thread?.like?.let { threadLike ->
-        LaunchedEffect(state.thread?.like, newMarkedCollectionPost?.id) {
-            val rec = createResult(threadId, threadLike, markedPost = newMarkedCollectionPost)
-            navigator.setResult(ThreadResultKey, rec)
+    state.thread?.let { thread ->
+        LaunchedEffect(thread.like, thread.collectMarkPid, newMarkedCollectionPost?.id) {
+            val markedPostId = newMarkedCollectionPost?.id ?: thread.collectMarkPid
+            navigator.setResult(ThreadResultKey, createResult(threadId, thread.like, markedPostId))
         }
     }
 
