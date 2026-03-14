@@ -7,14 +7,17 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeGestures
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.FullscreenExit
@@ -28,10 +31,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.SaverScope
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.retain.RetainedEffect
+import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -56,47 +57,33 @@ internal val LocalVideoPlayerController =
     compositionLocalOf<DefaultVideoPlayerController> { error("VideoPlayerController is not initialized") }
 
 @Composable
-fun rememberVideoPlayerController(
+fun retainVideoPlayerController(
     source: VideoPlayerSource? = null,
     thumbnailUrl: String? = null,
     fullScreenModeChangedListener: OnFullScreenModeChangedListener? = null,
     playWhenReady: Boolean = false,
 ): VideoPlayerController {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-
-    return rememberSaveable(
-        context, coroutineScope,
-        saver = object : Saver<DefaultVideoPlayerController, VideoPlayerState> {
-            override fun restore(value: VideoPlayerState): DefaultVideoPlayerController {
-                return DefaultVideoPlayerController(
-                    context = context,
-                    initialState = value.copy(isPlaying = playWhenReady),
-                    coroutineScope = coroutineScope,
-                    fullScreenModeChangedListener = fullScreenModeChangedListener
-                ).apply {
-                    source?.let { setSource(it) }
-                }
-            }
-
-            override fun SaverScope.save(value: DefaultVideoPlayerController): VideoPlayerState {
-                return value.currentState { it }
-            }
-        },
-        init = {
-            DefaultVideoPlayerController(
-                context = context,
-                initialState = VideoPlayerState(
-                    thumbnailUrl = thumbnailUrl,
-                    isPlaying = playWhenReady
-                ),
-                coroutineScope = coroutineScope,
-                fullScreenModeChangedListener = fullScreenModeChangedListener
-            ).apply {
-                source?.let { setSource(it) }
-            }
+    val videoPlayerController = retain {
+        DefaultVideoPlayerController(
+            context = context.applicationContext,
+            initialState = VideoPlayerState(
+                thumbnailUrl = thumbnailUrl,
+                isPlaying = playWhenReady
+            ),
+        ).apply {
+            source?.let { setSource(it) }
         }
-    )
+    }
+
+    DisposableEffect(fullScreenModeChangedListener) {
+        videoPlayerController.setFullScreenModeChangedListener(fullScreenModeChangedListener)
+        onDispose {
+            videoPlayerController.setFullScreenModeChangedListener(null)
+        }
+    }
+
+    return videoPlayerController
 }
 
 @Composable
@@ -116,9 +103,9 @@ fun VideoPlayer(
         videoPlayerController.enableGestures(gesturesEnabled)
     }
 
-    DisposableEffect(Unit) {
+    RetainedEffect(Unit) {
         videoPlayerController.initialize()
-        onDispose {
+        onRetire {
             videoPlayerController.release()
         }
     }
@@ -179,7 +166,11 @@ fun VideoPlayer(
 @Composable
 fun BoxScope.MediaController() {
     val videoPlayerController = LocalVideoPlayerController.current
-    MediaControlGestures(modifier = Modifier.matchParentSize())
+    MediaControlGestures(
+        modifier = Modifier
+            .windowInsetsPadding(WindowInsets.safeGestures)
+            .matchParentSize()
+    )
 
     MediaControlButtons(
         modifier = Modifier.matchParentSize()
@@ -191,7 +182,7 @@ fun BoxScope.MediaController() {
         Column(
             modifier = Modifier
                 .safeContentPadding()
-                .clickableNoIndication {/** Block Gestures */}
+                .clickableNoIndication { /** Block Gestures */ }
                 .padding(vertical = 8.dp)
                 .align(Alignment.BottomCenter),
         ) {

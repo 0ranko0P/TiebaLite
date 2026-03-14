@@ -28,7 +28,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.video.OnFullScreenModeChan
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerController
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerSource
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberVideoPlayerController
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.retainVideoPlayerController
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import java.util.Objects
 
@@ -52,7 +52,7 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
         val thumbnailUrl = intent.getStringExtra(EXTRA_THUMBNAIL)
 
         setContent {
-            videoPlayerController = rememberVideoPlayerController(
+            videoPlayerController = retainVideoPlayerController(
                 source = VideoPlayerSource.Network(data.toString()),
                 thumbnailUrl = thumbnailUrl,
                 fullScreenModeChangedListener = this

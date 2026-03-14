@@ -23,7 +23,9 @@ import com.huanchengfly.tieba.post.components.MediaCache
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.FlowDebouncer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,10 +42,13 @@ interface OnFullScreenModeChangedListener {
 internal class DefaultVideoPlayerController(
     private val context: Context,
     private val initialState: VideoPlayerState,
-    private val coroutineScope: CoroutineScope,
-    private val fullScreenModeChangedListener: OnFullScreenModeChangedListener? = null
 ) : VideoPlayerController {
+
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     private val released = AtomicBoolean(false)
+
+    private var fullScreenModeChangedListener: OnFullScreenModeChangedListener? = null
 
     private val _state = MutableStateFlow(initialState)
     override val state: StateFlow<VideoPlayerState>
@@ -331,13 +336,16 @@ internal class DefaultVideoPlayerController(
         }
     }
 
+    fun setFullScreenModeChangedListener(listener: OnFullScreenModeChangedListener?) {
+        this.fullScreenModeChangedListener = listener
+    }
+
     override fun supportFullScreen(): Boolean {
         return fullScreenModeChangedListener != null
     }
 
     override fun toggleFullScreen() {
-        require(fullScreenModeChangedListener != null) { "Full screen mode is not supported" }
-        fullScreenModeChangedListener.onFullScreenModeChanged()
+        fullScreenModeChangedListener?.onFullScreenModeChanged()
     }
 
     companion object {
