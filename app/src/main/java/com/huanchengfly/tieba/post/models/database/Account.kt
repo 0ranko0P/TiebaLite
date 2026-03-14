@@ -38,5 +38,7 @@ data class Account(
     val tiebaUid: String? = null,
     val zid: String? = null,
     @ColumnInfo(name = "last_update")
-    val lastUpdate: Long = System.currentTimeMillis()
+    val lastUpdate: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "days_tofree", defaultValue = "0")
+    val blockDays: Int = 0,
 )

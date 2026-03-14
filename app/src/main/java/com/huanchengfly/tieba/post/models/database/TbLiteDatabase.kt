@@ -36,9 +36,10 @@ import java.util.concurrent.TimeUnit
         Timestamp::class,
         UserProfile::class,
     ],
-    version = 2,
+    version = 3,
     autoMigrations = [
-        AutoMigration(from = 1, to = 2, spec = Migrations.Migration_1_2::class)
+        AutoMigration(from = 1, to = 2, spec = Migrations.Migration_1_2::class),
+        AutoMigration(from = 2, to = 3, spec = Migrations.Migration_2_3::class),
     ]
 )
 abstract class TbLiteDatabase : RoomDatabase() {
@@ -89,6 +90,17 @@ abstract class TbLiteDatabase : RoomDatabase() {
              * @since 4.0.0-beta.4
              */
             class Migration_1_2 : AutoMigrationSpec {
+                override fun onPostMigrate(connection: SQLiteConnection) {
+                }
+            }
+
+            /**
+             * [UserProfile] add days_tofree column
+             * [Account] add days_tofree column
+             *
+             * @since 4.0.0-beta.4.3
+             */
+            class Migration_2_3 : AutoMigrationSpec {
                 override fun onPostMigrate(connection: SQLiteConnection) {
                 }
             }

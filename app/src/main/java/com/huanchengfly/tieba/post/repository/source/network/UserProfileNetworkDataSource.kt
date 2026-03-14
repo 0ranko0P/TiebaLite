@@ -7,6 +7,7 @@ import com.huanchengfly.tieba.post.api.models.FollowBean
 import com.huanchengfly.tieba.post.api.models.InitNickNameBean
 import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.PermissionListBean
+import com.huanchengfly.tieba.post.api.models.protos.Anti
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
@@ -52,15 +53,15 @@ object UserProfileNetworkDataSource {
             }
     }
 
-    suspend fun loadUserProfile(uid: Long): User {
+    suspend fun loadUserProfile(uid: Long): Pair<User, Anti?> {
         require(uid > 0) { "Invalid user ID: $uid." }
 
         return TiebaApi.getInstance()
             .userProfileFlow(uid)
             .firstOrThrow()
             .run {
-                val data = data_ ?: throw TiebaApiException(commonResponse = error.commonResponse)
-                data.user ?: throw TiebaException("Null user data")
+                if (data_?.user == null) throw TiebaException("Null user data")
+                data_.user to data_.anti_stat
             }
     }
 

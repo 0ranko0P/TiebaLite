@@ -503,6 +503,8 @@
     <string name="channel_group_msg">消息通知</string>
     <string name="channel_group_msg_description">贴吧的各种消息通知</string>
     <string name="profile_title_hidden">该用户已隐藏%s</string>
+    <string name="profile_account_blocked_forever">该账号已被永久封禁</string>
+    <string name="profile_account_blocked">该账号处于%d 天封禁套餐中</string>
     <string name="title_hide_reply_warning">忽略回贴风险提示</string>
     <string name="title_nav_label_always">始终显示</string>
     <string name="title_nav_label_selected">显示当前</string>

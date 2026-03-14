@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.api.retrofit.interceptors
 
+import com.huanchengfly.tieba.post.api.Error
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.protos.ProtoCommonResponse
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
@@ -19,6 +20,7 @@ object ProtoFailureResponseInterceptor : Interceptor {
         val protoCommonResponse = try {
             ProtoCommonResponse.ADAPTER.decode(inputStream)
         } catch (exception: Exception) {
+            exception.printStackTrace()
             //如果返回内容解析失败, 说明它不是一个合法的 json
             //如果在拦截器抛出 MalformedJsonException 会导致 Retrofit 的异步请求一直卡着直到超时
             return response
@@ -26,8 +28,10 @@ object ProtoFailureResponseInterceptor : Interceptor {
             inputStream.close()
         }
 
-        if (protoCommonResponse.error != null && protoCommonResponse.error.error_code != 0) {
-            throw TiebaApiException(CommonResponse(protoCommonResponse.error.error_code, protoCommonResponse.error.error_msg))
+        protoCommonResponse.error?.run {
+            if (error_code != 0 && error_code != Error.ERROR_ACCOUNT_BLOCKED/* 账号封禁错误由DataSource 处理 */) {
+                throw TiebaApiException(CommonResponse(error_code, error_msg))
+            }
         }
         return response
     }

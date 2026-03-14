@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -109,6 +110,7 @@ import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.models.user.PermissionList
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
@@ -278,6 +280,9 @@ fun UserProfilePage(
         val account = LocalAccount.current
         val isSelf = account?.uid == uid
         val blockState by viewModel.blockState.collectAsStateWithLifecycle()
+        val onAppealClicked: (() -> Unit)? = {
+            navigator.navigate(Destination.WebView("https://c.tieba.baidu.com/mo/q/userappeal"))
+        }.takeIf { isSelf }
 
         val permList = uiState.permList
         val permissionDialogState = rememberDialogState()
@@ -328,7 +333,7 @@ fun UserProfilePage(
             }
         }
 
-        val movablePager = remember(tabs.size) {
+        val movablePager = remember {
             movableContentOf<Modifier, Boolean> { modifier, fluid ->
                 Column {
                     UserProfileTabRow(tabs, pagerState, collapseFraction)
@@ -348,7 +353,7 @@ fun UserProfilePage(
                 UserProfileTopAppBar(
                     transitionKey = transitionKey,
                     profile = userProfile,
-                    myUid = account?.uid,
+                    isSelf = account?.uid == userProfile.uid,
                     isFollowing = userProfile.following,
                     isRequestingFollow = uiState.isRequestingFollow,
                     onActionClicked = {
@@ -371,7 +376,8 @@ fun UserProfilePage(
                     UserIntro(
                         modifier = Modifier.padding(start = 16.dp),
                         profile = userProfile,
-                        landscape = contentLandscapeLayout
+                        landscape = contentLandscapeLayout,
+                        onAppealClicked = onAppealClicked,
                     )
                 }
             },
@@ -400,7 +406,7 @@ fun UserProfilePage(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            UserIntro(profile = userProfile, landscape = true)
+                            UserIntro(profile = userProfile, landscape = true, onAppealClicked = onAppealClicked)
                         }
 
                         movablePager(Modifier.weight(1.0f), true/* fluid */)
@@ -422,7 +428,7 @@ private fun UserProfileTopAppBar(
     transitionKey: String? = null,
     profile: UserProfile,
     block: UserBlockState,
-    myUid: Long? = null,
+    isSelf: Boolean = false,
     isFollowing: Boolean = false,
     isRequestingFollow: Boolean = false,
     onActionClicked: (() -> Unit)? = null,
@@ -434,7 +440,6 @@ private fun UserProfileTopAppBar(
     scrollBehavior: TopAppBarScrollBehavior,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val isSelf = myUid == profile.uid
     val actionsMenu: @Composable RowScope.() -> Unit = {
         if (isRequestingFollow) {
             CircularProgressIndicator(
@@ -751,7 +756,51 @@ private fun UserProfileDetail(
 }
 
 @Composable
-private fun UserIntro(modifier: Modifier = Modifier, profile: UserProfile, landscape: Boolean) {
+private fun UserAccountBlockedTip(
+    modifier: Modifier = Modifier,
+    days: Int,
+    onAppealClicked: (() -> Unit)? = null
+) {
+    ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
+        Row(
+            modifier = modifier,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Warning,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = Color.Red,
+            )
+            Text(
+                text = if (days < 36500) {
+                    stringResource(R.string.profile_account_blocked, days)
+                } else {
+                    stringResource(R.string.profile_account_blocked_forever)
+                },
+                modifier = Modifier.padding(horizontal = 8.dp),
+                maxLines = 1,
+                color = MaterialTheme.colorScheme.error,
+            )
+            if (onAppealClicked != null) {
+                Text(
+                    text = "申诉",
+                    modifier = Modifier.clickableNoIndication(onClick = onAppealClicked),
+                    textDecoration = TextDecoration.Underline,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserIntro(
+    modifier: Modifier = Modifier,
+    profile: UserProfile,
+    landscape: Boolean,
+    onAppealClicked: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
     val flowArrangement = Arrangement.spacedBy(6.dp)
 
@@ -759,6 +808,10 @@ private fun UserIntro(modifier: Modifier = Modifier, profile: UserProfile, lands
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+        if (profile.blockDays > 0) {
+            UserAccountBlockedTip(days = profile.blockDays, onAppealClicked = onAppealClicked)
+        }
+
         Text(
             text = profile.intro ?: stringResource(id = R.string.tip_no_intro),
             style = MaterialTheme.typography.bodyMedium,
@@ -905,7 +958,7 @@ private fun StateScreenScope.LoadingScreen(
         modifier = modifier.fillMaxSize()
     ) {
         if (!landscapeLayout) {
-            val titleModifier = Modifier.padding(start = 8.dp)
+            val titleModifier = Modifier.padding(start = 2.dp)
             CollapsingAvatarTopAppBar(
                 avatar = {
                     UserAvatar(Modifier.matchParentSize(), avatar, uid, transitionKey)

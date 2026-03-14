@@ -181,7 +181,7 @@ class AccountUtil private constructor(context: Context) {
             Log.i(TAG, "onRefreshCurrent: Cache of ${account.uid} expired for ${duration / 1000}s")
         }
 
-        val user = networkDataSource.loadUserProfile(uid = account.uid)
+        val (user, anti) = networkDataSource.loadUserProfile(uid = account.uid)
         val birthday = user.birthday_info
         val updated = account.copy(
             nickname = user.nameShow,
@@ -198,7 +198,8 @@ class AccountUtil private constructor(context: Context) {
             birthdayTime = birthday?.birthday_time ?: account.birthdayTime,
             constellation = birthday?.constellation,
             tiebaUid = user.tieba_uid,
-            lastUpdate = System.currentTimeMillis()
+            lastUpdate = System.currentTimeMillis(),
+            blockDays = anti?.days_tofree?.takeIf { anti.block_stat == 1 } ?: 0,
         )
         accountDao.upsert(account = updated)
         return updated

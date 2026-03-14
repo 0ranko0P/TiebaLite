@@ -38,4 +38,6 @@ data class UserProfile(
     val lastUpdate: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "last_visit")
     val lastVisit: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "days_tofree", defaultValue = "0")
+    val blockDays: Int = 0,
 )

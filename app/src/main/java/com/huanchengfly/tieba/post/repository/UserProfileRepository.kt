@@ -6,6 +6,7 @@ import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.api.booleanToInt
 import com.huanchengfly.tieba.post.api.models.FollowBean
 import com.huanchengfly.tieba.post.api.models.PermissionListBean
+import com.huanchengfly.tieba.post.api.models.protos.Anti
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
@@ -105,8 +106,9 @@ class UserProfileRepository @Inject constructor(
         scope.async {
             // Force refresh or cache expired, load latest user profile from network
             if (forceRefresh || checkUserCacheExpired(uid)) {
-                val data: User = networkDataSource.loadUserProfile(uid)
-                userProfileDao.upsert(profile = mapToEntity(data))
+                val (data: User, anti: Anti?) = networkDataSource.loadUserProfile(uid)
+                val blockDays = anti?.days_tofree?.takeIf { anti.block_stat == 1 } ?: 0
+                userProfileDao.upsert(profile = mapToEntity(data, blockDays))
                 localDataSource.purgeByUid(uid)
             } else if (recordHistory) {
                 userProfileDao.updateLastVisit(uid, timestamp = System.currentTimeMillis())
@@ -222,7 +224,7 @@ class UserProfileRepository @Inject constructor(
             }
         }
 
-        private fun mapToEntity(user: User): UserProfile {
+        private fun mapToEntity(user: User, blockDays: Int): UserProfile {
             val nickname = user.nameShow.trim().normalized().takeUnless { it.isEmpty() || it.isBlank() }
             val name = user.name.trim()
                 .normalized()
@@ -253,7 +255,8 @@ class UserProfileRepository @Inject constructor(
                 bazuDesc = user.bazhu_grade?.desc?.takeUnless { it.isEmpty() },
                 newGod = user.new_god_data?.takeUnless { it.status <= 0 }?.field_name,
                 privateForum = user.privSets?.like != 1,
-                isOfficial = user.is_guanfang == 1
+                isOfficial = user.is_guanfang == 1,
+                blockDays = blockDays,
             )
         }
     }
