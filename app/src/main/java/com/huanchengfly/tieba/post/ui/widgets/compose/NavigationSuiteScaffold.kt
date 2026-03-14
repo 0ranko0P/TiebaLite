@@ -54,6 +54,7 @@ import com.huanchengfly.tieba.post.NoWindowInsets
  * 0Ranko0p changes:
  *   1. Add navigationBarAtop option to NavigationSuiteScaffoldLayout
  *   2. Add navigationBarAtop option to Modifier.navigationSuiteScaffoldConsumeWindowInsets
+ *   3. Place the primary action at the end of the ShortNavigationBarCompact
  */
 
 /**
@@ -106,11 +107,6 @@ fun NavigationSuiteScaffoldLayout(
         modifier = modifier,
     ) { measurables, constraints ->
         val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
-        // Find the navigation suite composable through it's layoutId tag
-        val navigationPlaceable =
-            measurables
-                .fastFirst { it.layoutId == NavigationSuiteLayoutIdTag }
-                .measure(looseConstraints)
         val primaryActionContentPlaceable =
             measurables
                 .fastFirst { it.layoutId == PrimaryActionContentLayoutIdTag }
@@ -118,6 +114,21 @@ fun NavigationSuiteScaffoldLayout(
         val isNavigationBar = navigationSuiteType.isNavigationBar
         val layoutHeight = constraints.maxHeight
         val layoutWidth = constraints.maxWidth
+
+        // Find the navigation suite composable through it's layoutId tag
+        val navigationPlaceable =
+            measurables
+                .fastFirst { it.layoutId == NavigationSuiteLayoutIdTag }
+                .measure(
+                    // 0Ranko0p changes: Place the primary action at the end of the navigation bar (HorizontalFloatingToolbar)
+                    if (navigationSuiteType == NavigationSuiteType.ShortNavigationBarCompact) {
+                        looseConstraints.copy(maxWidth = layoutWidth - primaryActionContentPlaceable.width)
+                    // End of 0Ranko0p changes
+                    } else {
+                        looseConstraints
+                    }
+                )
+
         // Find the content composable through it's layoutId tag.
         val contentPlaceable =
             measurables
@@ -153,11 +164,32 @@ fun NavigationSuiteScaffoldLayout(
             if (isNavigationBar) {
                 // Place content above the navigation component.
                 contentPlaceable.placeRelative(0, 0)
-                // Place the navigation component at the bottom of the screen.
-                navigationPlaceable.placeRelative(
-                    0,
-                    layoutHeight - (navigationPlaceable.height * animationProgress).toInt(),
-                )
+                // Place the navigation component at the bottom center of the screen.
+                if (navigationSuiteType != NavigationSuiteType.ShortNavigationBarCompact) {
+                    navigationPlaceable.placeRelative(
+                        (layoutWidth - navigationPlaceable.width) / 2,
+                        layoutHeight - (navigationPlaceable.height * animationProgress).toInt(),
+                    )
+                } else {
+                    // 0Ranko0p changes: Place the primary action at the end of the navigation bar
+                    val actionWidth = if (primaryActionContentPlaceable.width > 0) {
+                        primaryActionContentPlaceable.width + PrimaryActionContentPadding.roundToPx()
+                    } else {
+                        0
+                    }
+                    val navigationX = (layoutWidth - navigationPlaceable.width - actionWidth ) / 2
+                    navigationPlaceable.placeRelative(
+                        navigationX,
+                        layoutHeight - (navigationPlaceable.height * animationProgress).toInt(),
+                    )
+                    primaryActionContentPlaceable.placeRelative(
+                        layoutWidth - navigationX - actionWidth + ToolbarToFabGap.roundToPx(),
+                        layoutHeight - (navigationPlaceable.height * animationProgress).toInt(),
+                    )
+                    return@layout
+                    // End of 0Ranko0p changes
+                }
+
                 // Place the primary action content above the navigation component.
                 val positionX =
                     if (primaryActionContentHorizontalAlignment == Alignment.Start) {

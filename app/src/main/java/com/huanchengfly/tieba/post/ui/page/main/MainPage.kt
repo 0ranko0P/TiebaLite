@@ -7,6 +7,7 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -36,6 +37,7 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalShortNavigationBarOverride
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.NavigationItemColors
 import androidx.compose.material3.ShortNavigationBarDefaults
@@ -61,12 +63,14 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -88,6 +92,8 @@ import androidx.window.embedding.SplitAttributes.LayoutDirection
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
@@ -99,6 +105,7 @@ import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationPosition
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationSuiteScaffoldLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -114,6 +121,7 @@ import dev.chrisbanes.haze.hazeSource
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 @Stable
 val MainDestination.titleRes: Int
@@ -194,11 +202,11 @@ fun MainPage(
     val hazeState = if (!isTranslucent && !uiSettings.reduceEffect) remember { HazeState() } else null
     val navigationSuiteColors = mainNavigationSuiteColors(uiSettings.bottomNavFloating, blur = hazeState != null)
 
+    val currentDestination by nestedNavController.currentMainDestinationAsState(destinations)
     MainNavigationSuiteScaffold(
         state = scaffoldState,
         hazeState = hazeState.takeIf { navigationSuiteType.isNavigationBar },
         navigationItems = {
-            val currentDestination by nestedNavController.currentMainDestinationAsState(destinations)
             val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
 
             MainNavigationItems(
@@ -234,6 +242,12 @@ fun MainPage(
                     AccountNavIcon(onLoginClicked, modifier = Modifier.padding(top = 10.dp))
                 }
                 MainNavigationSuiteType.NavigationDrawer -> TbDrawerNavigationAction(onLoginClicked)
+
+                MainNavigationSuiteType.FloatingNavigationBarCompact -> {
+                    if (!uiSettings.hideExplore) {
+                        ExplorePrimaryAction(visible = MainDestination.Explore === currentDestination)
+                    }
+                }
                 else -> null // NavigationBar or None
             }
         }
@@ -495,7 +509,9 @@ private fun mainNavigationSuiteColors(floatingNavBar: Boolean, blur: Boolean): N
     return TiebaLiteTheme.extendedColorScheme.run {
         NavigationSuiteDefaults.colors(
             shortNavigationBarContainerColor = if (floatingNavBar) {
-                colorScheme.vibrantFloatingNavigationBarColor.copy(if (blur) 0.86f else 1f)
+                colorScheme.vibrantFloatingNavigationBarColor.copy(
+                    alpha = if (blur) if (darkTheme) 0.9f else 0.78f else 1f
+                )
             } else {
                 navigationContainer
             },
@@ -506,6 +522,27 @@ private fun mainNavigationSuiteColors(floatingNavBar: Boolean, blur: Boolean): N
             },
             navigationBarContainerColor = navigationContainer
         )
+    }
+}
+
+@Composable
+private fun ExplorePrimaryAction(modifier: Modifier = Modifier, visible: Boolean) {
+    val coroutineScope = rememberCoroutineScope()
+    val visibilityAnimation by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
+    )
+    DefaultBackToTopFAB(
+        modifier = modifier
+            .graphicsLayer {
+                translationX = (1 - visibilityAnimation) * size.width
+                translationY = -FloatingNavigationBarScreenOffset.toPx()
+            },
+        visible = visible
+    ) {
+        coroutineScope.launch {
+            emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))
+        }
     }
 }
 

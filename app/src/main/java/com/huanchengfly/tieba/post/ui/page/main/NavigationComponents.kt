@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -65,7 +63,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.LocalAccount
 
-val FloatingNavigationBarScreenOffset = FloatingToolbarDefaults.ScreenOffset / 4
+val FloatingNavigationBarScreenOffset = FloatingToolbarDefaults.ScreenOffset / 2
 
 private val FloatingNavigationBarElevation: Dp = 1.dp
 
@@ -228,21 +226,21 @@ private fun BoxScope.Indicator(
     )
 }
 
-@Composable
-private fun ShortNavigationBarOverrideScope.FloatingContainer(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .windowInsetsPadding(windowInsets)
-            .fillMaxWidth()
-            .clickableNoIndication(onClick = {})
-            .offset(y = -FloatingNavigationBarScreenOffset),
-        contentAlignment = Alignment.Center,
-    ) {
-        CompositionLocalProvider(LocalContentColor provides contentColor, content)
-    }
+context(scope: ShortNavigationBarOverrideScope)
+private fun Modifier.floatingNavBarContainer(height: Dp): Modifier = this then with(scope) {
+    Modifier
+        .windowInsetsPadding(windowInsets)
+        .heightIn(min = height)
+        .clickableNoIndication(onClick = {})
+        .selectableGroup()
+        .graphicsLayer {
+            this.shape = CircleShape
+            this.clip = true
+            this.translationY = -FloatingNavigationBarScreenOffset.toPx()
+            this.shadowElevation = FloatingNavigationBarElevation.toPx()
+        }
+        .then(modifier)
+        .background(containerColor)
 }
 
 /**
@@ -252,22 +250,12 @@ private fun ShortNavigationBarOverrideScope.FloatingContainer(
 object FloatingNavigationBarOverride : ShortNavigationBarOverride {
     @Composable
     override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
-        FloatingContainer(
-            modifier = Modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)
-        ) {
+        CompositionLocalProvider(LocalContentColor provides contentColor) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = NavigationBarHeight)
-                    .graphicsLayer {
-                        shape = CircleShape
-                        clip = true
-                        shadowElevation = FloatingNavigationBarElevation.toPx()
-                    }
-                    .then(modifier)
-                    .background(containerColor)
-                    .padding(start = 24.dp, top = 6.dp, end = 24.dp, bottom = 4.dp)
-                    .selectableGroup(),
+                    .floatingNavBarContainer(NavigationBarHeight)
+                    .padding(start = 24.dp, top = 6.dp, end = 24.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -284,19 +272,11 @@ object FloatingNavigationBarOverride : ShortNavigationBarOverride {
 object FloatingIconNavigationBarOverride : ShortNavigationBarOverride {
     @Composable
     override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
-        FloatingContainer {
+        CompositionLocalProvider(LocalContentColor provides contentColor) {
             Row(
                 modifier = Modifier
-                    .height(FloatingIconNavigationBarHeight)
-                    .graphicsLayer {
-                        shape = CircleShape
-                        clip = true
-                        shadowElevation = FloatingNavigationBarElevation.toPx()
-                    }
-                    .then(modifier)
-                    .background(containerColor)
-                    .padding(4.dp)
-                    .selectableGroup(),
+                    .floatingNavBarContainer(FloatingIconNavigationBarHeight)
+                    .padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
