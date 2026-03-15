@@ -247,7 +247,10 @@ fun DefaultBackToTopFAB(
     onClick: () -> Unit,
 ) {
     TooltipBox(
-        positionProvider = rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
+        positionProvider = rememberTooltipPositionProvider(
+            positioning = TooltipAnchorPosition.Above,
+            spacingBetweenTooltipAndAnchor = 8.dp
+        ),
         tooltip = {
             PlainTooltip { Text(text = stringResource(R.string.btn_back_to_top)) }
         },

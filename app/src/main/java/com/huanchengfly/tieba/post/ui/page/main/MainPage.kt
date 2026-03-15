@@ -270,6 +270,7 @@ fun MainPage(
         ) {
             mainNavGraph(
                 navController = navHostController,
+                nestedNavController = nestedNavController,
                 hazeState = hazeState,
                 parentAnimatedVisibilityScope = parentAnimatedVisibilityScope,
                 parentSharedTransitionScope = parentSharedTransitionScope,

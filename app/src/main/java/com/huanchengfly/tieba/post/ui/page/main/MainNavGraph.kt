@@ -15,6 +15,7 @@ import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.ComposeNavigatorDestinationBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.get
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
@@ -47,6 +48,7 @@ sealed interface MainDestination {
 
 fun NavGraphBuilder.mainNavGraph(
     navController: NavController,
+    nestedNavController: NavController,
     hazeState: HazeState? = null,
     parentAnimatedVisibilityScope: AnimatedVisibilityScope? = null,
     parentSharedTransitionScope: SharedTransitionScope? = null,
@@ -57,7 +59,9 @@ fun NavGraphBuilder.mainNavGraph(
         parentAnimatedVisibilityScope = parentAnimatedVisibilityScope,
         parentSharedTransitionScope = parentSharedTransitionScope,
     ) {
-        HomePage(onOpenExplore = { navController.navigate(MainDestination.Explore) })
+        HomePage(
+            onOpenExplore = { nestedNavController.navigateDebounced(MainDestination.Explore) },
+        )
     }
 
     animatedMainComposable<MainDestination.Explore>(

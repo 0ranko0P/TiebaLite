@@ -31,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -96,12 +97,11 @@ fun SwipeUpLazyLoadColumn(
     val refreshState = rememberSwipeUpRefreshConnection(isLoading, onLoad)
 
     Box(
-        modifier = Modifier.nestedScroll(refreshState) then modifier
+        modifier = Modifier.clipToBounds().nestedScroll(refreshState) then modifier
     ) {
         LazyColumn(
             modifier = Modifier
                 .graphicsLayer {
-                    this.clip = true
                     this.translationY = refreshState.position
                 },
             state = state,
