@@ -54,7 +54,8 @@ import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.consumeResult
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
-import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.FloatingNavigationBarCompact
+import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType
+import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
@@ -179,7 +180,9 @@ fun AnimatedContentScope.ExplorePage(loggedIn: Boolean) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val navigator = LocalNavController.current
-    val isFloatingNavBarCompat = calculateMainNavigationSuiteType() === FloatingNavigationBarCompact
+    val navigationSuiteType = calculateMainNavigationSuiteType()
+    // Hide FAB on FloatingNavigationBarCompact
+    val isFloatingNavBarCompat = navigationSuiteType === MainNavigationSuiteType.FloatingNavigationBarCompact
     val hazeState: HazeState? = LocalHazeState.current
 
     val pages = remember(loggedIn) {
@@ -244,6 +247,7 @@ fun AnimatedContentScope.ExplorePage(loggedIn: Boolean) {
             }
         },
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
+        bottomBarAtop = navigationSuiteType.isFloatingNavigationBar,
         floatingActionButton = {
             if (isFloatingNavBarCompat) return@MyScaffold
             // FAB visibility: scrolling forward, pager not scrolling, current page not refreshing

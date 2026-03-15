@@ -57,7 +57,9 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
+import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
@@ -227,6 +229,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
         modifier = Modifier.fillMaxSize(),
         useMD2Layout = true,
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
+        bottomBarAtop = calculateMainNavigationSuiteType().isFloatingNavigationBar,
     ) { contentPaddings ->
         val account = LocalAccount.current
 
@@ -236,7 +239,10 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
             contentPadding = contentPaddings,
         ) {
             Column(
-                modifier = Modifier.padding(contentPaddings)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onCase(!isWindowHeightExpanded) { verticalScroll(state = rememberScrollState()) }
+                    .padding(contentPaddings)
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 if (account != null) {
@@ -269,9 +275,6 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     Spacer(modifier = Modifier.weight(0.7f))
                 }
                 UserMenu(
-                    modifier = Modifier.onCase(!isWindowHeightExpanded) {
-                        verticalScroll(state = rememberScrollState()) // Scrollable on compact screen
-                    },
                     onThreadStoreClicked = { navigator.navigateDebounced(Destination.ThreadStore) }.takeIf { account != null },
                     onHistoryClicked = {
                         navigator.navigateDebounced(Destination.History)

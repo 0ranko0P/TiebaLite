@@ -27,7 +27,9 @@ import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
+import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
@@ -35,6 +37,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHolder
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
@@ -95,6 +98,7 @@ fun NotificationsPage(
             }
         },
         bottomBar = if (fromHome) bottomNavigationPlaceholder else BlurNavigationBarPlaceHolder,
+        bottomBarAtop = calculateMainNavigationSuiteType().isFloatingNavigationBar,
     ) { contentPadding ->
         ProvideNavigator(navigator = navigator) {
             HorizontalPager(

@@ -112,7 +112,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TallNavigationBarHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
-import com.huanchengfly.tieba.post.ui.widgets.compose.isNavigationBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.navigationSuiteScaffoldConsumeWindowInsets
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import dev.chrisbanes.haze.HazeState
@@ -142,16 +141,16 @@ val MainDestination.iconRes: Int
     }
 
 val bottomNavigationPlaceholder: @Composable () -> Unit = {
-    val navigationSuiteType = calculateNavigationType(LocalWindowAdaptiveInfo.current)
+    val navigationSuiteType = calculateMainNavigationSuiteType()
     if (navigationSuiteType.isNavigationBar) {
         Spacer(
             modifier = Modifier
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .height(
-                    if (navigationSuiteType == NavigationSuiteType.NavigationBar) {
-                        TallNavigationBarHeight
-                    } else {
+                    if (navigationSuiteType == MainNavigationSuiteType.ShortNavigationBarCompact) {
                         NavigationBarHeight
+                    } else {
+                        TallNavigationBarHeight
                     }
                 )
         )
@@ -184,8 +183,6 @@ fun MainPage(
     val scaffoldState = rememberNavigationSuiteScaffoldState()
     val uiSettings = LocalUISettings.current
     val windowAdaptiveInfo = LocalWindowAdaptiveInfo.current
-
-    val colorSchemeExt = TiebaLiteTheme.extendedColorScheme
     val navigationSuiteType = calculateMainNavigationSuiteType()
 
     val loggedIn = LocalAccount.current != null
@@ -198,9 +195,9 @@ fun MainPage(
         )
     }
 
-    val isTranslucent = colorSchemeExt.colorScheme.isTranslucent
-    val hazeState = if (!isTranslucent && !uiSettings.reduceEffect) remember { HazeState() } else null
-    val navigationSuiteColors = mainNavigationSuiteColors(uiSettings.bottomNavFloating, blur = hazeState != null)
+    val blurEffect = !uiSettings.reduceEffect && !MaterialTheme.colorScheme.isTranslucent
+    val hazeState = if (blurEffect) remember { HazeState() } else null
+    val navigationSuiteColors = mainNavigationSuiteColors(uiSettings.bottomNavFloating, blurEffect)
 
     val currentDestination by nestedNavController.currentMainDestinationAsState(destinations)
     MainNavigationSuiteScaffold(
@@ -228,7 +225,6 @@ fun MainPage(
             )
         },
         mainNavSuiteType = navigationSuiteType,
-        navigationBarAtop = hazeState != null,
         navigationSuiteColors = navigationSuiteColors,
         navigationVerticalArrangement = calculateNavigationPosition(windowAdaptiveInfo),
         primaryActionContent = {
@@ -350,6 +346,7 @@ private fun MainNavigationSuiteScaffold(
         },
         state = state,
         navigationSuiteType = navigationSuiteType,
+        navigationBarAtop = navigationBarAtop,
         primaryActionContent = primaryActionContent,
         primaryActionContentHorizontalAlignment = primaryActionContentHorizontalAlignment,
         content = {
@@ -510,7 +507,11 @@ private fun mainNavigationSuiteColors(floatingNavBar: Boolean, blur: Boolean): N
         NavigationSuiteDefaults.colors(
             shortNavigationBarContainerColor = if (floatingNavBar) {
                 colorScheme.vibrantFloatingNavigationBarColor.copy(
-                    alpha = if (blur) if (darkTheme) 0.9f else 0.78f else 1f
+                    alpha = when {
+                        colorScheme.isTranslucent -> 0.65f
+                        blur -> if (darkTheme) 0.86f else 0.74f
+                        else -> 1f
+                    }
                 )
             } else {
                 navigationContainer

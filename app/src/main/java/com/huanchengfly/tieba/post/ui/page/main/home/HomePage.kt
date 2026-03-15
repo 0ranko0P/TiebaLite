@@ -90,7 +90,9 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.LikedForum
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
+import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.explore.topAppBarBlurEffect
 import com.huanchengfly.tieba.post.ui.page.search.SearchToolbarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
@@ -456,6 +458,7 @@ fun AnimatedContentScope.HomePage(
             }
         },
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
+        bottomBarAtop = calculateMainNavigationSuiteType().isFloatingNavigationBar,
     ) { contentPaddings ->
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val forums = viewModel.forums.collectAsLazyPagingItems()

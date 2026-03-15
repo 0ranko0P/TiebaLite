@@ -76,5 +76,9 @@ enum class MainNavigationSuiteType {
                 else -> None
             }
         }
+
+        val MainNavigationSuiteType.isFloatingNavigationBar
+            get() = this == FloatingNavigationBar || this == FloatingNavigationBarCompact
+
     }
 }

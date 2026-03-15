@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
+import com.huanchengfly.tieba.post.PaddingNone
 import kotlinx.coroutines.launch
 
 @Composable
@@ -88,6 +89,7 @@ fun MyScaffold(
     useMD2Layout: Boolean = true,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
+    bottomBarAtop: Boolean = false,
     snackbarHostState: SnackbarHostState = rememberSnackbarHostState(),
     snackbarHost: @Composable () -> Unit = { SwipeToDismissSnackbarHost(LocalSnackbarHostState.current) },
     floatingActionButton: @Composable () -> Unit = {},
@@ -103,6 +105,7 @@ fun MyScaffold(
                 modifier = modifier,
                 topBar = topBar,
                 bottomBar = bottomBar,
+                bottomBarAtop = bottomBarAtop,
                 snackbarHost = snackbarHost,
                 floatingActionButton = floatingActionButton,
                 floatingActionButtonPosition = floatingActionButtonPosition,
@@ -135,7 +138,8 @@ fun MyScaffold(
  * on branch androidx-compose-material3-release
  *
  * 0Ranko0p changes:
- *   1. Revert MD3 layout (lays out content behind both the TopBar and BottomBar) to MD2 layout
+ *   1. Revert to MD2 layout (place content below the TopBar)
+ *   2. Add 'BottomBarAtop' option to place content behind the BottomBar
  */
 
 /**
@@ -152,6 +156,7 @@ fun MyScaffold(
  * @param modifier the [Modifier] to be applied to this scaffold
  * @param topBar top app bar of the screen, typically a [TopAppBar]
  * @param bottomBar bottom bar of the screen, typically a [NavigationBar]
+ * @param bottomBarAtop whether or not the [bottomBar] is placed on top of the [content].
  * @param snackbarHost component to host [Snackbar]s that are pushed to be shown via
  *   [SnackbarHostState.showSnackbar], typically a [SnackbarHost]
  * @param floatingActionButton Main action button of the screen, typically a [FloatingActionButton]
@@ -177,6 +182,7 @@ fun Scaffold(
     modifier: Modifier = Modifier,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
+    bottomBarAtop: Boolean = false,
     snackbarHost: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     floatingActionButtonPosition: FabPosition = FabPosition.End,
@@ -199,6 +205,7 @@ fun Scaffold(
             fabPosition = floatingActionButtonPosition,
             topBar = topBar,
             bottomBar = bottomBar,
+            bottomBarAtop = bottomBarAtop,
             content = content,
             snackbar = snackbarHost,
             contentWindowInsets = safeInsets,
@@ -216,8 +223,8 @@ fun Scaffold(
  * @param snackbar the [Snackbar] displayed on top of the [content]
  * @param fab the [FloatingActionButton] displayed on top of the [content], below the [snackbar] and
  *   above the [bottomBar]
- * @param bottomBar the content to place at the bottom of the [Scaffold], on top of the [content],
- *   typically a [NavigationBar].
+ * @param bottomBar the content to place at the bottom of the [Scaffold], typically a [NavigationBar].
+ * @param bottomBarAtop whether or not the [bottomBar] is placed on top of the [content].
  */
 @Composable
 private fun ScaffoldLayout(
@@ -228,6 +235,7 @@ private fun ScaffoldLayout(
     fab: @Composable () -> Unit,
     contentWindowInsets: WindowInsets,
     bottomBar: @Composable () -> Unit,
+    bottomBarAtop: Boolean = false,
 ) {
     // Create the backing value for the content padding
     // These values will be updated during measurement, but before subcomposing the body content
@@ -235,7 +243,7 @@ private fun ScaffoldLayout(
     // change
     val contentPadding = remember {
         object : PaddingValues {
-            var paddingHolder by mutableStateOf(PaddingValues(0.dp))
+            var paddingHolder by mutableStateOf(PaddingNone)
 
             override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
                 paddingHolder.calculateLeftPadding(layoutDirection)
@@ -356,9 +364,13 @@ private fun ScaffoldLayout(
                 bottom =
                     if (isBottomBarEmpty) {
                         insets.calculateBottomPadding()
+                    // 0Ranko0p changes: place content behind the BottomBar
+                    } else if (bottomBarAtop) {
+                        bottomBarPlaceable.height.toDp()
                     } else {
                         Dp.Hairline
                     },
+                    // End of 0Ranko0p changes
                 start = insets.calculateStartPadding(layoutDirection),
                 end = insets.calculateEndPadding(layoutDirection),
             )
@@ -367,10 +379,19 @@ private fun ScaffoldLayout(
             subcompose(ScaffoldLayoutContent.MainContent, bodyContent)
                 .first()
                 .measure(
-                    looseConstraints.copy(
-                        minHeight = layoutHeight - topBarPlaceable.height - bottomBarPlaceable.height,
-                        maxHeight = layoutHeight - topBarPlaceable.height - bottomBarPlaceable.height
-                    )
+                    // 0Ranko0p changes: place content behind the BottomBar
+                    if (!bottomBarAtop) {
+                        looseConstraints.copy(
+                            minHeight = layoutHeight - topBarPlaceable.height - bottomBarPlaceable.height,
+                            maxHeight = layoutHeight - topBarPlaceable.height - bottomBarPlaceable.height
+                        )
+                    } else {
+                        looseConstraints.copy(
+                            minHeight = layoutHeight - topBarPlaceable.height,
+                            maxHeight = layoutHeight - topBarPlaceable.height
+                        )
+                    }
+                    // End of 0Ranko0p changes
                 )
 
         layout(layoutWidth, layoutHeight) {
