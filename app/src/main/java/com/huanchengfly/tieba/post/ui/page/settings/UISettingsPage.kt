@@ -16,7 +16,6 @@ import androidx.compose.material.icons.outlined.FontDownload
 import androidx.compose.material.icons.outlined.House
 import androidx.compose.material.icons.outlined.Houseboat
 import androidx.compose.material.icons.outlined.NightsStay
-import androidx.compose.material.icons.outlined.Upcoming
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -189,18 +188,6 @@ fun UISettingsPage(
                     title = R.string.title_hide_explore,
                     leadingIcon = AnimatedImageVector
                         .animatedVectorResource(id = R.drawable.ic_animated_toy_fans).imageVector,
-                )
-            }
-
-            Item { uiSettings ->
-                SwitchPref(
-                    checked = uiSettings.liftBottomBar,
-                    onCheckedChange = {
-                        updatePreference { old -> old.copy(liftBottomBar = it) }
-                    },
-                    title = R.string.title_lift_up_bottom_bar,
-                    leadingIcon = Icons.Outlined.Upcoming,
-                    summary = R.string.summary_lift_up_bottom_bar
                 )
             }
         }
