@@ -1,40 +1,43 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose.video
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.OptIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.safeGestures
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.FullscreenExit
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.retain.RetainedEffect
 import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -42,14 +45,22 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.PlayerSurface
+import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
+import androidx.media3.ui.compose.modifiers.resizeWithContentScale
+import androidx.media3.ui.compose.state.PresentationState
+import androidx.media3.ui.compose.state.ProgressStateWithTickInterval
+import androidx.media3.ui.compose.state.rememberPresentationState
+import androidx.media3.ui.compose.state.rememberProgressStateWithTickCount
+import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.Grey100
-import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 import com.huanchengfly.tieba.post.utils.DisplayUtil
 
@@ -86,10 +97,12 @@ fun retainVideoPlayerController(
     return videoPlayerController
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayer(
-    videoPlayerController: VideoPlayerController,
     modifier: Modifier = Modifier,
+    videoPlayerController: VideoPlayerController,
+    contentScale: ContentScale = ContentScale.Fit,
     controlsEnabled: Boolean = true,
     gesturesEnabled: Boolean = true,
     backgroundColor: Color = Color.Black
@@ -110,18 +123,11 @@ fun VideoPlayer(
         }
     }
 
+    val presentationState = rememberPresentationState(videoPlayerController.exoPlayer)
     CompositionLocalProvider(
         LocalContentColor provides Color.White,
         LocalVideoPlayerController provides videoPlayerController
     ) {
-        val startedPlay by videoPlayerController.collect {
-            startedPlay || playbackState != Player.STATE_IDLE
-        }
-
-        val aspectRatio by videoPlayerController.collect {
-            (videoSize.first / videoSize.second).takeUnless { it.isNaN() || it == 0f } ?: 2f
-        }
-
         val isFullScreen = DisplayUtil.isLandscape
         if (videoPlayerController.supportFullScreen()) {
 
@@ -137,108 +143,132 @@ fun VideoPlayer(
                 .then(modifier),
             contentAlignment = Alignment.Center
         ) {
-            val aspectModifier = Modifier
-                .block {
-                    if (isFullScreen) fillMaxHeight() else fillMaxWidth()
-                }
-                .aspectRatio(aspectRatio)
+            PlayerSurface(
+                player = videoPlayerController.exoPlayer,
+                modifier = Modifier
+                    .matchParentSize()
+                    .resizeWithContentScale(contentScale, presentationState.videoSizeDp),
+                surfaceType = SURFACE_TYPE_SURFACE_VIEW
+            )
 
-            if (startedPlay) {
-                PlayerSurface(
-                    player = videoPlayerController.exoPlayer,
-                    modifier = aspectModifier,
-                )
-
-                MediaController()
-            } else {
+            if (presentationState.coverSurface) {
                 val thumbnailUrl by videoPlayerController.collect { thumbnailUrl }
-
-                VideoThumbnail(
-                    modifier = aspectModifier,
-                    thumbnailUrl = thumbnailUrl,
-                    onClick = { videoPlayerController.play() }
-                )
+                if (!thumbnailUrl.isNullOrEmpty()) {
+                    VideoThumbnail(
+                        modifier = Modifier.matchParentSize(),
+                        thumbnailUrl = thumbnailUrl,
+                        contentScale = if (isFullScreen) ContentScale.FillHeight else ContentScale.FillWidth,
+                        onClick = { videoPlayerController.play() }
+                    )
+                } else {
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+                }
             }
+
+            MediaController(presentationState)
         }
     }
 }
 
+@UnstableApi
 @Composable
-fun BoxScope.MediaController() {
+fun BoxScope.MediaController(
+    presentationState: PresentationState,
+) {
+    val coroutineScope = rememberCoroutineScope()
     val videoPlayerController = LocalVideoPlayerController.current
+    val progressStateWithTick = rememberProgressStateWithTickInterval(
+        player = videoPlayerController.exoPlayer,
+        tickIntervalMs = 500,
+        scope = coroutineScope,
+    )
+
     MediaControlGestures(
         modifier = Modifier
-            .windowInsetsPadding(WindowInsets.safeGestures)
             .matchParentSize()
+            .windowInsetsPadding(WindowInsets.safeGestures),
+        durationProvider = { progressStateWithTick.durationMs },
+        positionProvider = { progressStateWithTick.currentPositionMs }
     )
 
     MediaControlButtons(
-        modifier = Modifier.matchParentSize()
+        modifier = Modifier.align(Alignment.Center)
     )
 
     val controlsVisible by videoPlayerController.collect { controlsVisible }
 
     if (controlsVisible) {
-        Column(
+        Row(
             modifier = Modifier
-                .safeContentPadding()
+                .windowInsetsPadding(NavigationBarDefaults.windowInsets)
                 .clickableNoIndication { /** Block Gestures */ }
-                .padding(vertical = 8.dp)
+                .onCase(DisplayUtil.isLandscape) { padding(horizontal = 16.dp) }
+                .padding(start = 16.dp, end = Dp.Hairline, bottom = 8.dp)
                 .align(Alignment.BottomCenter),
+            verticalAlignment = Alignment.Bottom,
         ) {
-            ProgressIndicator(modifier = Modifier.padding(horizontal = 16.dp))
+            PositionAndDuration(
+                modifier = Modifier.minimumInteractiveComponentSize(),
+                progressStateWithTick = progressStateWithTick,
+            )
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Spacer(modifier = Modifier.width(16.dp))
-                PositionAndDuration()
-                Spacer(modifier = Modifier.weight(1f))
-                if (videoPlayerController.supportFullScreen()) {
-                    FullScreenButton()
-                }
+            Spacer(modifier = Modifier.width(8.dp))
+
+            ProgressIndicator(
+                modifier = Modifier.minimumInteractiveComponentSize().weight(1.0f),
+                state = rememberProgressStateWithTickCount(
+                    player = videoPlayerController.exoPlayer,
+                    totalTickCount = (progressStateWithTick.durationMs / 300).toInt().coerceAtLeast(1),
+                    scope = coroutineScope
+                ),
+                durationMs = progressStateWithTick.durationMs,
+                videoSize = presentationState.videoSizeDp,
+            )
+
+            if (videoPlayerController.supportFullScreen()) {
+                FullScreenButton(onClick = videoPlayerController::toggleFullScreen)
+            } else {
+                Spacer(modifier = Modifier.minimumInteractiveComponentSize())
             }
         }
     }
 }
 
+@UnstableApi
 @Composable
-fun PositionAndDuration(
-    modifier: Modifier = Modifier
+private fun PositionAndDuration(
+    modifier: Modifier = Modifier,
+    progressStateWithTick: ProgressStateWithTickInterval,
 ) {
-    val controller = LocalVideoPlayerController.current
-
-    val positionText by controller.collect {
-        getDurationString(currentPosition, false)
+    val positionText = getDurationString(progressStateWithTick.currentPositionMs.coerceAtLeast(0), false)
+    val durationText = getDurationString(progressStateWithTick.durationMs.coerceAtLeast(0), false)
+    val durationTextStyle = remember {
+        TextStyle(
+            shadow = Shadow(blurRadius = 8f, offset = Offset(2f, 2f))
+        )
     }
-    val durationText by controller.collect {
-        getDurationString(duration, false)
-    }
 
-    Text(
-        "$positionText/$durationText",
-        style = TextStyle(
-            shadow = Shadow(
-                blurRadius = 8f,
-                offset = Offset(2f, 2f)
-            )
-        ),
-        modifier = modifier
-    )
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(text = "$positionText / $durationText", style = durationTextStyle)
+    }
 }
 
 @Composable
-private fun FullScreenButton() {
-    val videoPlayerController = LocalVideoPlayerController.current
+private fun FullScreenButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
     val icon = if (DisplayUtil.isLandscape) {
         Icons.Rounded.FullscreenExit
     } else {
         Icons.Rounded.Fullscreen
     }
     Box(
-        modifier = Modifier
-            .padding(8.dp)
-            .clickableNoIndication(onClick = videoPlayerController::toggleFullScreen)
+        modifier = modifier
+            .minimumInteractiveComponentSize()
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,
@@ -248,7 +278,12 @@ private fun FullScreenButton() {
 }
 
 @Composable
-fun VideoThumbnail(modifier: Modifier = Modifier, thumbnailUrl: String?, onClick: () -> Unit) {
+fun VideoThumbnail(
+    modifier: Modifier = Modifier,
+    thumbnailUrl: String?,
+    contentScale: ContentScale = ContentScale.FillWidth,
+    onClick: () -> Unit
+) {
     Box(
         modifier = modifier.clickableNoIndication(onClick = onClick),
         contentAlignment = Alignment.Center
@@ -257,8 +292,8 @@ fun VideoThumbnail(modifier: Modifier = Modifier, thumbnailUrl: String?, onClick
             GlideImage(
                 model = thumbnailUrl,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillWidth
+                modifier = Modifier.matchParentSize(),
+                contentScale = contentScale
             )
         }
 

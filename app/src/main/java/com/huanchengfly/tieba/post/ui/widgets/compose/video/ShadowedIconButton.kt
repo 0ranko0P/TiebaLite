@@ -24,8 +24,7 @@ fun ShadowedIcon(
             tint = Color.Black.copy(alpha = 0.3f),
             modifier = Modifier
                 .size(iconSize)
-                .offset(2.dp, 2.dp)
-                .then(modifier),
+                .offset(2.dp, 2.dp),
             contentDescription = null
         )
         Icon(

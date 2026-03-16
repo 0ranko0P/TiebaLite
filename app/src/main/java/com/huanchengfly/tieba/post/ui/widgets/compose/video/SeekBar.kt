@@ -107,7 +107,7 @@ fun VideoSeekBar(
         state.value = progress()
     }
 
-    BoxWithConstraints(modifier = modifier) {
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.CenterStart) {
         Column {
             // SEEK POPUP
             if (onGoingDrag) {
@@ -142,10 +142,7 @@ fun VideoSeekBar(
                 }
             }
 
-            val defaultColors = SliderDefaults.colors()
-            val sliderColors = remember(defaultColors) {
-                defaultColors.run { copy(inactiveTrackColor = inactiveTrackColor.copy(0.6f)) }
-            }
+            val sliderColors = SliderDefaults.colors()
             Slider(
                 state = state,
                 enabled = enabled,
@@ -216,7 +213,6 @@ private fun Track(
  * 0Ranko0p changes:
  *   1. Drop drawTick (unnecessary for a VideoSeekBar)
  *   2. Add video buffer track
- *   3. Make default Thumb smaller
  */
 @Composable
 private fun TrackImpl(
@@ -453,7 +449,6 @@ private fun DrawScope.drawTrack(
             } else {
                 Offset(end - cornerSize, center.y)
             }
-        drawStopIndicator?.invoke(this, stopIndicatorOffset)
 
         // buffer track
         val bufferTrackStart = start
@@ -487,6 +482,8 @@ private fun DrawScope.drawTrack(
                 endCornerRadius
             )
         }
+
+        drawStopIndicator?.invoke(this, stopIndicatorOffset)
     }
 
     // active track
@@ -576,11 +573,11 @@ private fun DrawScope.drawTrackPath(
     trackPath.rewind()
 }
 
-private val BufferTrackColor = Color.White.copy(alpha = 0.35f)
+private val BufferTrackColor = Color.White.copy(alpha = 0.8f)
 
-private val TrackHeight = 12.dp
+private val TrackHeight = 16.dp
 private val ThumbWidth = 4.dp
-private val ThumbHeight = 36.dp // SliderTokens.HandleHeight (44dp)
+private val ThumbHeight = 44.dp // SliderTokens.HandleHeight
 private val ThumbSize = DpSize(ThumbWidth, ThumbHeight)
 private val TrackInsideCornerSize: Dp = 2.dp
 private val ThumbTrackGapSize: Dp = 4.dp // SliderTokens.ActiveHandleLeadingSpace (6dp)

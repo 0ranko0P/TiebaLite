@@ -41,7 +41,9 @@ import kotlin.math.abs
 
 @Composable
 fun MediaControlGestures(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    durationProvider: () -> Long,
+    positionProvider: () -> Long,
 ) {
     val controller = LocalVideoPlayerController.current
 
@@ -57,14 +59,18 @@ fun MediaControlGestures(
                 }
         ) {
             DraggingProgressText(draggingProgress = draggingProgress)
-            GestureBox()
+            GestureBox(durationProvider = durationProvider, positionProvider = positionProvider)
         }
     }
 
 }
 
 @Composable
-fun GestureBox(modifier: Modifier = Modifier) {
+private fun GestureBox(
+    modifier: Modifier = Modifier,
+    durationProvider: () -> Long,
+    positionProvider: () -> Long,
+) {
     val controller = LocalVideoPlayerController.current
 
     val coroutineScope = rememberCoroutineScope()
@@ -110,8 +116,8 @@ fun GestureBox(modifier: Modifier = Modifier) {
                     wasPlaying = controller.currentState { it.isPlaying }
                     controller.pause()
 
-                    currentPosition = controller.currentState { it.currentPosition }
-                    duration = controller.currentState { it.duration }
+                    currentPosition = controller.currentState { positionProvider() }
+                    duration = controller.currentState { durationProvider() }
 
                     resetState()
                 },

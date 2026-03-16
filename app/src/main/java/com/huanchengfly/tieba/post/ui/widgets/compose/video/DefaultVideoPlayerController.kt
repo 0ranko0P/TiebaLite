@@ -9,29 +9,29 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.common.Player.STATE_ENDED
-import androidx.media3.common.Player.STATE_IDLE
-import androidx.media3.common.Player.STATE_READY
-import androidx.media3.common.VideoSize
+import androidx.media3.common.util.Util
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.MediaCache
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.FlowDebouncer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -54,22 +54,8 @@ internal class DefaultVideoPlayerController(
     override val state: StateFlow<VideoPlayerState>
         get() = _state.asStateFlow()
 
-    /**
-     * Some properties in initial state are not applicable until player is ready.
-     * These are kept in this container. Once the player is ready for the first time,
-     * they are applied and removed.
-     */
-    private var initialStateRunner: (() -> Unit)? = {
-        exoPlayer.seekTo(initialState.currentPosition)
-    }
-
     inline fun <T> currentState(filter: (VideoPlayerState) -> T): T {
         return filter(_state.value)
-    }
-
-    @Composable
-    fun collect(): State<VideoPlayerState> {
-        return _state.collectAsState()
     }
 
     @SuppressLint("StateFlowValueCalledInComposition")
@@ -84,45 +70,27 @@ internal class DefaultVideoPlayerController(
 
     private lateinit var source: VideoPlayerSource
 
-    private var updateDurationAndPositionJob: Job? = null
     private var autoHideControllerJob: Job? = null
 
     private val playerListener = object : Player.Listener {
-        @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+
         override fun onPlaybackStateChanged(playbackState: Int) {
-            if (playbackState == STATE_READY) {
-                initialStateRunner?.let {
-                    it.invoke()
-                    initialStateRunner = null
-                }
-
-                updateDurationAndPositionJob?.cancel()
-                updateDurationAndPositionJob = coroutineScope.launch {
-                    while (this.isActive) {
-                        updateDurationAndPosition()
-                        delay(250)
-                    }
-                }
-            }
-
             _state.set {
-                copy(
-                    playbackState = playbackState,
-                    startedPlay = playbackState != STATE_IDLE
-                )
+                copy(playbackState = playbackState)
+            }
+            if (playbackState == Player.STATE_ENDED) {
+                showControls(autoHide = false)
             }
         }
 
-        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
             _state.set {
-                copy(isPlaying = playWhenReady)
+                copy(isPlaying = isPlaying)
             }
         }
 
-        override fun onVideoSizeChanged(videoSize: VideoSize) {
-            _state.set {
-                copy(videoSize = videoSize.width.toFloat() to videoSize.height.toFloat())
-            }
+        override fun onPlayerError(error: PlaybackException) {
+            context.toastShort(context.getString(R.string.error_tip) + error.errorCodeName)
         }
     }
 
@@ -167,9 +135,6 @@ internal class DefaultVideoPlayerController(
         require(!released.get())
         val currentState = _state.value
         exoPlayer.playWhenReady = currentState.isPlaying
-        initialStateRunner = {
-            exoPlayer.seekTo(currentState.currentPosition)
-        }
         if (this::source.isInitialized) {
             setSource(source)
         }
@@ -177,21 +142,18 @@ internal class DefaultVideoPlayerController(
     }
 
     override fun play() {
-        _state.set { copy(startedPlay = true) }
-        if (exoPlayer.playbackState == STATE_ENDED) {
-            exoPlayer.seekTo(0)
-        }
-        exoPlayer.playWhenReady = true
+        Util.handlePlayButtonAction(exoPlayer)
         autoHideControls()
     }
 
     override fun pause() {
-        exoPlayer.playWhenReady = false
+        if (exoPlayer.isCommandAvailable(Player.COMMAND_PLAY_PAUSE)) {
+            exoPlayer.playWhenReady = false
+        }
     }
 
     override fun togglePlaying() {
-        if (exoPlayer.isPlaying) pause()
-        else play()
+        if (Util.shouldShowPlayButton(exoPlayer)) play() else pause()
     }
 
     override fun quickSeekForward() {
@@ -201,7 +163,6 @@ internal class DefaultVideoPlayerController(
         }
         val target = (exoPlayer.currentPosition + 10_000).coerceAtMost(exoPlayer.duration)
         exoPlayer.seekTo(target)
-        updateDurationAndPosition()
         _state.set { copy(quickSeekAction = QuickSeekAction.forward()) }
     }
 
@@ -212,12 +173,10 @@ internal class DefaultVideoPlayerController(
         }
         val target = (exoPlayer.currentPosition - 10_000).coerceAtLeast(0)
         exoPlayer.seekTo(target)
-        updateDurationAndPosition()
         _state.set { copy(quickSeekAction = QuickSeekAction.rewind()) }
     }
 
     override fun seekTo(position: Long) {
-        updateDurationAndPosition(forcedUiPosition = position)
         exoPlayer.seekTo(position)
     }
 
@@ -267,23 +226,6 @@ internal class DefaultVideoPlayerController(
         _state.set { copy(quickSeekAction = quickSeekAction) }
     }
 
-    private fun updateDurationAndPosition(forcedUiPosition: Long = -1L) {
-        if (exoPlayer.playbackState == STATE_READY || exoPlayer.playbackState == STATE_ENDED) {
-            _state.set {
-                copy(
-                    duration = exoPlayer.duration.coerceAtLeast(0),
-                    currentPosition = if (forcedUiPosition >= 0) {
-                        forcedUiPosition
-                    } else {
-                        exoPlayer.currentPosition.coerceAtLeast(0)
-                    },
-                    secondaryProgress = exoPlayer.bufferedPosition.coerceAtLeast(0),
-                    isPlaying = exoPlayer.isPlaying
-                )
-            }
-        }
-    }
-
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     private fun prepare() {
         fun createVideoSource(): MediaSource {
@@ -330,6 +272,7 @@ internal class DefaultVideoPlayerController(
     }
 
     override fun release() {
+        coroutineScope.cancel()
         if (released.compareAndSet(false, true)) {
             _exoPlayer.release()
             _previewExoPlayer.release()

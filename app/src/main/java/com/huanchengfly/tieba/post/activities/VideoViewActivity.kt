@@ -10,10 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -23,12 +20,14 @@ import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.components.BD_VIDEO_HOST
 import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.OnFullScreenModeChangedListener
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerController
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.retainVideoPlayerController
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import java.util.Objects
 
@@ -38,6 +37,8 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
 
     private var videoPlayerController: VideoPlayerController? = null
 
+    private var playOnRecreate = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(scrim = android.graphics.Color.TRANSPARENT),
@@ -45,6 +46,7 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
         )
 
         super.onCreate(savedInstanceState)
+        playOnRecreate = savedInstanceState?.getBoolean(KEY_PLAY_ON_RECREATE, false) == true
         mInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         mInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
@@ -55,16 +57,18 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
             videoPlayerController = retainVideoPlayerController(
                 source = VideoPlayerSource.Network(data.toString()),
                 thumbnailUrl = thumbnailUrl,
-                fullScreenModeChangedListener = this
-            )
-            VideoPlayer(
-                videoPlayerController = videoPlayerController!!,
-                modifier = Modifier.fillMaxSize(),
-                backgroundColor = Color.Black
+                fullScreenModeChangedListener = this,
+                playWhenReady = true,
             )
 
+            TiebaLiteTheme(colorSchemeExt = ThemeUtil.colorState.value) {
+                VideoPlayer(videoPlayerController = videoPlayerController!!)
+            }
+
             LaunchedEffect(Unit) {
-                videoPlayerController!!.play()
+                if (playOnRecreate) {
+                    videoPlayerController!!.play()
+                }
                 videoPlayerController!!.state
                     .distinctUntilChangedBy { Objects.hash(it.isPlaying, it.controlsVisible) }
                     .collectIn(this@VideoViewActivity) {
@@ -88,7 +92,13 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
 
     override fun onPause() {
         super.onPause()
+        playOnRecreate = videoPlayerController?.state?.value?.isPlaying == true
         videoPlayerController?.pause()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(KEY_PLAY_ON_RECREATE, playOnRecreate)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onFullScreenModeChanged() {
@@ -102,6 +112,8 @@ class VideoViewActivity: ComponentActivity(), OnFullScreenModeChangedListener {
     }
 
     companion object {
+        private const val KEY_PLAY_ON_RECREATE = "com.huanchengfly.tieba.post.VideoViewActivity.PLAY_ON_RECREATE"
+
         const val EXTRA_THUMBNAIL = "video_thumbnail"
 
         fun launch(context: Context, videoUrl: String, thumbnailUrl: String?) {
