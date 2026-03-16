@@ -1,8 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page.main.home
 
 import androidx.activity.compose.ReportDrawnWhen
-import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -63,7 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -392,7 +392,7 @@ private sealed interface ForumType {
 
 // Note: Obtain Root AnimatedVisibilityScope by LocalAnimatedVisibilityScope.current
 @Composable
-fun AnimatedContentScope.HomePage(
+fun AnimatedVisibilityScope.HomePage(
     viewModel: HomeViewModel = hiltViewModel<HomeViewModel>(),
     onOpenExplore: () -> Unit = {},
 ) {

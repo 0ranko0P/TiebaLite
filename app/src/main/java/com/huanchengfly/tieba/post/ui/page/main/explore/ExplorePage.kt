@@ -1,6 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
-import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -176,7 +176,7 @@ private fun ExplorePageTab(
 
 // Note: Obtain Root AnimatedVisibilityScope by LocalAnimatedVisibilityScope.current
 @Composable
-fun AnimatedContentScope.ExplorePage(loggedIn: Boolean) {
+fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val navigator = LocalNavController.current
@@ -298,7 +298,7 @@ fun AnimatedContentScope.ExplorePage(loggedIn: Boolean) {
     }
 }
 
-context(mainAnimatedContentScope: AnimatedContentScope)
+context(mainAnimatedContentScope: AnimatedVisibilityScope)
 fun Modifier.topAppBarBlurEffect(
     hazeState: HazeState?,
     block: (HazeEffectScope.() -> Unit)?,
