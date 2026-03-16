@@ -530,6 +530,7 @@ private fun mainNavigationSuiteColors(floatingNavBar: Boolean, blur: Boolean): N
 @Composable
 private fun ExplorePrimaryAction(modifier: Modifier = Modifier, visible: Boolean) {
     val coroutineScope = rememberCoroutineScope()
+    val screenOffset = floatingNavigationBarScreenOffset
     val visibilityAnimation by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
@@ -538,9 +539,10 @@ private fun ExplorePrimaryAction(modifier: Modifier = Modifier, visible: Boolean
         modifier = modifier
             .graphicsLayer {
                 translationX = (1 - visibilityAnimation) * size.width
-                translationY = -FloatingNavigationBarScreenOffset.toPx()
+                translationY = -screenOffset.toPx()
             },
-        visible = visible
+        visible = visible,
+        size = NavigationBarHeight,
     ) {
         coroutineScope.launch {
             emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))

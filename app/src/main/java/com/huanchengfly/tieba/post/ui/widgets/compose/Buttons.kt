@@ -244,6 +244,7 @@ fun OutlinedIconTextButton(
 fun DefaultBackToTopFAB(
     modifier: Modifier = Modifier,
     visible: Boolean,
+    size: Dp = ExtendedFabHeight,
     onClick: () -> Unit,
 ) {
     TooltipBox(
@@ -260,7 +261,7 @@ fun DefaultBackToTopFAB(
     ) {
         FloatingActionButton(
             onClick = onClick,
-            modifier = Modifier.animateFloatingActionButton(visible, alignment = Alignment.Center),
+            modifier = Modifier.animateFloatingActionButton(visible, alignment = Alignment.Center).size(size),
         ) {
             Icon(
                 imageVector = Icons.Rounded.VerticalAlignTop,

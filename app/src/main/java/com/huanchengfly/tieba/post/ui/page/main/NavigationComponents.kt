@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -49,6 +51,7 @@ import androidx.compose.ui.layout.HorizontalRuler
 import androidx.compose.ui.layout.VerticalRuler
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -63,11 +66,17 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.LocalAccount
 
-val FloatingNavigationBarScreenOffset = FloatingToolbarDefaults.ScreenOffset / 2
+val floatingNavigationBarScreenOffset: Dp
+    @Composable
+    get() = if (WindowInsets.navigationBars.getBottom(LocalDensity.current) > 0) {
+        FloatingToolbarDefaults.ScreenOffset / 4
+    } else {
+        FloatingToolbarDefaults.ScreenOffset
+    }
 
 private val FloatingNavigationBarElevation: Dp = 1.dp
 
-private val FloatingIconNavigationBarHeight = 56.dp
+private val FloatingIconNavigationBarHeight = NavigationBarHeight
 
 val ColorScheme.vibrantFloatingNavigationBarColor: Color
     get() = surfaceColorAtElevation(4.dp)
@@ -227,7 +236,10 @@ private fun BoxScope.Indicator(
 }
 
 context(scope: ShortNavigationBarOverrideScope)
-private fun Modifier.floatingNavBarContainer(height: Dp): Modifier = this then with(scope) {
+private fun Modifier.floatingNavBarContainer(
+    height: Dp,
+    screenOffset: Dp,
+): Modifier = this then with(scope) {
     Modifier
         .windowInsetsPadding(windowInsets)
         .heightIn(min = height)
@@ -236,7 +248,7 @@ private fun Modifier.floatingNavBarContainer(height: Dp): Modifier = this then w
         .graphicsLayer {
             this.shape = CircleShape
             this.clip = true
-            this.translationY = -FloatingNavigationBarScreenOffset.toPx()
+            this.translationY = -screenOffset.toPx()
             this.shadowElevation = FloatingNavigationBarElevation.toPx()
         }
         .then(modifier)
@@ -255,7 +267,7 @@ object FloatingNavigationBarOverride : ShortNavigationBarOverride {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .floatingNavBarContainer(NavigationBarHeight)
+                    .floatingNavBarContainer(NavigationBarHeight, floatingNavigationBarScreenOffset)
                     .padding(start = 24.dp, top = 6.dp, end = 24.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -276,8 +288,8 @@ object FloatingIconNavigationBarOverride : ShortNavigationBarOverride {
         CompositionLocalProvider(LocalContentColor provides contentColor) {
             Row(
                 modifier = Modifier
-                    .floatingNavBarContainer(FloatingIconNavigationBarHeight)
-                    .padding(4.dp),
+                    .floatingNavBarContainer(FloatingIconNavigationBarHeight, floatingNavigationBarScreenOffset)
+                    .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
