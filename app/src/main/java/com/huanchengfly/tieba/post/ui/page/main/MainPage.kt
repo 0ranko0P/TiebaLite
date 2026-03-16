@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -275,6 +276,12 @@ fun MainPage(
                 parentAnimatedVisibilityScope = parentAnimatedVisibilityScope,
                 parentSharedTransitionScope = parentSharedTransitionScope,
             )
+        }
+    }
+
+    currentDestination?.let {
+        BackHandler(it !== startDestination) {
+            nestedNavController.popBackStack(route = startDestination::class, inclusive = false, saveState = true)
         }
     }
 }
