@@ -35,7 +35,7 @@ enum class NavigationLabel {
 data class UISettings(
     val appIcon: LauncherIcons = LauncherIcons.NEW_ICON,
     val appIconThemed: Boolean = false,
-    val bottomNavFloating: Boolean = true,
+    val bottomNavFloating: Boolean = false,
     val bottomNavLabel: NavigationLabel = NavigationLabel.ALWAYS,
     val darkAmoled: Boolean = false,
     val darkPreference: DarkPreference = DarkPreference.FOLLOW_SYSTEM,

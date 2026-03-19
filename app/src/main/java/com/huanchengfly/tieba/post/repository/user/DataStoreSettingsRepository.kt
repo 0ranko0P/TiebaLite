@@ -243,7 +243,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
         UISettings(
             appIcon = LauncherIcons.entries[appIconOrdinal],
             appIconThemed = it[booleanPreferencesKey(KEY_APP_THEMED_ICON)] == true,
-            bottomNavFloating = it[booleanPreferencesKey(KEY_BOTTOM_NAV_FLOATING)] ?: true,
+            bottomNavFloating = it[booleanPreferencesKey(KEY_BOTTOM_NAV_FLOATING)] == true,
             bottomNavLabel = NavigationLabel.entries[bottomNavLabelOrdinal],
             darkAmoled = it[booleanPreferencesKey(KEY_DARK_AMOLED)] == true,
             darkPreference = DarkPreference.entries[darkPrefOrdinal],
