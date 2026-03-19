@@ -78,8 +78,8 @@ data class SearchThreadBean(
     data class MediaInfo(
         val type: String,
         val size: String? = null,
-        val width: Int?,  // 一些古老视频的尺寸为 null, 一些古老图片的尺寸为 0
-        val height: Int?,
+        val width: Int? = null, // 一些古老视频的尺寸为 null, 一些古老图片的尺寸为 0
+        val height: Int? = null,
         @SerialName("water_pic")
         val waterPic: String? = null,
         @SerialName("small_pic")
