@@ -25,6 +25,14 @@ inline fun <T> Modifier.onNotNull(obj: T?, modifier: Modifier.(T) -> Modifier): 
     return if (obj != null) this then (Modifier.modifier(obj)) else this
 }
 
+inline fun <T1, T2> Modifier.onNotNull(obj1: T1?, obj2: T2?, modifier: Modifier.(Pair<T1, T2>) -> Modifier): Modifier {
+    return if (obj1 != null && obj2 != null) {
+        this then Modifier.modifier(obj1 to obj2)
+    } else {
+        this
+    }
+}
+
 /**
  * Configure component to receive clicks via input or accessibility "click" event.
  *

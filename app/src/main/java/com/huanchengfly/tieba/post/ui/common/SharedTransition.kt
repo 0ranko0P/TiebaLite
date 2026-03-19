@@ -10,11 +10,15 @@ import androidx.compose.animation.SharedTransitionScope.PlaceholderSize
 import androidx.compose.animation.SharedTransitionScope.ResizeMode
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.scaleToBounds
 import androidx.compose.animation.SharedTransitionScope.SharedContentState
+import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.animation.core.Spring.StiffnessMediumLow
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment.Companion.Center
@@ -82,6 +86,40 @@ fun Modifier.localSharedBounds(
             clipInOverlayDuringTransition = clipInOverlayDuringTransition
         )
     }
+}
+
+fun Modifier.animateEnterExit(
+    zIndexInOverlay: Float = 1f,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+    sharedTransitionScope: SharedTransitionScope?,
+    enter: EnterTransition = defaultVerticalEnterTransition(),
+    exit: ExitTransition = defaultVerticalExitTransition(),
+): Modifier {
+    return this then with(sharedTransitionScope ?: return Modifier) {
+        with(animatedVisibilityScope ?: return Modifier) {
+            Modifier
+                .renderInSharedTransitionScopeOverlay(zIndexInOverlay)
+                .animateEnterExit(enter, exit)
+        }
+    }
+}
+
+fun defaultVerticalEnterTransition(topToBottom: Boolean = true): EnterTransition {
+    return fadeIn(
+        animationSpec = tween(durationMillis = AnimationConstants.DefaultDurationMillis / 2),
+        initialAlpha = 0f
+    ) + slideInVertically(
+        initialOffsetY = { if (topToBottom) -it else it }
+    )
+}
+
+fun defaultVerticalExitTransition(topToBottom: Boolean = true): ExitTransition {
+    return fadeOut(
+        animationSpec = tween(durationMillis = AnimationConstants.DefaultDurationMillis / 2),
+        targetAlpha = 0f
+    ) + slideOutVertically(
+        targetOffsetY = { if (topToBottom) -it else it }
+    )
 }
 
 private val ParentClip: OverlayClip =

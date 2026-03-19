@@ -55,6 +55,11 @@ import com.huanchengfly.tieba.post.models.database.ThreadHistory
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.repository.UserHistory
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
+import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.ui.common.animateEnterExit
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -68,8 +73,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
-import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -88,6 +91,7 @@ fun HistoryPage(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = rememberSnackbarHostState()
+    val sharedTransitionScope = LocalSharedTransitionScope.current
 
     val tabs = remember {
         listOf(
@@ -155,10 +159,17 @@ fun HistoryPage(
     MyScaffold(
         topBar = {
             TopAppBarPaged(
+                modifier = Modifier.animateEnterExit(
+                    animatedVisibilityScope = LocalAnimatedVisibilityScope.current,
+                    sharedTransitionScope = sharedTransitionScope,
+                ),
                 title = { Text(text = stringResource(R.string.title_history)) },
                 titleHorizontalAlignment = Alignment.CenterHorizontally,
                 navigationIcon = {
-                    BackNavigationIcon(onBackPressed = navigator::navigateUp)
+                    val visible by remember { derivedStateOf { sharedTransitionScope?.isTransitionActive != true } }
+                    if (visible) {
+                        BackNavigationIcon(onBackPressed = navigator::navigateUp)
+                    }
                 },
                 actions = {
                     ActionItem(
@@ -174,7 +185,7 @@ fun HistoryPage(
                 },
                 scrollBehavior = scrollBehavior,
                 canScrollBackward = {
-                    listStates[pagerState.currentPage].canScrollBackward
+                    sharedTransitionScope?.isTransitionActive != true && listStates[pagerState.currentPage].canScrollBackward
                 },
                 content = {
                     PrimaryTabRow(

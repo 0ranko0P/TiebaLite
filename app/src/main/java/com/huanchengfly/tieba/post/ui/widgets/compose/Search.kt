@@ -55,10 +55,8 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
 import com.huanchengfly.tieba.post.ui.common.PbContentText
-import com.huanchengfly.tieba.post.ui.common.localSharedElements
 import com.huanchengfly.tieba.post.ui.models.search.SearchMedia
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
-import com.huanchengfly.tieba.post.ui.page.search.SearchIconSharedElementKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
 import kotlin.math.min
 
@@ -333,7 +331,6 @@ fun SearchBox(
             AnimatedVisibility(visible = isKeywordNotEmpty) {
                 Icon(
                     modifier = Modifier
-                        .localSharedElements(SearchIconSharedElementKey)
                         .clip(CircleShape)
                         .clickable { onKeywordSubmit(keyword) },
                     imageVector = Icons.Rounded.Search,

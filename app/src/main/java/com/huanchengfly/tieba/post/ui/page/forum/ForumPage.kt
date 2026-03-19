@@ -83,6 +83,8 @@ import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
@@ -111,8 +113,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultToggleFloatingActionButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
-import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.MoreMenuItem

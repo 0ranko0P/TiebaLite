@@ -143,7 +143,7 @@ fun BlurScaffold(
     snackbarHost: @Composable () -> Unit = { SnackbarHost(LocalSnackbarHostState.current) },
     floatingActionButton: @Composable () -> Unit = {},
     floatingActionButtonPosition: FabPosition = FabPosition.End,
-    backgroundColor: Color = Color.Transparent,
+    backgroundColor: Color = MaterialTheme.colorScheme.run { if (isTranslucent) Color.Transparent else background },
     contentColor: Color = MaterialTheme.colorScheme.onBackground,
     content: @Composable (PaddingValues) -> Unit
 ) {

@@ -77,6 +77,7 @@ import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.SearchToolbarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.search.SearchForum
@@ -102,10 +103,6 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-
-object SearchToolbarSharedBoundsKey
-
-object SearchIconSharedElementKey
 
 private enum class SearchPages(val titleRes: Int) {
     Forum(titleRes = R.string.title_search_forum),
@@ -219,7 +216,7 @@ fun SearchPage(
                     SearchTopBar(
                         modifier = Modifier
                             .padding(start = Dp.Hairline, top = 8.dp, end = 18.dp, bottom = 8.dp)
-                            .localSharedBounds(key = SearchToolbarSharedBoundsKey),
+                            .localSharedBounds(key = SearchToolbarSharedBoundsKey, zIndexInOverlay = 2.0f),
                         keyword = inputKeyword,
                         onKeywordChange = {
                             inputKeyword = it

@@ -197,7 +197,7 @@ private fun EditProfileScaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 titleRes = R.string.title_activity_edit_profile,
-                navigationIcon = { BackNavigationIcon(onBackPressed) },
+                navigationIcon = { BackNavigationIcon(onBackPressed = onBackPressed) },
                 actions = {
                     val allowSubmit by remember {
                         derivedStateOf {

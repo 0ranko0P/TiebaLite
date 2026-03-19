@@ -2,10 +2,12 @@ package com.huanchengfly.tieba.post.ui.page.user
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -102,6 +104,9 @@ import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
+import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.ui.common.animateEnterExit
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
@@ -489,6 +494,10 @@ private fun UserProfileTopAppBar(
         }
     }
 
+    val navIcon = remember {
+        movableContentOf { AnimatedBackButton(onBackPressed = onBack) }
+    }
+
     if (!ContentLandscapeLayout) {
         val titleModifier = Modifier.padding(start = 2.dp)
         CollapsingAvatarTopAppBar(
@@ -508,7 +517,7 @@ private fun UserProfileTopAppBar(
             subtitle = {
                 UserProfileDetail(titleModifier, profile, block, transitionKey, landscape = false)
             },
-            navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+            navigationIcon = navIcon,
             actions = actionsMenu,
             expandedHeight = UserAppbarExpandHeight,
             avatarMax = AvatarExpandedSize,
@@ -521,7 +530,7 @@ private fun UserProfileTopAppBar(
         TopAppBar(
             modifier = modifier,
             title = {},
-            navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+            navigationIcon = navIcon,
             actions = actionsMenu,
             colors = rememberAvatarTopBarColors(),
         )
@@ -578,12 +587,32 @@ private fun UserAvatar(modifier: Modifier = Modifier, avatar: String?, uid: Long
         Avatar(
             modifier = modifier
                 .clickableNoIndication {
-                    PhotoViewActivity.launchSinglePhoto(context, url = avatar, useTbGlideUrl = false)
+                    PhotoViewActivity.launchSinglePhoto(
+                        context,
+                        url = avatar,
+                        useTbGlideUrl = false
+                    )
                 }
                 .onNotNull(avatar) { sharedUserAvatar(uid = uid, extraKey = transitionKey) },
             data = avatar
         )
     }
+}
+
+@Composable
+private fun AnimatedBackButton(modifier: Modifier = Modifier, onBackPressed: () -> Unit) {
+    BackNavigationIcon(
+        modifier = modifier.animateEnterExit(
+            zIndexInOverlay = 0f,
+            animatedVisibilityScope = LocalAnimatedVisibilityScope.current,
+            sharedTransitionScope = LocalSharedTransitionScope.current,
+            enter = fadeIn(),
+            exit = fadeOut(
+                animationSpec = tween(durationMillis = 150)
+            ) + slideOutHorizontally { -it }
+        ),
+        onBackPressed = onBackPressed
+    )
 }
 
 @NonRestartableComposable

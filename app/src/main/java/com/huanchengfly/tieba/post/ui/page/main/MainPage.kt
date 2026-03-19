@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -61,6 +62,7 @@ import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,6 +83,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
+import androidx.compose.ui.util.lerp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
@@ -99,10 +102,14 @@ import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.ui.common.animateEnterExit
+import com.huanchengfly.tieba.post.ui.common.defaultVerticalEnterTransition
+import com.huanchengfly.tieba.post.ui.common.defaultVerticalExitTransition
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.settings.NavigationLabel
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationPosition
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
@@ -113,6 +120,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TallNavigationBarHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
+import com.huanchengfly.tieba.post.ui.widgets.compose.isNavigationBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.navigationSuiteScaffoldConsumeWindowInsets
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import dev.chrisbanes.haze.HazeState
@@ -180,6 +188,7 @@ fun MainPage(
     startDestination: MainDestination = MainDestination.Home,
     vm: MainPageViewModel = hiltViewModel()
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val nestedNavController = rememberNavController()
     val scaffoldState = rememberNavigationSuiteScaffoldState()
     val uiSettings = LocalUISettings.current
@@ -241,8 +250,11 @@ fun MainPage(
                 MainNavigationSuiteType.NavigationDrawer -> TbDrawerNavigationAction(onLoginClicked)
 
                 MainNavigationSuiteType.FloatingNavigationBarCompact -> {
-                    if (!uiSettings.hideExplore) {
-                        ExplorePrimaryAction(visible = MainDestination.Explore === currentDestination)
+                    if (uiSettings.hideExplore) return@MainNavigationSuiteScaffold
+                    ExplorePrimaryAction(visible = MainDestination.Explore === currentDestination) {
+                        coroutineScope.launch {
+                            emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))
+                        }
                     }
                 }
                 else -> null // NavigationBar or None
@@ -335,18 +347,36 @@ private fun MainNavigationSuiteScaffold(
     content: @Composable () -> Unit = {},
 ) {
     val navigationSuiteType = mainNavSuiteType.toNavigationSuiteType()
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+    // Override navbar container color when there is ongoing transition
+    val colorsOnTransition = if (navigationSuiteType.isNavigationBar && animatedVisibilityScope != null) {
+        animatedVisibilityScope.navigationSuiteTransitionColors(mainNavSuiteType, navigationSuiteColors).value
+    } else {
+        null
+    }
+
     NavigationSuiteScaffoldLayout(
         modifier = modifier,
         navigationSuite = {
             MainNavigationSuite(
                 mainNavigationSuiteType = mainNavSuiteType,
-                modifier = Modifier.onNotNull(hazeState) {
-                    val hazeInputScale = defaultInputScale()
-                    hazeEffect(state = it, style = defaultHazeStyle()) {
-                        inputScale = hazeInputScale
+                modifier = Modifier
+                    .onNotNull(hazeState) {
+                        val hazeInputScale = defaultInputScale()
+                        hazeEffect(state = it, style = defaultHazeStyle()) {
+                            blurEnabled = animatedVisibilityScope?.transition?.isRunning != true
+                            inputScale = hazeInputScale
+                        }
                     }
-                },
-                colors = navigationSuiteColors,
+                    .onCase(colorsOnTransition != null) {
+                        animateEnterExit(
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            sharedTransitionScope = LocalSharedTransitionScope.current,
+                            enter = defaultVerticalEnterTransition(topToBottom = false),
+                            exit = defaultVerticalExitTransition(topToBottom = false)
+                        )
+                    },
+                colors = colorsOnTransition ?: navigationSuiteColors,
                 verticalArrangement = navigationVerticalArrangement,
                 primaryActionContent = primaryActionContent,
                 content = navigationItems,
@@ -534,27 +564,43 @@ private fun mainNavigationSuiteColors(floatingNavBar: Boolean, blur: Boolean): N
     }
 }
 
+// Override navigation bar container color when there is ongoing transition
 @Composable
-private fun ExplorePrimaryAction(modifier: Modifier = Modifier, visible: Boolean) {
-    val coroutineScope = rememberCoroutineScope()
-    val screenOffset = floatingNavigationBarScreenOffset
+private fun AnimatedVisibilityScope.navigationSuiteTransitionColors(
+    navigationSuiteType: MainNavigationSuiteType,
+    defaultColors: NavigationSuiteColors
+): State<NavigationSuiteColors> {
+    // Replace with NavigationSuiteColors.copy()!!
+    val colorsInTransition = NavigationSuiteDefaults.colors(
+        navigationBarContainerColor = MaterialTheme.colorScheme.surface,
+        shortNavigationBarContainerColor = if (navigationSuiteType.isFloatingNavigationBar) {
+            MaterialTheme.colorScheme.vibrantFloatingNavigationBarColor
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+    )
+    return remember(defaultColors) {
+        derivedStateOf { if (transition.isRunning) colorsInTransition else defaultColors }
+    }
+}
+
+@Composable
+private fun ExplorePrimaryAction(modifier: Modifier = Modifier, visible: Boolean, onClick: () -> Unit) {
+    val isTransitionActive = LocalAnimatedVisibilityScope.current?.transition?.isRunning == true
+    val screenOffset = floatingNavigationBarCompactScreenOffset
     val visibilityAnimation by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
+        targetValue = if (visible && !isTransitionActive) 1f else 0f,
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
     )
     DefaultBackToTopFAB(
         modifier = modifier
-            .graphicsLayer {
-                translationX = (1 - visibilityAnimation) * size.width
-                translationY = -screenOffset.toPx()
+            .graphicsLayer { // SlideIn vertically
+                translationY = lerp(size.height * 2, -screenOffset.toPx(), visibilityAnimation)
             },
         visible = visible,
         size = NavigationBarHeight,
-    ) {
-        coroutineScope.launch {
-            emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))
-        }
-    }
+        onClick = onClick,
+    )
 }
 
 /**

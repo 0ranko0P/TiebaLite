@@ -6,10 +6,13 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -31,7 +34,6 @@ import androidx.navigation.get
 import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
@@ -88,22 +90,28 @@ fun RootNavGraph(
                     },
                     enterTransition = {
                         scaleIn(
-                            animationSpec = tween(delayMillis = 35),
-                            initialScale = 1.1F
-                        ) + fadeIn(
-                            animationSpec = tween(delayMillis = 35)
-                        )
+                            animationSpec = DefaultAnimationSpec,
+                            initialScale = 0.9f
+                        ) + DefaultFadeIn
                     },
-                    exitTransition = { DefaultFadeOut },
+                    exitTransition = {
+                        scaleOut(
+                            animationSpec = DefaultAnimationSpec,
+                            targetScale = 1.1f
+                        ) + DefaultFadeOut
+                    },
                     popEnterTransition = {
                         scaleIn(
-                            animationSpec = tween(delayMillis = 35),
-                            initialScale = 0.9F
-                        ) + fadeIn(
-                            animationSpec = tween(delayMillis = 35)
-                        )
+                            animationSpec = DefaultAnimationSpec,
+                            initialScale = 1.1f
+                        ) + DefaultFadeIn
                     },
-                    popExitTransition = { DefaultFadeOut },
+                    popExitTransition = {
+                        scaleOut(
+                            animationSpec = DefaultAnimationSpec,
+                            targetScale = 0.9f
+                        ) + DefaultFadeOut
+                    },
                 )
             // }
         }
@@ -116,7 +124,9 @@ private fun buildRootNavGraph(
     startDestination: Destination
 ): NavGraph {
     return navController.createGraph(startDestination) {
-        animatedComposable<Destination.Main> {
+        animatedComposable<Destination.Main>(
+            popEnterTransition = { DefaultFadeIn },
+        ) {
             MainPage(navController)
         }
 
@@ -249,9 +259,14 @@ private fun buildRootNavGraph(
     }
 }
 
-private val DefaultFadeOut: ExitTransition by unsafeLazy {
-    fadeOut(animationSpec = tween(100))
-}
+private val DefaultAnimationSpec: TweenSpec<Float> =
+    tween(durationMillis = 300, easing = FastOutSlowInEasing)
+
+private val DefaultFadeIn: EnterTransition =
+    fadeIn(animationSpec = tween(durationMillis = 300))
+
+private val DefaultFadeOut: ExitTransition =
+    fadeOut(animationSpec = tween(durationMillis = 200))
 
 /**
  * Add the [Composable] to the [NavGraphBuilder]

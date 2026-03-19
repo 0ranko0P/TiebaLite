@@ -117,6 +117,11 @@ import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
+import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
+import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.ui.common.animateEnterExit
+import com.huanchengfly.tieba.post.ui.common.defaultVerticalEnterTransition
+import com.huanchengfly.tieba.post.ui.common.defaultVerticalExitTransition
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.Like
@@ -477,8 +482,15 @@ fun ThreadPage(
                 // The toolbar should receive focus before the screen content, so place it first.
                 // Make sure to set its zIndex so it's above the screen content visually.
                 ThreadFloatingToolbar(
-                    modifier =
-                        Modifier.align(Alignment.BottomCenter).offset(y = toolbarScreenOffset).zIndex(1f),
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                        .offset(y = toolbarScreenOffset)
+                        .zIndex(1f)
+                        .animateEnterExit(
+                            animatedVisibilityScope = LocalAnimatedVisibilityScope.current,
+                            sharedTransitionScope = LocalSharedTransitionScope.current,
+                            enter = defaultVerticalEnterTransition(topToBottom = false),
+                            exit = defaultVerticalExitTransition(topToBottom = false),
+                        ),
                     user = state.user,
                     onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
                     onClickMore =  openBottomSheet,

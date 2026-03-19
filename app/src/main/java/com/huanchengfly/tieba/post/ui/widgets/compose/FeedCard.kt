@@ -27,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -65,6 +64,8 @@ import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
@@ -231,38 +232,6 @@ fun FeedCardPlaceholder() {
                 }
             }
         }
-    )
-}
-
-/**
- * 贴吧头像过渡动画唯一标识键
- * */
-@Immutable
-@JvmInline
-value class ForumAvatarSharedBoundsKey(private val value: String) {
-
-    /**
-     * @param forumName 吧名
-     * @param extraKey 额外标识键. 确保推荐页, 搜索页中多个贴子来自同一个吧时过渡动画的唯一性
-     * */
-    constructor(forumName: String, extraKey: Any?): this(
-        if (extraKey != null) forumName + extraKey else forumName
-    )
-}
-
-/**
- * 贴吧吧名过渡动画唯一标识键
- * */
-@Immutable
-@JvmInline
-value class ForumTitleSharedBoundsKey(private val value: String) {
-
-    /**
-     * @param forumName 吧名
-     * @param extraKey 额外标识键. 确保推荐页, 搜索页中多个贴子来自同一个吧时过渡动画的唯一性
-     * */
-    constructor(forumName: String, extraKey: Any?): this(
-        if (extraKey != null) forumName + extraKey else forumName
     )
 }
 

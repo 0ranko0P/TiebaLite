@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.main.FloatingIconNavigationBarOverride.ShortNavigationBar
 import com.huanchengfly.tieba.post.ui.page.main.FloatingNavigationBarOverride.ShortNavigationBar
@@ -66,7 +67,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.LocalAccount
 
-val floatingNavigationBarScreenOffset: Dp
+val floatingNavigationBarCompactScreenOffset: Dp
     @Composable
     get() = if (WindowInsets.navigationBars.getBottom(LocalDensity.current) > 0) {
         FloatingToolbarDefaults.ScreenOffset / 4
@@ -239,6 +240,7 @@ context(scope: ShortNavigationBarOverrideScope)
 private fun Modifier.floatingNavBarContainer(
     height: Dp,
     screenOffset: Dp,
+    isTransitionActive: () -> Boolean,
 ): Modifier = this then with(scope) {
     Modifier
         .windowInsetsPadding(windowInsets)
@@ -249,10 +251,12 @@ private fun Modifier.floatingNavBarContainer(
             this.shape = CircleShape
             this.clip = true
             this.translationY = -screenOffset.toPx()
-            this.shadowElevation = FloatingNavigationBarElevation.toPx()
+            if (!isTransitionActive()) {
+                this.shadowElevation = FloatingNavigationBarElevation.toPx()
+            }
         }
         .then(modifier)
-        .background(containerColor)
+        .background(color = containerColor, shape = CircleShape)
 }
 
 /**
@@ -262,12 +266,17 @@ private fun Modifier.floatingNavBarContainer(
 object FloatingNavigationBarOverride : ShortNavigationBarOverride {
     @Composable
     override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
+        val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
         CompositionLocalProvider(LocalContentColor provides contentColor) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .floatingNavBarContainer(NavigationBarHeight, floatingNavigationBarScreenOffset)
+                    .floatingNavBarContainer(
+                        height = NavigationBarHeight,
+                        screenOffset = Dp.Hairline,
+                        isTransitionActive = { animatedVisibilityScope?.transition?.isRunning == true }
+                    )
                     .padding(start = 24.dp, top = 6.dp, end = 24.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -285,10 +294,15 @@ object FloatingNavigationBarOverride : ShortNavigationBarOverride {
 object FloatingIconNavigationBarOverride : ShortNavigationBarOverride {
     @Composable
     override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
+        val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
         CompositionLocalProvider(LocalContentColor provides contentColor) {
             Row(
                 modifier = Modifier
-                    .floatingNavBarContainer(FloatingIconNavigationBarHeight, floatingNavigationBarScreenOffset)
+                    .floatingNavBarContainer(
+                        height = FloatingIconNavigationBarHeight,
+                        screenOffset = floatingNavigationBarCompactScreenOffset,
+                        isTransitionActive = { animatedVisibilityScope?.transition?.isRunning == true }
+                    )
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)

@@ -83,6 +83,11 @@ import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.SearchToolbarSharedBoundsKey
+import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
+import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
@@ -94,15 +99,12 @@ import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companio
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.explore.topAppBarBlurEffect
-import com.huanchengfly.tieba.post.ui.page.search.SearchToolbarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.ForumAvatarSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.widgets.compose.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
@@ -111,8 +113,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.color
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -398,6 +402,8 @@ fun AnimatedVisibilityScope.HomePage(
 ) {
     val loggedIn = LocalAccount.current != null
     val hazeState: HazeState? = LocalHazeState.current
+    val hazeInputScale = defaultInputScale()
+    val sharedTransitionScope = LocalSharedTransitionScope.current
     val context = LocalContext.current
     val navigator = LocalNavController.current
     val gridState = rememberLazyGridState()
@@ -421,12 +427,17 @@ fun AnimatedVisibilityScope.HomePage(
     MyScaffold(
         useMD2Layout = hazeState == null,
         topBar = {
-            TopAppBar(
+            TopAppBarPaged(
                 modifier = Modifier
-                    .topAppBarBlurEffect(hazeState, block = null) {
-                        gridState.canScrollBackward || scrollBehavior.isOverlapping
-                    },
-                titleRes = R.string.title_main,
+                    .topAppBarBlurEffect(
+                        sharedTransitionScope = sharedTransitionScope,
+                        rootAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current,
+                        hazeState = hazeState,
+                        style = defaultHazeStyle(),
+                        inputScale = hazeInputScale,
+                        blurEnabled = { gridState.canScrollBackward || scrollBehavior.isOverlapping }
+                    ),
+                title = { Text(text = stringResource(R.string.title_main)) },
                 navigationIcon = {
                     AccountNavIconIfCompact(onLoginClicked = { navigator.navigate(Destination.Login) })
                 },
@@ -448,10 +459,13 @@ fun AnimatedVisibilityScope.HomePage(
                         )
                     }
                 },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                canScrollBackward = {
+                    sharedTransitionScope?.isTransitionActive != true && !transition.isRunning && gridState.canScrollBackward
+                },
             ) {
                 DummySearchBox(
-                    modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey),
+                    modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey, zIndexInOverlay = 2.0f),
                     onClick = { navigator.navigateDebounced(route = Destination.Search) }
                 )
                 Spacer(modifier = Modifier.height(4.dp))

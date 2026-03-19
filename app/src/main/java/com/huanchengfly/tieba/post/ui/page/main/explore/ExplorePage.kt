@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -26,8 +27,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -43,8 +42,10 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.navigateDebounced
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
+import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.ui.common.animateEnterExit
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
@@ -80,7 +81,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
 import dev.chrisbanes.haze.HazeEffectScope
+import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -184,6 +187,8 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
     // Hide FAB on FloatingNavigationBarCompact
     val isFloatingNavBarCompat = navigationSuiteType === MainNavigationSuiteType.FloatingNavigationBarCompact
     val hazeState: HazeState? = LocalHazeState.current
+    val hazeInputScale = defaultInputScale()
+    val sharedTransitionScope = LocalSharedTransitionScope.current
 
     val pages = remember(loggedIn) {
         listOfNotNull(
@@ -224,9 +229,14 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
         topBar = {
             TopAppBarPaged(
                 modifier = Modifier
-                    .topAppBarBlurEffect(hazeState, block = null) {
-                        !fabHideStates[pagerState.currentPage] || pagerState.isScrolling
-                    },
+                    .topAppBarBlurEffect(
+                        sharedTransitionScope = sharedTransitionScope,
+                        rootAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current,
+                        hazeState = hazeState,
+                        style = defaultHazeStyle(),
+                        inputScale = hazeInputScale,
+                        blurEnabled = { !fabHideStates[pagerState.currentPage] || pagerState.isScrolling }
+                    ),
                 title = { Text(text = stringResource(R.string.title_explore)) },
                 navigationIcon = {
                     AccountNavIconIfCompact(onLoginClicked = { navigator.navigate(Destination.Login) })
@@ -239,8 +249,9 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
                     )
                 },
                 scrollBehavior = scrollBehavior,
-                canScrollBackward = {
-                    listStates[pagerState.currentPage].canScrollBackward
+                canScrollBackward = { // No transition running && canScrollBackward
+                    sharedTransitionScope?.isTransitionActive != true && !transition.isRunning &&
+                            listStates[pagerState.currentPage].canScrollBackward
                 }
             ) {
                 ExplorePageTab(pagerState = pagerState, pages = pages)
@@ -300,22 +311,29 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
 
 context(mainAnimatedContentScope: AnimatedVisibilityScope)
 fun Modifier.topAppBarBlurEffect(
+    sharedTransitionScope: SharedTransitionScope?,
+    rootAnimatedVisibilityScope: AnimatedVisibilityScope?,
     hazeState: HazeState?,
-    block: (HazeEffectScope.() -> Unit)?,
-    isEnabled: () -> Boolean,
-): Modifier = this.onNotNull(hazeState) {
-    Modifier.composed {
-        val hazeInputScale = defaultInputScale()
-        val containerColor = TiebaLiteTheme.topAppBarColors.containerColor
-        hazeEffect(state = it, defaultHazeStyle()) {
+    style: HazeStyle = HazeStyle.Unspecified,
+    inputScale: HazeInputScale = HazeInputScale.None,
+    block: (HazeEffectScope.() -> Unit)? = null,
+    blurEnabled: () -> Boolean,
+): Modifier = this then Modifier
+    .onNotNull(rootAnimatedVisibilityScope, sharedTransitionScope) { (rootAnimatedVisibilityScope, sharedTransitionScope) ->
+        animateEnterExit(
+            zIndexInOverlay = 1.0f,
+            animatedVisibilityScope = rootAnimatedVisibilityScope,
+            sharedTransitionScope = sharedTransitionScope
+        )
+    }
+    .onNotNull(hazeState) {
+        hazeEffect(state = it, style = style) {
             // Disable background blur when MainNavHost transition is running
-            blurEnabled = !mainAnimatedContentScope.transition.isRunning && isEnabled()
-            inputScale = hazeInputScale
+            this.blurEnabled = !mainAnimatedContentScope.transition.isRunning && blurEnabled()
+            this.inputScale = inputScale
             if (block != null) block()
         }
-        .drawBehind { if (mainAnimatedContentScope.transition.isRunning) drawRect(containerColor) }
     }
-}
 
 @Composable
 fun LaunchedFabStateEffect(

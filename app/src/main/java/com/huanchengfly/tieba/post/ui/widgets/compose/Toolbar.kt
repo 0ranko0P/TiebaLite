@@ -246,8 +246,8 @@ fun ActionItem(
 )
 
 @Composable
-fun BackNavigationIcon(onBackPressed: () -> Unit) {
-    IconButton(onClick = onBackPressed) {
+fun BackNavigationIcon(modifier: Modifier = Modifier, onBackPressed: () -> Unit) {
+    IconButton(onClick = onBackPressed, modifier = modifier) {
         Icon(
             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
             contentDescription = stringResource(id = R.string.button_back)

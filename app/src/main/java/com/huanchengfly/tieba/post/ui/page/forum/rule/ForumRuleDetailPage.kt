@@ -51,7 +51,7 @@ fun ForumRuleDetailPage(
                     TitleCentredToolbar(
                         title = stringResource(id = R.string.title_forum_rule),
                         navigationIcon = {
-                            BackNavigationIcon(navigator::navigateUp)
+                            BackNavigationIcon(onBackPressed = navigator::navigateUp)
                         }
                     )
                 }
