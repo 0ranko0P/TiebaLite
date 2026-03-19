@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -32,6 +33,7 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.NavigationItemColors
 import androidx.compose.material3.ShortNavigationBarOverride
 import androidx.compose.material3.ShortNavigationBarOverrideScope
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuite
 import androidx.compose.material3.ripple
@@ -48,13 +50,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.HorizontalRuler
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasurePolicy
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.VerticalRuler
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrain
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastMap
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
@@ -65,6 +77,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.TallNavigationBarHeight
 import com.huanchengfly.tieba.post.utils.LocalAccount
 
 val floatingNavigationBarCompactScreenOffset: Dp
@@ -308,6 +321,77 @@ object FloatingIconNavigationBarOverride : ShortNavigationBarOverride {
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 content()
+            }
+        }
+    }
+}
+
+@ExperimentalMaterial3ComponentOverrideApi
+object DefaultNavigationBarOverride : ShortNavigationBarOverride {
+    @Composable
+    override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
+        Surface(color = containerColor, contentColor = contentColor, modifier = modifier) {
+            Layout(
+                modifier =
+                    Modifier
+                        .windowInsetsPadding(windowInsets)
+                        .height(TallNavigationBarHeight)
+                        .selectableGroup(),
+                content = content,
+                measurePolicy = EqualWeightContentMeasurePolicy,
+            )
+        }
+    }
+}
+
+// androidx.compose.material3.EqualWeightContentMeasurePolicy
+private object EqualWeightContentMeasurePolicy : MeasurePolicy {
+    override fun MeasureScope.measure(
+        measurables: List<Measurable>,
+        constraints: Constraints,
+    ): MeasureResult {
+        val width = constraints.maxWidth
+        var itemHeight = constraints.minHeight
+        val itemsCount = measurables.size
+        // If there are no items, bar will be empty.
+        if (itemsCount < 1) {
+            return layout(width, itemHeight) {}
+        }
+
+        val itemsPlaceables: List<Placeable>
+        if (!constraints.hasBoundedWidth) {
+            // If width constraint is not bounded, let item containers widths be as big as they are.
+            // This may lead to a different items arrangement than the expected.
+            itemsPlaceables =
+                measurables.fastMap {
+                    it.measure(constraints.constrain(Constraints.fixedHeight(height = itemHeight)))
+                }
+        } else {
+            val itemWidth = width / itemsCount
+            measurables.fastForEach {
+                val measurableHeight = it.maxIntrinsicHeight(itemWidth)
+                if (itemHeight < measurableHeight) {
+                    itemHeight = measurableHeight.coerceAtMost(constraints.maxHeight)
+                }
+            }
+
+            // Make sure the item containers have the same width and height.
+            itemsPlaceables =
+                measurables.fastMap {
+                    it.measure(
+                        constraints.constrain(
+                            Constraints.fixed(width = itemWidth, height = itemHeight)
+                        )
+                    )
+                }
+        }
+
+        return layout(width, itemHeight) {
+            var x = 0
+            val y = 0
+            itemsPlaceables.fastForEach { item ->
+                item.placeRelative(x, y)
+                x += item.width
             }
         }
     }

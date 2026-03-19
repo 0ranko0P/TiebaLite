@@ -311,6 +311,7 @@ private fun MainNavigationSuite(
     val shortNavBarOverride = when (mainNavigationSuiteType) {
         MainNavigationSuiteType.FloatingNavigationBar -> FloatingNavigationBarOverride
         MainNavigationSuiteType.FloatingNavigationBarCompact -> FloatingIconNavigationBarOverride
+        MainNavigationSuiteType.NavigationBar -> DefaultNavigationBarOverride
         else -> androidx.compose.material3.DefaultShortNavigationBarOverride
     }
     CompositionLocalProvider(LocalShortNavigationBarOverride provides shortNavBarOverride) {
