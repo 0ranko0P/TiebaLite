@@ -10,11 +10,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -22,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.PaddingNone
+import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -36,7 +39,6 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadViewModel.Companion.UserThreadVmFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.ForumInfoChip
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
@@ -128,7 +130,7 @@ private fun UserThread(
     onClickForum: (ThreadItem) -> Unit,
 ) {
     val context = LocalContext.current
-    val (forumId, forumName, forumAvatar) = thread.simpleForum
+    val (forumId, forumName, _) = thread.simpleForum
 
     Card(
         modifier = modifier,
@@ -138,11 +140,18 @@ private fun UserThread(
                 avatar = thread.author.avatarUrl,
                 desc = remember { DateTimeUtils.getRelativeTimeString(context, thread.lastTimeMill) },
             ) {
-                ForumInfoChip(
-                    forumName = forumName,
-                    avatarUrl = forumAvatar,
-                    onClick = { onClickForum(thread) }
-                )
+                Surface(
+                    onClick = { onClickForum(thread) },
+                    shape = MaterialTheme.shapes.extraSmall,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.title_forum_name, forumName),
+                        modifier = Modifier.padding(4.dp),
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
         },
         content = {
