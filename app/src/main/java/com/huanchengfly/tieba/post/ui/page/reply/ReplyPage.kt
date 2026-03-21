@@ -604,6 +604,11 @@ private fun ImagePanel(
     onIsOriginImageChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val iconButtonColors = IconButtonDefaults.iconButtonColors(
+        containerColor = MaterialTheme.colorScheme.tertiary,
+        contentColor = MaterialTheme.colorScheme.onTertiary,
+    )
+
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.Center
@@ -631,7 +636,7 @@ private fun ImagePanel(
                     IconButton(
                         onClick = { onRemoveImage(index) },
                         modifier = Modifier.align(Alignment.TopEnd),
-                        colors = IconButtonDefaults.iconButtonColors(MaterialTheme.colorScheme.tertiary)
+                        colors = iconButtonColors,
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Close,

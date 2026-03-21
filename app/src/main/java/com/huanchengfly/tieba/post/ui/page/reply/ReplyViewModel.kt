@@ -1,16 +1,15 @@
 package com.huanchengfly.tieba.post.ui.page.reply
 
 import android.content.Context
-import android.net.Uri
 import android.text.Editable
 import android.text.SpannableString
 import android.text.TextWatcher
 import android.util.Log
 import androidx.compose.runtime.Stable
+import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.AddThreadBean
@@ -31,10 +30,12 @@ import com.huanchengfly.tieba.post.components.ImageUploader
 import com.huanchengfly.tieba.post.models.database.Draft
 import com.huanchengfly.tieba.post.models.database.dao.DraftDao
 import com.huanchengfly.tieba.post.repository.AddPostRepository
+import com.huanchengfly.tieba.post.repository.user.Settings
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
-import com.huanchengfly.tieba.post.utils.FileUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,6 +50,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -56,11 +58,13 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.collections.map
 
 @Stable
 @HiltViewModel
 class ReplyViewModel @Inject constructor(
     @ApplicationContext val context: Context,
+    private val settingsRepo: SettingsRepository,
     private val draftDao: DraftDao,
     savedStateHandle: SavedStateHandle
 ) : BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>(), TextWatcher {
@@ -113,7 +117,7 @@ class ReplyViewModel @Inject constructor(
     override fun createInitialState() = ReplyUiState()
 
     override fun createPartialChangeProducer(): PartialChangeProducer<ReplyUiIntent, ReplyPartialChange, ReplyUiState> =
-        ReplyPartialChangeProducer
+        ReplyPartialChangeProducer(context, settingsRepo.habitSettings)
 
     override fun dispatchEvent(partialChange: ReplyPartialChange): UiEvent? = when (partialChange) {
         is ReplyPartialChange.Send.Success -> ReplyUiEvent.ReplySuccess(
@@ -141,7 +145,10 @@ class ReplyViewModel @Inject constructor(
         else -> null
     }
 
-    private object ReplyPartialChangeProducer :
+    private class ReplyPartialChangeProducer(
+        private val context: Context,
+        private val habitSettings: Settings<HabitSettings>
+    ) :
         PartialChangeProducer<ReplyUiIntent, ReplyPartialChange, ReplyUiState> {
         @OptIn(ExperimentalCoroutinesApi::class)
         override fun toPartialChangeFlow(intentFlow: Flow<ReplyUiIntent>): Flow<ReplyPartialChange> =
@@ -216,22 +223,17 @@ class ReplyViewModel @Inject constructor(
         }
 
         private fun ReplyUiIntent.UploadImages.producePartialChange() =
-            ImageUploader(forumName)
-                .uploadImages(
-                    imageUris.map {
-                        FileUtil.getRealPathFromUri(
-                            App.INSTANCE,
-                            Uri.parse(it)
-                        )
-                    },
-                    isOriginImage
-                )
-                .map<List<UploadPictureResultBean>, ReplyPartialChange.UploadImages> {
-                    ReplyPartialChange.UploadImages.Success(it)
+                flow<ReplyPartialChange.UploadImages> {
+                    val rec = ImageUploader(forumName).upload(
+                        context = context,
+                        images = imageUris.map { it.toUri() },
+                        watermarkType = habitSettings.snapshot().imageWatermarkType,
+                        isOriginImage = isOriginImage
+                    )
+                    emit(ReplyPartialChange.UploadImages.Success(rec))
                 }
-                .onStart { emit(ReplyPartialChange.UploadImages.Start) }
                 .catch {
-                    it.printStackTrace()
+                    Log.e(TAG, "producePartialChange: onUploadImages", it)
                     emit(
                         ReplyPartialChange.UploadImages.Failure(
                             it.getErrorCode(),
@@ -239,6 +241,7 @@ class ReplyViewModel @Inject constructor(
                         )
                     )
                 }
+                .onStart { emit(ReplyPartialChange.UploadImages.Start) }
 
         private fun ReplyUiIntent.AddImage.producePartialChange() =
             flowOf(ReplyPartialChange.AddImage(imageUris))

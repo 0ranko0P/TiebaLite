@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.utils
 
 import android.Manifest
 import android.app.DownloadManager
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -17,6 +18,9 @@ import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import okio.buffer
+import okio.sink
+import okio.source
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
@@ -161,6 +165,17 @@ object FileUtil {
 
     fun File.toSharedUri(context: Context): Uri {
         return FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".share.FileProvider", this)
+    }
+
+    @Throws(IOException::class)
+    fun File.writeAll(contentResolver: ContentResolver, uri: Uri): File {
+        ensureParents()
+        contentResolver.openInputStream(uri)!!.source().buffer().use { bufferedSource ->
+            this.sink().buffer().use { bufferedSink ->
+                bufferedSink.writeAll(bufferedSource)
+            }
+        }
+        return this
     }
 
     fun Context.createFileInCacheDir(file: String) = File(cacheDir, "misc/$file")

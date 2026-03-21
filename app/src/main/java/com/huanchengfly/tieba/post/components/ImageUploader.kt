@@ -1,8 +1,10 @@
 package com.huanchengfly.tieba.post.components
 
+import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Bitmap.CompressFormat
 import android.graphics.BitmapFactory
-import com.huanchengfly.tieba.post.App
+import android.net.Uri
 import com.huanchengfly.tieba.post.api.BOUNDARY
 import com.huanchengfly.tieba.post.api.booleanToString
 import com.huanchengfly.tieba.post.api.models.UploadPictureResultBean
@@ -10,24 +12,22 @@ import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
 import com.huanchengfly.tieba.post.api.retrofit.body.buildMultipartBody
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.ui.models.settings.WaterType
+import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
+import com.huanchengfly.tieba.post.utils.FileUtil.writeAll
 import com.huanchengfly.tieba.post.utils.ImageUtil
+import com.huanchengfly.tieba.post.utils.ImageUtil.toFile
 import com.huanchengfly.tieba.post.utils.MD5Util
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.withContext
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.RandomAccessFile
 
 class ImageUploader(
@@ -41,36 +41,39 @@ class ImageUploader(
         const val ORIGIN_IMAGE_MAX_SIZE = 10485760
     }
 
-    fun uploadImages(
-        filePaths: List<String>,
-        isOriginImage: Boolean = false,
-    ): Flow<List<UploadPictureResultBean>> {
-        return filePaths.asFlow()
-            .map { filePath ->
-                uploadSinglePicture(filePath, isOriginImage)
+    suspend fun upload(
+        context: Context,
+        images: List<Uri>,
+        @WaterType watermarkType: Int,
+        isOriginImage: Boolean = false
+    ): List<UploadPictureResultBean> {
+        require(images.isNotEmpty())
+        val contentResolver = context.contentResolver
+        val tempDir = File(context.cacheDir, "upload_tmp_${images.hashCode()}")
+        return try {
+            images.mapIndexed { i, uri ->
+                val image = File(tempDir, "img_$i").writeAll(contentResolver, uri)
+                uploadSinglePicture(image, watermarkType, isOriginImage)
             }
-            .runningFold<UploadPictureResultBean, MutableList<UploadPictureResultBean>>(initial = mutableListOf()) { list, result ->
-                list.add(result)
-                list
-            }
-            .filter { it.size == filePaths.size }
+        } catch (e: Throwable) {
+            throw e
+        } finally {
+            runCatching { tempDir.deleteRecursively() } // Cleanup quietly
+        }
     }
 
     private suspend fun compressImage(
-        filePath: String,
+        originFile: File,
         isOriginImage: Boolean
     ): File {
-        val originFile = File(filePath)
-        val fileLength = originFile.length()
-        val maxSize = if (isOriginImage) ORIGIN_IMAGE_MAX_SIZE else IMAGE_MAX_SIZE
-        val tempFile = withContext(Dispatchers.IO) {
-            File.createTempFile("temp", ".tmp")
-        }
-        withContext<Unit>(Dispatchers.IO) {
+        return withContext(Dispatchers.IO) {
+            val fileLength = originFile.length()
+            val maxSize = if (isOriginImage) ORIGIN_IMAGE_MAX_SIZE else IMAGE_MAX_SIZE
             if (isOriginImage && fileLength <= maxSize) {
-                originFile.copyTo(tempFile, true)
+                return@withContext originFile
             } else {
-                val bitmap = BitmapFactory.decodeFile(filePath)
+                val tempFile = File.createTempFile("temp", ".tmp")
+                val bitmap = BitmapFactory.decodeFile(originFile.path)
                 val firstCompressResult = ImageUtil.compressImage(bitmap, quality = 95)
                 tempFile.writeBytes(firstCompressResult)
                 if (firstCompressResult.size > maxSize) {
@@ -85,35 +88,36 @@ class ImageUploader(
                     if (scale < 1) {
                         val newWidth = (width * scale).toInt()
                         val newHeight = (height * scale).toInt()
-                        val newBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
-                        tempFile.writeBytes(ImageUtil.compressImage(newBitmap, quality = 95))
+                        Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+                            .toFile(tempFile, quality = 95, format = CompressFormat.JPEG)
                     }
                 }
+                return@withContext tempFile
             }
         }
-        return tempFile
     }
 
+    @Throws(UploadPictureFailedException::class, FileNotFoundException::class)
     @OptIn(ExperimentalCoroutinesApi::class)
-    suspend fun uploadSinglePicture(
-        filePath: String,
+    private suspend fun uploadSinglePicture(
+        image: File,
+        @WaterType watermarkType: Int,
         isOriginImage: Boolean = false,
     ): UploadPictureResultBean {
         val option = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
         }
-        BitmapFactory.decodeFile(filePath, option)
+        withContext(Dispatchers.IO) { BitmapFactory.decodeFile(image.path, option) }
         val width = option.outWidth
         val height = option.outHeight
         check(width > 0 && height > 0) { "图片宽高不正确" }
-        val file = compressImage(filePath, isOriginImage)
+        val file = compressImage(originFile = image, isOriginImage)
         val fileLength = file.length()
         val maxSize = if (isOriginImage) ORIGIN_IMAGE_MAX_SIZE else IMAGE_MAX_SIZE
         check(fileLength <= maxSize) { "图片大小超过限制" }
-        val fileMd5 = MD5Util.toMd5(file)
+        val fileMd5 = withContext(Dispatchers.IO) { MD5Util.toMd5(file) }
         val isMultipleChunkSize = fileLength % chunkSize == 0L
         val totalChunkNum = fileLength / chunkSize + if (isMultipleChunkSize) 0 else 1
-        val picWatermarkType = App.INSTANCE.settingRepository.habitSettings.snapshot().imageWatermarkType
         val requestBodies = (0 until totalChunkNum).map { chunk ->
             val isFinish = chunk == totalChunkNum - 1
             val curChunkSize = if (isFinish) {
@@ -141,7 +145,7 @@ class ImageUploader(
                 addFormDataPart("height", "$height")
                 addFormDataPart("isFinish", isFinish.booleanToString())
                 addFormDataPart("is_bjh", "0")
-                addFormDataPart("pic_water_type", picWatermarkType.toString())
+                addFormDataPart("pic_water_type", watermarkType.toString())
                 addFormDataPart("resourceId", "$fileMd5$chunkSize")
                 addFormDataPart("saveOrigin", isOriginImage.booleanToString())
                 addFormDataPart("size", "$fileLength")
@@ -152,15 +156,16 @@ class ImageUploader(
         }
         return requestBodies.asFlow()
             .flatMapConcat { RetrofitTiebaApi.OFFICIAL_TIEBA_API.uploadPicture(it) }
-            .catch {
-                throw UploadPictureFailedException(it.getErrorCode(), it.getErrorMessage())
-            }
             .onCompletion {
-                withContext(Dispatchers.IO) {
-                    file.delete()
-                }
+                withContext(Dispatchers.IO) { file.deleteQuietly() }
             }
             .last()
+            .also { resultBean ->
+                val errorCode = resultBean.errorCode.toIntOrNull() ?: -1
+                if (errorCode != 0) {
+                    throw UploadPictureFailedException(errorCode, resultBean.errorMsg)
+                }
+            }
     }
 }
 
