@@ -17,7 +17,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.NonSkippableComposable
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -157,63 +156,3 @@ fun PlaceholderDecoration(
 fun ProvideContentColor(color: Color, content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalContentColor provides color, content)
 }
-
-// Internal functions from TextFieldColors
-
-/**
- * Represents the container color for this text field.
- *
- * @param enabled whether the text field is enabled
- * @param isError whether the text field's current value is in error
- * @param focused whether the text field is in focus
- */
-@Stable
-private fun TextFieldColors.containerColor(enabled: Boolean, isError: Boolean, focused: Boolean): Color =
-    when {
-        !enabled -> disabledContainerColor
-        isError -> errorContainerColor
-        focused -> focusedContainerColor
-        else -> unfocusedContainerColor
-    }
-
-/**
- * Represents the color used for the placeholder of this text field.
- *
- * @param enabled whether the text field is enabled
- * @param isError whether the text field's current value is in error
- * @param focused whether the text field is in focus
- */
-@Stable
-private fun TextFieldColors.placeholderColor(enabled: Boolean, isError: Boolean, focused: Boolean): Color =
-    when {
-        !enabled -> disabledPlaceholderColor
-        isError -> errorPlaceholderColor
-        focused -> focusedPlaceholderColor
-        else -> unfocusedPlaceholderColor
-    }
-
-/**
- * Represents the color used for the input field of this text field.
- *
- * @param enabled whether the text field is enabled
- * @param isError whether the text field's current value is in error
- * @param focused whether the text field is in focus
- */
-@Stable
-private fun TextFieldColors.textColor(enabled: Boolean, isError: Boolean, focused: Boolean): Color =
-    when {
-        !enabled -> disabledTextColor
-        isError -> errorTextColor
-        focused -> focusedTextColor
-        else -> unfocusedTextColor
-    }
-
-/**
- * Represents the color used for the cursor of this text field.
- *
- * @param isError whether the text field's current value is in error
- */
-@Stable
-private fun TextFieldColors.cursorColor(isError: Boolean): Color =
-    if (isError) errorCursorColor else cursorColor
-

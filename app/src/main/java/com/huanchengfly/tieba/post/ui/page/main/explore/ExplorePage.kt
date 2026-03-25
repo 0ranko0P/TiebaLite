@@ -207,6 +207,7 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
         coroutineScope.launch {
             listStates[pagerState.currentPage].scrollToItem(0)
             scrollBehavior.state.contentOffset = 0f
+            scrollBehavior.state.heightOffset = 0f
         }
     }
 

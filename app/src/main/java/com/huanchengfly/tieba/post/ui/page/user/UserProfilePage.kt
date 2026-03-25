@@ -268,8 +268,10 @@ fun UserProfilePage(
 
     // Compose fullscreen avatar background when possible
     val avatarUrl = avatar ?: uiState.userProfile?.let { remember { StringUtil.getAvatarUrl(it.portrait) } }
+    var backgroundColor = MaterialTheme.colorScheme.background
     if (!avatarUrl.isNullOrEmpty()) {
         AvatarBackground(viewModel.imageProcessor, avatar = avatarUrl, collapseFraction)
+        backgroundColor = Color.Transparent
     }
 
     StateScreen(
@@ -386,6 +388,7 @@ fun UserProfilePage(
                 }
             },
             snackbarHostState = snackbarHostState,
+            backgroundColor = backgroundColor,
         ) { paddingValues ->
             Box(
                 modifier = Modifier
