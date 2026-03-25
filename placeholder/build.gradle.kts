@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("UnstableApiUsage")
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.android.get().pluginId)
     id(libs.plugins.kotlin.compose.get().pluginId)
-}
-
-kotlin {
-    explicitApi()
 }
 
 android {
@@ -40,12 +34,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget = JvmTarget.JVM_17
-        }
     }
 
     buildFeatures {
@@ -69,6 +57,11 @@ android {
     }
 
     namespace = "com.google.accompanist.placeholder"
+}
+
+kotlin {
+    explicitApi()
+    compilerOptions.jvmTarget = JvmTarget.JVM_17
 }
 
 dependencies {

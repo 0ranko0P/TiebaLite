@@ -1,10 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("kotlin-android")
     alias(libs.plugins.android.baselineprofile)
     alias(libs.plugins.android.test)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -32,17 +30,15 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlin {
-        compilerOptions {
-            jvmTarget = JvmTarget.JVM_17
-        }
-    }
-
     // Note that your module name may have different name
     targetProjectPath = ":app"
 
     // Enable the benchmark to run separately from the app process
     experimentalProperties["android.experimental.self-instrumenting"] = true
+}
+
+kotlin {
+    compilerOptions.jvmTarget = JvmTarget.JVM_17
 }
 
 dependencies {
