@@ -2,11 +2,13 @@ package com.huanchengfly.tieba.post.ui.page.reply
 
 import android.content.Context
 import android.text.Editable
-import android.text.SpannableString
-import android.text.TextWatcher
+import android.text.Spannable
+import android.text.style.ImageSpan
 import android.util.Log
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.util.fastForEach
 import androidx.core.net.toUri
+import androidx.core.text.getSpans
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
@@ -42,11 +44,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
@@ -55,10 +56,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import kotlin.collections.map
 
 @Stable
 @HiltViewModel
@@ -67,7 +67,7 @@ class ReplyViewModel @Inject constructor(
     private val settingsRepo: SettingsRepository,
     private val draftDao: DraftDao,
     savedStateHandle: SavedStateHandle
-) : BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>(), TextWatcher {
+) : BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>() {
 
     private val params = savedStateHandle.toRoute<Destination.Reply>()
 
@@ -87,13 +87,10 @@ class ReplyViewModel @Inject constructor(
     var emoticons: List<Emoticon> = emptyList()
         private set
 
-    private val _text = MutableStateFlow(SpannableString(""))
-    val text: StateFlow<SpannableString> = _text.asStateFlow()
-
     /**
-     * Draft to save, will be cleared after a successful reply.
+     * Draft to save.
      *
-     * @see onTextChanged
+     * @see getDraft
      * @see deleteDraft
      * */
     private var userDraft: CharSequence? = null
@@ -103,13 +100,6 @@ class ReplyViewModel @Inject constructor(
     private var emoticonSize = -1
 
     init {
-        // Restore draft from DataBase
-        viewModelScope.launch {
-            val draft = draftDao.getByIds(threadId, postId ?: 0, subPostId ?: 0).firstOrNull()
-            if (!draft.isNullOrEmpty()) {
-                onTextChanged(draft, 0, 0, draft.length)
-            }
-        }
         emoticons = EmoticonManager.getAllEmoticon()
         super.initialized = true
     }
@@ -293,19 +283,35 @@ class ReplyViewModel @Inject constructor(
         )
     }
 
-    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        val input = s?.toString()?: ""
+    fun setEmoticonSpans(s: Editable?) {
+        val input = s?.toString() ?: ""
         userDraft = input
+
+        if (s.isNullOrEmpty()) {
+            emoticonContentRunner.cancelCurrent()
+            return
+        }
+
         viewModelScope.launch {
             emoticonContentRunner.cancelPreviousThenRun {
-                val newText = StringUtil.getEmoticonContent(context, emoticonSize, source = input)
-                _text.update { newText }
+                val spans = StringUtil.getEmoticonSpans(context, emoticonSize, source = input)
+                withContext(Dispatchers.Main) {
+                    s.getSpans<ImageSpan>().forEach { s.removeSpan(it) }
+                    ensureActive()
+                    spans.fastForEach {
+                        s.setSpan(it.item, it.start, it.end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                }
             }
         }
     }
 
     fun setEmoticonSize(size: Int) {
         emoticonSize = size
+    }
+
+    suspend fun getDraft(): CharSequence? {
+        return userDraft ?: draftDao.getByIds(threadId, postId ?: 0, subPostId ?: 0).firstOrNull()
     }
 
     fun deleteDraft() {
@@ -330,10 +336,6 @@ class ReplyViewModel @Inject constructor(
             }
         }
     }
-
-    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { /*** NO-OP ***/ }
-
-    override fun afterTextChanged(s: Editable?) { /*** NO-OP ***/ }
 
     companion object {
         private const val TAG = "ReplyViewModel"

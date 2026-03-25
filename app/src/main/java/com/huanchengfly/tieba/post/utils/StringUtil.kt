@@ -3,12 +3,13 @@ package com.huanchengfly.tieba.post.utils
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import android.text.Spannable
-import android.text.SpannableString
+import android.text.style.ImageSpan
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.text.AnnotatedString
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -17,20 +18,20 @@ object StringUtil {
 
     private val CONTROL_CHAR_REGEX_PATTERN by unsafeLazy { "\\p{C}".toRegex() }
 
-    suspend fun getEmoticonContent(
+    suspend fun getEmoticonSpans(
         context: Context,
         size: Int,
         source: CharSequence?,
         emoticonType: Int = EmoticonUtil.EMOTICON_ALL_TYPE
-    ): SpannableString = withContext(Dispatchers.IO) {
-        val spannableString = source as? SpannableString ?: SpannableString(source ?: "")
-        if (spannableString.length < 4) { // minimum length of emotion text
-            return@withContext spannableString
+    ): List<AnnotatedString.Range<ImageSpan>> = withContext(Dispatchers.Default) {
+        if (source == null || source.length < 4) { // Minimum emotion text length
+            return@withContext emptyList()
         }
 
+        val spans = mutableListOf<AnnotatedString.Range<ImageSpan>>()
         try {
             val patternEmoticon = EmoticonUtil.getRegexPattern(emoticonType)
-            val matcherEmoticon = patternEmoticon.matcher(spannableString)
+            val matcherEmoticon = patternEmoticon.matcher(source)
             while (matcherEmoticon.find()) {
                 val key = matcherEmoticon.group()
                 val start = matcherEmoticon.start()
@@ -41,14 +42,15 @@ object StringUtil {
                 val bitmap: Bitmap = glideBitmapRec.getOrNull() ?: continue
                 val emoticonDrawable = BitmapDrawable(context.resources, bitmap)
                 val span = EmoticonSpanV2(emoticonDrawable, size)
+                spans.add(AnnotatedString.Range(item = span, start = start, end = end))
                 ensureActive()
-                spannableString.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
             e.printStackTrace()
         }
-
-        return@withContext spannableString
+        return@withContext spans
     }
 
     fun getUserNameString(showBoth: Boolean, username: String, nickname: String?): String {

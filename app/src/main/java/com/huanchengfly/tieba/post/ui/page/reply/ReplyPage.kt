@@ -85,6 +85,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.widget.doAfterTextChanged
 import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
@@ -216,20 +217,6 @@ private fun ReplyPageContent(
     var inputLength by remember { mutableIntStateOf(0) }
     var editTextView by remember { mutableStateOf<UndoableEditText?>(null) }
 
-    LaunchedEffect(Unit) {
-        viewModel.text.collect { t ->
-            editTextView?.apply {
-                val start = selectionStart
-                removeTextChangedListener(viewModel) // Avoid onTextChanged loop
-                setSelection(0)
-                setText(t)
-                setSelection(start.coerceIn(0, t.length))
-                addTextChangedListener(viewModel)
-                inputLength = t.length
-            }
-        }
-    }
-
     viewModel.onEvent<CommonUiEvent.Toast> {
         Toast.makeText(context, it.message, it.length).show()
     }
@@ -359,16 +346,24 @@ private fun ReplyPageContent(
                             if (subPostId != null && subPostId != 0L && replyUserName != null) {
                                 hint = ctx.getString(R.string.hint_reply, replyUserName)
                             }
+
                             setOnFocusChangeListener { _, hasFocus ->
                                 if (hasFocus) {
                                     switchToPanel(NONE)
                                 }
                             }
 
-                            addTextChangedListener(viewModel)
+                            doAfterTextChanged { inputLength = it?.length ?: 0 }
+                            doAfterTextChanged(viewModel::setEmoticonSpans)
 
                             val emoticonSize = (-paint.ascent() + paint.descent()).roundToInt()
                             viewModel.setEmoticonSize(emoticonSize)
+
+                            // Restore draft if exists
+                            coroutineScope.launch {
+                                viewModel.getDraft()?.let { setText(it) }
+                            }
+
                         }
                     },
                     modifier = Modifier
@@ -376,6 +371,7 @@ private fun ReplyPageContent(
                         .wrapContentHeight(align = Alignment.Top),
                     update = {
                         it.setTextColor(colors.onSurface.toArgb())
+                        it.setHintTextColor(colors.onSurfaceVariant.toArgb())
                     }
                 )
             }
