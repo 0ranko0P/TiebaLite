@@ -6,35 +6,49 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Forum
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemElevation
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.animateFloatingActionButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,30 +56,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
+import com.huanchengfly.tieba.post.models.database.BlockKeyword
 import com.huanchengfly.tieba.post.models.database.BlockUser
+import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.icons.RegularExpression
-import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
+import com.huanchengfly.tieba.post.ui.widgets.compose.AnimatedDeleteFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultToggleFloatingActionButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
-import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.PlainTooltipBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultSegmentedListItemColors
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.coroutines.launch
@@ -79,31 +96,9 @@ private sealed class BlockType(val title: Int, val contentDescription: Int) {
 
 private class BlockKeywordOption(val isRegex: Boolean, val isWhitelisted: Boolean)
 
-@Composable
-fun UserBlockListPage(
-    onBack: () -> Unit,
-    viewModel: BlockListViewModel = hiltViewModel(),
-) {
-    val blackList by viewModel.userBlacklist.collectAsStateWithLifecycle()
-    val whitelist by viewModel.userWhitelist.collectAsStateWithLifecycle()
-
-    BlockListScaffold(
-        title = R.string.settings_block_user,
-        blackList = { blackList },
-        whitelist = { whitelist },
-        onBack = onBack,
-        itemKeyProvider = { it.uid },
-    ) { user ->
-        LongClickMenu(
-            menuContent = {
-                TextMenuItem(text = R.string.title_delete, onClick = { viewModel.onDelete(user) })
-            },
-            shape = MaterialTheme.shapes.extraSmall,
-        ) {
-            UserItem(user = user)
-        }
-    }
-}
+// FAB Menu has extra padding, offset FAB to make them aligned
+// See FloatingActionButtonMenu.FabMenuButtonPaddingBottom
+private fun Modifier.fabMenuOffset(): Modifier = this then Modifier.offset(x = -(16).dp, y = -(16).dp)
 
 @Composable
 private fun KeywordBlockDialog(
@@ -141,80 +136,168 @@ private fun KeywordBlockDialog(
 }
 
 @Composable
+private fun ForumBlockDialog(
+    modifier: Modifier = Modifier,
+    dialogState: DialogState = rememberDialogState(),
+    type: BlockType? = null,
+    isError: ((String) -> Boolean)? = null,
+    onConfirm: (String) -> Unit,
+    onCancel: () -> Unit
+) {
+    if (type == null) return
+    LaunchedEffect(type) {
+        dialogState.show()
+    }
+
+    PromptDialog(
+        onConfirm = onConfirm,
+        modifier = modifier,
+        dialogState = dialogState,
+        isError = isError,
+        onCancel = onCancel,
+        title = { Text(text = stringResource(id = type.contentDescription)) }
+    ) {
+        Text(text = stringResource(id = R.string.dialog_add_blocklist_forum))
+    }
+}
+
+@Composable
+fun ForumBlockListPage(
+    onBack: () -> Unit,
+    viewModel: ForumBlockListViewModel = hiltViewModel(),
+) {
+    val blackList by viewModel.blackList.collectAsStateWithLifecycle()
+    val isUpdating by viewModel.updating.collectAsStateWithLifecycle()
+    val (addBlockForum, setBlockForum) = remember { mutableStateOf<BlockType?>(null) }
+
+    if (addBlockForum != null) {
+        ForumBlockDialog(
+            type = addBlockForum,
+            isError = viewModel::isForumInvalid,
+            onConfirm = viewModel::upsert,
+            onCancel = { setBlockForum(null) },
+        )
+    }
+
+    BlockListScaffold(
+        title = R.string.settings_block_forum,
+        pages = listOf(BlockType.Blacklist),
+        blackList = { blackList },
+        whitelist = { null },
+        onBack = onBack,
+        onSelectItems = viewModel::delete,
+        isUpdating = isUpdating,
+        itemKeyProvider = { _, keyword -> keyword },
+        floatingActionButton = { visible, blockType ->
+            PlainTooltipBox(
+                contentDescription = stringResource(blockType.contentDescription),
+            ) {
+                FloatingActionButton(
+                    modifier = Modifier
+                        .fabMenuOffset()
+                        .animateFloatingActionButton(visible, alignment = Alignment.Center),
+                    onClick = {
+                        setBlockForum(blockType) // Launch PromptDialog
+                    }
+                ) {
+                    Icon(imageVector = Icons.Rounded.Add, contentDescription = null)
+                }
+            }
+        }
+    ) { forumName ->
+        ForumItem(forumName = forumName)
+    }
+}
+
+@Composable
 fun KeywordBlockListPage(
     onBack: () -> Unit,
-    viewModel: BlockListViewModel = hiltViewModel(),
+    viewModel: KeywordBlockListViewModel = hiltViewModel(),
 ) {
     val (addKeywordOpt, setKeywordOpt) = remember { mutableStateOf<BlockKeywordOption?>(null) }
 
     KeywordBlockDialog(
         option = addKeywordOpt,
         isError = {
-            viewModel.isKeywordInvalid(keyword = it.trim(), isRegex = addKeywordOpt!!.isRegex)
+            viewModel.isInvalid(keyword = it.trim(), isRegex = addKeywordOpt!!.isRegex)
         },
         onConfirm = { keyword ->
-            addKeywordOpt?.apply { viewModel.addKeyword(keyword, isRegex, isWhitelisted) }
+            addKeywordOpt?.apply {
+                viewModel.upsert(BlockKeyword(-1, keyword = keyword.trim(), isRegex, isWhitelisted))
+            }
         },
         onCancel = { setKeywordOpt(null) },
     )
 
-    val blackList by viewModel.keywordBlacklist.collectAsStateWithLifecycle()
-    val whitelist by viewModel.keywordWhitelist.collectAsStateWithLifecycle()
+    val blackList by viewModel.blackList.collectAsStateWithLifecycle()
+    val whitelist by viewModel.whiteList.collectAsStateWithLifecycle()
+    val isUpdating by viewModel.updating.collectAsStateWithLifecycle()
 
     BlockListScaffold(
         blackList = { blackList },
         whitelist = { whitelist },
-        onAddClicked = setKeywordOpt,
         onBack = onBack,
-        itemKeyProvider = { it.keyword },
+        onSelectItems = viewModel::delete,
+        isUpdating = isUpdating,
+        floatingActionButton = { visible, blockType ->
+            BlockFloatingActionButtonMenu(visible = visible) { isRegex ->
+                val isWhitelisted = blockType === BlockType.Whitelist
+                setKeywordOpt(BlockKeywordOption(isRegex, isWhitelisted))
+            }
+        },
+        itemKeyProvider = { _, item -> item.id },
     ) { item ->
-        LongClickMenu(
-            menuContent = {
-                TextMenuItem(text = R.string.title_delete, onClick = { viewModel.onDelete(item) })
-            },
-            shape = MaterialTheme.shapes.extraSmall,
-        ) {
-            KeywordItem(keyword = item.keyword, isRegex = item.isRegex)
-        }
+        KeywordItem(keyword = item.keyword, isRegex = item.isRegex)
+    }
+}
+
+@Composable
+fun UserBlockListPage(
+    onBack: () -> Unit,
+    viewModel: UserBlockListViewModel = hiltViewModel(),
+) {
+    val blackList by viewModel.blackList.collectAsStateWithLifecycle()
+    val whitelist by viewModel.whiteList.collectAsStateWithLifecycle()
+    val isUpdating by viewModel.updating.collectAsStateWithLifecycle()
+
+    BlockListScaffold(
+        title = R.string.settings_block_user,
+        blackList = { blackList },
+        whitelist = { whitelist },
+        onBack = onBack,
+        onSelectItems = viewModel::delete,
+        isUpdating = isUpdating,
+        itemKeyProvider = { _, item -> item.uid },
+    ) {
+        UserItem(user = it)
     }
 }
 
 @Composable
 private fun <T> BlockListScaffold(
     title: Int = R.string.settings_block_keyword,
+    pages: List<BlockType> = remember { listOf(BlockType.Blacklist, BlockType.Whitelist) },
     blackList: () -> List<T>?,
     whitelist: () -> List<T>?,
-    onAddClicked: ((BlockKeywordOption) -> Unit)? = null,
     onBack: () -> Unit = {},
-    itemKeyProvider: (item: T) -> Any = { it.toString() },
-    itemContent: @Composable LazyItemScope.(item: T) -> Unit,
+    onSelectItems: (List<T>) -> Unit = {},
+    isUpdating: Boolean = false,
+    floatingActionButton: (@Composable (visible: Boolean, BlockType) -> Unit)? = null,
+    itemKeyProvider: (Int, item: T) -> Any = { _, it -> it.toString() },
+    itemContent: @Composable (item: T) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    val scrollOrientationConnection = rememberScrollOrientationConnection()
-
-    val pages = remember { listOf(BlockType.Blacklist, BlockType.Whitelist) }
     val pagerState = rememberPagerState { pages.size }
-    val pagerMovableContent = remember {
-        pages.map { page ->
-            movableContentOf<PaddingValues> { contentPadding ->
-                val items = if (page == BlockType.Blacklist) blackList() else whitelist()
-                StateScreen(
-                    modifier = Modifier.nestedScroll(connection = scrollOrientationConnection),
-                    isEmpty = items.isNullOrEmpty(),
-                    isError = false,
-                    isLoading = items == null,
-                    screenPadding = contentPadding,
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = contentPadding
-                    ) {
-                        items(items ?: emptyList(), key = itemKeyProvider, itemContent = itemContent)
-                    }
-                }
-            }
-        }
+
+    val listItemColors = defaultSegmentedListItemColors
+    val listItemElevation = ListItemElevation(Dp.Hairline, Dp.Hairline)
+
+    val selectedItems = remember { mutableStateSetOf<T>() }
+    var selectMode by remember { mutableStateOf(false) }
+    BackHandler(enabled = selectMode) {
+        selectMode = false
+        selectedItems.clear()
     }
 
     MyScaffold(
@@ -226,6 +309,8 @@ private fun <T> BlockListScaffold(
                 },
                 scrollBehavior = scrollBehavior
             ) {
+                if (pagerState.pageCount <= 1) return@CenterAlignedTopAppBar
+
                 PrimaryTabRow(
                     selectedTabIndex = pagerState.currentPage,
                     indicator = {
@@ -240,6 +325,7 @@ private fun <T> BlockListScaffold(
                             onClick = {
                                 coroutineScope.launch { pagerState.animateScrollToPage(i) }
                             },
+                            enabled = !selectMode,
                             text = { Text(text = stringResource(id = page.title)) },
                             unselectedContentColor = MaterialTheme.colorScheme.onSurface
                         )
@@ -248,27 +334,79 @@ private fun <T> BlockListScaffold(
             }
         },
         floatingActionButton = {
-            if (onAddClicked == null) return@MyScaffold
-
-            BlockFloatingActionButtonMenu(
-                visibleState = {
-                    !pagerState.isScrolling && scrollOrientationConnection.isScrollingForward
-                },
-                onAdd = { isRegex ->
-                    val isWhitelisted = pages[pagerState.currentPage] === BlockType.Whitelist
-                    onAddClicked(BlockKeywordOption(isRegex, isWhitelisted))
+            when {
+                isUpdating || selectMode -> {
+                    val deletable by remember { derivedStateOf { selectedItems.isNotEmpty() } }
+                    AnimatedDeleteFAB(Modifier.fabMenuOffset(), deletable, deleting = isUpdating) {
+                        selectMode = false
+                        if (deletable) {
+                            onSelectItems(selectedItems.toList())
+                            selectedItems.clear()
+                        }
+                    }
                 }
-            )
+
+                floatingActionButton == null -> Unit
+
+                else -> {
+                    val fabVisibleState by remember { derivedStateOf { !pagerState.isScrolling } }
+                    floatingActionButton(fabVisibleState, pages[pagerState.currentPage])
+                }
+            }
         },
-        backgroundColor = MaterialTheme.colorScheme.background // Higher contrast on translucent theme
     ) { contentPadding ->
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize(),
             key = { it },
-            verticalAlignment = Alignment.Top
+            userScrollEnabled = !selectMode
         ) { index ->
-            pagerMovableContent[index](contentPadding)
+            val items = if (pages[index] == BlockType.Blacklist) blackList() else whitelist()
+            StateScreen(
+                isEmpty = items.isNullOrEmpty(),
+                isError = false,
+                isLoading = items == null,
+                screenPadding = contentPadding,
+            ) {
+                if (items == null) return@StateScreen
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = contentPadding + PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                ) {
+                    itemsIndexed(items, key = itemKeyProvider) { i, item ->
+                        val interactionSource = remember { MutableInteractionSource() }
+                        val selected = selectedItems.contains(item)
+                        SegmentedListItem(
+                            selected = selected,
+                            onClick = {
+                                if (selectMode) {
+                                    if (selected) selectedItems -= item else selectedItems += item
+                                }
+                            },
+                            shapes = ListItemDefaults.segmentedShapes(i, count = items.size),
+                            modifier = Modifier
+                                .minimumInteractiveComponentSize()
+                                .animateItem(),
+                            trailingContent = {
+                                if (selectMode) {
+                                    Checkbox(selected, onCheckedChange = null, interactionSource = interactionSource)
+                                }
+                            },
+                            verticalAlignment = Alignment.CenterVertically,
+                            onLongClick = {
+                                if (!isUpdating && !selectMode) {
+                                    selectedItems += item
+                                    selectMode = true
+                                }
+                            },
+                            colors = listItemColors,
+                            elevation = listItemElevation,
+                            interactionSource = interactionSource,
+                            content = { itemContent(item) },
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -276,7 +414,7 @@ private fun <T> BlockListScaffold(
 @Composable
 private fun BlockFloatingActionButtonMenu(
     modifier: Modifier = Modifier,
-    visibleState: () -> Boolean,
+    visible: Boolean,
     onAdd: (isRegex: Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -291,7 +429,6 @@ private fun BlockFloatingActionButtonMenu(
 
     BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
 
-    val visible = visibleState()
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn() + slideInHorizontally { it },
@@ -326,58 +463,77 @@ private fun BlockFloatingActionButtonMenu(
     }
 }
 
+@NonRestartableComposable
 @Composable
-private fun UserItem(modifier: Modifier = Modifier, user: BlockUser) {
-    val uidText = remember { "UID: " + user.uid.toString() }
+private fun BaseBlockRuleItem(
+    modifier: Modifier = Modifier,
+    contentDescription: String,
+    icon: @Composable RowScope.() -> Unit,
+    content: @Composable RowScope.() -> Unit = { Text(text = contentDescription) },
+) {
     Row(
         modifier = modifier
-            .padding(16.dp)
+            .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                contentDescription = user.name ?: uidText
+                this.contentDescription = contentDescription
             },
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(imageVector = Icons.Outlined.AccountCircle, contentDescription = null)
+        icon()
 
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if (!user.name.isNullOrEmpty()) {
-                Text(text = user.name, style = MaterialTheme.typography.titleMedium)
-            }
-
-            Text(text = uidText, style = MaterialTheme.typography.bodyMedium)
+        ProvideTextStyle(MaterialTheme.typography.titleMedium) {
+            content()
         }
     }
 }
 
 @Composable
-private fun KeywordItem(modifier: Modifier = Modifier, keyword: String, isRegex: Boolean) {
-    Row(
-        modifier = modifier
-            .padding(16.dp)
-            .semantics(mergeDescendants = true) {
-                contentDescription = keyword
-            },
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (isRegex) {
-            Icon(imageVector = Icons.Rounded.RegularExpression, contentDescription = null)
-        } else {
-            Icon(imageVector = Icons.AutoMirrored.Rounded.Notes, contentDescription = null)
+private fun ForumItem(modifier: Modifier = Modifier, forumName: String) {
+    BaseBlockRuleItem(
+        modifier = modifier,
+        contentDescription = forumName,
+        icon = {
+            Icon(imageVector = Icons.Outlined.Forum, contentDescription = null)
+        },
+    )
+}
+
+@Composable
+private fun UserItem(modifier: Modifier = Modifier, user: BlockUser) {
+    val uidText = remember { "UID: " + user.uid }
+    BaseBlockRuleItem(
+        modifier = modifier,
+        contentDescription = user.name ?: uidText,
+        icon = {
+            Icon(imageVector = Icons.Outlined.AccountCircle, contentDescription = null)
+        },
+        content = {
+            Column {
+                if (!user.name.isNullOrEmpty()) {
+                    Text(text = user.name)
+                    Spacer(modifier = Modifier.height(2.dp))
+                }
+
+                Text(text = uidText, style = MaterialTheme.typography.bodyMedium)
+            }
         }
+    )
+}
 
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Text(
-            text = keyword,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleMedium
-        )
-    }
+@Composable
+private fun KeywordItem(modifier: Modifier = Modifier, keyword: String, isRegex: Boolean) {
+    BaseBlockRuleItem(
+        modifier = modifier,
+        contentDescription = keyword,
+        icon = {
+            if (isRegex) {
+                Icon(imageVector = Icons.Rounded.RegularExpression, contentDescription = null)
+            } else {
+                Icon(imageVector = Icons.AutoMirrored.Rounded.Notes, contentDescription = null)
+            }
+        },
+    )
 }
 
 @Preview("BlockListScaffold Keyword")
@@ -387,7 +543,6 @@ private fun BlockListScaffoldKeywordPreview() = TiebaLiteTheme {
     BlockListScaffold(
         blackList = { blackList },
         whitelist = { emptyList() },
-        onAddClicked = {},
         itemContent = { KeywordItem(keyword = it, isRegex = Random.nextBoolean()) }
     )
 }
@@ -399,7 +554,6 @@ private fun BlockListScaffoldUserPreview() = TiebaLiteTheme {
     BlockListScaffold(
         blackList = { blackList },
         whitelist = { emptyList() },
-        itemKeyProvider = { it.uid },
         itemContent = { UserItem(user = it) }
     )
 }

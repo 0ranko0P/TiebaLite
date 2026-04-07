@@ -403,6 +403,7 @@
     <string name="title_sub_posts_header">%d 条回复</string>
     <string name="pull_to_load">继续上拉加载</string>
     <string name="release_to_load">松开加载</string>
+    <string name="settings_block_forum">屏蔽吧管理</string>
     <string name="settings_block_keyword">屏蔽词管理</string>
     <string name="settings_block_user">屏蔽用户管理</string>
     <string name="settings_hide_blocked_content">彻底隐藏被屏蔽的内容</string>
@@ -486,6 +487,7 @@
     <string name="desc_show">显示</string>
     <string name="dialog_add_blocklist">包含关键词的内容将会被屏蔽</string>
     <string name="dialog_add_whitelist">包含关键词的内容不会被屏蔽, 白名单优先级高于黑名单</string>
+    <string name="dialog_add_blocklist_forum">来自该吧的内容将会被屏蔽，此名单拥有最高优先级</string>
     <string name="dialog_add_blocklist_regex">匹配的内容将会被屏蔽</string>
     <string name="dialog_add_whitelist_regex">匹配的内容不会被屏蔽, 白名单优先级高于黑名单</string>
     <string name="dialog_ban">拉黑范围</string>
@@ -517,6 +519,7 @@
     <string name="toast_connecting">连接中请稍候..</string>
     <string name="toast_exception">出错了 %1$s</string>
     <string name="toast_ban_interact_failed">更新拉黑配置失败 %1$s</string>
+    <string name="toast_block_rule_updated">本地屏蔽规则已更新</string>
     <string name="toast_preview_image_too_large">无法预览超大图</string>
     <string name="welcome_intro">欢迎使用贴吧 Lite</string>
     <string name="welcome_intro_subtitle">极简的贴吧第三方客户端</string>

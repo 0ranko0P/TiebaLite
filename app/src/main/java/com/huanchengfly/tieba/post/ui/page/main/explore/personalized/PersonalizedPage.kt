@@ -35,6 +35,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -49,6 +50,7 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
+import com.huanchengfly.tieba.post.ui.widgets.compose.CardHorizontalSpacing
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
@@ -60,11 +62,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
-    BlockTip(modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(
-            text = stringResource(id = R.string.tip_blocked_thread),
-            style = MaterialTheme.typography.bodyMedium
-        )
+    BlockTip(modifier = Modifier.padding(horizontal = CardHorizontalSpacing, vertical = 4.dp)) {
+        Text(text = stringResource(id = R.string.tip_blocked_thread))
     }
 }
 
@@ -90,7 +89,11 @@ fun PersonalizedPage(
                 refreshCount = 0        // Hide refresh tip
             }
 
-            is PersonalizedUiEvent.DislikeFailed -> toastShort(R.string.toast_exception, it.e.getErrorMessage())
+            is PersonalizedUiEvent.BlockRuleUpdated -> toastShort(R.string.toast_block_rule_updated)
+
+            is PersonalizedUiEvent.DislikeFailed -> if (it.e !is TiebaNotLoggedInException) {
+                toastShort(R.string.toast_exception, it.e.getErrorMessage())
+            }
 
             is CommonUiEvent.ToastError -> toastShort(R.string.toast_exception, it.message)
         }

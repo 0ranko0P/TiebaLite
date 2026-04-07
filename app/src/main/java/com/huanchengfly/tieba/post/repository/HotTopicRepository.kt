@@ -123,7 +123,7 @@ class HotTopicRepository @Inject constructor(
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         suspend fun ThreadInfoBean.mapUiModel(
             showBothName: Boolean,
-            isBlocked: suspend (uid: Long, content: Array<String>) -> Boolean,
+            isBlocked: suspend (forumName: String, uid: Long, content: Array<String>) -> Boolean,
         ): ThreadItem {
             val author = with(author) {
                 val nameShow = StringUtil.getUserNameString(showBothName, name, nameShow)
@@ -135,7 +135,7 @@ class HotTopicRepository @Inject constructor(
                 id = this.id,
                 firstPostId = this.firstPostId,
                 author = author,
-                blocked = isBlocked(author.id, arrayOf(title, abstractText)),
+                blocked = isBlocked(forumName, author.id, arrayOf(title, abstractText)),
                 content = buildThreadContent(title, abstractText),
                 title = title,
                 lastTimeMill = DateTimeUtils.fixTimestamp(lastTimeInt),

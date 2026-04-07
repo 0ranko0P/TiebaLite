@@ -279,7 +279,7 @@ class ExploreRepository @Inject constructor(
         private suspend fun PersonalizedResponseData.mapUiModel(
             showBothName: Boolean,
             blockVideo: Boolean,
-            isBlocked: suspend (uid: Long, content: Array<String>) -> Boolean,
+            isBlocked: suspend (forumName: String, uid: Long, content: Array<String>) -> Boolean,
             dislikeProvider: (DislikeReason) -> Dislike
         ): List<ThreadItem> {
             // associate dislikeResource by thread id
@@ -291,7 +291,16 @@ class ExploreRepository @Inject constructor(
             return withContext(Dispatchers.Default) {
                 thread_list
                     .filter { !blockVideo || it.videoInfo == null }
-                    .map { it.mapUiModel(showBothName, isBlocked, threadDislikeMap) }
+                    .map {
+                        it.mapUiModel(
+                            showBothName = showBothName,
+                            isBlocked = { uid, content ->
+                                // 4.0.0-beta.4.4: Add forum name filter
+                                isBlocked(it.forumName, uid, content)
+                            },
+                            threadDislikeMap = threadDislikeMap
+                        )
+                    }
             }
         }
 

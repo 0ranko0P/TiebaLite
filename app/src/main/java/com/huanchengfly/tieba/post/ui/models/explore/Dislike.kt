@@ -16,4 +16,17 @@ import androidx.compose.runtime.Immutable
 
         return id == (other as Dislike).id
     }
+
+    companion object {
+
+        /**
+         * Dislike Type ID: 屏蔽该贴吧
+         * */
+        const val TYPE_ID_FORUM = 7
+
+        /**
+         * Dislike Type ID: 屏蔽该用户
+         * */
+        const val TYPE_ID_USER = 220
+    }
 }

@@ -159,8 +159,23 @@ class MigrationTest {
 
     @Test
     @Throws(IOException::class)
+    fun migrate3To4_addBlockForumTable() {
+        helper.createDatabase(TEST_DB, 1).close()
+
+        // Re-open the database with version 4 and provide
+        val db = helper.runMigrationsAndValidate(TEST_DB, version = 4, validateDroppedTables = true)
+
+        // Verify name column exists
+        val cursor = db.query("SELECT * FROM block_forum")
+        val nameIndex = cursor.getColumnIndex("name")
+        assert(nameIndex != -1) { "Column name not exist in block_forum table" }
+        cursor.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
     fun migrateAll() {
-        // Create earliest version of the database.
+        // Create the earliest version of the database.
         helper.createDatabase(TEST_DB, 1).apply {
             close()
         }

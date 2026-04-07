@@ -143,7 +143,7 @@ class UserProfileViewModel @Inject constructor(
      *
      * @param newState 将该用户加入白名单, 黑名单或移除
      * */
-    private fun updateBlockState(newState: UserBlockState) {
+    private fun updateBlockState(newState: UserBlockState) = viewModelScope.launch {
         val name = currentState.userProfile?.run { nickname ?: name } ?: throw NullPointerException()
         when (newState) {
             blockState.value -> blockRepo.deleteUser(uid)

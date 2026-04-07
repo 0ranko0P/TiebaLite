@@ -3,8 +3,8 @@ package com.huanchengfly.tieba.post.ui.page.settings
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.ui.page.settings.blocklist.ForumBlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.blocklist.KeywordBlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.blocklist.UserBlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.theme.AppFontPage
@@ -27,13 +27,14 @@ sealed interface SettingsDestination {
     @Serializable
     object BlockSettings: SettingsDestination
 
-    /**
-     * Destination of block list page
-     *
-     * @param isUser is user or keyword blocklist
-     * */
     @Serializable
-    data class BlockList(val isUser: Boolean): SettingsDestination
+    object ForumBlockList: SettingsDestination
+
+    @Serializable
+    object KeywordBlockList: SettingsDestination
+
+    @Serializable
+    object UserBlockList: SettingsDestination
 
     @Serializable
     object UI: SettingsDestination
@@ -75,13 +76,16 @@ fun NavGraphBuilder.settingsGraph(navController: NavController, settingsRepo: Se
         BlockSettingsPage(settings = settingsRepo.blockSettings, navController)
     }
 
-    composable<SettingsDestination.BlockList> { backStackEntry ->
-        val params = backStackEntry.toRoute<SettingsDestination.BlockList>()
-        if (params.isUser) {
-            UserBlockListPage(onBack = navController::navigateUp)
-        } else {
-            KeywordBlockListPage(onBack = navController::navigateUp)
-        }
+    composable<SettingsDestination.ForumBlockList> {
+        ForumBlockListPage(onBack = navController::navigateUp)
+    }
+
+    composable<SettingsDestination.KeywordBlockList> {
+        KeywordBlockListPage(onBack = navController::navigateUp)
+    }
+
+    composable<SettingsDestination.UserBlockList> {
+        UserBlockListPage(onBack = navController::navigateUp)
     }
 
     composable<SettingsDestination.UI> {

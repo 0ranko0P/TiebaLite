@@ -2,18 +2,19 @@ package com.huanchengfly.tieba.post.repository
 
 import androidx.annotation.VisibleForTesting
 import androidx.core.util.Predicate
-import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.arch.shareInBackground
+import com.huanchengfly.tieba.post.models.database.BlockForum
 import com.huanchengfly.tieba.post.models.database.BlockKeyword
 import com.huanchengfly.tieba.post.models.database.BlockUser
 import com.huanchengfly.tieba.post.models.database.dao.BlockDao
 import com.huanchengfly.tieba.post.models.database.dao.TypedKeyword
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,7 +25,6 @@ import javax.inject.Singleton
 class BlockRepository @Inject constructor(
     private val localDataSource: BlockDao
 ) {
-    private val scope = AppBackgroundScope
 
     /**
      * Blacklisted predicates.
@@ -34,29 +34,49 @@ class BlockRepository @Inject constructor(
         .shareInBackground(started = SharingStarted.Lazily)
 
     /**
-     * Whitelisted predicates. Note that whitelist has highest priority.
+     * Whitelisted predicates. Note that whitelist has the highest priority.
      * */
     val whitelist: SharedFlow<List<Predicate<String>>> = localDataSource.observeTypedKeywords(whitelisted = true)
         .map(::mapToPredicates)
         .shareInBackground(started = SharingStarted.Lazily)
 
-    fun addKeyword(keyword: String, isRegex: Boolean, whitelisted: Boolean) {
-        scope.launch {
-            localDataSource.addKeyword(keyword, isRegex, whitelisted)
-        }
+    suspend fun upsertForum(forum: BlockForum) = withContext(NonCancellable) {
+        localDataSource.upsertForum(forum)
     }
 
-    fun deleteKeyword(keyword: BlockKeyword) {
-        scope.launch { localDataSource.deleteKeywordById(keyword.id) }
+    suspend fun deleteForum(forumName: String) = withContext(NonCancellable) {
+        localDataSource.deleteForum(forumName)
     }
 
-    fun upsertUser(user: BlockUser) {
-        scope.launch { localDataSource.upsertUser(user) }
+    suspend fun deleteForums(forumNames: List<String>) = withContext(NonCancellable) {
+        localDataSource.deleteForums(forumNames)
     }
 
-    fun deleteUser(uid: Long) {
-        scope.launch { localDataSource.deleteUserById(uid) }
+    suspend fun addKeyword(keyword: String, isRegex: Boolean, whitelisted: Boolean) = withContext(NonCancellable) {
+        localDataSource.addKeyword(keyword, isRegex, whitelisted)
     }
+
+    suspend fun deleteKeyword(keyword: BlockKeyword) = withContext(NonCancellable) {
+        localDataSource.deleteKeywordById(keyword.id)
+    }
+
+    suspend fun deleteKeywords(keywords: List<BlockKeyword>) = withContext(NonCancellable) {
+        localDataSource.deleteKeywordByIdList(idList = keywords.map { it.id })
+    }
+
+    suspend fun upsertUser(user: BlockUser) = withContext(NonCancellable) {
+        localDataSource.upsertUser(user)
+    }
+
+    suspend fun deleteUser(uid: Long) = withContext(NonCancellable) {
+        localDataSource.deleteUserById(uid)
+    }
+
+    suspend fun deleteUsers(users: List<BlockUser>) = withContext(NonCancellable) {
+        localDataSource.deleteUserByIdList(uidList = users.map { it.uid })
+    }
+
+    fun observeForums(): Flow<List<String>> = localDataSource.observeForums()
 
     fun observeUser(uid: Long): Flow<Boolean?> = localDataSource.observeUser(uid)
 
@@ -74,6 +94,14 @@ class BlockRepository @Inject constructor(
             !userRule.whitelisted
         } else {
             isBlocked(blacklist = blacklist.first(), whitelist = whitelist.first(), contents = contents)
+        }
+    }
+
+    suspend fun isBlocked(forumName: String, uid: Long, vararg contents: String): Boolean {
+        return if (localDataSource.getForum(forumName) != null) {
+            true
+        } else {
+            isBlocked(uid, *contents)
         }
     }
 
@@ -118,7 +146,7 @@ class BlockRepository @Inject constructor(
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         fun isBlocked(blacklist: List<Predicate<String>>, whitelist: List<Predicate<String>>, vararg contents: String): Boolean {
-            // whitelist has highest priority
+            // whitelist has the highest priority
             return if (contents.anyMatches(predicates = whitelist)) {
                 false
             } else {

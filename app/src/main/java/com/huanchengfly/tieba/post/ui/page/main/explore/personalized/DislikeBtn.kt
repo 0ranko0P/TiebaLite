@@ -74,8 +74,8 @@ fun Dislike(
                     )
 
                     SubmitButton {
-                        dismiss()
                         onDislikeClicked()
+                        dismiss()
                     }
                 }
 

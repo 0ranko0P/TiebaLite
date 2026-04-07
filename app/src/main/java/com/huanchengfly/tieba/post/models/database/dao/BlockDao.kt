@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.models.database.dao
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
+import com.huanchengfly.tieba.post.models.database.BlockForum
 import com.huanchengfly.tieba.post.models.database.BlockKeyword
 import com.huanchengfly.tieba.post.models.database.BlockUser
 import kotlinx.coroutines.flow.Flow
@@ -25,11 +26,11 @@ interface BlockDao {
     @Query("INSERT INTO block_keyword (keyword, isRegex, whitelisted) VALUES (:keyword, :isRegex, :whitelisted)")
     suspend fun addKeyword(keyword: String, isRegex: Boolean, whitelisted: Boolean)
 
-    @Query("DELETE FROM block_keyword WHERE keyword = :keyword")
-    suspend fun deleteKeyword(keyword: String): Int
-
     @Query("DELETE FROM block_keyword WHERE id = :id")
     suspend fun deleteKeywordById(id: Long): Int
+
+    @Query("DELETE FROM block_keyword WHERE id in (:idList)")
+    suspend fun deleteKeywordByIdList(idList: List<Long>): Int
 
     /**
      * Observes list of keywords
@@ -58,6 +59,9 @@ interface BlockDao {
     @Query("DELETE FROM block_user WHERE uid = :uid")
     suspend fun deleteUserById(uid: Long): Int
 
+    @Query("DELETE FROM block_user WHERE uid in (:uidList)")
+    suspend fun deleteUserByIdList(uidList: List<Long>): Int
+
     /**
      * Observes a user blocking state by uid.
      *
@@ -81,4 +85,40 @@ interface BlockDao {
      */
     @Query("SELECT * FROM block_user WHERE uid = :uid")
     suspend fun getUser(uid: Long): BlockUser?
+
+    /**
+     * Insert or update a forum blocking rule in the database. If a rule already exists, replace it.
+     *
+     * @param forum the forum blocking rule to be inserted or updated.
+     */
+    @Upsert
+    suspend fun upsertForum(forum: BlockForum)
+
+    /**
+     * Delete a forum blocking rule by name.
+     *
+     * @return the number of rule deleted. This should always be 1.
+     */
+    @Query("DELETE FROM block_forum WHERE name = :forumName")
+    suspend fun deleteForum(forumName: String): Int
+
+    /**
+     * Delete list of forum blocking rule by name.
+     *
+     * @return the number of rule deleted.
+     */
+    @Query("DELETE FROM block_forum WHERE name in (:forumNames)")
+    suspend fun deleteForums(forumNames: List<String>): Int
+
+    /**
+     * Select a forum blocking rule by name.
+     */
+    @Query("SELECT name FROM block_forum WHERE name = :forumName")
+    suspend fun getForum(forumName: String): String?
+
+    /**
+     * Observes list of forum blocking rules.
+     */
+    @Query("SELECT name FROM block_forum")
+    fun observeForums(): Flow<List<String>>
 }

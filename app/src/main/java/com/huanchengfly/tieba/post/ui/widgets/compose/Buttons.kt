@@ -1,7 +1,10 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -17,19 +20,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.SmallExtendedFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleFloatingActionButton
@@ -38,12 +46,16 @@ import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
 import androidx.compose.material3.animateFloatingActionButton
+import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import com.huanchengfly.tieba.post.R
+import kotlinx.coroutines.delay
 
 /**
  * Represents the container color for this button, depending on [enabled].
@@ -301,6 +314,52 @@ fun DefaultToggleFloatingActionButton(
                     scaleX = lerp(1f, 1.25f, checkedProgress)
                     scaleY = scaleX
                 },
+            )
+        }
+    }
+}
+
+@Composable
+fun AnimatedDeleteFAB(
+    modifier: Modifier = Modifier,
+    deletable: Boolean,
+    deleting: Boolean,
+    onClick: () -> Unit
+) {
+    var textVisibility by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(200)
+        textVisibility = true
+    }
+
+    val containerColor =
+        if (deletable && !deleting) MaterialTheme.colorScheme.errorContainer else FloatingActionButtonDefaults.containerColor
+
+    SmallExtendedFloatingActionButton(
+        onClick = onClick,
+        modifier = modifier,
+        containerColor = containerColor,
+        contentColor = contentColorFor(containerColor)
+    ) {
+        if (deleting) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(Sizes.Tiny)
+            )
+        } else {
+            Icon(
+                imageVector = if (deletable) Icons.Rounded.DeleteForever else Icons.Rounded.Close,
+                contentDescription = null,
+            )
+        }
+
+        AnimatedVisibility(
+            visible = !deleting && textVisibility,
+            enter = expandHorizontally(animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()),
+            exit = shrinkHorizontally(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
+        ) {
+            Text(
+                text = stringResource(if (deletable) R.string.title_delete else R.string.btn_close),
+                modifier = Modifier.padding(start = 8.dp)
             )
         }
     }

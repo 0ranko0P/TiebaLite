@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit
 @Database(
     entities = [
         Account::class,
+        BlockForum::class,
         BlockKeyword::class,
         BlockUser::class,
         Draft::class,
@@ -36,10 +37,11 @@ import java.util.concurrent.TimeUnit
         Timestamp::class,
         UserProfile::class,
     ],
-    version = 3,
+    version = 4,
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = Migrations.Migration_1_2::class),
         AutoMigration(from = 2, to = 3, spec = Migrations.Migration_2_3::class),
+        AutoMigration(from = 3, to = 4, spec = Migrations.Migration_3_4::class),
     ]
 )
 abstract class TbLiteDatabase : RoomDatabase() {
@@ -101,6 +103,16 @@ abstract class TbLiteDatabase : RoomDatabase() {
              * @since 4.0.0-beta.4.3
              */
             class Migration_2_3 : AutoMigrationSpec {
+                override fun onPostMigrate(connection: SQLiteConnection) {
+                }
+            }
+
+            /**
+             * [BlockForum] new Entity
+             *
+             * @since 4.0.0-beta.4.4
+             */
+            class Migration_3_4 : AutoMigrationSpec {
                 override fun onPostMigrate(connection: SQLiteConnection) {
                 }
             }

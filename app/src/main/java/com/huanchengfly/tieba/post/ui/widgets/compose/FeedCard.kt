@@ -102,6 +102,10 @@ val ThreadContentType: (index: Int, item: ThreadItem) -> FeedType by unsafeLazy 
     }
 }
 
+internal val CardHorizontalSpacing = 16.dp
+
+internal val DefaultCardPaddings = PaddingValues(horizontal = CardHorizontalSpacing)
+
 @Composable
 fun Card(
     modifier: Modifier = Modifier,
@@ -109,7 +113,7 @@ fun Card(
     content: @Composable ColumnScope.() -> Unit = {},
     action: @Composable (ColumnScope.() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    contentPadding: PaddingValues = DefaultCardPaddings,
 ) {
     Column(
         modifier = modifier

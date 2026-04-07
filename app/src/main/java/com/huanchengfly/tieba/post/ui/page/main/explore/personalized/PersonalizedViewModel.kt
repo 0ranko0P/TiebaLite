@@ -5,6 +5,7 @@ import androidx.collection.MutableScatterSet
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastMap
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
@@ -12,6 +13,9 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.stateInViewModel
+import com.huanchengfly.tieba.post.models.database.BlockForum
+import com.huanchengfly.tieba.post.models.database.BlockUser
+import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Like
@@ -49,6 +53,7 @@ data class PersonalizedUiState(
 @HiltViewModel
 class PersonalizedViewModel @Inject constructor(
     private val exploreRepo: ExploreRepository,
+    private val blockRepo: BlockRepository,
     settingsRepository: SettingsRepository
 ) : BaseStateViewModel<PersonalizedUiState>() {
 
@@ -148,6 +153,35 @@ class PersonalizedViewModel @Inject constructor(
             .onFailure { // ignore errors and keep data changes
                 sendUiEvent(PersonalizedUiEvent.DislikeFailed(it))
             }
+            // Update local block rule (blacklist)
+            var updated = false
+            for (reason in reasons) {
+                when (reason.id) {
+                    Dislike.TYPE_ID_USER -> {
+                        updated = true
+                        blockRepo.upsertUser(
+                            thread.author.run { BlockUser(uid = id, name, whitelisted = false) }
+                        )
+                    }
+
+                    Dislike.TYPE_ID_FORUM -> {
+                        updated = true
+                        blockRepo.upsertForum(BlockForum(name = thread.simpleForum.second))
+                    }
+                }
+            }
+            if (updated) {
+                val newData = withContext(Dispatchers.Default) {
+                    currentState.data.fastMap { thread ->
+                        val forumName = thread.simpleForum.second
+                        val content = thread.content?.text.orEmpty()
+                        val blocked = blockRepo.isBlocked(forumName, uid = thread.author.id, content)
+                        if (blocked xor thread.blocked) thread.copy(blocked = blocked) else thread
+                    }
+                }
+                _uiState.update { it.copy(data = newData) }
+                sendUiEvent(PersonalizedUiEvent.BlockRuleUpdated)
+            }
         }
     }
 
@@ -169,6 +203,8 @@ class PersonalizedViewModel @Inject constructor(
 
 sealed interface PersonalizedUiEvent : UiEvent {
     class RefreshSuccess(val count: Int) : PersonalizedUiEvent
+
+    object BlockRuleUpdated: PersonalizedUiEvent
 
     class DislikeFailed(val e: Throwable): PersonalizedUiEvent
 }
