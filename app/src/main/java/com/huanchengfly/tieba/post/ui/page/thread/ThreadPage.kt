@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -99,7 +98,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.util.trace
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalUISettings
@@ -137,6 +135,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.CardHorizontalSpacing
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -169,6 +168,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 private val ThreadToolbarContainerHeight = 48.dp
+
+/**
+ * Offset from the edge of the screen used for [ThreadFloatingToolbar].
+ * */
+private val ThreadToolbarScreenOffset = FloatingToolbarDefaults.ScreenOffset / 2
 
 const val ThreadResultKey = "THREAD_PAGE"
 
@@ -455,7 +459,27 @@ fun ThreadPage(
                 }
             },
             bottomBar = {
-                Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                Container {
+                    ThreadFloatingToolbar(
+                        modifier = Modifier
+                            .windowInsetsPadding(WindowInsets.navigationBars)
+                            .offset(y = -ThreadToolbarScreenOffset)
+                            .padding(horizontal = CardHorizontalSpacing)
+                            .animateEnterExit(
+                                animatedVisibilityScope = LocalAnimatedVisibilityScope.current,
+                                sharedTransitionScope = LocalSharedTransitionScope.current,
+                                enter = defaultVerticalEnterTransition(topToBottom = false),
+                                exit = defaultVerticalExitTransition(topToBottom = false),
+                            ),
+                        user = state.user,
+                        onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
+                        onClickMore =  openBottomSheet,
+                        onJumpPage = jumpToPageDialogState::show,
+                        like = state.thread?.like ?: LikeZero,
+                        onLiked = viewModel::onThreadLikeClicked,
+                        scrollBehavior = toolbarScrollBehavior
+                    )
+                }
             },
             bottomHazeBlock = { blurEnabled = false },
             snackbarHostState = snackbarHostState,
@@ -471,35 +495,10 @@ fun ThreadPage(
             },
         ) { padding ->
             val hazeState: HazeState? = LocalHazeState.current
-
-            // ScreenOffset / 2 + Navigation bar
-            val toolbarScreenOffset = -FloatingToolbarDefaults.ScreenOffset / 2 - padding.calculateBottomPadding()
-
             // Ignore Scaffold padding top changes if workaround enabled
             val contentPadding = padding.fixedTopBarPadding()
 
             Container(modifier = Modifier.clipToBounds()) {
-                // The toolbar should receive focus before the screen content, so place it first.
-                // Make sure to set its zIndex so it's above the screen content visually.
-                ThreadFloatingToolbar(
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                        .offset(y = toolbarScreenOffset)
-                        .zIndex(1f)
-                        .animateEnterExit(
-                            animatedVisibilityScope = LocalAnimatedVisibilityScope.current,
-                            sharedTransitionScope = LocalSharedTransitionScope.current,
-                            enter = defaultVerticalEnterTransition(topToBottom = false),
-                            exit = defaultVerticalExitTransition(topToBottom = false),
-                        ),
-                    user = state.user,
-                    onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
-                    onClickMore =  openBottomSheet,
-                    onJumpPage = jumpToPageDialogState::show,
-                    like = state.thread?.like ?: LikeZero,
-                    onLiked = viewModel::onThreadLikeClicked,
-                    scrollBehavior = toolbarScrollBehavior
-                )
-
                 ProvideNavigator(navigator = navigator) {
                     ThreadContent(
                         modifier = Modifier
@@ -870,11 +869,10 @@ private fun ThreadFloatingToolbar(
     ProvideContentColor(colorScheme.onPrimaryContainer) {
         Row(
             modifier = modifier
-                .height(ThreadToolbarContainerHeight)
-                .padding(horizontal = 16.dp)
                 .onNotNull(scrollBehavior) {
                     with(it) { floatingScrollBehavior() }
                 }
+                .height(ThreadToolbarContainerHeight)
                 .graphicsLayer {
                     this.shadowElevation = shadowElevation.toPx()
                     this.shape = CircleShape

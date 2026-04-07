@@ -154,7 +154,7 @@ fun StateScreenScope.ThreadContent(
                 }
             }
 
-            state.thread?.replyNum?.let { replyNum ->
+            if (state.thread != null) {
                 if (useStickyHeader) {
                     stickyHeader(key = Type.Header.key, contentType = Type.Header) {
                         ThreadHeader(
