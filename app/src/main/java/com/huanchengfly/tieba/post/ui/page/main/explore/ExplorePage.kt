@@ -39,6 +39,7 @@ import androidx.navigation.NavOptions
 import androidx.navigation.Navigator
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.navigateDebounced
@@ -57,6 +58,7 @@ import com.huanchengfly.tieba.post.ui.page.consumeResult
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.ui.page.main.OnMainNavigationScrollTopEvent
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
@@ -203,14 +205,6 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
     val scrollOrientationConnection = rememberScrollOrientationConnection()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysOnLowerBoundScrollBehavior()
 
-    val onScrollToTopClicked: () -> Unit = {
-        coroutineScope.launch {
-            listStates[pagerState.currentPage].scrollToItem(0)
-            scrollBehavior.state.contentOffset = 0f
-            scrollBehavior.state.heightOffset = 0f
-        }
-    }
-
     // FAB visibility of each page
     var fabHideStates by remember(pages) { mutableStateOf(BooleanBitSet()) }
 
@@ -219,11 +213,11 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
         context.toastShort(it.toMessage(context))
     }
 
-    if (isFloatingNavBarCompat) {
-        onGlobalEvent<GlobalEvent.ScrollToTop>(filter = { it.tag == MainDestination.Explore }) {
-            onScrollToTopClicked()
-        }
-    }
+    OnMainNavigationScrollTopEvent<MainDestination.Explore>(
+        coroutineScope = coroutineScope,
+        topAppBarState = scrollBehavior.state,
+        listState = { listStates.getOrNull(pagerState.currentPage) }
+    )
 
     MyScaffold(
         useMD2Layout = hazeState == null,
@@ -269,7 +263,9 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
                     !pagerState.isScrolling && !fabHideStates[pagerState.currentPage]
                 }
             }
-            DefaultBackToTopFAB(visible = visible, onClick = onScrollToTopClicked)
+            DefaultBackToTopFAB(visible = visible) {
+                coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))
+            }
         },
         floatingActionButtonPosition = if (isFloatingNavBarCompat) FabPosition.EndOverlay else FabPosition.End,
     ) { contentPadding ->

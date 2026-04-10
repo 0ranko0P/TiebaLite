@@ -33,6 +33,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -74,6 +76,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -81,6 +84,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
+import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.lerp
@@ -98,6 +102,7 @@ import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
@@ -122,11 +127,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.isNavigationBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.navigationSuiteScaffoldConsumeWindowInsets
+import com.huanchengfly.tieba.post.utils.DeviceUtils.vibrateOneShot
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -219,7 +226,7 @@ fun MainPage(
             MainNavigationItems(
                 items = destinations,
                 isSelected = { dest -> dest === currentDestination },
-                onClick = { dest ->
+                onSelect = { dest ->
                     nestedNavController.navigate(route = dest) {
                         launchSingleTop = true
                         restoreState = true
@@ -228,6 +235,9 @@ fun MainPage(
                         }
                     }
                     if (dest == MainDestination.Notification) vm.onNavigateNotification()
+                },
+                onReSelect = { dest ->
+                    coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(dest))
                 },
                 mainNavigationSuiteType = navigationSuiteType,
                 bottomNavLabel = uiSettings.bottomNavLabel,
@@ -252,12 +262,11 @@ fun MainPage(
                 MainNavigationSuiteType.FloatingNavigationBarCompact -> {
                     if (uiSettings.hideExplore) return@MainNavigationSuiteScaffold
                     ExplorePrimaryAction(visible = MainDestination.Explore === currentDestination) {
-                        coroutineScope.launch {
-                            emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))
-                        }
+                        coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))
                     }
                 }
-                else -> null // NavigationBar or None
+
+                else -> Unit // NavigationBar or None
             }
         }
     ) {
@@ -416,18 +425,19 @@ private fun MainNavigationItems(
     items: List<MainDestination>,
     isSelected: (MainDestination) -> Boolean,
     modifier: Modifier = Modifier,
-    onClick: (MainDestination) -> Unit = {},
+    onSelect: (MainDestination) -> Unit = {},
+    onReSelect: (MainDestination) -> Unit = {},
     mainNavigationSuiteType: MainNavigationSuiteType = calculateMainNavigationSuiteType(),
     bottomNavLabel: NavigationLabel = NavigationLabel.ALWAYS,
     messageCount: () -> String? = { null },
 ) {
     val isNavigationBar = mainNavigationSuiteType.isNavigationBar
-    items.fastForEachIndexed { index, destination ->
+    items.fastForEach { destination ->
         val selected = isSelected(destination)
         MainNavigationSuiteItem(
             selected = selected,
             onClick = {
-                if (selected) return@MainNavigationSuiteItem else onClick(destination)
+                if (selected) onReSelect(destination) else onSelect(destination)
             },
             icon = {
                 Icon(
@@ -602,6 +612,32 @@ private fun ExplorePrimaryAction(modifier: Modifier = Modifier, visible: Boolean
         size = NavigationBarHeight,
         onClick = onClick,
     )
+}
+
+// Common ScrollToTop event listener for main destinations
+@Composable
+inline fun <reified T: MainDestination> OnMainNavigationScrollTopEvent(
+    coroutineScope: CoroutineScope = rememberCoroutineScope(),
+    topAppBarState: TopAppBarState? = null,
+    gridState: LazyGridState? = null,
+    crossinline listState: () -> LazyListState?,
+) {
+    val context = LocalContext.current
+    onGlobalEvent<GlobalEvent.ScrollToTop>(coroutineScope, filter = { it.tag is T }) {
+        val listState = listState()
+        if (listState?.canScrollBackward == true || gridState?.canScrollBackward == true) {
+            context.vibrateOneShot(milliseconds = 50)
+            coroutineScope.launch {
+                listState?.run {
+                    if (firstVisibleItemIndex > 5) scrollToItem(0) else animateScrollToItem(0)
+                }
+                gridState?.animateScrollToItem(0)
+            }
+        }
+        // Reset TopAppBarState
+        topAppBarState?.contentOffset = 0f
+        topAppBarState?.heightOffset = 0f
+    }
 }
 
 /**

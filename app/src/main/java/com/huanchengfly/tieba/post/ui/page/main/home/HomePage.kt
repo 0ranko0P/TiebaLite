@@ -45,6 +45,7 @@ import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -95,7 +96,9 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.LikedForum
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.ui.page.main.OnMainNavigationScrollTopEvent
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.explore.topAppBarBlurEffect
@@ -474,6 +477,7 @@ fun AnimatedVisibilityScope.HomePage(
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
         bottomBarAtop = calculateMainNavigationSuiteType().isFloatingNavigationBar,
     ) { contentPaddings ->
+        val coroutineScope = rememberCoroutineScope()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val forums = viewModel.forums.collectAsLazyPagingItems()
         val pinnedForums = viewModel.pinnedForums.collectAsLazyPagingItems()
@@ -500,6 +504,13 @@ fun AnimatedVisibilityScope.HomePage(
             unfollowForum = it
             confirmUnfollowDialog.show()
         }
+
+        OnMainNavigationScrollTopEvent<MainDestination.Home>(
+            coroutineScope = coroutineScope,
+            topAppBarState = scrollBehavior.state,
+            gridState = gridState,
+            listState = { null }
+        )
 
         StateScreen(
             isEmpty = isEmpty,

@@ -1,17 +1,29 @@
 package com.huanchengfly.tieba.post.utils
 
+import android.content.Context
+import android.content.Context.VIBRATOR_MANAGER_SERVICE
+import android.content.Context.VIBRATOR_SERVICE
+import android.os.Build
 import android.os.Environment
 import android.os.StatFs
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import androidx.annotation.GuardedBy
 import java.io.File
 import java.io.IOException
 import java.util.Locale
 import java.util.regex.Pattern
 import kotlin.math.round
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 
 object DeviceUtils {
     var coreNum = -1
     private const val CPU_MAX_INFO_FORMAT = "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq"
     private const val MEM_INFO_FILE = "/proc/meminfo"
+
+    val Context.vibrator: Vibrator by VibratorSingletonDelegate()
 
     fun roundUpRom(f: Float): Int {
         var i = 1
@@ -93,5 +105,41 @@ object DeviceUtils {
             e.printStackTrace()
             ""
         }
+    }
+
+    fun Context.vibrateOneShot(milliseconds: Long = 100) {
+        if (vibrator.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(milliseconds)
+            }
+        }
+    }
+}
+
+private class VibratorSingletonDelegate : ReadOnlyProperty<Context, Vibrator> {
+
+    private val lock = DeviceUtils
+
+    @Suppress("PrivatePropertyName")
+    @GuardedBy("lock")
+    @Volatile
+    private var INSTANCE: Vibrator? = null
+
+    override fun getValue(thisRef: Context, property: KProperty<*>): Vibrator {
+        return INSTANCE
+            ?: synchronized(lock) {
+                if (INSTANCE == null) {
+                    INSTANCE = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        (thisRef.getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+                    } else {
+                        @Suppress("DEPRECATION")
+                        thisRef.getSystemService(VIBRATOR_SERVICE) as Vibrator
+                    }
+                }
+                INSTANCE!!
+            }
     }
 }
