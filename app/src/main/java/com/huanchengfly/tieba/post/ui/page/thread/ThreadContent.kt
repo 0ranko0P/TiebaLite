@@ -1,5 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +27,7 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -83,6 +87,7 @@ sealed class Type(val key: String) {
     object Header: Type("ThreadHeader")
     object LoadPrevious: Type("LoadPreviousBtn")
     object Post: Type("") // Use PostData.id as item key
+    object LoadMoreIndicator: Type("LoadMoreIndicator")
 }
 
 /**
@@ -123,13 +128,16 @@ fun StateScreenScope.ThreadContent(
                 .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
             state = lazyListState,
             contentPadding = contentPadding,
+            horizontalAlignment = Alignment.CenterHorizontally,
             isLoading = isLoadingMore,
             onLoad = onSwipeUpRefresh.takeIf {  // Enable it conditionally
                 state.data.isNotEmpty() && state.sortType != ThreadSortType.BY_DESC
             },
             onLazyLoad = { if (state.pageData.hasMore) viewModel.requestLoadMore() },
             bottomIndicator = { onThreshold ->
-                LoadMoreIndicator(isLoading = isLoadingMore, noMore = !state.pageData.hasMore, onThreshold = onThreshold)
+                if (isLoadingMore) return@SwipeUpLazyLoadColumn // Replaced by Shape-Morphing LoadingIndicator
+
+                LoadMoreIndicator(isLoading = false, noMore = !state.pageData.hasMore, onThreshold = onThreshold)
             }
         ) {
             item(key = Type.FirstPost.key, contentType = Type.FirstPost) {
@@ -203,6 +211,16 @@ fun StateScreenScope.ThreadContent(
                 postTipItem(isDesc = false)  // ASC Tip on top
                 items(items = latestPosts, key = { post -> "LatestPost_${post.id}" }) { post ->
                     PostCardItem(viewModel, post, localUid, collectPid)
+                }
+            }
+
+            item(key = Type.LoadMoreIndicator.key, contentType = Type.LoadMoreIndicator) {
+                AnimatedVisibility(
+                    visible = state.isLoadingMore,
+                    enter = fadeIn(animationSpec = MaterialTheme.motionScheme.slowEffectsSpec()),
+                    exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec())
+                ) {
+                    LoadingIndicator(modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
         }
