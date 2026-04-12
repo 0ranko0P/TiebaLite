@@ -72,12 +72,14 @@ import com.huanchengfly.tieba.post.models.database.BlockKeyword
 import com.huanchengfly.tieba.post.models.database.BlockUser
 import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.common.FadedVisibility
 import com.huanchengfly.tieba.post.ui.icons.RegularExpression
-import com.huanchengfly.tieba.post.ui.widgets.compose.AnimatedDeleteFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultToggleFloatingActionButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.DeleteIconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.ExtendedFabHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PlainTooltipBox
@@ -186,7 +188,7 @@ fun ForumBlockListPage(
         whitelist = { null },
         onBack = onBack,
         onSelectItems = viewModel::delete,
-        isUpdating = isUpdating,
+        isUpdating = { isUpdating },
         itemKeyProvider = { _, keyword -> keyword },
         floatingActionButton = { visible, blockType ->
             PlainTooltipBox(
@@ -238,7 +240,7 @@ fun KeywordBlockListPage(
         whitelist = { whitelist },
         onBack = onBack,
         onSelectItems = viewModel::delete,
-        isUpdating = isUpdating,
+        isUpdating = { isUpdating },
         floatingActionButton = { visible, blockType ->
             BlockFloatingActionButtonMenu(visible = visible) { isRegex ->
                 val isWhitelisted = blockType === BlockType.Whitelist
@@ -266,7 +268,7 @@ fun UserBlockListPage(
         whitelist = { whitelist },
         onBack = onBack,
         onSelectItems = viewModel::delete,
-        isUpdating = isUpdating,
+        isUpdating = { isUpdating },
         itemKeyProvider = { _, item -> item.uid },
     ) {
         UserItem(user = it)
@@ -281,7 +283,7 @@ private fun <T> BlockListScaffold(
     whitelist: () -> List<T>?,
     onBack: () -> Unit = {},
     onSelectItems: (List<T>) -> Unit = {},
-    isUpdating: Boolean = false,
+    isUpdating: () -> Boolean = { false },
     floatingActionButton: (@Composable (visible: Boolean, BlockType) -> Unit)? = null,
     itemKeyProvider: (Int, item: T) -> Any = { _, it -> it.toString() },
     itemContent: @Composable (item: T) -> Unit,
@@ -292,6 +294,7 @@ private fun <T> BlockListScaffold(
 
     val listItemColors = defaultSegmentedListItemColors
     val listItemElevation = ListItemElevation(Dp.Hairline, Dp.Hairline)
+    val listContentPadding = PaddingValues(start = 8.dp, top = 16.dp, end = 8.dp, bottom = 48.dp + ExtendedFabHeight)
 
     val selectedItems = remember { mutableStateSetOf<T>() }
     var selectMode by remember { mutableStateOf(false) }
@@ -307,52 +310,47 @@ private fun <T> BlockListScaffold(
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = onBack)
                 },
+                actions = {
+                    FadedVisibility(visible = selectMode || isUpdating()) {
+                        DeleteIconButton(deleting = isUpdating(), enabled = selectedItems.isNotEmpty()) {
+                            selectMode = false
+                            onSelectItems(selectedItems.toList())
+                            selectedItems.clear()
+                        }
+                    }
+                },
                 scrollBehavior = scrollBehavior
             ) {
                 if (pagerState.pageCount <= 1) return@CenterAlignedTopAppBar
-
-                PrimaryTabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    indicator = {
-                        FancyAnimatedIndicatorWithModifier(pagerState.currentPage)
-                    },
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                ) {
-                    pages.fastForEachIndexed { i, page ->
-                        Tab(
-                            selected = pagerState.currentPage == i,
-                            onClick = {
-                                coroutineScope.launch { pagerState.animateScrollToPage(i) }
-                            },
-                            enabled = !selectMode,
-                            text = { Text(text = stringResource(id = page.title)) },
-                            unselectedContentColor = MaterialTheme.colorScheme.onSurface
-                        )
+                AnimatedVisibility(visible = !selectMode) {
+                    PrimaryTabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        indicator = {
+                            FancyAnimatedIndicatorWithModifier(pagerState.currentPage)
+                        },
+                        containerColor = Color.Transparent,
+                    ) {
+                        pages.fastForEachIndexed { i, page ->
+                            Tab(
+                                selected = pagerState.currentPage == i,
+                                onClick = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(i) }
+                                },
+                                text = { Text(text = stringResource(id = page.title)) },
+                                unselectedContentColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             }
         },
         floatingActionButton = {
-            when {
-                isUpdating || selectMode -> {
-                    val deletable by remember { derivedStateOf { selectedItems.isNotEmpty() } }
-                    AnimatedDeleteFAB(Modifier.fabMenuOffset(), deletable, deleting = isUpdating) {
-                        selectMode = false
-                        if (deletable) {
-                            onSelectItems(selectedItems.toList())
-                            selectedItems.clear()
-                        }
-                    }
-                }
+            if (floatingActionButton == null) return@MyScaffold
 
-                floatingActionButton == null -> Unit
-
-                else -> {
-                    val fabVisibleState by remember { derivedStateOf { !pagerState.isScrolling } }
-                    floatingActionButton(fabVisibleState, pages[pagerState.currentPage])
-                }
+            val fabVisibleState by remember {
+                derivedStateOf { !isUpdating() && !selectMode && !pagerState.isScrolling }
             }
+            floatingActionButton(fabVisibleState, pages[pagerState.currentPage])
         },
     ) { contentPadding ->
         HorizontalPager(
@@ -370,7 +368,7 @@ private fun <T> BlockListScaffold(
                 if (items == null) return@StateScreen
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = contentPadding + PaddingValues(16.dp),
+                    contentPadding = contentPadding + listContentPadding,
                     verticalArrangement = Arrangement.spacedBy(1.dp),
                 ) {
                     itemsIndexed(items, key = itemKeyProvider) { i, item ->
@@ -394,7 +392,7 @@ private fun <T> BlockListScaffold(
                             },
                             verticalAlignment = Alignment.CenterVertically,
                             onLongClick = {
-                                if (!isUpdating && !selectMode) {
+                                if (!isUpdating() && !selectMode) {
                                     selectedItems += item
                                     selectMode = true
                                 }
