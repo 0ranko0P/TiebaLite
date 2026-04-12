@@ -22,6 +22,9 @@ interface UserProfileDao {
     @Query("DELETE FROM user WHERE uid = :uid")
     suspend fun deleteById(uid: Long): Int
 
+    @Query("DELETE FROM user WHERE uid in (:uids)")
+    suspend fun deleteByIdList(uids: List<Long>): Int
+
     @Query("UPDATE user SET `following` = :following, fans = :fans WHERE uid = :uid")
     suspend fun updateFollowState(uid: Long, following: Boolean, fans: Int)
 

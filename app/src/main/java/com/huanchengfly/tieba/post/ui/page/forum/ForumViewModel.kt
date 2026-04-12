@@ -28,6 +28,7 @@ import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.requestPinShortcut
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -184,7 +185,9 @@ class ForumViewModel @Inject constructor(
 
     private fun recordHistory(forum: ForumData) = with(forum) {
         if (!historyRecorded) {
-            historyRepo.saveHistory(ForumHistory(id, name, avatar))
+            launchInVM(Dispatchers.Default) {
+                historyRepo.saveHistory(ForumHistory(id, name, avatar))
+            }
             historyRecorded = true
         }
     }

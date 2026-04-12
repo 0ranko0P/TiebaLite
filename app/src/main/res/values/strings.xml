@@ -21,7 +21,6 @@
     <string name="toast_copy_success">已复制到剪贴板</string>
     <string name="title_share">分享</string>
     <string name="title_history">浏览记录</string>
-    <string name="title_history_delete">清空浏览记录</string>
     <string name="toast_delete_success">删除成功</string>
     <string name="title_about">关于</string>
     <string name="title_settings_app_link">App Links</string>

@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.round
@@ -67,6 +68,31 @@ class MenuScope(
             },
             modifier = modifier,
         )
+
+    /**
+     * Simple Text [DropdownMenuItem] with leadingIcon, auto close the menu after onClick event triggered.
+     *
+     * @see [MenuScope.dismiss]
+     * */
+    @Composable
+    fun TextIconMenuItem(
+        modifier: Modifier = Modifier,
+        text: String,
+        icon: ImageVector,
+        enabled: Boolean = true,
+        onClick: () -> Unit
+    ) = DropdownMenuItem(
+        text = { Text(text = text) },
+        onClick = {
+            onClick()
+            dismiss()
+        },
+        modifier = modifier,
+        leadingIcon = {
+            Icon(imageVector = icon, contentDescription = null)
+        },
+        enabled = enabled,
+    )
 
     @Composable
     fun ListPickerMenuItem(

@@ -31,6 +31,9 @@ interface ThreadHistoryDao {
     @Query("DELETE FROM thread_history WHERE id = :threadId")
     suspend fun deleteById(threadId: Long): Int
 
+    @Query("DELETE FROM thread_history WHERE id in (:idList)")
+    suspend fun deleteByIdList(idList: List<Long>): Int
+
     /**
      * Get thread history paging source.
      * */

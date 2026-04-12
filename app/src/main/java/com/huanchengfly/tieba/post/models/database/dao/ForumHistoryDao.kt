@@ -27,6 +27,9 @@ interface ForumHistoryDao {
     @Query("DELETE FROM forum_history WHERE id = :forumId")
     suspend fun deleteById(forumId: Long): Int
 
+    @Query("DELETE FROM forum_history WHERE id in (:ids)")
+    suspend fun deleteByIdList(ids: List<Long>): Int
+
     @Query("SELECT * FROM forum_history ORDER BY timestamp DESC LIMIT :limit")
     fun observeTop(limit: Int = 10): Flow<List<ForumHistory>>
 

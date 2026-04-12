@@ -1,11 +1,11 @@
 package com.huanchengfly.tieba.post.repository
 
+import androidx.compose.ui.util.fastMap
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import androidx.room.withTransaction
-import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.models.database.ForumHistory
 import com.huanchengfly.tieba.post.models.database.History
@@ -17,10 +17,11 @@ import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,7 +32,6 @@ import javax.inject.Singleton
 class HistoryRepository @Inject constructor(
     private val dataBase: TbLiteDatabase
 ) {
-    private val scope = AppBackgroundScope
 
     private val threadHistoryDao: ThreadHistoryDao = dataBase.threadHistoryDao()
 
@@ -69,8 +69,8 @@ class HistoryRepository @Inject constructor(
         .flowOn(Dispatchers.Default)
     }
 
-    fun saveHistory(history: History) {
-        scope.launch {
+    suspend fun saveHistory(history: History) {
+        withContext(NonCancellable) {
             when (history) {
                 is ThreadHistory -> threadHistoryDao.upsert(history)
 
@@ -83,8 +83,8 @@ class HistoryRepository @Inject constructor(
         }
     }
 
-    fun deleteHistory(history: History) {
-        scope.launch {
+    suspend fun deleteHistory(history: History) {
+        withContext(NonCancellable) {
             when (history) {
                 is ThreadHistory -> threadHistoryDao.deleteById(threadId = history.id)
 
@@ -97,8 +97,23 @@ class HistoryRepository @Inject constructor(
         }
     }
 
-    fun deleteAll() {
-        scope.launch {
+    suspend fun deleteHistory(historyList: List<History>) {
+        val ids = historyList.fastMap { it.id }
+        withContext(NonCancellable) {
+            when (historyList.first()) {
+                is ThreadHistory -> threadHistoryDao.deleteByIdList(ids)
+
+                is ForumHistory -> forumHistoryDao.deleteByIdList(ids)
+
+                is UserHistory -> userProfileDao.deleteByIdList(ids)
+
+                else -> throw RuntimeException()
+            }
+        }
+    }
+
+    suspend fun deleteAll() {
+        withContext(NonCancellable) {
             dataBase.withTransaction {
                 threadHistoryDao.deleteAll()
                 forumHistoryDao.deleteAll()
