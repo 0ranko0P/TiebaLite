@@ -96,7 +96,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
-import androidx.compose.ui.util.lerp
 import androidx.compose.ui.util.trace
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -483,16 +482,7 @@ fun ThreadPage(
             },
             bottomHazeBlock = { blurEnabled = false },
             snackbarHostState = snackbarHostState,
-            snackbarHost = {
-                SwipeToDismissSnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier.graphicsLayer { // Offset up based on the collapsed fraction
-                        translationY = toolbarScrollBehavior.state.run {
-                            lerp(start = offsetLimit, stop = 0f, fraction = collapsedFraction)
-                        }
-                    }
-                )
-            },
+            snackbarHost = { SwipeToDismissSnackbarHost(hostState = snackbarHostState) },
         ) { padding ->
             val hazeState: HazeState? = LocalHazeState.current
             // Ignore Scaffold padding top changes if workaround enabled

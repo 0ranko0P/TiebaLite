@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.PlayerSurface
+import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import androidx.media3.ui.compose.state.ProgressStateWithTickCount
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 import kotlin.math.roundToLong
@@ -48,7 +49,8 @@ fun ProgressIndicator(
                 modifier = Modifier
                     .height(48.dp)
                     .width(48.dp * aspectRatio)
-                    .background(Color.DarkGray)
+                    .background(Color.DarkGray),
+                surfaceType = SURFACE_TYPE_TEXTURE_VIEW
             )
         },
         seekerDurationProvider = { seekProgress ->

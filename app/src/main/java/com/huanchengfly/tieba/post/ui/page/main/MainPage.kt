@@ -184,9 +184,11 @@ val bottomNavigationPlaceholder: @Composable () -> Unit = {
  */
 @Composable
 private fun NavController.currentMainDestinationAsState(destinations: List<MainDestination>): State<MainDestination?> {
-    return currentBackStackEntryFlow
-        .map { destinations.fastFirstOrNull { dest -> it.destination.hasRoute(dest::class) } }
-        .collectAsStateWithLifecycle(null, context = Dispatchers.Default)
+    return remember(currentBackStackEntryFlow, destinations) {
+        currentBackStackEntryFlow.map {
+            destinations.fastFirstOrNull { dest -> it.destination.hasRoute(dest::class) }
+        }
+    }.collectAsStateWithLifecycle(null, context = Dispatchers.Default)
 }
 
 @Composable
