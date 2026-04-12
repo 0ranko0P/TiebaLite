@@ -99,6 +99,7 @@ import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.trace
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.NoWindowInsets
@@ -106,6 +107,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.arch.isFullyCollapsed
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.glide.TbGlideUrl
@@ -236,6 +238,7 @@ fun ThreadPage(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val snackbarHostState = rememberSnackbarHostState()
+    val useStickyHeader = LocalHabitSettings.current.stickyHeader
     val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
 
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -244,7 +247,11 @@ fun ThreadPage(
     }
 
     val lazyListState = rememberLazyListState()
-    val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val topAppBarScrollBehavior = if (useStickyHeader) {
+        TopAppBarDefaults.pinnedScrollBehavior()
+    } else {
+        TopAppBarDefaults.enterAlwaysScrollBehavior()
+    }
     val toolbarScrollBehavior = FloatingToolbarDefaults.exitAlwaysScrollBehavior(exitDirection = Bottom)
 
     var showBottomSheet by rememberSaveable { mutableStateOf(false) }
@@ -413,7 +420,8 @@ fun ThreadPage(
     ) {
         BlurScaffold(
             topHazeBlock = {
-                blurEnabled = lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping
+                blurEnabled = !topAppBarScrollBehavior.isFullyCollapsed &&
+                        (lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping)
             },
             attachHazeContentState = false, // Attach manually since we're blurring the BottomSheet
             topBar = {
@@ -498,7 +506,7 @@ fun ThreadPage(
                         lazyListState = lazyListState,
                         contentPadding = contentPadding,
                         topAppBarScrollBehavior = topAppBarScrollBehavior,
-                        useStickyHeader = !useStickyHeaderWorkaround
+                        useStickyHeader = useStickyHeader && !useStickyHeaderWorkaround
                     )
                 }
             }

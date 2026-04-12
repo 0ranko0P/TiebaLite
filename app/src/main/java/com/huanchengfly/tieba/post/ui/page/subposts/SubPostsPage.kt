@@ -54,6 +54,7 @@ import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.arch.isFullyCollapsed
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -146,6 +147,7 @@ private fun SubPostsContent(
 ) {
     val context = LocalContext.current
     val navigator = LocalNavController.current
+    val useStickyHeader = LocalHabitSettings.current.stickyHeader
     val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
     val account = LocalAccount.current
     val myUid = account?.uid
@@ -210,7 +212,11 @@ private fun SubPostsContent(
         onReload = viewModel::onRefresh,
     ) {
         val coroutineScope = rememberCoroutineScope()
-        val topAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        val topAppBarScrollBehavior = if (useStickyHeader) {
+            TopAppBarDefaults.pinnedScrollBehavior()
+        } else {
+            TopAppBarDefaults.enterAlwaysScrollBehavior()
+        }
         val scrollOrientationConnection = rememberScrollOrientationConnection()
 
         val onScrollToTopClicked: () -> Unit = {
@@ -257,7 +263,8 @@ private fun SubPostsContent(
 
         BlurScaffold(
             topHazeBlock = {
-                blurEnabled = lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping
+                blurEnabled = !topAppBarScrollBehavior.isFullyCollapsed &&
+                        (lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping)
             },
             topBar = {
                 TitleBar(
@@ -336,7 +343,7 @@ private fun SubPostsContent(
                     }
                 }
 
-                if (useStickyHeaderWorkaround) {
+                if (!useStickyHeader || useStickyHeaderWorkaround) {
                     item(contentType = HeaderContentType) {
                         SubPostsHeader(postNum = uiState.page.postCount)
                     }

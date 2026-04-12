@@ -161,6 +161,7 @@
     <string name="settings_collect_thread_desc_sort">收藏贴自动倒序浏览</string>
     <string name="tip_collect_thread_desc_sort">从收藏进入贴子将自动切换至倒序浏览</string>
     <string name="tip_collect_thread_desc_sort_on">从收藏进入的贴子将自动切换至倒序浏览</string>
+    <string name="tip_sticky_header">控制帖子页中的功能栏滚动时的行为</string>
     <string name="toast_feed_refresh">更新了 %1$d 条动态</string>
     <string name="button_submit_dislike">不感兴趣</string>
     <string name="title_dislike">不喜欢推荐用户的理由</string>
@@ -320,6 +321,7 @@
     <string name="summary_not_logged_in">未登录，点击登录</string>
     <string name="title_settings_more">更多</string>
     <string name="title_settings_worker">Worker Info</string>
+    <string name="title_settings_sticky_header">帖子功能栏</string>
     <string name="summary_block_settings">眼不见心不烦</string>
     <string name="summary_settings_custom">个性你的 UI 界面</string>
     <string name="summary_settings_habit">万般功能不如自己顺手</string>
@@ -496,6 +498,10 @@
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
     <string name="settings_nav_floating">首页使用悬浮底部导航栏</string>
     <string name="settings_nav_label">首页底部导航栏标签显示模式</string>
+    <string name="settings_sticky_header_off">跟随帖子滚动</string>
+    <string name="settings_sticky_header_on">保持固定</string>
+    <string name="summary_sticky_header_off">不会占用顶部空间并且顶部应用栏在帖子滚动时会折叠, 你将获得最大阅读空间</string>
+    <string name="summary_sticky_header_on">帖子滚动时固定到顶部应用栏下方, 这与贴吧官方App 的行为一致</string>
     <string name="brightness">亮度</string>
     <string name="channel_at">提到我的</string>
     <string name="channel_reply">回复我的</string>
