@@ -120,7 +120,9 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
             appbar = view.findViewById(R.id.appbar)
             appbar.doOnApplyWindowInsets { insets ->
                 val sysBar = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-                updatePadding(left = sysBar.left, top = sysBar.top, right = sysBar.right)
+                if (sysBar.top != 0) {
+                    updatePadding(left = sysBar.left, top = sysBar.top, right = sysBar.right)
+                }
                 return@doOnApplyWindowInsets true
             }
 
