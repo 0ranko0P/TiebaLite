@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.LocalHabitSettings
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.theme.isTranslucent
@@ -66,8 +65,7 @@ import kotlinx.coroutines.withTimeout
 fun StickyHeaderSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () -> Unit = {}) {
     val listState = rememberLazyListState()
     val windowSize = LocalWindowInfo.current.containerDpSize
-    val windowSizeClass = LocalWindowAdaptiveInfo.current.windowSizeClass
-    val isWindowHeightCompact = windowSizeClass.minHeightDp <= WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND
+    val isWindowHeightCompact = windowSize.height <= WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND.dp
 
     val selected = LocalHabitSettings.current.stickyHeader
     val onSelectChanged: (Boolean) -> Unit = { newValue ->

@@ -41,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -124,8 +123,7 @@ fun StateScreenScope.ThreadContent(
         SwipeUpLazyLoadColumn(
             modifier = modifier
                 .fillMaxSize()
-                .testColumn()
-                .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
+                .testColumn(),
             state = lazyListState,
             contentPadding = contentPadding,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -407,11 +405,11 @@ fun ThreadHeader(
 
 @NonRestartableComposable
 @Composable
-fun SubPostBlockedTip(modifier: Modifier = Modifier) {
+private fun SubPostBlockedTip(modifier: Modifier = Modifier) {
     Text(
         text = stringResource(id = R.string.tip_blocked_sub_post),
         modifier = modifier.fillMaxWidth(),
-        style = MaterialTheme.typography.bodyMedium
+        style = MaterialTheme.typography.labelLarge,
     )
 }
 

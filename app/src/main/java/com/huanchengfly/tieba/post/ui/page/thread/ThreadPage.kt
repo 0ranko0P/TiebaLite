@@ -501,6 +501,7 @@ fun ThreadPage(
                     ThreadContent(
                         modifier = Modifier
                             .hazeSource(hazeState)
+                            .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
                             .nestedScroll(toolbarScrollBehavior),
                         viewModel = viewModel,
                         lazyListState = lazyListState,

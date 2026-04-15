@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
@@ -105,6 +106,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.coroutines.launch
+
+/**
+ * Date Header -> Null
+ * History Item -> String
+ * else -> [androidx.paging.compose.PagingPlaceholderContentType]
+ * */
+private const val HistoryItemContentType = "history"
 
 @Composable
 fun HistoryPage(
@@ -481,11 +489,14 @@ private fun <T : HistoryUiModel> HistoryColumn(
         modifier = modifier.fillMaxSize(),
         state = state,
         contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(1.dp),
+        verticalArrangement = Arrangement.spacedBy(1.5.dp),
     ) {
         items(
             count = pagedItems.itemCount,
-            key = pagedItems.itemKey { if (it is HistoryUiModel.Item) it.history.id else it.toString() }
+            key = pagedItems.itemKey { if (it is HistoryUiModel.Item) it.history.id else it.toString() },
+            contentType = pagedItems.itemContentType {
+                if (it is HistoryUiModel.Item) HistoryItemContentType else null
+            }
         ) { i ->
             when (val item = pagedItems[i]) {
                 is HistoryUiModel.Item -> item.history.let { history ->
@@ -497,7 +508,7 @@ private fun <T : HistoryUiModel> HistoryColumn(
                             onClick(history)
                         },
                         shapes = historySegmentedShapes(index = i, pagedItems = pagedItems),
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
                         verticalAlignment = Alignment.CenterVertically,
                         onLongClick = {
                             onLongClick(history)

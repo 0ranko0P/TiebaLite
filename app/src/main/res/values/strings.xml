@@ -497,7 +497,7 @@
     <string name="dialog_content_wait">请坐和放宽</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
     <string name="settings_nav_floating">首页使用悬浮底部导航栏</string>
-    <string name="settings_nav_label">首页底部导航栏标签显示模式</string>
+    <string name="settings_nav_label">首页底部导航栏标签</string>
     <string name="settings_sticky_header_off">跟随帖子滚动</string>
     <string name="settings_sticky_header_on">保持固定</string>
     <string name="summary_sticky_header_off">不会占用顶部空间并且顶部应用栏在帖子滚动时会折叠, 你将获得最大阅读空间</string>

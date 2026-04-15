@@ -73,10 +73,10 @@ import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.PostCard
-import com.huanchengfly.tieba.post.ui.page.thread.SubPostBlockedTip
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
@@ -591,6 +591,17 @@ private fun SubPostsHeader(modifier: Modifier = Modifier, postNum: Int) {
             .padding(horizontal = 16.dp, vertical = 8.dp),
         style = MaterialTheme.typography.titleMedium
     )
+}
+
+@NonRestartableComposable
+@Composable
+private fun SubPostBlockedTip(modifier: Modifier = Modifier) {
+    BlockTip(modifier = modifier) {
+        Text(
+            text = stringResource(id = R.string.tip_blocked_sub_post),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @NonRestartableComposable
