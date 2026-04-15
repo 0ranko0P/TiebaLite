@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.settings
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.page.settings.blocklist.ForumBlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.blocklist.KeywordBlockListPage
@@ -44,6 +45,9 @@ sealed interface SettingsDestination {
 
     @Serializable
     object Privacy: SettingsDestination
+
+    @Serializable
+    object StickyHeader: SettingsDestination
 
     @Serializable
     object More: SettingsDestination
@@ -93,11 +97,21 @@ fun NavGraphBuilder.settingsGraph(navController: NavController, settingsRepo: Se
     }
 
     composable<SettingsDestination.Habit> {
-        HabitSettingsPage(settingsRepo.habitSettings, onBack = navController::navigateUp)
+        HabitSettingsPage(
+            habitSettings = settingsRepo.habitSettings,
+            onStickyHeaderClicked = {
+                navController.navigateDebounced(SettingsDestination.StickyHeader)
+            },
+            onBack = navController::navigateUp
+        )
     }
 
     composable<SettingsDestination.Privacy> {
         PrivacySettingsPage(settingsRepo.privacySettings, onBack = navController::navigateUp)
+    }
+
+    composable<SettingsDestination.StickyHeader> {
+        StickyHeaderSettingsPage(settingsRepo.habitSettings, onBack = navController::navigateUp)
     }
 
     composable<SettingsDestination.More> {

@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.repository.user.Settings
+import com.huanchengfly.tieba.post.ui.icons.PageHeader
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.WaterType
@@ -27,11 +28,16 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.preference.ListPref
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SwitchPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import kotlinx.collections.immutable.persistentMapOf
 
 @Composable
-fun HabitSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () -> Unit) {
+fun HabitSettingsPage(
+    habitSettings: Settings<HabitSettings>,
+    onStickyHeaderClicked: () -> Unit,
+    onBack: () -> Unit,
+) {
     MyScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
@@ -111,6 +117,14 @@ fun HabitSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () -> Unit
                     },
                     title = R.string.settings_home_page_show_history_forum,
                     leadingIcon = Icons.Outlined.WatchLater
+                )
+            }
+
+            TextItem {
+                TextPref(
+                    title = stringResource(id = R.string.title_settings_sticky_header),
+                    onClick = onStickyHeaderClicked,
+                    leadingIcon = Icons.Rounded.PageHeader,
                 )
             }
 

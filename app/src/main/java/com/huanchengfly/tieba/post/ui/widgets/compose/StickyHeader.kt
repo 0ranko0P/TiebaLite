@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.util.fastFirstOrNull
+import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
@@ -29,7 +30,9 @@ import kotlinx.coroutines.delay
 
 // Workaround to enable background blurring on StickyHeader
 @Composable @ReadOnlyComposable
-fun useStickyHeaderWorkaround(): Boolean = !MaterialTheme.colorScheme.isTranslucent
+fun useStickyHeaderWorkaround(): Boolean {
+    return LocalHabitSettings.current.stickyHeader && !MaterialTheme.colorScheme.isTranslucent
+}
 
 /**
  * Workaround to enable background blurring on StickyHeader.

@@ -22,8 +22,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
@@ -43,7 +41,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlurNavigationBarPlaceHold
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
-import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import kotlinx.coroutines.launch
 
@@ -56,7 +53,7 @@ fun NotificationsPage(
     val pages = NotificationsType.entries
     val pagerState = rememberPagerState(initialPage = initialPage.ordinal, pageCount = { pages.size })
     val listStates = rememberPagerListStates(pages.size)
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysOnLowerBoundScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
 
     OnMainNavigationScrollTopEvent<MainDestination.Notification>(

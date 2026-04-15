@@ -78,7 +78,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultHazeStyle
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultInputScale
-import com.huanchengfly.tieba.post.ui.widgets.compose.enterAlwaysOnLowerBoundScrollBehavior
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
@@ -203,7 +202,7 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
     val listStates = rememberPagerListStates(pages.size)
 
     val scrollOrientationConnection = rememberScrollOrientationConnection()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysOnLowerBoundScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     // FAB visibility of each page
     var fabHideStates by remember(pages) { mutableStateOf(BooleanBitSet()) }

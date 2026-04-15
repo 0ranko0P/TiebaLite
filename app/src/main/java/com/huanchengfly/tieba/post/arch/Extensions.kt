@@ -234,6 +234,9 @@ inline fun <INTENT : UiIntent, reified VM : BaseViewModel<INTENT, *, *, *>> page
 val TopAppBarScrollBehavior.isOverlapping: Boolean
     get() = state.overlappedFraction > 0.01f
 
+val TopAppBarScrollBehavior.isFullyCollapsed: Boolean
+    get() = state.collapsedFraction == 1.0f
+
 inline fun List<TopAppBarScrollBehavior>.isOverlapping(pagerState: PagerState): Boolean {
     return this.getOrNull(pagerState.currentPage)?.isOverlapping ?: false
 }

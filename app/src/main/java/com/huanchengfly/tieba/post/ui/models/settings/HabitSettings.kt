@@ -54,6 +54,7 @@ annotation class WaterType {
  * @param imageWatermarkType 图片上传水印设置
  * @param showBothName 同时显示用户名和昵称
  * @param showHistoryInHome 首页显示最近逛的吧
+ * @param stickyHeader 帖子页面是否使用StickyHeader
  * */
 @Immutable
 data class HabitSettings(
@@ -67,5 +68,6 @@ data class HabitSettings(
     val imageLoadType: Int = ImageUtil.SETTINGS_SMART_ORIGIN,
     @WaterType val imageWatermarkType: Int = WaterType.FORUM_NAME,
     val showBothName: Boolean = false,
-    val showHistoryInHome: Boolean = true
+    val showHistoryInHome: Boolean = true,
+    val stickyHeader: Boolean = true,
 )

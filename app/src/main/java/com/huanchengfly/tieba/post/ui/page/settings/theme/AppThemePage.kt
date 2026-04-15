@@ -535,7 +535,7 @@ private fun SlidersWidgetRow(
 }
 
 @Composable
-private fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account?, postText: Int) {
+fun UserPostCardWidget(modifier: Modifier = Modifier, account: Account?, postText: Int) {
     val colorScheme = MaterialTheme.colorScheme
 
     CompositionLocalProvider(LocalContentColor provides colorScheme.onSurface) {
