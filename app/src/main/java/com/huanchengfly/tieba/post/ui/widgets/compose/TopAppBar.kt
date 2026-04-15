@@ -49,7 +49,6 @@ import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
@@ -97,8 +96,6 @@ import androidx.compose.ui.util.fastMaxOfOrNull
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.fastSumBy
 import androidx.compose.ui.util.lerp
-import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_EXPANDED_LOWER_BOUND
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -119,24 +116,7 @@ import kotlin.math.roundToInt
  *   4. Drop subtitleContent
  *   5. Implement CollapsingAvatarTopAppBar
  *   6. Implement TopAppBarPaged
- *   7. Add enterAlwaysOnLowerBoundScrollBehavior
  */
-
-@Suppress("UnusedReceiverParameter")
-@Composable
-fun TopAppBarDefaults.enterAlwaysOnLowerBoundScrollBehavior(
-    state: TopAppBarState = rememberTopAppBarState(),
-): TopAppBarScrollBehavior {
-    return if (
-        LocalWindowAdaptiveInfo.current.windowSizeClass.isHeightAtLeastBreakpoint(
-            heightDpBreakpoint = HEIGHT_DP_EXPANDED_LOWER_BOUND
-        )
-    ) {
-        TopAppBarDefaults.pinnedScrollBehavior(state)
-    } else {
-        TopAppBarDefaults.enterAlwaysScrollBehavior(state)
-    }
-}
 
 /**
  * Represents the container color used for the top app bar.
