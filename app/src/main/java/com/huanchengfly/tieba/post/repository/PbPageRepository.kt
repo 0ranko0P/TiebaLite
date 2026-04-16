@@ -174,8 +174,8 @@ class PbPageRepository @Inject constructor(
                 total = pageData.total_page,
                 postCount = pageData.total_count,
                 nextPagePostId = -1,
-                hasMore = pageData.has_more != 0,
-                hasPrevious = pageData.has_prev != 0
+                hasMore = pageData.total_page > 1 && pageData.current_page < pageData.total_page,
+                hasPrevious = pageData.total_page > 1 && pageData.current_page > 1
             )
         )
     }
