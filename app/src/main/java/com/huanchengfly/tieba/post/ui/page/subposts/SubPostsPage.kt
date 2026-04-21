@@ -84,12 +84,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.FavoriteButton
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.PlainTooltipBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SharedTransitionUserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.fixedTopBarPadding
@@ -254,7 +254,7 @@ private fun SubPostsContent(
             )
         }.takeIf { canReply && forumId > 0 }
 
-        val onOpenThreadClickedListener: (() -> Unit)? = {
+        val onOpenThreadClickedListener: () -> Unit = {
             navigator.navigateDebounced(route = Thread(threadId, forumId, postId = postId))
         }
 
@@ -317,13 +317,8 @@ private fun SubPostsContent(
                 state = lazyListState,
                 contentPadding = contentPadding,
                 isLoading = isLoadingMore,
-                onLazyLoad = {
-                    if (hasMore && uiState.subPosts.isNotEmpty()) {
-                        viewModel.onLoadMore()
-                    }
-                },
-                onLoad = null,
-                bottomIndicator = { LoadingIndicator(isLoading = isLoadingMore) }
+                onLazyLoad = viewModel::onLoadMore.takeIf { hasMore },
+                bottomIndicator = defaultBottomIndicator,
             ) {
                 val postItem = uiState.post ?: return@SwipeUpLazyLoadColumn
                 item(key = "Post$postId", contentType = PostContentType) {

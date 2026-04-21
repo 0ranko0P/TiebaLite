@@ -37,10 +37,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.LocalAccount
@@ -72,6 +72,7 @@ fun NotificationsListPage(
 
     StateScreen(
         isLoading = uiState.isRefreshing,
+        isEmpty = uiState.data.isEmpty(),
         error = error,
         onReload = onRefresh.takeIf { error?.getErrorCode() != Error.ERROR_NOT_LOGGED_IN },
         screenPadding = contentPadding,
@@ -125,11 +126,8 @@ private fun NotificationsListContent(
             state = listState,
             contentPadding = contentPadding,
             isLoading = isLoadingMore,
-            onLazyLoad = onLoadMore,
-            onLoad = null, // Disable manual load!
-            bottomIndicator = {
-                LoadMoreIndicator(isLoading = isLoadingMore, noMore = !uiState.hasMore, onThreshold = false)
-            }
+            onLazyLoad = onLoadMore.takeIf { uiState.hasMore },
+            bottomIndicator = defaultBottomIndicator,
         ) {
             items(items = uiState.data, key = { it.lazyListItemKey }) { info ->
                 BlockableContent(

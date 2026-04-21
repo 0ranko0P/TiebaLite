@@ -84,9 +84,9 @@ fun SearchThreadPage(
                 contentPadding = contentPadding,
                 isLoading = isLoadingMore,
                 onLoad = onLazyLoad,
-                onLazyLoad = onLazyLoad,
+                onLazyLoad = onLazyLoad.takeIf { uiState.hasMore },
                 bottomIndicator = {
-                    LoadMoreIndicator(isLoading = isLoadingMore, noMore = !uiState.hasMore, onThreshold = it)
+                    LoadMoreIndicator(noMore = !uiState.hasMore, onThreshold = it)
                 }
             ) {
                 itemsIndexed(uiState.data, key = { _, it -> it.lazyListKey }) { index, item ->

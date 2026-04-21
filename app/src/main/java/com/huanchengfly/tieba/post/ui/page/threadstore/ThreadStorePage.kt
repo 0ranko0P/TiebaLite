@@ -143,10 +143,10 @@ fun ThreadStorePage(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = contentPadding,
                     isLoading = isLoadingMore,
-                    onLazyLoad = viewModel::onLoadMore,
                     onLoad = viewModel::onLoadMore,
+                    onLazyLoad = viewModel::onLoadMore.takeIf { hasMore },
                     bottomIndicator = {
-                        LoadMoreIndicator(isLoading = isLoadingMore, noMore = !hasMore, onThreshold = it)
+                        LoadMoreIndicator(noMore = !hasMore, onThreshold = it)
                     }
                 ) {
                     items(items = data, key = { it.id }) { info ->

@@ -63,12 +63,12 @@ import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
@@ -224,13 +224,8 @@ fun ForumSearchPostPage(
                                 .nestedScroll(scrollBehavior.nestedScrollConnection),
                             contentPadding = contentPadding,
                             isLoading = isLoadingMore,
-                            onLazyLoad = {
-                                if (hasMore) viewModel.onLoadMore()
-                            },
-                            onLoad = null, // Refuse manual load more!
-                            bottomIndicator = {
-                                LoadingIndicator(isLoading = isLoadingMore)
-                            }
+                            onLazyLoad = viewModel::onLoadMore.takeIf { hasMore },
+                            bottomIndicator = defaultBottomIndicator
                         ) {
                             itemsIndexed(data) { index, item ->
                                 if (index > 0) {

@@ -52,11 +52,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.CardHorizontalSpacing
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -144,15 +144,9 @@ fun PersonalizedPage(
                 modifier = modifier.fillMaxSize(),
                 state = listState,
                 contentPadding = contentPadding,
-                horizontalAlignment = Alignment.CenterHorizontally,
                 isLoading = isLoadingMore,
-                onLazyLoad = {
-                    if (data.isNotEmpty()) viewModel.onLoadMore()
-                },
-                onLoad = null, // Disable manual load
-                bottomIndicator = {
-                    LoadingIndicator(isLoading = isLoadingMore)
-                }
+                onLazyLoad = viewModel::onLoadMore.takeUnless { isRefreshing },
+                bottomIndicator = defaultBottomIndicator,
             ) {
                 itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { index, thread ->
                     val isHidden = thread.blocked && hideBlockedContent

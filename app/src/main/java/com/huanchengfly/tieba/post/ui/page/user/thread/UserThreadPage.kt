@@ -39,11 +39,11 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadViewModel.Companion.UserThreadVmFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadMedia
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 
@@ -98,11 +98,8 @@ fun UserThreadPage(
                 modifier = Modifier.fillMaxSize(),
                 state = lazyListState,
                 isLoading = isLoadingMore,
-                onLazyLoad = {
-                    if (hasMore) viewModel.onLoadMore()
-                },
-                onLoad = null,
-                bottomIndicator = { LoadingIndicator(isLoading = isLoadingMore) }
+                onLazyLoad = viewModel::onLoadMore.takeIf { hasMore },
+                bottomIndicator = defaultBottomIndicator,
             ) {
                 itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { i, thread ->
                     Column {

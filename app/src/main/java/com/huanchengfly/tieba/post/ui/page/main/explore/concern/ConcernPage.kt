@@ -11,7 +11,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -25,10 +24,10 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 
 @Composable
@@ -77,22 +76,15 @@ fun ConcernPage(
         ) {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val isLoadingMore = uiState.isLoadingMore
-            val hasMore = uiState.hasMore
             val data = uiState.data
 
             SwipeUpLazyLoadColumn(
                 modifier = modifier.fillMaxSize(),
                 state = listState,
                 contentPadding = contentPadding,
-                horizontalAlignment = Alignment.CenterHorizontally,
                 isLoading = isLoadingMore,
-                onLazyLoad = {
-                    if (hasMore) viewModel.onLoadMore()
-                },
-                onLoad = null, // Disable manual load more
-                bottomIndicator = {
-                    LoadingIndicator(isLoading = isLoadingMore)
-                }
+                onLazyLoad = viewModel::onLoadMore.takeIf { uiState.hasMore },
+                bottomIndicator = defaultBottomIndicator,
             ) {
                 itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { i, thread ->
                     Column {

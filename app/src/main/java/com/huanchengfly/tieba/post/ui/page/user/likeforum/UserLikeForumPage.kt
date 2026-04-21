@@ -31,9 +31,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentListOf
 
@@ -93,21 +93,15 @@ fun UserLikeForumPage(
         },
         screenPadding = PaddingNone,
     ) {
-
         Container(fluid = fluid) {
             SwipeUpLazyLoadColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = lazyListState,
                 isLoading = isLoadingMore,
                 onLazyLoad = {
-                    if (hasMore && !isEmpty) {
-                        viewModel.send(UserLikeForumUiIntent.LoadMore(uid, currentPage))
-                    }
-                },
-                onLoad = null, // Disable manual refresh
-                bottomIndicator = {
-                    LoadingIndicator(isLoading = isLoadingMore)
-                }
+                    viewModel.send(UserLikeForumUiIntent.LoadMore(uid, currentPage))
+                }.takeIf { hasMore },
+                bottomIndicator = defaultBottomIndicator,
             ) {
                 items(items = forums, key = { it.id }) { forumBean ->
                     UserLikeForumItem(Modifier.fillMaxWidth(), item = forumBean) {

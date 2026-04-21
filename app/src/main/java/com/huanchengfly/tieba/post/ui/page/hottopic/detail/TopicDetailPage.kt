@@ -52,11 +52,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import kotlinx.coroutines.launch
@@ -138,15 +138,10 @@ fun TopicDetailPage(
                         SwipeUpLazyLoadColumn(
                             modifier = Modifier.fillMaxSize(),
                             state = lazyListState,
-                            isLoading = uiState.isLoadingMore,
                             contentPadding = contentPadding,
-                            onLazyLoad = {
-                                if (uiState.hasMore) viewModel.onLoadMore()
-                            },
-                            onLoad = null,
-                            bottomIndicator = {
-                                LoadingIndicator(isLoading = uiState.isLoadingMore)
-                            }
+                            isLoading = uiState.isLoadingMore,
+                            onLazyLoad = viewModel::onLoadMore.takeIf { uiState.hasMore },
+                            bottomIndicator = defaultBottomIndicator,
                         ) {
                             itemsIndexed(
                                 items = uiState.threads,

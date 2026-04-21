@@ -168,14 +168,10 @@ fun ForumThreadList(
                 state = listState,
                 contentPadding = contentPadding,
                 isLoading = isLoadingMore,
-                onLazyLoad = {
-                    if (hasMore) {
-                        viewModel.loadMore()
-                    }
-                },
-                onLoad = viewModel::loadMore.takeUnless{ threadList.isEmpty() },
+                onLoad = viewModel::loadMore,
+                onLazyLoad = viewModel::loadMore.takeIf { hasMore },
                 bottomIndicator = {
-                    LoadMoreIndicator(isLoading = isLoadingMore, noMore = !hasMore, onThreshold = it)
+                    LoadMoreIndicator(noMore = !hasMore, onThreshold = it)
                 }
             ) {
                 forumRuleTitle?.let { rule ->

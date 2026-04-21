@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,8 +38,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource.Companion.UserInput
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.onFirstVisible
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -71,6 +72,7 @@ private fun Modifier.indicatorOffset(bottomPadding: Dp, connection: SwipeUpRefre
         }
     }
 
+private const val LoadMoreContentType = "LoadMore"
 
 /**
  * LazyColumn with swipe-up-to-refresh behaviour
@@ -85,11 +87,11 @@ private fun Modifier.indicatorOffset(bottomPadding: Dp, connection: SwipeUpRefre
 fun SwipeUpLazyLoadColumn(
     modifier: Modifier = Modifier,
     state: LazyListState = rememberLazyListState(),
-    contentPadding: PaddingValues = PaddingValues(0.dp),
+    contentPadding: PaddingValues = PaddingValues.Zero,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
-    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
     isLoading: Boolean,
-    onLoad: (() -> Unit)?,
+    onLoad: (() -> Unit)? = null,
     onLazyLoad: (() -> Unit)? = null,
     bottomIndicator: @Composable BoxScope.(onThreshold: Boolean) -> Unit,
     items: LazyListScope.() -> Unit
@@ -101,6 +103,7 @@ fun SwipeUpLazyLoadColumn(
     ) {
         LazyColumn(
             modifier = Modifier
+                .matchParentSize()
                 .graphicsLayer {
                     this.translationY = refreshState.position
                 },
@@ -108,8 +111,21 @@ fun SwipeUpLazyLoadColumn(
             contentPadding = contentPadding,
             verticalArrangement = verticalArrangement,
             horizontalAlignment = horizontalAlignment,
-            content = items
-        )
+        ) {
+            items()
+
+            if (onLazyLoad != null) {
+                item(key = LoadMoreContentType, contentType = LoadMoreContentType) {
+                    LoadingIndicator(
+                        modifier = Modifier
+                            .onFirstVisible(minDurationMs = 300) {
+                                if (!isLoading && state.layoutInfo.visibleItemsInfo.size > 1) onLazyLoad()
+                            }
+                            .padding(vertical = 8.dp)
+                    )
+                }
+            }
+        }
 
         OneTimeMeasurer(
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -123,10 +139,8 @@ fun SwipeUpLazyLoadColumn(
                 contentAlignment = Alignment.Center
             ) {
                 val onThreshold by remember { derivedStateOf { refreshState.progress >= 1.0f } }
-                bottomIndicator(onThreshold)
-
-                if (onLazyLoad != null) {
-                    LazyLoadAtBottom(state, isLoading, onLazyLoad)
+                if (!isLoading) {
+                    bottomIndicator(onThreshold)
                 }
             }
 
@@ -135,22 +149,6 @@ fun SwipeUpLazyLoadColumn(
                 refreshState.setThreshold(size.height.toFloat())
             }
         }
-    }
-}
-
-@Composable
-@NonRestartableComposable
-private fun LazyLoadAtBottom(state: LazyListState, isLoading: Boolean, onLazyLoad: () -> Unit)  {
-    val isAtBottom by remember {
-        derivedStateOf {
-            !state.canScrollForward && state.firstVisibleItemIndex != 0
-                    // Bug: empty visible items even FirstVisibleItem exists
-                    && state.layoutInfo.visibleItemsInfo.isNotEmpty()
-        }
-    }
-
-    LaunchedEffect(isAtBottom) {
-        if (isAtBottom && !isLoading) onLazyLoad()
     }
 }
 
@@ -230,7 +228,7 @@ private class SwipeUpRefreshScrollConnection(
             // We are flinging without having dragged the pull refresh (for example a fling inside
             // a list) - don't consume
             _offset == 0f -> 0f
-            // If the velocity is negative, the fling is upwards, and we don't want to prevent the
+            // If the velocity is negative, the fling is upwards, and we don't want to prevent
             // the list from scrolling
             velocity < 0f -> 0f
             // We are showing the indicator, and the fling is downwards - consume everything
@@ -298,31 +296,28 @@ private fun rememberSwipeUpRefreshConnection(
     return state
 }
 
+@NonRestartableComposable
 @Composable
-private fun TextIndicator(modifier: Modifier = Modifier, indicatorText: () -> String) {
+private fun TextIndicator(modifier: Modifier = Modifier, indicatorText: String) {
     Box(
-        modifier = modifier
+        modifier = modifier,
+        contentAlignment = Alignment.Center
     ) {
         HorizontalDivider(modifier = Modifier.align(Alignment.TopStart))
 
         Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 20.dp)
-                .align(Alignment.Center),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             HorizontalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
 
-            Box(
+            Text(
+                text = indicatorText,
                 modifier = Modifier
-                    .padding(horizontal = 4.dp)
-                    .animateContentSize(animationSpec = TweenSpec()),
-            ) {
-                Text(
-                    text = indicatorText(),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+                    .animateContentSize(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
+                style = MaterialTheme.typography.bodyLarge
+            )
 
             HorizontalDivider(modifier = Modifier.weight(1f), thickness = 2.dp)
         }
@@ -332,28 +327,24 @@ private fun TextIndicator(modifier: Modifier = Modifier, indicatorText: () -> St
 @Composable
 fun LoadMoreIndicator(
     modifier: Modifier = Modifier,
-    isLoading: Boolean,
     noMore: Boolean,
-    onThreshold: Boolean
+    onThreshold: Boolean,
 ) {
-    val context = LocalContext.current
-    TextIndicator(modifier = modifier.fillMaxWidth()) {
-        when {
-            isLoading -> context.getString(R.string.text_loading)
-            onThreshold -> context.getString(R.string.release_to_load)
-            noMore -> context.getString(R.string.tip_load_end)
-            else -> context.getString(R.string.pull_to_load)
-        }
-    }
+    TextIndicator(
+        modifier = modifier.fillMaxWidth(),
+        indicatorText = stringResource(
+            id = when {
+                onThreshold -> R.string.release_to_load
+                noMore -> R.string.tip_load_end
+                else -> R.string.pull_to_load
+            }
+        )
+    )
 }
 
-@Composable
-fun LoadingIndicator(modifier: Modifier = Modifier, isLoading: Boolean) {
-    val context = LocalContext.current
-    TextIndicator(modifier = modifier.fillMaxWidth()) {
-        when {
-            isLoading -> context.getString(R.string.text_loading)
-            else -> context.getString(R.string.tip_load_end)
-        }
-    }
+val defaultBottomIndicator: @Composable BoxScope.(onThreshold: Boolean) -> Unit = { _ ->
+    TextIndicator(
+        modifier = Modifier.fillMaxWidth(),
+        indicatorText = stringResource(R.string.tip_load_end)
+    )
 }
