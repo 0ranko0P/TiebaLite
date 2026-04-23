@@ -481,6 +481,8 @@
     <string name="ban_interact_summary">包含转,评,赞踩,@</string>
     <string name="button_add_keyword">关键词</string>
     <string name="button_add_regex">正则表达式</string>
+    <string name="button_backup">备份</string>
+    <string name="button_restore">恢复</string>
     <string name="button_ok">我知道了</string>
     <string name="button_sure">确定</string>
     <string name="button_back">返回</string>
@@ -494,7 +496,9 @@
     <string name="dialog_ban">拉黑范围</string>
     <string name="dialog_ban_requesting">正在请求更新拉黑设置</string>
     <string name="dialog_permission_rationale">前往设置页面并手动授予“%1$s”权限</string>
+    <string name="dialog_restore_select_rules">选择要恢复的规则</string>
     <string name="dialog_content_wait">请坐和放宽</string>
+    <string name="dialog_content_rule_restore_to">恢复至 %s 的状态</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
     <string name="settings_nav_floating">首页使用悬浮底部导航栏</string>
     <string name="settings_nav_label">首页底部导航栏标签</string>
@@ -502,6 +506,7 @@
     <string name="settings_sticky_header_on">保持固定</string>
     <string name="summary_sticky_header_off">不会占用顶部空间并且顶部应用栏在帖子滚动时会折叠, 你将获得最大阅读空间</string>
     <string name="summary_sticky_header_on">帖子滚动时固定到顶部应用栏下方, 这与贴吧官方App 的行为一致</string>
+    <string name="summary_rules_count">%d 条</string>
     <string name="brightness">亮度</string>
     <string name="channel_at">提到我的</string>
     <string name="channel_reply">回复我的</string>
@@ -514,6 +519,9 @@
     <string name="title_nav_label_always">始终显示</string>
     <string name="title_nav_label_selected">显示当前</string>
     <string name="title_nav_label_none">隐藏</string>
+    <string name="title_restore_forum">吧黑名单</string>
+    <string name="title_restore_keyword">关键词</string>
+    <string name="title_restore_user">用户</string>
     <string name="theme_dialog_unsave">主题未保存</string>
     <string name="theme_dialog_unsave_msg">保存或放弃更改?</string>
     <string name="theme_dialog_saving">应用主题中</string>
@@ -523,6 +531,8 @@
     <string name="theme_tab_custom">定制</string>
     <string name="toast_connecting">连接中请稍候..</string>
     <string name="toast_exception">出错了 %1$s</string>
+    <string name="toast_bad_backup_rule">无效备份规则</string>
+    <string name="toast_backup_done">备份完成</string>
     <string name="toast_ban_interact_failed">更新拉黑配置失败 %1$s</string>
     <string name="toast_block_rule_updated">本地屏蔽规则已更新</string>
     <string name="toast_preview_image_too_large">无法预览超大图</string>

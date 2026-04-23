@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.models.database.dao
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import com.huanchengfly.tieba.post.models.database.BlockForum
@@ -10,8 +12,12 @@ import kotlinx.coroutines.flow.Flow
 
 data class TypedKeyword(val keyword: String, val isRegex: Boolean)
 
+data class KeywordCSV(val keyword: String, val isRegex: Boolean, val whitelisted: Boolean)
+
+typealias UserCSV = BlockUser
+
 /**
- * Data Access Object for the block_keyword and block_user table.
+ * Data Access Object for block_forum, block_keyword and block_user table.
  */
 @Dao
 interface BlockDao {
@@ -25,6 +31,15 @@ interface BlockDao {
      */
     @Query("INSERT INTO block_keyword (keyword, isRegex, whitelisted) VALUES (:keyword, :isRegex, :whitelisted)")
     suspend fun addKeyword(keyword: String, isRegex: Boolean, whitelisted: Boolean)
+
+    /**
+     * Insert one or more keyword rule into the database. If a rule already exists, replace it.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertKeywords(vararg keywords: BlockKeyword)
+
+    @Query("DELETE FROM block_keyword")
+    suspend fun deleteAllKeyword()
 
     @Query("DELETE FROM block_keyword WHERE id = :id")
     suspend fun deleteKeywordById(id: Long): Int
@@ -49,12 +64,29 @@ interface BlockDao {
     fun observeKeywordRules(whitelisted: Boolean): Flow<List<BlockKeyword>>
 
     /**
-     * Insert or update a user blocking rule in the database. If a rule already exists, replace it.
+     * Select all keyword blocking rules.
+     * */
+    @Query("SELECT keyword, isRegex, whitelisted FROM block_keyword ORDER BY isRegex, whitelisted")
+    suspend fun getAllKeywords(): List<KeywordCSV>
+
+    /**
+     * Insert or update a user blocking rule into the database. If a rule already exists, update it.
      *
      * @param blockUser the user blocking rule to be inserted or updated.
      */
     @Upsert
     suspend fun upsertUser(blockUser: BlockUser)
+
+    /**
+     * Insert one or more user blocking rule into the database. If a rule already exists, replace it.
+     *
+     * @param blockUsers the blocking rules to be inserted.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUsers(vararg blockUsers: BlockUser)
+
+    @Query("DELETE FROM block_user")
+    suspend fun deleteAllUser()
 
     @Query("DELETE FROM block_user WHERE uid = :uid")
     suspend fun deleteUserById(uid: Long): Int
@@ -79,6 +111,12 @@ interface BlockDao {
     fun observeUsers(whitelisted: Boolean): Flow<List<BlockUser>>
 
     /**
+     * Select all user blocking rule.
+     * */
+    @Query("SELECT * FROM block_user ORDER BY whitelisted")
+    suspend fun getAllUsers(): List<UserCSV>
+
+    /**
      * Select a user blocking rule by uid.
      *
      * @param uid user id
@@ -87,12 +125,23 @@ interface BlockDao {
     suspend fun getUser(uid: Long): BlockUser?
 
     /**
-     * Insert or update a forum blocking rule in the database. If a rule already exists, replace it.
+     * Insert or update a forum blocking rule into the database. If a rule already exists, update it.
      *
      * @param forum the forum blocking rule to be inserted or updated.
      */
     @Upsert
     suspend fun upsertForum(forum: BlockForum)
+
+    /**
+     * Insert one or more forum blocking rule into the database. If a rule already exists, replace it.
+     *
+     * @param forums the forum blocking rules to be inserted.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertForums(vararg forums: BlockForum)
+
+    @Query("DELETE FROM block_forum")
+    suspend fun deleteAllForum()
 
     /**
      * Delete a forum blocking rule by name.
@@ -115,6 +164,9 @@ interface BlockDao {
      */
     @Query("SELECT name FROM block_forum WHERE name = :forumName")
     suspend fun getForum(forumName: String): String?
+
+    @Query("SELECT name FROM block_forum")
+    suspend fun getForums(): List<String>
 
     /**
      * Observes list of forum blocking rules.

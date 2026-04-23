@@ -8,6 +8,7 @@ import com.huanchengfly.tieba.post.models.database.BlockForum
 import com.huanchengfly.tieba.post.models.database.BlockKeyword
 import com.huanchengfly.tieba.post.models.database.BlockUser
 import com.huanchengfly.tieba.post.repository.BlockRepository
+import com.huanchengfly.tieba.post.utils.StringUtil.normalized
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -115,7 +116,11 @@ class KeywordBlockListViewModel @Inject constructor(
     override val _whiteList: Flow<List<BlockKeyword>?> = blockRepo.observeKeyword(whitelisted = true)
 
     override suspend fun upsertInternal(item: BlockKeyword) {
-        blockRepo.addKeyword(keyword = item.keyword.trim(), isRegex = item.isRegex, whitelisted = item.whitelisted)
+        blockRepo.addKeyword(
+            keyword = item.keyword.trim().normalized(),
+            isRegex = item.isRegex,
+            whitelisted = item.whitelisted
+        )
     }
 
     override suspend fun deleteInternal(item: BlockKeyword) {

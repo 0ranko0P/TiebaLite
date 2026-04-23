@@ -225,7 +225,7 @@ fun KeywordBlockListPage(
         },
         onConfirm = { keyword ->
             addKeywordOpt?.apply {
-                viewModel.upsert(BlockKeyword(-1, keyword = keyword.trim(), isRegex, isWhitelisted))
+                viewModel.upsert(BlockKeyword(-1, keyword, isRegex, isWhitelisted))
             }
         },
         onCancel = { setKeywordOpt(null) },

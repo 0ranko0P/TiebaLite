@@ -229,6 +229,9 @@ dependencies {
     implementation(libs.androidx.tracing)
     implementation(libs.bundles.paging3)
 
+    // FastCSV
+    implementation(libs.fastcsv)
+
     // WorkManager
     implementation(libs.androidx.hilt.work)
     implementation(libs.androidx.work.runtime)
@@ -267,6 +270,7 @@ dependencies {
 
     // Test
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(libs.androidx.test.core)

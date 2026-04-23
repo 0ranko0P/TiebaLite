@@ -19,6 +19,7 @@ import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.models.database.TbLiteDatabase.Companion.Migrations
+import com.huanchengfly.tieba.post.models.database.dao.TransactionRunnerDao
 import java.util.concurrent.TimeUnit
 
 @Database(
@@ -63,6 +64,8 @@ abstract class TbLiteDatabase : RoomDatabase() {
     abstract fun threadHistoryDao(): ThreadHistoryDao
 
     abstract fun timestampDao(): TimestampDao
+
+    abstract fun transactionRunnerDao(): TransactionRunnerDao
 
     abstract fun userProfileDao(): UserProfileDao
 

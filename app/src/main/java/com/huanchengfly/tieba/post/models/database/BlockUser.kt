@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey
     tableName = "block_user",
     indices = [Index(value = ["whitelisted"])]
 )
-class BlockUser(
+data class BlockUser(
     @PrimaryKey
     val uid: Long,
     val name: String?,
