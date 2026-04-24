@@ -170,10 +170,10 @@ data class Agree(
 
 @Serializable
 data class Author(
-    val name: String,
+    val name: String?,
     val id: Long,
     @SerialName("show_nickname")
-    val showNickName: String ,
+    val showNickName: String,
     @SerialName("name_show")
     val nameShow: String,
     val portrait: String,

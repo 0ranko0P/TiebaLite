@@ -126,7 +126,7 @@ class HotTopicRepository @Inject constructor(
             isBlocked: suspend (forumName: String, uid: Long, content: Array<String>) -> Boolean,
         ): ThreadItem {
             val author = with(author) {
-                val nameShow = StringUtil.getUserNameString(showBothName, name, nameShow)
+                val nameShow = StringUtil.getUserNameString(showBothName, name ?: nameShow, showNickName)
                 Author(id = this.id, name = nameShow, avatarUrl = StringUtil.getAvatarUrl(portrait))
             }
             val title = this.title.orEmpty()
