@@ -16,8 +16,7 @@ import com.huanchengfly.tieba.post.utils.RestoreOption.Companion.EXCLUDE_FORUM
 import com.huanchengfly.tieba.post.utils.RestoreOption.Companion.EXCLUDE_KEYWORD
 import com.huanchengfly.tieba.post.utils.RestoreOption.Companion.EXCLUDE_USER
 import com.huanchengfly.tieba.post.utils.StringUtil.normalized
-import de.siegmar.fastcsv.reader.CsvParseException
-import de.siegmar.fastcsv.reader.CsvReader
+import de.siegmar.fastcsv.reader.NamedCsvReader
 import de.siegmar.fastcsv.writer.CsvWriter
 import de.siegmar.fastcsv.writer.LineDelimiter
 import kotlinx.coroutines.Dispatchers
@@ -185,14 +184,15 @@ object BlockRuleBackupUtil {
     fun writeKeyword(keywords: List<KeywordCSV>, writer: Writer) {
         CsvWriter.builder()
             .lineDelimiter(LineDelimiter.LF)
+            .bufferSize(0) // Disable buffer on FastCSV 2.x
             .build(writer)
-            .writeRecord("keyword", "isRegex", "whitelisted")
+            .writeRow("keyword", "isRegex", "whitelisted")
             .apply {
                 for (k in keywords) {
-                    writeRecord(k.keyword, k.isRegex.booleanToString(), k.whitelisted.booleanToString())
+                    writeRow(k.keyword, k.isRegex.booleanToString(), k.whitelisted.booleanToString())
                 }
             }
-            .flush()
+        writer.flush()
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -200,14 +200,15 @@ object BlockRuleBackupUtil {
     fun writeUser(users: List<UserCSV>, writer: Writer) {
         CsvWriter.builder()
             .lineDelimiter(LineDelimiter.LF)
+            .bufferSize(0) // Disable buffer on FastCSV 2.x
             .build(writer)
-            .writeRecord("uid", "name", "whitelisted")
+            .writeRow("uid", "name", "whitelisted")
             .apply {
                 for (u in users) {
-                    writeRecord(u.uid.toString(), u.name ?: "", u.whitelisted.booleanToString())
+                    writeRow(u.uid.toString(), u.name ?: "", u.whitelisted.booleanToString())
                 }
             }
-            .flush()
+        writer.flush()
     }
 
     /**
@@ -304,11 +305,11 @@ object BlockRuleBackupUtil {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     @Throws(IOException::class, CsvParseException::class)
     fun readKeyword(reader: Reader): List<KeywordCSV> {
-        return CsvReader.builder()
-            .ofNamedCsvRecord(reader)
+        return NamedCsvReader.builder()
+            .build(reader)
             .map { record -> // keyword, isRegex: Int, whitelisted: Int
                 try {
-                    val keyword = record.getField(0).trim().normalized()
+                    val keyword = record.getField("keyword").trim().normalized()
                     if (keyword.isEmpty()) {
                         throw IllegalArgumentException("Empty keyword")
                     }
@@ -318,7 +319,7 @@ object BlockRuleBackupUtil {
                         whitelisted = record.getField("whitelisted")?.ofBooleanInt()!!
                     )
                 } catch (e: Throwable) {
-                    throw CsvParseException("Read keyword failed at: ${record.startingLineNumber}", e)
+                    throw CsvParseException("Read keyword failed at: ${record.originalLineNumber}", e)
                 }
             }
     }
@@ -326,13 +327,13 @@ object BlockRuleBackupUtil {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     @Throws(IOException::class, CsvParseException::class)
     fun readUser(reader: Reader): List<UserCSV> {
-        return CsvReader.builder()
-            .ofNamedCsvRecord(reader)
+        return NamedCsvReader.builder()
+            .build(reader)
             .map { record -> // uid, name, whitelisted: Int
                 try {
-                    val uid = record.getField(0).toLong()
+                    val uid = record.getField("uid").toLong()
                     if (uid <= 0) {
-                        throw IllegalArgumentException("Invalid uid ${record.getField(0)}")
+                        throw IllegalArgumentException("Invalid uid $uid")
                     }
                     UserCSV(
                         uid = uid,
@@ -340,7 +341,7 @@ object BlockRuleBackupUtil {
                         whitelisted = record.getField("whitelisted")?.ofBooleanInt()!!
                     )
                 } catch (e: Throwable) {
-                    throw CsvParseException("Read user failed at: ${record.startingLineNumber}", e)
+                    throw CsvParseException("Read user failed at: ${record.originalLineNumber}", e)
                 }
             }
     }
@@ -368,5 +369,28 @@ object BlockRuleBackupUtil {
             typedArray[i] = transform(this[i])
         }
         return typedArray as Array<E>
+    }
+}
+
+/**
+ * Exception to be thrown when malformed csv data is read.
+ * */
+// TODO: Remove && Update FastCSV to 3.x
+class CsvParseException : RuntimeException {
+    /** Construct exception with a message.
+     *
+     * @param message the cause for this exception
+     */
+    constructor(message: String?) : super(message)
+
+    /** Construct exception with message and cause.
+     *
+     * @param message the cause for this exception
+     * @param cause the cause for this exception
+     */
+    constructor(message: String?, cause: Throwable?) : super(message, cause)
+
+    companion object {
+        private const val serialVersionUID = 1L
     }
 }

@@ -104,7 +104,10 @@ androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "androidx
 androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "androidx-room" }
 androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "androidx-room" }
 
-fastcsv = { module = "de.siegmar:fastcsv", version = "4.2.0" }
+# for 4.x version: Java ⩾ 17 (Android 14 / API level 34)
+# for 3.x version: Java ⩾ 11 (Android 13 / API level 33)
+#noinspection NewerVersionAvailable
+fastcsv = { module = "de.siegmar:fastcsv", version = "2.2.2" }
 
 jetbrains-annotations = { module = "org.jetbrains:annotations", version = "23.0.0" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }

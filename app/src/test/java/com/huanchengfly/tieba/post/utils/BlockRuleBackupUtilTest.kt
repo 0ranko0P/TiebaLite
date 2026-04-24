@@ -12,7 +12,6 @@ import com.huanchengfly.tieba.post.models.database.dao.UserCSV
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil.ENTRY_NAME_FORUM
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil.ENTRY_NAME_KEYWORD
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil.ENTRY_NAME_USER
-import de.siegmar.fastcsv.reader.CsvParseException
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
