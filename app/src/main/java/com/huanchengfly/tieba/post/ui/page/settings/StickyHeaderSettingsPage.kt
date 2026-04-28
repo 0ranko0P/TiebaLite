@@ -1,11 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -35,7 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import com.google.accompanist.placeholder.PlaceholderHighlight
@@ -56,7 +57,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.fade
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.BasePreference
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPreference
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -66,6 +67,7 @@ fun StickyHeaderSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () 
     val listState = rememberLazyListState()
     val windowSize = LocalWindowInfo.current.containerDpSize
     val isWindowHeightCompact = windowSize.height <= WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND.dp
+    val isWindowWidthCompact = windowSize.width <= WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND.dp
 
     val selected = LocalHabitSettings.current.stickyHeader
     val onSelectChanged: (Boolean) -> Unit = { newValue ->
@@ -89,7 +91,10 @@ fun StickyHeaderSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () 
         ) {
             BoxWithConstraints(
                 modifier = Modifier
-                    .padding(32.dp)
+                    .padding(
+                        horizontal = if (isWindowWidthCompact) Dp.Hairline else 32.dp,
+                        vertical = if (isWindowHeightCompact) 16.dp else 32.dp
+                    )
                     .fillMaxWidth(fraction = if (isWindowHeightCompact) 0.9f else 0.7f)
             ) {
                 val containerColor = MaterialTheme.colorScheme.let {
@@ -124,15 +129,15 @@ fun StickyHeaderSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () 
                 )
 
                 RadioPreference(
-                    title = stringResource(R.string.settings_sticky_header_on),
-                    summary = stringResource(R.string.summary_sticky_header_on),
+                    title = R.string.settings_sticky_header_on,
+                    summary = R.string.summary_sticky_header_on,
                     selected = selected,
                     onClick = { onSelectChanged(true) }
                 )
 
                 RadioPreference(
-                    title = stringResource(R.string.settings_sticky_header_off),
-                    summary = stringResource(R.string.summary_sticky_header_off),
+                    title = R.string.settings_sticky_header_off,
+                    summary = R.string.summary_sticky_header_off,
                     selected = !selected,
                     onClick = { onSelectChanged(false) }
                 )
@@ -158,31 +163,32 @@ fun StickyHeaderSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () 
 }
 
 @Composable
-private fun RadioPreference(
-    modifier: Modifier = Modifier,
+fun RadioPreference(
     selected: Boolean,
-    title: String,
-    summary: String? = null,
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    @StringRes title: Int,
+    modifier: Modifier = Modifier,
+    @StringRes summary: Int? = null,
     onClick: () -> Unit
 ) {
-    BasePreference(
-        modifier = modifier
-            .clickable(
-                role = Role.Button,
-                interactionSource = interactionSource,
-                onClick = onClick
-            ),
-        title = title,
-        summary = summary,
-        enabled = true,
-        leadingContent = {
+    val interactionSource = remember { MutableInteractionSource() }
+    SegmentedPreference(
+        modifier = modifier,
+        title = {
+            Text(text = stringResource(id = title))
+        },
+        summary = summary?.let {
+            { Text(text = stringResource(id = it)) }
+        },
+        leadingIcon = {
             RadioButton(
                 selected = selected,
                 onClick = null,
                 interactionSource = interactionSource,
             )
         },
+        colors = ListItemDefaults.colors(),
+        interactionSource = interactionSource,
+        onClick = onClick,
     )
 }
 

@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.round
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
-import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.Options
 import kotlinx.coroutines.flow.filterIsInstance
 
 class MenuScope(

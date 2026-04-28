@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.user
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -9,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +43,7 @@ import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -72,6 +75,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -132,11 +136,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SwitchPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPreference
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
@@ -1089,6 +1094,37 @@ private fun UserPageEmpty() {
 }
 
 @Composable
+fun SwitchPreference(
+    modifier: Modifier = Modifier,
+    checked: Boolean,
+    @StringRes title: Int,
+    @StringRes summary: Int? = null,
+    leadingIcon: ImageVector? = null,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    SegmentedPreference(
+        modifier = modifier,
+        title = title,
+        onClick = {
+            onCheckedChange(!checked)
+        },
+        leadingIcon = leadingIcon,
+        trailingContent = {
+            Switch(
+                checked = checked,
+                enabled = checked,
+                onCheckedChange = null,
+                interactionSource = interactionSource,
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        summary = summary,
+        interactionSource = interactionSource,
+    )
+}
+
+@Composable
 private fun PermissionSettingDialog(
     modifier: Modifier = Modifier,
     dialogState: DialogState,
@@ -1122,16 +1158,16 @@ private fun PermissionSettingDialog(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically(),
             ) {
-                Column(modifier = Modifier.padding(end = 8.dp)) {
+                Column {
                     // 1. 禁止关注
-                    SwitchPref(
+                    SwitchPreference(
                         checked = current.follow,
                         title = R.string.ban_follow,
                         leadingIcon = Icons.Outlined.Block,
                         onCheckedChange = { current = current.copy(follow = it) }
                     )
                     // 2. 禁止互动
-                    SwitchPref(
+                    SwitchPreference(
                         checked = current.interact,
                         title = R.string.ban_interact,
                         summary = R.string.ban_interact_summary,
@@ -1139,7 +1175,7 @@ private fun PermissionSettingDialog(
                         onCheckedChange = { current = current.copy(interact = it) }
                     )
                     // 3. 禁止私信
-                    SwitchPref(
+                    SwitchPreference(
                         checked = current.chat,
                         title = R.string.ban_chat,
                         leadingIcon = Icons.Outlined.Block,

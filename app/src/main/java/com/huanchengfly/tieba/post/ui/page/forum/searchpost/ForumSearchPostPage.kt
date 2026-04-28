@@ -69,7 +69,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.Options
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen

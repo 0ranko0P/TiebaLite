@@ -72,6 +72,7 @@ fun SegmentedPreference(
     shapes: ListItemShapes = ListItemDefaults.shapes(),
     leadingIcon: ImageVector? = null,
     trailingContent: @Composable (() -> Unit)? = null,
+    colors: ListItemColors = SegmentedListItemColors,
     summary: String? = null,
     contentPadding: PaddingValues = if (summary == null) {
         PreferenceItemPadding
@@ -92,6 +93,7 @@ fun SegmentedPreference(
             { Icon(imageVector, contentDescription = null) }
         },
         trailingContent = trailingContent,
+        colors = colors,
         summary = summary?.let { { Text(text = it) } },
         contentPadding = contentPadding,
         enabled = enabled,
@@ -106,6 +108,7 @@ fun SegmentedPreference(
     shapes: ListItemShapes = ListItemDefaults.shapes(),
     leadingIcon: ImageVector? = null,
     trailingContent: @Composable (() -> Unit)? = null,
+    colors: ListItemColors = SegmentedListItemColors,
     @StringRes summary: Int? = null,
     contentPadding: PaddingValues = if (summary == null) {
         PreferenceItemPadding
@@ -126,6 +129,7 @@ fun SegmentedPreference(
             { Icon(imageVector, contentDescription = null) }
         },
         trailingContent = trailingContent,
+        colors = colors,
         summary = summary?.let {
             { Text(text = stringResource(id = it)) }
         },

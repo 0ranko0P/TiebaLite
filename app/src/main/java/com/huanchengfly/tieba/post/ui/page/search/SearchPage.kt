@@ -96,7 +96,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWith
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBar
-import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.Options
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import kotlinx.collections.immutable.persistentMapOf

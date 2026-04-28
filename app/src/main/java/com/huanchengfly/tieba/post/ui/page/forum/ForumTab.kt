@@ -21,7 +21,7 @@ import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.picker.Options
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.Options
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.launch
 
