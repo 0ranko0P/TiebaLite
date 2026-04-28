@@ -32,12 +32,6 @@
 -keep public class * extends android.content.BroadcastReceiver
 -keep public class * extends android.content.ContentProvider
 
-# 保留在Activity中的方法参数是view的方法，
-# 这样以来我们在layout中写的onClick就不会被影响
-# -keepclassmembers class * extends android.app.Activity{
-#     public void *(android.view.View);
-# }
-
 # 对于带有回调函数的onXXEvent、**On*Listener的，不能被混淆
 -keepclassmembers class * {
     void *(**On*Event);
@@ -67,12 +61,13 @@
     public static *** v(...);
     public static *** d(...);
     public static *** i(...);
-    # public static *** w(...);
-    # public static *** e(...);
 }
 
 # Keep setting classes for SettingsSaver
 -keep class com.huanchengfly.tieba.post.ui.models.settings.* { *; }
+
+# Keep navigation destination
+-keep public class * extends com.huanchengfly.tieba.post.ui.page.Destination
 
 # WebView
 -keepclassmembers class * extends android.webkit.WebViewClient {
@@ -82,24 +77,6 @@
 -keepclassmembers class * extends android.webkit.WebViewClient {
     public void *(android.webkit.WebView, java.lang.String);
 }
-
-# Retain service method parameters when optimizing.
--keepclassmembers,allowshrinking,allowobfuscation interface * {
-    @retrofit2.http.* <methods>;
-}
-
-# Platform calls Class.forName on types which do not exist on Android to determine platform.
--dontnote retrofit2.Platform
-# Platform used when running on RoboVM on iOS. Will not be used at runtime.
--dontnote retrofit2.Platform$IOS$MainThreadExecutor
-# Platform used when running on Java 8 VMs. Will not be used at runtime.
--dontwarn retrofit2.Platform$Java8
-
-# Ignore JSR 305 annotations for embedding nullability information.
--dontwarn javax.annotation.**
-
-# JSR 305 annotations are for embedding nullability information.
--dontwarn javax.annotation.**
 
 -keep class com.huanchengfly.tieba.post.models.** { *; }
 -keep class com.huanchengfly.tieba.post.api.models.** { *; }
@@ -114,26 +91,14 @@
 -keep interface com.yalantis.ucrop** { *; }
 
 # kotlin
--keep class kotlin.** { *; }
 -keep class kotlin.Metadata { *; }
 -dontwarn kotlin.**
 -keepclassmembers class **$WhenMappings {
     <fields>;
 }
--keepclassmembers class kotlin.Metadata {
-    public <methods>;
-}
 -assumenosideeffects class kotlin.jvm.internal.Intrinsics {
     static void checkParameterIsNotNull(java.lang.Object, java.lang.String);
 }
-
-# Retrofit
--dontwarn retrofit2.**
--keep class retrofit2.** { *; }
-
--keep class com.huanchengfly.tieba.post.plugins.** { *; }
-
--keep class com.squareup.wire.** { *; }
 
 # Keep `Companion` object fields of serializable classes.
 # This avoids serializer lookup through `getDeclaredClasses` as done for named companion objects.
@@ -162,28 +127,12 @@
 # @Serializable and @Polymorphic are used at runtime for polymorphic serialization.
 -keepattributes RuntimeVisibleAnnotations,AnnotationDefault
 
-# Keep generic signature of Flow (R8 full mode strips signatures from non-kept items).
--keep,allowobfuscation,allowshrinking class kotlinx.coroutines.flow.Flow
--keep,allowobfuscation,allowshrinking class * extends kotlinx.coroutines.flow.Flow
-
--keep,allowobfuscation,allowshrinking class kotlinx.coroutines.Deferred
--keep,allowobfuscation,allowshrinking class * extends kotlinx.coroutines.Deferred
-
 -keep,allowobfuscation,allowshrinking class com.huanchengfly.tieba.post.api.retrofit.ApiResult
 -keep,allowobfuscation,allowshrinking class * extends com.huanchengfly.tieba.post.api.retrofit.ApiResult
-
--keep public class * extends com.huanchengfly.tieba.post.ui.page.Destination
-
--keep,allowobfuscation,allowshrinking interface retrofit2.Call
--keep,allowobfuscation,allowshrinking class retrofit2.Response
--keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 
 # Retain generic signatures of TypeToken and its subclasses with R8 version 3.0 and higher.
 -keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
 -keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
-
--if interface * { @retrofit2.http.* <methods>; }
--keep,allowobfuscation interface <1>
 
 -keepclassmembers,allowobfuscation class * {
  @com.google.gson.annotations.SerializedName <fields>;
