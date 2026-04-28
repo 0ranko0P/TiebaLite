@@ -71,6 +71,9 @@
     # public static *** e(...);
 }
 
+# Keep setting classes for SettingsSaver
+-keep class com.huanchengfly.tieba.post.ui.models.settings.* { *; }
+
 # WebView
 -keepclassmembers class * extends android.webkit.WebViewClient {
     public void *(android.webkit.WebView, java.lang.String, android.graphics.Bitmap);

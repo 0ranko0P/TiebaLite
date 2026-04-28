@@ -1,10 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page.welcome
 
 import android.Manifest
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,19 +18,24 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.ui.icons.EncryptedMinusCircle
 import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
-import com.huanchengfly.tieba.post.ui.page.settings.AppLinkPreference
-import com.huanchengfly.tieba.post.ui.page.settings.ClipboardPreference
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.BasePreference
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
+import com.huanchengfly.tieba.post.ui.page.settings.appLinkPreference
+import com.huanchengfly.tieba.post.ui.page.settings.clipboardPreference
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPreference
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPrefsScope
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPrefsScreen
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
 import kotlinx.coroutines.launch
+
+private val PermissionTitleVerticalPadding: Dp = 8.dp
 
 @Immutable
 private class PermissionInfo(
@@ -39,24 +45,24 @@ private class PermissionInfo(
     val permission: String
 )
 
-@Composable
-private fun PermissionPref(
-    modifier: Modifier = Modifier,
+private fun SegmentedPrefsScope.permissionPreference(
     info: PermissionInfo,
     onRequest: (PermissionInfo) -> Unit
 ) {
-    BasePreference(
-        modifier = modifier.clickable {
-            onRequest(info)
-        },
-        title = stringResource(id = info.name),
-        summary = stringResource(id = info.description),
-        leadingIcon = info.icon,
-    ) {
-        Text(
-            text = stringResource(R.string.button_grant),
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
+    customPreference {
+        SegmentedPreference(
+            title = info.name,
+            summary = info.description,
+            leadingIcon = info.icon,
+            trailingContent = {
+                Text(
+                    text = stringResource(R.string.button_grant),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight)
+                )
+            },
+            onClick = { onRequest(info) }
         )
     }
 }
@@ -97,36 +103,31 @@ fun PermissionPage(
             else -> R.string.welcome_permission_subtitle
         }
     ) {
-        PrefsScreen(
+        SegmentedPrefsScreen(
             settings = settings,
             initialValue = PrivacySettings(),
+            verticalArrangement = Arrangement.Top,
         ) {
             if (!permissionEssential.isNullOrEmpty()) {
-                Group(
-                    titleRes = R.string.title_permission_essential
-                ) {
+                group(title = R.string.title_permission_essential, titleVerticalPadding = PermissionTitleVerticalPadding) {
                     permissionEssential.fastForEach { info ->
-                        PermissionPref(info = info, onRequest = onRequestPermission)
+                        permissionPreference(info = info, onRequest = onRequestPermission)
                     }
                 }
             }
 
             if (!permissionOpt.isNullOrEmpty()) {
-                Group(
-                    titleRes = R.string.title_permission_optional
-                ) {
+                group(title = R.string.title_permission_optional, titleVerticalPadding = PermissionTitleVerticalPadding) {
                     permissionOpt.fastForEach { info ->
-                        PermissionPref(info = info, onRequest = onRequestPermission)
+                        permissionPreference(info = info, onRequest = onRequestPermission)
                     }
                 }
             }
 
-            Group(
-                titleRes = R.string.title_settings_privacy
-            ) {
-                AppLinkPreference()
+            group(title = R.string.title_settings_privacy, titleVerticalPadding = PermissionTitleVerticalPadding) {
+                appLinkPreference()
 
-                ClipboardPreference()
+                clipboardPreference()
             }
         }
     }

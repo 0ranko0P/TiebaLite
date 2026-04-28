@@ -15,17 +15,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.HideSource
 import androidx.compose.material.icons.outlined.NoAccounts
 import androidx.compose.material.icons.outlined.VideocamOff
+import androidx.compose.material.icons.sharp.Restore
+import androidx.compose.material.icons.sharp.SaveAs
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
@@ -54,18 +63,13 @@ import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.ui.models.settings.BlockBackupMetadata
 import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
-import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SwitchPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil
@@ -97,76 +101,60 @@ fun BlockSettingsPage(
         coroutineScope.launch { snackbarHostState.showSnackbar(message) }
     }
 
-    MyScaffold(
-        topBar = {
-            TitleCentredToolbar(
-                title = stringResource(id = R.string.title_block_settings),
-                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) }
-            )
-        },
+    SettingsScaffold(
+        titleRes = R.string.title_block_settings,
+        onBack = navigator::navigateUp,
+        settings = settings,
+        initialValue = BlockSettings(),
         snackbarHostState = snackbarHostState,
         snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
-    ) { paddingValues ->
-        PrefsScreen(
-            settings = settings,
-            initialValue = BlockSettings(),
-            contentPadding = paddingValues
-        ) {
-            Item { block ->
-                SwitchPref(
-                    checked = block.hideBlocked,
-                    onCheckedChange = {
-                        updatePreference { old -> old.copy(hideBlocked = it) }
-                    },
-                    title = R.string.settings_hide_blocked_content,
-                    leadingIcon = Icons.Outlined.HideSource
-                )
-            }
+    ) {
+        group(title = R.string.settings_group_block) {
+            toggleablePreference(
+                property = BlockSettings::hideBlocked,
+                title = R.string.settings_hide_blocked_content,
+                leadingIcon = Icons.Outlined.HideSource
+            )
 
-            Item { block ->
-                SwitchPref(
-                    checked = block.blockVideo,
-                    onCheckedChange = {
-                        updatePreference { old -> old.copy(blockVideo = it) }
-                    },
-                    title = R.string.settings_block_video,
-                    summary = R.string.settings_block_video_summary,
-                    leadingIcon = Icons.Outlined.VideocamOff
-                )
-            }
+            toggleablePreference(
+                property = BlockSettings::blockVideo,
+                title = R.string.settings_block_video,
+                summary = R.string.settings_block_video_summary,
+                leadingIcon = Icons.Outlined.VideocamOff
+            )
+        }
 
-            TextItem {
-                TextPref(
-                    title = stringResource(id = R.string.settings_block_forum),
-                    leadingIcon = Icons.Outlined.Forum,
-                    onClick = {
-                        navigator.navigate(route = SettingsDestination.ForumBlockList)
-                    }
-                )
-            }
+        group(title = R.string.settings_group_block_rule) {
+            preference(
+                title = R.string.settings_block_forum,
+                leadingIcon = Icons.Outlined.Forum,
+                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                onClick = {
+                    navigator.navigate(route = SettingsDestination.ForumBlockList)
+                }
+            )
 
-            TextItem {
-                TextPref(
-                    title = stringResource(id = R.string.settings_block_user),
-                    leadingIcon = Icons.Outlined.NoAccounts,
-                    onClick = {
-                        navigator.navigate(route = SettingsDestination.UserBlockList)
-                    }
-                )
-            }
+            preference(
+                title = R.string.settings_block_user,
+                leadingIcon = Icons.Outlined.NoAccounts,
+                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                onClick = {
+                    navigator.navigate(route = SettingsDestination.UserBlockList)
+                }
+            )
 
-            TextItem {
-                TextPref(
-                    title = stringResource(id = R.string.settings_block_keyword),
-                    leadingIcon = Icons.Outlined.Block,
-                    onClick = {
-                        navigator.navigate(route = SettingsDestination.KeywordBlockList)
-                    }
-                )
-            }
+            preference(
+                title = R.string.settings_block_keyword,
+                leadingIcon = Icons.Outlined.Block,
+                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                onClick = {
+                    navigator.navigate(route = SettingsDestination.KeywordBlockList)
+                }
+            )
 
-            TextItem {
+            customPreference {
                 BlockRuleBackupPreference(
+                    modifier = Modifier.padding(top = 2.dp),
                     onBackup = viewModel::onBackup,
                     onRestore = { uri ->
                         viewModel.onRestoreFilePicked(uri)
@@ -175,6 +163,7 @@ fun BlockSettingsPage(
                 )
             }
         }
+    }
 
         StrongBox {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -194,7 +183,6 @@ fun BlockSettingsPage(
                 )
             }
         }
-    }
 }
 
 @Composable
@@ -217,23 +205,25 @@ private fun BlockRuleBackupPreference(
         if (uri != null) onRestore(uri)
     }
 
-    val options = listOf(R.string.button_backup, R.string.button_restore)
-    val shapes = listOf(
-        ButtonDefaults.shapes(
-            shape = ButtonGroupDefaults.connectedLeadingButtonShape,
-            pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape
-        ),
-        ButtonDefaults.shapes(
-            shape = ButtonGroupDefaults.connectedTrailingButtonShape,
-            pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape
-        )
+    val options = listOf(
+        R.string.button_backup to Icons.Sharp.SaveAs,
+        R.string.button_restore to Icons.Sharp.Restore,
     )
 
+    val shapes = remember {
+        val shape = ShapeDefaults.ExtraSmall
+        val overrideCorner = ShapeDefaults.Large.bottomStart
+        listOf(
+            ButtonShapes(shape = shape.copy(bottomStart = overrideCorner), pressedShape = shape),
+            ButtonShapes(shape = shape.copy(bottomEnd = overrideCorner), pressedShape = shape)
+        )
+    }
+
     Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
     ) {
-        options.fastForEachIndexed { index, label ->
+        options.fastForEachIndexed { index, (label, icon) ->
             Button(
                 onClick = {
                     when (label) {
@@ -250,7 +240,15 @@ private fun BlockRuleBackupPreference(
                 shapes = shapes[index],
                 contentPadding = ButtonDefaults.MediumContentPadding,
             ) {
-                Text(text = stringResource(label))
+                Icon(icon, contentDescription = null)
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Text(
+                    text = stringResource(label),
+                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodyLarge // Use SegmentedListItem font style
+                )
             }
         }
     }

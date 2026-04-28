@@ -563,7 +563,7 @@ private fun SingleRowTopAppBar(
 @Composable
 fun CollapsingAvatarTopAppBar(
     modifier: Modifier = Modifier,
-    avatar: @Composable BoxScope.() -> Unit,
+    avatar: @Composable (BoxScope.() -> Unit)?,
     title: @Composable () -> Unit,
     titleHorizontalAlignment: Alignment.Horizontal = Alignment.Start,
     subtitle: (@Composable () -> Unit)? = null,
@@ -1112,7 +1112,7 @@ private fun CollapsingAvatarTopAppBarLayout(
     titleContentColor: Color,
     subtitleContentColor: Color,
     actionIconContentColor: Color,
-    avatar: @Composable BoxScope.() -> Unit,
+    avatar: @Composable (BoxScope.() -> Unit)?,
     title: @Composable () -> Unit,
     titleVerticalArrangement: Arrangement.Vertical,
     titleHorizontalAlignment: Alignment.Horizontal,
@@ -1133,7 +1133,9 @@ private fun CollapsingAvatarTopAppBarLayout(
                 )
             }
 
-            Box(modifier = Modifier.layoutId("avatar"), content = avatar)
+            if (avatar != null) {
+                Box(modifier = Modifier.layoutId("avatar"), content = avatar)
+            }
 
             val titleContentAlignment = if (titleHorizontalAlignment == Alignment.CenterHorizontally) {
                 Alignment.TopCenter
@@ -1249,18 +1251,22 @@ private class CollapsingAvatarTopBarMeasurePolicy(
             null
         }
 
-        val avatarPadding = IntSize(
-            lerp(CollapsedAvatarHorizontalPadding.roundToPx(), 0, collapsedFraction),
-            lerp(CollapsedAvatarVerticalPadding.roundToPx(), 0, collapsedFraction)
-        )
-
         val avatarMaxSize = min(avatarMax.roundToPx(), constraints.maxWidth)
         val avatarMinSize = max(CollapsedAvatarSize.roundToPx(), constraints.minWidth)
         val avatarWidth = lerp(avatarMaxSize, avatarMinSize, slowInCollapseFraction)
         val avatarPlaceable =
             measurables
-                .fastFirst { it.layoutId == "avatar" }
-                .measure(Constraints.fixed(avatarWidth, avatarWidth))
+                .fastFirstOrNull { it.layoutId == "avatar" }
+                ?.measure(Constraints.fixed(avatarWidth, avatarWidth))
+
+        val avatarPadding = if (avatarPlaceable != null) {
+            IntSize(
+                width = lerp(CollapsedAvatarHorizontalPadding.roundToPx(), 0, collapsedFraction),
+                height = lerp(CollapsedAvatarVerticalPadding.roundToPx(), 0, collapsedFraction)
+            )
+        } else {
+            IntSize.Zero
+        }
 
         val maxTitleWidth =
             if (constraints.maxWidth == Constraints.Infinity) {
@@ -1311,7 +1317,7 @@ private class CollapsingAvatarTopBarMeasurePolicy(
         } ?: 0
 
         val topExpandingOffset = lerp(MinAvatarOffset.roundToPx(), 0, collapsedFraction)
-        val maxElementHeight = max(avatarPlaceable.height, titlePlaceable.height + subtitleExpandingOffset)
+        val maxElementHeight = max(avatarPlaceable?.height ?: 0, titlePlaceable.height + subtitleExpandingOffset)
         val maxLayoutHeight = max(
             height.roundToPx(),
             maxElementHeight + topExpandingOffset + avatarPadding.height * 2 + extraContentHeight
@@ -1377,7 +1383,7 @@ private class CollapsingAvatarTopBarMeasurePolicy(
         maxLayoutHeight: Int,
         extraContentHeight: Int,
         navigationIconPlaceable: Placeable,
-        avatarPlaceable: Placeable,
+        avatarPlaceable: Placeable?,
         titlePlaceable: Placeable,
         subtitlePlaceable: Placeable?,
         actionIconsPlaceable: Placeable,
@@ -1411,7 +1417,7 @@ private class CollapsingAvatarTopBarMeasurePolicy(
             )
 
             // Avatar composable
-            avatarPlaceable.placeRelative(
+            avatarPlaceable?.placeRelative(
                 x = start,
                 y = (headerLayoutHeight - avatarPlaceable.height) / 2 + topExpandingOffset
             )
@@ -1420,7 +1426,7 @@ private class CollapsingAvatarTopBarMeasurePolicy(
             titlePlaceable.let {
                 // Add extra padding between avatar and title
                 val titlePadding = lerp(TopAppBarHorizontalPadding.roundToPx() * 2, 0, collapsedFraction)
-                start = start + avatarPlaceable.width + titlePadding
+                start += (avatarPlaceable?.width?: 0) + titlePadding
                 val end = actionIconsPlaceable.width
                 // Align using the maxWidth. We will adjust the position later according to the
                 // start and end. This is done to ensure that a center alignment is still maintained

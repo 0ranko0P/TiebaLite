@@ -4,6 +4,10 @@ import androidx.compose.ui.graphics.Color
 
 val Blue200 = Color(0xFF90CAF9)
 
+val BlueGrey700 = Color(0xFF455A64)
+
+val Green800 = Color(0xFF2E7D32)
+
 val Grey50 = Color(0xFFFAFAFA)
 val Grey100 = Color(0xFFF5F5F5)
 val Grey200 = Color(0xFFEEEEEE)
@@ -15,13 +19,17 @@ val Grey700 = Color(0xFF616161)
 val Grey800 = Color(0xFF424242)
 val Grey900 = Color(0xFF212121)
 
+val Cyan800 = Color(0xFF00838F)
+
 val OrangeA700 = Color(0xFFFF6D00)
 
 val YellowA700 = Color(0xFFFFD600)
 
 val Purple100 = Color(0xFFE1BEE7)
+val Purple800 = Color(0xFF4527A0)
 
 val RedA700 = Color(0xFFD50000)
+val Red800 = Color(0xFFC62828)
 
 // Primary color of Built-in Themes
 val BlueViolet = Color(0xFF8A2BE2)

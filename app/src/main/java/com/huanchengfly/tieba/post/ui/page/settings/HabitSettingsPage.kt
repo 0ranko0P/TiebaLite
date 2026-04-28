@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.settings
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.outlined.CalendarViewDay
 import androidx.compose.material.icons.outlined.PhotoSizeSelectActual
@@ -9,26 +10,17 @@ import androidx.compose.material.icons.outlined.SecurityUpdateWarning
 import androidx.compose.material.icons.outlined.SpeakerNotesOff
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.Verified
-import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material.icons.rounded.UnfoldLess
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.ui.icons.PageHeader
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.WaterType
-import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.ListPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScope
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SwitchPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegmentedPrefsScope
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.toggleablePreference
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import kotlinx.collections.immutable.persistentMapOf
 
@@ -38,122 +30,80 @@ fun HabitSettingsPage(
     onStickyHeaderClicked: () -> Unit,
     onBack: () -> Unit,
 ) {
-    MyScaffold(
-        backgroundColor = Color.Transparent,
-        topBar = {
-            TitleCentredToolbar(
-                title = stringResource(id = R.string.title_settings_read_habit),
-                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) }
+    SettingsScaffold(
+        titleRes = R.string.title_settings_read_habit,
+        onBack = onBack,
+        settings = habitSettings,
+        initialValue = HabitSettings()
+    ) {
+        group(title = R.string.settings_group_media) {
+            imageLoadPreference()
+
+            listPref(
+                property = HabitSettings::imageWatermarkType,
+                title = R.string.title_settings_image_watermark,
+                options = persistentMapOf(
+                    WaterType.NO to R.string.title_image_watermark_none,
+                    WaterType.USER_NAME to R.string.title_image_watermark_user_name,
+                    WaterType.FORUM_NAME to R.string.title_image_watermark_forum_name
+                ),
+                leadingIcon = Icons.AutoMirrored.Outlined.BrandingWatermark
             )
-        },
-    ) { paddingValues ->
-        PrefsScreen(
-            settings = habitSettings,
-            initialValue = HabitSettings(),
-            contentPadding = paddingValues
-        ) {
-            ImageLoadPreference()
 
-            Item { habit ->
-                ListPref(
-                    value = habit.imageWatermarkType,
-                    title = R.string.title_settings_image_watermark,
-                    onValueChange = { newType ->
-                        updatePreference { old -> old.copy(imageWatermarkType = newType) }
-                    },
-                    options = persistentMapOf(
-                        WaterType.NO to R.string.title_image_watermark_none,
-                        WaterType.USER_NAME to R.string.title_image_watermark_user_name,
-                        WaterType.FORUM_NAME to R.string.title_image_watermark_forum_name
-                    ),
-                    leadingIcon = Icons.AutoMirrored.Outlined.BrandingWatermark
-                )
-            }
+            toggleablePreference(
+                property = HabitSettings::hideMedia,
+                title = R.string.title_hide_media,
+                leadingIcon = Icons.Rounded.UnfoldLess
+            )
+        }
 
-            DefaultSortPreference()
+        group(title = R.string.settings_group_forum) {
+            forumSortPreference()
+        }
 
-            Item { habit ->
-                SwitchPref(
-                    checked = habit.hideMedia,
-                    onCheckedChange = {
-                        updatePreference { old -> old.copy(hideMedia = it) }
-                    },
-                    title = R.string.title_hide_media,
-                    leadingIcon = Icons.Rounded.UnfoldLess
-                )
-            }
+        group(title = R.string.settings_group_thread) {
+            toggleablePreference(
+                property = HabitSettings::showBothName,
+                title = R.string.title_show_both_username_and_nickname,
+                leadingIcon = Icons.Outlined.Verified
+            )
 
-            CollectSeeLzPreference()
+            preference(
+                title = R.string.title_settings_sticky_header,
+                summary = R.string.tip_sticky_header,
+                onClick = onStickyHeaderClicked,
+                leadingIcon = Icons.Rounded.PageHeader,
+                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            )
 
-            Item { habit ->
-                SwitchPref(
-                    checked = habit.collectedDesc,
-                    onCheckedChange = {
-                        updatePreference { old -> old.copy(collectedDesc = it)}
-                    },
-                    title = R.string.settings_collect_thread_desc_sort,
-                    leadingIcon = Icons.AutoMirrored.Rounded.Sort,
-                    summaryOn = R.string.tip_collect_thread_desc_sort_on,
-                    summaryOff = R.string.tip_collect_thread_desc_sort
-                )
-            }
+            collectSeeLzPreference() // 收藏贴自动只看楼主
 
-            Item { habit ->
-                SwitchPref(
-                    checked = habit.showBothName,
-                    onCheckedChange = {
-                        updatePreference { old -> old.copy(showBothName = it) }
-                    },
-                    title = R.string.title_show_both_username_and_nickname,
-                    leadingIcon = Icons.Outlined.Verified
-                )
-            }
+            toggleablePreference(
+                property = HabitSettings::collectedDesc,
+                title = R.string.settings_collect_thread_desc_sort,
+                leadingIcon = Icons.AutoMirrored.Rounded.Sort,
+                summaryOn = R.string.tip_collect_thread_desc_sort_on,
+                summaryOff = R.string.tip_collect_thread_desc_sort
+            )
+        }
 
-            Item { habit ->
-                SwitchPref(
-                    checked = habit.showHistoryInHome,
-                    onCheckedChange = {
-                        updatePreference { old -> old.copy(showHistoryInHome = it) }
-                    },
-                    title = R.string.settings_home_page_show_history_forum,
-                    leadingIcon = Icons.Outlined.WatchLater
-                )
-            }
+        group(title = R.string.settings_group_reply) {
+            hideReplyPreference()
 
-            TextItem {
-                TextPref(
-                    title = stringResource(id = R.string.title_settings_sticky_header),
-                    onClick = onStickyHeaderClicked,
-                    leadingIcon = Icons.Rounded.PageHeader,
-                )
-            }
-
-            HideReplyPreference()
-
-            Item { habit ->
-                SwitchPref(
-                    checked = habit.hideReplyWarning,
-                    onCheckedChange = {
-                        updatePreference { old -> old.copy(hideReplyWarning = it) }
-                    },
-                    title = R.string.title_hide_reply_warning,
-                    enabled = !habit.hideReply,
-                    leadingIcon = Icons.Outlined.SecurityUpdateWarning
-                )
-            }
+            toggleablePreference(
+                property = HabitSettings::hideReplyWarning,
+                title = R.string.title_hide_reply_warning,
+                enabled = !currentPreference.hideReply,
+                leadingIcon = Icons.Outlined.SecurityUpdateWarning
+            )
         }
     }
 }
 
-@Composable
-fun PrefsScope<HabitSettings>.ImageLoadPreference(modifier: Modifier = Modifier) = Item { habit ->
-    ListPref(
-        modifier = modifier,
-        value = habit.imageLoadType,
+fun SettingsSegmentedPrefsScope<HabitSettings>.imageLoadPreference() {
+    listPref(
+        property = HabitSettings::imageLoadType,
         title = R.string.title_settings_image_load_type,
-        onValueChange = { newLoadType ->
-            updatePreference { old -> old.copy(imageLoadType = newLoadType) }
-        },
         options = persistentMapOf(
             ImageUtil.SETTINGS_SMART_ORIGIN to R.string.title_image_load_type_smart_origin,
             ImageUtil.SETTINGS_SMART_LOAD to R.string.title_image_load_type_smart_load,
@@ -163,31 +113,21 @@ fun PrefsScope<HabitSettings>.ImageLoadPreference(modifier: Modifier = Modifier)
     )
 }
 
-@Composable
-fun PrefsScope<HabitSettings>.DefaultSortPreference(modifier: Modifier = Modifier) = Item { habit ->
-    ListPref(
-        modifier = modifier,
-        value = habit.forumSortType,
+fun SettingsSegmentedPrefsScope<HabitSettings>.forumSortPreference() {
+    listPref(
+        property = HabitSettings::forumSortType,
         title = R.string.title_settings_default_sort_type,
         options = persistentMapOf(
             ForumSortType.BY_REPLY to R.string.title_sort_by_reply,
             ForumSortType.BY_SEND to R.string.title_sort_by_send,
         ),
-        onValueChange = {
-            updatePreference { old -> old.copy(forumSortType = it)}
-        },
         leadingIcon = Icons.Outlined.CalendarViewDay
     )
 }
 
-@Composable
-fun PrefsScope<HabitSettings>.CollectSeeLzPreference(modifier: Modifier = Modifier) = Item { habit ->
-    SwitchPref(
-        modifier = modifier,
-        checked = habit.collectedDesc,
-        onCheckedChange = {
-            updatePreference { old -> old.copy(collectedDesc = it) }
-        },
+fun SettingsSegmentedPrefsScope<HabitSettings>.collectSeeLzPreference() {
+    toggleablePreference(
+        property = HabitSettings::collectedDesc,
         title = R.string.settings_collect_thread_see_lz,
         leadingIcon = Icons.Outlined.StarOutline,
         summaryOn = R.string.tip_collect_thread_see_lz_on,
@@ -195,14 +135,9 @@ fun PrefsScope<HabitSettings>.CollectSeeLzPreference(modifier: Modifier = Modifi
     )
 }
 
-@Composable
-fun PrefsScope<HabitSettings>.HideReplyPreference(modifier: Modifier = Modifier) = Item { habit ->
-    SwitchPref(
-        modifier = modifier,
-        checked = habit.hideReply,
-        onCheckedChange = {
-            updatePreference { old -> old.copy(hideReply = it) }
-        },
+fun SettingsSegmentedPrefsScope<HabitSettings>.hideReplyPreference() {
+    toggleablePreference(
+        property = HabitSettings::hideReply,
         title = R.string.title_hide_reply,
         leadingIcon = Icons.Outlined.SpeakerNotesOff
     )

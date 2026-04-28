@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -78,14 +77,14 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.settings.CollectSeeLzPreference
-import com.huanchengfly.tieba.post.ui.page.settings.DarkImagePreference
-import com.huanchengfly.tieba.post.ui.page.settings.DarkThemeModePreference
-import com.huanchengfly.tieba.post.ui.page.settings.DefaultSortPreference
-import com.huanchengfly.tieba.post.ui.page.settings.ForumListPreference
-import com.huanchengfly.tieba.post.ui.page.settings.HideReplyPreference
-import com.huanchengfly.tieba.post.ui.page.settings.ImageLoadPreference
-import com.huanchengfly.tieba.post.ui.page.settings.ReduceEffectPreference
+import com.huanchengfly.tieba.post.ui.page.settings.collectSeeLzPreference
+import com.huanchengfly.tieba.post.ui.page.settings.darkImagePreference
+import com.huanchengfly.tieba.post.ui.page.settings.darkThemeModePreference
+import com.huanchengfly.tieba.post.ui.page.settings.forumListPreference
+import com.huanchengfly.tieba.post.ui.page.settings.forumSortPreference
+import com.huanchengfly.tieba.post.ui.page.settings.hideReplyPreference
+import com.huanchengfly.tieba.post.ui.page.settings.imageLoadPreference
+import com.huanchengfly.tieba.post.ui.page.settings.reduceEffectPreference
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
@@ -94,8 +93,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.containerColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.contentColor
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPrefsScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewState
 import kotlinx.coroutines.CoroutineScope
@@ -281,9 +279,7 @@ fun DualTitleContent(
         if (content != null) {
             Spacer(modifier = Modifier.weight(0.75f))
             Box(
-                modifier = Modifier
-                    .height(IntrinsicSize.Min)
-                    .padding(12.dp, Dp.Hairline, 18.dp, Dp.Hairline), // Visually aligned
+                modifier = Modifier.padding(start = 12.dp, end = 18.dp), // Visually aligned
                 content = content
             )
             Spacer(modifier = Modifier.weight(0.25f))
@@ -368,14 +364,18 @@ private fun HabitPage(modifier: Modifier = Modifier, habitSettings: Settings<Hab
         title = R.string.welcome_habit,
         subtitle = R.string.welcome_habit_subtitle,
     ) {
-        PrefsScreen(
+        SegmentedPrefsScreen(
             settings = habitSettings,
             initialValue = HabitSettings(),
+            verticalArrangement = Arrangement.Top,
         ) {
-            DefaultSortPreference()
-            CollectSeeLzPreference()
-            HideReplyPreference()
-            ImageLoadPreference()
+            forumSortPreference()
+
+            collectSeeLzPreference()
+
+            hideReplyPreference()
+
+            imageLoadPreference()
         }
     }
 }
@@ -392,22 +392,30 @@ private fun CustomPage(
         modifier = modifier,
         subtitle = R.string.welcome_custom_subtitle,
     ) {
-        PrefsScreen(
+        SegmentedPrefsScreen(
             settings = uiSettings,
             initialValue = UISettings(),
+            verticalArrangement = Arrangement.Top,
         ) {
-            TextPref(
-                title = stringResource(id = R.string.title_theme),
+            preference(
+                title = {
+                    Text(text = stringResource(id = R.string.title_theme))
+                },
                 onClick = onThemeClicked,
-                leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_brush_24)
+                icon = {
+                    Icon(ImageVector.vectorResource(id = R.drawable.ic_brush_24), contentDescription = null)
+                }
             )
-            DarkThemeModePreference()
+
+            darkThemeModePreference()
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                ReduceEffectPreference()
+                reduceEffectPreference()
             } else {
-                DarkImagePreference()
+                darkImagePreference()
             }
-            ForumListPreference()
+
+            forumListPreference()
         }
     }
 }

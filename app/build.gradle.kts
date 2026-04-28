@@ -110,7 +110,6 @@ android {
     packaging {
         resources.excludes += listOf(
             "META-INF/**",
-            "kotlin/**",
             "kotlin-tooling-metadata.json", // Unneeded: See KT-48019
             "**.bin"
         )

@@ -30,6 +30,7 @@ enum class NavigationLabel {
  * @param reduceEffect 降低模糊效果
  * @param setupFinished 设置向导已完成
  * @param homeForumList 吧列表单列显示
+ * @param showHistoryInHome 首页显示最近逛的吧
  * */
 @Immutable
 data class UISettings(
@@ -44,4 +45,5 @@ data class UISettings(
     val reduceEffect: Boolean = false,
     val setupFinished: Boolean = false,
     val homeForumList: Boolean = false,
+    val showHistoryInHome: Boolean = true,
 )

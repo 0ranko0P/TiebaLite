@@ -81,10 +81,10 @@ class HomeViewModel @Inject constructor(
     /**
      * Recent forum history.
      *
-     * @see SettingsRepository.habitSettings
+     * @see SettingsRepository.uiSettings
      * */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val historyFlow: StateFlow<List<ForumHistory>?> = settingsRepo.habitSettings
+    val historyFlow: StateFlow<List<ForumHistory>?> = settingsRepo.uiSettings
         .map { it.showHistoryInHome }
         .distinctUntilChanged()
         .flatMapLatest { showHistory ->

@@ -1,5 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.settings
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -7,152 +9,162 @@ import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.SupervisedUserCircle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.ui.page.Destination.Login
-import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.DropDownPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.EditTextPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.PrefsScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TextPref
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.TipPref
+import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPreference
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.StringLabelOptions
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.LocalAccount
+import com.huanchengfly.tieba.post.utils.StringUtil.normalized
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.launchUrl
-import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+@Composable
+private fun Flow<List<Account>>.collectLabelOptionsAsState(): State<StringLabelOptions<Long>> {
+    return produceState(initialValue = emptyMap(), this) {
+        this@collectLabelOptionsAsState
+            .map { accounts ->
+                accounts.associate { it.uid to it.name }
+            }
+            .collect { value = it }
+    }
+}
 
 @Composable
 fun AccountManagePage(
     myLittleTailSettings: Settings<String>,
     navigator: NavController
 ) {
-    MyScaffold(
-        topBar = {
-            TitleCentredToolbar(
-                title = stringResource(id = R.string.title_account_manage),
-                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) }
-            )
-        },
-    ) { paddingValues ->
-        val context = LocalContext.current
-        val accountUtil = remember { AccountUtil.getInstance() }
-        val account = LocalAccount.current ?: return@MyScaffold
-        val accounts by accountUtil.allAccounts.collectAsStateWithLifecycle(emptyList())
+    val context = LocalContext.current
+    val accountUtil = remember { AccountUtil.getInstance() }
+    val account = LocalAccount.current ?: return
+    val accountName = account.nickname ?: account.name
+    val accounts by accountUtil.allAccounts.collectLabelOptionsAsState()
 
-        PrefsScreen(
-            settings = myLittleTailSettings,
-            initialValue = "",
-            contentPadding = paddingValues
-        ) {
-            TextItem {
-                val accountName = account.nickname ?: account.name
-                if (accounts.size > 1) {
-                    val accountsMap = remember(accounts) {
-                        accounts.associate { it.uid to (it.nickname ?: it.name) }.toImmutableMap()
-                    }
-                    DropDownPref(
-                        value = account.uid,
-                        title = stringResource(id = R.string.title_switch_account),
-                        summary = stringResource(id = R.string.summary_now_account, accountName),
-                        leadingIcon = Icons.Outlined.AccountCircle,
-                        onValueChange = accountUtil::switchAccount,
-                        options = accountsMap
-                    )
-                } else {
-                    TextPref(
-                        title = accountName,
-                        enabled = true,
-                        leadingIcon = Icons.Outlined.AccountCircle
-                    )
-                }
-            }
-
-            TextItem {
-                TextPref(
-                    title = stringResource(id = R.string.title_new_account),
-                    onClick = { navigator.navigate(Login) },
-                    leadingIcon = Icons.Outlined.AddCircleOutline,
+    SettingsScaffold(
+        titleRes = R.string.title_account_manage,
+        onBack = navigator::navigateUp
+    ) {
+        group(verticalPadding = 16.dp) {
+            if (accounts.size > 1) {
+                listPref(
+                    value = account.uid,
+                    title = context.getString(R.string.title_switch_account),
+                    summary = context.getString(R.string.summary_now_account, accountName),
+                    leadingIcon = Icons.Outlined.AccountCircle,
+                    onValueChange = accountUtil::switchAccount,
+                    options = accounts,
+                )
+            } else {
+                preference(
+                    title = accountName,
+                    icon = Icons.Outlined.AccountCircle,
                 )
             }
 
-            TextItem {
-                TipPref {
-                    val tip = remember {
-                        buildAnnotatedString {
-                            withStyle(
-                                style = SpanStyle(fontWeight = FontWeight.Bold)
-                            ) {
-                                append(context.getString(R.string.tip_start))
-                            }
-                            append(context.getString(R.string.tip_account_error))
-                        }
-                    }
+            preference(
+                title = R.string.title_new_account,
+                onClick = { navigator.navigate(Login) },
+                leadingIcon = Icons.Outlined.AddCircleOutline,
+            )
 
-                    Text(text = tip, fontSize = 12.sp)
-                }
-            }
+            customPreference { shapes ->
+                val logoutDialogState = rememberDialogState()
+                SegmentedPreference(
+                    title = R.string.title_exit_account,
+                    shapes = shapes,
+                    onClick = logoutDialogState::show,
+                    leadingIcon = Icons.AutoMirrored.Outlined.Logout
+                )
 
-            TextItem {
-                TextPref(
-                    title = stringResource(id = R.string.title_exit_account),
-                    onClick = {
+                ConfirmDialog(
+                    title = { Text(text = stringResource(R.string.title_exit_account)) },
+                    dialogState = logoutDialogState,
+                    onConfirm = {
                         if (accounts.size == 1) {
                             navigator.navigateUp()
                         }
                         accountUtil.exit(context.applicationContext, account)
-                    },
-                    leadingIcon = Icons.AutoMirrored.Outlined.Logout
+                    }
                 )
             }
+        }
 
-            TextItem {
-                TextPref(
-                    title = stringResource(id = R.string.title_modify_username),
-                    onClick = {
-                        launchUrl(
-                            context,
-                            navigator,
-                            "https://wappass.baidu.com/static/manage-chunk/change-username.html#/showUsername"
-                        )
-                    },
-                    leadingIcon = Icons.Outlined.SupervisedUserCircle,
+        group(title = R.string.settings_group_account_expire, titleVerticalPadding = Dp.Hairline) {
+            customPreference {
+                Text(
+                    text = stringResource(id = R.string.tip_account_error),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
+        }
 
-            TextItem {
-                TextPref(
-                    title = stringResource(id = R.string.title_copy_bduss),
-                    summary = stringResource(id = R.string.summary_copy_bduss),
-                    onClick = { TiebaUtil.copyText(context, account.bduss, isSensitive = true) },
-                    leadingIcon = Icons.Outlined.ContentCopy,
-                )
-            }
+        group(title = R.string.settings_group_account_edit) {
+            preference(
+                title = R.string.title_modify_username,
+                onClick = {
+                    val url = "https://wappass.baidu.com/static/manage-chunk/change-username.html#/showUsername"
+                    launchUrl(context, navigator, url)
+                },
+                leadingIcon = Icons.Outlined.SupervisedUserCircle,
+            )
 
-            Item { myLittleTail ->
-                EditTextPref(
-                    value = myLittleTail,
-                    onValueChanged = { newTail -> updatePreference { newTail } },
+            preference(
+                title = R.string.title_copy_bduss,
+                summary = R.string.summary_copy_bduss,
+                onClick = { TiebaUtil.copyText(context, account.bduss, isSensitive = true) },
+                leadingIcon = Icons.Outlined.ContentCopy,
+            )
+
+            customPreference(key = R.string.title_my_tail) { shapes ->
+                val dialogState = rememberDialogState()
+                val myLittleTail by myLittleTailSettings.collectAsStateWithLifecycle(initialValue = "")
+
+                SegmentedPreference(
                     title = stringResource(id = R.string.title_my_tail),
-                    summary = myLittleTail.ifEmpty { context.getString(R.string.tip_no_little_tail) },
+                    summary = myLittleTail.ifEmpty { stringResource(R.string.tip_no_little_tail) },
+                    shapes = shapes,
                     leadingIcon = Icons.Outlined.Edit,
-                    dialogTitle = stringResource(id = R.string.title_dialog_modify_little_tail),
+                    onClick = dialogState::show
                 )
+
+                if (dialogState.show) {
+                    PromptDialog(
+                        onConfirm = {
+                            val newValue = it.normalized().trim()
+                            if (newValue != myLittleTail) {
+                                myLittleTailSettings.set(newValue)
+                            }
+                        },
+                        dialogState = dialogState,
+                        initialValue = myLittleTail,
+                        title = { Text(text = stringResource(id = R.string.title_dialog_modify_little_tail)) },
+                    )
+                }
             }
         }
     }

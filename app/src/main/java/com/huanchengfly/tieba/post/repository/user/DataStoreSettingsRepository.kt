@@ -141,7 +141,6 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
             imageLoadType = it[intPreferencesKey(KEY_IMAGE_LOAD_TYPE)] ?: ImageUtil.SETTINGS_SMART_ORIGIN,
             imageWatermarkType = it[intPreferencesKey(KEY_IMAGE_WATERMARK_TYPE)] ?: WaterType.FORUM_NAME,
             showBothName = it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true,
-            showHistoryInHome = it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] ?: true,
             stickyHeader = it[booleanPreferencesKey(KEY_STICKY_HEADER)] ?: true,
         )
     }
@@ -157,7 +156,6 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
         it[intPreferencesKey(KEY_IMAGE_LOAD_TYPE)] = habit.imageLoadType
         it[intPreferencesKey(KEY_IMAGE_WATERMARK_TYPE)] = habit.imageWatermarkType
         it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] = habit.showBothName
-        it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] = habit.showHistoryInHome
         it[booleanPreferencesKey(KEY_STICKY_HEADER)] = habit.stickyHeader
         it -= intPreferencesKey(KEY_FORUM_FAB_FUNCTION)
     }
@@ -180,7 +178,6 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
     private const val KEY_REPLY_HIDE = "ui_reply_hide"
     private const val KEY_REPLY_HIDE_WARNING = "ui_reply_hide_warn"
     private const val KEY_SHOW_NICKNAME = "ui_show_both_name"
-    private const val KEY_HOME_PAGE_SHOW_HISTORY = "ui_history_in_home"
     private const val KEY_STICKY_HEADER = "ui_sticky_header"
 }
 
@@ -254,7 +251,8 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
             hideExplore = it[booleanPreferencesKey(KEY_HIDE_EXPLORE)] == true,
             reduceEffect = it[booleanPreferencesKey(KEY_REDUCE_EFFECT)] ?: (Build.VERSION.SDK_INT < Build.VERSION_CODES.S),
             setupFinished = it[booleanPreferencesKey(KEY_SETUP_FINISHED)] == true,
-            homeForumList = it[booleanPreferencesKey(KEY_HOME_SINGLE_FORUM_LIST)] == true
+            homeForumList = it[booleanPreferencesKey(KEY_HOME_SINGLE_FORUM_LIST)] == true,
+            showHistoryInHome = it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] ?: true,
         )
     }
 
@@ -270,6 +268,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
         it[booleanPreferencesKey(KEY_REDUCE_EFFECT)] = ui.reduceEffect
         it[booleanPreferencesKey(KEY_SETUP_FINISHED)] = ui.setupFinished
         it[booleanPreferencesKey(KEY_HOME_SINGLE_FORUM_LIST)] = ui.homeForumList
+        it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] = ui.showHistoryInHome
     }
 
     private const val KEY_APP_ICON = "app_icon"
@@ -290,6 +289,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
     private const val KEY_SETUP_FINISHED = "ui_setup"
     private const val KEY_REDUCE_EFFECT = "ui_reduce_effect"
     private const val KEY_HOME_SINGLE_FORUM_LIST = "ui_forum_list_in_home"
+    private const val KEY_HOME_PAGE_SHOW_HISTORY = "ui_history_in_home"
 }
 
 private object BlockTransformer: PreferenceTransformer<BlockSettings> {

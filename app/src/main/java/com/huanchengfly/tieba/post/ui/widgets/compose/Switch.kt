@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -36,6 +37,7 @@ fun Switch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     colors: SwitchColors = SwitchDefaults.colors(),
+    interactionSource: MutableInteractionSource? = null,
 ) {
     Switch(
         checked = checked,
@@ -52,6 +54,7 @@ fun Switch(
             }
         },
         enabled = enabled,
-        colors = colors
+        colors = colors,
+        interactionSource = interactionSource,
     )
 }
