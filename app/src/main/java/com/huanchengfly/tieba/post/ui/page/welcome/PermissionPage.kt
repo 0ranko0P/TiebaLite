@@ -49,10 +49,11 @@ private fun SegmentedPrefsScope.permissionPreference(
     info: PermissionInfo,
     onRequest: (PermissionInfo) -> Unit
 ) {
-    customPreference {
+    customPreference { shapes ->
         SegmentedPreference(
             title = info.name,
             summary = info.description,
+            shapes = shapes,
             leadingIcon = info.icon,
             trailingContent = {
                 Text(
@@ -106,7 +107,7 @@ fun PermissionPage(
         SegmentedPrefsScreen(
             settings = settings,
             initialValue = PrivacySettings(),
-            verticalArrangement = Arrangement.Top,
+            verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
             if (!permissionEssential.isNullOrEmpty()) {
                 group(title = R.string.title_permission_essential, titleVerticalPadding = PermissionTitleVerticalPadding) {

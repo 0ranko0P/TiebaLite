@@ -72,7 +72,7 @@ val DefaultDialogProperties = AnyPopDialogProperties(
 )
 
 val dialogAdaptiveFraction: Float
-    @ReadOnlyComposable @Composable get() = if (isWindowWidthCompact()) 1.0f else 0.6f
+    @ReadOnlyComposable @Composable get() = if (isWindowWidthCompact()) 0.95f else 0.6f
 
 @Composable
 fun DialogScope.DialogPositiveButton(

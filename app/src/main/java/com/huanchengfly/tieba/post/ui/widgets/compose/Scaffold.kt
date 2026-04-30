@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -52,7 +53,7 @@ import kotlinx.coroutines.launch
 fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifier) {
     val coroutineScope = rememberCoroutineScope()
     val dismissState = rememberSwipeToDismissBoxState()
-    val isVisible by remember { derivedStateOf { hostState.currentSnackbarData != null } }
+    val isVisible by remember(hostState) { derivedStateOf { hostState.currentSnackbarData != null } }
 
     LaunchedEffect(isVisible) {
         if (isVisible && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
@@ -65,6 +66,7 @@ fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState, modifier: Modifier 
             state = dismissState,
             backgroundContent = {},
             modifier = modifier,
+            gesturesEnabled = hostState.currentSnackbarData?.visuals?.duration != SnackbarDuration.Indefinite,
             onDismiss = { direction ->
                 if (direction != SwipeToDismissBoxValue.Settled) {
                     hostState.currentSnackbarData?.dismiss()

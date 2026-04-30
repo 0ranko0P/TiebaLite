@@ -58,8 +58,8 @@ fun Dislike(
                 checkedShape = CircleShape
             )
             val toggleButtonColors = ToggleButtonDefaults.toggleButtonColors(
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             )
 
             Column(

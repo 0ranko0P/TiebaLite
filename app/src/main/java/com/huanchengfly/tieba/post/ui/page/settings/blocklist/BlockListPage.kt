@@ -84,7 +84,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWith
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PlainTooltipBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
-import com.huanchengfly.tieba.post.ui.widgets.compose.defaultSegmentedListItemColors
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedListItemColors
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.coroutines.launch
@@ -292,7 +292,7 @@ private fun <T> BlockListScaffold(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val pagerState = rememberPagerState { pages.size }
 
-    val listItemColors = defaultSegmentedListItemColors
+    val listItemColors = SegmentedListItemColors
     val listItemElevation = ListItemElevation(Dp.Hairline, Dp.Hairline)
     val listContentPadding = PaddingValues(start = 8.dp, top = 16.dp, end = 8.dp, bottom = 48.dp + ExtendedFabHeight)
 

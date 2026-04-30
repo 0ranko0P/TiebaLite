@@ -101,7 +101,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeaderPlaceholder
-import com.huanchengfly.tieba.post.ui.widgets.compose.defaultSegmentedListItemColors
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedListItemColors
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
@@ -123,6 +123,7 @@ fun HistoryPage(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = rememberSnackbarHostState()
     val sharedTransitionScope = LocalSharedTransitionScope.current
+    val scaffoldContentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp + ExtendedFabHeight)
 
     val tabs = remember {
         listOf(
@@ -252,7 +253,7 @@ fun HistoryPage(
             }
         },
     ) { paddingValues ->
-        val contentPadding = paddingValues + PaddingValues(start = 8.dp, end = 8.dp, bottom = 32.dp + ExtendedFabHeight)
+        val contentPadding = paddingValues + scaffoldContentPadding
 
         ProvideNavigator(navigator = navigator) {
             HorizontalPager(
@@ -298,19 +299,23 @@ fun HistoryPage(
 }
 
 @Composable
+private fun TimeText(modifier: Modifier = Modifier, time: Long) {
+    val context = LocalContext.current
+    Text(
+        text = remember(time) { DateTimeUtils.getRelativeTimeString(context, time) },
+        modifier = modifier
+    )
+}
+
+@Composable
 private fun HistoryBaseItem(
     modifier: Modifier = Modifier,
     selected: Boolean,
     avatar: @Composable BoxScope.() -> Unit,
     name: @Composable () -> Unit,
     etc: (@Composable () -> Unit)? = null,
-    time: Long,
+    time: @Composable () -> Unit,
 ) {
-    val context = LocalContext.current
-    val relativeTimeString = remember {
-        DateTimeUtils.getRelativeTimeString(context, time)
-    }
-
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
@@ -335,18 +340,9 @@ private fun HistoryBaseItem(
 
         Column(
             modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Row {
-                Box(modifier = Modifier.weight(1.0f)) {
-                    ProvideTextStyle(MaterialTheme.typography.labelLarge, content = name)
-                }
-
-                Text(
-                    text = relativeTimeString,
-                    modifier = Modifier.padding(start = 6.dp),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+            ProvideTextStyle(MaterialTheme.typography.labelLarge, content = name)
 
             if (etc != null) {
                 ProvideContentColorTextStyle(
@@ -356,6 +352,8 @@ private fun HistoryBaseItem(
                 )
             }
         }
+
+        ProvideTextStyle(MaterialTheme.typography.bodyMedium, content = time)
     }
 }
 
@@ -381,7 +379,7 @@ private fun ForumItem(modifier: Modifier = Modifier, item: ForumHistory, selecte
                 overflow = TextOverflow.MiddleEllipsis,
             )
         },
-        time = item.timestamp
+        time = { TimeText(time = item.timestamp) }
     )
 }
 
@@ -396,17 +394,14 @@ private fun ThreadItem(modifier: Modifier = Modifier, item: ThreadHistory, selec
         },
         name = { Text(text = item.name, maxLines = 1) },
         etc = {
-            Row (
-                modifier = Modifier.padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Text(text = item.title, overflow = TextOverflow.Ellipsis, maxLines = 1)
+        },
+        time = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalAlignment = Alignment.End,
             ) {
-                Text(
-                    text = item.title,
-                    modifier = Modifier.weight(1.0f),
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
-                )
+                TimeText(time = item.timestamp)
 
                 if (item.forum != null) {
                     Surface(
@@ -416,14 +411,12 @@ private fun ThreadItem(modifier: Modifier = Modifier, item: ThreadHistory, selec
                         Text(
                             text = stringResource(R.string.title_forum, item.forum),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            fontWeight = FontWeight.Medium,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.labelMedium,
                         )
                     }
                 }
             }
-        },
-        time = item.timestamp
+        }
     )
 }
 
@@ -454,7 +447,7 @@ private fun UserItem(modifier: Modifier = Modifier, item: UserHistory, selected:
                 modifier = Modifier.sharedUsername(username = it, extraKey)
             )
         } },
-        time = item.timestamp
+        time = { TimeText(time = item.timestamp) }
     )
 }
 
@@ -481,9 +474,9 @@ private fun <T : HistoryUiModel> HistoryColumn(
     onClick: (History) -> Unit,
     onLongClick: (History) -> Unit,
 ) {
-    val listItemColors = defaultSegmentedListItemColors
+    val listItemColors = SegmentedListItemColors
     val listItemElevation = ListItemElevation(Dp.Hairline, Dp.Hairline)
-    val listItemContentPadding = ListItemDefaults.ContentPadding
+    val listItemContentPadding = PaddingValues(10.dp) // ListItem.InteractiveListStartPadding
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -548,8 +541,8 @@ private fun <T : HistoryUiModel> HistoryColumn(
 @Composable
 private fun <T: HistoryUiModel> historySegmentedShapes(index: Int, pagedItems: LazyPagingItems<T>): ListItemShapes {
     val count = pagedItems.itemCount
-    val isFirstItem = index > 0 && pagedItems[index - 1] is HistoryUiModel.DateHeader
-    val isLastItem = index + 1 == count || pagedItems[index + 1] is HistoryUiModel.DateHeader
+    val isFirstItem = index > 0 && pagedItems.peek(index - 1) is HistoryUiModel.DateHeader
+    val isLastItem = index + 1 == count || pagedItems.peek(index + 1) is HistoryUiModel.DateHeader
 
     return when {
         isFirstItem && isLastItem -> ListItemDefaults.shapes().run { copy(shape = selectedShape) }

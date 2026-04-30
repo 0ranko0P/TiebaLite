@@ -34,7 +34,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.unit.Constraints
@@ -63,7 +67,6 @@ fun TabIndicatorScope.FancyAnimatedIndicatorWithModifier(
     var startAnimatable by remember { mutableStateOf<Animatable<Dp, AnimationVector1D>?>(null) }
     var endAnimatable by remember { mutableStateOf<Animatable<Dp, AnimationVector1D>?>(null) }
     val coroutineScope = rememberCoroutineScope()
-    val cornerRadius = CornerRadius(4.5f)
 
     Box(
         Modifier
@@ -136,7 +139,19 @@ fun TabIndicatorScope.FancyAnimatedIndicatorWithModifier(
             }
             .fillMaxSize()
             .drawWithContent {
-                drawRoundRect(color = indicatorColor, cornerRadius = cornerRadius)
+                val path = Path().apply {
+                    val cornerRadius = CornerRadius(size.height, size.height)
+                    addRoundRect(
+                        RoundRect(
+                            rect = Rect(offset = Offset.Zero, size),
+                            topLeft = cornerRadius,
+                            topRight = cornerRadius,
+                            bottomLeft = CornerRadius.Zero,
+                            bottomRight = CornerRadius.Zero
+                        )
+                    )
+                }
+                drawPath(path, indicatorColor)
             }
     )
 }

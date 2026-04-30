@@ -49,7 +49,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
@@ -246,8 +245,7 @@ private fun BlockRuleBackupPreference(
 
                 Text(
                     text = stringResource(label),
-                    fontWeight = FontWeight.Medium,
-                    style = MaterialTheme.typography.bodyLarge // Use SegmentedListItem font style
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
         }

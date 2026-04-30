@@ -367,7 +367,7 @@ private fun HabitPage(modifier: Modifier = Modifier, habitSettings: Settings<Hab
         SegmentedPrefsScreen(
             settings = habitSettings,
             initialValue = HabitSettings(),
-            verticalArrangement = Arrangement.Top,
+            verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
             forumSortPreference()
 
@@ -395,7 +395,7 @@ private fun CustomPage(
         SegmentedPrefsScreen(
             settings = uiSettings,
             initialValue = UISettings(),
-            verticalArrangement = Arrangement.Top,
+            verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
             preference(
                 title = {

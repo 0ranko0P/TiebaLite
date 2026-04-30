@@ -163,7 +163,7 @@ fun StickyHeaderSettingsPage(habitSettings: Settings<HabitSettings>, onBack: () 
 }
 
 @Composable
-fun RadioPreference(
+private fun RadioPreference(
     selected: Boolean,
     @StringRes title: Int,
     modifier: Modifier = Modifier,

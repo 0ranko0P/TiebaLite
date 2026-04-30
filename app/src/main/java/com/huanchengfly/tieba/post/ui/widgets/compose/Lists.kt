@@ -50,8 +50,3 @@ fun ListMenuItem(
         }
     }
 }
-
-val defaultSegmentedListItemColors: ListItemColors
-    @Composable get() = ListItemDefaults.segmentedColors(
-        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
-    )
