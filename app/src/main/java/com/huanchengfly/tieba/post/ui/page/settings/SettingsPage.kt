@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.DoNotDisturbOff
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -46,10 +47,10 @@ import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.theme.BlueGrey700
-import com.huanchengfly.tieba.post.theme.Cyan800
-import com.huanchengfly.tieba.post.theme.Green800
-import com.huanchengfly.tieba.post.theme.Purple800
-import com.huanchengfly.tieba.post.theme.Red800
+import com.huanchengfly.tieba.post.theme.Cyan700
+import com.huanchengfly.tieba.post.theme.Green700
+import com.huanchengfly.tieba.post.theme.Purple700
+import com.huanchengfly.tieba.post.theme.Red700
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.page.Destination.Login
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
@@ -96,7 +97,7 @@ private fun SegmentedPrefsScope.accountPreference(
             title = R.string.title_account_manage,
             summary = R.string.summary_not_logged_in,
             icon = Icons.Rounded.AccountCircle,
-            iconTint = iconTint,
+            iconContainer = iconTint,
             onClick = onLoginClicked,
         )
     }
@@ -118,14 +119,14 @@ fun SettingsPage(navigator: NavController) {
                     navigator.navigateDebounced(route = AccountManage)
                 },
                 onLoginClicked = { navigator.navigateDebounced(route = Login) },
-                iconTint = Purple800,
+                iconTint = Purple700,
             )
 
             mainPreference(
                 title = R.string.title_oksign,
                 summary = R.string.summary_settings_oksign,
                 icon = Icons.Rounded.Checklist,
-                iconTint = Purple800,
+                iconContainer = Purple700,
                 enabled = account != null
             ) {
                 navigator.navigateDebounced(SettingsDestination.OKSign)
@@ -137,7 +138,7 @@ fun SettingsPage(navigator: NavController) {
                 title = R.string.title_block_settings,
                 summary = R.string.summary_block_settings,
                 icon = Icons.Rounded.DoNotDisturbOff,
-                iconTint = Red800,
+                iconContainer = Red700,
             ) {
                 navigator.navigateDebounced(SettingsDestination.BlockSettings)
             }
@@ -148,7 +149,7 @@ fun SettingsPage(navigator: NavController) {
                 title = R.string.title_settings_custom,
                 summary = R.string.summary_settings_custom,
                 icon = Icons.Outlined.FormatPaint,
-                iconTint = Green800,
+                iconContainer = Green700,
             ) {
                 navigator.navigateDebounced(SettingsDestination.UI)
             }
@@ -157,7 +158,7 @@ fun SettingsPage(navigator: NavController) {
                 title = R.string.title_settings_read_habit,
                 summary = R.string.summary_settings_habit,
                 icon = Icons.Outlined.DashboardCustomize,
-                iconTint = Green800,
+                iconContainer = Green700,
             ) {
                 navigator.navigateDebounced(SettingsDestination.Habit)
             }
@@ -168,7 +169,7 @@ fun SettingsPage(navigator: NavController) {
                 title = R.string.title_settings_privacy,
                 summary = R.string.summary_settings_privacy,
                 icon = Icons.Outlined.Shield,
-                iconTint = Cyan800,
+                iconContainer = Cyan700,
             ) {
                 navigator.navigateDebounced(SettingsDestination.Privacy)
             }
@@ -179,7 +180,7 @@ fun SettingsPage(navigator: NavController) {
                 title = R.string.title_settings_more,
                 summary = R.string.summary_settings_more,
                 icon =  Icons.Rounded.MoreHoriz,
-                iconTint = BlueGrey700
+                iconContainer = BlueGrey700
             ) {
                 navigator.navigateDebounced(SettingsDestination.More)
             }
@@ -188,7 +189,7 @@ fun SettingsPage(navigator: NavController) {
                 title = R.string.title_about,
                 summary = R.string.summary_settings_about,
                 icon = Icons.Outlined.Info,
-                iconTint = BlueGrey700
+                iconContainer = BlueGrey700
             ) {
                 navigator.navigate(About)
             }
@@ -219,12 +220,12 @@ private fun SegmentedPrefsScope.mainPreference(
     @StringRes title: Int,
     @StringRes summary: Int,
     icon: ImageVector,
-    iconTint: Color,
+    iconContainer: Color,
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     customPreference(key = title) { shapes ->
-        val iconTint = if (enabled) iconTint else iconTint.copy(0.38f) // ListTokens.ItemDisabledLeadingIconOpacity
+        val iconColor = if (enabled) iconContainer else iconContainer.copy(0.38f) // ListTokens.ItemDisabledLeadingIconOpacity
         SegmentedPreference(
             title = { Text(text = stringResource(id = title)) },
             summary = {
@@ -235,9 +236,10 @@ private fun SegmentedPrefsScope.mainPreference(
                 Box(
                     modifier = Modifier
                         .size(SettingsLeadingIconSize)
-                        .background(iconTint.copy(0.15f), shape = CircleShape),
+                        .background(color = iconColor, shape = CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
+                    val iconTint = if (enabled) Color.White else LocalContentColor.current
                     Icon(imageVector = icon, contentDescription = null, tint = iconTint)
                 }
             },
