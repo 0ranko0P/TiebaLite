@@ -1,17 +1,21 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchColors
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
+import kotlinx.coroutines.flow.filterIsInstance
 
 /**
  *
@@ -29,7 +33,6 @@ import androidx.compose.ui.Modifier
  * @param colors [SwitchColors] that will be used to resolve the colors used for this switch in
  *   different states. See [SwitchDefaults.colors].
  */
-@NonRestartableComposable
 @Composable
 fun Switch(
     checked: Boolean,
@@ -39,6 +42,16 @@ fun Switch(
     colors: SwitchColors = SwitchDefaults.colors(),
     interactionSource: MutableInteractionSource? = null,
 ) {
+    val view = LocalView.current
+    val interactionSource = interactionSource ?: remember { MutableInteractionSource() }
+    LaunchedEffect(interactionSource, view) {
+        interactionSource.interactions
+            .filterIsInstance<PressInteraction.Release>()
+            .collect {
+                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            }
+    }
+
     Switch(
         checked = checked,
         onCheckedChange = onCheckedChange,
@@ -49,7 +62,6 @@ fun Switch(
                     imageVector = Icons.Filled.Check,
                     contentDescription = null,
                     modifier = Modifier.size(SwitchDefaults.IconSize),
-                    tint = if (enabled) colors.checkedTrackColor else LocalContentColor.current
                 )
             }
         },
