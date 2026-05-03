@@ -163,6 +163,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import com.huanchengfly.tieba.post.utils.TiebaUtil
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.Job
@@ -557,7 +558,11 @@ fun ThreadPage(
                         },
                         onShareClick = viewModel::onShareThread,
                         onCopyLinkClick = viewModel::onCopyThreadLink,
-                        onReportClick = { viewModel.onReportThread(navigator) },
+                        onReportClick = {
+                            coroutineScope.launch {
+                                TiebaUtil.reportPost(context, navigator, state.firstPost!!.id.toString())
+                            }
+                        },
                         onDeleteClick = viewModel::onDeleteThread.takeIf { isMyThread },
                         requestCloseMenu = closeBottomSheet,
                         modifier = Modifier

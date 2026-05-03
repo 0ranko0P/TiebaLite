@@ -579,10 +579,6 @@ class ThreadViewModel @Inject constructor(
         ClipBoardLinkDetector.onCopyTiebaLink(link)
     }
 
-    fun onReportThread(navigator: NavController) = viewModelScope.launch {
-        TiebaUtil.reportPost(context, navigator, firstPostId.toString())
-    }
-
     fun onImmersiveModeChanged() {
         if (!isImmersiveMode && !currentState.seeLz) {
             onSeeLzChanged()
