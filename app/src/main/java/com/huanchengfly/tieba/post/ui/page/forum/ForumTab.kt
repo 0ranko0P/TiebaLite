@@ -53,7 +53,7 @@ fun ForumTab(
     SecondaryTabRow(
         selectedTabIndex = currentPage,
         indicator = {
-            FancyAnimatedIndicatorWithModifier(currentPage, verticalPadding = 6.dp)
+            FancyAnimatedIndicatorWithModifier(index = currentPage)
         },
         divider = {},
         containerColor = Color.Transparent,

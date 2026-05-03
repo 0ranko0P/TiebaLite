@@ -56,13 +56,11 @@ private val DEFAULT_INDICATOR_HEIGHT = 3.dp
  * 0Ranko0P changes:
  *   1. border indicator to line indicator
  *   2. remove color animation
- *   3. add vertical padding support
  * */
 @Composable
 fun TabIndicatorScope.FancyAnimatedIndicatorWithModifier(
     index: Int,
     indicatorColor: Color = MaterialTheme.colorScheme.primary,
-    verticalPadding: Dp = Dp.Hairline
 ) {
     var startAnimatable by remember { mutableStateOf<Animatable<Dp, AnimationVector1D>?>(null) }
     var endAnimatable by remember { mutableStateOf<Animatable<Dp, AnimationVector1D>?>(null) }
@@ -133,7 +131,7 @@ fun TabIndicatorScope.FancyAnimatedIndicatorWithModifier(
                 layout(constraints.maxWidth, constraints.maxHeight) {
                     placeable.place(
                         x = indicatorStart + horizontalPadding,
-                        y = constraints.maxHeight - indicatorHeight - verticalPadding.roundToPx()
+                        y = constraints.maxHeight - indicatorHeight
                     )
                 }
             }

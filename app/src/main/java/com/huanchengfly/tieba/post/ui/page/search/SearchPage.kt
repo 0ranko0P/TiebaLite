@@ -369,7 +369,7 @@ private fun SearchTabRow(
     SecondaryTabRow(
         selectedTabIndex = pagerState.currentPage,
         indicator = {
-            FancyAnimatedIndicatorWithModifier(pagerState.currentPage, verticalPadding = 6.dp)
+            FancyAnimatedIndicatorWithModifier(index = pagerState.currentPage)
         },
         divider = {},
         containerColor = Color.Transparent,
