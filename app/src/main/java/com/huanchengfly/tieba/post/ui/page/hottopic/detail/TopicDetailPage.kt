@@ -3,9 +3,12 @@ package com.huanchengfly.tieba.post.ui.page.hottopic.detail
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
@@ -20,12 +23,12 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -129,7 +132,7 @@ fun TopicDetailPage(
                 onRefresh = viewModel::onRefresh,
                 contentPadding = contentPadding,
             ) {
-                Container (
+                Container(
                     modifier = Modifier
                         .nestedScroll(connection = scrollOrientationConnection)
                         .nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -187,36 +190,56 @@ private fun TopicToolbar(
     onBack: () -> Unit = {},
 ) {
     TwoRowsTopAppBar(
-        modifier = modifier,
         title = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Avatar(
-                    data = topicInfo.topicImage,
-                    size =  Sizes.Large,
-                    shape = MaterialTheme.shapes.extraSmall
-                )
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    TopicTitle(text = stringResource(id = R.string.title_topic, topicInfo.topicName))
-
-                    TopicTitle(
-                        text = stringResource(id = R.string.topic_index, topicInfo.idxNum),
-                        style = MaterialTheme.typography.bodySmall,
+            Column(modifier) {
+                /* 图片,标题,排行,热度 */
+                Row(modifier) {
+                    // 图片
+                    Avatar(
+                        data = topicInfo.topicImage,
+                        size = Sizes.Large,
+                        shape = MaterialTheme.shapes.extraSmall
                     )
-                    TopicTitle(
-                        text = stringResource(id = R.string.hot_num, topicInfo.discussNum.getShortNumString()),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                    /* 标题,排行,热度 */
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // 标题
+                        TopicInfo(
+                            text = stringResource(R.string.title_topic, topicInfo.topicName),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        /* 排行,热度 */
+                        Row{
+                            TopicInfo(
+                                text = stringResource(R.string.topic_index, topicInfo.idxNum),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            TopicInfo(
+                                text = stringResource(
+                                    R.string.hot_num,
+                                    topicInfo.discussNum.getShortNumString()
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                // 描述
+                TopicInfo(
+                    text = topicInfo.topicDesc,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 7,
+                )
             }
         },
         smallTitle = {
-            TopicTitle(text = stringResource(id = R.string.title_topic, topicInfo.topicName))
+            TopicInfo(text = stringResource(id = R.string.title_topic, topicInfo.topicName),maxLines = 1)
         },
         navigationIcon = {
             BackNavigationIcon(onBackPressed = onBack)
@@ -227,10 +250,47 @@ private fun TopicToolbar(
 
 @NonRestartableComposable
 @Composable
-private fun TopicTitle(
+private fun TopicInfo(
     modifier: Modifier = Modifier,
     text: String,
-    style: TextStyle = LocalTextStyle.current
+    style: TextStyle = LocalTextStyle.current,
+    maxLines : Int = 1,
 ) {
-    Text(text, modifier, maxLines = 1, overflow = TextOverflow.Ellipsis, style = style)
+    Text(text, modifier, maxLines = maxLines, overflow = TextOverflow.Ellipsis, style = style)
 }
+
+@Preview(showBackground = true, name = "scrollBehavior")
+@Composable
+private fun TopicToolbarPreviewExpanded() {
+    MaterialTheme {
+        TopicToolbar(
+            topicInfo = previewTopicInfo,
+            scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
+            onBack = {},
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "no scrollBehavior")
+@Composable
+private fun TopicToolbarPreviewNoScroll() {
+    MaterialTheme {
+        TopicToolbar(
+            topicInfo = previewTopicInfo,
+            onBack = {},
+        )
+    }
+}
+
+private val previewTopicInfo = TopicInfoBean(
+    topicId = "12345",
+    topicName = "示例话题标题示例话题标题示例话题标题",
+    candle = "",
+    topicDesc = "这是话题的详细描述，用于展示话题详情页顶部的完整内容。这是话题的详细描述，用于展示话题详情页顶部的完整内容。这是话题的详细描述，用于展示话题详情页顶部的完整内容。这是话题的详细描述，用于展示话题详情页顶部的完整内容。",
+    discussNum = 1234567L,
+    topicImage = "",
+    shareTitle = "",
+    sharePic = "",
+    isVideoTopic = 0,
+    idxNum = 1
+)
