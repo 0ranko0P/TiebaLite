@@ -16,6 +16,7 @@ import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.repository.source.local.UserProfileLocalDataSource
 import com.huanchengfly.tieba.post.repository.source.network.UserProfileNetworkDataSource
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.LikeZero
@@ -46,10 +47,12 @@ class UserProfileRepository @Inject constructor(
     @ApplicationContext val context: Context,
     private val threadRepo: PbPageRepository,
     private val userProfileDao: UserProfileDao,
-    private val localDataSource: UserProfileLocalDataSource
+    private val localDataSource: UserProfileLocalDataSource,
+    settingsRepository: SettingsRepository
 ) {
 
     private val networkDataSource = UserProfileNetworkDataSource
+    private val habitSettings = settingsRepository.habitSettings
 
     private val scope = AppBackgroundScope
 
@@ -91,11 +94,13 @@ class UserProfileRepository @Inject constructor(
     fun observeUserProfile(uid: Long): Flow<UserProfile?> = userProfileDao.observeById(uid)
 
     suspend fun loadUserPost(uid: Long, page: Int, cached: Boolean): List<PostListItem> {
-        return loadUserThreadPost(uid, page, cached, isThread = false).mapUiModelPost(context)
+        val showBothName = habitSettings.first().showBothName
+        return loadUserThreadPost(uid, page, cached, isThread = false).mapUiModelPost(context, showBothName)
     }
 
     suspend fun loadUserThread(uid: Long, page: Int, cached: Boolean): List<ThreadItem> {
-        return loadUserThreadPost(uid, page, cached, isThread = true).mapUiModelThreads()
+        val showBothName = habitSettings.first().showBothName
+        return loadUserThreadPost(uid, page, cached, isThread = true).mapUiModelThreads(showBothName)
     }
 
     /**
@@ -162,18 +167,21 @@ class UserProfileRepository @Inject constructor(
 
         private const val PROFILE_EXPIRE_MILL = 0x240C8400 // 7 days
 
-        private fun PostInfoList.getAuthor(): Author {
+        private fun PostInfoList.getAuthor(showBothName: Boolean): Author {
             return Author(
                 id = user_id,
-                name = name_show.takeUnless { it.isEmpty() || it == user_name } ?: user_name,
+                name = StringUtil.getUserNameString(showBothName, user_name, name_show),
                 avatarUrl = StringUtil.getAvatarUrl(user_portrait)
             )
         }
 
-        private suspend fun List<PostInfoList>.mapUiModelPost(context: Context): List<PostListItem> {
+        private suspend fun List<PostInfoList>.mapUiModelPost(
+            context: Context,
+            showBothName: Boolean
+        ): List<PostListItem> {
             if (isEmpty()) return emptyList()
 
-            val author = this.first().getAuthor()
+            val author = this.first().getAuthor(showBothName)
             return withContext(Dispatchers.Default) {
                 map {
                     PostListItem(
@@ -195,10 +203,10 @@ class UserProfileRepository @Inject constructor(
             }
         }
 
-        private suspend fun List<PostInfoList>.mapUiModelThreads(): List<ThreadItem> {
+        private suspend fun List<PostInfoList>.mapUiModelThreads(showBothName: Boolean): List<ThreadItem> {
             if (isEmpty()) return emptyList()
 
-            val author = this.first().getAuthor()
+            val author = this.first().getAuthor(showBothName)
             return withContext(Dispatchers.Default) {
                 map {
                     ThreadItem(

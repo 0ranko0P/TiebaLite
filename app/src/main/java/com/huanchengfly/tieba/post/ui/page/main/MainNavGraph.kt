@@ -15,7 +15,6 @@ import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.ComposeNavigatorDestinationBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.get
-import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
@@ -60,7 +59,15 @@ fun NavGraphBuilder.mainNavGraph(
         parentSharedTransitionScope = parentSharedTransitionScope,
     ) {
         HomePage(
-            onOpenExplore = { nestedNavController.navigateDebounced(MainDestination.Explore) },
+            onOpenExplore = {
+                nestedNavController.navigate(route = MainDestination.Explore) {
+                    launchSingleTop = true
+                    restoreState = true
+                    popUpTo(MainDestination.Home) {
+                        saveState = true
+                    }
+                }
+            },
         )
     }
 

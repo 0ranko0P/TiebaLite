@@ -213,7 +213,7 @@ fun ForumPage(
 
             is ForumUiEvent.PinShortcut.Success -> getString(R.string.toast_send_to_desktop_success)
 
-            is ForumUiEvent.PinShortcut.Failure -> getString(R.string.toast_unlike_failed, it.errorMsg)
+            is ForumUiEvent.PinShortcut.Failure -> getString(R.string.toast_send_to_desktop_failed, it.errorMsg)
 
             is ForumUiEvent.ScrollToTop -> {
                 listStates[it.type.ordinal].scrollToItem(0)

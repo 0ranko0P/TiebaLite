@@ -14,6 +14,7 @@ import com.huanchengfly.tieba.post.api.models.SearchForumBean.ForumInfoBean
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean.MediaInfo.Companion.TYPE_PICTURE
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean.MediaInfo.Companion.TYPE_VIDEO
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean.ThreadInfoBean
+import com.huanchengfly.tieba.post.api.models.SearchThreadBean.UserInfoBean
 import com.huanchengfly.tieba.post.api.models.SearchUserBean.UserBean
 import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
@@ -247,30 +248,30 @@ class SearchRepository @Inject constructor(
          * @param context application context
          * @param showBothName show both username and nickname
          * */
+        private fun UserInfoBean.toAuthor(showBothName: Boolean) = Author(
+            id = userId,
+            name = if (userId != -1L) {
+                StringUtil.getUserNameString(showBothName, userName, showNickname)
+            } else {
+                "@用户已注销"
+            },
+            avatarUrl = StringUtil.getAvatarUrl(portrait)
+        )
+
         private suspend fun List<ThreadInfoBean>.mapUiModel(
             keywordPatterns: List<Pattern>,
             context: Context,
             showBothName: Boolean
         ): List<SearchThreadInfo> = withContext(Dispatchers.Default) {
             map { info ->
-                val author = with(info.user) {
-                    Author(
-                        id = userId,
-                        name = if (userId != -1L) {
-                            StringUtil.getUserNameString(showBothName, userName, showNickname)
-                        } else {
-                            "@用户已注销"
-                        },
-                        avatarUrl = StringUtil.getAvatarUrl(portrait)
-                    )
-                }
+                val author = info.user.toAuthor(showBothName)
 
                 val postHighlightContent: AnnotatedString? = info.postInfo?.run {
-                    buildHighlightContent(buildAnnotatedString(author, content), keywordPatterns)
+                    buildHighlightContent(buildAnnotatedString(user.toAuthor(showBothName), content), keywordPatterns)
                 }
 
                 val mainPostTitleHighlight: AnnotatedString? = info.mainPost?.run {
-                    buildHighlightContent(buildAnnotatedString(author, title), keywordPatterns)
+                    buildHighlightContent(buildAnnotatedString(user.toAuthor(showBothName), title), keywordPatterns)
                 }
 
                 val mainPostHighlight: AnnotatedString? = info.mainPost?.run {

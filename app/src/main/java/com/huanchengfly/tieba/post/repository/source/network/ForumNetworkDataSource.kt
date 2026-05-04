@@ -132,5 +132,15 @@ object ForumNetworkDataSource {
 private fun List<ThreadInfo>.addUsers(userList: List<User>): List<ThreadInfo> {
     if (isEmpty()) return this
     val userMap = userList.associateBy { it.id }
-    return map { it.copy(author = userMap[it.authorId]) }
+    return map { thread ->
+        val user = userMap[thread.authorId]
+        val fallback = thread.author
+
+        thread.copy(
+            author = user?.copy(
+                name = user.name.takeUnless { it.isBlank() } ?: fallback?.name.orEmpty(),
+                nameShow = user.nameShow.takeUnless { it.isBlank() } ?: fallback?.nameShow.orEmpty()
+            ) ?: fallback
+        )
+    }
 }
