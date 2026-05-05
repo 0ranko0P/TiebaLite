@@ -57,7 +57,7 @@ import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AccountManage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingAvatarTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
@@ -271,9 +271,8 @@ fun SettingsTopAppBar(
             colors = colors,
         )
     } else {
-        CollapsingAvatarTopAppBar(
+        CollapsingTopAppBar(
             modifier = modifier,
-            avatar = null,
             title = {
                 Text(
                     text = stringResource(id = titleRes),

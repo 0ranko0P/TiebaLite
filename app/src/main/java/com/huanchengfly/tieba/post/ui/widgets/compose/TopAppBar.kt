@@ -51,6 +51,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -666,6 +667,74 @@ fun CollapsingAvatarTopAppBar(
             content()
         }
     }
+}
+
+
+/**
+ * [Material Design large top app bar](https://m3.material.io/components/top-app-bar/overview)
+ *
+ * Large top app bar with collapsible [subtitle] and extra [content].
+ *
+ * Note that the **collapsedHeight** is hardcoded to [TopAppBarDefaults.TopAppBarExpandedHeight],
+ * the height of a standard TopAppBar.
+ *
+ * @see androidx.compose.material3.LargeTopAppBar
+ *
+ * @param modifier the [Modifier] to be applied to this top app bar
+ * @param title the title to be displayed in the top app bar
+ * @param titleHorizontalAlignment horizontal alignment of the title
+ * @param subtitle the subtitle to be displayed below the title
+ * @param navigationIcon the navigation icon displayed at the start of the top app bar. This should
+ *   typically be an [IconButton] or [IconToggleButton].
+ * @param actions the actions displayed at the end of the top app bar. This should typically be
+ *   [IconButton]s. The default layout here is a [Row], so icons inside will be placed horizontally.
+ * @param expandedHeight this app bar's height. When a specified [scrollBehavior] causes the app bar
+ *   to expand, this value will represent the maximum height that the bar will be allowed to
+ *   expand. This value must be specified and finite, otherwise it will be ignored and replaced
+ *   with [TopAppBarDefaults.LargeAppBarExpandedHeight].
+ * @param windowInsets a window insets that app bar will respect.
+ * @param colors [TopAppBarColors] that will be used to resolve the colors used for this top app bar
+ *   in different states. See [TopAppBarDefaults.topAppBarColors].
+ * @param scrollBehavior a [androidx.compose.material3.ExitUntilCollapsedScrollBehavior] which holds
+ *   various offset values that will be applied by this top app bar to set up its height and colors. A
+ *   scroll behavior is designed to work in conjunction with a scrolled content to change the top
+ *   app bar appearance as the content scrolls. See [TopAppBarScrollBehavior.nestedScrollConnection].
+ * @param collapsibleExtraContent is [content] collapsible.
+ * @param content extra content to be displayed below the top app bar, mostly are [TabRow].
+ * */
+@OptIn(ExperimentalMaterial3Api::class)
+@NonRestartableComposable
+@Composable
+fun CollapsingTopAppBar(
+    modifier: Modifier = Modifier,
+    title: @Composable () -> Unit,
+    titleHorizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    subtitle: (@Composable () -> Unit)? = null,
+    navigationIcon: @Composable () -> Unit = {},
+    actions: @Composable RowScope.() -> Unit = {},
+    expandedHeight: Dp = TopAppBarDefaults.LargeAppBarExpandedHeight,
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
+    colors: TopAppBarColors = TiebaLiteTheme.topAppBarColors,
+    scrollBehavior: TopAppBarScrollBehavior? = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
+    collapsibleExtraContent: Boolean = false,
+    content: (@Composable ColumnScope.() -> Unit)? = null,
+) {
+    CollapsingAvatarTopAppBar(
+        modifier = Modifier,
+        avatar = null,
+        avatarMax = Dp.Hairline,
+        title = title,
+        titleHorizontalAlignment = titleHorizontalAlignment,
+        subtitle = subtitle,
+        navigationIcon = navigationIcon,
+        actions = actions,
+        expandedHeight = expandedHeight,
+        windowInsets = windowInsets,
+        colors = colors,
+        scrollBehavior = scrollBehavior,
+        collapsibleExtraContent = true,
+        content = content
+    )
 }
 
 /**
