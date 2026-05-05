@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page
 
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionLayout
@@ -13,9 +14,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
@@ -67,6 +72,8 @@ import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 
 const val TB_LITE_DOMAIN = "tblite"
 
@@ -312,9 +319,15 @@ private inline fun <reified T : Any> NavGraphBuilder.animatedComposable(
             provider[ComposeNavigator::class],
             T::class,
             typeMap
-        ) {
+        ) { backStackEntry ->
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                content(it)
+                Box(
+                    modifier = Modifier.blockPointerEvents(
+                        transition.targetState == EnterExitState.PostExit
+                    )
+                ) {
+                    content(backStackEntry)
+                }
             }
         }
         .apply {
@@ -327,3 +340,19 @@ private inline fun <reified T : Any> NavGraphBuilder.animatedComposable(
         }
     )
 }
+
+private fun Modifier.blockPointerEvents(enabled: Boolean): Modifier =
+    if (enabled) {
+        pointerInput(Unit) {
+            val context = currentCoroutineContext()
+            awaitPointerEventScope {
+                while (context.isActive) {
+                    awaitPointerEvent(PointerEventPass.Initial)
+                        .changes
+                        .forEach { it.consume() }
+                }
+            }
+        }
+    } else {
+        this
+    }

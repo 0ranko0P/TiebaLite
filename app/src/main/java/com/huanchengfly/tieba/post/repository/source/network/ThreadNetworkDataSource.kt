@@ -108,7 +108,7 @@ object ThreadNetworkDataSource {
         )
 
         if (data.post_list.isEmpty()) {
-            throw TiebaApiException(CommonResponse(ERROR_POST_NOMORE, "没有更多了"))
+            throw TiebaApiException(CommonResponse(errorCode = ERROR_POST_NOMORE))
         }
         if (data.page == null || data.forum == null || data.anti == null) throw TiebaUnknownException
 

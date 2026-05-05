@@ -130,7 +130,11 @@ class ThreadViewModel @Inject constructor(
             _uiState.update {
                 it.copy(isRefreshing = false, isLoadingMore = false, isLoadingLatestReply = false, error = null)
             }
-            sendUiEvent(CommonUiEvent.ToastError(e))
+            if (e.getErrorCode() == Error.ERROR_POST_NOMORE) {
+                sendUiEvent(CommonUiEvent.Toast(this.context.getString(R.string.no_more)))
+            } else {
+                sendUiEvent(CommonUiEvent.ToastError(e))
+            }
         } else {
             errorHandler.handleException(context = context, exception = e)
         }
