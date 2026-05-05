@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.hottopic.detail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -15,27 +17,32 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.bumptech.glide.integration.compose.GlideImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.TopicInfoBean
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -45,17 +52,15 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListene
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.ThreadBlockedTip
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.TwoRowsTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
@@ -179,6 +184,8 @@ fun TopicDetailPage(
     }
 }
 
+private val TopicToolbarExpandedHeight = 180.dp
+
 @Composable
 private fun TopicToolbar(
     modifier: Modifier = Modifier,
@@ -186,51 +193,75 @@ private fun TopicToolbar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
     onBack: () -> Unit = {},
 ) {
-    TwoRowsTopAppBar(
-        modifier = modifier,
-        title = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Avatar(
-                    data = topicInfo.topicImage,
-                    size =  Sizes.Large,
-                    shape = MaterialTheme.shapes.extraSmall
-                )
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    TopicTitle(text = stringResource(id = R.string.title_topic, topicInfo.topicName))
+    val topAppBarColors = TiebaLiteTheme.topAppBarColors
 
-                    TopicTitle(
+    Box(
+        modifier = modifier,
+    ) {
+        if (!TiebaLiteTheme.colorScheme.isTranslucent) {
+            val gradientColors = listOf(
+                Color.Transparent,
+                topAppBarColors.containerColor.copy(alpha = 0.5f),
+                topAppBarColors.containerColor.copy(alpha = 0.9f),
+                topAppBarColors.containerColor,
+            )
+
+            GlideImage(
+                model = topicInfo.topicImage,
+                contentDescription = null,
+                modifier = Modifier
+                    .matchParentSize()
+                    .drawWithContent {
+                        if (scrollBehavior == null || scrollBehavior.state.collapsedFraction < 1) {
+                            drawContent()
+                            drawRect(brush = Brush.verticalGradient(colors = gradientColors))
+                        }
+                    }
+                ,
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        CollapsingTopAppBar(
+            title = {
+                Text(
+                    text = stringResource(id = R.string.title_topic, topicInfo.topicName),
+                    autoSize = TextAutoSize.StepBased(8.sp, LocalTextStyle.current.fontSize),
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                )
+            },
+            subtitle = {
+                Row(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
                         text = stringResource(id = R.string.topic_index, topicInfo.idxNum),
-                        style = MaterialTheme.typography.bodySmall,
                     )
-                    TopicTitle(
+
+                    Text(
                         text = stringResource(id = R.string.hot_num, topicInfo.discussNum.getShortNumString()),
-                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
+            },
+            navigationIcon = {
+                BackNavigationIcon(onBackPressed = onBack)
+            },
+            expandedHeight = TopicToolbarExpandedHeight,
+            colors = topAppBarColors.copy(
+                containerColor = topAppBarColors.containerColor.copy(0.01f) // 99% Transparent
+            ),
+            scrollBehavior = scrollBehavior,
+            collapsibleExtraContent = true,
+        ) {
+            if (topicInfo.topicDesc.isNotEmpty()) {
+                Text(
+                    text = topicInfo.topicDesc,
+                    modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
-        },
-        smallTitle = {
-            TopicTitle(text = stringResource(id = R.string.title_topic, topicInfo.topicName))
-        },
-        navigationIcon = {
-            BackNavigationIcon(onBackPressed = onBack)
-        },
-        scrollBehavior = scrollBehavior,
-    )
-}
-
-@NonRestartableComposable
-@Composable
-private fun TopicTitle(
-    modifier: Modifier = Modifier,
-    text: String,
-    style: TextStyle = LocalTextStyle.current
-) {
-    Text(text, modifier, maxLines = 1, overflow = TextOverflow.Ellipsis, style = style)
+        }
+    }
 }
