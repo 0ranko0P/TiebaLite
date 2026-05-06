@@ -227,7 +227,9 @@ class ForumRepository @Inject constructor(
     }
 
     suspend fun forumSignIn(forumId: Long, forumName: String, tbs: String): SignResultBean.UserInfo {
-        return networkDataSource.forumSignIn(forumId, forumName, tbs)
+        val userInfo = networkDataSource.forumSignIn(forumId, forumName, tbs)
+        homeRepo.onForumSignedIn(forumId)
+        return userInfo
     }
 
     /**

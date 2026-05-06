@@ -8,8 +8,8 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.BuildConfig
-import com.huanchengfly.tieba.post.api.models.MsgBean.MessageBean
 import com.huanchengfly.tieba.post.api.models.ForumGuideBean.LikeForum
+import com.huanchengfly.tieba.post.api.models.MsgBean.MessageBean
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.models.database.Account
@@ -128,6 +128,10 @@ class HomeRepository @Inject constructor(
     }
 
     suspend fun onLikeForum() = refresh(cached = false)
+
+    suspend fun onForumSignedIn(forumId: Long) {
+        localDataSource.updateSignIn(requireAccount().uid, forumId, timestamp = System.currentTimeMillis())
+    }
 
     suspend fun addTopForum(forum: LikedForum) {
         localDataSource.pinForum(forumId = forum.id)
