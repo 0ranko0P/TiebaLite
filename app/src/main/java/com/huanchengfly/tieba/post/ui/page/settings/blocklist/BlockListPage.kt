@@ -155,6 +155,7 @@ private fun ForumBlockDialog(
         onConfirm = onConfirm,
         modifier = modifier,
         dialogState = dialogState,
+        onValueChange = { new, _ -> !new.contains(' ') },
         isError = isError,
         onCancel = onCancel,
         title = { Text(text = stringResource(id = type.contentDescription)) }
