@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.models
 
 import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
+import com.huanchengfly.tieba.post.api.models.protos.PollInfo
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 
 /**
@@ -26,6 +27,7 @@ typealias SimpleForum = Triple<Long, String, String?>
     val originThreadInfo: ImmutableHolder<OriginThreadInfo>?,
     val replyNum: Int,
     val simpleForum: SimpleForum,
+    val pollInfo: PollInfo?,
 ) {
 
     /**
@@ -45,6 +47,7 @@ typealias SimpleForum = Triple<Long, String, String?>
         originThreadInfo: ImmutableHolder<OriginThreadInfo>? = this.originThreadInfo,
         replyNum: Int = this.replyNum,
         simpleForum: SimpleForum = this.simpleForum,
+        pollInfo: PollInfo? = this.pollInfo,
     ) = ThreadInfoData(
         id = this.id,
         title = title,
@@ -53,7 +56,8 @@ typealias SimpleForum = Triple<Long, String, String?>
         like = like,
         originThreadInfo = originThreadInfo,
         replyNum = replyNum,
-        simpleForum = simpleForum
+        simpleForum = simpleForum,
+        pollInfo = pollInfo,
     )
 
     /**

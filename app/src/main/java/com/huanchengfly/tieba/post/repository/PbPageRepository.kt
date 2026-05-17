@@ -317,7 +317,8 @@ class PbPageRepository @Inject constructor(
         like = agree?.let { Like(it) } ?: LikeZero,
         originThreadInfo = origin_thread_info?.takeIf { is_share_thread == 1 }?.wrapImmutable(),
         replyNum = replyNum,
-        simpleForum = forumInfo!!.let { SimpleForum(it.id, it.name, it.avatar) }
+        simpleForum = forumInfo!!.let { SimpleForum(it.id, it.name, it.avatar) },
+        pollInfo = origin_thread_info?.poll_info?.takeIf { it.options.isNotEmpty() },
     )
 }
 

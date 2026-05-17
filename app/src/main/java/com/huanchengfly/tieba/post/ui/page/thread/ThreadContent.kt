@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,12 +19,15 @@ import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AlignVerticalTop
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.sharp.AccessTime
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,6 +41,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,10 +52,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastForEachIndexed
+import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant.testColumn
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.models.protos.PollInfo
+import com.huanchengfly.tieba.post.api.models.protos.PollOption
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.PbContentText
@@ -67,6 +78,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
+import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.SharedTransitionUserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
@@ -75,8 +87,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.DefaultEmptyScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.stickyHeaderBackground
+import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import kotlin.time.Instant
 
 sealed class Type(val key: String) {
     object FirstPost: Type("FirstPost")
@@ -93,6 +108,113 @@ sealed class Type(val key: String) {
 private fun LazyListState.firstVisiblePostOffset(): Int {
     val postItem = layoutInfo.visibleItemsInfo.firstOrNull { it.contentType === Type.Post }
     return postItem?.offset ?: 0
+}
+
+@Composable
+private fun PollOption(title: String, percentage: String, num: Long, total: Long, polled: Boolean) {
+    val colorScheme = MaterialTheme.colorScheme
+    val optionColor = colorScheme.background.copy(0.3f)
+    val progressColor = if (polled) colorScheme.primaryContainer else colorScheme.background
+
+    Row(
+        modifier = Modifier
+            .border(width = 1.dp, color = progressColor, shape = CircleShape)
+            .clip(shape = CircleShape)
+            .drawBehind {
+                val cornerRadius = CornerRadius(size.height, size.height)
+                drawRoundRect(color = optionColor, cornerRadius = cornerRadius)
+                if (num > 0) {
+                    drawRoundRect(
+                        color = progressColor,
+                        size = size.copy(width = size.width * num / total.toFloat()),
+                        cornerRadius = cornerRadius
+                    )
+                }
+            }
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1.0f),
+            color = if (polled) colorScheme.onPrimaryContainer else LocalContentColor.current,
+            maxLines = 1,
+            style = MaterialTheme.typography.labelLarge,
+        )
+
+        Text(text = percentage, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun ThreadPoll(modifier: Modifier = Modifier, info: PollInfo) {
+    val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
+    val percentages = remember {
+        val numberFormat = NumberFormat.getNumberInstance()
+        numberFormat.maximumFractionDigits = 0
+        info.options.fastMap {
+            "${numberFormat.format(it.num / info.total_poll.toDouble() * 100)}%"
+        }
+    }
+    // ID of polled option
+    val polledId = if (info.polled_value.isNotEmpty()) info.polled_value.toIntOrNull() else null
+
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = 2.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+        ) {
+            Text(text = info.title, style = MaterialTheme.typography.titleMedium)
+
+            if (info.total_poll > 0) {
+                Text(
+                    text = stringResource(R.string.text_poll_votes, info.total_poll),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                info.options.fastForEachIndexed { i, it ->
+                    PollOption(
+                        title = it.text,
+                        percentage = percentages[i],
+                        num = it.num,
+                        total = info.total_poll,
+                        polled = it.id == polledId,
+                    )
+                }
+            }
+
+            if (info.end_time > 0) {
+                val endTime = remember {
+                    DateTimeUtils.getRelativeTimeString(context, info.end_time * 1000L)
+                }
+                ProvideContentColor(color = colorScheme.onSurfaceVariant) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.align(Alignment.End),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Sharp.AccessTime, null, modifier = Modifier.size(14.dp))
+
+                        Text(
+                            text = stringResource(R.string.text_poll_end_time, endTime),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -147,6 +269,13 @@ fun StateScreenScope.ThreadContent(
                             val threadId = info.item.tid.toLong()
                             navigator.navigateDebounced(route = Thread(threadId, forumId = info.get { fid }))
                         }
+                    }
+
+                    state.thread?.pollInfo?.let { pollInfo ->
+                        ThreadPoll(
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                            info = pollInfo
+                        )
                     }
 
                     HorizontalDivider(
@@ -624,4 +753,22 @@ private fun ThreadHeaderPreview() {
     TiebaLiteTheme {
         ThreadHeader(replyNum = 999, isSeeLz = true, onSeeLzChanged = {})
     }
+}
+
+@Preview("ThreadPoll")
+@Composable
+private fun ThreadPollPreview() = TiebaLiteTheme {
+    ThreadPoll(
+        info = PollInfo(
+            options = listOf(
+                PollOption(id = 0, num=143, text="Test 1"),
+                PollOption(id = 1, num=25, text="Test 2"),
+                PollOption(id = 2, num=5, text="Test 3"),
+            ),
+            end_time = Instant.parse("2020-08-30T18:00:00Z").epochSeconds.toInt(),
+            total_poll = 173,
+            polled_value = "2",
+            title = "来投票",
+        )
+    )
 }
