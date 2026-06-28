@@ -32,6 +32,7 @@ import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.NavigationLabel
+import com.huanchengfly.tieba.post.ui.models.settings.PlayerSettings
 import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
@@ -126,6 +127,8 @@ class DataStoreSettingsRepository @Inject constructor(
     override val UUIDSettings: Settings<String> = SimpleSettings(stringPreferencesKey("uuid"), "")
 
     override val myLittleTail: Settings<String> = SimpleSettings(stringPreferencesKey("little_tail"), "")
+
+    override val playerSettings: Settings<PlayerSettings> = ComplexSettings(PlayerSettingsTransformer)
 }
 
 private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
@@ -360,4 +363,79 @@ private object ClientConfigTransformer: PreferenceTransformer<ClientConfig> {
     private const val KEY_ACTIVE_TIMESTAMP = "active_timestamp"
     private const val KEY_INSTALL_TIME = "se_install_time"
     private const val KEY_UPDATE_TIME = "se_update_time"
+}
+
+/** 播放器设置持久化转换 */
+private object PlayerSettingsTransformer : PreferenceTransformer<PlayerSettings> {
+    override val get: (Preferences) -> PlayerSettings = {
+        PlayerSettings(
+            longPressSpeed = it[stringPreferencesKey(KEY_LONG_PRESS_SPEED)] ?: "disabled",
+            doubleTapPauseEnabled = it[booleanPreferencesKey(KEY_DOUBLE_TAP_PAUSE)] ?: true,
+            doubleTapSeekEnabled = it[booleanPreferencesKey(KEY_DOUBLE_TAP_SEEK)] ?: true,
+            horizontalSwipeSeekEnabled = it[booleanPreferencesKey(KEY_HORIZONTAL_SWIPE_SEEK)] ?: true,
+            volumeControlEnabled = it[booleanPreferencesKey(KEY_VOLUME_CONTROL)] ?: true,
+            brightnessControlEnabled = it[booleanPreferencesKey(KEY_BRIGHTNESS_CONTROL)] ?: true,
+            backgroundPlayEnabled = it[booleanPreferencesKey(KEY_BACKGROUND_PLAY)] ?: false,
+            pipAutoEnterEnabled = it[booleanPreferencesKey(KEY_PIP_AUTO_ENTER_ENABLED)] ?: true,
+            fullscreenFollowScreenOrientation = it[booleanPreferencesKey(KEY_FULLSCREEN_FOLLOW_SCREEN_ORIENTATION)] ?: false,
+            saveVideoProgress = it[booleanPreferencesKey(KEY_SAVE_VIDEO_PROGRESS)] ?: true,
+            drawSegmentedCache = it[booleanPreferencesKey(KEY_DRAW_SEGMENTED_CACHE)] ?: true,
+            diskCacheEnabled = it[booleanPreferencesKey(KEY_DISK_CACHE_ENABLED)] ?: true,
+            videoCacheLimitMb = it[intPreferencesKey(KEY_VIDEO_CACHE_LIMIT_MB)] ?: 500,
+            forwardBufferSizeMb = it[intPreferencesKey(KEY_FORWARD_BUFFER_SIZE_MB)] ?: 50,
+            advancedBufferSettingsEnabled = it[booleanPreferencesKey(KEY_ADVANCED_BUFFER_SETTINGS_ENABLED)] ?: false,
+            minBufferMs = it[intPreferencesKey(KEY_MIN_BUFFER_MS)] ?: 50_000,
+            maxBufferMs = it[intPreferencesKey(KEY_MAX_BUFFER_MS)] ?: 50_000,
+            bufferForPlaybackMs = it[intPreferencesKey(KEY_BUFFER_FOR_PLAYBACK_MS)] ?: 3_000,
+            bufferForPlaybackAfterRebufferMs = it[intPreferencesKey(KEY_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS)] ?: 5_000,
+            backBufferDurationSec = it[intPreferencesKey(KEY_BACK_BUFFER_DURATION_SEC)] ?: 30,
+            prioritizeCacheSize = it[booleanPreferencesKey(KEY_PRIORITIZE_CACHE_SIZE)] ?: true,
+        )
+    }
+
+    override val set: (MutablePreferences, PlayerSettings) -> Unit = { it, settings ->
+        it[stringPreferencesKey(KEY_LONG_PRESS_SPEED)] = settings.longPressSpeed
+        it[booleanPreferencesKey(KEY_DOUBLE_TAP_PAUSE)] = settings.doubleTapPauseEnabled
+        it[booleanPreferencesKey(KEY_DOUBLE_TAP_SEEK)] = settings.doubleTapSeekEnabled
+        it[booleanPreferencesKey(KEY_HORIZONTAL_SWIPE_SEEK)] = settings.horizontalSwipeSeekEnabled
+        it[booleanPreferencesKey(KEY_VOLUME_CONTROL)] = settings.volumeControlEnabled
+        it[booleanPreferencesKey(KEY_BRIGHTNESS_CONTROL)] = settings.brightnessControlEnabled
+        it[booleanPreferencesKey(KEY_BACKGROUND_PLAY)] = settings.backgroundPlayEnabled
+        it[booleanPreferencesKey(KEY_PIP_AUTO_ENTER_ENABLED)] = settings.pipAutoEnterEnabled
+        it[booleanPreferencesKey(KEY_FULLSCREEN_FOLLOW_SCREEN_ORIENTATION)] = settings.fullscreenFollowScreenOrientation
+        it[booleanPreferencesKey(KEY_SAVE_VIDEO_PROGRESS)] = settings.saveVideoProgress
+        it[booleanPreferencesKey(KEY_DRAW_SEGMENTED_CACHE)] = settings.drawSegmentedCache
+        it[booleanPreferencesKey(KEY_DISK_CACHE_ENABLED)] = settings.diskCacheEnabled
+        it[intPreferencesKey(KEY_VIDEO_CACHE_LIMIT_MB)] = settings.videoCacheLimitMb
+        it[intPreferencesKey(KEY_FORWARD_BUFFER_SIZE_MB)] = settings.forwardBufferSizeMb
+        it[booleanPreferencesKey(KEY_ADVANCED_BUFFER_SETTINGS_ENABLED)] = settings.advancedBufferSettingsEnabled
+        it[intPreferencesKey(KEY_MIN_BUFFER_MS)] = settings.minBufferMs
+        it[intPreferencesKey(KEY_MAX_BUFFER_MS)] = settings.maxBufferMs
+        it[intPreferencesKey(KEY_BUFFER_FOR_PLAYBACK_MS)] = settings.bufferForPlaybackMs
+        it[intPreferencesKey(KEY_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS)] = settings.bufferForPlaybackAfterRebufferMs
+        it[intPreferencesKey(KEY_BACK_BUFFER_DURATION_SEC)] = settings.backBufferDurationSec
+        it[booleanPreferencesKey(KEY_PRIORITIZE_CACHE_SIZE)] = settings.prioritizeCacheSize
+    }
+
+    private const val KEY_LONG_PRESS_SPEED = "video_long_press_speed"
+    private const val KEY_DOUBLE_TAP_PAUSE = "video_double_tap_pause"
+    private const val KEY_DOUBLE_TAP_SEEK = "video_double_tap_seek"
+    private const val KEY_HORIZONTAL_SWIPE_SEEK = "video_horizontal_swipe_seek"
+    private const val KEY_VOLUME_CONTROL = "video_volume_control"
+    private const val KEY_BRIGHTNESS_CONTROL = "video_brightness_control"
+    private const val KEY_BACKGROUND_PLAY = "video_background_play"
+    private const val KEY_PIP_AUTO_ENTER_ENABLED = "video_pip_auto_enter_enabled"
+    private const val KEY_FULLSCREEN_FOLLOW_SCREEN_ORIENTATION = "video_fullscreen_follow_screen_orientation"
+    private const val KEY_SAVE_VIDEO_PROGRESS = "video_save_progress"
+    private const val KEY_DRAW_SEGMENTED_CACHE = "video_draw_segmented_cache"
+    private const val KEY_DISK_CACHE_ENABLED = "video_disk_cache_enabled"
+    private const val KEY_VIDEO_CACHE_LIMIT_MB = "video_cache_limit_mb"
+    private const val KEY_FORWARD_BUFFER_SIZE_MB = "video_forward_buffer_size_mb"
+    private const val KEY_ADVANCED_BUFFER_SETTINGS_ENABLED = "video_advanced_buffer_settings_enabled"
+    private const val KEY_MIN_BUFFER_MS = "video_min_buffer_ms"
+    private const val KEY_MAX_BUFFER_MS = "video_max_buffer_ms"
+    private const val KEY_BUFFER_FOR_PLAYBACK_MS = "video_buffer_for_playback_ms"
+    private const val KEY_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = "video_buffer_for_playback_after_rebuffer_ms"
+    private const val KEY_BACK_BUFFER_DURATION_SEC = "video_back_buffer_duration_sec"
+    private const val KEY_PRIORITIZE_CACHE_SIZE = "video_prioritize_cache_size"
 }

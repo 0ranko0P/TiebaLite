@@ -21,6 +21,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
     <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT" />
     <uses-permission android:name="com.android.launcher.permission.READ_SETTINGS" />
@@ -99,6 +100,7 @@
             android:roundIcon="@mipmap/ic_launcher_new_round"
             android:launchMode="singleTask"
             android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
             android:theme="@style/Theme.Splash"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -240,12 +242,6 @@
             android:theme="@style/Theme.Transparent.NewAppTheme" />
 
         <activity
-            android:name=".activities.VideoViewActivity"
-            android:configChanges="uiMode|screenSize|screenLayout|orientation|navigation"
-            android:theme="@style/Theme.Transparent.PhotoView"
-            android:exported="false" />
-
-        <activity
             android:name=".activities.OKSignActivity"
             android:excludeFromRecents="true"
             android:exported="false">
@@ -272,6 +268,15 @@
                 <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
             </intent-filter>
             <meta-data android:name="photopicker_activity:0:required" android:value="" />
+        </service>
+
+        <service
+            android:name=".services.PlaybackService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
         </service>
 
         <service

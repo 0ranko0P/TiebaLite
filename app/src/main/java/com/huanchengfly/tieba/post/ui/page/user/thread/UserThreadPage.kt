@@ -170,6 +170,7 @@ private fun UserThread(
                 forumId = forumId,
                 forumName = forumName,
                 threadId = thread.id,
+                title = thread.title,
                 medias = thread.medias ?: emptyList(),
                 videoInfo = thread.video,
             )

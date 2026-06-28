@@ -57,6 +57,9 @@ sealed interface SettingsDestination {
 
     @Serializable
     object WorkInfo: SettingsDestination
+
+    @Serializable
+    object PlayerSettings: SettingsDestination
 }
 
 fun NavGraphBuilder.settingsGraph(navController: NavController, settingsRepo: SettingsRepository) {
@@ -124,5 +127,9 @@ fun NavGraphBuilder.settingsGraph(navController: NavController, settingsRepo: Se
 
     composable<SettingsDestination.WorkInfo> {
         WorkInfoPage(onBack = navController::navigateUp)
+    }
+
+    composable<SettingsDestination.PlayerSettings> {
+        PlayerSettingsPage(settings = settingsRepo.playerSettings, onBack = navController::navigateUp)
     }
 }

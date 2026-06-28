@@ -52,12 +52,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.activities.VideoViewActivity
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.FullscreenArgs
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.models.search.SearchMedia
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoCover
 import kotlin.math.min
 
 @Composable
@@ -157,7 +159,10 @@ fun SearchThreadItem(
                     if (item.pictures != null) {
                         SearchPhoto(pics = item.pictures)
                     } else if (item.video != null) {
-                        SearchVideo(video = item.video)
+                        SearchVideo(
+                            video = item.video,
+                            title = item.mainPostTitle?.text
+                        )
                     }
                 }
             }
@@ -203,16 +208,30 @@ fun SearchThreadItem(
 }
 
 @Composable
-private fun SearchVideo(modifier: Modifier = Modifier, video: SearchMedia.Video) {
-    val context = LocalContext.current
-    VideoThumbnail(
+private fun SearchVideo(
+    modifier: Modifier = Modifier,
+    video: SearchMedia.Video,
+    title: String? = null,
+) {
+    val navigator = LocalNavController.current
+    VideoCover(
         modifier = modifier
             .fillMaxWidth(singleMediaFraction)
             .aspectRatio(ratio = 2.0f)
             .clip(MaterialTheme.shapes.small),
-        thumbnailUrl = video.thumbnail,
+        url = video.thumbnail,
         onClick = {
-            VideoViewActivity.launch(context, videoUrl = video.url, thumbnailUrl = video.thumbnail)
+            navigator.navigate(
+                Destination.VideoFullscreen(
+                    args = FullscreenArgs(
+                        videoUrl = video.url,
+                        title = title,
+                        thumbnailUrl = video.thumbnail,
+                        videoWidth = video.dimensions?.width ?: 0,
+                        videoHeight = video.dimensions?.height ?: 0,
+                    ),
+                )
+            )
         }
     )
 }

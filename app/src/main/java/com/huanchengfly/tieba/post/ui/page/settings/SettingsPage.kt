@@ -28,6 +28,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -55,6 +57,7 @@ import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompa
 import com.huanchengfly.tieba.post.ui.page.Destination.Login
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AccountManage
+import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.PlayerSettings
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingTopAppBar
@@ -106,6 +109,7 @@ private fun SegmentedPrefsScope.accountPreference(
 @Composable
 fun SettingsPage(navigator: NavController) {
     val account = LocalAccount.current
+    val playIcon = ImageVector.vectorResource(R.drawable.ic_play_circle)
 
     SettingsScaffold(
         titleRes = R.string.title_settings,
@@ -161,6 +165,15 @@ fun SettingsPage(navigator: NavController) {
                 iconContainer = Green700,
             ) {
                 navigator.navigateDebounced(SettingsDestination.Habit)
+            }
+
+            mainPreference(
+                title = R.string.title_player_settings,
+                summary = R.string.summary_player_settings,
+                icon = playIcon,
+                iconContainer = Green700,
+            ) {
+                navigator.navigateDebounced(PlayerSettings)
             }
         }
 
@@ -301,6 +314,7 @@ fun <T> SettingsScaffold(
     initialValue: T,
     snackbarHostState: SnackbarHostState = rememberSnackbarHostState(),
     snackbarHost: @Composable () -> Unit = { SwipeToDismissSnackbarHost(LocalSnackbarHostState.current) },
+    state: State<T>? = null,
     content: SettingsSegmentedPrefsScope<T>.() -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -325,6 +339,7 @@ fun <T> SettingsScaffold(
             settings = settings,
             initialValue = initialValue,
             contentPadding = contentPadding + SettingsContentPadding,
+            state = state,
             content = content
         )
     }

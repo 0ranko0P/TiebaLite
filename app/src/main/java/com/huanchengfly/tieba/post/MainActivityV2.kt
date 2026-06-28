@@ -1,8 +1,10 @@
 package com.huanchengfly.tieba.post
 
 import android.Manifest
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -26,10 +28,12 @@ import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -47,10 +51,12 @@ import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isHttp
 import com.huanchengfly.tieba.post.components.ShortcutInitializer
 import com.huanchengfly.tieba.post.components.ShortcutInitializer.Companion.TbShortcut
+import com.huanchengfly.tieba.post.di.RepositoryEntryPoint
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.PlayerSettings
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.RootNavGraph
@@ -66,6 +72,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.FullscreenStore
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.EmoticonManager
@@ -75,6 +82,7 @@ import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -84,12 +92,20 @@ val LocalHabitSettings = compositionLocalOf<HabitSettings> { error("No HabitSett
 
 val LocalUISettings = compositionLocalOf { UISettings() }
 
+val LocalFullscreenFollowScreenOrientation = staticCompositionLocalOf { false }
+
+val LocalPipAutoEnterEnabled = staticCompositionLocalOf { true }
+
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
 
     private var pendingAppLink by mutableStateOf<Destination?>(null)
 
     private var pendingDeepLink by mutableStateOf<NavDeepLinkRequest?>(null)
+
+    private var shouldEnterPipOnLeaveHint = false
+
+    private var pendingPictureInPictureParams: PictureInPictureParams? = null
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -132,6 +148,43 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
+    /** 画中画模式变更时同步到 [FullscreenStore]，供全屏页和内嵌播放器感知 PiP 状态 */
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        FullscreenStore.setPip(isInPictureInPictureMode)
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            shouldEnterPipOnLeaveHint &&
+            !isInPictureInPictureMode
+        ) {
+            val params = pendingPictureInPictureParams ?: return
+            runCatching { enterPictureInPictureMode(params) }
+        }
+    }
+
+    /** 单 Activity 架构下动态同步自动 PiP 状态，避免离开播放页后残留自动进入配置。 */
+    fun syncAutoEnterPictureInPicture(
+        enabled: Boolean,
+        params: PictureInPictureParams? = null,
+    ) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        // 旧版本靠 leave hint 控制进入时机，新版本只更新参数即可
+        shouldEnterPipOnLeaveHint = enabled
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !isInPictureInPictureMode) {
+            params?.let { runCatching { setPictureInPictureParams(it) } }
+        }
+        params?.let {
+            pendingPictureInPictureParams = it
+        }
+    }
+
     private fun onNewShortcut(shortcut: TbShortcut) {
         ShortcutManagerCompat.reportShortcutUsed(applicationContext, shortcut.id)
     }
@@ -162,10 +215,24 @@ class MainActivityV2 : BaseComposeActivity() {
         val navController = rememberNavController(/* bottomSheetNavigator */)
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+        val context = LocalContext.current
+        val settingsStore =
+            remember(context) {
+                EntryPointAccessors
+                    .fromApplication(
+                        context.applicationContext,
+                        RepositoryEntryPoint::class.java,
+                    ).settingsRepository()
+                    .playerSettings
+            }
+        val playerSettings by settingsStore.collectAsStateWithLifecycle(initialValue = PlayerSettings())
+
         TiebaExtendedTheme(colorsExt = uiState.themeColor) {
             TiebaLiteLocalProvider(
                 habit = uiState.habitSettings ?: return@TiebaExtendedTheme, // Initializing ...
-                uiSettings = uiState.uiSettings ?: return@TiebaExtendedTheme
+                uiSettings = uiState.uiSettings ?: return@TiebaExtendedTheme,
+                pipAutoEnterEnabled = playerSettings.pipAutoEnterEnabled,
+                fullscreenFollowScreenOrientation = playerSettings.fullscreenFollowScreenOrientation,
             ) {
                 val setupFinished = if (welcomeScreen == null) {
                     uiState.uiSettings!!.setupFinished
@@ -250,6 +317,8 @@ class MainActivityV2 : BaseComposeActivity() {
     private fun TiebaLiteLocalProvider(
         habit: HabitSettings,
         uiSettings: UISettings,
+        pipAutoEnterEnabled: Boolean = true,
+        fullscreenFollowScreenOrientation: Boolean = false,
         content: @Composable () -> Unit
     ) {
         val currentAccount by viewModel.account.collectAsStateWithLifecycle(initialValue = null)
@@ -257,6 +326,8 @@ class MainActivityV2 : BaseComposeActivity() {
             LocalAccount provides currentAccount,
             LocalHabitSettings provides habit,
             LocalUISettings provides uiSettings,
+            LocalPipAutoEnterEnabled provides pipAutoEnterEnabled,
+            LocalFullscreenFollowScreenOrientation provides fullscreenFollowScreenOrientation,
             content = content
         )
     }

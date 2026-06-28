@@ -50,7 +50,9 @@ import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.activities.VideoViewActivity
+import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.FullscreenArgs
+import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
@@ -75,7 +77,7 @@ import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoCover
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ThemeUtil
@@ -317,12 +319,14 @@ fun ThreadMedia(
     forumId: Long,
     forumName: String,
     threadId: Long,
+    title: String? = null,
     medias: List<Media> = persistentListOf(),
     videoInfo: ImmutableHolder<VideoInfo>? = null,
 ) {
     if (medias.isEmpty() && videoInfo == null) return
 
     val context = LocalContext.current
+    val navigator = LocalNavController.current
     val habitSettings = LocalHabitSettings.current
     val mediaCount = medias.size
     val isSinglePhoto = mediaCount == 1
@@ -343,14 +347,24 @@ fun ThreadMedia(
                     modifier = Modifier.fillMaxWidth()
                 )
             } else {
-                VideoThumbnail(
+                VideoCover(
                     modifier = Modifier
                         .fillMaxWidth(singleMediaFraction)
                         .aspectRatio(ratio = max(videoInfo.item.aspectRatio(), 16f / 9))
                         .clip(MaterialTheme.shapes.small),
-                    thumbnailUrl = videoInfo.item.thumbnailUrl,
+                    url = videoInfo.item.thumbnailUrl,
                     onClick = {
-                        VideoViewActivity.launch(context, videoInfo.item)
+                        navigator.navigate(
+                            Destination.VideoFullscreen(
+                                args = FullscreenArgs(
+                                    videoUrl = videoInfo.item.videoUrl,
+                                    title = title,
+                                    thumbnailUrl = videoInfo.item.thumbnailUrl,
+                                    videoWidth = videoInfo.item.videoWidth,
+                                    videoHeight = videoInfo.item.videoHeight,
+                                ),
+                            )
+                        )
                     }
                 )
             }
@@ -456,7 +470,7 @@ fun OriginThreadCard(
 ) {
     val imageLoadType = LocalHabitSettings.current.imageLoadType
     val contentRenders = remember(originThreadInfo.item.tid) {
-        originThreadInfo.get { content.buildRenders(imageLoadType) }
+        originThreadInfo.get { content.buildRenders(imageLoadType, title = title) }
     }
 
     Column(
@@ -476,6 +490,7 @@ fun OriginThreadCard(
             forumId = originThreadInfo.get { fid },
             forumName = originThreadInfo.get { fname },
             threadId = originThreadInfo.get { tid.toLong() },
+            title = originThreadInfo.get { title },
             medias = originThreadInfo.item.media,
             videoInfo = originThreadInfo.get { video_info }?.wrapImmutable()
         )
@@ -524,6 +539,7 @@ fun FeedCard(
                 forumId = forumId,
                 forumName = forumName,
                 threadId = thread.id,
+                title = thread.title,
                 medias = thread.medias ?: emptyList(),
                 videoInfo = thread.video,
             )

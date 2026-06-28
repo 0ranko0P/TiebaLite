@@ -5,12 +5,13 @@ import android.os.Build
 import android.text.format.Formatter
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
+import androidx.annotation.OptIn
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemShapes
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,19 +27,25 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.MediaCache
 import com.huanchengfly.tieba.post.components.TiebaWebView.Companion.dumpWebViewVersion
-import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPreference
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import com.huanchengfly.tieba.post.utils.buildAppSettingsIntent
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @SuppressLint("WebViewApiAvailability")
+@OptIn(UnstableApi::class)
 @Composable
 fun MoreSettingsPage(navigator: NavController) {
     val context = LocalContext.current
@@ -78,59 +85,99 @@ fun MoreSettingsPage(navigator: NavController) {
 
         group(title = R.string.settings_group_cache) {
             customPreference {
-                ImageCachePreference(shapes = it)
+                CacheClearPreference(
+                    title = stringResource(id = R.string.title_clear_picture_cache),
+                    getCacheSize = { ImageCacheUtil.getCacheSize(context.applicationContext) },
+                    clearCache = { ImageCacheUtil.clearImageAllCache(context.applicationContext) },
+                    successToastRes = R.string.toast_clear_picture_cache_success,
+                    failureToastRes = R.string.toast_clear_picture_cache_failed,
+                    shapes = it,
+                )
+            }
+
+            customPreference {
+                CacheClearPreference(
+                    title = stringResource(id = R.string.title_clear_video_cache),
+                    getCacheSize = { MediaCache.sizeBytes(context.applicationContext) },
+                    clearCache = {
+                        MediaCache.clear(
+                            context.applicationContext,
+                            excludeCacheKeys = MediaCache.activeKeys(),
+                        )
+                    },
+                    successToastRes = R.string.toast_clear_video_cache_success,
+                    failureToastRes = R.string.toast_clear_video_cache_failed,
+                    shapes = it,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ImageCachePreference(modifier: Modifier = Modifier, shapes: ListItemShapes) {
+private fun CacheClearPreference(
+    title: String,
+    getCacheSize: suspend () -> Long,
+    clearCache: suspend () -> Unit,
+    @StringRes successToastRes: Int,
+    @StringRes failureToastRes: Int,
+    modifier: Modifier = Modifier,
+    shapes: ListItemShapes,
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = LocalSnackbarHostState.current
 
-    var diskCacheJob: Job? by retain { mutableStateOf(null) }
-    BackHandler(diskCacheJob != null) {} // 硬控用户直到清除完成
+    var cacheJob: Job? by retain { mutableStateOf(null) }
+    BackHandler(cacheJob != null) {
+        context.toastShort(context.getString(R.string.tip_clearing_cache))
+    }
 
-    var cacheSize: String? by rememberSaveable { mutableStateOf(null) }
-    if (cacheSize == null) {
-        LaunchedEffect(Unit) {
-            val size = ImageCacheUtil.getCacheSize(context.applicationContext)
+    var cacheSizeText: String? by rememberSaveable { mutableStateOf(null) }
+
+    fun refreshCacheSize() {
+        coroutineScope.launch {
+            val size = withContext(Dispatchers.IO) { getCacheSize() }
             val formattedSize = Formatter.formatShortFileSize(context, size)
-            cacheSize = context.getString(R.string.tip_cache, formattedSize)
+            cacheSizeText = context.getString(R.string.tip_cache, formattedSize)
         }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshCacheSize()
     }
 
     SegmentedPreference(
         modifier = modifier,
-        title = stringResource(id = R.string.title_clear_picture_cache),
+        title = title,
         shapes = shapes,
         leadingIcon = Icons.Rounded.DeleteForever,
-        summary = cacheSize ?: stringResource(id = R.string.text_loading),
+        summary = cacheSizeText ?: stringResource(id = R.string.text_loading),
         onClick = {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(
-                    message = context.getString(R.string.tip_clearing_cache),
-                    duration = SnackbarDuration.Indefinite
-                )
-            }
-            diskCacheJob = coroutineScope
-                .launch {
-                    ImageCacheUtil.clearImageAllCache(context.applicationContext)
-                }
-                .also {
-                    it.invokeOnCompletion {
-                        diskCacheJob = null
-                        cacheSize = context.getString(R.string.tip_cache, "0B")
-                        coroutineScope.launch {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            delay(300)
-                            snackbarHostState.showSnackbar(context.getString(R.string.toast_clear_picture_cache_success))
+            context.toastShort(context.getString(R.string.tip_clearing_cache))
+            cacheJob =
+                coroutineScope
+                    .launch {
+                        withContext(Dispatchers.IO) { clearCache() }
+                    }.also {
+                        it.invokeOnCompletion { error ->
+                            coroutineScope.launch {
+                                cacheJob = null
+                                if (error == null) {
+                                    refreshCacheSize()
+                                    delay(300)
+                                    context.toastShort(context.getString(successToastRes))
+                                } else if (error !is CancellationException) {
+                                    context.toastShort(
+                                        context.getString(
+                                            R.string.toast_clear_failure,
+                                            error.message ?: context.getString(failureToastRes),
+                                        ),
+                                    )
+                                }
+                            }
                         }
                     }
-                }
         },
-        enabled = cacheSize != null && diskCacheJob == null,
+        enabled = cacheSizeText != null && cacheJob == null,
     )
 }

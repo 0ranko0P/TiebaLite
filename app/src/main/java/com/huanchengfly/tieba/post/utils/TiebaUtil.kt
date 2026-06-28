@@ -38,9 +38,7 @@ object TiebaUtil {
         val cm: ClipboardManager = ClipBoardLinkDetector.clipBoardManager
         val clipData = ClipData.newPlainText("Tieba Lite", text).setIsSensitive(isSensitive)
         cm.setPrimaryClip(clipData)
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
-            context.toastShort(R.string.toast_copy_success)
-        }
+        context.toastShort(R.string.toast_copy_success)
     }
 
     @JvmStatic

@@ -513,6 +513,7 @@ fun <T> SettingsSegmentedPrefsScope<T>.toggleablePreference(
         enabled = enabled,
     )
 
+/** 由 [settings] Flow 收集状态以驱动 SegmentedPrefsScreen */
 @Composable
 fun <T> SegmentedPrefsScreen(
     modifier: Modifier = Modifier,
@@ -520,18 +521,21 @@ fun <T> SegmentedPrefsScreen(
     initialValue: T,
     contentPadding: PaddingValues = PaddingValues.Zero,
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(2.dp),
+    fluid: Boolean = false,
+    state: State<T>? = null,
     content: SettingsSegmentedPrefsScope<T>.() -> Unit
 ) {
     val latestContent by rememberUpdatedState(content)
 
-    val settingsSaver = remember { SettingsSaver(initialValue, settings) }
-    val settingsState = settings.collectAsStateWithLifecycle(
+    val settingsState = state ?: settings.collectAsStateWithLifecycle(
         initialValue = initialValue,
         minActiveState = Lifecycle.State.CREATED,
         context = Dispatchers.IO
     )
 
-    Container {
+    val settingsSaver = remember { SettingsSaver(settingsState.value, settings) }
+
+    Container(fluid = fluid) {
         LazyColumn(
             modifier = modifier,
             contentPadding = contentPadding,
@@ -552,11 +556,12 @@ fun SegmentedTextPrefsScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues.Zero,
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(2.dp),
+    fluid: Boolean = false,
     content: SegmentedPrefsScope.() -> Unit
 ) {
     val latestContent by rememberUpdatedState(content)
 
-    Container {
+    Container(fluid = fluid) {
         LazyColumn(
             modifier = modifier,
             contentPadding = contentPadding,

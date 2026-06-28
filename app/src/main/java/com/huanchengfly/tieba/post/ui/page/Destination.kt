@@ -9,6 +9,7 @@ import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.FullscreenArgs
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -132,6 +133,10 @@ sealed interface Destination {
             recordHistory = recordHistory
         )
     }
+
+    /** 全屏视频页导航参数，委托给 [FullscreenArgs] 承载播放器会话与内容元数据 */
+    @Serializable
+    data class VideoFullscreen(val args: FullscreenArgs): Destination
 
     @Serializable
     data class WebView(val initialUrl: String, val customClient: Boolean = true): Destination

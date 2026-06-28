@@ -9,7 +9,7 @@ import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.ui.models.forum.ForumRule
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
+import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -14,13 +15,17 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.Composer
 import androidx.compose.runtime.ExperimentalComposeRuntimeApi
 import androidx.hilt.work.HiltWorkerFactory
+import androidx.media3.common.util.UnstableApi
 import androidx.work.Configuration
 import coil3.SingletonImageLoader
 import com.huanchengfly.tieba.post.activities.CrashActivity
 import com.huanchengfly.tieba.post.components.ConfigInitializer
+import com.huanchengfly.tieba.post.components.MediaCache
 import com.huanchengfly.tieba.post.components.coil.TbImageLoaderFactory
 import com.huanchengfly.tieba.post.di.RepositoryEntryPoint
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.services.PlaybackService
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.PlayerSettingsStore
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import dagger.hilt.android.EntryPointAccessors
@@ -91,6 +96,10 @@ class App : Application(), Configuration.Provider {
         SingletonImageLoader.setSafe(TbImageLoaderFactory())
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         EmoticonManager.init(this)
+        // 异步初始化播放器全局设置，加载持久化配置并同步缓存上限
+        CoroutineScope(Dispatchers.Main).launch {
+            PlayerSettingsStore.initialize(settingRepository.playerSettings, this@App)
+        }
         Composer.setDiagnosticStackTraceEnabled(BuildConfig.DEBUG)
 
         AppBackgroundScope.launch {
@@ -102,6 +111,21 @@ class App : Application(), Configuration.Provider {
     //解决魅族 Flyme 系统夜间模式强制反色
     @Keep
     fun mzNightModeUseOf(): Int = 2
+
+    /** UI 不可见时释放媒体缓存；若有活跃播放则只尝试应用待生效的缓存上限，否则完全释放 */
+    @androidx.annotation.OptIn(UnstableApi::class)
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            AppBackgroundScope.launch {
+                if (PlaybackService.isActive()) {
+                    MediaCache.releaseIfIdle()
+                } else {
+                    MediaCache.release()
+                }
+            }
+        }
+    }
 
     /**
      * 添加Activity

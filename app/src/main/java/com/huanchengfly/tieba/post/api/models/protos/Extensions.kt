@@ -154,7 +154,10 @@ private fun isMaliciousLink(linkPbContent: PbContent): Boolean {
     return isTieba(linkPbContent.text, skipSchemeCheck = true) && !isTieba(linkPbContent.link)
 }
 
-fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRender> {
+fun List<PbContent>.buildRenders(
+    imageLoadType: Int,
+    title: String? = null,
+): ImmutableList<PbContentRender> {
         val pureText = fastFirstOrNull { it.type !in PureTextType } == null
         if (pureText) {
             return fastMap { PureTextContentRender(it.text) }.toImmutableList()
@@ -225,7 +228,8 @@ fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRen
                                 videoUrl = it.link,
                                 picUrl = it.src,
                                 webUrl = it.text,
-                                dimensions = it.getPicSize()
+                                dimensions = it.getPicSize(),
+                                title = title,
                             )
                         )
                     } else {
@@ -264,13 +268,16 @@ fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRen
     }
 
 @WorkerThread
-fun Post.buildContentRenders(imageLoadType: Int): List<PbContentRender> {
-    return content.buildRenders(imageLoadType)
+fun Post.buildContentRenders(imageLoadType: Int): List<PbContentRender> =
+    content
+        .buildRenders(imageLoadType, title = title.takeUnless { it.isBlank() })
         .map {
             if (it is PicContentRender) {
                 it.copy(photoViewData = getPhotoViewData(post = this, it))
-            } else it
+            } else {
+                it
+            }
         }
-}
+
 
 fun VideoInfo.aspectRatio(): Float = thumbnailWidth.toFloat() / thumbnailHeight

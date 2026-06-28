@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
 import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.PlayerSettings
 import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
 import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
@@ -60,4 +61,6 @@ interface SettingsRepository {
     val clientConfig: Settings<ClientConfig>
 
     val myLittleTail: Settings<String>
+
+    val playerSettings: Settings<PlayerSettings>
 }

@@ -1,4 +1,4 @@
-package com.huanchengfly.tieba.post.ui.widgets.compose.video.util
+package com.huanchengfly.tieba.post.utils.extension
 
 import kotlinx.coroutines.flow.MutableStateFlow
 

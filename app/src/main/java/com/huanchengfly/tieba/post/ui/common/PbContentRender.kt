@@ -11,7 +11,9 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,7 +41,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
 import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
@@ -51,7 +52,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayer
 import com.huanchengfly.tieba.post.ui.widgets.compose.singleMediaFraction
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.FullscreenArgs
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.FullscreenStarter
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.FullscreenStore
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.InitialPositionKind
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.PlayerContainer
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.PlayerSource
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberPlayerHandle
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.launchUrl
 
@@ -84,8 +91,9 @@ private fun highlightContent(content: String): AnnotatedString {
 
 @Immutable
 @JvmInline
-value class PureTextContentRender(val value: String) : PbContentRender {
-
+value class PureTextContentRender(
+    val value: String,
+) : PbContentRender {
     @Composable
     override fun Render() = Text(text = value, style = MaterialTheme.typography.bodyLarge)
 
@@ -96,8 +104,9 @@ value class PureTextContentRender(val value: String) : PbContentRender {
 
 @Immutable
 @JvmInline
-value class TextContentRender(val value: AnnotatedString) : PbContentRender {
-
+value class TextContentRender(
+    val value: AnnotatedString,
+) : PbContentRender {
     constructor(text: String) : this(AnnotatedString(text))
 
     override fun toString(): String = value.text
@@ -107,7 +116,7 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
         PbContentText(
             text = value,
             style = MaterialTheme.typography.bodyLarge,
-            lineSpacing = 0.8.sp
+            lineSpacing = 0.8.sp,
         )
     }
 
@@ -118,9 +127,8 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
     operator fun plus(text: AnnotatedString): TextContentRender = TextContentRender(value + text)
 
     companion object {
-        fun MutableList<PbContentRender>.appendText(
-            text: String
-        ) {
+        fun MutableList<PbContentRender>.appendText(text: String) {
+            if (text.isBlank()) return
             val lastRender = lastOrNull()
             if (lastRender is TextContentRender) {
                 this[lastIndex] = lastRender + text
@@ -129,9 +137,8 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
             }
         }
 
-        fun MutableList<PbContentRender>.appendText(
-            text: AnnotatedString
-        ) {
+        fun MutableList<PbContentRender>.appendText(text: AnnotatedString) {
+            if (text.text.isBlank()) return
             val lastRender = lastOrNull()
             if (lastRender is TextContentRender) {
                 this[lastIndex] = lastRender + text
@@ -143,7 +150,7 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
 }
 
 @Immutable
-/*data */class PicContentRender(
+class PicContentRender(
     val picUrl: String,
     val originUrl: String,
     val originSize: Int, // Bytes
@@ -151,29 +158,27 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
     val picId: String,
     val photoViewData: PhotoViewData? = null,
 ) : PbContentRender {
-
     @Composable
     override fun Render() {
         NetworkImage(
-            modifier = Modifier
-                .clip(shape = MaterialTheme.shapes.small)
-                .fillMaxWidth(singleMediaFraction)
-                .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f),
+            modifier =
+                Modifier
+                    .clip(shape = MaterialTheme.shapes.small)
+                    .fillMaxWidth(singleMediaFraction)
+                    .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f),
             imageUrl = picUrl,
             photoViewDataProvider = { photoViewData },
         )
     }
 
     fun copy(
-        picUrl: String  = this.picUrl,
+        picUrl: String = this.picUrl,
         originUrl: String = this.originUrl,
         originSize: Int = this.originSize,
         dimensions: IntSize? = this.dimensions,
         picId: String = this.picId,
         photoViewData: PhotoViewData? = this.photoViewData,
-    ): PicContentRender {
-        return PicContentRender(picUrl,  originUrl, originSize, dimensions, picId, photoViewData)
-    }
+    ): PicContentRender = PicContentRender(picUrl, originUrl, originSize, dimensions, picId, photoViewData)
 
     override fun toString(): String = PbContentRender.MEDIA_PICTURE
 }
@@ -181,56 +186,140 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
 @Immutable
 class VoiceContentRender(
     val voiceMd5: String,
-    val duration: Int
+    val duration: Int,
 ) : PbContentRender {
     @Composable
     override fun Render() {
-        val voiceUrl = remember {
-            "https://tiebac.baidu.com/c/p/voice?voice_md5=$voiceMd5&play_from=pb_voice_play"
-        }
+        val voiceUrl =
+            remember {
+                "https://tiebac.baidu.com/c/p/voice?voice_md5=$voiceMd5&play_from=pb_voice_play"
+            }
         VoicePlayer(url = voiceUrl, duration = duration)
     }
 
     override fun toString(): String = PbContentRender.MEDIA_VOICE
 }
 
+/** 有视频 URL 时复用同步组播放核心实现无缝全屏切换；无视频 URL 时降级为封面跳转网页 */
 @Immutable
 class VideoContentRender(
     val videoUrl: String,
     val picUrl: String,
     val webUrl: String,
-    val dimensions: IntSize?
+    val dimensions: IntSize?,
+    val title: String? = null,
 ) : PbContentRender {
-
     init {
-        require(picUrl.isNotBlank() && picUrl.isNotEmpty()) { "Invalid video cover url" }
+        require(picUrl.isNotBlank()) { "Invalid video cover url" }
     }
 
     @Composable
     override fun Render() {
-        val widthFraction = if (isWindowWidthCompact()) 1f else 0.5f
+        val widthFraction =
+            if (isWindowWidthCompact()) {
+                1f
+            } else {
+                0.5f
+            }
 
-        val picModifier = Modifier
-            .fillMaxWidth(widthFraction)
-            .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f)
-            .clip(shape = MaterialTheme.shapes.small)
+        val picModifier =
+            Modifier
+                .fillMaxWidth(widthFraction)
+                .aspectRatio(
+                    ratio =
+                        dimensions?.run { width * 1f / height } ?: (16f / 9f),
+                ).clip(shape = MaterialTheme.shapes.small)
 
         if (videoUrl.isNotBlank()) {
-            val context = LocalContext.current
-            VideoThumbnail(
+            val navigator = LocalNavController.current
+            val restoreState =
+                remember(videoUrl) {
+                    FullscreenStore.consumeRestoreState(videoUrl)
+                }
+            val requestedOrientation =
+                remember(videoUrl) {
+                    FullscreenStore.consumeRequestedOrientation(videoUrl)
+                }
+            val videoPlayer =
+                rememberPlayerHandle(
+                    source =
+                        PlayerSource(
+                            url = videoUrl,
+                            initialPositionMs = restoreState?.position ?: 0L,
+                            initialPositionKind =
+                                if (restoreState != null) {
+                                    InitialPositionKind.Handoff
+                                } else {
+                                    InitialPositionKind.PersistedResume
+                                },
+                            initialSpeed = restoreState?.speed ?: 1f,
+                            title = title,
+                            artworkUrl = picUrl,
+                        ),
+                    thumbnailUrl = picUrl,
+                    playWhenReady = restoreState?.play ?: false,
+                    syncGroupId = restoreState?.syncGroupId,
+                )
+
+            val fullscreenStarter =
+                remember(videoPlayer, requestedOrientation) {
+                    FullscreenStarter(
+                        player = videoPlayer,
+                        onFullscreen = { controllerId, wasPlaying ->
+                            val state = videoPlayer.state.value
+                            val fullscreenVideoWidth = state.videoWidth.takeIf { it > 0 } ?: dimensions?.width ?: 0
+                            val fullscreenVideoHeight = state.videoHeight.takeIf { it > 0 } ?: dimensions?.height ?: 0
+                            navigator.navigate(
+                                Destination.VideoFullscreen(
+                                    args =
+                                        FullscreenArgs(
+                                            videoUrl = videoUrl,
+                                            title = title,
+                                            thumbnailUrl = picUrl,
+                                            videoWidth = fullscreenVideoWidth,
+                                            videoHeight = fullscreenVideoHeight,
+                                            syncGroupId = videoPlayer.syncGroupId.takeIf { it != 0L },
+                                            inlineControllerId = controllerId,
+                                            requestedOrientation = requestedOrientation,
+                                            playWhenReady = wasPlaying,
+                                        ),
+                                ),
+                            )
+                        },
+                    )
+                }
+
+            DisposableEffect(videoPlayer, fullscreenStarter) {
+                videoPlayer.setFullscreenListener(fullscreenStarter)
+                onDispose { videoPlayer.setFullscreenListener(null) }
+            }
+
+            // syncGroupId 通常已复用全屏播放器核心；这里兜底恢复一次性快照中的运行时状态
+            LaunchedEffect(restoreState, videoPlayer) {
+                if (restoreState != null) {
+                    videoPlayer.setProgressTransitioning(false)
+                    val currentState = videoPlayer.state.value
+
+                    videoPlayer.setSpeed(restoreState.speed)
+                    if (restoreState.syncGroupId != videoPlayer.syncGroupId) videoPlayer.seekTo(restoreState.position)
+                    if (restoreState.play && !currentState.isPlaying) videoPlayer.play()
+                }
+            }
+
+            PlayerContainer(
                 modifier = picModifier,
-                thumbnailUrl = picUrl,
-                onClick = { VideoViewActivity.launch(context, videoUrl, picUrl) }
+                player = videoPlayer,
             )
         } else {
             val navigator = LocalNavController.current
             AsyncImage(
-                model  = picUrl,
+                model = picUrl,
                 contentDescription = stringResource(id = R.string.desc_video),
-                modifier = picModifier.clickable {
-                    navigator.navigateDebounced(Destination.WebView(webUrl))
-                },
-                contentScale = ContentScale.Crop
+                modifier =
+                    picModifier.clickable {
+                        navigator.navigateDebounced(Destination.WebView(webUrl))
+                    },
+                contentScale = ContentScale.Crop,
             )
         }
     }
@@ -266,34 +355,36 @@ fun PbContentText(
     var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     EmoticonText(
         text = text,
-        modifier = modifier.pointerInput(Unit) {
-            awaitEachGesture {
-                val change = awaitFirstDown()
-                val annotation =
-                    layoutResult?.getOffsetForPosition(change.position)?.let { offset ->
-                        text.getStringAnnotations(start = offset, end = offset)
-                            .fastFirstOrNull { it.tag == TAG_URL || it.tag == TAG_USER }
-                    }
-                if (annotation != null) {
-                    if (change.pressed != change.previousPressed) change.consume()
-                    val up =
-                        waitForUpOrCancellation()?.also { if (it.pressed != it.previousPressed) it.consume() }
-                    if (up != null) {
-                        when (annotation.tag) {
-                            TAG_URL -> {
-                                val url = annotation.item
-                                launchUrl(context, navigator, url)
-                            }
+        modifier =
+            modifier.pointerInput(Unit) {
+                awaitEachGesture {
+                    val change = awaitFirstDown()
+                    val annotation =
+                        layoutResult?.getOffsetForPosition(change.position)?.let { offset ->
+                            text
+                                .getStringAnnotations(start = offset, end = offset)
+                                .fastFirstOrNull { it.tag == TAG_URL || it.tag == TAG_USER }
+                        }
+                    if (annotation != null) {
+                        if (change.pressed != change.previousPressed) change.consume()
+                        val up =
+                            waitForUpOrCancellation()?.also { if (it.pressed != it.previousPressed) it.consume() }
+                        if (up != null) {
+                            when (annotation.tag) {
+                                TAG_URL -> {
+                                    val url = annotation.item
+                                    launchUrl(context, navigator, url)
+                                }
 
-                            TAG_USER -> {
-                                val uid = annotation.item.toLong()
-                                navigator.navigateDebounced(Destination.UserProfile(uid))
+                                TAG_USER -> {
+                                    val uid = annotation.item.toLong()
+                                    navigator.navigateDebounced(Destination.UserProfile(uid))
+                                }
                             }
                         }
                     }
                 }
-            }
-        },
+            },
         color = color,
         fontSize = fontSize,
         fontStyle = fontStyle,
@@ -313,6 +404,6 @@ fun PbContentText(
             layoutResult = it
             onTextLayout(it)
         },
-        style = style
+        style = style,
     )
 }

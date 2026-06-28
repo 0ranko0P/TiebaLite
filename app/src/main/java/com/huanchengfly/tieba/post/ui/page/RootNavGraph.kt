@@ -23,6 +23,8 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.media3.common.util.UnstableApi
+import androidx.annotation.OptIn
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDeepLink
 import androidx.navigation.NavGraph
@@ -69,6 +71,8 @@ import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStorePage
 import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
+import com.huanchengfly.tieba.post.ui.page.video.FullscreenPage
+import com.huanchengfly.tieba.post.ui.widgets.compose.video.FullscreenArgs
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -125,6 +129,7 @@ fun RootNavGraph(
     }
 }
 
+@OptIn(UnstableApi::class)
 private fun buildRootNavGraph(
     navController: NavHostController,
     settingsRepo: SettingsRepository,
@@ -262,6 +267,17 @@ private fun buildRootNavGraph(
 
         composable<Destination.Welcome> {
             WelcomeScreen(navController)
+        }
+
+        composable<Destination.VideoFullscreen>(
+            typeMap = mapOf(typeOf<FullscreenArgs>() to navTypeOf<FullscreenArgs>()),
+            enterTransition = { fadeIn(animationSpec = tween(durationMillis = 200)) },
+            exitTransition = { fadeOut(animationSpec = tween(durationMillis = 200)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(durationMillis = 200)) },
+            popExitTransition = { fadeOut(animationSpec = tween(durationMillis = 200)) },
+        ) { backStackEntry ->
+            val params = backStackEntry.toRoute<Destination.VideoFullscreen>()
+            FullscreenPage(args = params.args, navController = navController)
         }
     }
 }
