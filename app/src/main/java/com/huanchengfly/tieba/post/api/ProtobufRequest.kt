@@ -9,6 +9,7 @@ import com.huanchengfly.tieba.post.api.models.protos.CommonRequest
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.AdParam
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.CacheUtil.base64Encode
@@ -29,6 +30,7 @@ fun buildProtobufRequestBody(
     data: Message<*, *>,
     clientVersion: ClientVersion = ClientVersion.TIEBA_V11,
     needSToken: Boolean = true,
+    account: Account? = null,
 ): MyMultipartBody {
     return MyMultipartBody.Builder(BOUNDARY)
         .apply {
@@ -36,7 +38,11 @@ fun buildProtobufRequestBody(
             if (clientVersion != ClientVersion.TIEBA_V12 && clientVersion != ClientVersion.TIEBA_V12_POST) {
                 addFormDataPart(Param.CLIENT_VERSION, clientVersion.version)
             }
-            if (needSToken) {
+            if (account != null) {
+                addFormDataPart(Param.BDUSS, account.bduss)
+                addFormDataPart(Param.STOKEN, account.sToken)
+                account.zid?.let { addFormDataPart(Param.Z_ID, it) }
+            } else if (needSToken) {
                 val sToken = AccountUtil.getSToken()
                 if (sToken != null) addFormDataPart(Param.STOKEN, sToken)
             }
@@ -73,6 +79,7 @@ fun buildCommonRequest(
     bduss: String? = null,
     stoken: String? = null,
     tbs: String? = null,
+    zid: String? = null,
 ): CommonRequest = when (clientVersion) {
     ClientVersion.TIEBA_V11 -> {
         CommonRequest(
@@ -102,7 +109,7 @@ fun buildCommonRequest(
 
     ClientVersion.TIEBA_V12 -> {
         CommonRequest(
-            BDUSS = AccountUtil.getBduss(),
+            BDUSS = bduss ?: AccountUtil.getBduss(),
             _client_id = ClientUtils.clientId ?: RetrofitTiebaApi.randomClientId,
             _client_type = 2,
             _client_version = clientVersion.version,
@@ -142,16 +149,16 @@ fun buildCommonRequest(
             sdk_ver = "2.34.0",
             start_scheme = "",
             start_type = 1,
-            stoken = AccountUtil.getSToken(),
+            stoken = stoken ?: AccountUtil.getSToken(),
             swan_game_ver = "1038000",
             user_agent = getUserAgent("tieba/${clientVersion.version}"),
-            z_id = AccountUtil.getAccountInfo { zid }
+            z_id = zid ?: AccountUtil.getAccountInfo { zid }
         )
     }
 
     ClientVersion.TIEBA_V12_POST -> {
         CommonRequest(
-            BDUSS = AccountUtil.getBduss(),
+            BDUSS = bduss ?: AccountUtil.getBduss(),
             _client_id = ClientUtils.clientId ?: RetrofitTiebaApi.randomClientId,
             _client_type = 2,
             _client_version = clientVersion.version,
@@ -193,11 +200,11 @@ fun buildCommonRequest(
             sdk_ver = "2.34.0",
             start_scheme = "",
             start_type = 1,
-            stoken = AccountUtil.getSToken(),
+            stoken = stoken ?: AccountUtil.getSToken(),
             swan_game_ver = "1038000",
             tbs = tbs,
             user_agent = getUserAgent("tieba/${clientVersion.version}"),
-            z_id = AccountUtil.getAccountInfo { zid }
+            z_id = zid ?: AccountUtil.getAccountInfo { zid }
         )
     }
 }

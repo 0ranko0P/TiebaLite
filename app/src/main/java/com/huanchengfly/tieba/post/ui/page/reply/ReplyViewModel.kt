@@ -6,6 +6,9 @@ import android.text.Spannable
 import android.text.style.ImageSpan
 import android.util.Log
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.util.fastForEach
 import androidx.core.net.toUri
 import androidx.core.text.getSpans
@@ -30,6 +33,7 @@ import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.components.ImageUploader
 import com.huanchengfly.tieba.post.models.database.Draft
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.dao.DraftDao
 import com.huanchengfly.tieba.post.repository.AddPostRepository
 import com.huanchengfly.tieba.post.repository.user.Settings
@@ -85,6 +89,16 @@ class ReplyViewModel @Inject constructor(
     val replyType = if (forumId != 0L && threadId == 0L) ReplyType.TOPIC_THREAD else ReplyType.NONE
 
     val isTopicThread = replyType == ReplyType.TOPIC_THREAD
+
+    /**
+     * 当前弹窗的发送账号，null 表示使用全局主账号
+     * */
+    var sendAsAccount by mutableStateOf<Account?>(null)
+        private set
+
+    fun selectSendAccount(account: Account?) {
+        sendAsAccount = account
+    }
 
     var emoticons: List<Emoticon> = emptyList()
         private set
@@ -167,6 +181,7 @@ class ReplyViewModel @Inject constructor(
                         title = title,
                         isHide = 1,
                         isTitle = if (title.isNullOrEmpty()) 1 else 0,
+                        account = account,
                     )
                     .map<AddThreadBean, ReplyPartialChange.Send> {
                         if (it.tid == null) throw TiebaUnknownException
@@ -197,7 +212,8 @@ class ReplyViewModel @Inject constructor(
                     tbs,
                     postId = postId,
                     subPostId = subPostId,
-                    replyUserId = replyUserId
+                    replyUserId = replyUserId,
+                    account = account,
                 )
                 .map<AddPostResponse, ReplyPartialChange.Send> {
                     if (it.data_ == null) throw TiebaUnknownException
@@ -220,7 +236,8 @@ class ReplyViewModel @Inject constructor(
                         context = context,
                         images = imageUris.map { it.toUri() },
                         watermarkType = habitSettings.snapshot().imageWatermarkType,
-                        isOriginImage = isOriginImage
+                        isOriginImage = isOriginImage,
+                        account = account,
                     )
                     emit(ReplyPartialChange.UploadImages.Success(rec))
                 }
@@ -262,7 +279,8 @@ class ReplyViewModel @Inject constructor(
                 title = threadTitle.takeIf { isTopicThread },
                 postId = postId,
                 subPostId = subPostId,
-                replyUserId = replyUserId
+                replyUserId = replyUserId,
+                account = sendAsAccount,
             )
         )
     }
@@ -283,6 +301,7 @@ class ReplyViewModel @Inject constructor(
                 postId = postId,
                 subPostId = subPostId,
                 replyUserId = replyUserId,
+                account = sendAsAccount,
             )
         )
     }
@@ -355,7 +374,8 @@ sealed interface ReplyUiIntent : UiIntent {
     data class UploadImages(
         val forumName: String,
         val imageUris: List<String>,
-        val isOriginImage: Boolean
+        val isOriginImage: Boolean,
+        val account: Account? = null,
     ) : ReplyUiIntent
 
     data class Send(
@@ -368,6 +388,7 @@ sealed interface ReplyUiIntent : UiIntent {
         val postId: Long? = null,
         val subPostId: Long? = null,
         val replyUserId: Long? = null,
+        val account: Account? = null,
     ) : ReplyUiIntent
 
     data class AddImage(val imageUris: List<String>) : ReplyUiIntent
