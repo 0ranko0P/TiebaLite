@@ -6,12 +6,14 @@ import android.graphics.Bitmap.CompressFormat
 import android.graphics.BitmapFactory
 import android.net.Uri
 import com.huanchengfly.tieba.post.api.BOUNDARY
+import com.huanchengfly.tieba.post.api.Param
 import com.huanchengfly.tieba.post.api.booleanToString
 import com.huanchengfly.tieba.post.api.models.UploadPictureResultBean
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
 import com.huanchengfly.tieba.post.api.retrofit.body.buildMultipartBody
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.models.settings.WaterType
 import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.FileUtil.writeAll
@@ -45,7 +47,8 @@ class ImageUploader(
         context: Context,
         images: List<Uri>,
         @WaterType watermarkType: Int,
-        isOriginImage: Boolean = false
+        isOriginImage: Boolean = false,
+        account: Account? = null,
     ): List<UploadPictureResultBean> {
         require(images.isNotEmpty())
         val contentResolver = context.contentResolver
@@ -53,7 +56,7 @@ class ImageUploader(
         return try {
             images.mapIndexed { i, uri ->
                 val image = File(tempDir, "img_$i").writeAll(contentResolver, uri)
-                uploadSinglePicture(image, watermarkType, isOriginImage)
+                uploadSinglePicture(image, watermarkType, isOriginImage, account)
             }
         } catch (e: Throwable) {
             throw e
@@ -103,6 +106,7 @@ class ImageUploader(
         image: File,
         @WaterType watermarkType: Int,
         isOriginImage: Boolean = false,
+        account: Account? = null,
     ): UploadPictureResultBean {
         val option = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
@@ -151,6 +155,7 @@ class ImageUploader(
                 addFormDataPart("size", "$fileLength")
                 if (forumName.isNotEmpty()) addFormDataPart("small_flow_fname", forumName)
                 addFormDataPart("width", "$width")
+                if (account != null) addFormDataPart(Param.BDUSS, account.bduss)
                 addFormDataPart("chunk", "file", chunkBytes.toRequestBody())
             }
         }

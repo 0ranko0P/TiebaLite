@@ -444,7 +444,8 @@ interface MiniTiebaApi {
 		@retrofit2.http.Header("client_user_token") clientUserToken: String? = AccountUtil.getUid(),
         @Field("cuid_gid") cuidGid: String? = "",
         @Field("tbs") tbs: String? = AccountUtil.getLoginInfo()?.tbs,
-        @Field("stoken") stoken: String? = AccountUtil.getSToken()
+        @Field("stoken") stoken: String? = AccountUtil.getSToken(),
+        @Field("BDUSS") bduss: String? = null
         //好像还有个st_type的参数，有标题时没有，无标题时为notitle
     ): Flow<AddThreadBean>
 

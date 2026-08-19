@@ -89,6 +89,8 @@ interface OfficialProtobufTiebaApi {
     @POST("/c/c/post/add?cmd=309731&format=protobuf")
     fun addPostFlow(
         @Body body: MyMultipartBody,
+        @retrofit2.http.Header(com.huanchengfly.tieba.post.api.Header.CLIENT_USER_TOKEN) clientUserToken: String? = null,
+        @retrofit2.http.Header(com.huanchengfly.tieba.post.api.Header.COOKIE) cookie: String? = null,
     ): Flow<AddPostResponse>
 
     @POST("/c/s/searchSug?cmd=309438&format=protobuf")

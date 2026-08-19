@@ -16,6 +16,7 @@ import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -92,8 +93,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
@@ -111,8 +114,10 @@ import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.IMAGE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.NONE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyViewModel.Companion.MAX_SELECTABLE_IMAGE
 import com.huanchengfly.tieba.post.ui.utils.imeNestedScroll
+import com.huanchengfly.tieba.post.ui.widgets.compose.AccountDropdownMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BaseTextField
+import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogContentPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
@@ -122,7 +127,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonInlineImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DisplayUtil.toDpSize
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonUtil
@@ -203,7 +210,7 @@ private fun ReplyPageContent(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val account = LocalAccount.current
-    val curTbs = tbs ?: account?.tbs.orEmpty()
+    val curTbs = tbs ?: (viewModel.sendAsAccount ?: account)?.tbs.orEmpty()
     val colors = MaterialTheme.colorScheme
 
     val isUploading by viewModel.uiState.collectPartialAsState(
@@ -321,11 +328,33 @@ private fun ReplyPageContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (account != null) {
-                Avatar(
-                    data = remember { StringUtil.getAvatarUrl(account.portrait) },
-                    size = Sizes.Tiny,
-                    contentDescription = account.name,
-                )
+                val accountUtil = remember { AccountUtil.getInstance() }
+                val accounts by accountUtil.allAccounts.collectAsStateWithLifecycle(emptyList())
+                val sendAccount = viewModel.sendAsAccount ?: account
+                val menuState = rememberMenuState()
+                ClickMenu(
+                    menuContent = {
+                        accounts.fastForEach { item ->
+                            AccountDropdownMenuItem(
+                                onClick = {
+                                    menuState.dismiss()
+                                    viewModel.selectSendAccount(item)
+                                },
+                                account = item,
+                                currentAccountUid = sendAccount.uid,
+                            )
+                        }
+                    },
+                    menuState = menuState,
+                    enabled = accounts.size > 1,
+                    triggerShape = CircleShape,
+                ) {
+                    Avatar(
+                        data = remember(sendAccount) { StringUtil.getAvatarUrl(sendAccount.portrait) },
+                        size = Sizes.Tiny,
+                        contentDescription = account.name,
+                    )
+                }
                 Spacer(modifier = Modifier.width(8.dp))
             }
             Text(
@@ -434,7 +463,14 @@ private fun ReplyPageContent(
                     viewModel.onSendReply(threadTitle, curTbs)
                 } else {
                     waitUploadSuccessToSend = true
-                    viewModel.send(ReplyUiIntent.UploadImages(forumName, selectedImageList, isOriginImage))
+                    viewModel.send(
+                        ReplyUiIntent.UploadImages(
+                            forumName,
+                            selectedImageList,
+                            isOriginImage,
+                            account = viewModel.sendAsAccount,
+                        )
+                    )
                 }
             }
         )
