@@ -456,6 +456,8 @@
     <string name="button_clear_all">清除全部</string>
     <string name="settings_image_darken_when_night_mode">夜间模式压暗缩略图</string>
     <string name="title_hide_reply">隐藏回贴入口</string>
+    <string name="settings_quick_reply_from_feed">长按回复按钮快速回复</string>
+    <string name="tip_quick_reply_from_feed">在帖子列表中长按回复按钮直接弹出回复框，无需进入帖子详情</string>
     <string name="title_settings_use_themed_icon">应用图标使用动态取色</string>
     <string name="tip_themed_icon_unsupported">当前正在使用的应用图标暂不支持动态取色</string>
     <string name="btn_copy_all">复制全部</string>

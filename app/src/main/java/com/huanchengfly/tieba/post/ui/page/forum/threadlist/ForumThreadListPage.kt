@@ -224,6 +224,7 @@ fun LazyListScope.forumThreadList(
                     onClick = threadClickListeners.onClicked,
                     onLike = onLikeClicked,
                     onClickReply = threadClickListeners.onReplyClicked,
+                    onLongClickReply = threadClickListeners.onReplyLongClicked,
                     onClickUser = threadClickListeners.onAuthorClicked,
                     cardDivider = true,
                     onClickOriginThread = onOriginThreadClicked,

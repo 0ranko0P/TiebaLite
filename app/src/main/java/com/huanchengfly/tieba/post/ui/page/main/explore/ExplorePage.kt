@@ -99,6 +99,7 @@ sealed class ExplorePageItem(val title: Int){
 class ThreadClickListeners(
     val onClicked: (ThreadItem) -> Unit,
     val onReplyClicked: (ThreadItem) -> Unit,
+    val onReplyLongClicked: ((ThreadItem) -> Unit)? = null,
     val onAuthorClicked: (ThreadItem) -> Unit,
     val onForumClicked: (ThreadItem) -> Unit,
     val onNavigateHotTopicList: () -> Unit // Not a thread click listener, place here just for convenience
@@ -114,6 +115,14 @@ fun createThreadClickListeners(
     onReplyClicked = { thread ->
         val (forumId, _, _) = thread.simpleForum
         onNavigate(Destination.Thread(threadId = thread.id, forumId, scrollToReply = true), null, null)
+    },
+    onReplyLongClicked = { thread ->
+        val (forumId, forumName, _) = thread.simpleForum
+        onNavigate(
+            Destination.Reply(forumId = forumId, forumName = forumName, threadId = thread.id),
+            null,
+            null
+        )
     },
     onAuthorClicked = { thread ->
         val route = thread.run {

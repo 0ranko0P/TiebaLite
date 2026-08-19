@@ -524,6 +524,7 @@ fun FeedCard(
     onLike: (ThreadItem) -> Unit,
     modifier: Modifier = Modifier,
     onClickReply: (ThreadItem) -> Unit = onClick,
+    onLongClickReply: ((ThreadItem) -> Unit)? = null,
     onClickUser: (ThreadItem) -> Unit = {},
     onClickForum: ((ThreadItem) -> Unit)? = null, // Parse Null to Hide ForumInfo
     onClickOriginThread: (OriginThreadInfo) -> Unit = {},
@@ -594,6 +595,9 @@ fun FeedCard(
                     TiebaUtil.shareThread(context, thread.title, thread.id)
                 },
                 onReplyClicked = { onClickReply(thread) },
+                onReplyLongClicked = onLongClickReply?.takeIf {
+                    LocalHabitSettings.current.quickReplyFromFeed && !LocalHabitSettings.current.hideReply
+                }?.let { listener -> { listener(thread) } },
                 onAgreeClicked = { onLike(thread) }
             )
         },

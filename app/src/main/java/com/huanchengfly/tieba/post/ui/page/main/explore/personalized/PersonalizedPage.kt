@@ -168,6 +168,7 @@ fun PersonalizedPage(
                                 onClick = threadClickListeners.onClicked,
                                 onLike = viewModel::onThreadLikeClicked,
                                 onClickReply = threadClickListeners.onReplyClicked,
+                                onLongClickReply = threadClickListeners.onReplyLongClicked,
                                 onClickUser = threadClickListeners.onAuthorClicked,
                                 onClickForum = threadClickListeners.onForumClicked,
                                 dislikeAction = {
