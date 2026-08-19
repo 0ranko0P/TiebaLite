@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -40,10 +41,17 @@ private fun ActionBtn(
     contentDescription: String? = null,
     contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
-            .onNotNull(onClick) { clickable(onClick = it) }
+            .onNotNull(onClick) {
+                if (onLongClick != null) {
+                    combinedClickable(onClick = it, onLongClick = onLongClick)
+                } else {
+                    clickable(onClick = it)
+                }
+            }
             .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
@@ -78,6 +86,7 @@ fun ThreadActionButtonRow(
     liked: Boolean,
     onShareClicked: (() -> Unit)? = null,
     onReplyClicked: (() -> Unit)? = null,
+    onReplyLongClicked: (() -> Unit)? = null,
     onAgreeClicked: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -97,7 +106,8 @@ fun ThreadActionButtonRow(
             text = context.shortNumString(replies.toLong(), R.string.title_reply),
             icon = Icons.Rounded.CommentNew,
             contentDescription = stringResource(id = R.string.desc_comment),
-            onClick = onReplyClicked
+            onClick = onReplyClicked,
+            onLongClick = onReplyLongClicked
         )
 
         ActionBtn(
