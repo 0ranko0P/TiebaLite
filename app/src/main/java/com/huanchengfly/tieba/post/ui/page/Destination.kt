@@ -38,7 +38,16 @@ sealed interface Destination {
     data object Login: Destination
 
     @Serializable
-    data object Search: Destination
+    data class Search(
+        /**
+         * 外部深链传入的搜索关键词, 为空表示仅打开搜索页.
+         * */
+        val keyword: String = "",
+        /**
+         * 搜索类型, 与 SearchPage 中 SearchPages 枚举序一致: 0=吧, 1=帖子, 2=用户.
+         * */
+        val type: Int = 0
+    ): Destination
 
     /**
      * @param forumName 吧名

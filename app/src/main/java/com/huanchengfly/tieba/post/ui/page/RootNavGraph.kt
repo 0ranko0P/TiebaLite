@@ -197,8 +197,10 @@ private fun SharedTransitionScope.buildRootNavGraph(
 
         animatedComposable<Destination.Search>(
             deepLinks = listOf(navDeepLink<Destination.Search>(basePath = "$TB_LITE_DOMAIN://search"))
-        ) {
-            SearchPage(navController)
+        ) { backStackEntry ->
+            backStackEntry.toRoute<Destination.Search>().let {
+                SearchPage(navController, keyword = it.keyword, type = it.type)
+            }
         }
 
         animatedComposable<Destination.UserFollowList> { backStackEntry ->
