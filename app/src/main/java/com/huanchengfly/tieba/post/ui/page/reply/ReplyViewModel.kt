@@ -40,6 +40,7 @@ import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -54,6 +55,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -97,7 +99,14 @@ class ReplyViewModel @Inject constructor(
         private set
 
     fun selectSendAccount(account: Account?) {
+        if (account?.uid == sendAsAccount?.uid) return
+        if (uiState.value.uploadImageResultList.isNotEmpty()) {
+            send(ReplyUiIntent.ClearUploadResults)
+        }
         sendAsAccount = account
+        if (account != null) {
+            settingsRepo.replySendAsUid.set(account.uid)
+        }
     }
 
     var emoticons: List<Emoticon> = emptyList()
@@ -118,6 +127,16 @@ class ReplyViewModel @Inject constructor(
     init {
         emoticons = EmoticonManager.getAllEmoticon()
         super.initialized = true
+
+        viewModelScope.launch {
+            val savedUid = settingsRepo.replySendAsUid.snapshot()
+            if (savedUid != -1L) {
+                val account = AccountUtil.getInstance().allAccounts.first().find { it.uid == savedUid }
+                if (account != null) {
+                    sendAsAccount = account
+                }
+            }
+        }
     }
 
     override fun createInitialState() = ReplyUiState()
@@ -169,7 +188,12 @@ class ReplyViewModel @Inject constructor(
                     .flatMapConcat { it.producePartialChange() },
                 intentFlow.filterIsInstance<ReplyUiIntent.ToggleIsOriginImage>()
                     .flatMapConcat { it.producePartialChange() },
+                intentFlow.filterIsInstance<ReplyUiIntent.ClearUploadResults>()
+                    .flatMapConcat { it.producePartialChange() },
             )
+
+        private fun ReplyUiIntent.ClearUploadResults.producePartialChange() =
+            flowOf(ReplyPartialChange.ClearUploadResults)
 
         private fun ReplyUiIntent.Send.producePartialChange(): Flow<ReplyPartialChange.Send> {
             if (forumId != 0L && threadId == 0L ) {
@@ -396,6 +420,8 @@ sealed interface ReplyUiIntent : UiIntent {
     data class RemoveImage(val imageIndex: Int) : ReplyUiIntent
 
     data class ToggleIsOriginImage(val isOriginImage: Boolean) : ReplyUiIntent
+
+    data object ClearUploadResults : ReplyUiIntent
 }
 
 sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
@@ -463,6 +489,11 @@ sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
     data class ToggleIsOriginImage(val isOriginImage: Boolean) : ReplyPartialChange {
         override fun reduce(oldState: ReplyUiState): ReplyUiState =
             oldState.copy(isOriginImage = isOriginImage)
+    }
+
+    data object ClearUploadResults : ReplyPartialChange {
+        override fun reduce(oldState: ReplyUiState): ReplyUiState =
+            oldState.copy(uploadImageResultList = persistentListOf())
     }
 }
 
