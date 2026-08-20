@@ -21,6 +21,10 @@ class ScrollOrientationConnection(
     var isScrollingForward by mutableStateOf(true)
         private set
 
+    fun reset(forward: Boolean = true) {
+        isScrollingForward = forward
+    }
+
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         when {
             orientation === Orientation.Vertical && available.y != 0.0f -> {

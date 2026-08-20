@@ -248,6 +248,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
             appIcon = LauncherIcons.entries[appIconOrdinal],
             appIconThemed = it[booleanPreferencesKey(KEY_APP_THEMED_ICON)] == true,
             bottomNavFloating = it[booleanPreferencesKey(KEY_BOTTOM_NAV_FLOATING)] == true,
+            bottomNavHideOnScroll = it[booleanPreferencesKey(KEY_BOTTOM_NAV_HIDE_ON_SCROLL)] == true,
             bottomNavLabel = NavigationLabel.entries[bottomNavLabelOrdinal],
             darkAmoled = it[booleanPreferencesKey(KEY_DARK_AMOLED)] == true,
             darkPreference = DarkPreference.entries[darkPrefOrdinal],
@@ -265,6 +266,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
         it[intPreferencesKey(KEY_APP_ICON)] = ui.appIcon.ordinal
         it[booleanPreferencesKey(KEY_APP_THEMED_ICON)] = ui.appIconThemed
         it[booleanPreferencesKey(KEY_BOTTOM_NAV_FLOATING)] = ui.bottomNavFloating
+        it[booleanPreferencesKey(KEY_BOTTOM_NAV_HIDE_ON_SCROLL)] = ui.bottomNavHideOnScroll
         it[intPreferencesKey(KEY_BOTTOM_NAV_LABEL)] = ui.bottomNavLabel.ordinal
         it[booleanPreferencesKey(KEY_DARK_AMOLED)] = ui.darkAmoled
         it[intPreferencesKey(KEY_DARK_THEME_MODE)] = ui.darkPreference.ordinal
@@ -280,6 +282,7 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
     private const val KEY_APP_ICON = "app_icon"
     private const val KEY_APP_THEMED_ICON = "app_themed_icon"
     private const val KEY_BOTTOM_NAV_FLOATING = "ui_bottom_nav_floating"
+    private const val KEY_BOTTOM_NAV_HIDE_ON_SCROLL = "ui_bottom_nav_hide_on_scroll"
     private const val KEY_BOTTOM_NAV_LABEL = "ui_bottom_nav_label"
 
     private const val KEY_DARK_AMOLED = "dark_amoled"

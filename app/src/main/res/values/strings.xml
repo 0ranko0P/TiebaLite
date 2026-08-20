@@ -547,12 +547,14 @@
     <string name="settings_group_thread">帖子偏好</string>
     <string name="settings_group_reply">@string/title_reply</string>
     <string name="settings_nav_floating">悬浮底部导航栏</string>
+    <string name="settings_nav_hide_on_scroll">底部导航栏随上下滑动收起展开</string>
     <string name="settings_nav_label">底部导航栏标签</string>
     <string name="settings_sticky_header_off">跟随帖子滚动</string>
     <string name="settings_sticky_header_on">保持固定</string>
     <string name="settings_video_autoplay">动态页视频自动播放</string>
     <string name="summary_dark_amoled">夜间模式使用AMOLED 纯黑背景</string>
     <string name="summary_nav_floating">首页底部导航栏样式</string>
+    <string name="summary_nav_hide_on_scroll">向上滑动页面时隐藏底部导航栏，向下滑动时展开</string>
     <string name="summary_sticky_header_off">不会占用顶部空间并且顶部应用栏在帖子滚动时会折叠, 你将获得最大阅读空间</string>
     <string name="summary_sticky_header_on">帖子滚动时固定到顶部应用栏下方, 这与贴吧官方App 的行为一致</string>
     <string name="summary_rules_count">%d 条</string>
