@@ -10,6 +10,7 @@ import com.huanchengfly.tieba.post.api.buildAdParam
 import com.huanchengfly.tieba.post.api.buildAppPosInfo
 import com.huanchengfly.tieba.post.api.buildCommonRequest
 import com.huanchengfly.tieba.post.api.buildProtobufRequestBody
+import com.huanchengfly.tieba.post.api.getCookie
 import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
@@ -125,6 +126,7 @@ import com.huanchengfly.tieba.post.api.models.web.HotMessageListBean
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.api.urlEncode
 import com.huanchengfly.tieba.post.models.DislikeBean
 import com.huanchengfly.tieba.post.models.MyInfoBean
@@ -1201,7 +1203,8 @@ object MixedTiebaApiImpl : ITiebaApi {
         nameShow: String?,
         postId: String?,
         subPostId: String?,
-        replyUserId: String?
+        replyUserId: String?,
+        account: Account?,
     ): Flow<AddPostResponse> {
         return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_POST_API
             .addPostFlow(
@@ -1213,7 +1216,10 @@ object MixedTiebaApiImpl : ITiebaApi {
                             can_no_forum = "0",
                             common = buildCommonRequest(
                                 clientVersion = ClientVersion.TIEBA_V12_POST,
-                                tbs = tbs ?: AccountUtil.getAccountInfo { this.tbs }
+                                tbs = account?.tbs ?: tbs ?: AccountUtil.getAccountInfo { this.tbs },
+                                bduss = account?.bduss,
+                                stoken = account?.sToken,
+                                zid = account?.zid
                             ),
                             content = content,
                             entrance_type = "0",
@@ -1228,8 +1234,8 @@ object MixedTiebaApiImpl : ITiebaApi {
                             is_pictxt = "0",
                             is_show_bless = 0,
                             is_twzhibo_thread = "0",
-                            name_show = nameShow ?: AccountUtil.getAccountInfo { this.nickname }
-                                .orEmpty(),
+                            name_show = account?.nickname ?: nameShow
+                                ?: AccountUtil.getAccountInfo { this.nickname }.orEmpty(),
                             new_vcode = "1",
                             post_from = if (postId.isNullOrEmpty() && subPostId.isNullOrEmpty()) "13" else if (subPostId.isNullOrEmpty()) "0" else null,
                             quote_id = postId,
@@ -1244,8 +1250,18 @@ object MixedTiebaApiImpl : ITiebaApi {
                             vcode_tag = "12",
                         )
                     ),
-                    clientVersion = ClientVersion.TIEBA_V12_POST
-                )
+                    clientVersion = ClientVersion.TIEBA_V12_POST,
+                    account = account
+                ),
+                clientUserToken = account?.uid?.toString(),
+                cookie = account?.let {
+                    getCookie(
+                        "BAIDUZID" to { it.zid },
+                        "ka" to { "open" },
+                        "CUID" to { CuidUtils.getNewCuid() },
+                        "TBBRAND" to { Build.MODEL }
+                    )
+                }
             )
     }
 
@@ -1552,9 +1568,22 @@ object MixedTiebaApiImpl : ITiebaApi {
         fid: String,
         title: String,
         isHide: Int,
-        isTitle: Int
+        isTitle: Int,
+        account: Account?,
     ): Flow<AddThreadBean> =
-    RetrofitTiebaApi.MINI_TIEBA_API.addThreadFlow(threadContent, kw, fid, title, isHide, isTitle)
+        if (account == null) {
+            RetrofitTiebaApi.MINI_TIEBA_API.addThreadFlow(threadContent, kw, fid, title, isHide, isTitle)
+        } else {
+            RetrofitTiebaApi.MINI_TIEBA_API.addThreadFlow(
+                threadContent, kw, fid, title, isHide, isTitle,
+                z_id = account.zid,
+                nameShow = account.nickname,
+                clientUserToken = account.uid.toString(),
+                tbs = account.tbs,
+                stoken = account.sToken,
+                bduss = account.bduss,
+            )
+        }
 
     override fun setUserBlackFlow(
         blackUid: Long,

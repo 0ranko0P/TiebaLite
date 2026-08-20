@@ -33,6 +33,11 @@ interface SettingsRepository {
      * */
     val accountUid: Settings<Long>
 
+    /**
+     * Settings of last used reply send-as account uid, ``-1`` if not set (use main account)
+     * */
+    val replySendAsUid: Settings<Long>
+
     val blockSettings: Settings<BlockSettings>
 
     /**

@@ -27,6 +27,7 @@ import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostResponse
 import com.huanchengfly.tieba.post.api.models.web.ForumHome
 import com.huanchengfly.tieba.post.api.models.web.HotMessageListBean
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.DislikeBean
 import com.huanchengfly.tieba.post.models.MyInfoBean
 import com.huanchengfly.tieba.post.models.PhotoInfoBean
@@ -1377,7 +1378,8 @@ interface ITiebaApi {
         nameShow: String? = null,
         postId: String? = null,
         subPostId: String? = null,
-        replyUserId: String? = null
+        replyUserId: String? = null,
+        account: Account? = null,
     ): Flow<AddPostResponse>
 
     /**
@@ -1544,6 +1546,7 @@ interface ITiebaApi {
         title: String,
         isHide: Int,
         isTitle: Int,
+        account: Account? = null,
     ): Flow<AddThreadBean>
 
     /**
