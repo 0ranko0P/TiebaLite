@@ -45,3 +45,5 @@ fun rememberScrollOrientationConnection(orientation: Orientation = Orientation.V
     remember(orientation) {
         ScrollOrientationConnection(orientation = orientation)
     }
+
+val LocalScrollOrientationConnection = androidx.compose.runtime.staticCompositionLocalOf<ScrollOrientationConnection?> { null }
