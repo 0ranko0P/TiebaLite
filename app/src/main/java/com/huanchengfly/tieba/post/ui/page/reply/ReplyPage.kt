@@ -346,7 +346,7 @@ private fun ReplyPageContent(
                         }
                     },
                     menuState = menuState,
-                    enabled = accounts.size > 1,
+                    enabled = accounts.size > 1 && !isUploading,
                     triggerShape = CircleShape,
                 ) {
                     Avatar(
