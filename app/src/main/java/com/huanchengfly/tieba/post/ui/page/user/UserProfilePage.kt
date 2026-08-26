@@ -341,7 +341,7 @@ fun UserProfilePage(
                         Tab.POSTS -> UserPostPage(uid, fluid, lazyListState)
 
                         Tab.FORUMS -> when {
-                            userProfile.privateForum -> UserPageHide(hiddenTab = tab)
+                            !isSelf && userProfile.privateForum -> UserPageHide(hiddenTab = tab)
 
                             userProfile.forum == 0 -> UserPageEmpty()
 
