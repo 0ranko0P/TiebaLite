@@ -281,7 +281,7 @@ class SearchRepository @Inject constructor(
                 val threadHighlightContent: AnnotatedString = buildHighlightContent(
                     content = buildThreadContent(
                         title = info.title.takeIf { info.mainPost == null },
-                        abstractText = info.content
+                        abstractText = info.content.orEmpty()
                     ),
                     patterns = keywordPatterns
                 )

@@ -48,7 +48,7 @@ data class SearchThreadBean(
         val pid: Long,
         val cid: Long,
         val title: String,
-        val content: String,
+        val content: String?,
         val time: Long,
         @SerialName("modified_time")
         val modifiedTime: Long,
