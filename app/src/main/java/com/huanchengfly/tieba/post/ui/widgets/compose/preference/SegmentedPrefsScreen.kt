@@ -184,6 +184,7 @@ interface SettingsSegmentedPrefsScope<T>: SegmentedPrefsScope {
      * @param leadingIcon optional leading icon to be drawn at the beginning of the preference.
      * @param enabled controls the enabled state of this list pref. When `false`, this component will
      *   not respond to user input, and it will appear visually disabled.
+     * @param onValueChanged callback to be invoked when user selected new option in [options]
      */
     fun <K> listPref(
         property: KProperty1<T, K>,
@@ -194,6 +195,7 @@ interface SettingsSegmentedPrefsScope<T>: SegmentedPrefsScope {
         useSelectedAsSummary: Boolean = summary == null,
         leadingIcon: ImageVector? = null,
         enabled: Boolean = true,
+        onValueChanged: ((K) -> Unit)? = null,
     )
 }
 
@@ -449,6 +451,7 @@ private class SettingsSegmentedPrefsScopeImpl<T>(
         useSelectedAsSummary: Boolean,
         leadingIcon: ImageVector?,
         enabled: Boolean,
+        onValueChanged: ((K) -> Unit)?,
     ) {
         prefsItem(key = title, contentType = ItemType.Clickable) { shapes ->
             val context = LocalContext.current
@@ -468,6 +471,7 @@ private class SettingsSegmentedPrefsScopeImpl<T>(
                 enabled = enabled,
                 onValueChange = { newOption ->
                     this@SettingsSegmentedPrefsScopeImpl.saver.update(property, newOption)
+                    onValueChanged?.invoke(newOption)
                 },
             )
         }

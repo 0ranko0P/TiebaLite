@@ -146,7 +146,7 @@ object ThemeUtil {
         _darkModeOverride.update { null } // clear override
     }
 
-    fun overrideDarkMode(darkMode: Boolean) = _darkModeOverride.update { darkMode }
+    fun overrideDarkMode(darkMode: Boolean?) = _darkModeOverride.update { darkMode }
 
     fun currentColorScheme(): ColorScheme = colorState.value.colorScheme
 

@@ -40,6 +40,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegment
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
 import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.LauncherIcons
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.persistentMapOf
 
 @Composable
@@ -201,7 +202,10 @@ fun SettingsSegmentedPrefsScope<UISettings>.darkThemeModePreference() {
             DarkPreference.ALWAYS to R.string.summary_night_mode_always,
             DarkPreference.DISABLED to R.string.summary_night_mode_disabled,
             DarkPreference.FOLLOW_SYSTEM to R.string.summary_night_mode_system
-        )
+        ),
+        onValueChanged = {
+            ThemeUtil.overrideDarkMode(darkMode = null) // Clear user override
+        },
     )
 }
 
