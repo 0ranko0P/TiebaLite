@@ -141,6 +141,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
             hideReplyWarning = it[booleanPreferencesKey(KEY_REPLY_HIDE_WARNING)] == true,
             imageLoadType = it[intPreferencesKey(KEY_IMAGE_LOAD_TYPE)] ?: ImageUtil.SETTINGS_SMART_ORIGIN,
             imageWatermarkType = it[intPreferencesKey(KEY_IMAGE_WATERMARK_TYPE)] ?: WaterType.FORUM_NAME,
+            quickReplyFromFeed = it[booleanPreferencesKey(KEY_REPLY_QUICK_FROM_FEED)] == true,
             showBothName = it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true,
             stickyHeader = it[booleanPreferencesKey(KEY_STICKY_HEADER)] ?: true,
             videoAutoplay = it[booleanPreferencesKey(KEY_VIDEO_AUTOPLAY)] ?: true
@@ -157,6 +158,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
         it[booleanPreferencesKey(KEY_REPLY_HIDE_WARNING)] = habit.hideReplyWarning
         it[intPreferencesKey(KEY_IMAGE_LOAD_TYPE)] = habit.imageLoadType
         it[intPreferencesKey(KEY_IMAGE_WATERMARK_TYPE)] = habit.imageWatermarkType
+        it[booleanPreferencesKey(KEY_REPLY_QUICK_FROM_FEED)] = habit.quickReplyFromFeed
         it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] = habit.showBothName
         it[booleanPreferencesKey(KEY_STICKY_HEADER)] = habit.stickyHeader
         it[booleanPreferencesKey(KEY_VIDEO_AUTOPLAY)] = habit.videoAutoplay
@@ -180,6 +182,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
     private const val KEY_POST_HIDE_MEDIA = "ui_post_hide_media"
     private const val KEY_REPLY_HIDE = "ui_reply_hide"
     private const val KEY_REPLY_HIDE_WARNING = "ui_reply_hide_warn"
+    private const val KEY_REPLY_QUICK_FROM_FEED = "ui_reply_quick_from_feed"
     private const val KEY_SHOW_NICKNAME = "ui_show_both_name"
     private const val KEY_STICKY_HEADER = "ui_sticky_header"
     private const val KEY_VIDEO_AUTOPLAY = "ui_video_autoplay"

@@ -88,6 +88,7 @@ fun ConcernPage(
                         onClick = threadClickListeners.onClicked,
                         onLike = viewModel::onThreadLikeClicked,
                         onClickReply = threadClickListeners.onReplyClicked,
+                        onLongClickReply = threadClickListeners.onReplyLongClicked,
                         onClickUser = threadClickListeners.onAuthorClicked,
                         onClickForum = threadClickListeners.onForumClicked,
                         cardDivider = i < data.lastIndex

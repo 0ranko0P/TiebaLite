@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.ui.icons.Autoplay
+import com.huanchengfly.tieba.post.ui.icons.CommentNew
 import com.huanchengfly.tieba.post.ui.icons.PageHeader
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
@@ -98,6 +99,15 @@ fun HabitSettingsPage(
 
         group(title = R.string.settings_group_reply) {
             hideReplyPreference()
+
+            toggleablePreference(
+                property = HabitSettings::quickReplyFromFeed,
+                title = R.string.settings_quick_reply_from_feed,
+                summaryOn = R.string.tip_quick_reply_from_feed,
+                summaryOff = R.string.tip_quick_reply_from_feed,
+                enabled = !currentPreference.hideReply,
+                leadingIcon = Icons.Rounded.CommentNew
+            )
 
             toggleablePreference(
                 property = HabitSettings::hideReplyWarning,
