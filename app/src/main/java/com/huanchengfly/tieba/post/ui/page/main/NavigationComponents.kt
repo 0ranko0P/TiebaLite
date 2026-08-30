@@ -257,6 +257,7 @@ private fun Modifier.floatingNavBarContainer(
 ): Modifier = this then with(scope) {
     Modifier
         .windowInsetsPadding(windowInsets)
+        .padding(top = screenOffset)
         .heightIn(min = height)
         .clickableNoIndication(onClick = {})
         .selectableGroup()

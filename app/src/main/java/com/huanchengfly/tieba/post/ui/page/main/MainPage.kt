@@ -4,11 +4,13 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -27,6 +29,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -76,6 +79,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -117,11 +122,15 @@ import com.huanchengfly.tieba.post.ui.common.defaultVerticalExitTransition
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.huanchengfly.tieba.post.ui.models.settings.NavigationLabel
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.ui.utils.LocalScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationPosition
 import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
+import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
 import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarHeight
@@ -162,23 +171,34 @@ val MainDestination.iconRes: Int
 val bottomNavigationPlaceholder: @Composable () -> Unit = {
     val navigationSuiteType = calculateMainNavigationSuiteType()
     if (navigationSuiteType.isNavigationBar) {
+        val uiSettings = LocalUISettings.current
+        val scrollConnection = LocalScrollOrientationConnection.current
+        val isNavVisible = if (uiSettings.bottomNavHideOnScroll && scrollConnection != null) {
+            scrollConnection.isScrollingForward
+        } else {
+            true
+        }
+        val targetHeight = when (navigationSuiteType) {
+            MainNavigationSuiteType.ShortNavigationBarCompact -> NavigationBarHeight
+            MainNavigationSuiteType.FloatingNavigationBar -> {
+                TallNavigationBarHeight + floatingNavigationBarCompactScreenOffset
+            }
+
+            MainNavigationSuiteType.FloatingNavigationBarCompact -> {
+                NavigationBarHeight + floatingNavigationBarCompactScreenOffset
+            }
+
+            else -> TallNavigationBarHeight
+        }
+        val placeholderHeight by animateDpAsState(
+            targetValue = if (isNavVisible) targetHeight else 0.dp,
+            animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+            label = "BottomNavPlaceholderHeight"
+        )
         Spacer(
             modifier = Modifier
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .height(
-                    when (navigationSuiteType) {
-                        MainNavigationSuiteType.ShortNavigationBarCompact -> NavigationBarHeight
-                        MainNavigationSuiteType.FloatingNavigationBar -> {
-                            TallNavigationBarHeight + floatingNavigationBarCompactScreenOffset
-                        }
-
-                        MainNavigationSuiteType.FloatingNavigationBarCompact -> {
-                            NavigationBarHeight + floatingNavigationBarCompactScreenOffset
-                        }
-
-                        else -> TallNavigationBarHeight
-                    }
-                )
+                .height(placeholderHeight)
         )
     } else {
         Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
@@ -233,87 +253,100 @@ fun MainPage(
     val hazeState = if (blurEffect) rememberTbHazeState() else null
     val navigationSuiteColors = mainNavigationSuiteColors(uiSettings.bottomNavFloating, blurEffect)
 
-    val currentDestination by nestedNavController.currentMainDestinationAsState(destinations)
-    MainNavigationSuiteScaffold(
-        state = scaffoldState,
-        hazeState = hazeState.takeIf { navigationSuiteType.isNavigationBar },
-        navigationItems = {
-            val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
+    val scrollConnection = rememberScrollOrientationConnection()
+    val isNavVisible = if (uiSettings.bottomNavHideOnScroll && navigationSuiteType.isNavigationBar) {
+        scrollConnection.isScrollingForward
+    } else {
+        true
+    }
 
-            MainNavigationItems(
-                items = destinations,
-                isSelected = { dest -> dest === currentDestination },
-                onSelect = { dest ->
-                    nestedNavController.navigate(route = dest) {
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(route = startDestination) {
-                            saveState = true
+    val currentDestination by nestedNavController.currentMainDestinationAsState(destinations)
+    CompositionLocalProvider(LocalScrollOrientationConnection provides scrollConnection) {
+        MainNavigationSuiteScaffold(
+            state = scaffoldState,
+            hazeState = hazeState.takeIf { navigationSuiteType.isNavigationBar },
+            isNavVisible = isNavVisible,
+            scrollConnection = scrollConnection.takeIf { uiSettings.bottomNavHideOnScroll && navigationSuiteType.isNavigationBar },
+            navigationItems = {
+                val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
+
+                MainNavigationItems(
+                    items = destinations,
+                    isSelected = { dest -> dest === currentDestination },
+                    onSelect = { dest ->
+                        scrollConnection.reset()
+                        nestedNavController.navigate(route = dest) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(route = startDestination) {
+                                saveState = true
+                            }
+                        }
+                        if (dest == MainDestination.Notification) vm.onNavigateNotification()
+                    },
+                    onReSelect = { dest ->
+                        scrollConnection.reset()
+                        coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(dest))
+                    },
+                    mainNavigationSuiteType = navigationSuiteType,
+                    bottomNavLabel = uiSettings.bottomNavLabel,
+                    messageCount = { messageCount },
+                )
+            },
+            mainNavSuiteType = navigationSuiteType,
+            navigationSuiteColors = navigationSuiteColors,
+            navigationVerticalArrangement = calculateNavigationPosition(windowAdaptiveInfo),
+            primaryActionContent = {
+                val onLoginClicked: () -> Unit = { navHostController.navigate(Destination.Login) }
+                when (navigationSuiteType) {
+                    MainNavigationSuiteType.WideNavigationRailCollapsed,
+                    MainNavigationSuiteType.WideNavigationRailExpanded -> {
+                        AccountNavIcon(onLoginClicked, modifier = Modifier.padding(start = 32.dp))
+                    }
+                    MainNavigationSuiteType.NavigationRail -> {
+                        AccountNavIcon(onLoginClicked, modifier = Modifier.padding(top = 10.dp))
+                    }
+                    MainNavigationSuiteType.NavigationDrawer -> TbDrawerNavigationAction(onLoginClicked)
+
+                    MainNavigationSuiteType.FloatingNavigationBarCompact -> {
+                        if (uiSettings.hideExplore) return@MainNavigationSuiteScaffold
+                        ExplorePrimaryAction(visible = MainDestination.Explore === currentDestination) {
+                            coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))
                         }
                     }
-                    if (dest == MainDestination.Notification) vm.onNavigateNotification()
-                },
-                onReSelect = { dest ->
-                    coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(dest))
-                },
-                mainNavigationSuiteType = navigationSuiteType,
-                bottomNavLabel = uiSettings.bottomNavLabel,
-                messageCount = { messageCount },
-            )
-        },
-        mainNavSuiteType = navigationSuiteType,
-        navigationSuiteColors = navigationSuiteColors,
-        navigationVerticalArrangement = calculateNavigationPosition(windowAdaptiveInfo),
-        primaryActionContent = {
-            val onLoginClicked: () -> Unit = { navHostController.navigate(Destination.Login) }
-            when (navigationSuiteType) {
-                MainNavigationSuiteType.WideNavigationRailCollapsed,
-                MainNavigationSuiteType.WideNavigationRailExpanded -> {
-                    AccountNavIcon(onLoginClicked, modifier = Modifier.padding(start = 32.dp))
-                }
-                MainNavigationSuiteType.NavigationRail -> {
-                    AccountNavIcon(onLoginClicked, modifier = Modifier.padding(top = 10.dp))
-                }
-                MainNavigationSuiteType.NavigationDrawer -> TbDrawerNavigationAction(onLoginClicked)
 
-                MainNavigationSuiteType.FloatingNavigationBarCompact -> {
-                    if (uiSettings.hideExplore) return@MainNavigationSuiteScaffold
-                    ExplorePrimaryAction(visible = MainDestination.Explore === currentDestination) {
-                        coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))
-                    }
+                    else -> Unit // NavigationBar or None
                 }
-
-                else -> Unit // NavigationBar or None
             }
-        }
-    ) {
-        val parentAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current
-        val parentSharedTransitionScope = LocalSharedTransitionScope.current
-        val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-            mainEnterTransition(navigationSuiteType, destinations)
-        }
-        val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-            mainExitTransition(navigationSuiteType, destinations)
-        }
-
-        NavHost(
-            navController = nestedNavController,
-            startDestination = startDestination,
-            modifier = Modifier.onNotNull(hazeState) {
-                hazeSource(state = it.state, zIndex = 1f)
-            },
-            enterTransition = enterTransition,
-            exitTransition = exitTransition,
-            popEnterTransition = enterTransition,
-            popExitTransition = exitTransition
         ) {
-            mainNavGraph(
-                navController = navHostController,
-                nestedNavController = nestedNavController,
-                hazeState = hazeState,
-                parentAnimatedVisibilityScope = parentAnimatedVisibilityScope,
-                parentSharedTransitionScope = parentSharedTransitionScope,
-            )
+            val parentAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current
+            val parentSharedTransitionScope = LocalSharedTransitionScope.current
+            val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+                mainEnterTransition(navigationSuiteType, destinations)
+            }
+            val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+                mainExitTransition(navigationSuiteType, destinations)
+            }
+
+            NavHost(
+                navController = nestedNavController,
+                startDestination = startDestination,
+                modifier = Modifier.onNotNull(hazeState) {
+                    hazeSource(state = it.state, zIndex = 1f)
+                },
+                enterTransition = enterTransition,
+                exitTransition = exitTransition,
+                popEnterTransition = enterTransition,
+                popExitTransition = exitTransition
+            ) {
+                mainNavGraph(
+                    navController = navHostController,
+                    nestedNavController = nestedNavController,
+                    hazeState = hazeState,
+                    parentAnimatedVisibilityScope = parentAnimatedVisibilityScope,
+                    parentSharedTransitionScope = parentSharedTransitionScope,
+                )
+            }
         }
     }
 
@@ -364,6 +397,8 @@ private fun MainNavigationSuiteScaffold(
     modifier: Modifier = Modifier,
     hazeState: TbHazeState? = null,
     mainNavSuiteType: MainNavigationSuiteType = calculateMainNavigationSuiteType(),
+    isNavVisible: Boolean = true,
+    scrollConnection: NestedScrollConnection? = null,
     navigationBarAtop: Boolean = true,
     navigationSuiteColors: NavigationSuiteColors = NavigationSuiteDefaults.colors(),
     navigationVerticalArrangement: Arrangement.Vertical = NavigationSuiteDefaults.verticalArrangement,
@@ -385,27 +420,39 @@ private fun MainNavigationSuiteScaffold(
     NavigationSuiteScaffoldLayout(
         modifier = modifier,
         navigationSuite = {
-            MainNavigationSuite(
-                mainNavigationSuiteType = mainNavSuiteType,
-                modifier = Modifier
-                    .withNonNull(hazeState) {
-                        Modifier.defaultHazeEffect {
-                            blurEnabled = animatedVisibilityScope?.transition?.isRunning != true
+            AnimatedVisibility(
+                visible = isNavVisible || !mainNavSuiteType.isNavigationBar,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+                ) + fadeIn(tween(durationMillis = 250, easing = FastOutSlowInEasing)),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+                ) + fadeOut(tween(durationMillis = 250, easing = FastOutSlowInEasing))
+            ) {
+                MainNavigationSuite(
+                    mainNavigationSuiteType = mainNavSuiteType,
+                    modifier = Modifier
+                        .withNonNull(hazeState) {
+                            Modifier.defaultHazeEffect {
+                                blurEnabled = animatedVisibilityScope?.transition?.isRunning != true
+                            }
                         }
-                    }
-                    .onNotNull(colorsOnTransition) {
-                        animateEnterExit(
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            sharedTransitionScope = LocalSharedTransitionScope.current,
-                            enter = defaultVerticalEnterTransition(topToBottom = false),
-                            exit = defaultVerticalExitTransition(topToBottom = false)
-                        )
-                    },
-                colors = colorsOnTransition ?: navigationSuiteColors,
-                verticalArrangement = navigationVerticalArrangement,
-                primaryActionContent = primaryActionContent,
-                content = navigationItems,
-            )
+                        .onNotNull(colorsOnTransition) {
+                            animateEnterExit(
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                sharedTransitionScope = LocalSharedTransitionScope.current,
+                                enter = defaultVerticalEnterTransition(topToBottom = false),
+                                exit = defaultVerticalExitTransition(topToBottom = false)
+                            )
+                        },
+                    colors = colorsOnTransition ?: navigationSuiteColors,
+                    verticalArrangement = navigationVerticalArrangement,
+                    primaryActionContent = primaryActionContent,
+                    content = navigationItems,
+                )
+            }
         },
         state = state,
         navigationSuiteType = navigationSuiteType,
@@ -414,11 +461,15 @@ private fun MainNavigationSuiteScaffold(
         primaryActionContentHorizontalAlignment = primaryActionContentHorizontalAlignment,
         content = {
             Box(
-                Modifier.navigationSuiteScaffoldConsumeWindowInsets(
-                    navigationSuiteType,
-                    navigationBarAtop,
-                    state,
-                ),
+                Modifier
+                    .navigationSuiteScaffoldConsumeWindowInsets(
+                        navigationSuiteType,
+                        navigationBarAtop,
+                        state,
+                    )
+                    .onNotNull(scrollConnection) {
+                        nestedScroll(it)
+                    },
             ) {
                 content()
             }
@@ -585,7 +636,7 @@ private fun mainNavigationSuiteColors(floatingNavBar: Boolean, blur: Boolean): N
             } else {
                 ShortNavigationBarDefaults.contentColor
             },
-            navigationBarContainerColor = navigationContainer
+            navigationBarContainerColor = if (floatingNavBar) Color.Transparent else navigationContainer
         )
     }
 }
