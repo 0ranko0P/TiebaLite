@@ -22,6 +22,7 @@ import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.ThreadHistory
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.repository.PageData
@@ -31,11 +32,14 @@ import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
+import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
 import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStoreUiEvent
+import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,12 +51,15 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
@@ -95,6 +102,20 @@ class ThreadViewModel @Inject constructor(
 
     var hideReply by mutableStateOf(false)
         private set
+
+    /**
+     * 帖子详情底部悬浮栏应展示的账号（持久化的发送账号），null 表示使用主账号
+     * */
+    val sendAsUser: StateFlow<UserData?> = combine(
+        settingsRepository.replySendAsUid,
+        AccountUtil.getInstance().allAccounts
+    ) { uid, accounts ->
+        if (uid == -1L) {
+            null
+        } else {
+            accounts.firstOrNull { it.uid == uid }?.toSendAsUserData()
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val isRefreshing: Boolean
         get() = currentState.isRefreshing
@@ -746,3 +767,16 @@ sealed interface ThreadUiEvent : UiEvent {
 
     data class ToSubPostsDestination(val direction: SubPosts): ThreadUiEvent
 }
+
+private fun Account.toSendAsUserData(): UserData = UserData(
+    id = uid,
+    name = name,
+    nameShow = nickname.orEmpty(),
+    showBothName = false,
+    avatarUrl = StringUtil.getAvatarUrl(portrait),
+    portrait = portrait,
+    ip = "",
+    levelId = 0,
+    bawuType = null,
+    isLz = false
+)

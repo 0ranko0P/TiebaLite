@@ -6,6 +6,9 @@ import android.text.Spannable
 import android.text.style.ImageSpan
 import android.util.Log
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.util.fastForEach
 import androidx.core.net.toUri
 import androidx.core.text.getSpans
@@ -30,12 +33,14 @@ import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.components.ImageUploader
 import com.huanchengfly.tieba.post.models.database.Draft
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.dao.DraftDao
 import com.huanchengfly.tieba.post.repository.AddPostRepository
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -50,6 +55,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -86,6 +92,23 @@ class ReplyViewModel @Inject constructor(
 
     val isTopicThread = replyType == ReplyType.TOPIC_THREAD
 
+    /**
+     * 当前弹窗的发送账号，null 表示使用全局主账号
+     * */
+    var sendAsAccount by mutableStateOf<Account?>(null)
+        private set
+
+    fun selectSendAccount(account: Account?) {
+        if (account?.uid == sendAsAccount?.uid) return
+        if (uiState.value.uploadImageResultList.isNotEmpty()) {
+            send(ReplyUiIntent.ClearUploadResults)
+        }
+        sendAsAccount = account
+        if (account != null) {
+            settingsRepo.replySendAsUid.set(account.uid)
+        }
+    }
+
     var emoticons: List<Emoticon> = emptyList()
         private set
 
@@ -104,6 +127,16 @@ class ReplyViewModel @Inject constructor(
     init {
         emoticons = EmoticonManager.getAllEmoticon()
         super.initialized = true
+
+        viewModelScope.launch {
+            val savedUid = settingsRepo.replySendAsUid.snapshot()
+            if (savedUid != -1L) {
+                val account = AccountUtil.getInstance().allAccounts.first().find { it.uid == savedUid }
+                if (account != null) {
+                    sendAsAccount = account
+                }
+            }
+        }
     }
 
     override fun createInitialState() = ReplyUiState()
@@ -155,7 +188,12 @@ class ReplyViewModel @Inject constructor(
                     .flatMapConcat { it.producePartialChange() },
                 intentFlow.filterIsInstance<ReplyUiIntent.ToggleIsOriginImage>()
                     .flatMapConcat { it.producePartialChange() },
+                intentFlow.filterIsInstance<ReplyUiIntent.ClearUploadResults>()
+                    .flatMapConcat { it.producePartialChange() },
             )
+
+        private fun ReplyUiIntent.ClearUploadResults.producePartialChange() =
+            flowOf(ReplyPartialChange.ClearUploadResults)
 
         private fun ReplyUiIntent.Send.producePartialChange(): Flow<ReplyPartialChange.Send> {
             if (forumId != 0L && threadId == 0L ) {
@@ -167,6 +205,7 @@ class ReplyViewModel @Inject constructor(
                         title = title,
                         isHide = 1,
                         isTitle = if (title.isNullOrEmpty()) 1 else 0,
+                        account = account,
                     )
                     .map<AddThreadBean, ReplyPartialChange.Send> {
                         if (it.tid == null) throw TiebaUnknownException
@@ -197,7 +236,8 @@ class ReplyViewModel @Inject constructor(
                     tbs,
                     postId = postId,
                     subPostId = subPostId,
-                    replyUserId = replyUserId
+                    replyUserId = replyUserId,
+                    account = account,
                 )
                 .map<AddPostResponse, ReplyPartialChange.Send> {
                     if (it.data_ == null) throw TiebaUnknownException
@@ -220,7 +260,8 @@ class ReplyViewModel @Inject constructor(
                         context = context,
                         images = imageUris.map { it.toUri() },
                         watermarkType = habitSettings.snapshot().imageWatermarkType,
-                        isOriginImage = isOriginImage
+                        isOriginImage = isOriginImage,
+                        account = account,
                     )
                     emit(ReplyPartialChange.UploadImages.Success(rec))
                 }
@@ -262,7 +303,8 @@ class ReplyViewModel @Inject constructor(
                 title = threadTitle.takeIf { isTopicThread },
                 postId = postId,
                 subPostId = subPostId,
-                replyUserId = replyUserId
+                replyUserId = replyUserId,
+                account = sendAsAccount,
             )
         )
     }
@@ -283,6 +325,7 @@ class ReplyViewModel @Inject constructor(
                 postId = postId,
                 subPostId = subPostId,
                 replyUserId = replyUserId,
+                account = sendAsAccount,
             )
         )
     }
@@ -355,7 +398,8 @@ sealed interface ReplyUiIntent : UiIntent {
     data class UploadImages(
         val forumName: String,
         val imageUris: List<String>,
-        val isOriginImage: Boolean
+        val isOriginImage: Boolean,
+        val account: Account? = null,
     ) : ReplyUiIntent
 
     data class Send(
@@ -368,6 +412,7 @@ sealed interface ReplyUiIntent : UiIntent {
         val postId: Long? = null,
         val subPostId: Long? = null,
         val replyUserId: Long? = null,
+        val account: Account? = null,
     ) : ReplyUiIntent
 
     data class AddImage(val imageUris: List<String>) : ReplyUiIntent
@@ -375,6 +420,8 @@ sealed interface ReplyUiIntent : UiIntent {
     data class RemoveImage(val imageIndex: Int) : ReplyUiIntent
 
     data class ToggleIsOriginImage(val isOriginImage: Boolean) : ReplyUiIntent
+
+    data object ClearUploadResults : ReplyUiIntent
 }
 
 sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
@@ -442,6 +489,11 @@ sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
     data class ToggleIsOriginImage(val isOriginImage: Boolean) : ReplyPartialChange {
         override fun reduce(oldState: ReplyUiState): ReplyUiState =
             oldState.copy(isOriginImage = isOriginImage)
+    }
+
+    data object ClearUploadResults : ReplyPartialChange {
+        override fun reduce(oldState: ReplyUiState): ReplyUiState =
+            oldState.copy(uploadImageResultList = persistentListOf())
     }
 }
 

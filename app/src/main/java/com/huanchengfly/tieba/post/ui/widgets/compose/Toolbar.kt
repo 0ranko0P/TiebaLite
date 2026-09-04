@@ -96,7 +96,7 @@ val MoreMenuItem: @Composable () -> Unit = {
 
 
 @Composable
-private fun AccountDropdownMenuItem(
+fun AccountDropdownMenuItem(
     onClick: () -> Unit,
     account: Account,
     currentAccountUid: Long,

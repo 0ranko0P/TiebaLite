@@ -239,6 +239,7 @@ fun ThreadPage(
     val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
 
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sendAsUser by viewModel.sendAsUser.collectAsStateWithLifecycle()
     val isEmpty by remember {
         derivedStateOf { state.data.isEmpty() && state.firstPost == null }
     }
@@ -476,7 +477,7 @@ fun ThreadPage(
                                 enter = defaultVerticalEnterTransition(topToBottom = false),
                                 exit = defaultVerticalExitTransition(topToBottom = false),
                             ),
-                        user = state.user,
+                        user = sendAsUser ?: state.user,
                         onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
                         onClickMore =  openBottomSheet,
                         onJumpPage = jumpToPageDialogState::show,

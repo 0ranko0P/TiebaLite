@@ -110,6 +110,8 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override val accountUid: Settings<Long> = SimpleSettings(longPreferencesKey("account_uid"), -1)
 
+    override val replySendAsUid: Settings<Long> = SimpleSettings(longPreferencesKey("reply_send_as_uid"), -1)
+
     override val blockSettings: Settings<BlockSettings> = ComplexSettings(BlockTransformer)
 
     override val fontScale: Settings<Float> = SimpleSettings(floatPreferencesKey("fontScale"), 1.0f)
