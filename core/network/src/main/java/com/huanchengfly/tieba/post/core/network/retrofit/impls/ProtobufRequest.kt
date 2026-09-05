@@ -26,7 +26,7 @@ internal fun MixedTiebaApiImpl.buildProtobufRequestBody(
     return MyMultipartBody.Builder(BOUNDARY)
         .apply {
             setType(MyMultipartBody.FORM)
-            if (clientVersion != ClientVersion.TIEBA_V12 && clientVersion != ClientVersion.TIEBA_V12_POST) {
+            if (clientVersion != ClientVersion.TIEBA_V12 && clientVersion != ClientVersion.TIEBA_V12_POST && clientVersion != ClientVersion.TIEBA_V22) {
                 addFormDataPart(Param.CLIENT_VERSION, clientVersion.version)
             }
             if (needSToken) {
@@ -136,6 +136,55 @@ internal fun MixedTiebaApiImpl.buildCommonRequest(
             start_type = 1,
             stoken = credentialProvider.getSToken(),
             swan_game_ver = "1038000",
+            user_agent = retrofitTiebaApi.getUserAgent("tieba/${clientVersion.version}"),
+            z_id = credentialProvider.getZid()
+        )
+    }
+
+    ClientVersion.TIEBA_V22 -> {
+        CommonRequest(
+            BDUSS = credentialProvider.getBduss(),
+            _client_id = clientConfigProvider.getClientId() ?: retrofitTiebaApi.randomClientId,
+            _client_type = 2,
+            _client_version = clientVersion.version,
+            _os_version = "${Build.VERSION.SDK_INT}",
+            _phone_imei = deviceInfoProvider.imei,
+            _timestamp = System.currentTimeMillis(),
+            active_timestamp = clientConfigProvider.activeTimestamp,
+            android_id = base64Encode(uidManager.getAndroidId("000")),
+            brand = Build.BRAND,
+            c3_aid = uidManager.getAid(),
+            cmode = 1,
+            cuid = uidManager.newCUID,
+            cuid_galaxy2 = uidManager.newCUID,
+            cuid_gid = "",
+            event_day = SimpleDateFormat("yyyyMdd", Locale.getDefault()).format(
+                Date(
+                    System.currentTimeMillis()
+                )
+            ),
+            extra = "",
+            first_install_time = oaidProvider.appFirstInstallTime,
+            framework_ver = "4220001",
+            from = "1020031h",
+            is_teenager = 0,
+            last_update_time = oaidProvider.appLastUpdateTime,
+            lego_lib_version = "3.0.0",
+            model = Build.MODEL,
+            net_type = 1,
+            oaid = "",
+            personalized_rec_switch = 1,
+            pversion = "1.0.3",
+            q_type = 0,
+            sample_id = clientConfigProvider.getSampleId(),
+            scr_dip = deviceInfoProvider.density.toDouble(),
+            scr_h = deviceInfoProvider.screenHeight,
+            scr_w = deviceInfoProvider.screenWidth,
+            sdk_ver = "3.36.0",
+            start_scheme = "",
+            start_type = 1,
+            stoken = credentialProvider.getSToken(),
+            swan_game_ver = "2035000",
             user_agent = retrofitTiebaApi.getUserAgent("tieba/${clientVersion.version}"),
             z_id = credentialProvider.getZid()
         )
