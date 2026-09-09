@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,26 +14,17 @@
  * limitations under the License.
  */
 
-plugins {
-    alias(libs.plugins.tblite.android.library)
-}
+import com.huanchengfly.tieba.configureKotlinJvm
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.kotlin.dsl.apply
 
-android {
-    namespace = "com.google.android.material.color.utilities"
+abstract class JvmLibraryConventionPlugin : Plugin<Project> {
+    override fun apply(target: Project) {
+        with(target) {
+            apply(plugin = "org.jetbrains.kotlin.jvm")
 
-    lint.checkReleaseBuilds = false
-
-    buildFeatures.buildConfig = false
-
-    packaging {
-        // Some of the META-INF files conflict with coroutines-test. Exclude them to enable
-        // our test APK to build (has no effect on our AARs)
-        resources {
-            excludes += listOf("/META-INF/AL2.0", "/META-INF/LGPL2.1")
+            configureKotlinJvm()
         }
     }
-}
-
-dependencies {
-    implementation(libs.androidx.annotation)
 }

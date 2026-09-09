@@ -7,11 +7,6 @@ coroutines = "1.10.2"
 ksp = "2.3.10"
 wire = "6.0.0"
 
-#noinspection UnusedVersionCatalogEntry
-compileSdk = "37"
-targetSdk = "35"
-minSdk = "24"
-
 androidx-appcompat = "1.7.1"
 androidx-activity-compose = "1.13.0"
 androidx-benchmark = "1.5.0-rc01"
@@ -23,6 +18,7 @@ androidx-lifecycle = "2.11.0"
 androidx-paging = "3.5.1"
 androidx-perfetto = "1.0.1"
 androidx-room = "2.8.4"
+androidx-test = "1.7.0"
 androidx-work = "2.11.2"
 androidx-media3 = "1.10.1"
 coil = "3.4.0"
@@ -68,6 +64,7 @@ androidx-hilt-work = { module = "androidx.hilt:hilt-work", version.ref = "androi
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+hilt-core = { module = "com.google.dagger:hilt-core", version.ref = "hilt" }
 
 androidx-annotation = { module = "androidx.annotation:annotation", version = "1.10.0" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
@@ -81,7 +78,8 @@ androidx-palette = { module = "androidx.palette:palette-ktx", version = "1.0.0" 
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version = "1.4.1" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version = "1.4.0" }
 androidx-test-automator = { module = "androidx.test.uiautomator:uiautomator", version = "2.4.0-alpha07" }
-androidx-test-core = { module = "androidx.test:core", version = "1.7.0" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidx-test" }
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version = "3.7.0" }
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version = "1.2.0" }
 androidx-window = { module = "androidx.window:window", version = "1.5.1" }
@@ -111,9 +109,10 @@ jetbrains-annotations = { module = "org.jetbrains:annotations", version = "23.0.
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version = "0.4.0" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.10.0" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.11.0" }
 
 lottie = { module = "com.airbnb.android:lottie", version.ref = "lottie" }
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottie" }
@@ -138,6 +137,12 @@ wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire"
 junit = { module = "junit:junit", version.ref = "junit" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 
+# Dependencies of the included build-logic
+android-gradle = { group = "com.android.tools.build", name = "gradle-api", version.ref = "agp" }
+compose-compiler-gradle = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+kotlin-gradle = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+ksp-gradle = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+
 [bundles]
 compose-md3 = ["androidx-compose-material3", "androidx-compose-material3-navsuite"]
 coil3 = ["coil-compose", "coil-gif", "coil-network-okhttp"]
@@ -155,3 +160,13 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "androidx-room" }
 wire = { id = "com.squareup.wire", version.ref = "wire" }
+
+tblite-android-application = { id = "tblite.android.application" }
+tblite-android-application-compose = { id = "tblite.android.application.compose" }
+# tblite-android-feature-impl = { id = "tblite.android.feature.impl" }
+# tblite-android-feature-api = { id = "tblite.android.feature.api" }
+tblite-android-library = { id = "tblite.android.library" }
+tblite-android-library-compose = { id = "tblite.android.library.compose" }
+tblite-android-test = { id = "tblite.android.test" }
+tblite-hilt = { id = "tblite.hilt" }
+tblite-jvm-library = { id = "tblite.jvm.library" }

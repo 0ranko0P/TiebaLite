@@ -14,31 +14,18 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.compose.get().pluginId)
+    alias(libs.plugins.tblite.android.library)
+    alias(libs.plugins.tblite.android.library.compose)
 }
 
 android {
-    compileSdk = libs.versions.compileSdk.get().toInt()
-
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-        // targetSdkVersion has no effect for libraries. This is only used for the test APK
-        testOptions.targetSdk = libs.versions.targetSdk.get().toInt()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildFeatures {
         buildConfig = false
-        compose = true
     }
 
     lint {
@@ -59,15 +46,7 @@ android {
     namespace = "com.google.accompanist.placeholder"
 }
 
-kotlin {
-    explicitApi()
-    compilerOptions.jvmTarget = JvmTarget.JVM_17
-}
-
 dependencies {
-    val composeBom = platform(libs.androidx.compose.bom)
-    implementation(composeBom)
-
     implementation(libs.kotlin.stdlib)
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.ui)

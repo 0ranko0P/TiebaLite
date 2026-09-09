@@ -1,15 +1,14 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.ByteArrayOutputStream
 import java.time.Clock
 import java.time.Instant
 
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.tblite.android.application)
+    alias(libs.plugins.tblite.android.application.compose)
+    alias(libs.plugins.tblite.hilt)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.wire)
 }
@@ -31,15 +30,12 @@ room {
 }
 
 android {
-    compileSdk = libs.versions.compileSdk.get().toInt()
-
     defaultConfig {
         applicationId = "com.huanchengfly.tieba.post"
-        minSdk = libs.versions.minSdk.get().toInt()
         //noinspection OldTargetApi
-        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 391033
         versionName = "4.0.0 Beta 5.2"
+
         // Configure custom runner to set up the Hilt test application
         testInstrumentationRunner = "$applicationId.TbLiteTestRunner"
         vectorDrawables {
@@ -49,7 +45,6 @@ android {
     }
 
     buildFeatures {
-        compose = true
         buildConfig = true
     }
 
@@ -102,11 +97,6 @@ android {
         }
     }
 
-    compileOptions {
-        targetCompatibility = JavaVersion.VERSION_17
-        sourceCompatibility = JavaVersion.VERSION_17
-    }
-
     packaging {
         resources.excludes += listOf(
             "META-INF/**",
@@ -136,7 +126,6 @@ android {
 
 kotlin {
     compilerOptions {
-        jvmTarget = JvmTarget.JVM_17
         freeCompilerArgs.addAll(
             "-Xcontext-parameters",
             "-opt-in=kotlin.RequiresOptIn",
@@ -155,19 +144,7 @@ configurations.configureEach {
     exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
 }
 
-composeCompiler {
-    reportsDestination = layout.buildDirectory.dir("compose_compiler")
-    metricsDestination = layout.buildDirectory.dir("compose_compiler")
-
-    stabilityConfigurationFiles.addAll(
-        rootProject.layout.projectDirectory.file("compose_stability_configuration.txt")
-    )
-}
-
 dependencies {
-    //Local Files
-//    implementation fileTree(include: ["*.jar"], dir: "libs")
-
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -188,8 +165,6 @@ dependencies {
 
     api(libs.wire.runtime)
 
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.navigation.compose)
@@ -208,8 +183,6 @@ dependencies {
     implementation(libs.androidx.compose.material.iconsExtended)
     implementation(libs.androidx.compose.runtime.tracing)
     implementation(libs.androidx.compose.ui.util)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     implementation(libs.androidx.lifecycle.runtime.compose)
