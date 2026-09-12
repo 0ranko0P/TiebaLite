@@ -15,11 +15,11 @@ import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderEffectImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImageProcessor
+import com.huanchengfly.tieba.post.core.database.model.BlockUser
+import com.huanchengfly.tieba.post.core.database.model.UserProfile
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.network.model.FollowBean
-import com.huanchengfly.tieba.post.models.database.BlockUser
-import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
 import com.huanchengfly.tieba.post.ui.models.user.PermissionList

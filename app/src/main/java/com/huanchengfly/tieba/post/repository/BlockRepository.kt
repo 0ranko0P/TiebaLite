@@ -3,11 +3,11 @@ package com.huanchengfly.tieba.post.repository
 import androidx.annotation.VisibleForTesting
 import androidx.core.util.Predicate
 import com.huanchengfly.tieba.post.arch.shareInBackground
-import com.huanchengfly.tieba.post.models.database.BlockForum
-import com.huanchengfly.tieba.post.models.database.BlockKeyword
-import com.huanchengfly.tieba.post.models.database.BlockUser
-import com.huanchengfly.tieba.post.models.database.dao.BlockDao
-import com.huanchengfly.tieba.post.models.database.dao.TypedKeyword
+import com.huanchengfly.tieba.post.core.database.model.BlockForum
+import com.huanchengfly.tieba.post.core.database.model.BlockKeyword
+import com.huanchengfly.tieba.post.core.database.model.BlockUser
+import com.huanchengfly.tieba.post.core.database.dao.BlockDao
+import com.huanchengfly.tieba.post.core.database.dao.TypedKeyword
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow

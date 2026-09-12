@@ -27,14 +27,14 @@ import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
 import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.database.dao.DraftDao
+import com.huanchengfly.tieba.post.core.database.model.Draft
 import com.huanchengfly.tieba.post.core.network.exception.TiebaUnknownException
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.network.model.AddThreadBean
 import com.huanchengfly.tieba.post.core.network.model.UploadPictureResultBean
 import com.huanchengfly.tieba.post.core.network.model.protos.addPost.AddPostResponse
-import com.huanchengfly.tieba.post.models.database.Draft
-import com.huanchengfly.tieba.post.models.database.dao.DraftDao
 import com.huanchengfly.tieba.post.repository.AddPostRepository
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.Emoticon

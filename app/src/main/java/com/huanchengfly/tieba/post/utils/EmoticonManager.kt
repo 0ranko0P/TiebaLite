@@ -15,7 +15,7 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.fromJson
-import com.huanchengfly.tieba.post.toJson
+import com.huanchengfly.tieba.post.core.common.ktx.toJson
 import com.huanchengfly.tieba.post.utils.CoilUtil.downloadOnly
 import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
 import kotlinx.coroutines.CoroutineName

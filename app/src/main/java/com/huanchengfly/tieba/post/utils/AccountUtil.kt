@@ -1,7 +1,7 @@
 package com.huanchengfly.tieba.post.utils
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.core.database.model.Account
 
 val LocalAccount = staticCompositionLocalOf<Account?> { error("No Account provided") }
 

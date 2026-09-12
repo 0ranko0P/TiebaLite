@@ -6,6 +6,8 @@ import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.core.common.ktx.booleanToInt
+import com.huanchengfly.tieba.post.core.database.dao.UserProfileDao
+import com.huanchengfly.tieba.post.core.database.model.UserProfile
 import com.huanchengfly.tieba.post.core.network.model.FollowBean
 import com.huanchengfly.tieba.post.core.network.model.FollowListBean
 import com.huanchengfly.tieba.post.core.network.model.PermissionListBean
@@ -15,8 +17,6 @@ import com.huanchengfly.tieba.post.core.network.model.protos.PostInfoList
 import com.huanchengfly.tieba.post.core.network.model.protos.User
 import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
 import com.huanchengfly.tieba.post.core.network.source.UserProfileNetworkDataSource
-import com.huanchengfly.tieba.post.models.database.UserProfile
-import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.repository.source.local.UserProfileLocalDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author

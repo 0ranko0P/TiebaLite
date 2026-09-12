@@ -9,7 +9,7 @@ import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.SessionManager
 import com.huanchengfly.tieba.post.components.media.ExoPlayerPool
-import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.repository.user.Settings
@@ -45,9 +45,9 @@ data class MainUiState(
 class MainViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     val settingsRepository: SettingsRepository,
+    sessionManager: SessionManager,
     private val forumRepo: ForumRepository,
     private val threadRepo: PbPageRepository,
-    val sessionManager: SessionManager,
 ) : ViewModel() {
 
     val account: SharedFlow<Account?> = sessionManager.currentAccount

@@ -3,14 +3,14 @@ package com.huanchengfly.tieba.post.utils
 import androidx.annotation.IntDef
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
-import com.huanchengfly.tieba.post.api.booleanToString
-import com.huanchengfly.tieba.post.models.database.BlockForum
-import com.huanchengfly.tieba.post.models.database.BlockKeyword
-import com.huanchengfly.tieba.post.models.database.BlockUser
-import com.huanchengfly.tieba.post.models.database.dao.BlockDao
-import com.huanchengfly.tieba.post.models.database.dao.KeywordCSV
-import com.huanchengfly.tieba.post.models.database.dao.TransactionRunner
-import com.huanchengfly.tieba.post.models.database.dao.UserCSV
+import com.huanchengfly.tieba.post.core.common.ktx.booleanToString
+import com.huanchengfly.tieba.post.core.database.model.BlockForum
+import com.huanchengfly.tieba.post.core.database.model.BlockKeyword
+import com.huanchengfly.tieba.post.core.database.model.BlockUser
+import com.huanchengfly.tieba.post.core.database.dao.BlockDao
+import com.huanchengfly.tieba.post.core.database.dao.KeywordCSV
+import com.huanchengfly.tieba.post.core.database.dao.TransactionRunner
+import com.huanchengfly.tieba.post.core.database.dao.UserCSV
 import com.huanchengfly.tieba.post.ui.models.settings.BlockBackupMetadata
 import com.huanchengfly.tieba.post.utils.RestoreOption.Companion.EXCLUDE_FORUM
 import com.huanchengfly.tieba.post.utils.RestoreOption.Companion.EXCLUDE_KEYWORD
@@ -372,10 +372,10 @@ object BlockRuleBackupUtil {
     }
 }
 
+// TODO: Remove && Update FastCSV to 3.x (Revert 1dc85644)
 /**
  * Exception to be thrown when malformed csv data is read.
  * */
-// TODO: Remove && Update FastCSV to 3.x
 class CsvParseException : RuntimeException {
     /** Construct exception with a message.
      *

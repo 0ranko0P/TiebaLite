@@ -22,7 +22,7 @@ import com.huanchengfly.tieba.post.core.network.Error
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.network.model.protos.Page
-import com.huanchengfly.tieba.post.models.database.ThreadHistory
+import com.huanchengfly.tieba.post.core.database.model.ThreadHistory
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.repository.PageData
 import com.huanchengfly.tieba.post.repository.PbPageRepository

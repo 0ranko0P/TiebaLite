@@ -68,8 +68,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
-import com.huanchengfly.tieba.post.models.database.BlockKeyword
-import com.huanchengfly.tieba.post.models.database.BlockUser
+import com.huanchengfly.tieba.post.core.database.model.BlockKeyword
+import com.huanchengfly.tieba.post.core.database.model.BlockUser
 import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
@@ -509,8 +509,8 @@ private fun UserItem(modifier: Modifier = Modifier, user: BlockUser) {
         },
         content = {
             Column {
-                if (!user.name.isNullOrEmpty()) {
-                    Text(text = user.name)
+                user.name?.let { name ->
+                    Text(text = name)
                     Spacer(modifier = Modifier.height(2.dp))
                 }
 

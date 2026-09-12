@@ -9,14 +9,9 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.room)
 }
 
 apply(from = "${rootProject.projectDir}/signing.gradle")
-
-room {
-    schemaDirectory("$projectDir/schemas")
-}
 
 android {
     defaultConfig {
@@ -135,6 +130,7 @@ configurations.configureEach {
 
 dependencies {
     implementation(project(":core:common"))
+    implementation(project(":core:database"))
     implementation(project(":core:network"))
 
     implementation(libs.jetbrains.annotations)
@@ -200,13 +196,6 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     implementation(libs.androidx.work.runtime)
     androidTestImplementation(libs.androidx.work.testing)
-
-    // Room
-    implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.paging)
-    androidTestImplementation(libs.androidx.room.testing)
 
     implementation(libs.google.gson)
 

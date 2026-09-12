@@ -5,16 +5,15 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import androidx.room.withTransaction
 import com.huanchengfly.tieba.post.arch.unsafeLazy
-import com.huanchengfly.tieba.post.models.database.ForumHistory
-import com.huanchengfly.tieba.post.models.database.History
-import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
-import com.huanchengfly.tieba.post.models.database.ThreadHistory
-import com.huanchengfly.tieba.post.models.database.UserProfile
-import com.huanchengfly.tieba.post.models.database.dao.ForumHistoryDao
-import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
-import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
+import com.huanchengfly.tieba.post.core.database.dao.ForumHistoryDao
+import com.huanchengfly.tieba.post.core.database.dao.ThreadHistoryDao
+import com.huanchengfly.tieba.post.core.database.dao.TransactionRunner
+import com.huanchengfly.tieba.post.core.database.dao.UserProfileDao
+import com.huanchengfly.tieba.post.core.database.model.ForumHistory
+import com.huanchengfly.tieba.post.core.database.model.History
+import com.huanchengfly.tieba.post.core.database.model.ThreadHistory
+import com.huanchengfly.tieba.post.core.database.model.UserProfile
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -30,14 +29,11 @@ import javax.inject.Singleton
  * */
 @Singleton
 class HistoryRepository @Inject constructor(
-    private val dataBase: TbLiteDatabase
+    private val threadHistoryDao: ThreadHistoryDao,
+    private val forumHistoryDao: ForumHistoryDao,
+    private val userProfileDao: UserProfileDao,
+    private val transactionRunner: TransactionRunner,
 ) {
-
-    private val threadHistoryDao: ThreadHistoryDao = dataBase.threadHistoryDao()
-
-    private val forumHistoryDao: ForumHistoryDao = dataBase.forumHistoryDao()
-
-    private val userProfileDao: UserProfileDao = dataBase.userProfileDao()
 
     private val defaultConfig by unsafeLazy {
         PagingConfig(pageSize = 20, prefetchDistance = 4, maxSize = 80)
@@ -112,14 +108,10 @@ class HistoryRepository @Inject constructor(
         }
     }
 
-    suspend fun deleteAll() {
-        withContext(NonCancellable) {
-            dataBase.withTransaction {
-                threadHistoryDao.deleteAll()
-                forumHistoryDao.deleteAll()
-                userProfileDao.deleteAll()
-            }
-        }
+    suspend fun deleteAll() = transactionRunner {
+        threadHistoryDao.deleteAll()
+        forumHistoryDao.deleteAll()
+        userProfileDao.deleteAll()
     }
 }
 

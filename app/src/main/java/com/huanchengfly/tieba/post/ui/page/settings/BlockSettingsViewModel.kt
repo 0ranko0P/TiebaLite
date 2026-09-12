@@ -7,8 +7,8 @@ import androidx.documentfile.provider.DocumentFile
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.models.database.dao.BlockDao
-import com.huanchengfly.tieba.post.models.database.dao.TransactionRunner
+import com.huanchengfly.tieba.post.core.database.dao.BlockDao
+import com.huanchengfly.tieba.post.core.database.dao.TransactionRunner
 import com.huanchengfly.tieba.post.ui.models.settings.BlockBackupMetadata
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil
 import com.huanchengfly.tieba.post.utils.RestoreOption

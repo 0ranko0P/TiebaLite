@@ -68,9 +68,9 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
-import com.huanchengfly.tieba.post.models.database.ForumHistory
-import com.huanchengfly.tieba.post.models.database.History
-import com.huanchengfly.tieba.post.models.database.ThreadHistory
+import com.huanchengfly.tieba.post.core.database.model.ForumHistory
+import com.huanchengfly.tieba.post.core.database.model.History
+import com.huanchengfly.tieba.post.core.database.model.ThreadHistory
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.repository.UserHistory

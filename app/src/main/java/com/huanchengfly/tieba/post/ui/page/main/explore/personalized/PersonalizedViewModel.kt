@@ -13,8 +13,8 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.stateInViewModel
-import com.huanchengfly.tieba.post.models.database.BlockForum
-import com.huanchengfly.tieba.post.models.database.BlockUser
+import com.huanchengfly.tieba.post.core.database.model.BlockForum
+import com.huanchengfly.tieba.post.core.database.model.BlockUser
 import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository

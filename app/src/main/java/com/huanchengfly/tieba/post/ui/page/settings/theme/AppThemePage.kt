@@ -118,7 +118,7 @@ import coil3.request.ImageRequest
 import com.google.android.material.color.utilities.Variant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity
-import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.theme.TiebaBlue
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.colorscheme.BlueColorScheme

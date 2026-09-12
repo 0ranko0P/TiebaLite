@@ -42,7 +42,7 @@ import androidx.navigation.NavController
 import androidx.window.core.layout.WindowSizeClass
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.repository.user.Settings

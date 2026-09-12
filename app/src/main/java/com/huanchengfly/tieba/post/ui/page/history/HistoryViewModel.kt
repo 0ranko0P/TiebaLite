@@ -9,7 +9,7 @@ import androidx.paging.insertSeparators
 import androidx.paging.map
 import com.huanchengfly.tieba.post.core.common.Dispatcher
 import com.huanchengfly.tieba.post.core.common.TbDispatchers.Default
-import com.huanchengfly.tieba.post.models.database.History
+import com.huanchengfly.tieba.post.core.database.model.History
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel

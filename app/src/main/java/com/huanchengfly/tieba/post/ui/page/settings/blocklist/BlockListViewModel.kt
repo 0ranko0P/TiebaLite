@@ -4,9 +4,9 @@ import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.unsafeLazy
-import com.huanchengfly.tieba.post.models.database.BlockForum
-import com.huanchengfly.tieba.post.models.database.BlockKeyword
-import com.huanchengfly.tieba.post.models.database.BlockUser
+import com.huanchengfly.tieba.post.core.database.model.BlockForum
+import com.huanchengfly.tieba.post.core.database.model.BlockKeyword
+import com.huanchengfly.tieba.post.core.database.model.BlockUser
 import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.utils.StringUtil.normalized
 import dagger.hilt.android.lifecycle.HiltViewModel

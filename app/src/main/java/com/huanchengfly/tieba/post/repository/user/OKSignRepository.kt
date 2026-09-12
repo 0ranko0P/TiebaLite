@@ -8,13 +8,13 @@ import androidx.work.WorkInfo
 import com.huanchengfly.tieba.post.arch.shareInBackground
 import com.huanchengfly.tieba.post.components.SessionManager
 import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.core.network.exception.TiebaException
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.network.model.MSignBean
 import com.huanchengfly.tieba.post.core.network.source.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.core.network.source.OKSignNetworkDataSource
 import com.huanchengfly.tieba.post.core.network.source.OKSignNetworkDataSource.Companion.ForumSignParam
-import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.HomeRepository
 import com.huanchengfly.tieba.post.repository.user.OKSignRepository.ProgressListener
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig

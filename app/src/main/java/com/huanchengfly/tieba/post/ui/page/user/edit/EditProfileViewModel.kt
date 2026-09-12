@@ -8,9 +8,9 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.components.SessionManager
+import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
 import com.huanchengfly.tieba.post.ui.models.user.EditProfile
 import com.huanchengfly.tieba.post.utils.StringUtil

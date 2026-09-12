@@ -24,6 +24,7 @@ dependencyResolutionManagement {
 rootProject.name = "TiebaLite"
 include(":app")
 include(":core:common")
+include(":core:database")
 include(":core:network")
 include(":macrobenchmark")
 include(":material-color-utilities")

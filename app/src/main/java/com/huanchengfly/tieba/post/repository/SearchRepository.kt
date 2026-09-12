@@ -17,10 +17,10 @@ import com.huanchengfly.tieba.post.core.network.model.SearchThreadBean.ThreadInf
 import com.huanchengfly.tieba.post.core.network.model.SearchThreadBean.UserInfoBean
 import com.huanchengfly.tieba.post.core.network.model.SearchUserBean.UserBean
 import com.huanchengfly.tieba.post.core.network.source.SearchNetworkDataSource
-import com.huanchengfly.tieba.post.models.database.SearchHistory
-import com.huanchengfly.tieba.post.models.database.SearchPostHistory
-import com.huanchengfly.tieba.post.models.database.dao.SearchDao
-import com.huanchengfly.tieba.post.models.database.dao.SearchPostDao
+import com.huanchengfly.tieba.post.core.database.model.SearchHistory
+import com.huanchengfly.tieba.post.core.database.model.SearchPostHistory
+import com.huanchengfly.tieba.post.core.database.dao.SearchDao
+import com.huanchengfly.tieba.post.core.database.dao.SearchPostDao
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.models.Author

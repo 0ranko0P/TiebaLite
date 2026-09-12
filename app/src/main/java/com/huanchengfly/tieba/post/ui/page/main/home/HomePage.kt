@@ -78,8 +78,8 @@ import com.google.accompanist.placeholder.PlaceholderDefaults
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isOverlapping
+import com.huanchengfly.tieba.post.core.database.model.History
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
