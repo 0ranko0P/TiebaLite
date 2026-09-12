@@ -5,11 +5,11 @@ import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
 import androidx.lifecycle.viewModelScope
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
 import dagger.hilt.android.lifecycle.HiltViewModel

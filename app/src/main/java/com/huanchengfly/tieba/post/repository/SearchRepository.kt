@@ -10,17 +10,17 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.util.fastMapNotNull
-import com.huanchengfly.tieba.post.api.models.SearchForumBean.ForumInfoBean
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean.MediaInfo.Companion.TYPE_PICTURE
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean.MediaInfo.Companion.TYPE_VIDEO
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean.ThreadInfoBean
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean.UserInfoBean
-import com.huanchengfly.tieba.post.api.models.SearchUserBean.UserBean
+import com.huanchengfly.tieba.post.core.network.model.SearchForumBean.ForumInfoBean
+import com.huanchengfly.tieba.post.core.network.model.SearchThreadBean.MediaInfo.Companion.TYPE_PICTURE
+import com.huanchengfly.tieba.post.core.network.model.SearchThreadBean.MediaInfo.Companion.TYPE_VIDEO
+import com.huanchengfly.tieba.post.core.network.model.SearchThreadBean.ThreadInfoBean
+import com.huanchengfly.tieba.post.core.network.model.SearchThreadBean.UserInfoBean
+import com.huanchengfly.tieba.post.core.network.model.SearchUserBean.UserBean
+import com.huanchengfly.tieba.post.core.network.source.SearchNetworkDataSource
 import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
 import com.huanchengfly.tieba.post.models.database.dao.SearchDao
 import com.huanchengfly.tieba.post.models.database.dao.SearchPostDao
-import com.huanchengfly.tieba.post.repository.source.network.SearchNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.models.Author
@@ -56,12 +56,11 @@ data class SearchResult<T>(
 @Singleton
 class SearchRepository @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val networkDataSource: SearchNetworkDataSource,
     private val historyDao: SearchDao,
     private val postHistoryDao: SearchPostDao,
-    private val settingsRepo: SettingsRepository
+    private val settingsRepo: SettingsRepository,
 ) {
-
-    private val networkDataSource = SearchNetworkDataSource
 
     suspend fun searchForum(keyword: String): SearchResult<SearchForum> {
         val data = networkDataSource.searchForum(keyword)

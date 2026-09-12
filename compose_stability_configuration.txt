@@ -1,1 +1,2 @@
-com.huanchengfly.tieba.post.api.models.protos.**
+com.huanchengfly.tieba.post.core.network.model.*
+com.huanchengfly.tieba.post.ui.models.*

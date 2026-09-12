@@ -31,6 +31,7 @@ import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.ImageLoadType
 import com.huanchengfly.tieba.post.ui.models.settings.NavigationLabel
 import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
@@ -41,7 +42,6 @@ import com.huanchengfly.tieba.post.ui.models.settings.WaterType
 import com.huanchengfly.tieba.post.ui.models.settings.randomSignTime
 import com.huanchengfly.tieba.post.utils.DeviceUtils
 import com.huanchengfly.tieba.post.utils.HmTime
-import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.JobQueue
 import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.ThemeUtil
@@ -139,7 +139,7 @@ private object HabitSettingsTransformer : PreferenceTransformer<HabitSettings> {
             hideMedia = it[booleanPreferencesKey(KEY_POST_HIDE_MEDIA)] == true,
             hideReply = it[booleanPreferencesKey(KEY_REPLY_HIDE)] == true,
             hideReplyWarning = it[booleanPreferencesKey(KEY_REPLY_HIDE_WARNING)] == true,
-            imageLoadType = it[intPreferencesKey(KEY_IMAGE_LOAD_TYPE)] ?: ImageUtil.SETTINGS_SMART_ORIGIN,
+            imageLoadType = it[intPreferencesKey(KEY_IMAGE_LOAD_TYPE)] ?: ImageLoadType.SMART_ORIGIN,
             imageWatermarkType = it[intPreferencesKey(KEY_IMAGE_WATERMARK_TYPE)] ?: WaterType.FORUM_NAME,
             showBothName = it[booleanPreferencesKey(KEY_SHOW_NICKNAME)] == true,
             stickyHeader = it[booleanPreferencesKey(KEY_STICKY_HEADER)] ?: true,

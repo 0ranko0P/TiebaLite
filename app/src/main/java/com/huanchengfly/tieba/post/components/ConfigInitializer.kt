@@ -7,25 +7,25 @@ import android.os.Build
 import android.webkit.WebSettings
 import com.github.gzuliyujiang.oaid.DeviceID
 import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.core.network.session.OAIDProvider
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.packageInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 // Note: Config.init moved here for dependency injection
 @Singleton
 class ConfigInitializer @Inject constructor(
     @ApplicationContext val context: Context,
+    private val clientConfigManagerProvider: Provider<ClientConfigManager>,
     settingsRepository: SettingsRepository
-) {
+): OAIDProvider {
 
-    val clientSettings = settingsRepository.clientConfig
+    private val clientSettings = settingsRepository.clientConfig
 
     fun init(reload: Boolean = false) = with(App.Config) {
-        ClientUtils.clientConfigSettings = clientSettings
         if (reload || !inited) {
             isOAIDSupported = DeviceID.supportedOAID(context)
             if (isOAIDSupported) {
@@ -35,7 +35,8 @@ class ConfigInitializer @Inject constructor(
                 isTrackLimited = false
             }
             userAgent = WebSettings.getDefaultUserAgent(context)
-            var config = runBlocking { clientSettings.snapshot() }
+            val clientConfigManager = clientConfigManagerProvider.get()
+            var config = clientConfigManager.currentConfig()
             appFirstInstallTime = config.firstInstallTime ?: context.packageInfo.firstInstallTime
             appLastUpdateTime = config.lastUpdateTime ?: context.packageInfo.lastUpdateTime
 
@@ -47,9 +48,26 @@ class ConfigInitializer @Inject constructor(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
                 context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PERMISSION_GRANTED
             ) {
-                ClientUtils.init(clientSettings, configSnapshot = config)
+                clientConfigManager.init(config)
             }
             inited = true
         }
     }
+
+    override fun isOAIDSupported(): Boolean = App.Config.isOAIDSupported
+
+    override fun isTrackLimited(): Boolean = App.Config.isTrackLimited
+
+    override fun getEncodedOAID(): String = App.Config.encodedOAID
+
+    override fun getStatusCode(): Int = App.Config.statusCode
+
+    override val appFirstInstallTime: Long
+        get() = App.Config.appFirstInstallTime
+
+    override val appLastUpdateTime: Long
+        get() = App.Config.appLastUpdateTime
+
+    override val userAgent: String?
+        get() = App.Config.userAgent
 }

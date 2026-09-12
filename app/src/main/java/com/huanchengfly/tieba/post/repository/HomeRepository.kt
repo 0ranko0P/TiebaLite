@@ -8,11 +8,13 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.BuildConfig
-import com.huanchengfly.tieba.post.api.models.ForumGuideBean.LikeForum
-import com.huanchengfly.tieba.post.api.models.MsgBean.MessageBean
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.unsafeLazy
-import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.core.network.model.ForumGuideBean.LikeForum
+import com.huanchengfly.tieba.post.core.network.model.MsgBean.MessageBean
+import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
+import com.huanchengfly.tieba.post.core.network.source.ForumNetworkDataSource
+import com.huanchengfly.tieba.post.core.network.source.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.models.database.LocalLikedForum
 import com.huanchengfly.tieba.post.models.database.Timestamp
 import com.huanchengfly.tieba.post.models.database.dao.LikedForumDao
@@ -20,17 +22,13 @@ import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TYPE_FORUM_LAST_UPDATED
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TYPE_NEW_MESSAGE_COUNT
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TYPE_NEW_MESSAGE_UPDATED
-import com.huanchengfly.tieba.post.repository.source.network.ForumNetworkDataSource
-import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.LikedForum
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -49,19 +47,15 @@ import javax.inject.Singleton
 @Singleton
 class HomeRepository @Inject constructor(
     private val networkDataSource: HomeNetworkDataSource,
+    private val forumNetworkDataSource: ForumNetworkDataSource,
     private val localDataSource: LikedForumDao,
     private val timestampDao: TimestampDao,
-    private val settingsRepo: SettingsRepository
+    private val settingsRepo: SettingsRepository,
+    private val credentialProvider: CredentialProvider,
 ) {
-
-    private val forumNetworkDataSource = ForumNetworkDataSource
 
     private val homePagingConfig by unsafeLazy {
         PagingConfig(pageSize = 30, prefetchDistance = 4, maxSize = 60)
-    }
-
-    suspend fun requireAccount(): Account {
-       return AccountUtil.getInstance().currentAccount.first() ?: throw TiebaNotLoggedInException()
     }
 
     /**
@@ -95,7 +89,7 @@ class HomeRepository @Inject constructor(
      * */
     suspend fun refresh(cached: Boolean) {
         val start = System.currentTimeMillis()
-        val uid = requireAccount().uid
+        val uid = credentialProvider.requireUid()
 
         // force refresh or cache is expired
         if (!cached || isCacheExpired(uid)) {
@@ -115,14 +109,14 @@ class HomeRepository @Inject constructor(
     }
 
     suspend fun requestDislikeForum(forum: LikedForum) {
-        val tbs = requireAccount().tbs
+        val tbs = credentialProvider.requireTbs()
         forumNetworkDataSource.dislike(forumId = forum.id, forumName = forum.name, tbs)
         onDislikeForum(forumId = forum.id)
     }
 
     suspend fun onDislikeForum(forumId: Long) {
         AppBackgroundScope.async {
-            localDataSource.deleteById(uid = requireAccount().uid, forumId = forumId)
+            localDataSource.deleteById(uid = credentialProvider.requireUid(), forumId = forumId)
         }
         .await()
     }
@@ -130,7 +124,8 @@ class HomeRepository @Inject constructor(
     suspend fun onLikeForum() = refresh(cached = false)
 
     suspend fun onForumSignedIn(forumId: Long) {
-        localDataSource.updateSignIn(requireAccount().uid, forumId, timestamp = System.currentTimeMillis())
+        val uid = credentialProvider.requireUid()
+        localDataSource.updateSignIn(uid, forumId, timestamp = System.currentTimeMillis())
     }
 
     suspend fun addTopForum(forum: LikedForum) {

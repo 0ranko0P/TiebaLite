@@ -2,7 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.search
 
 import android.content.Context
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.UiEvent
 
 sealed interface SearchUiEvent : UiEvent {

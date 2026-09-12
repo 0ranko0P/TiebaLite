@@ -53,7 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean
+import com.huanchengfly.tieba.post.core.network.model.SearchThreadBean
 import com.huanchengfly.tieba.post.ui.models.search.SearchMedia
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail

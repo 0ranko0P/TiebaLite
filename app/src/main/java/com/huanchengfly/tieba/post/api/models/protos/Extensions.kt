@@ -12,6 +12,13 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import androidx.core.net.toUri
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isTieba
+import com.huanchengfly.tieba.post.core.network.model.protos.Abstract
+import com.huanchengfly.tieba.post.core.network.model.protos.Media
+import com.huanchengfly.tieba.post.core.network.model.protos.PbContent
+import com.huanchengfly.tieba.post.core.network.model.protos.Post
+import com.huanchengfly.tieba.post.core.network.model.protos.PostInfoList
+import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
+import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
 import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
@@ -212,7 +219,7 @@ fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRen
                 3 -> {
                     renders.add(
                         PicContentRender(
-                            picUrl = it.getPicUrl(imageLoadType),
+                            picUrl = it.bigCdnSrc.tb2ImageWorkaround(),      // Medium
                             originUrl = it.originSrc,
                             originSize = it.originSize,
                             dimensions = it.getPicSize(),

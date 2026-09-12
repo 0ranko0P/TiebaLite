@@ -20,8 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.PaddingNone
-import com.huanchengfly.tieba.post.api.models.UserLikeForumBean
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.ui.models.user.UserLikeForum
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -103,9 +103,9 @@ fun UserLikeForumPage(
                 }.takeIf { hasMore },
                 bottomIndicator = defaultBottomIndicator,
             ) {
-                items(items = forums, key = { it.id }) { forumBean ->
-                    UserLikeForumItem(Modifier.fillMaxWidth(), item = forumBean) {
-                        forumBean.name?.let { navigator.navigate(Forum(forumName = it)) }
+                items(items = forums, key = { it.id }) { forum ->
+                    UserLikeForumItem(Modifier.fillMaxWidth(), item = forum) {
+                        forum.name.let { navigator.navigate(Forum(forumName = it)) }
                     }
                 }
             }
@@ -116,7 +116,7 @@ fun UserLikeForumPage(
 @Composable
 private fun UserLikeForumItem(
     modifier: Modifier = Modifier,
-    item: UserLikeForumBean.ForumBean,
+    item: UserLikeForum,
     onClick: () -> Unit
 ) {
     Row(
@@ -134,10 +134,10 @@ private fun UserLikeForumItem(
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(text = item.name.orEmpty(), style = MaterialTheme.typography.titleMedium)
-            item.slogan.takeUnless { it.isNullOrEmpty() }?.let {
+            Text(text = item.name, style = MaterialTheme.typography.titleMedium)
+            if (item.slogan != null) {
                 Text(
-                    text = it,
+                    text = item.slogan,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

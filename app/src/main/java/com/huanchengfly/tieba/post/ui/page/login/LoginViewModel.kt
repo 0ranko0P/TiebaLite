@@ -3,12 +3,12 @@ package com.huanchengfly.tieba.post.ui.page.login
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.UiEvent
+import com.huanchengfly.tieba.post.components.ClientConfigManager
+import com.huanchengfly.tieba.post.components.SessionManager
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.source.SofireDataSource
 import com.huanchengfly.tieba.post.utils.extension.set
-import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.ClientUtils
-import com.huanchengfly.tieba.post.utils.SofireUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -42,7 +41,12 @@ sealed interface LoginUiEvent : UiEvent {
 }
 
 @HiltViewModel
-class LoginViewModel @Inject constructor(@ApplicationContext val context: Context) : ViewModel() {
+class LoginViewModel @Inject constructor(
+    @ApplicationContext val context: Context,
+    private val networkDataSource: SofireDataSource,
+    private val clientConfigManager: ClientConfigManager,
+    private val sessionManager: SessionManager,
+) : ViewModel() {
 
     private val _uiEvent: MutableSharedFlow<LoginUiEvent> = MutableSharedFlow()
     val uiEvent: Flow<LoginUiEvent> = _uiEvent.asSharedFlow()
@@ -58,7 +62,7 @@ class LoginViewModel @Inject constructor(@ApplicationContext val context: Contex
 
     private suspend fun fetchZidInternal() {
         runCatching {
-            SofireUtils.fetchZid().firstOrNull() // Blocked by 99% of AD blockers
+            networkDataSource.fetchZid()
         }
         .onFailure { e ->
             _uiState.update { it.copy(isLoadingZid = false, error = e) }
@@ -80,13 +84,12 @@ class LoginViewModel @Inject constructor(@ApplicationContext val context: Contex
         if (loginJob?.isActive == true) return
         loginJob = viewModelScope.launch {
             _uiEvent.emit(LoginUiEvent.Start)
-            val accountUtil = AccountUtil.getInstance()
             runCatching {
-                if (ClientUtils.baiduId.isNullOrEmpty()) {
-                    ClientUtils.saveBaiduId(baiduId)
+                if (clientConfigManager.getBaiduId().isNullOrEmpty()) {
+                    clientConfigManager.saveBaiduId(baiduId)
                 }
-                val account = accountUtil.fetchAccount(bduss, sToken, cookie, zid = uiState.first().zid!!)
-                accountUtil.saveNewAccount(context, account)
+                val account = sessionManager.fetchAccount(bduss, sToken, cookie, zid = uiState.first().zid!!)
+                sessionManager.saveNewAccount(account)
             }
             .onFailure {
                 _uiEvent.emit(LoginUiEvent.Error(it.getErrorMessage()))

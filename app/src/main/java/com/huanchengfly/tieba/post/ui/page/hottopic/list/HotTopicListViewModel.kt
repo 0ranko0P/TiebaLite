@@ -1,7 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.hottopic.list
 
 import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.api.models.protos.topicList.NewTopicList
+import com.huanchengfly.tieba.post.core.network.model.protos.topicList.NewTopicList
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler

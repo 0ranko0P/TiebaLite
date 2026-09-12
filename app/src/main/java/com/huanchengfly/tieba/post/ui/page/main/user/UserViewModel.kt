@@ -1,20 +1,29 @@
 package com.huanchengfly.tieba.post.ui.page.main.user
 
 import android.util.Log
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.huanchengfly.tieba.post.api.Error.ERROR_NETWORK
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.components.SessionManager
+import com.huanchengfly.tieba.post.core.network.Error.ERROR_NETWORK
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.util.UIDManager
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class UserViewModel : ViewModel() {
+@HiltViewModel
+@Stable
+class UserViewModel @Inject constructor(
+    private val sessionManager: SessionManager,
+    private val uidManager: UIDManager,
+) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -27,7 +36,7 @@ class UserViewModel : ViewModel() {
         _isLoading.update { true }
 
         runCatching {
-            AccountUtil.getInstance().refreshCurrent(force = !cached)
+            sessionManager.refreshCurrent(force = !cached)
         }
         .onFailure { e ->
             if (e !is TiebaNotLoggedInException && e.getErrorCode() != ERROR_NETWORK) {
@@ -39,5 +48,10 @@ class UserViewModel : ViewModel() {
 
     fun onRefresh() {
         if (!_isLoading.value) refreshInternal(cached = false)
+    }
+
+    fun getUegServiceCenterUrl(): String {
+        val newCuid = uidManager.newCUID
+        return "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=$newCuid&cuid_galaxy2=$newCuid&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
     }
 }

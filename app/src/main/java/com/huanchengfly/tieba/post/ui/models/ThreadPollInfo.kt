@@ -1,9 +1,9 @@
 package com.huanchengfly.tieba.post.ui.models
 
-import com.huanchengfly.tieba.post.api.models.protos.PollOption
+import com.huanchengfly.tieba.post.core.network.model.protos.PollOption
 
 /**
- * UI Model of [com.huanchengfly.tieba.post.api.models.protos.PollInfo]
+ * UI Model of [com.huanchengfly.tieba.post.core.network.model.protos.PollInfo]
  * */
 data class ThreadPollInfo(
     val title: String?,

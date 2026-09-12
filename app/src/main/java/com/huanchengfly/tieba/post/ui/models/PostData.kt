@@ -3,8 +3,8 @@ package com.huanchengfly.tieba.post.ui.models
 import android.content.Context
 import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.Post
-import com.huanchengfly.tieba.post.api.models.protos.User
+import com.huanchengfly.tieba.post.core.network.model.protos.Post
+import com.huanchengfly.tieba.post.core.network.model.protos.User
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 

@@ -5,9 +5,9 @@ import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.NoConnectivityException
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.components.ClipBoardLink
+import com.huanchengfly.tieba.post.core.network.exception.NoConnectivityException
+import com.huanchengfly.tieba.post.core.network.exception.TiebaException
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 

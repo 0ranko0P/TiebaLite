@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package tieba;
+
+option java_package = "com.huanchengfly.tieba.post.core.network.model.protos";
+
+message SortButton {
+    string text = 1;
+    int32 source_id = 2;
+}

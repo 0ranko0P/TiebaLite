@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package tieba;
+
+option java_package = "com.huanchengfly.tieba.post.core.network.model.protos";
+
+message ToastConfig {
+  string pre_color_msg = 1;
+  string toast_back_image = 2;
+}

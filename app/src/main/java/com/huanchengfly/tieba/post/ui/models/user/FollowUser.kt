@@ -21,7 +21,7 @@ annotation class ConcernType {
 }
 
 /**
- * UI Model of [com.huanchengfly.tieba.post.api.models.FollowListBean.FollowUserBean]
+ * UI Model of [com.huanchengfly.tieba.post.core.network.model.FollowListBean.FollowUserBean]
  * */
 data class FollowUser(
     val uid: Long,

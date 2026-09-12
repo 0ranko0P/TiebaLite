@@ -50,6 +50,7 @@ import com.huanchengfly.tieba.post.ui.page.main.MainPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPageBottomSheet
+import com.huanchengfly.tieba.post.ui.page.report.ReportPage
 import com.huanchengfly.tieba.post.ui.page.search.SearchPage
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.page.settings.settingsGraph
@@ -199,6 +200,10 @@ private fun SharedTransitionScope.buildRootNavGraph(
             deepLinks = listOf(navDeepLink<Destination.Search>(basePath = "$TB_LITE_DOMAIN://search"))
         ) {
             SearchPage(navController)
+        }
+
+        composable<Destination.Report> {
+            ReportPage(navController)
         }
 
         animatedComposable<Destination.UserFollowList> { backStackEntry ->

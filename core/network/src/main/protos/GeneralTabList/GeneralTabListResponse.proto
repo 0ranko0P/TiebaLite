@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package tieba.GeneralTabList;
+
+option java_package = "com.huanchengfly.tieba.post.core.network.model.protos.GeneralTabList";
+
+import "Error.proto";
+import "GeneralTabList/GeneralTabListResponseData.proto";
+
+message GeneralTabListResponse {
+    Error error = 1;
+    GeneralTabListResponseData data = 2;
+}

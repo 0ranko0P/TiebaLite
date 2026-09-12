@@ -1,8 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.user.likeforum
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.UserLikeForumBean
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.PartialChange
@@ -11,6 +9,8 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.repository.UserProfileRepository
+import com.huanchengfly.tieba.post.ui.models.user.UserLikeForum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -20,20 +20,23 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 
 @HiltViewModel
-class UserLikeForumViewModel @Inject constructor() :
+class UserLikeForumViewModel @Inject constructor(
+    private val userProfileRepo: UserProfileRepository,
+) :
     BaseViewModel<UserLikeForumUiIntent, UserLikeForumPartialChange, UserLikeForumUiState, UiEvent>() {
     override fun createInitialState(): UserLikeForumUiState = UserLikeForumUiState()
 
     override fun createPartialChangeProducer(): PartialChangeProducer<UserLikeForumUiIntent, UserLikeForumPartialChange, UserLikeForumUiState> =
-        UserLikeForumPartialChangeProducer
+        UserLikeForumPartialChangeProducer()
 
-    private object UserLikeForumPartialChangeProducer :
+    private inner class UserLikeForumPartialChangeProducer :
         PartialChangeProducer<UserLikeForumUiIntent, UserLikeForumPartialChange, UserLikeForumUiState> {
         @OptIn(ExperimentalCoroutinesApi::class)
         override fun toPartialChangeFlow(intentFlow: Flow<UserLikeForumUiIntent>): Flow<UserLikeForumPartialChange> =
@@ -45,27 +48,17 @@ class UserLikeForumViewModel @Inject constructor() :
             )
 
         private fun UserLikeForumUiIntent.Refresh.toPartialChangeFlow(): Flow<UserLikeForumPartialChange.Refresh> =
-            TiebaApi.getInstance()
-                .userLikeForumFlow(uid.toString())
-                .map<UserLikeForumBean, UserLikeForumPartialChange.Refresh> {
-                    UserLikeForumPartialChange.Refresh.Success(
-                        page = 1,
-                        hasMore = it.hasMore == "1",
-                        forums = it.forumList.forumList,
-                    )
+            flow { emit(userProfileRepo.loadUserLikeForum(uid)) }
+                .map<Pair<List<UserLikeForum>, Boolean>, UserLikeForumPartialChange.Refresh> { (forums, hasMore) ->
+                    UserLikeForumPartialChange.Refresh.Success(page = 1, hasMore, forums)
                 }
                 .onStart { emit(UserLikeForumPartialChange.Refresh.Start) }
                 .catch { emit(UserLikeForumPartialChange.Refresh.Failure(it)) }
 
         private fun UserLikeForumUiIntent.LoadMore.toPartialChangeFlow(): Flow<UserLikeForumPartialChange.LoadMore> =
-            TiebaApi.getInstance()
-                .userLikeForumFlow(uid.toString(), page + 1)
-                .map<UserLikeForumBean, UserLikeForumPartialChange.LoadMore> {
-                    UserLikeForumPartialChange.LoadMore.Success(
-                        page = page + 1,
-                        hasMore = it.hasMore == "1",
-                        forums = it.forumList.forumList,
-                    )
+            flow { emit(userProfileRepo.loadUserLikeForum(uid, page + 1)) }
+                .map<Pair<List<UserLikeForum>, Boolean>, UserLikeForumPartialChange.LoadMore> { (forums, hasMore) ->
+                    UserLikeForumPartialChange.LoadMore.Success(page = page + 1, hasMore, forums)
                 }
                 .onStart { emit(UserLikeForumPartialChange.LoadMore.Start) }
                 .catch { emit(UserLikeForumPartialChange.LoadMore.Failure(it)) }
@@ -112,7 +105,7 @@ sealed interface UserLikeForumPartialChange : PartialChange<UserLikeForumUiState
         data class Success(
             val page: Int,
             val hasMore: Boolean,
-            val forums: List<UserLikeForumBean.ForumBean>,
+            val forums: List<UserLikeForum>,
         ) : Refresh()
 
         data class Failure(val error: Throwable) : Refresh()
@@ -150,7 +143,7 @@ sealed interface UserLikeForumPartialChange : PartialChange<UserLikeForumUiState
         data class Success(
             val page: Int,
             val hasMore: Boolean,
-            val forums: List<UserLikeForumBean.ForumBean>,
+            val forums: List<UserLikeForum>,
         ) : LoadMore()
 
         data class Failure(val error: Throwable) : LoadMore()
@@ -164,5 +157,5 @@ data class UserLikeForumUiState(
     val error: ImmutableHolder<Throwable>? = null,
     val currentPage: Int = 1,
     val hasMore: Boolean = false,
-    val forums: ImmutableList<UserLikeForumBean.ForumBean> = persistentListOf(),
+    val forums: ImmutableList<UserLikeForum> = persistentListOf(),
 ) : UiState

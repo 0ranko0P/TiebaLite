@@ -19,9 +19,9 @@ package com.huanchengfly.tieba.post.utils
 import android.content.Context
 import android.os.Build
 import com.huanchengfly.tieba.post.BuildConfig
+import com.huanchengfly.tieba.post.core.common.ktx.ensureParents
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.FileUtil.createFileInCacheDir
-import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
 import com.huanchengfly.tieba.post.utils.FileUtil.toSharedUri
 import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import kotlinx.coroutines.Dispatchers

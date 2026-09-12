@@ -1,10 +1,9 @@
 package com.huanchengfly.tieba.post.ui.models.search
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.api.models.SearchUserBean.UserBean
 
 /**
- * UI Model of [UserBean]
+ * UI Model of [com.huanchengfly.tieba.post.core.network.model.SearchUserBean.UserBean]
  * */
 @Immutable
 class SearchUser(

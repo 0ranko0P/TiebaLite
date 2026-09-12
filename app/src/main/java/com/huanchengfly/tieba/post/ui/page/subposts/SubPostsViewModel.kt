@@ -6,13 +6,14 @@ import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
 import com.huanchengfly.tieba.post.repository.PageData
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.ui.models.PostData
@@ -21,14 +22,12 @@ import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.utils.extension.set
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
@@ -61,14 +60,13 @@ data class SubPostsUiState(
 @HiltViewModel
 class SubPostsViewModel @Inject constructor(
     private val threadRepo: PbPageRepository,
+    private val credentialProvider: CredentialProvider,
     savedStateHandle: SavedStateHandle
 ) : BaseStateViewModel<SubPostsUiState>() {
 
     private val params = savedStateHandle.toRoute<Destination.SubPosts>()
 
     private var scrollToSubpostId: Long = params.subPostId
-
-    private val currentAccount = AccountUtil.getInstance().currentAccount
 
     override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, suppressed ->
         // Allow user browse existing posts on suppressed exceptions
@@ -184,7 +182,7 @@ class SubPostsViewModel @Inject constructor(
         runCatching {
             val thread = uiStateSnapshot.thread!!
             val tbs = uiStateSnapshot.tbs
-            val myUid = currentAccount.first()?.uid ?: throw TiebaNotLoggedInException()
+            val myUid = credentialProvider.requireUid()
             when (target) {
                 is SubPostItemData -> threadRepo.deleteSubPost(target.id, thread, tbs, delMyPost = target.authorId == myUid)
 

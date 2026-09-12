@@ -14,7 +14,7 @@ import androidx.core.net.toUri
 import androidx.startup.Initializer
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.di.CoroutinesEntryPoint
+import com.huanchengfly.tieba.post.core.common.di.CoroutinesEntryPoint
 import com.huanchengfly.tieba.post.di.RepositoryEntryPoint
 import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
 import dagger.hilt.android.EntryPointAccessors

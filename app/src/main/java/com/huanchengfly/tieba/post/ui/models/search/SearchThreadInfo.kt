@@ -2,10 +2,9 @@ package com.huanchengfly.tieba.post.ui.models.search
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean
+import com.huanchengfly.tieba.post.core.network.model.SearchThreadBean
 import com.huanchengfly.tieba.post.ui.models.Author
 import java.util.Objects
-
 
 /**
  * UI Model of [SearchThreadBean.ThreadInfoBean]

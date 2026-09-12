@@ -10,20 +10,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.room)
-    alias(libs.plugins.wire)
 }
 
 apply(from = "${rootProject.projectDir}/signing.gradle")
-
-wire {
-    sourcePath {
-        srcDir("src/main/protos")
-    }
-
-    kotlin {
-        android = true
-    }
-}
 
 room {
     schemaDirectory("$projectDir/schemas")
@@ -145,9 +134,8 @@ configurations.configureEach {
 }
 
 dependencies {
-    val composeBom = platform(libs.androidx.compose.bom)
-    implementation(composeBom)
-    androidTestImplementation(composeBom)
+    implementation(project(":core:common"))
+    implementation(project(":core:network"))
 
     implementation(libs.jetbrains.annotations)
     implementation(libs.kotlin.stdlib)
@@ -162,8 +150,6 @@ dependencies {
 
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui.compose)
-
-    api(libs.wire.runtime)
 
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.androidx.hilt.compiler)

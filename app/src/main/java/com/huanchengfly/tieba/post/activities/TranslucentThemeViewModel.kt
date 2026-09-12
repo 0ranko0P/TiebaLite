@@ -36,7 +36,7 @@ import com.huanchengfly.tieba.post.theme.SunsetOrange
 import com.huanchengfly.tieba.post.theme.TiebaBlue
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.utils.extension.set
-import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
+import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
 import com.huanchengfly.tieba.post.utils.ImageUtil.toFile
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import dagger.hilt.android.lifecycle.HiltViewModel

@@ -2,12 +2,12 @@ package com.huanchengfly.tieba.post.repository
 
 import android.util.Log
 import androidx.annotation.VisibleForTesting
-import com.huanchengfly.tieba.post.api.models.ThreadBean
-import com.huanchengfly.tieba.post.api.models.ThreadInfoBean
-import com.huanchengfly.tieba.post.api.models.TopicInfoBean
-import com.huanchengfly.tieba.post.api.models.protos.Media
-import com.huanchengfly.tieba.post.api.models.protos.topicList.NewTopicList
-import com.huanchengfly.tieba.post.repository.source.network.HotTopicNetworkDataSource
+import com.huanchengfly.tieba.post.core.network.model.ThreadBean
+import com.huanchengfly.tieba.post.core.network.model.ThreadInfoBean
+import com.huanchengfly.tieba.post.core.network.model.TopicInfoBean
+import com.huanchengfly.tieba.post.core.network.model.protos.Media
+import com.huanchengfly.tieba.post.core.network.model.protos.topicList.NewTopicList
+import com.huanchengfly.tieba.post.core.network.source.HotTopicNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author

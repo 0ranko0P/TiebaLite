@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package tieba.frsPage;
+
+option java_package = "com.huanchengfly.tieba.post.core.network.model.protos.frsPage";
+
+message RankInfo {
+  int32 sign_count = 1;
+  int32 sign_rank = 2;
+  int32 member_count = 3;
+  double dir_rate = 4;
+}

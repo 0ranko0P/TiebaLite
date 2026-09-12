@@ -34,10 +34,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.components.TbWebChromeClient
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.createTopAppBarColors
@@ -212,7 +212,6 @@ fun WebViewPage(initialUrl: String, customClient: Boolean, navigator: NavControl
                 onDispose = TiebaWebView::dispose,
                 client = remember {
                     if (!customClient) return@remember AccompanistWebViewClient()
-
                     TbWebViewClient(context, coroutineScope) { route ->
                         if ((webViewState.webView as TiebaWebView).canNavigate(route)) {
                             navigator.navigateDebounced(route = route)

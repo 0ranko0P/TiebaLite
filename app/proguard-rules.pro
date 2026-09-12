@@ -127,8 +127,8 @@
 # @Serializable and @Polymorphic are used at runtime for polymorphic serialization.
 -keepattributes RuntimeVisibleAnnotations,AnnotationDefault
 
--keep,allowobfuscation,allowshrinking class com.huanchengfly.tieba.post.api.retrofit.ApiResult
--keep,allowobfuscation,allowshrinking class * extends com.huanchengfly.tieba.post.api.retrofit.ApiResult
+-keep,allowobfuscation,allowshrinking class com.huanchengfly.tieba.post.core.network.retrofit.ApiResult
+-keep,allowobfuscation,allowshrinking class * extends com.huanchengfly.tieba.post.core.network.retrofit.ApiResult
 
 # Retain generic signatures of TypeToken and its subclasses with R8 version 3.0 and higher.
 -keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken

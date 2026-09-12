@@ -14,11 +14,14 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectIn
-import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.components.SessionManager
 import com.huanchengfly.tieba.post.utils.TiebaUtil.startSign
 import com.huanchengfly.tieba.post.workers.OKSignWorker
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.FlowCollector
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class OKSignTileService: TileService(), LifecycleOwner {
 
     companion object {
@@ -46,6 +49,8 @@ class OKSignTileService: TileService(), LifecycleOwner {
 
     private var userName: String? = null
 
+    @Inject lateinit var mSessionManager: SessionManager
+
     private val workInfoCollector = FlowCollector<List<WorkInfo>> { workInfos ->
         val info = workInfos.lastOrNull()
         if (info != null && info.state == WorkInfo.State.RUNNING) {
@@ -65,15 +70,6 @@ class OKSignTileService: TileService(), LifecycleOwner {
         val workManager = WorkManager.getInstance(application)
         workManager.getWorkInfosByTagFlow(OKSignWorker.TAG_EXPEDITED).collectIn(this, collector = workInfoCollector)
         workManager.getWorkInfosByTagFlow(OKSignWorker.TAG).collectIn(this, collector = workInfoCollector)
-
-        // Observe current account
-        AccountUtil.getInstance().currentAccount.collectIn(lifecycleOwner = this) { account ->
-            requestListening(applicationContext)
-            userName = account?.name
-            if (qsTile?.state != Tile.STATE_ACTIVE) {
-                updateState(Tile.STATE_INACTIVE, 0, 0)
-            }
-        }
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -86,6 +82,15 @@ class OKSignTileService: TileService(), LifecycleOwner {
     override fun onStart(intent: Intent?, startId: Int) {
         dispatcher.onServicePreSuperOnStart()
         super.onStart(intent, startId)
+
+        // Observe current account
+        mSessionManager.currentAccount.collectIn(lifecycleOwner = this) { account ->
+            requestListening(applicationContext)
+            userName = account?.name
+            if (qsTile?.state != Tile.STATE_ACTIVE) {
+                updateState(Tile.STATE_INACTIVE, 0, 0)
+            }
+        }
     }
 
     override fun onStartListening() {

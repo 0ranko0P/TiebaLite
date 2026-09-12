@@ -44,12 +44,13 @@ import androidx.navigation.NavOptions
 import androidx.navigation.compose.rememberNavController
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant.EXTRA_REDUCE_EFFECT
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant.EXTRA_WELCOME_SETUP
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
+import com.huanchengfly.tieba.post.components.ClientConfigManager
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isHttp
 import com.huanchengfly.tieba.post.components.ShortcutInitializer
 import com.huanchengfly.tieba.post.components.ShortcutInitializer.Companion.TbShortcut
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.LocalPbInlineContentCache
@@ -73,8 +74,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.LocalVideoPreviewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberVideoPreviewState
-import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
@@ -83,6 +82,8 @@ import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Provider
 
 val LocalWindowAdaptiveInfo = staticCompositionLocalOf<WindowAdaptiveInfo> { error("No WindowAdaptiveInfo provided!") }
 
@@ -99,11 +100,13 @@ class MainActivityV2 : BaseComposeActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
+    @Inject lateinit var clientConfigManagerProvider: Provider<ClientConfigManager>
+
     /** Used to control the initial welcome screen state in Macrobenchmark */
     private var welcomeScreen: Boolean? = null
 
     private suspend fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AccountUtil.isLoggedIn()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && viewModel.sessionManager.isLoggedIn()) {
             askPermission(R.string.desc_permission_post_notifications, Manifest.permission.POST_NOTIFICATIONS, noRationale = true)
         }
     }
@@ -112,7 +115,7 @@ class MainActivityV2 : BaseComposeActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         lifecycleScope.launch {
-            ClientUtils.refreshActiveTimestamp()
+            clientConfigManagerProvider.get().refreshActiveTimestamp()
             delay(2000L)
             runCatching {
                 requestNotificationPermission()

@@ -1,19 +1,18 @@
 package com.huanchengfly.tieba.post.ui.models
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.PollInfo
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
+import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
 
 /**
  * Forum ID, name and avatar``(nullable)``
  *
- * @see com.huanchengfly.tieba.post.api.models.protos.SimpleForum
+ * @see com.huanchengfly.tieba.post.core.network.model.protos.SimpleForum
  * */
 typealias SimpleForum = Triple<Long, String, String?>
 
 /**
- * Ui Model of [com.huanchengfly.tieba.post.api.models.protos.ThreadInfo].
+ * UI Model of [com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo].
  *
  * Mini version of [ThreadItem] for thread page.
  * */
@@ -34,7 +33,7 @@ typealias SimpleForum = Triple<Long, String, String?>
      * Is this thread collected.
      *
      * @see collectMarkPid
-     * @see com.huanchengfly.tieba.post.api.models.protos.ThreadInfo.collectStatus
+     * @see com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo.collectStatus
      * */
     val collected: Boolean
         get() = collectMarkPid != null

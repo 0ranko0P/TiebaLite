@@ -1,16 +1,17 @@
 package com.huanchengfly.tieba.post.repository
 
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.AddThreadBean
-import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import kotlinx.coroutines.GlobalScope
+import android.net.Uri
+import com.huanchengfly.tieba.post.core.network.model.AddThreadBean
+import com.huanchengfly.tieba.post.core.network.model.UploadPictureResultBean
+import com.huanchengfly.tieba.post.core.network.model.protos.addPost.AddPostResponse
+import com.huanchengfly.tieba.post.core.network.source.ReplyNetworkDataSource
+import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object AddPostRepository {
+interface AddPostRepository {
+
     fun addThread(
         content: String,
         forumId: Long,
@@ -18,26 +19,7 @@ object AddPostRepository {
         title: String? = "",
         isHide: Int? = 1,
         isTitle: Int? = 1
-    ): Flow<AddThreadBean> =
-        TiebaApi.getInstance()
-            .addThreadFlow(
-                content,
-                forumName,
-                forumId.toString(),
-                title.orEmpty(),
-                requireNotNull(isHide),
-                requireNotNull(isTitle)
-            ).onEach {
-                GlobalScope.launch {
-                    emitGlobalEvent(
-                        GlobalEvent.AddThreadSuccess(
-                            checkNotNull(it.tid?.toLong()),
-                            checkNotNull(it.pid?.toLong()),
-                            checkNotNull(it.errorMsg),
-                        )
-                    )
-                }
-            }
+    ): Flow<AddThreadBean>
 
     fun addPost(
         content: String,
@@ -49,35 +31,74 @@ object AddPostRepository {
         postId: Long? = null,
         subPostId: Long? = null,
         replyUserId: Long? = null,
-    ): Flow<AddPostResponse> =
-        TiebaApi.getInstance()
-            .addPostFlow(
-                content,
-                forumId.toString(),
-                forumName,
-                threadId.toString(),
-                tbs,
-                nameShow,
-                postId?.toString(),
-                subPostId?.toString(),
-                replyUserId?.toString()
+    ): Flow<AddPostResponse>
+
+    suspend fun upload(
+        forumName: String,
+        images: List<Uri>,
+        isOriginImage: Boolean = false
+    ): List<UploadPictureResultBean>
+}
+
+@Singleton
+class AddPostRepositoryImpl @Inject constructor(
+    private val networkDataSource: ReplyNetworkDataSource,
+    private val settingsRepo: SettingsRepository,
+): AddPostRepository {
+
+    override fun addThread(
+        content: String,
+        forumId: Long,
+        forumName: String,
+        title: String?,
+        isHide: Int?,
+        isTitle: Int?,
+    ): Flow<AddThreadBean> =
+        networkDataSource
+            .addThread(
+                content = content,
+                forumId = forumId,
+                forumName = forumName,
+                title = title.orEmpty(),
+                isHide = requireNotNull(isHide),
+                isTitle = requireNotNull(isTitle)
             )
-            .onEach {
-                val newPostId = checkNotNull(it.data_?.pid?.toLongOrNull())
-                GlobalScope.launch {
-                    if (postId != null) {
-                        emitGlobalEvent(
-                            GlobalEvent.ReplySuccess(
-                                threadId,
-                                postId,
-                                postId,
-                                subPostId,
-                                newPostId
-                            )
-                        )
-                    } else {
-                        emitGlobalEvent(GlobalEvent.ReplySuccess(threadId, newPostId))
-                    }
-                }
-            }
+
+    override fun addPost(
+        content: String,
+        forumId: Long,
+        forumName: String,
+        threadId: Long,
+        tbs: String?,
+        nameShow: String?,
+        postId: Long?,
+        subPostId: Long?,
+        replyUserId: Long?,
+    ): Flow<AddPostResponse> =
+        networkDataSource
+            .addPost(
+                content,
+                forumId = forumId,
+                forumName = forumName,
+                threadId = threadId,
+                tbs = tbs,
+                nameShow = nameShow,
+                postId = postId,
+                subPostId = subPostId,
+                replyUserId = replyUserId
+            )
+
+    override suspend fun upload(
+        forumName: String,
+        images: List<Uri>,
+        isOriginImage: Boolean
+    ): List<UploadPictureResultBean> {
+        val watermarkType = settingsRepo.habitSettings.snapshot().imageWatermarkType
+        return networkDataSource.upload(
+            forumName = forumName,
+            images = images,
+            watermarkType = watermarkType,
+            isOriginImage = isOriginImage
+        )
+    }
 }

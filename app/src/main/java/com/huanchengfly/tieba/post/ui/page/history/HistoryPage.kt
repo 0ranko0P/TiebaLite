@@ -412,7 +412,7 @@ private fun ThreadItem(modifier: Modifier = Modifier, item: ThreadHistory, selec
                         shape = MaterialTheme.shapes.extraSmall
                     ) {
                         Text(
-                            text = stringResource(R.string.title_forum, item.forum),
+                            text = stringResource(R.string.title_forum, item.forum!!),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelMedium,
                         )

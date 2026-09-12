@@ -127,6 +127,7 @@ import com.huanchengfly.tieba.post.ui.models.LikeZero
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.UserData
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.setResult
@@ -160,7 +161,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.trace
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -557,9 +557,8 @@ fun ThreadPage(
                         onShareClick = viewModel::onShareThread,
                         onCopyLinkClick = viewModel::onCopyThreadLink,
                         onReportClick = {
-                            coroutineScope.launch {
-                                TiebaUtil.reportPost(context, navigator, state.firstPost!!.id.toString())
-                            }
+                            val postId = state.firstPost!!.id
+                            navigator.navigateDebounced(Destination.Report(postId))
                         },
                         onDeleteClick = viewModel::onDeleteThread.takeIf { isMyThread },
                         requestCloseMenu = closeBottomSheet,

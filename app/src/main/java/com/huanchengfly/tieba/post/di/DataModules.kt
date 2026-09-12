@@ -16,15 +16,11 @@ import com.huanchengfly.tieba.post.models.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.models.database.dao.TransactionRunner
 import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
+import com.huanchengfly.tieba.post.repository.AddPostRepository
+import com.huanchengfly.tieba.post.repository.AddPostRepositoryImpl
 import com.huanchengfly.tieba.post.repository.source.local.ExploreAssetsDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalFileDataSource
-import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
-import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSourceImpl
-import com.huanchengfly.tieba.post.repository.source.network.HotTopicNetworkDataSource
-import com.huanchengfly.tieba.post.repository.source.network.HotTopicNetworkDataSourceImpl
-import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
-import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSourceImpl
 import com.huanchengfly.tieba.post.repository.user.DataStoreSettingsRepository
 import com.huanchengfly.tieba.post.repository.user.OKSignRepository
 import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp
@@ -40,15 +36,16 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class RepositoryModule {
+interface RepositoryModule {
 
-    @Singleton
     @Binds
-    abstract fun bindSettingsRepository(repository: DataStoreSettingsRepository): SettingsRepository
+    fun bindAddPostRepository(repository: AddPostRepositoryImpl): AddPostRepository
 
-    @Singleton
     @Binds
-    abstract fun bindOKSignRepository(repository: OKSignRepositoryImp): OKSignRepository
+    fun bindSettingsRepository(repository: DataStoreSettingsRepository): SettingsRepository
+
+    @Binds
+    fun bindOKSignRepository(repository: OKSignRepositoryImp): OKSignRepository
 }
 
 // TODO: Gradle Modularization
@@ -65,23 +62,6 @@ object ExploreLocalCacheModule {
             ExploreAssetsDataSource(context)
         }
     }
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
-abstract class DataSourceModule {
-
-    @Singleton
-    @Binds
-    abstract fun bindHomeNetworkDataSource(dataSource: HomeNetworkDataSourceImpl): HomeNetworkDataSource
-
-    @Singleton
-    @Binds
-    abstract fun bindOKSignNetworkDataSource(dataSource: OKSignNetworkDataSourceImpl): OKSignNetworkDataSource
-
-    @Singleton
-    @Binds
-    abstract fun bindHotTopicNetworkDataSource(dataSource: HotTopicNetworkDataSourceImpl): HotTopicNetworkDataSource
 }
 
 @Module

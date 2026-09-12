@@ -27,9 +27,9 @@ import com.github.iielse.imageviewer.core.Transformer
 import com.github.iielse.imageviewer.core.ViewerCallback
 import com.github.iielse.imageviewer.utils.Config
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.components.viewer.SimpleImageLoader
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.goToActivityDebounced
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
@@ -38,8 +38,10 @@ import com.huanchengfly.tieba.post.utils.DisplayUtil.doOnApplyWindowInsets
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.extension.getParcelableExtraCompat
 import com.huanchengfly.tieba.post.utils.extension.toShareIntent
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback {
 
     private val viewModel: PhotoViewViewModel by viewModels()

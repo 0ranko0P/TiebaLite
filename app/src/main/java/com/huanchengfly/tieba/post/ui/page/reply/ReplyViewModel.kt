@@ -1,49 +1,53 @@
 package com.huanchengfly.tieba.post.ui.page.reply
 
 import android.content.Context
+import android.graphics.drawable.BitmapDrawable
 import android.text.Editable
 import android.text.Spannable
 import android.text.style.ImageSpan
 import android.util.Log
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.util.fastForEach
 import androidx.core.net.toUri
 import androidx.core.text.getSpans
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.AddThreadBean
-import com.huanchengfly.tieba.post.api.models.UploadPictureResultBean
-import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.ControlledRunner
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.PartialChange
 import com.huanchengfly.tieba.post.arch.PartialChangeProducer
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.components.ImageUploader
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
+import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.network.exception.TiebaUnknownException
+import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.model.AddThreadBean
+import com.huanchengfly.tieba.post.core.network.model.UploadPictureResultBean
+import com.huanchengfly.tieba.post.core.network.model.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.models.database.Draft
 import com.huanchengfly.tieba.post.models.database.dao.DraftDao
 import com.huanchengfly.tieba.post.repository.AddPostRepository
-import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
-import com.huanchengfly.tieba.post.utils.StringUtil
+import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
+import com.huanchengfly.tieba.post.utils.EmoticonUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ensureActive
@@ -64,7 +68,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ReplyViewModel @Inject constructor(
     @ApplicationContext val context: Context,
-    private val settingsRepo: SettingsRepository,
+    @ApplicationScope val coroutineScope: CoroutineScope,
+    private val addPostRepository: AddPostRepository,
     private val draftDao: DraftDao,
     savedStateHandle: SavedStateHandle
 ) : BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>() {
@@ -108,8 +113,9 @@ class ReplyViewModel @Inject constructor(
 
     override fun createInitialState() = ReplyUiState()
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<ReplyUiIntent, ReplyPartialChange, ReplyUiState> =
-        ReplyPartialChangeProducer(context, settingsRepo.habitSettings)
+    override fun createPartialChangeProducer(): PartialChangeProducer<ReplyUiIntent, ReplyPartialChange, ReplyUiState> {
+        return ReplyPartialChangeProducer()
+    }
 
     override fun dispatchEvent(partialChange: ReplyPartialChange): UiEvent? = when (partialChange) {
         is ReplyPartialChange.Send.Success -> ReplyUiEvent.ReplySuccess(
@@ -137,11 +143,8 @@ class ReplyViewModel @Inject constructor(
         else -> null
     }
 
-    private class ReplyPartialChangeProducer(
-        private val context: Context,
-        private val habitSettings: Settings<HabitSettings>
-    ) :
-        PartialChangeProducer<ReplyUiIntent, ReplyPartialChange, ReplyUiState> {
+    private inner class ReplyPartialChangeProducer: PartialChangeProducer<ReplyUiIntent, ReplyPartialChange, ReplyUiState> {
+
         @OptIn(ExperimentalCoroutinesApi::class)
         override fun toPartialChangeFlow(intentFlow: Flow<ReplyUiIntent>): Flow<ReplyPartialChange> =
             merge(
@@ -159,7 +162,7 @@ class ReplyViewModel @Inject constructor(
 
         private fun ReplyUiIntent.Send.producePartialChange(): Flow<ReplyPartialChange.Send> {
             if (forumId != 0L && threadId == 0L ) {
-                return AddPostRepository
+                return addPostRepository
                     .addThread(
                         content,
                         forumId,
@@ -170,6 +173,13 @@ class ReplyViewModel @Inject constructor(
                     )
                     .map<AddThreadBean, ReplyPartialChange.Send> {
                         if (it.tid == null) throw TiebaUnknownException
+                        viewModelScope.emitGlobalEvent(
+                            GlobalEvent.AddThreadSuccess(
+                                checkNotNull(it.tid?.toLong()),
+                                checkNotNull(it.pid?.toLong()),
+                                checkNotNull(it.errorMsg),
+                            )
+                        )
                         ReplyPartialChange.Send.Success(
                             threadId = it.tid!!,
                             postId = it.pid.orEmpty(),
@@ -188,7 +198,7 @@ class ReplyViewModel @Inject constructor(
                         )
                     }
             }
-            return AddPostRepository
+            return addPostRepository
                 .addPost(
                     content,
                     forumId,
@@ -201,10 +211,26 @@ class ReplyViewModel @Inject constructor(
                 )
                 .map<AddPostResponse, ReplyPartialChange.Send> {
                     if (it.data_ == null) throw TiebaUnknownException
+                    val newPostId = checkNotNull(it.data_?.pid?.toLongOrNull())
+                    viewModelScope.launch {
+                        if (postId != null) {
+                            emitGlobalEvent(
+                                GlobalEvent.ReplySuccess(
+                                    threadId,
+                                    postId,
+                                    postId,
+                                    subPostId,
+                                    newPostId
+                                )
+                            )
+                        } else {
+                            emitGlobalEvent(GlobalEvent.ReplySuccess(threadId, newPostId))
+                        }
+                    }
                     ReplyPartialChange.Send.Success(
-                        threadId = it.data_.tid,
-                        postId = it.data_.pid,
-                        expInc = it.data_.exp?.inc.orEmpty()
+                        threadId = it.data_!!.tid,
+                        postId = it.data_!!.pid,
+                        expInc = it.data_!!.exp?.inc.orEmpty()
                     )
                 }
                 .onStart { emit(ReplyPartialChange.Send.Start) }
@@ -216,10 +242,9 @@ class ReplyViewModel @Inject constructor(
 
         private fun ReplyUiIntent.UploadImages.producePartialChange() =
                 flow<ReplyPartialChange.UploadImages> {
-                    val rec = ImageUploader(forumName).upload(
-                        context = context,
+                    val rec = addPostRepository.upload(
+                        forumName = forumName,
                         images = imageUris.map { it.toUri() },
-                        watermarkType = habitSettings.snapshot().imageWatermarkType,
                         isOriginImage = isOriginImage
                     )
                     emit(ReplyPartialChange.UploadImages.Success(rec))
@@ -298,7 +323,7 @@ class ReplyViewModel @Inject constructor(
 
         viewModelScope.launch {
             emoticonContentRunner.cancelPreviousThenRun {
-                val spans = StringUtil.getEmoticonSpans(context, emoticonSize, source = input)
+                val spans = getEmoticonSpans(context, emoticonSize, source = input)
                 withContext(Dispatchers.Main) {
                     s.getSpans<ImageSpan>().forEach { s.removeSpan(it) }
                     ensureActive()
@@ -320,7 +345,7 @@ class ReplyViewModel @Inject constructor(
 
     fun deleteDraft() {
         userDraft = null
-        AppBackgroundScope.launch {
+        coroutineScope.launch {
             draftDao.deleteByIds(threadId, postId ?: 0, subPostId ?: 0)
         }
     }
@@ -329,7 +354,7 @@ class ReplyViewModel @Inject constructor(
         emoticonContentRunner.cancelCurrent()
         if (isTopicThread) return
         val draft = userDraft?.toString()?.trim() ?: return
-        AppBackgroundScope.launch {
+        coroutineScope.launch {
             runCatching {
                 if (draft.isNotEmpty() && draft.isNotBlank()) {
                     draftDao.upsert(Draft(threadId, postId ?: 0, subPostId ?: 0, draft))
@@ -348,6 +373,41 @@ class ReplyViewModel @Inject constructor(
         private const val TAG = "ReplyViewModel"
 
         const val MAX_SELECTABLE_IMAGE = 9
+
+        private suspend fun getEmoticonSpans(
+            context: Context,
+            size: Int,
+            source: CharSequence?,
+            emoticonType: Int = EmoticonUtil.EMOTICON_ALL_TYPE
+        ): List<AnnotatedString.Range<ImageSpan>> = withContext(Dispatchers.Default) {
+            if (source == null || source.length < 4) { // Minimum emotion text length
+                return@withContext emptyList()
+            }
+
+            val spans = mutableListOf<AnnotatedString.Range<ImageSpan>>()
+            try {
+                val patternEmoticon = EmoticonUtil.getRegexPattern(emoticonType)
+                val matcherEmoticon = patternEmoticon.matcher(source)
+                while (matcherEmoticon.find()) {
+                    val key = matcherEmoticon.group()
+                    val start = matcherEmoticon.start()
+                    val end = start + key.length
+                    val group1 = matcherEmoticon.group(1) ?: ""
+                    val id = getEmoticonIdByName(group1) ?: continue
+                    val rec = runCatching { EmoticonManager.getEmoticonBitmap(id, size) }
+                    val bitmap = rec.getOrNull() ?: continue
+                    val emoticonDrawable = BitmapDrawable(context.resources, bitmap)
+                    val span = EmoticonSpanV2(emoticonDrawable, size)
+                    spans.add(AnnotatedString.Range(item = span, start = start, end = end))
+                    ensureActive()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+            return@withContext spans
+        }
     }
 }
 

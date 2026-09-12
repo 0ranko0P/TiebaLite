@@ -21,10 +21,11 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaMSignException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterceptor
+import com.huanchengfly.tieba.post.core.network.exception.TiebaMSignException
+import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.retrofit.interceptors.ConnectivityInterceptor
+import com.huanchengfly.tieba.post.core.network.util.NetworkMonitor
 import com.huanchengfly.tieba.post.repository.user.OKSignRepository
 import com.huanchengfly.tieba.post.services.OKSignTileService
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
@@ -42,6 +43,7 @@ class OKSignWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val okSignRepository: OKSignRepository,
+    private val networkMonitor: NetworkMonitor,
 ): CoroutineWorker(context, params) {
 
     private var notificationUpdater = OKSignNotificationUpdater(
@@ -68,7 +70,7 @@ class OKSignWorker @AssistedInject constructor(
         throw e
     } catch (e: Throwable) {
         Log.e(TAG, "onDoWork: ${e.getErrorMessage()}.", e)
-        notificationUpdater.onError(ConnectivityInterceptor.wrapException(e))
+        notificationUpdater.onError(ConnectivityInterceptor.wrapException(networkMonitor, e))
         Result.failure(
             workDataOf(KEY_ERROR_MESSAGE to e.getErrorMessage())
         )

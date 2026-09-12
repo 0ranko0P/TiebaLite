@@ -2,12 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.main.notifications.list
 
 import android.content.Context
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.MessageListBean
-import com.huanchengfly.tieba.post.api.models.MessageListBean.MessageInfoBean
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.PartialChange
@@ -16,13 +10,19 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.stateInViewModel
+import com.huanchengfly.tieba.post.core.network.exception.TiebaException
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.model.MessageListBean
+import com.huanchengfly.tieba.post.core.network.model.MessageListBean.MessageInfoBean
+import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
+import com.huanchengfly.tieba.post.core.network.source.ReplyNetworkDataSource
 import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.message.MessageItemData
 import com.huanchengfly.tieba.post.ui.models.message.ReplyUser
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListViewModel.Companion.NotificationsListVmFactory
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -49,7 +49,9 @@ import kotlinx.coroutines.withContext
 class NotificationsListViewModel @AssistedInject constructor(
     @Assisted private val type: NotificationsType,
     @ApplicationContext private val context: Context,
+    private val networkDataSource: ReplyNetworkDataSource,
     private val blockRepo: BlockRepository,
+    private val credentialProvider: CredentialProvider,
     settingsRepo: SettingsRepository,
 ) :
     BaseViewModel<NotificationsListUiIntent, NotificationsListPartialChange, NotificationsListUiState, NotificationsListUiEvent>() {
@@ -62,7 +64,7 @@ class NotificationsListViewModel @AssistedInject constructor(
 
     override fun createPartialChangeProducer():
             PartialChangeProducer<NotificationsListUiIntent, NotificationsListPartialChange, NotificationsListUiState> {
-        return NotificationsListPartialChangeProducer(context, type, blockRepo::isBlocked)
+        return NotificationsListPartialChangeProducer(context, credentialProvider, networkDataSource, type, blockRepo::isBlocked)
     }
 
     override fun dispatchEvent(partialChange: NotificationsListPartialChange): UiEvent? =
@@ -83,6 +85,8 @@ class NotificationsListViewModel @AssistedInject constructor(
 
 private class NotificationsListPartialChangeProducer(
     private val context: Context,
+    private val credentialProvider: CredentialProvider,
+    private val networkDataSource: ReplyNetworkDataSource,
     private val type: NotificationsType,
     private val isBlocked: suspend (uid: Long, content: String) -> Boolean,
 ) : PartialChangeProducer<NotificationsListUiIntent, NotificationsListPartialChange, NotificationsListUiState> {
@@ -94,12 +98,12 @@ private class NotificationsListPartialChangeProducer(
         )
 
     private fun produceRefreshPartialChange(): Flow<NotificationsListPartialChange.Refresh> {
-        if (!AccountUtil.isLoggedIn()) {
+        if (!credentialProvider.isLoggedIn()) {
             return flowOf(NotificationsListPartialChange.Refresh.Failure(TiebaNotLoggedInException()))
         }
         return (when (type) {
-            NotificationsType.ReplyMe -> TiebaApi.getInstance().replyMeFlow()
-            NotificationsType.AtMe -> TiebaApi.getInstance().atMeFlow()
+            NotificationsType.ReplyMe -> networkDataSource.replyMeFlow()
+            NotificationsType.AtMe -> networkDataSource.atMeFlow()
         }).map<MessageListBean, NotificationsListPartialChange.Refresh> { messageListBean ->
             val data =
                 ((if (type == NotificationsType.ReplyMe) messageListBean.replyList else messageListBean.atList)
@@ -115,8 +119,8 @@ private class NotificationsListPartialChangeProducer(
 
     private fun NotificationsListUiIntent.LoadMore.produceLoadMorePartialChange() =
         (when (type) {
-            NotificationsType.ReplyMe -> TiebaApi.getInstance().replyMeFlow(page = page)
-            NotificationsType.AtMe -> TiebaApi.getInstance().atMeFlow(page = page)
+            NotificationsType.ReplyMe -> networkDataSource.replyMeFlow(page = page)
+            NotificationsType.AtMe -> networkDataSource.atMeFlow(page = page)
         }).map<MessageListBean, NotificationsListPartialChange.LoadMore> { messageListBean ->
             val data =
                 ((if (type == NotificationsType.ReplyMe) messageListBean.replyList else messageListBean.atList)
@@ -242,7 +246,7 @@ private suspend fun List<MessageInfoBean>.mapUiModel(
             }
 
             val quoteContent = if (!it.quoteContent.isNullOrEmpty() && isReply && isFloor) {
-                it.quoteContent.emoticonString
+                it.quoteContent!!.emoticonString
             } else {
                 null
             }

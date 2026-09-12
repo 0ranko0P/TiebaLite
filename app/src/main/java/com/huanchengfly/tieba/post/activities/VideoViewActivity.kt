@@ -50,11 +50,11 @@ import androidx.media3.ui.compose.state.observeState
 import coil3.imageLoader
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.components.media.MediaCache.BD_VIDEO_HOST
 import com.huanchengfly.tieba.post.components.media.MediaCache.getBdMediaId
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme

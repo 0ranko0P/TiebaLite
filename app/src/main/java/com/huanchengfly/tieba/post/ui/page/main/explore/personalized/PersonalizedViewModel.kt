@@ -21,7 +21,7 @@ import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
+import com.huanchengfly.tieba.post.ui.models.explore.ExploreType
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
 import com.huanchengfly.tieba.post.utils.extension.set
@@ -134,7 +134,7 @@ class PersonalizedViewModel @Inject constructor(
     fun onThreadLikeClicked(thread: ThreadItem): Unit = launchInVM {
         updateLikeStatusUiStateCommon(
             thread = thread,
-            onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Personalized) },
+            onRequestLikeThread = { exploreRepo.onLikeThread(it, ExploreType.PERSONALIZED) },
             onEvent = ::emitGlobalEventSuspend
         ) { threadId, liked, loading ->
             val newData = currentState.data.updateLikeStatus(threadId, liked, loading)
@@ -195,7 +195,7 @@ class PersonalizedViewModel @Inject constructor(
         val newData = currentState.data.updateLikeStatus(threadId, like)
         if (newData != null) {
             _uiState.update { it.copy(data = newData) }
-            exploreRepo.updateCachedThreadLike(threadId, like, from = ExplorePageItem.Personalized)
+            exploreRepo.updateCachedThreadLike(threadId, like, from = ExploreType.PERSONALIZED)
         }
         // else -> empty or no status changes
     }

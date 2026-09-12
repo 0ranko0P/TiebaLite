@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +52,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
+import com.huanchengfly.tieba.post.ui.models.explore.ExploreType
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.HotTopicList
 import com.huanchengfly.tieba.post.ui.page.Destination.Search
@@ -84,13 +86,12 @@ import com.huanchengfly.tieba.post.utils.BooleanBitSet
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-sealed class ExplorePageItem(val title: Int){
-    object Concern : ExplorePageItem(R.string.title_concern)
-
-    object Personalized : ExplorePageItem(R.string.title_personalized)
-
-    object Hot : ExplorePageItem(R.string.title_hot)
-}
+private val ExploreType.title: Int
+    @StringRes get() = when(this) {
+        ExploreType.CONCERN -> R.string.title_concern
+        ExploreType.PERSONALIZED -> R.string.title_personalized
+        ExploreType.HOT -> R.string.title_hot
+    }
 
 /**
  * Common [ThreadItem] onClick listeners for [ConcernPage], [PersonalizedPage] and [HotPage]
@@ -134,7 +135,7 @@ fun createThreadClickListeners(
 @Composable
 private fun ExplorePageTab(
     pagerState: PagerState,
-    pages: List<ExplorePageItem>
+    pages: List<ExploreType>
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -187,9 +188,9 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
 
     val pages = remember(loggedIn) {
         listOfNotNull(
-            ExplorePageItem.Concern.takeIf { loggedIn },
-            ExplorePageItem.Personalized,
-            ExplorePageItem.Hot
+            ExploreType.CONCERN.takeIf { loggedIn },
+            ExploreType.PERSONALIZED,
+            ExploreType.HOT
         )
     }
     val pagerState = rememberPagerState(initialPage = if (loggedIn) 1 else 0) { pages.size }
@@ -281,15 +282,15 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
                 val listState = listStates[index]
 
                 when (pages[index]) {
-                    ExplorePageItem.Concern -> {
+                    ExploreType.CONCERN -> {
                         ConcernPage(modifier, contentPadding, listState, navigator, onHideFab)
                     }
 
-                    ExplorePageItem.Personalized -> {
+                    ExploreType.PERSONALIZED -> {
                         PersonalizedPage(modifier, contentPadding, listState, navigator, onHideFab)
                     }
 
-                    ExplorePageItem.Hot -> {
+                    ExploreType.HOT -> {
                         HotPage(modifier, contentPadding, listState, navigator, onHideFab)
                     }
                 }

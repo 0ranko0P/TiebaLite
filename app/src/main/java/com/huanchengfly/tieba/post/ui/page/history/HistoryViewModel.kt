@@ -7,7 +7,8 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.insertSeparators
 import androidx.paging.map
-import com.huanchengfly.tieba.post.di.DefaultDispatcher
+import com.huanchengfly.tieba.post.core.common.Dispatcher
+import com.huanchengfly.tieba.post.core.common.TbDispatchers.Default
 import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
@@ -28,7 +29,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     @ApplicationContext val context: Context,
-    @DefaultDispatcher val dispatcher: CoroutineDispatcher,
+    @Dispatcher(Default) val dispatcher: CoroutineDispatcher,
     private val historyRepo: HistoryRepository
 ) : ViewModel() {
 

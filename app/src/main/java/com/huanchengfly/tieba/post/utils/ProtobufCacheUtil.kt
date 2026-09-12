@@ -3,14 +3,14 @@ package com.huanchengfly.tieba.post.utils
 import android.util.Log
 import androidx.annotation.WorkerThread
 import com.huanchengfly.tieba.post.BuildConfig
-import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
-import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
+import com.huanchengfly.tieba.post.core.common.ktx.closeQuietly
+import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
+import com.huanchengfly.tieba.post.core.common.ktx.ensureParents
 import com.huanchengfly.tieba.post.utils.FileUtil.isCacheExpired
 import com.squareup.wire.ProtoAdapter
 import com.squareup.wire.ProtoReader
 import com.squareup.wire.ReverseProtoWriter
 import com.squareup.wire.internal.ProtocolException
-import okhttp3.internal.closeQuietly
 import okio.BufferedSink
 import okio.BufferedSource
 import okio.buffer
@@ -60,7 +60,6 @@ object ProtobufCacheUtil {
      * Decode list of [T] from [cacheIn], **null** if file not exists or expired.
      * */
     @Throws(IOException::class)
-    @WorkerThread
     fun <T> ProtoAdapter<T>.decodeListCache(cacheIn: File, cacheExpireMill: Long? = null): List<T>? {
         if (!cacheIn.exists()) return null
 

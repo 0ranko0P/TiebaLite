@@ -3,10 +3,8 @@ package com.huanchengfly.tieba.post.utils
 import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
-import android.text.TextUtils
 import android.util.Log
 import androidx.collection.ArraySet
-import androidx.compose.ui.unit.TextUnit
 import coil3.BitmapImage
 import coil3.executeBlocking
 import coil3.imageLoader
@@ -14,13 +12,12 @@ import coil3.network.HttpException
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.fromJson
-import com.huanchengfly.tieba.post.models.EmoticonCache
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.CoilUtil.downloadOnly
-import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
+import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +34,11 @@ import java.util.concurrent.ConcurrentHashMap
 data class Emoticon(
     val id: String,
     val name: String
+)
+
+private data class EmoticonCache(
+    var ids: Set<String> = emptySet(),
+    var mapping: Map<String, String> = emptyMap()
 )
 
 object EmoticonManager {

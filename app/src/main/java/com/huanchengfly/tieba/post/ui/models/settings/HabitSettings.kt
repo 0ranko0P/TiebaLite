@@ -28,6 +28,42 @@ annotation class ForumSortType {
 }
 
 /**
+ * 图片加载设置
+ *
+ * Forum com.huanchengfly.tieba.post.utils.ImageUtil
+ *
+ * @since 3.8.1
+ * @author HuanChengFly
+ * */
+@IntDef(ImageLoadType.SMART_ORIGIN, ImageLoadType.SMART_LOAD, ImageLoadType.ALL_ORIGIN)
+@Retention(AnnotationRetention.SOURCE)
+annotation class ImageLoadType {
+    companion object {
+
+        /**
+         * 智能省流
+         */
+        const val SMART_ORIGIN = 0
+
+        /**
+         * 智能无图
+         */
+        const val SMART_LOAD = 1
+
+        /**
+         * 始终高质量
+         */
+        const val ALL_ORIGIN = 2
+
+        /**
+         * 始终无图
+         */
+        // Replaced with HabitSettings#hideMedia
+        // const val SETTINGS_ALL_NO = 3
+    }
+}
+
+/**
  * 图片上传水印
  * */
 @IntDef(WaterType.NO, WaterType.USER_NAME, WaterType.FORUM_NAME)
@@ -65,7 +101,7 @@ data class HabitSettings(
     val hideMedia: Boolean = false,
     val hideReply: Boolean = false,
     val hideReplyWarning: Boolean = false,
-    val imageLoadType: Int = ImageUtil.SETTINGS_SMART_ORIGIN,
+    @ImageLoadType val imageLoadType: Int = ImageLoadType.SMART_ORIGIN,
     @WaterType val imageWatermarkType: Int = WaterType.FORUM_NAME,
     val showBothName: Boolean = false,
     val stickyHeader: Boolean = true,

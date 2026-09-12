@@ -1,7 +1,7 @@
 package com.huanchengfly.tieba.post.ui.models.message
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.api.models.MessageListBean.ReplyerInfoBean
+import com.huanchengfly.tieba.post.core.network.model.MessageListBean.ReplyerInfoBean
 
 /**
  * UI Model of [ReplyerInfoBean]

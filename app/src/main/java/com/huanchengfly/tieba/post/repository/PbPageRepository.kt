@@ -8,20 +8,23 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
-import com.huanchengfly.tieba.post.api.models.protos.Page
-import com.huanchengfly.tieba.post.api.models.protos.Post
-import com.huanchengfly.tieba.post.api.models.protos.SubPostList
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.User
+import com.huanchengfly.tieba.post.core.network.model.protos.Page
+import com.huanchengfly.tieba.post.core.network.model.protos.Post
+import com.huanchengfly.tieba.post.core.network.model.protos.SubPostList
+import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
+import com.huanchengfly.tieba.post.core.network.model.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.buildContentRenders
 import com.huanchengfly.tieba.post.api.models.protos.buildRenders
-import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
-import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
+import com.huanchengfly.tieba.post.core.network.model.protos.pbFloor.PbFloorResponseData
+import com.huanchengfly.tieba.post.core.network.model.protos.pbPage.PbPageResponse
+import com.huanchengfly.tieba.post.core.network.model.protos.pbPage.PbPageResponseData
 import com.huanchengfly.tieba.post.api.models.protos.plainText
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
+import com.huanchengfly.tieba.post.core.network.exception.TiebaException
 import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.repository.source.network.ThreadNetworkDataSource
+import com.huanchengfly.tieba.post.core.network.model.PicPageBean
+import com.huanchengfly.tieba.post.core.network.source.ThreadNetworkDataSource
+import com.huanchengfly.tieba.post.core.network.source.ThreadPictureDataSource
+import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
@@ -87,10 +90,10 @@ class PbFloorUiResponse(
 @Singleton
 class PbPageRepository @Inject constructor(
     private val blockRepo: BlockRepository,
-    settingsRepo: SettingsRepository
+    private val networkDataSource: ThreadNetworkDataSource,
+    private val pictureNetworkDataSource: ThreadPictureDataSource,
+    settingsRepo: SettingsRepository,
 ) {
-
-    private val networkDataSource = ThreadNetworkDataSource
 
     private val blockSettings = settingsRepo.blockSettings
 
@@ -109,6 +112,10 @@ class PbPageRepository @Inject constructor(
     suspend fun requestLikeThread(thread: ThreadItem) {
         val like = !thread.like.liked // reverse like status
         networkDataSource.requestLikeThread(thread.id, thread.firstPostId, like)
+    }
+
+    suspend fun requestLikePost(threadId: Long, postId: Long, like: Boolean) {
+        networkDataSource.requestLikePost(threadId, postId, !like) // reverse like status
     }
 
     suspend fun requestLikeSubPost(threadId: Long, subPost: SubPostItemData) {
@@ -146,11 +153,12 @@ class PbPageRepository @Inject constructor(
             lastPostId = lastPostId
         )
         val pageData = data.page ?: throw TiebaException("Null page")
+        val thread = data.thread ?: throw TiebaException("Null Thread Data")
         val lz = data.thread!!.author!!
         val nextPagePostId = if (sortType == ThreadSortType.BY_ASC) {
             0
         } else {
-            data.thread.getNextPagePostId(data.post_list, sortType)
+            thread.getNextPagePostId(data.post_list, sortType)
         }
         val showBothName = habitSettings.first().showBothName
         val firstPost = data.first_floor_post?.mapToUiModel(lzId = lz.id, blockable = false)
@@ -160,7 +168,7 @@ class PbPageRepository @Inject constructor(
             firstPost = firstPost,
             posts = data.post_list.mapToUiModel(lzId = lz.id),
             tbs = data.anti!!.tbs,
-            thread = data.thread.mapToUiModel(),
+            thread = thread.mapToUiModel(),
             page = pageData,
             nextPagePostId = nextPagePostId,
         )
@@ -186,6 +194,17 @@ class PbPageRepository @Inject constructor(
                 hasPrevious = pageData.total_page > 1 && pageData.current_page > 1
             )
         )
+    }
+
+    suspend fun picturePage(
+        data: LoadPicPageData,
+        picId: String = data.picId,
+        picIndex: Int = data.picIndex,
+        prev: Boolean,
+    ): PicPageBean {
+        return with(data) {
+            pictureNetworkDataSource.picturePage(forumId, forumName, threadId, seeLz, picId, picIndex, objType, prev)
+        }
     }
 
     suspend fun deletePost(postId: Long, thread: ThreadInfoData, tbs: String?, delMyPost: Boolean) {
@@ -225,6 +244,10 @@ class PbPageRepository @Inject constructor(
             from = "",
             lastPostId = null,
         )
+    }
+
+    suspend fun loadReportPostURL(postId: Long): String {
+        return networkDataSource.loadReportPostURL(postId)
     }
 
     private suspend fun ThreadInfo.getNextPagePostId(newData: List<Post>, sortType: Int): Long {

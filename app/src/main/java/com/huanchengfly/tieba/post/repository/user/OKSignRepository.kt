@@ -5,19 +5,19 @@ import android.util.Log
 import androidx.collection.LongSet
 import androidx.collection.mutableLongSetOf
 import androidx.work.WorkInfo
-import com.huanchengfly.tieba.post.api.models.ForumGuideBean
-import com.huanchengfly.tieba.post.api.models.MSignBean
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.shareInBackground
-import com.huanchengfly.tieba.post.di.ApplicationScope
+import com.huanchengfly.tieba.post.components.SessionManager
+import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.network.exception.TiebaException
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.model.MSignBean
+import com.huanchengfly.tieba.post.core.network.source.HomeNetworkDataSource
+import com.huanchengfly.tieba.post.core.network.source.OKSignNetworkDataSource
+import com.huanchengfly.tieba.post.core.network.source.OKSignNetworkDataSource.Companion.ForumSignParam
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.HomeRepository
-import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
-import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.OKSignRepository.ProgressListener
 import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.workManager
 import com.huanchengfly.tieba.post.workers.OKSignWorker
@@ -66,6 +66,7 @@ class OKSignRepositoryImp @Inject constructor(
     private val settingsRepo: SettingsRepository,
     private val networkDataSource: OKSignNetworkDataSource,
     private val homeDataSource: HomeNetworkDataSource,
+    private val sessionManager: SessionManager,
 ): OKSignRepository {
 
     // Lazy init for instrumented test
@@ -245,7 +246,7 @@ class OKSignRepositoryImp @Inject constructor(
     }
 
     override suspend fun sign(listener: ProgressListener?) {
-        val account = AccountUtil.getInstance().updateSigningAccount()
+        val account = sessionManager.updateSigningAccount()
         val signConfig = settingsRepo.signConfig.snapshot()
         signInternal(account, signConfig, listener)
     }
@@ -279,16 +280,6 @@ class OKSignRepositoryImp @Inject constructor(
     }
 
     companion object {
-
-        data class ForumSignParam(val name: String, val forumId: Long, val signed: Boolean) {
-
-            constructor(forum: ForumGuideBean.LikeForum): this(
-                name = forum.forumName,
-                forumId = forum.forumId,
-                signed = forum.isSign == 1
-            )
-        }
-
         private const val TAG = "OKSignRepository"
 
         private const val MAX_COMPOUNDING_ERROR_TIME = 10 * 60 * 1000 // 10 minutes

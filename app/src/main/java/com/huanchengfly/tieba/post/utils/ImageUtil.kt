@@ -10,19 +10,19 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Base64
 import android.util.Log
 import android.webkit.URLUtil
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
 import androidx.media3.common.MimeTypes
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.components.NetworkObserver
-import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
+import com.huanchengfly.tieba.post.core.common.ktx.ensureParents
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
-import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
-import com.huanchengfly.tieba.post.utils.FileUtil.ensureParents
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.models.settings.ImageLoadType
 import com.huanchengfly.tieba.post.utils.ImageUtil.downloadForShare
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
@@ -36,7 +36,6 @@ import okhttp3.internal.closeQuietly
 import okio.buffer
 import okio.sink
 import okio.source
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -46,26 +45,6 @@ import java.io.InputStream
 import java.nio.file.Files
 
 object ImageUtil {
-    /**
-     * 智能省流
-     */
-    const val SETTINGS_SMART_ORIGIN = 0
-
-    /**
-     * 智能无图
-     */
-    const val SETTINGS_SMART_LOAD = 1
-
-    /**
-     * 始终高质量
-     */
-    const val SETTINGS_ALL_ORIGIN = 2
-
-    /**
-     * 始终无图
-     */
-    // Replaced with HabitSettings#hideMedia
-    // const val SETTINGS_ALL_NO = 3
 
     /**
      * Directory where the shared image will be saved, keep it sync with [R.xml.file_paths_share_img]
@@ -105,15 +84,6 @@ object ImageUtil {
             inputStream.closeQuietly()
         }
         return false
-    }
-
-    fun compressImage(
-        bitmap: Bitmap,
-        quality: Int = 100
-    ): ByteArray {
-        val baos = ByteArrayOutputStream()
-        bitmap.compress(CompressFormat.JPEG, quality, baos)
-        return baos.use { it.toByteArray() }
     }
 
     @Throws(FileNotFoundException::class, IOException::class)
@@ -276,48 +246,23 @@ object ImageUtil {
      *
      * @see HabitSettings.imageLoadType
      */
-    fun getThumbnail(loadType: Int, originUrl: String, smallPicUrl: String): String {
+    fun getThumbnail(@ImageLoadType loadType: Int, originUrl: String, smallPicUrl: String): String {
         // Workaround for empty srcPic, originPic in OriginThreadInfo (v12.52.1.0)
         val emptyOrigin = originUrl.isEmpty()
         return if (emptyOrigin || loadWorst(loadType)) smallPicUrl else originUrl
     }
 
-    private fun loadWorst(loadType: Int): Boolean {
-        return if (loadType == SETTINGS_SMART_ORIGIN) {
+    private fun loadWorst(@ImageLoadType loadType: Int): Boolean {
+        return if (loadType == ImageLoadType.SMART_ORIGIN) {
             !NetworkObserver.isNetworkUnmetered.value
         } else {
-            loadType != SETTINGS_ALL_ORIGIN
+            loadType != ImageLoadType.ALL_ORIGIN
         }
     }
 
     // Check is long image with given width x height size
     fun isLongImg(width: Int, height: Int): Boolean {
-        if (width <= 0) return false
+        if (width <= 0 || height <= 0) return false
         return height.toFloat() / width > 4f
-    }
-
-    fun imageToBase64(inputStream: InputStream?): String? {
-        if (inputStream == null) {
-            return null
-        }
-        return runCatching {
-            inputStream.use {
-                Base64.encodeToString(inputStream.readBytes(), Base64.DEFAULT)
-            }
-        }.getOrNull()
-    }
-
-    fun imageToBase64(file: File?): String? {
-        if (file == null) {
-            return null
-        }
-        var result: String? = null
-        try {
-            val `is`: InputStream = FileInputStream(file)
-            result = imageToBase64(`is`)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        return result
     }
 }

@@ -10,7 +10,6 @@ import androidx.compose.material.icons.outlined.SecurityUpdateWarning
 import androidx.compose.material.icons.outlined.SpeakerNotesOff
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.Verified
-import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.UnfoldLess
 import androidx.compose.runtime.Composable
 import com.huanchengfly.tieba.post.R
@@ -19,11 +18,11 @@ import com.huanchengfly.tieba.post.ui.icons.Autoplay
 import com.huanchengfly.tieba.post.ui.icons.PageHeader
 import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.ui.models.settings.ImageLoadType
 import com.huanchengfly.tieba.post.ui.models.settings.WaterType
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegmentedPrefsScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.toggleablePreference
-import com.huanchengfly.tieba.post.utils.ImageUtil
 import kotlinx.collections.immutable.persistentMapOf
 
 @Composable
@@ -114,9 +113,9 @@ fun SettingsSegmentedPrefsScope<HabitSettings>.imageLoadPreference() {
         property = HabitSettings::imageLoadType,
         title = R.string.title_settings_image_load_type,
         options = persistentMapOf(
-            ImageUtil.SETTINGS_SMART_ORIGIN to R.string.title_image_load_type_smart_origin,
-            ImageUtil.SETTINGS_SMART_LOAD to R.string.title_image_load_type_smart_load,
-            ImageUtil.SETTINGS_ALL_ORIGIN to R.string.title_image_load_type_all_origin,
+            ImageLoadType.SMART_ORIGIN to R.string.title_image_load_type_smart_origin,
+            ImageLoadType.SMART_LOAD to R.string.title_image_load_type_smart_load,
+            ImageLoadType.ALL_ORIGIN to R.string.title_image_load_type_all_origin,
         ),
         leadingIcon = Icons.Outlined.PhotoSizeSelectActual
     )

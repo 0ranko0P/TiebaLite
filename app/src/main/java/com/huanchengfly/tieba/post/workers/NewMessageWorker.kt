@@ -26,8 +26,8 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.huanchengfly.tieba.post.MainActivityV2
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.repository.HomeRepository
 import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType

@@ -99,6 +99,9 @@ sealed interface Destination {
     ): Destination
 
     @Serializable
+    data class Report(val postId: Long): Destination
+
+    @Serializable
     data class UserFollowList(val uid: Long): Destination
 
     /**

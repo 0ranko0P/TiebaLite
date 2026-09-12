@@ -1,7 +1,7 @@
 package com.huanchengfly.tieba.post.ui.models
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.api.models.protos.User
+import com.huanchengfly.tieba.post.core.network.model.protos.User
 import com.huanchengfly.tieba.post.utils.StringUtil
 
 /**

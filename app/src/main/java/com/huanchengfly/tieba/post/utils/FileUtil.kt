@@ -2,12 +2,10 @@ package com.huanchengfly.tieba.post.utils
 
 import android.Manifest
 import android.app.DownloadManager
-import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.provider.MediaStore
 import android.text.TextUtils
 import android.util.Log
 import android.webkit.URLUtil
@@ -15,14 +13,12 @@ import androidx.annotation.WorkerThread
 import androidx.core.content.FileProvider
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.core.common.ktx.closeQuietly
+import com.huanchengfly.tieba.post.core.common.ktx.ensureParents
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import okhttp3.internal.closeQuietly
-import okio.buffer
-import okio.sink
-import okio.source
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
@@ -58,19 +54,6 @@ object FileUtil {
                 }
             }
         return null
-    }
-
-    @JvmStatic
-    fun getRealPathFromUri(context: Context, contentUri: Uri?): String {
-        val proj = arrayOf(MediaStore.Images.Media.DATA)
-        context.contentResolver.query(contentUri!!, proj, null, null, null).use { cursor ->
-            if (cursor != null) {
-                val column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-                cursor.moveToFirst()
-                return cursor.getString(column_index)
-            }
-        }
-        return ""
     }
 
     fun downloadBySystem(context: Context, fileType: Int, url: String?) {
@@ -202,17 +185,6 @@ object FileUtil {
         return FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".share.FileProvider", this)
     }
 
-    @Throws(IOException::class)
-    fun File.writeAll(contentResolver: ContentResolver, uri: Uri): File {
-        ensureParents()
-        contentResolver.openInputStream(uri)!!.source().buffer().use { bufferedSource ->
-            this.sink().buffer().use { bufferedSink ->
-                bufferedSink.writeAll(bufferedSource)
-            }
-        }
-        return this
-    }
-
     fun Context.createFileInCacheDir(file: String) = File(cacheDir, "misc/$file")
 
     fun deleteWithPrefixSafe(dir: File, prefix: String) {
@@ -249,17 +221,5 @@ object FileUtil {
         return if (index == -1) {
             fileName + newExtension
         } else fileName.substring(0, index) + newExtension
-    }
-
-    @Throws(IOException::class)
-    fun File.ensureParents() {
-        val parent = parentFile?: throw IOException("Invalid parent dir of $this")
-        if (!parent.exists() && !parent.mkdirs()) throw IOException("Create $parent failed!")
-    }
-
-    fun File.deleteQuietly() {
-        try {
-            this.delete()
-        } catch (_: Exception) {}
     }
 }

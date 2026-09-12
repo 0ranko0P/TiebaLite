@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.activities.TranslucentThemeViewModel.Companion.translucentBackground
 import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
+import com.huanchengfly.tieba.post.components.SessionManager
 import com.huanchengfly.tieba.post.components.media.ExoPlayerPool
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.ForumRepository
@@ -18,7 +19,6 @@ import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.models.settings.UISettings
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,10 +46,11 @@ class MainViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     val settingsRepository: SettingsRepository,
     private val forumRepo: ForumRepository,
-    private val threadRepo: PbPageRepository
+    private val threadRepo: PbPageRepository,
+    val sessionManager: SessionManager,
 ) : ViewModel() {
 
-    val account: SharedFlow<Account?> = AccountUtil.getInstance().currentAccount
+    val account: SharedFlow<Account?> = sessionManager.currentAccount
 
     val previewInfoFlow = ClipBoardLinkDetector.previewInfoStateFlow
 

@@ -11,17 +11,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.Error
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.booleanToString
-import com.huanchengfly.tieba.post.api.models.protos.Page
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
+import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.common.ktx.booleanToString
+import com.huanchengfly.tieba.post.core.network.Error
+import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.model.protos.Page
 import com.huanchengfly.tieba.post.models.database.ThreadHistory
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.repository.PageData
@@ -41,18 +41,16 @@ import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.getAndUpdate
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
@@ -64,6 +62,7 @@ import kotlin.reflect.typeOf
 @HiltViewModel
 class ThreadViewModel @Inject constructor(
     @ApplicationContext val context: Context,
+    @ApplicationScope private val coroutineScope: CoroutineScope,
     private val historyRepo: HistoryRepository,
     private val storeRepo: ThreadStoreRepository,
     private val threadRepo: PbPageRepository,
@@ -382,7 +381,7 @@ class ThreadViewModel @Inject constructor(
     fun updateCollections(markedPost: PostData) {
         collectionsJob?.let { if (it.isActive) it.cancel() }
         // Launch in different CoroutineScope
-        collectionsJob = MainScope().launch {
+        collectionsJob = coroutineScope.launch {
             storeRepo.add(threadId, postId = markedPost.id)
                 .onFailure { e ->
                     emitUiEvent(ThreadStoreUiEvent.Add.Failure(message = e.getErrorMessage()))
@@ -431,23 +430,21 @@ class ThreadViewModel @Inject constructor(
         viewModelScope.launch {
             val start = System.currentTimeMillis()
             val liked = post.like.liked
-            val opType = if (liked) 1 else 0 // 操作 0 = 点赞, 1 = 取消点赞
 
-            TiebaApi.getInstance()
-                .opAgreeFlow(threadId.toString(), post.id.toString(), opType, objType = 1)
-                .onStart {
-                    _uiState.update { it.updateLikedPost(post.id, !liked, loading = true) }
+            _uiState.update { it.updateLikedPost(post.id, !liked, loading = true) }
+            runCatching {
+                threadRepo.requestLikePost(threadId, postId = post.id, liked)
+            }
+            .onFailure { e ->
+                sendUiEvent(ThreadLikeUiEvent.Failed(e))
+                if (System.currentTimeMillis() - start < 400) { // Wait for button animation
+                    delay(250)
                 }
-                .catch { e ->
-                    sendUiEvent(ThreadLikeUiEvent.Failed(e))
-                    _uiState.update { it.updateLikedPost(post.id, liked, loading = false) }
-                }
-                .collect {
-                    if (System.currentTimeMillis() - start < 400) { // Wait for button animation
-                        delay(250)
-                    }
-                    _uiState.update { it.updateLikedPost(post.id, !liked, loading = false) }
-                }
+                _uiState.update { it.updateLikedPost(post.id, liked, loading = false) }
+            }
+            .onSuccess {
+                _uiState.update { it.updateLikedPost(post.id, !liked, loading = false) }
+            }
         }
     }
 
@@ -473,7 +470,7 @@ class ThreadViewModel @Inject constructor(
                 it.copy(thread = it.thread!!.updateLikeStatus(liked = like.liked, loading = false))
             }
         }
-        .onSuccess { _ ->
+        .onSuccess {
             _uiState.update { // Update like loading status
                 it.copy(thread = it.thread!!.updateLikeStatus(liked = !like.liked, loading = false))
             }

@@ -2,9 +2,9 @@ package com.huanchengfly.tieba.post.ui.models
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
-import com.huanchengfly.tieba.post.api.models.protos.Media
-import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
+import com.huanchengfly.tieba.post.core.network.model.protos.Media
+import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
+import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
 

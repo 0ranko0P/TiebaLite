@@ -2,7 +2,7 @@ package com.huanchengfly.tieba.post.ui.models
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
-import com.huanchengfly.tieba.post.api.models.protos.SubPostList
+import com.huanchengfly.tieba.post.core.network.model.protos.SubPostList
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 
 /**

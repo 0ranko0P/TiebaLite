@@ -8,8 +8,8 @@ import com.google.common.base.Preconditions.checkArgument
 import com.google.common.net.InternetDomainName
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.api.urlDecode
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.common.ktx.urlDecode
 import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.checkClipBoard
 import com.huanchengfly.tieba.post.repository.ForumRepository

@@ -2,9 +2,9 @@ package com.huanchengfly.tieba.post.repository.source.local
 
 import android.content.Context
 import androidx.collection.MutableLongSet
-import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
+import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
+import com.huanchengfly.tieba.post.core.network.model.protos.PostInfoList
 import com.huanchengfly.tieba.post.utils.FileUtil
-import com.huanchengfly.tieba.post.utils.FileUtil.deleteQuietly
 import com.huanchengfly.tieba.post.utils.FileUtil.isCacheExpired
 import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.decodeListCache
 import com.huanchengfly.tieba.post.utils.ProtobufCacheUtil.encodeListCache

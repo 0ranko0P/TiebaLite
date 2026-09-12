@@ -2,18 +2,18 @@ package com.huanchengfly.tieba.post.repository
 
 import android.util.SparseArray
 import androidx.collection.LruCache
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
-import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponseData
-import com.huanchengfly.tieba.post.api.models.protos.personalized.DislikeReason
-import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponseData
-import com.huanchengfly.tieba.post.api.models.protos.userLike.ConcernData
-import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponseData
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
+import com.huanchengfly.tieba.post.core.network.model.protos.hotThreadList.HotThreadListResponseData
+import com.huanchengfly.tieba.post.core.network.model.protos.personalized.DislikeReason
+import com.huanchengfly.tieba.post.core.network.model.protos.personalized.PersonalizedResponseData
+import com.huanchengfly.tieba.post.core.network.model.protos.userLike.ConcernData
+import com.huanchengfly.tieba.post.core.network.model.protos.userLike.UserLikeResponseData
+import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
+import com.huanchengfly.tieba.post.core.network.source.ExploreNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalDataSource
-import com.huanchengfly.tieba.post.repository.source.network.ExploreNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.Like
@@ -21,18 +21,16 @@ import com.huanchengfly.tieba.post.ui.models.LikeZero
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
+import com.huanchengfly.tieba.post.ui.models.explore.ExploreType
 import com.huanchengfly.tieba.post.ui.models.explore.HotTab
 import com.huanchengfly.tieba.post.ui.models.explore.HotTopicData
 import com.huanchengfly.tieba.post.ui.models.explore.RecommendTopic
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildThreadContent
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -49,20 +47,16 @@ class UserLikeThreads(
 class ExploreRepository @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
     private val localDataSource: ExploreLocalDataSource,
+    private val networkDataSource: ExploreNetworkDataSource,
     private val blockRepo: BlockRepository,
     private val threadRepo: PbPageRepository,
+    private val credentialProvider: CredentialProvider,
     settingsRepository: SettingsRepository
 ) {
-
-    private val networkDataSource = ExploreNetworkDataSource
 
     private val habitSettings = settingsRepository.habitSettings
 
     private val blockSettings = settingsRepository.blockSettings
-
-    private suspend fun requireUid(): Long {
-        return AccountUtil.getInstance().currentAccount.first()?.uid ?: throw TiebaNotLoggedInException()
-    }
 
     /**
      * [Dislike] 缓存池
@@ -118,7 +112,7 @@ class ExploreRepository @Inject constructor(
     }
 
     suspend fun refreshUserLike(lastRequestUnix: Long?, cached: Boolean): UserLikeThreads {
-        val uid = requireUid()
+        val uid = credentialProvider.requireUid()
         var data: UserLikeResponseData? = null
         var lastRequestTime = lastRequestUnix ?: 0
 
@@ -151,20 +145,20 @@ class ExploreRepository @Inject constructor(
         return UserLikeThreads(data.requestUnix, data.pageTag, data.hasMore == 1, threads)
     }
 
-    suspend fun onLikeThread(thread: ThreadItem, from: ExplorePageItem, hotTab: HotTab? = null) {
+    suspend fun onLikeThread(thread: ThreadItem, from: ExploreType, hotTab: HotTab? = null) {
         threadRepo.requestLikeThread(thread)
         updateCachedThreadLike(threadId = thread.id, like = !thread.like, from, hotTab)
     }
 
-    suspend fun updateCachedThreadLike(threadId: Long, like: Like, from: ExplorePageItem, hotTab: HotTab? = null) {
+    suspend fun updateCachedThreadLike(threadId: Long, like: Like, from: ExploreType, hotTab: HotTab? = null) {
         scope.async {
             // Update local cache, this is non-cancellable
             when (from) {
-                ExplorePageItem.Concern -> localDataSource.updateUserLike(uid = requireUid(), threadId, like)
+                ExploreType.CONCERN -> localDataSource.updateUserLike(uid = credentialProvider.requireUid(), threadId, like)
 
-                ExplorePageItem.Personalized -> localDataSource.updatePersonalizedLike(threadId, like)
+                ExploreType.PERSONALIZED -> localDataSource.updatePersonalizedLike(threadId, like)
 
-                ExplorePageItem.Hot -> localDataSource.updateHotThreadLike(hotTab!!.tabCode, threadId, like)
+                ExploreType.HOT -> localDataSource.updateHotThreadLike(hotTab!!.tabCode, threadId, like)
             }
         }.await()
     }
@@ -310,8 +304,8 @@ class ExploreRepository @Inject constructor(
         ): List<ThreadItem> {
             return withContext(Dispatchers.Default) {
                 mapNotNull {
-                    if (it.recommendType == 1 && it.threadList != null) {
-                        it.threadList.mapUiModel(showBothName, isBlocked, threadDislikeMap = null)
+                    if (it.recommendType == 1) {
+                        it.threadList?.mapUiModel(showBothName, isBlocked, threadDislikeMap = null)
                     } else {
                         null // recommend users
                     }

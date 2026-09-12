@@ -27,8 +27,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.Error
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
+import com.huanchengfly.tieba.post.core.network.Error
+import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.widgets.compose.BasicPbContentText
 import com.huanchengfly.tieba.post.ui.page.Destination

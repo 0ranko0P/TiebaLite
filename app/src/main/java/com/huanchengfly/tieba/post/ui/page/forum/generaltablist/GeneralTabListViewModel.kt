@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.forum.generaltablist
 
 import android.util.Log
 import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.api.models.protos.FrsTabInfo
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
@@ -10,6 +9,7 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.arch.stateInViewModel
+import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository

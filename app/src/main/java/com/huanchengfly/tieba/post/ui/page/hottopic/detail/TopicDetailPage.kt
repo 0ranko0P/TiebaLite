@@ -34,7 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.TopicInfoBean
+import com.huanchengfly.tieba.post.core.network.model.TopicInfoBean
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping

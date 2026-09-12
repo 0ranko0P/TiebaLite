@@ -6,9 +6,6 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.api.models.FollowBean
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
@@ -18,6 +15,9 @@ import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderEffectImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImageProcessor
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.model.FollowBean
 import com.huanchengfly.tieba.post.models.database.BlockUser
 import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.repository.BlockRepository

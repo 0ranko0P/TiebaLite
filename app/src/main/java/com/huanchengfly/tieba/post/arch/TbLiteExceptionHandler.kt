@@ -1,11 +1,14 @@
 package com.huanchengfly.tieba.post.arch
 
 import android.util.Log
-import com.huanchengfly.tieba.post.api.Error
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterceptor
+import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.core.network.Error
+import com.huanchengfly.tieba.post.core.network.di.NetUtilsEntryPoint
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.retrofit.interceptors.ConnectivityInterceptor
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
@@ -20,7 +23,8 @@ inline fun TbLiteExceptionHandler(
 ): CoroutineExceptionHandler {
     return object : AbstractCoroutineContextElement(CoroutineExceptionHandler.Key), CoroutineExceptionHandler {
         override fun handleException(context: CoroutineContext, exception: Throwable) {
-            val e = ConnectivityInterceptor.wrapException(exception)
+            val networkMonitor = EntryPointAccessors.fromApplication<NetUtilsEntryPoint>(App.INSTANCE).networkMonitor()
+            val e = ConnectivityInterceptor.wrapException(networkMonitor, exception)
             val suppressed = e.getErrorCode() == Error.ERROR_NETWORK || exception is TiebaNotLoggedInException
             if (suppressed) {
                 Log.w(tag, "onHandleException: ${e.getErrorMessage()}")

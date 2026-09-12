@@ -77,7 +77,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -132,7 +133,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TbHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.isNavigationBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.navigationSuiteScaffoldConsumeWindowInsets
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberTbHazeState
-import com.huanchengfly.tieba.post.utils.DeviceUtils.vibrateOneShot
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.collections.immutable.toImmutableList
@@ -637,11 +637,11 @@ inline fun <reified T: MainDestination> OnMainNavigationScrollTopEvent(
     gridState: LazyGridState? = null,
     crossinline listState: () -> LazyListState?,
 ) {
-    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     onGlobalEvent<GlobalEvent.ScrollToTop>(coroutineScope, filter = { it.tag is T }) {
         val listState = listState()
         if (listState?.canScrollBackward == true || gridState?.canScrollBackward == true) {
-            context.vibrateOneShot(milliseconds = 50)
+            haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
             coroutineScope.launch {
                 listState?.run {
                     if (firstVisibleItemIndex > 5) scrollToItem(0) else animateScrollToItem(0)

@@ -12,9 +12,9 @@ import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.HOT_THREAD_TAB_ALL
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
+import com.huanchengfly.tieba.post.ui.models.explore.ExploreType
 import com.huanchengfly.tieba.post.ui.models.explore.HotTab
 import com.huanchengfly.tieba.post.ui.models.explore.RecommendTopic
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
 import com.huanchengfly.tieba.post.utils.extension.set
@@ -133,7 +133,7 @@ class HotViewModel @Inject constructor(
             val selectedTab = stateSnapshot.selectedTab
             val success = updateLikeStatusUiStateCommon(
                 thread = thread,
-                onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Hot, selectedTab) },
+                onRequestLikeThread = { exploreRepo.onLikeThread(it, ExploreType.HOT, selectedTab) },
                 onEvent = ::emitGlobalEventSuspend
             ) { threadId, liked, loading ->
                 _uiState.update {
@@ -169,7 +169,7 @@ class HotViewModel @Inject constructor(
             if (newThreads != null) {
                 _uiState.update { it.copy(threads = newThreads) }
                 updateCache(selectedTab, newThreads)
-                exploreRepo.updateCachedThreadLike(threadId, like, from = ExplorePageItem.Hot, selectedTab)
+                exploreRepo.updateCachedThreadLike(threadId, like, from = ExploreType.HOT, selectedTab)
             }
             // else: empty or no status changes
         }

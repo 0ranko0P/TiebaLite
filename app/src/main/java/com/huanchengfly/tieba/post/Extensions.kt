@@ -116,8 +116,6 @@ inline fun <reified Data> File.fromJson(): Data {
     return GsonUtil.getGson().fromJson(reader(), type)
 }
 
-fun Any.toJson(): String = GsonUtil.getGson().toJson(this)
-
 fun String.toMD5(): String = MD5Util.toMd5(this)
 
 fun ByteArray.toMD5(): String = MD5Util.toMd5(this)

@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.components.SessionManager
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.ui.page.webview.WebviewTopAppBar
@@ -34,7 +35,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewSta
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.AccountUtil.Companion.parseCookie
+import com.huanchengfly.tieba.post.utils.AccountUtil.parseCookie
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -118,7 +119,7 @@ fun LoginPage(
                 },
                 onDispose = TiebaWebView::dispose,
                 client = remember(navigator) {
-                    LoginWebViewClient(context, coroutineScope, onLoggIn = viewModel::onLogin)
+                    LoginWebViewClient(context, coroutineScope, viewModel::onLogin)
                 },
             )
         }

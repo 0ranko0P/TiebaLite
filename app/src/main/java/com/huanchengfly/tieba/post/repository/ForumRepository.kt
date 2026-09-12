@@ -3,14 +3,14 @@ package com.huanchengfly.tieba.post.repository
 import android.util.Log
 import androidx.collection.LruCache
 import com.huanchengfly.tieba.post.BuildConfig
-import com.huanchengfly.tieba.post.api.models.SignResultBean
-import com.huanchengfly.tieba.post.api.models.protos.FrsTabInfo
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponseData
 import com.huanchengfly.tieba.post.api.models.protos.plainText
+import com.huanchengfly.tieba.post.core.network.model.SignResultBean
+import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
+import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
+import com.huanchengfly.tieba.post.core.network.model.protos.frsPage.FrsPageResponseData
+import com.huanchengfly.tieba.post.core.network.source.ForumNetworkDataSource
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.mapUiModel
-import com.huanchengfly.tieba.post.repository.source.network.ForumNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.ThreadItemList
@@ -39,10 +39,9 @@ private typealias ForumPageResult = Triple<ForumData, ThreadItemList, List<Forum
 class ForumRepository @Inject constructor(
     settingsRepo: SettingsRepository,
     private val blockRepo: BlockRepository,
-    private val homeRepo: HomeRepository
+    private val homeRepo: HomeRepository,
+    private val networkDataSource: ForumNetworkDataSource,
 ) {
-    private val networkDataSource = ForumNetworkDataSource
-
     private val blockedSettings: Flow<BlockSettings> = settingsRepo.blockSettings
 
     private val habitSettings: Flow<HabitSettings> = settingsRepo.habitSettings
@@ -344,7 +343,7 @@ private fun FrsPageResponseData.toData(): ForumData = forum!!.let {
         forumRuleTitle = forum_rule?.run {
             title.takeIf { t -> has_forum_rule == 1 && t.isNotEmpty() }
         },
-        slogan = forum.slogan.trim().takeUnless { slogan -> slogan.isEmpty() },
+        slogan = forum!!.slogan.trim().takeUnless { slogan -> slogan.isEmpty() },
         tbs = anti?.tbs?.takeUnless { tbs -> tbs.isEmpty() || tbs.isBlank() },
         liked = it.is_like == 1,
         signed = it.sign_in_info?.user_info?.is_sign_in == 1,

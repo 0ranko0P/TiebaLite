@@ -1,37 +1,40 @@
 package com.huanchengfly.tieba.post.ui.page.photoview
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.iielse.imageviewer.adapter.ItemType
 import com.github.iielse.imageviewer.core.DataProvider
 import com.github.iielse.imageviewer.core.Photo
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.PicPageBean
-import com.huanchengfly.tieba.post.api.models.bestQualitySrc
-import com.huanchengfly.tieba.post.api.models.isGif
-import com.huanchengfly.tieba.post.api.models.isLongPic
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaApiException
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
-import com.huanchengfly.tieba.post.arch.firstOrThrow
+import com.huanchengfly.tieba.post.core.network.exception.TiebaException
+import com.huanchengfly.tieba.post.core.network.model.PicPageBean
+import com.huanchengfly.tieba.post.core.network.model.bestQualitySrc
+import com.huanchengfly.tieba.post.core.network.model.isGif
+import com.huanchengfly.tieba.post.core.network.model.isLongPic
 import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
-import com.huanchengfly.tieba.post.utils.extension.set
+import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.utils.JobQueue
+import com.huanchengfly.tieba.post.utils.extension.set
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class PhotoViewViewModel : ViewModel(), DataProvider {
+@Stable
+@HiltViewModel
+class PhotoViewViewModel @Inject constructor(
+    private val pbPageRepo: PbPageRepository,
+): ViewModel(), DataProvider {
 
     private val _state: MutableStateFlow<PhotoViewUiState> = MutableStateFlow(PhotoViewUiState())
     val state: StateFlow<PhotoViewUiState> get() = _state
@@ -66,10 +69,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
              }
         } else {
             viewModelScope.launch(Dispatchers.Default + handler) {
-                val picPageBean = viewData.data
-                    .toPageFlow(viewData.data.picId, viewData.data.picIndex, prev = false)
-                    .firstOrThrow()
-
+                val picPageBean = pbPageRepo.picturePage(viewData.data, prev = false)
                 val stateSnapshot = _state.first()
                 val picAmount = picPageBean.picAmount ?: throw TiebaException("加载列表失败, 远古坟贴?")
                 val fetchedItems = picPageBean.picList.toUniquePhotoViewItems(old = stateSnapshot.data)
@@ -135,11 +135,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
                 callback(emptyList())
             } else {
                 val item: PhotoViewItem = items[index]
-
-                val picPageBean = data!!.toPageFlow(item.picId, item.overallIndex, prev = true)
-                    .retryWhen { cause, attempt ->  cause !is TiebaApiException && attempt < 3 }
-                    .firstOrThrow()
-
+                val picPageBean = pbPageRepo.picturePage(data!!, item.picId, picIndex = item.overallIndex, prev = true)
                 val hasPrev = picPageBean.picList.first().overAllIndex.toInt() > 1
                 val uniqueItems = picPageBean.picList.toUniquePhotoViewItems(uiState.data)
                 val newItems = (uniqueItems + uiState.data).toImmutableList()
@@ -164,10 +160,7 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
             }
 
             val item: PhotoViewItem = items[index]
-            val picPageBean = data!!.toPageFlow(item.picId, item.overallIndex, prev = false)
-                .retryWhen { cause, attempt ->  cause !is TiebaApiException && attempt < 3 }
-                .firstOrThrow()
-
+            val picPageBean = pbPageRepo.picturePage(data!!, item.picId, picIndex = item.overallIndex, prev = false)
             val newData = picPageBean.picList
             val picAmount = picPageBean.picAmount ?: throw TiebaException("加载列表失败, 远古坟贴?")
             val hasNext = newData.last().overAllIndex.toInt() < picAmount
@@ -182,25 +175,11 @@ class PhotoViewViewModel : ViewModel(), DataProvider {
     }
 
     override fun onCleared() {
-        super.onCleared()
         queue.cancel()
     }
 
     companion object {
         private const val TAG = "PhotoViewViewModel"
-
-        private fun LoadPicPageData.toPageFlow(picId: String, picIndex: Int, prev: Boolean): Flow<PicPageBean> {
-            return TiebaApi.getInstance().picPageFlow(
-                forumId = forumId.toString(),
-                forumName = forumName,
-                threadId = threadId.toString(),
-                seeLz = seeLz,
-                picId = picId,
-                picIndex = picIndex.toString(),
-                objType = objType,
-                prev = prev
-            )
-        }
 
         private fun PicPageBean.PicBean.toPhotoItem(): PhotoViewItem {
             val originSize = img.original.size.toIntOrNull() ?: 0 // Bytes

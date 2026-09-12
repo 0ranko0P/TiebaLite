@@ -2,7 +2,7 @@ package com.huanchengfly.tieba.post.components
 
 import com.github.gzuliyujiang.oaid.IGetter
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.utils.helios.Base32
+import com.huanchengfly.tieba.post.core.network.util.helios.Base32
 
 object OAIDGetter : IGetter {
 

@@ -44,7 +44,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,15 +62,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant.testColumn
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.PollOption
+import com.huanchengfly.tieba.post.core.network.model.protos.PollOption
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.widgets.compose.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.ThreadPollInfo
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.CopyText
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
@@ -85,6 +84,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.OutlinedIconTextButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.PbContentText
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.SharedTransitionUserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -95,8 +95,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.DefaultEmptyScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.stickyHeaderBackground
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import com.huanchengfly.tieba.post.utils.TiebaUtil
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import kotlin.time.Instant
 
@@ -615,7 +613,6 @@ fun PostCard(
 ) {
     val context = LocalContext.current
     val navigator = LocalNavController.current
-    val coroutineScope = rememberCoroutineScope()
 
     val hasPadding = post.floor > 1 && !immersiveMode
     val paddingModifier = if (hasPadding) Modifier.padding(start = Sizes.Small + 8.dp) else Modifier
@@ -644,9 +641,7 @@ fun PostCard(
                     onMenuCopyClick(if (post.floor == 1) post.title + "\n" + post.plainText else post.plainText)
                 }
                 TextMenuItem(text = R.string.title_report) {
-                    coroutineScope.launch {
-                        TiebaUtil.reportPost(context, navigator, post.id.toString())
-                    }
+                    navigator.navigateDebounced(Destination.Report(postId = post.id))
                 }
                 if (onMenuFavoriteClick != null) {
                     TextMenuItem(
@@ -762,9 +757,7 @@ private fun SubPostItem(
     onOpenSubPosts: (Long) -> Unit,
     onMenuCopyClick: (String) -> Unit,
 ) {
-    val context = LocalContext.current
     val navigator = LocalNavController.current
-    val coroutineScope = rememberCoroutineScope()
     val menuState = rememberMenuState()
 
     LongClickMenu(
@@ -777,9 +770,7 @@ private fun SubPostItem(
                 onMenuCopyClick(subPost.plainText)
             }
             TextMenuItem(text = R.string.title_report) {
-                coroutineScope.launch {
-                    TiebaUtil.reportPost(context, navigator, subPost.id.toString())
-                }
+                navigator.navigateDebounced(Destination.Report(postId = subPost.id))
             }
         },
         indication = null,

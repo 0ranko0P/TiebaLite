@@ -3,31 +3,33 @@ package com.huanchengfly.tieba.post.repository
 import android.content.Context
 import android.util.Log
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
-import com.huanchengfly.tieba.post.api.booleanToInt
-import com.huanchengfly.tieba.post.api.models.FollowBean
-import com.huanchengfly.tieba.post.api.models.FollowListBean
-import com.huanchengfly.tieba.post.api.models.PermissionListBean
-import com.huanchengfly.tieba.post.api.models.protos.Anti
-import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
-import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.core.common.ktx.booleanToInt
+import com.huanchengfly.tieba.post.core.network.model.FollowBean
+import com.huanchengfly.tieba.post.core.network.model.FollowListBean
+import com.huanchengfly.tieba.post.core.network.model.PermissionListBean
+import com.huanchengfly.tieba.post.core.network.model.UserLikeForumBean.ForumBean
+import com.huanchengfly.tieba.post.core.network.model.protos.Anti
+import com.huanchengfly.tieba.post.core.network.model.protos.PostInfoList
+import com.huanchengfly.tieba.post.core.network.model.protos.User
+import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
+import com.huanchengfly.tieba.post.core.network.source.UserProfileNetworkDataSource
 import com.huanchengfly.tieba.post.models.database.UserProfile
 import com.huanchengfly.tieba.post.models.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.repository.source.local.UserProfileLocalDataSource
-import com.huanchengfly.tieba.post.repository.source.network.UserProfileNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.LikeZero
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
+import com.huanchengfly.tieba.post.ui.models.user.EditProfile
 import com.huanchengfly.tieba.post.ui.models.user.PermissionList
 import com.huanchengfly.tieba.post.ui.models.user.PostContent
 import com.huanchengfly.tieba.post.ui.models.user.PostListItem
+import com.huanchengfly.tieba.post.ui.models.user.UserLikeForum
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildThreadContent
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.normalized
@@ -40,6 +42,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,20 +52,17 @@ class UserProfileRepository @Inject constructor(
     private val threadRepo: PbPageRepository,
     private val userProfileDao: UserProfileDao,
     private val localDataSource: UserProfileLocalDataSource,
+    private val networkDataSource: UserProfileNetworkDataSource,
+    private val credentialProvider: CredentialProvider,
     settingsRepository: SettingsRepository
 ) {
 
-    private val networkDataSource = UserProfileNetworkDataSource
     private val habitSettings = settingsRepository.habitSettings
 
     private val scope = AppBackgroundScope
 
     init {
         scope.launch { localDataSource.cleanUpExpired() }
-    }
-
-    private suspend fun requireTBS(): String {
-        return AccountUtil.getInstance().currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
     }
 
     /**
@@ -124,6 +124,11 @@ class UserProfileRepository @Inject constructor(
         }.await()
     }
 
+    suspend fun loadUserLikeForum(uid: Long, page: Int = 1): Pair<List<UserLikeForum>, Boolean> {
+        val (forums, hasMore) = networkDataSource.loadUserLikeForum(uid, page = page)
+        return forums.mapToUiModel() to hasMore
+    }
+
     suspend fun loadUserFollowList(uid: Long, page: Int = 1): FollowListBean {
         val start = System.currentTimeMillis()
         val result = networkDataSource.loadUserFollowList(uid, page)
@@ -133,24 +138,26 @@ class UserProfileRepository @Inject constructor(
     }
 
     suspend fun requestFollowUser(uid: Long, portrait: String): FollowBean.Info {
-        val result = networkDataSource.requestFollowUser(portrait, tbs = requireTBS())
+        val result = networkDataSource.requestFollowUser(portrait, tbs = credentialProvider.requireTbs())
         userProfileDao.updateLastUpdate(uid, timestamp = 0) // Invalidate user cache
         return result
     }
 
     suspend fun requestFollowUser(profile: UserProfile): FollowBean.Info {
-        val result = networkDataSource.requestFollowUser(portrait = profile.portrait, tbs = requireTBS())
+        val tbs = credentialProvider.requireTbs()
+        val result = networkDataSource.requestFollowUser(portrait = profile.portrait, tbs)
         userProfileDao.updateFollowState(uid = profile.uid, following = true, fans = profile.fans + 1)
         return result
     }
 
     suspend fun requestUnfollowUser(uid: Long, portrait: String) {
-        networkDataSource.requestUnfollowUser(portrait, tbs = requireTBS())
+        networkDataSource.requestUnfollowUser(portrait, tbs = credentialProvider.requireTbs())
         userProfileDao.updateLastUpdate(uid, timestamp = 0) // Invalidate user cache
     }
 
     suspend fun requestUnfollowUser(profile: UserProfile) {
-        networkDataSource.requestUnfollowUser(portrait = profile.portrait, tbs = requireTBS())
+        val tbs = credentialProvider.requireTbs()
+        networkDataSource.requestUnfollowUser(portrait = profile.portrait, tbs)
         userProfileDao.updateFollowState(uid = profile.uid, following = false, fans = profile.fans - 1)
     }
 
@@ -160,10 +167,30 @@ class UserProfileRepository @Inject constructor(
         localDataSource.purgeUserThreadPost(uid, isThread = true)
     }
 
+    suspend fun requestProfileUpdate(edit: EditProfile) {
+        credentialProvider.requireTbs()
+        networkDataSource.requestProfileUpdate(
+            birthdayShowStatus = edit.birthdayShowStatus,
+            birthdayTime = "${edit.birthdayTime / 1000L}",
+            intro = edit.intro ?: "",
+            sex = edit.sex.toString(),
+            nickName = edit.nickName
+        )
+    }
+
+    suspend fun uploadPortrait(file: File): String {
+        credentialProvider.requireTbs()
+        return networkDataSource.uploadPortrait(file)
+    }
+
     suspend fun getUserBlackInfo(uid: Long): PermissionList {
-        requireTBS()
+        credentialProvider.requireTbs()
         val bean = networkDataSource.getUserBlackInfo(uid)
-        return PermissionList(bean)
+        return PermissionList(
+            follow = bean.follow == 1,
+            interact = bean.interact == 1,
+            chat = bean.chat == 1
+        )
     }
 
     suspend fun setUserBlack(uid: Long, permList: PermissionList) {
@@ -173,7 +200,7 @@ class UserProfileRepository @Inject constructor(
             interact = permList.interact.booleanToInt(),
             chat = permList.chat.booleanToInt()
         )
-        networkDataSource.setUserBlack(uid, tbs = requireTBS(), bean)
+        networkDataSource.setUserBlack(uid, tbs = credentialProvider.requireTbs(), bean)
     }
 
     private suspend fun checkUserCacheExpired(uid: Long): Boolean {
@@ -286,6 +313,23 @@ class UserProfileRepository @Inject constructor(
                 isOfficial = user.is_guanfang == 1,
                 blockDays = blockDays,
             )
+        }
+
+        private suspend fun List<ForumBean>.mapToUiModel(): List<UserLikeForum> {
+            if (isEmpty()) return emptyList()
+
+            return withContext(Dispatchers.Default) {
+                map {
+                    UserLikeForum(
+                        id = it.id.toLongOrNull() ?: throw NumberFormatException("Invalid forum id: ${it.id}"),
+                        avatar = it.avatar.orEmpty(),
+                        name = it.name ?: throw NullPointerException("Null forum name"),
+                        levelId = it.levelId!!,
+                        levelName = it.levelName,
+                        slogan = it.slogan?.takeUnless { s -> s.isEmpty() || s.isBlank() },
+                    )
+                }
+            }
         }
     }
 }

@@ -8,18 +8,11 @@ import android.content.Intent
 import android.os.Build
 import android.os.PersistableBundle
 import androidx.core.net.toUri
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.retrofit.doIfFailure
-import com.huanchengfly.tieba.post.api.retrofit.doIfSuccess
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.api.urlEncode
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
-import com.huanchengfly.tieba.post.components.dialogs.LoadingDialog
+import com.huanchengfly.tieba.post.core.common.ktx.urlEncode
 import com.huanchengfly.tieba.post.di.RepositoryEntryPoint
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.webview.isTiebaHost
 import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import com.huanchengfly.tieba.post.workers.OKSignWorker
@@ -88,27 +81,5 @@ object TiebaUtil {
             Intent(Intent.ACTION_VIEW, uri)
         }
         context.startActivity(intent)
-    }
-
-    suspend fun reportPost(
-        context: Context,
-        navigator: NavController,
-        postId: String,
-    ) {
-        val dialog = LoadingDialog(context).apply { show() }
-        TiebaApi.getInstance()
-            .checkReportPostAsync(postId)
-            .doIfSuccess {
-                dialog.dismiss()
-                navigator.navigate(Destination.WebView(it.data.url))
-            }
-            .doIfFailure { e ->
-                dialog.dismiss()
-                if (e is TiebaNotLoggedInException) {
-                    context.toastShort(R.string.title_not_logged_in)
-                } else {
-                    context.toastShort(R.string.toast_load_failed)
-                }
-            }
     }
 }

@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.models.user
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.ui.models.Author
 import java.util.Objects
 
@@ -14,7 +13,7 @@ class PostContent(
 )
 
 /**
- * UI Model of [PostInfoList]
+ * UI Model of [com.huanchengfly.tieba.post.core.network.model.protos.PostInfoList]
  * */
 @Immutable
 class PostListItem(

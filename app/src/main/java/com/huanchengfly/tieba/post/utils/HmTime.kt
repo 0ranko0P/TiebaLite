@@ -7,7 +7,7 @@ import androidx.compose.ui.util.unpackInt1
 import androidx.compose.ui.util.unpackInt2
 
 /**
- * Pack "HH:mm" formatted time in long. For persisting [androidx.compose.material3.TimePickerState]
+ * Pack "HH:mm" formatted time into long. For persisting [androidx.compose.material3.TimePickerState]
  * into settings.
  * */
 @Immutable

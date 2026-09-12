@@ -3,13 +3,13 @@ package com.huanchengfly.tieba.post.ui.page.hottopic.detail
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.toRoute
-import com.huanchengfly.tieba.post.api.models.TopicInfoBean
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.stateInViewModel
+import com.huanchengfly.tieba.post.core.network.model.TopicInfoBean
 import com.huanchengfly.tieba.post.repository.HotTopicRepository
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Like

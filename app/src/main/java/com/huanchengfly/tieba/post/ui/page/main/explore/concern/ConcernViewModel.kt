@@ -3,17 +3,17 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastMap
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
-import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePageItem
+import com.huanchengfly.tieba.post.ui.models.explore.ExploreType
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -104,7 +104,7 @@ class ConcernViewModel @Inject constructor(
     fun onThreadLikeClicked(thread: ThreadItem) = launchInVM {
         updateLikeStatusUiStateCommon(
             thread = thread,
-            onRequestLikeThread = { exploreRepo.onLikeThread(it, ExplorePageItem.Concern) },
+            onRequestLikeThread = { exploreRepo.onLikeThread(it, ExploreType.CONCERN) },
             onEvent = ::emitGlobalEventSuspend
         ) { threadId, liked, loading ->
             val newData = currentState.data.updateLikeStatus(threadId, liked, loading)
@@ -124,7 +124,7 @@ class ConcernViewModel @Inject constructor(
             val newData = currentState.data.updateLikeStatus(threadId, like)
             if (newData != null) {
                 _uiState.update { it.copy(data = newData) }
-                exploreRepo.updateCachedThreadLike(threadId, like, from = ExplorePageItem.Concern)
+                exploreRepo.updateCachedThreadLike(threadId, like, from = ExploreType.CONCERN)
             }
             // else: empty or no status changes
         }

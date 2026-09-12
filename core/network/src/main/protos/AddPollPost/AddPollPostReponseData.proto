@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package tieba.addPollPost;
+
+option java_package = "com.huanchengfly.tieba.post.core.network.model.protos.addPollPost";
+
+message AddPollPostReponseData {
+    int32 error_code = 1;
+    string error_msg = 2;
+}

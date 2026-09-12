@@ -67,6 +67,7 @@ import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.UserData
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.CopyText
 import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
@@ -103,7 +104,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -369,9 +369,7 @@ private fun SubPostsContent(
                         onMenuReplyClick = onReplySubPostClickedListener,
                         onMenuCopyClick = onCopyClickedListener,
                         onMenuReportClick = {
-                            coroutineScope.launch {
-                                TiebaUtil.reportPost(context, navigator, postId = it.id.toString())
-                            }
+                            navigator.navigateDebounced(Destination.Report(postId = it.id))
                         },
                         onMenuDeleteClick = viewModel::onDeleteSubPost.takeIf { item.authorId == myUid } // Check is my SubPost
                     )

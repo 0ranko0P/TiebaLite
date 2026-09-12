@@ -45,8 +45,8 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
@@ -69,7 +69,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
-import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
@@ -229,7 +228,7 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun UserPage(viewModel: UserViewModel = viewModel()) {
+fun UserPage(viewModel: UserViewModel = hiltViewModel()) {
     val navigator = LocalNavController.current
     val colorScheme = MaterialTheme.colorScheme
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -299,11 +298,7 @@ fun UserPage(viewModel: UserViewModel = viewModel()) {
                     },
                     onThemeClicked = { navigator.navigateDebounced(Destination.AppTheme) },
                     onServiceCenterClicked = {
-                        navigator.navigateDebounced(
-                            Destination.WebView(
-                                initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
-                            )
-                        )
+                        navigator.navigateDebounced(Destination.WebView(viewModel.getUegServiceCenterUrl()))
                     }.takeIf { account != null },
                     onSettingsClicked = { navigator.navigateDebounced(SettingsDestination.Settings) },
                     onAboutClicked = { navigator.navigateDebounced(SettingsDestination.About) },

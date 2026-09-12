@@ -11,56 +11,37 @@ import androidx.compose.material.icons.outlined.SupervisedUserCircle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.user.Settings
 import com.huanchengfly.tieba.post.ui.page.Destination.Login
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPreference
-import com.huanchengfly.tieba.post.ui.widgets.compose.preference.StringLabelOptions
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil.normalized
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.launchUrl
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-
-@Composable
-private fun Flow<List<Account>>.collectLabelOptionsAsState(): State<StringLabelOptions<Long>> {
-    return produceState(initialValue = emptyMap(), this) {
-        this@collectLabelOptionsAsState
-            .map { accounts ->
-                accounts.associate { it.uid to it.name }
-            }
-            .collect { value = it }
-    }
-}
 
 @Composable
 fun AccountManagePage(
     myLittleTailSettings: Settings<String>,
-    navigator: NavController
+    navigator: NavController,
+    viewModel: AccountManageViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val accountUtil = remember { AccountUtil.getInstance() }
-    val account = LocalAccount.current ?: return
+    val account = viewModel.currentAccount.collectAsStateWithLifecycle().value ?: return
+    val accounts by viewModel.allAccounts.collectAsStateWithLifecycle()
     val accountName = account.nickname ?: account.name
-    val accounts by accountUtil.allAccounts.collectLabelOptionsAsState()
 
     SettingsScaffold(
         titleRes = R.string.title_account_manage,
@@ -73,7 +54,7 @@ fun AccountManagePage(
                     title = context.getString(R.string.title_switch_account),
                     summary = context.getString(R.string.summary_now_account, accountName),
                     leadingIcon = Icons.Outlined.AccountCircle,
-                    onValueChange = accountUtil::switchAccount,
+                    onValueChange = viewModel::switchAccount,
                     options = accounts,
                 )
             } else {
@@ -105,7 +86,7 @@ fun AccountManagePage(
                         if (accounts.size == 1) {
                             navigator.navigateUp()
                         }
-                        accountUtil.exit(context.applicationContext, account)
+                        viewModel.logout()
                     }
                 )
             }

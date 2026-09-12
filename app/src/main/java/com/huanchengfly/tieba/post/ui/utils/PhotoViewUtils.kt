@@ -1,7 +1,7 @@
 package com.huanchengfly.tieba.post.ui.utils
 
-import com.huanchengfly.tieba.post.api.models.protos.Media
-import com.huanchengfly.tieba.post.api.models.protos.Post
+import com.huanchengfly.tieba.post.core.network.model.protos.Media
+import com.huanchengfly.tieba.post.core.network.model.protos.Post
 import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
@@ -15,11 +15,11 @@ fun getPhotoViewData(
     content: PicContentRender,
     seeLz: Boolean = false
 ): PhotoViewData? {
-    if (post.from_forum == null) return null
+    val fromForum = post.from_forum ?: return null
     return PhotoViewData(
         data = LoadPicPageData(
-            forumId = post.from_forum.id,
-            forumName = post.from_forum.name,
+            forumId = fromForum.id,
+            forumName = fromForum.name,
             threadId = post.tid,
             postId = post.id,
             objType = "pb",

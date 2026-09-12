@@ -13,10 +13,12 @@ import com.huanchengfly.tieba.post.arch.unsafeLazy
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isBaidu
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission
+import com.huanchengfly.tieba.post.di.SessionModuleEntryPoint
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebViewClient
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.FileUtil
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.launch
@@ -33,6 +35,10 @@ open class TbWebViewClient(
     }
 
     private val cookieManager by unsafeLazy { CookieManager.getInstance() }
+
+    protected val sessionManager: SessionManager by unsafeLazy {
+        EntryPointAccessors.fromApplication<SessionModuleEntryPoint>(context).SessionManager()
+    }
 
     override fun onPageFinished(view: WebView, url: String?) {
         super.onPageFinished(view, url)
@@ -74,7 +80,7 @@ open class TbWebViewClient(
         val cookieStr = cookieManager.getCookie(url) ?: ""
         val cookies = AccountUtil.parseCookie(cookieStr)
         val BDUSS = cookies["BDUSS"]
-        val currentAccountBDUSS = AccountUtil.getBduss()
+        val currentAccountBDUSS = sessionManager.getBduss()
         if (currentAccountBDUSS != null && BDUSS != currentAccountBDUSS) {
             cookieManager.setCookie(url, AccountUtil.getBdussCookie(currentAccountBDUSS))
         }

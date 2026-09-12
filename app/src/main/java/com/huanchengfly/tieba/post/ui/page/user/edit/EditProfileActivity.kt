@@ -63,6 +63,7 @@ import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.models.user.EditProfile
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
@@ -84,12 +85,13 @@ import java.io.File
 @AndroidEntryPoint
 class EditProfileActivity : BaseComposeActivity() {
 
-    private val portraitFile: File by lazy { File(cacheDir, "cropped_portrait") }
+    private val portraitFile: File
+        get() = File(cacheDir, "cropped_portrait")
 
     // Launch UCropActivity for result (cropped portrait)
     private val uCropLauncher = registerUCropResult { result ->
         result?.run { // null when RESULT_CANCELED, do nothing
-            onSuccess { uri ->
+            onSuccess {
                 viewModel.send(EditProfileIntent.UploadPortrait(portraitFile))
             }
             onFailure { e ->

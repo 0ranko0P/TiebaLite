@@ -1,15 +1,13 @@
 package com.huanchengfly.tieba.post.repository
 
-import com.huanchengfly.tieba.post.api.models.ThreadStoreBean.ThreadStoreInfo
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.repository.source.network.ThreadStoreNetworkDataSource
+import com.huanchengfly.tieba.post.core.network.model.ThreadStoreBean.ThreadStoreInfo
+import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
+import com.huanchengfly.tieba.post.core.network.source.ThreadStoreNetworkDataSource
 import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import okhttp3.internal.toLongOrDefault
 import javax.inject.Inject
@@ -20,14 +18,10 @@ import javax.inject.Singleton
  * */
 @Singleton
 class ThreadStoreRepository @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val networkDataSource: ThreadStoreNetworkDataSource,
+    private val credentialProvider: CredentialProvider,
 ) {
-
-    private val networkDataSource = ThreadStoreNetworkDataSource
-
-    private suspend fun requireTBS(): String {
-        return AccountUtil.getInstance().currentAccount.first()?.tbs ?: throw TiebaNotLoggedInException()
-    }
 
     /**
      * 加载收藏的帖子
@@ -46,14 +40,14 @@ class ThreadStoreRepository @Inject constructor(
      * 取消收藏这个帖子
      * */
     suspend fun remove(thread: ThreadStore) = runCatching {
-        networkDataSource.remove(threadId = thread.id, tbs = requireTBS())
+        networkDataSource.remove(threadId = thread.id, tbs = credentialProvider.requireTbs())
     }
 
     /**
      * 取消收藏这个帖子
      * */
     suspend fun remove(threadId: Long, forumId: Long?, tbs: String?) {
-        networkDataSource.remove(threadId, forumId, tbs = tbs ?: requireTBS())
+        networkDataSource.remove(threadId, forumId, tbs = tbs ?: credentialProvider.requireTbs())
     }
 
     companion object {

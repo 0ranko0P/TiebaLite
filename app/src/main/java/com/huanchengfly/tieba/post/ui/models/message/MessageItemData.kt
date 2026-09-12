@@ -2,7 +2,7 @@ package com.huanchengfly.tieba.post.ui.models.message
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
-import com.huanchengfly.tieba.post.api.models.MessageListBean.MessageInfoBean
+import com.huanchengfly.tieba.post.core.network.model.MessageListBean.MessageInfoBean
 import com.huanchengfly.tieba.post.ui.models.Author
 import java.util.Objects
 

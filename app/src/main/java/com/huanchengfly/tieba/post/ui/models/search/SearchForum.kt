@@ -1,10 +1,9 @@
 package com.huanchengfly.tieba.post.ui.models.search
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.api.models.SearchForumBean.ForumInfoBean
 
 /**
- * UI Model of [ForumInfoBean]
+ * UI Model of [com.huanchengfly.tieba.post.core.network.model.SearchForumBean.ForumInfoBean]
  *
  * @param id forum ID
  * @param name forum name
