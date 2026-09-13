@@ -12,8 +12,9 @@ import com.huanchengfly.tieba.post.activities.TranslucentThemeViewModel.Companio
 import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
 import com.huanchengfly.tieba.post.theme.colorscheme.dynamicColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
-import com.huanchengfly.tieba.post.ui.models.settings.Theme
-import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.Theme
+import com.huanchengfly.tieba.post.core.data.model.settings.ThemeSettings
+import com.huanchengfly.tieba.post.theme.TiebaBlue
 import java.io.File
 
 @Stable
@@ -39,7 +40,10 @@ open class BuiltInTheme(val theme: Theme, val colors: ColorSchemeDayNight): AppT
 @Immutable
 class TranslucentTheme(settings: ThemeSettings, context: Context): BuiltInTheme(
     theme = Theme.TRANSLUCENT,
-    colors = translucentColorScheme(settings.transColor, settings.transDarkColorMode)
+    colors = translucentColorScheme(
+        settings.transColor?.let { Color(it) } ?: TiebaBlue,
+        settings.transDarkColorMode
+    )
 ) {
     val background: File? = settings.transBackground?.let { context.translucentBackground(it) }
 }

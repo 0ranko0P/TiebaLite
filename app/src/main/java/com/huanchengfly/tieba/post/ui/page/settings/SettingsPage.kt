@@ -45,7 +45,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.plus
-import com.huanchengfly.tieba.post.repository.user.Settings
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.theme.BlueGrey700
 import com.huanchengfly.tieba.post.theme.Cyan700
 import com.huanchengfly.tieba.post.theme.Green700

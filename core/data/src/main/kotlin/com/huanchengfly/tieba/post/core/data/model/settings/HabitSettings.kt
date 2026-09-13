@@ -1,8 +1,6 @@
-package com.huanchengfly.tieba.post.ui.models.settings
+package com.huanchengfly.tieba.post.core.data.model.settings
 
 import androidx.annotation.IntDef
-import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.utils.ImageUtil
 
 @IntDef(ForumFAB.POST, ForumFAB.REFRESH, ForumFAB.BACK_TO_TOP, ForumFAB.HIDE)
 @Retention(AnnotationRetention.SOURCE)
@@ -92,7 +90,6 @@ annotation class WaterType {
  * @param stickyHeader 帖子页面是否使用StickyHeader
  * @param videoAutoplay 视频自动播放
  * */
-@Immutable
 data class HabitSettings(
     val collectedDesc: Boolean = false,
     val favoriteDesc: Boolean = false,

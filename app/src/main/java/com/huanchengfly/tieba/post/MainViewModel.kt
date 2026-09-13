@@ -9,16 +9,16 @@ import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.SessionManager
 import com.huanchengfly.tieba.post.components.media.ExoPlayerPool
+import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.PrivacySettings
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.data.model.settings.Theme
+import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
-import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
-import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
-import com.huanchengfly.tieba.post.ui.models.settings.Theme
-import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -73,7 +73,7 @@ class MainViewModel @Inject constructor(
     val translucentThemeBackground: StateFlow<File?> = settingsRepository.themeSettings
         .map {
             if (it.theme == Theme.TRANSLUCENT && it.transBackground != null) {
-                context.translucentBackground(it.transBackground)
+                context.translucentBackground(it.transBackground!!)
             } else {
                 null
             }

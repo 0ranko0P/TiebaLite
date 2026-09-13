@@ -30,16 +30,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
-import com.huanchengfly.tieba.post.ui.models.settings.NavigationLabel
-import com.huanchengfly.tieba.post.ui.models.settings.UISettings
+import com.huanchengfly.tieba.post.core.data.model.settings.DarkPreference
+import com.huanchengfly.tieba.post.core.data.model.settings.LauncherIcons
+import com.huanchengfly.tieba.post.core.data.model.settings.NavigationLabel
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AppFont
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegmentedPrefsScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
 import com.huanchengfly.tieba.post.utils.AppIconUtil
-import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.persistentMapOf
 

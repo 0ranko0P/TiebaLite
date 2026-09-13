@@ -25,7 +25,7 @@ import com.huanchengfly.tieba.post.core.network.model.PicPageBean
 import com.huanchengfly.tieba.post.core.network.source.ThreadNetworkDataSource
 import com.huanchengfly.tieba.post.core.network.source.ThreadPictureDataSource
 import com.huanchengfly.tieba.post.models.LoadPicPageData
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.common.PbInlineType

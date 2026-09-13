@@ -5,6 +5,8 @@ import android.os.Build
 import android.util.Log
 import android.webkit.CookieManager
 import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.database.dao.AccountDao
 import com.huanchengfly.tieba.post.core.database.dao.TimestampDao
 import com.huanchengfly.tieba.post.core.database.model.Account
@@ -12,8 +14,6 @@ import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInExcept
 import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
 import com.huanchengfly.tieba.post.core.network.source.AuthNetworkDataSource
 import com.huanchengfly.tieba.post.core.network.source.UserProfileNetworkDataSource
-import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.workManager

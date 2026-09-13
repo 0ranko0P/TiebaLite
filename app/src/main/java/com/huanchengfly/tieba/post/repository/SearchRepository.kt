@@ -21,7 +21,7 @@ import com.huanchengfly.tieba.post.core.database.model.SearchHistory
 import com.huanchengfly.tieba.post.core.database.model.SearchPostHistory
 import com.huanchengfly.tieba.post.core.database.dao.SearchDao
 import com.huanchengfly.tieba.post.core.database.dao.SearchPostDao
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.search.SearchForum

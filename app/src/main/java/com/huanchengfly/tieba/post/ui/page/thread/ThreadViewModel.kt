@@ -28,7 +28,7 @@ import com.huanchengfly.tieba.post.repository.PageData
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.repository.PbPageUiResponse
 import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.page.Destination

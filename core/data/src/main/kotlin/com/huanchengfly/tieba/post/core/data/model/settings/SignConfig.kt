@@ -1,9 +1,7 @@
-package com.huanchengfly.tieba.post.ui.models.settings
+package com.huanchengfly.tieba.post.core.data.model.settings
 
-import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.utils.HmTime
+import com.huanchengfly.tieba.post.core.data.model.HmTime
 
-@Immutable
 data class SignConfig(
     val autoSign: Boolean = false,
     val autoSignSlow: Boolean = true,

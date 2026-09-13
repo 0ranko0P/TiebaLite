@@ -12,9 +12,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowInsetsControllerCompat
+import com.google.android.material.color.utilities.Variant
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
-import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.data.model.settings.DarkPreference
+import com.huanchengfly.tieba.post.core.data.model.settings.Theme
+import com.huanchengfly.tieba.post.core.data.model.settings.ThemeSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
 import com.huanchengfly.tieba.post.theme.DefaultColors
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
@@ -29,10 +34,6 @@ import com.huanchengfly.tieba.post.theme.colorscheme.monetColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
 import com.huanchengfly.tieba.post.theme.createTopAppBarColors
 import com.huanchengfly.tieba.post.theme.isTranslucent
-import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
-import com.huanchengfly.tieba.post.ui.models.settings.Theme
-import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
-import com.huanchengfly.tieba.post.ui.models.settings.UISettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil._darkConfigUiMode
 import com.huanchengfly.tieba.post.utils.ThemeUtil.onUpdateSystemUiMode
 import com.huanchengfly.tieba.post.utils.ThemeUtil.overrideDarkMode
@@ -156,9 +157,12 @@ object ThemeUtil {
     fun savedColorSchemeFlow(themeSettings: Settings<ThemeSettings>, context: Context): Flow<ColorSchemeDayNight> {
         return themeSettings.map {
             when (it.theme) {
-                Theme.TRANSLUCENT -> translucentColorScheme(it.transColor, it.transDarkColorMode)
+                Theme.TRANSLUCENT -> translucentColorScheme(Color(it.transColor!!), it.transDarkColorMode)
 
-                Theme.CUSTOM -> dynamicColorScheme(it.customColor!!.toArgb(), it.customVariant!!)
+                Theme.CUSTOM -> {
+                    val variant = Variant.entries[it.customVariant!!]
+                    dynamicColorScheme(it.customColor!!, variant)
+                }
 
                 Theme.DYNAMIC -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {

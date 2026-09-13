@@ -54,12 +54,12 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.core.data.model.HmTime
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
-import com.huanchengfly.tieba.post.utils.HmTime
 
 val DefaultDialogContentPadding = 20.dp
 val DefaultDialogMargin = 16.dp

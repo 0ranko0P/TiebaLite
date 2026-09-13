@@ -4,14 +4,17 @@ import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.util.fastFirst
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.lifecycle.viewModelScope
 import com.google.android.material.color.utilities.Variant
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.stateInViewModel
-import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.data.model.settings.Theme
+import com.huanchengfly.tieba.post.core.data.model.settings.ThemeSettings
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.theme.TiebaBlue
 import com.huanchengfly.tieba.post.theme.colorscheme.BlueColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.GreenColorScheme
@@ -19,8 +22,6 @@ import com.huanchengfly.tieba.post.theme.colorscheme.OrangeColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.PinkColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.PurpleColorScheme
 import com.huanchengfly.tieba.post.theme.colorscheme.monetColorScheme
-import com.huanchengfly.tieba.post.ui.models.settings.Theme
-import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
 import com.huanchengfly.tieba.post.ui.page.settings.theme.AppThemeViewModel.Companion.getBuiltInThemes
 import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -85,7 +86,7 @@ class AppThemeViewModel @Inject constructor(
         flow2 = themeSettings,
         // state.value vs settings.value
         transform = { a, b ->
-            a != null && (a.color != b.customColor || a.variant != b.customVariant || b.theme != Theme.CUSTOM)
+            a != null && (a.color.toArgb() != b.customColor || a.variant.ordinal != b.customVariant || b.theme != Theme.CUSTOM)
         }
     )
     .stateInViewModel(initialValue = false)
@@ -111,9 +112,9 @@ class AppThemeViewModel @Inject constructor(
     private fun loadThemes() = viewModelScope.launch {
         val themeSettings = themeSettings.snapshot()
         val currentTheme = themeSettings.theme
-        val customColor = themeSettings.customColor
-        val customVariant = themeSettings.customVariant
-        val variantThemes = generateVariantThemes(customColor ?: TiebaBlue, variantList)
+        val customColor: Color = themeSettings.customColor?.let { Color(it) } ?: TiebaBlue
+        val customVariant: Variant? = themeSettings.customVariant?.let { Variant.entries[it] }
+        val variantThemes = generateVariantThemes(customColor, variantList)
         val newState = withContext(Dispatchers.Default) {
             val builtInThemes = themeSettings.getBuiltInThemes(context)
             ThemeUiState(
@@ -155,8 +156,8 @@ class AppThemeViewModel @Inject constructor(
                     val variant: VariantTheme = state.pickedVariant ?: throw NullPointerException()
                     it.copy(
                         theme = Theme.CUSTOM,
-                        customColor = variant.color,
-                        customVariant = variant.variant
+                        customColor = variant.color.toArgb(),
+                        customVariant = variant.variant.ordinal,
                     )
                 }
             }

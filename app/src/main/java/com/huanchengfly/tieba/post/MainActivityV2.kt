@@ -56,8 +56,8 @@ import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.LocalPbInlineContentCache
 import com.huanchengfly.tieba.post.ui.common.PbInlineContentCache.Companion.rememberPbInlineContentCache
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
-import com.huanchengfly.tieba.post.ui.models.settings.UISettings
+import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.RootNavGraph
 import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN

@@ -2,12 +2,12 @@ package com.huanchengfly.tieba.post.components
 
 import android.util.Log
 import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.data.model.settings.ClientConfig
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.network.session.ClientConfigProvider
 import com.huanchengfly.tieba.post.core.network.source.AuthNetworkDataSource
-import com.huanchengfly.tieba.post.repository.user.Settings
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharedFlow

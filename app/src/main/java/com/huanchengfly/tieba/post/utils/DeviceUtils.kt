@@ -1,7 +1,5 @@
 package com.huanchengfly.tieba.post.utils
 
-import android.annotation.SuppressLint
-import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import java.io.File
@@ -14,9 +12,6 @@ object DeviceUtils {
     var coreNum = -1
     private const val CPU_MAX_INFO_FORMAT = "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq"
     private const val MEM_INFO_FILE = "/proc/meminfo"
-
-    val PRODUCT_FIRST_API_LEVEL: Int
-        get() = getIntSystemProperty("ro.product.first_api_level", default = Build.VERSION.SDK_INT)
 
     fun roundUpRom(f: Float): Int {
         var i = 1
@@ -36,18 +31,6 @@ object DeviceUtils {
                 roundUpRom(totalSDCardSize) * 4.1613E-4f +
                 (round(cpuCores) * cpuAverageFrequency) * 0.01155649f +
                 0.0231852f
-    }
-
-    @SuppressLint("PrivateApi")
-    fun getIntSystemProperty(key: String, default: Int): Int {
-        try {
-            val systemPropertiesClass = Class.forName("android.os.SystemProperties")
-            val getIntMethod = systemPropertiesClass.getMethod("getInt", String::class.java, Int::class.javaPrimitiveType)
-            return getIntMethod.invoke(null, key, default) as Int
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-        return default
     }
 
     fun getTotalSDCardSize(): Float {

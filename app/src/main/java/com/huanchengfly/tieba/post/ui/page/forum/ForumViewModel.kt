@@ -11,14 +11,14 @@ import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.core.data.model.settings.ForumFAB
+import com.huanchengfly.tieba.post.core.data.model.settings.ForumSortType
 import com.huanchengfly.tieba.post.core.database.model.ForumHistory
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.network.model.SignResultBean
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
-import com.huanchengfly.tieba.post.ui.models.settings.ForumFAB
-import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
 import com.huanchengfly.tieba.post.ui.page.forum.generaltablist.GeneralTabListUiEvent

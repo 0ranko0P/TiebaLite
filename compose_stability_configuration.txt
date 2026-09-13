@@ -1,3 +1,4 @@
 com.huanchengfly.tieba.post.core.network.model.*
+com.huanchengfly.tieba.post.core.data.model.*
 com.huanchengfly.tieba.post.core.database.model.*
 com.huanchengfly.tieba.post.ui.models.*

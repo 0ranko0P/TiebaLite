@@ -19,10 +19,10 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
 import com.huanchengfly.tieba.post.core.common.ktx.ensureParents
-import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.models.settings.ImageLoadType
+import com.huanchengfly.tieba.post.core.data.model.settings.ImageLoadType
 import com.huanchengfly.tieba.post.utils.ImageUtil.downloadForShare
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied

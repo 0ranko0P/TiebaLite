@@ -29,16 +29,16 @@ import com.huanchengfly.tieba.post.components.coil.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderEffectImageProcessor
 import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImageProcessor
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
+import com.huanchengfly.tieba.post.core.data.model.settings.Theme
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.theme.BlueViolet
 import com.huanchengfly.tieba.post.theme.MerlotPink
 import com.huanchengfly.tieba.post.theme.SunsetOrange
 import com.huanchengfly.tieba.post.theme.TiebaBlue
-import com.huanchengfly.tieba.post.ui.models.settings.Theme
-import com.huanchengfly.tieba.post.utils.extension.set
-import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
 import com.huanchengfly.tieba.post.utils.ImageUtil.toFile
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Deferred
@@ -118,7 +118,7 @@ class TranslucentThemeViewModel @Inject constructor(
             settings.theme != Theme.TRANSLUCENT -> true
 
             else -> state.isDarkTheme != settings.transDarkColorMode
-                    || state.primaryColor != settings.transColor
+                    || state.primaryColor.toArgb() != settings.transColor
                     || state.alpha != settings.transAlpha
                     || state.blur != settings.transBlur
         }
@@ -139,7 +139,7 @@ class TranslucentThemeViewModel @Inject constructor(
                 .map {
                     val blur: Float? = it.transBlur.takeUnless { f -> f == 0f }
                     UiState(
-                        primaryColor = it.transColor,
+                        primaryColor = it.transColor?.let { c -> Color(c) } ?: TiebaBlue,
                         isDarkTheme = it.transDarkColorMode,
                         alpha = it.transAlpha,
                         wallpaper = wallpaper,
@@ -222,7 +222,7 @@ class TranslucentThemeViewModel @Inject constructor(
                 themeSettings.save {
                     it.copy(
                         theme = Theme.TRANSLUCENT,
-                        transColor = state.primaryColor,
+                        transColor = state.primaryColor.toArgb(),
                         transAlpha = state.alpha,
                         transBlur = state.blur,
                         transDarkColorMode = state.isDarkTheme,

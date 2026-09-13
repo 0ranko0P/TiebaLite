@@ -9,10 +9,8 @@ import com.huanchengfly.tieba.post.repository.AddPostRepositoryImpl
 import com.huanchengfly.tieba.post.repository.source.local.ExploreAssetsDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalFileDataSource
-import com.huanchengfly.tieba.post.repository.user.DataStoreSettingsRepository
 import com.huanchengfly.tieba.post.repository.user.OKSignRepository
 import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -28,9 +26,6 @@ interface RepositoryModule {
 
     @Binds
     fun bindAddPostRepository(repository: AddPostRepositoryImpl): AddPostRepository
-
-    @Binds
-    fun bindSettingsRepository(repository: DataStoreSettingsRepository): SettingsRepository
 
     @Binds
     fun bindOKSignRepository(repository: OKSignRepositoryImp): OKSignRepository
@@ -55,7 +50,5 @@ object ExploreLocalCacheModule {
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface RepositoryEntryPoint {
-    fun settingsRepository(): SettingsRepository
-
     fun okSignRepository(): OKSignRepository
 }

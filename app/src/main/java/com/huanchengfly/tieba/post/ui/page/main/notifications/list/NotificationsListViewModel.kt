@@ -18,7 +18,7 @@ import com.huanchengfly.tieba.post.core.network.model.MessageListBean.MessageInf
 import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
 import com.huanchengfly.tieba.post.core.network.source.ReplyNetworkDataSource
 import com.huanchengfly.tieba.post.repository.BlockRepository
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.message.MessageItemData
 import com.huanchengfly.tieba.post.ui.models.message.ReplyUser

@@ -42,10 +42,10 @@ import androidx.window.core.layout.WindowSizeClass
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.repository.user.Settings
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.models.LikeZero
-import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
 import com.huanchengfly.tieba.post.ui.page.settings.theme.UserPostCardWidget
 import com.huanchengfly.tieba.post.ui.page.subposts.PostLikeButton
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadHeader

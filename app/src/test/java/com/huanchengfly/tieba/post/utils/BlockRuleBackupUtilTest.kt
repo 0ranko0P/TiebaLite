@@ -7,8 +7,8 @@ import com.huanchengfly.tieba.post.core.database.model.BlockUser
 import com.huanchengfly.tieba.post.core.database.dao.BlockDao
 import com.huanchengfly.tieba.post.core.database.dao.KeywordCSV
 import com.huanchengfly.tieba.post.core.database.dao.TransactionRunner
-import com.huanchengfly.tieba.post.core.database.dao.TransactionRunnerDao
 import com.huanchengfly.tieba.post.core.database.dao.UserCSV
+import com.huanchengfly.tieba.post.models.database.dao.TransactionRunnerDao
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil.ENTRY_NAME_FORUM
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil.ENTRY_NAME_KEYWORD
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil.ENTRY_NAME_USER

@@ -1,11 +1,8 @@
-package com.huanchengfly.tieba.post.repository.user
+package com.huanchengfly.tieba.post.core.data.repository.user
 
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import androidx.compose.ui.util.packFloats
-import androidx.compose.ui.util.unpackFloat1
-import androidx.compose.ui.util.unpackFloat2
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.MutablePreferences
@@ -18,33 +15,28 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.google.android.material.color.utilities.Variant
-import com.huanchengfly.tieba.post.getColor
-import com.huanchengfly.tieba.post.putBoolean
-import com.huanchengfly.tieba.post.putColor
-import com.huanchengfly.tieba.post.putInt
-import com.huanchengfly.tieba.post.putLong
-import com.huanchengfly.tieba.post.putString
-import com.huanchengfly.tieba.post.theme.TiebaBlue
-import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
-import com.huanchengfly.tieba.post.ui.models.settings.ClientConfig
-import com.huanchengfly.tieba.post.ui.models.settings.DarkPreference
-import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
-import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
-import com.huanchengfly.tieba.post.ui.models.settings.ImageLoadType
-import com.huanchengfly.tieba.post.ui.models.settings.NavigationLabel
-import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
-import com.huanchengfly.tieba.post.ui.models.settings.SignConfig
-import com.huanchengfly.tieba.post.ui.models.settings.Theme
-import com.huanchengfly.tieba.post.ui.models.settings.ThemeSettings
-import com.huanchengfly.tieba.post.ui.models.settings.UISettings
-import com.huanchengfly.tieba.post.ui.models.settings.WaterType
-import com.huanchengfly.tieba.post.ui.models.settings.randomSignTime
-import com.huanchengfly.tieba.post.utils.DeviceUtils
-import com.huanchengfly.tieba.post.utils.HmTime
+import com.huanchengfly.tieba.post.core.common.ktx.packFloats
+import com.huanchengfly.tieba.post.core.common.ktx.unpackFloat1
+import com.huanchengfly.tieba.post.core.common.ktx.unpackFloat2
+import com.huanchengfly.tieba.post.core.data.model.HmTime
+import com.huanchengfly.tieba.post.core.data.model.settings.BlockSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.ClientConfig
+import com.huanchengfly.tieba.post.core.data.model.settings.DarkPreference
+import com.huanchengfly.tieba.post.core.data.model.settings.ForumSortType
+import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.ImageLoadType
+import com.huanchengfly.tieba.post.core.data.model.settings.LauncherIcons
+import com.huanchengfly.tieba.post.core.data.model.settings.NavigationLabel
+import com.huanchengfly.tieba.post.core.data.model.settings.PrivacySettings
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.data.model.settings.SignConfig
+import com.huanchengfly.tieba.post.core.data.model.settings.Theme
+import com.huanchengfly.tieba.post.core.data.model.settings.ThemeSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
+import com.huanchengfly.tieba.post.core.data.model.settings.WaterType
+import com.huanchengfly.tieba.post.core.data.model.settings.randomSignTime
+import com.huanchengfly.tieba.post.core.data.util.SystemPropertyUtil
 import com.huanchengfly.tieba.post.utils.JobQueue
-import com.huanchengfly.tieba.post.utils.LauncherIcons
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -57,7 +49,7 @@ private const val DATA_STORE_NAME = "app_preferences"
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     name = DATA_STORE_NAME,
     corruptionHandler = ReplaceFileCorruptionHandler {
-        Log.e(DATA_STORE_NAME, "onHandleCorruption", it)
+        Log.wtf(DATA_STORE_NAME, "onHandleCorruption", it)
         emptyPreferences()
     }
 )
@@ -71,7 +63,7 @@ private interface PreferenceTransformer<T> {
  * DataStore implementation of [SettingsRepository].
  */
 @Singleton
-class DataStoreSettingsRepository @Inject constructor(
+internal class DataStoreSettingsRepository @Inject constructor(
     @ApplicationContext context: Context,
 ): SettingsRepository {
 
@@ -194,7 +186,7 @@ private object PrivacySettingsTransformer : PreferenceTransformer<PrivacySetting
     }
 
     override val set: (MutablePreferences, PrivacySettings) -> Unit = { it, settings ->
-        it.putBoolean(KEY_PRIVACY_CLIPBOARD, settings.readClipBoardLink)
+        it[booleanPreferencesKey(KEY_PRIVACY_CLIPBOARD)] = settings.readClipBoardLink
     }
 
     private const val KEY_PRIVACY_CLIPBOARD = "clipboard_link"
@@ -206,9 +198,9 @@ private object ThemeSettingsTransformer : PreferenceTransformer<ThemeSettings> {
 
         ThemeSettings(
             theme = it[intPreferencesKey(KEY_THEME)]?.let { i -> Theme.entries[i] } ?: Theme.BLUE,
-            customColor = it.getColor(KEY_CUSTOM_COLOR),
-            customVariant = it[intPreferencesKey(KEY_CUSTOM_VARIANT)]?.let { i -> Variant.entries[i] },
-            transColor = it.getColor(KEY_TRANSLUCENT_COLOR) ?: TiebaBlue,
+            customColor = it[intPreferencesKey(KEY_CUSTOM_COLOR)],
+            customVariant = it[intPreferencesKey(KEY_CUSTOM_VARIANT)],
+            transColor = it[intPreferencesKey(KEY_TRANSLUCENT_COLOR)],
             transAlpha = transFilters?.let { value -> unpackFloat1(value) } ?: 1.0f,
             transBlur = transFilters?.let { value -> unpackFloat2(value) } ?: 0f,
             transDarkColorMode = it[booleanPreferencesKey(KEY_TRANSLUCENT_DARK_COLOR_MODE)] == true,
@@ -217,13 +209,13 @@ private object ThemeSettingsTransformer : PreferenceTransformer<ThemeSettings> {
     }
 
     override val set: (MutablePreferences, ThemeSettings) -> Unit = { it, theme ->
-        it.putInt(KEY_THEME, theme.theme.ordinal)
-        it.putColor(KEY_CUSTOM_COLOR, theme.customColor)
-        it.putInt(KEY_CUSTOM_VARIANT, theme.customVariant?.ordinal)
-        it.putColor(KEY_TRANSLUCENT_COLOR, theme.transColor)
-        it.putLong(KEY_TRANSLUCENT_FILTERS, packFloats(theme.transAlpha, theme.transBlur))
+        it[intPreferencesKey(KEY_THEME)] = theme.theme.ordinal
+        theme.customColor?.let { color -> it[intPreferencesKey(KEY_CUSTOM_COLOR)] = color }
+        theme.customVariant?.let { ordinal -> it[intPreferencesKey(KEY_CUSTOM_VARIANT)] = ordinal }
+        theme.transColor?.let { color -> it[intPreferencesKey(KEY_TRANSLUCENT_COLOR)] = color }
+        it[longPreferencesKey(KEY_TRANSLUCENT_FILTERS)] = packFloats(theme.transAlpha, theme.transBlur)
         it[booleanPreferencesKey(KEY_TRANSLUCENT_DARK_COLOR_MODE)] = theme.transDarkColorMode
-        it.putString(KEY_TRANSLUCENT_BACKGROUND, theme.transBackground)
+        theme.transBackground?.let { bg -> it[stringPreferencesKey(KEY_TRANSLUCENT_BACKGROUND)] = bg }
     }
 
     private const val KEY_THEME = "theme" // Theme.ordinal
@@ -238,11 +230,14 @@ private object ThemeSettingsTransformer : PreferenceTransformer<ThemeSettings> {
 }
 
 private object UISettingsTransformer: PreferenceTransformer<UISettings> {
+
+    val PRODUCT_FIRST_API_LEVEL: Int
+        get() = SystemPropertyUtil.getInt("ro.product.first_api_level", default = Build.VERSION.SDK_INT)
+
     override val get: (Preferences) -> UISettings = {
         val darkPrefOrdinal = it[intPreferencesKey(KEY_DARK_THEME_MODE)] ?: DarkPreference.FOLLOW_SYSTEM.ordinal
         val appIconOrdinal = it[intPreferencesKey(KEY_APP_ICON)] ?: LauncherIcons.NEW_ICON.ordinal
-        val bottomNavLabelOrdinal =
-            it[intPreferencesKey(KEY_BOTTOM_NAV_LABEL)] ?: NavigationLabel.ALWAYS.ordinal
+        val bottomNavLabelOrdinal = it[intPreferencesKey(KEY_BOTTOM_NAV_LABEL)] ?: NavigationLabel.ALWAYS.ordinal
 
         UISettings(
             appIcon = LauncherIcons.entries[appIconOrdinal],
@@ -253,8 +248,8 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
             darkPreference = DarkPreference.entries[darkPrefOrdinal],
             darkenImage = it[booleanPreferencesKey(KEY_DARKEN_IMAGE_ON_NIGHT)] ?: true,
             hideExplore = it[booleanPreferencesKey(KEY_HIDE_EXPLORE)] == true,
-            reduceEffect = it[booleanPreferencesKey(KEY_REDUCE_EFFECT)] ?: (DeviceUtils.PRODUCT_FIRST_API_LEVEL < Build.VERSION_CODES.S),
-            reduceMotion = it[booleanPreferencesKey(KEY_REDUCE_MOTION)] ?: (DeviceUtils.PRODUCT_FIRST_API_LEVEL < Build.VERSION_CODES.S),
+            reduceEffect = it[booleanPreferencesKey(KEY_REDUCE_EFFECT)] ?: (PRODUCT_FIRST_API_LEVEL < Build.VERSION_CODES.S),
+            reduceMotion = it[booleanPreferencesKey(KEY_REDUCE_MOTION)] ?: (PRODUCT_FIRST_API_LEVEL < Build.VERSION_CODES.S),
             setupFinished = it[booleanPreferencesKey(KEY_SETUP_FINISHED)] == true,
             homeForumList = it[booleanPreferencesKey(KEY_HOME_SINGLE_FORUM_LIST)] == true,
             showHistoryInHome = it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] ?: true,
@@ -286,8 +281,6 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
 
     /**
      * Dark mode preferences, Default mode is [DarkPreference.FOLLOW_SYSTEM]
-     *
-     * @see ThemeUtil.shouldUseNightMode
      * */
     private const val KEY_DARK_THEME_MODE = "dark_mode"
     private const val KEY_DARKEN_IMAGE_ON_NIGHT = "ui_dark_img"
@@ -328,10 +321,10 @@ private object SignConfigTransformer: PreferenceTransformer<SignConfig> {
     }
 
     override val set: (MutablePreferences, SignConfig) -> Unit = { it, config ->
-        it.putBoolean(KEY_OKSIGN_AUTO, config.autoSign)
-        it.putBoolean(KEY_OKSIGN_SLOW, config.autoSignSlow)
-        it.putLong(KEY_OKSIGN_AUTO_TIME, config.autoSignTime.value)
-        it.putBoolean(KEY_OKSIGN_OFFICIAL, config.okSignOfficial)
+        it[booleanPreferencesKey(KEY_OKSIGN_AUTO)] = config.autoSign
+        it[booleanPreferencesKey(KEY_OKSIGN_SLOW)] = config.autoSignSlow
+        it[longPreferencesKey(KEY_OKSIGN_AUTO_TIME)] = config.autoSignTime.value
+        it[booleanPreferencesKey(KEY_OKSIGN_OFFICIAL)] = config.okSignOfficial
     }
 
     private const val KEY_OKSIGN_AUTO = "auto_sign"
@@ -353,9 +346,9 @@ private object ClientConfigTransformer: PreferenceTransformer<ClientConfig> {
     }
 
     override val set: (MutablePreferences, ClientConfig) -> Unit = { it, config ->
-        it.putString(KEY_CLIENT_ID, config.clientId)
-        it.putString(KEY_SAMPLE_ID, config.sampleId)
-        it.putString(KEY_BAIDU_ID, config.baiduId)
+        config.clientId?.let { id -> it[stringPreferencesKey(KEY_CLIENT_ID)] = id }
+        config.sampleId?.let { id -> it[stringPreferencesKey(KEY_SAMPLE_ID)] = id }
+        config.baiduId?.let { id -> it[stringPreferencesKey(KEY_BAIDU_ID)] = id }
         it[longPreferencesKey(KEY_ACTIVE_TIMESTAMP)] = config.activeTimestamp
         it[longPreferencesKey(KEY_INSTALL_TIME)] = config.firstInstallTime!!
         it[longPreferencesKey(KEY_UPDATE_TIME)] = config.lastUpdateTime!!

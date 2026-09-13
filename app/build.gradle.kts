@@ -129,9 +129,7 @@ configurations.configureEach {
 }
 
 dependencies {
-    implementation(project(":core:common"))
-    implementation(project(":core:database"))
-    implementation(project(":core:network"))
+    implementation(project(":core:data"))
 
     implementation(libs.jetbrains.annotations)
     implementation(libs.kotlin.stdlib)

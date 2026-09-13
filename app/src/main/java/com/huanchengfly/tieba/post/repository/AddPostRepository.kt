@@ -1,11 +1,11 @@
 package com.huanchengfly.tieba.post.repository
 
 import android.net.Uri
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.network.model.AddThreadBean
 import com.huanchengfly.tieba.post.core.network.model.UploadPictureResultBean
 import com.huanchengfly.tieba.post.core.network.model.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.core.network.source.ReplyNetworkDataSource
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -2,15 +2,15 @@ package com.huanchengfly.tieba.post.components
 
 import android.content.Context
 import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.network.session.DeviceInfoProvider
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.utils.DeviceUtils
 import com.huanchengfly.tieba.post.utils.MobileInfoUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.runBlocking
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import java.util.UUID
 
 @Singleton
 class DefaultDeviceInfoProvider @Inject constructor(

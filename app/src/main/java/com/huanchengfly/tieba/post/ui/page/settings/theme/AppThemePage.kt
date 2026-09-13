@@ -118,6 +118,7 @@ import coil3.request.ImageRequest
 import com.google.android.material.color.utilities.Variant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity
+import com.huanchengfly.tieba.post.core.data.model.settings.Theme
 import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.theme.TiebaBlue
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -132,7 +133,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.models.Like
-import com.huanchengfly.tieba.post.ui.models.settings.Theme
 import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.NavigationDrawerItem

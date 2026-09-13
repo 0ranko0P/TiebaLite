@@ -4,12 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import com.huanchengfly.tieba.post.components.ShortcutInitializer
-
-enum class LauncherIcons {
-    NEW_ICON, NEW_ICON_THEMED, NEW_ICON_INVERT, OLD_ICON;
-
-    fun supportThemedIcon(): Boolean = this == NEW_ICON
-}
+import com.huanchengfly.tieba.post.core.data.model.settings.LauncherIcons
 
 object AppIconUtil {
 

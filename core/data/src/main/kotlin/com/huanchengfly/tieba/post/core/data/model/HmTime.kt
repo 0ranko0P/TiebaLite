@@ -1,23 +1,17 @@
-package com.huanchengfly.tieba.post.utils
+package com.huanchengfly.tieba.post.core.data.model
 
-import androidx.annotation.IntRange
-import androidx.compose.runtime.Immutable
-import androidx.compose.ui.util.packInts
-import androidx.compose.ui.util.unpackInt1
-import androidx.compose.ui.util.unpackInt2
+import com.huanchengfly.tieba.post.core.common.ktx.packInts
+import com.huanchengfly.tieba.post.core.common.ktx.unpackInt1
+import com.huanchengfly.tieba.post.core.common.ktx.unpackInt2
 
 /**
  * Pack "HH:mm" formatted time into long. For persisting [androidx.compose.material3.TimePickerState]
  * into settings.
  * */
-@Immutable
 @JvmInline
 value class HmTime(val value: Long) {
 
-    constructor(
-        @IntRange(from = 0, to = 23) hourOfDay: Int,
-        @IntRange(from = 0, to = 59) minute: Int
-    ) : this(packInts(hourOfDay, minute))
+    constructor(hourOfDay: Int, minute: Int) : this(packInts(hourOfDay, minute))
 
     /** The hour of the day (0 - 23). */
     val hourOfDay: Int

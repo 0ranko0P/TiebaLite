@@ -1,7 +1,4 @@
-package com.huanchengfly.tieba.post.ui.models.settings
-
-import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.utils.LauncherIcons
+package com.huanchengfly.tieba.post.core.data.model.settings
 
 enum class DarkPreference {
     FOLLOW_SYSTEM, ALWAYS, DISABLED
@@ -33,7 +30,6 @@ enum class NavigationLabel {
  * @param homeForumList 吧列表单列显示
  * @param showHistoryInHome 首页显示最近逛的吧
  * */
-@Immutable
 data class UISettings(
     val appIcon: LauncherIcons = LauncherIcons.NEW_ICON,
     val appIconThemed: Boolean = false,

@@ -4,6 +4,10 @@ import android.util.Log
 import androidx.collection.LruCache
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.models.protos.plainText
+import com.huanchengfly.tieba.post.core.data.model.settings.BlockSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.ForumSortType
+import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.network.model.SignResultBean
 import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
 import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
@@ -11,7 +15,6 @@ import com.huanchengfly.tieba.post.core.network.model.protos.frsPage.FrsPageResp
 import com.huanchengfly.tieba.post.core.network.source.ForumNetworkDataSource
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.mapUiModel
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.ThreadItemList
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
@@ -20,9 +23,6 @@ import com.huanchengfly.tieba.post.ui.models.forum.ForumManager
 import com.huanchengfly.tieba.post.ui.models.forum.ForumRule
 import com.huanchengfly.tieba.post.ui.models.forum.GoodClassify
 import com.huanchengfly.tieba.post.ui.models.forum.Rule
-import com.huanchengfly.tieba.post.ui.models.settings.BlockSettings
-import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
-import com.huanchengfly.tieba.post.ui.models.settings.HabitSettings
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

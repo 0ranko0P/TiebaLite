@@ -21,8 +21,8 @@ import coil3.SingletonImageLoader
 import com.huanchengfly.tieba.post.activities.CrashActivity
 import com.huanchengfly.tieba.post.components.ConfigInitializer
 import com.huanchengfly.tieba.post.components.coil.TbImageLoaderFactory
-import com.huanchengfly.tieba.post.di.RepositoryEntryPoint
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.data.di.SettingsEntryPoint
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import dagger.hilt.android.EntryPointAccessors
@@ -61,7 +61,7 @@ class App : Application(), Configuration.Provider {
     // For components that can't work with Hilt inject
     val settingRepository: SettingsRepository
         get() = EntryPointAccessors
-            .fromApplication<RepositoryEntryPoint>(this)
+            .fromApplication<SettingsEntryPoint>(this)
             .settingsRepository()
 
     private fun getProcessName(context: Context): String? {

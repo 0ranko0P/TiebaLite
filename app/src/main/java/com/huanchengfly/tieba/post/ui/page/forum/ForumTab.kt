@@ -32,8 +32,8 @@ import androidx.core.util.getOrDefault
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.core.data.model.settings.ForumSortType
 import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
-import com.huanchengfly.tieba.post.ui.models.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.Options

@@ -12,10 +12,10 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
 import androidx.startup.Initializer
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.common.di.CoroutinesEntryPoint
-import com.huanchengfly.tieba.post.di.RepositoryEntryPoint
 import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.delay
@@ -35,8 +35,7 @@ class ShortcutInitializer : Initializer<Unit>{
         val coroutinesEntryPoint = EntryPointAccessors.fromApplication<CoroutinesEntryPoint>(context)
         coroutinesEntryPoint.coroutineScope().launch {
             delay(2000)
-            val repoEntryPoint = EntryPointAccessors.fromApplication<RepositoryEntryPoint>(context)
-            val settingsRepo = repoEntryPoint.settingsRepository()
+            val settingsRepo = (context.applicationContext as App).settingRepository
             val loggedIn = settingsRepo.accountUid.snapshot() > 0
             initialize(loggedIn, context)
         }

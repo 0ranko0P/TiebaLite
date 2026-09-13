@@ -9,7 +9,7 @@ import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.core.database.dao.BlockDao
 import com.huanchengfly.tieba.post.core.database.dao.TransactionRunner
-import com.huanchengfly.tieba.post.ui.models.settings.BlockBackupMetadata
+import com.huanchengfly.tieba.post.core.data.model.settings.BlockBackupMetadata
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil
 import com.huanchengfly.tieba.post.utils.RestoreOption
 import dagger.hilt.android.lifecycle.HiltViewModel

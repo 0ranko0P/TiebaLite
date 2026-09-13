@@ -1,9 +1,9 @@
 package com.huanchengfly.tieba.post.repository
 
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.network.model.ThreadStoreBean.ThreadStoreInfo
 import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
 import com.huanchengfly.tieba.post.core.network.source.ThreadStoreNetworkDataSource
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
 import com.huanchengfly.tieba.post.utils.StringUtil

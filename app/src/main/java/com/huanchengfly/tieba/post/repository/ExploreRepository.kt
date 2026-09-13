@@ -5,6 +5,7 @@ import androidx.collection.LruCache
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
 import com.huanchengfly.tieba.post.core.network.model.protos.hotThreadList.HotThreadListResponseData
 import com.huanchengfly.tieba.post.core.network.model.protos.personalized.DislikeReason
@@ -14,7 +15,6 @@ import com.huanchengfly.tieba.post.core.network.model.protos.userLike.UserLikeRe
 import com.huanchengfly.tieba.post.core.network.session.CredentialProvider
 import com.huanchengfly.tieba.post.core.network.source.ExploreNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalDataSource
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.LikeZero

@@ -22,9 +22,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.repository.user.Settings
+import com.huanchengfly.tieba.post.core.data.model.settings.PrivacySettings
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.ui.icons.EncryptedMinusCircle
-import com.huanchengfly.tieba.post.ui.models.settings.PrivacySettings
 import com.huanchengfly.tieba.post.ui.page.settings.appLinkPreference
 import com.huanchengfly.tieba.post.ui.page.settings.clipboardPreference
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPreference

@@ -7,8 +7,8 @@ import android.os.Build
 import android.webkit.WebSettings
 import com.github.gzuliyujiang.oaid.DeviceID
 import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.network.session.OAIDProvider
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.utils.packageInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject

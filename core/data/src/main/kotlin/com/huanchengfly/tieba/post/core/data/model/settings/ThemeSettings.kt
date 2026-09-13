@@ -1,8 +1,4 @@
-package com.huanchengfly.tieba.post.ui.models.settings
-
-import androidx.compose.ui.graphics.Color
-import com.google.android.material.color.utilities.Variant
-import com.huanchengfly.tieba.post.theme.TiebaBlue
+package com.huanchengfly.tieba.post.core.data.model.settings
 
 enum class Theme {
     TRANSLUCENT, CUSTOM, DYNAMIC, BLUE, GREEN, ORANGE, PINK, PURPLE
@@ -20,9 +16,9 @@ enum class Theme {
  * */
 data class ThemeSettings(
     val theme: Theme = Theme.BLUE,
-    val customColor: Color? = null,
-    val customVariant: Variant? = null,
-    val transColor: Color = TiebaBlue,
+    val customColor: Int? = null,
+    val customVariant: Int? = null, // Variant.ordinal
+    val transColor: Int?,
     val transAlpha: Float,
     val transBlur: Float,
     val transDarkColorMode: Boolean = false,
