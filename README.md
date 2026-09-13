@@ -19,6 +19,12 @@
 
 **本软件及源码仅供学习交流使用，严禁用于商业用途。**
 
+## 贡献
+
+请使用[GitHub问题跟踪器](https://github.com/0ranko0P/TiebaLite/issues)来报告问题或提出新功能建议。
+
+**Tieba Lite 正在参考[Google NIA](https://github.com/android/nowinandroid) 迁移至模块化架构, 开PR 前请先开Issue**
+
 ## 下载
 * [Github Releases](https://github.com/0ranko0P/TiebaLite/releases)
 * 下载每夜版: [Github Actions](https://github.com/0ranko0P/TiebaLite/actions/workflows/build.yml)

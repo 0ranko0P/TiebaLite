@@ -20,6 +20,12 @@
    </td>
   </tr>
   <tr>
+   <td><code>core:data</code>
+   </td>
+   <td>Fetching app data from multiple sources, shared by different features. <code>当前迁移进度: 1%</code>
+   </td>
+  </tr>
+  <tr>
    <td>core:database
    </td>
    <td>Local database storage using Room.
@@ -34,7 +40,7 @@
   <tr>
    <td><code>...</code>
    </td>
-   <td>Migrating...
+   <td>缓慢迁移中...
    </td>
   </tr>
 </table>
