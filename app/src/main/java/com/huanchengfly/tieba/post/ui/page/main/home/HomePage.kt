@@ -461,7 +461,7 @@ fun AnimatedVisibilityScope.HomePage(
             ) {
                 DummySearchBox(
                     modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey, zIndexInOverlay = 2.0f),
-                    onClick = { navigator.navigateDebounced(route = Destination.Search) }
+                    onClick = { navigator.navigateDebounced(route = Destination.Search()) }
                 )
                 Spacer(modifier = Modifier.height(4.dp))
             }

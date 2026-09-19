@@ -113,6 +113,8 @@ private enum class SearchPages(val titleRes: Int) {
 @Composable
 fun SearchPage(
     navigator: NavController,
+    keyword: String = "",
+    type: Int = 0,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -141,7 +143,8 @@ fun SearchPage(
     }
 
     val pages: List<SearchPages> = SearchPages.entries
-    val pagerState = rememberPagerState(0) { pages.size }
+    val initialSearchPage = SearchPages.entries.getOrNull(type) ?: SearchPages.Forum
+    val pagerState = rememberPagerState(initialPage = initialSearchPage.ordinal) { pages.size }
     val listStates = rememberPagerListStates(pages.size)
     val scrollBehaviors = rememberTopAppBarScrollBehaviors(pages.size) {
         TopAppBarDefaults.pinnedScrollBehavior(state = it)
@@ -173,7 +176,7 @@ fun SearchPage(
         }
     }
 
-    var inputKeyword by rememberSaveable { mutableStateOf("") }
+    var inputKeyword by rememberSaveable(keyword) { mutableStateOf(keyword) }
 
     // Callback for HistoryList, SearchBox and SuggestionList
     val onKeywordSubmit: (String) -> Unit = {
@@ -183,6 +186,22 @@ fun SearchPage(
         if (inputKeyword != newKeyword) inputKeyword = newKeyword
         focusManager.clearFocus(force = true)
         resetCurrentListState()
+    }
+
+    // Auto submit the keyword passed in via external deep link
+    LaunchedEffect(keyword) {
+        val trimmedKeyword = keyword.trim()
+        if (trimmedKeyword.isNotEmpty()) {
+            onKeywordSubmit(trimmedKeyword)
+        }
+    }
+
+    // Sync pager to the requested search type when the deep link args change
+    LaunchedEffect(type) {
+        val targetPage = SearchPages.entries.getOrNull(type)?.ordinal ?: SearchPages.Forum.ordinal
+        if (pagerState.currentPage != targetPage) {
+            pagerState.scrollToPage(targetPage)
+        }
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
