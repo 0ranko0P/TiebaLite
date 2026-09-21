@@ -174,7 +174,7 @@ internal fun MixedTiebaApiImpl.buildCommonRequest(
             lego_lib_version = "3.0.0",
             model = Build.MODEL,
             net_type = 1,
-            oaid = oaidProvider.getEncodedOAID(),
+            oaid = oaidProvider.encodedOAID,
             personalized_rec_switch = 1,
             pversion = "1.0.3",
             q_type = 0,

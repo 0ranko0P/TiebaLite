@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.components.ClientConfigManager
 import com.huanchengfly.tieba.post.components.SessionManager
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.session.ClientConfigProvider
 import com.huanchengfly.tieba.post.core.network.source.SofireDataSource
 import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,7 +44,7 @@ sealed interface LoginUiEvent : UiEvent {
 class LoginViewModel @Inject constructor(
     @ApplicationContext val context: Context,
     private val networkDataSource: SofireDataSource,
-    private val clientConfigManager: ClientConfigManager,
+    private val clientConfig: ClientConfigProvider,
     private val sessionManager: SessionManager,
 ) : ViewModel() {
 
@@ -85,8 +85,8 @@ class LoginViewModel @Inject constructor(
         loginJob = viewModelScope.launch {
             _uiEvent.emit(LoginUiEvent.Start)
             runCatching {
-                if (clientConfigManager.getBaiduId().isNullOrEmpty()) {
-                    clientConfigManager.saveBaiduId(baiduId)
+                if (clientConfig.getBaiduId().isNullOrEmpty()) {
+                    clientConfig.saveBaiduId(baiduId)
                 }
                 val account = sessionManager.fetchAccount(bduss, sToken, cookie, zid = uiState.first().zid!!)
                 sessionManager.saveNewAccount(account)

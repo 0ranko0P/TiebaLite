@@ -5,7 +5,6 @@ import android.content.Context
 import android.provider.Settings
 import android.text.TextUtils
 import com.huanchengfly.tieba.post.core.network.session.DeviceInfoProvider
-import com.huanchengfly.tieba.post.core.network.session.OAIDProvider
 import com.huanchengfly.tieba.post.core.network.util.helios.Base32
 import com.huanchengfly.tieba.post.core.network.util.helios.Hasher
 import com.huanchengfly.tieba.post.utils.StringUtil.toMD5
@@ -19,12 +18,14 @@ import javax.inject.Singleton
  * UID Manager
  *
  * From com.huanchengfly.tieba.post.utils.UIDUtil
+ *
+ * @author HuanChengFly
+ * @since 3.8.1 α
  * */
 @Singleton
 class UIDManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val deviceInfoProvider: DeviceInfoProvider,
-    private val oaidProvider: OAIDProvider
 ) {
 
     @SuppressLint("HardwareIds")
@@ -32,13 +33,6 @@ class UIDManager @Inject constructor(
         val androidId =
             Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         return androidId ?: defaultValue
-    }
-
-    fun getOAID(): String {
-        if (oaidProvider.getEncodedOAID().isBlank()) return ""
-        val raw = "A10-${oaidProvider.getEncodedOAID()}-"
-        val sign = Base32.encode(Hasher.hash(raw.toByteArray()))
-        return "$raw$sign"
     }
 
     fun getAid(): String {

@@ -9,8 +9,8 @@ import androidx.compose.ui.util.fastFilter
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.huanchengfly.tieba.post.components.ConfigInitializer
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.data.session.DefaultOAIDProvider
 import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,7 +41,7 @@ data class WelcomeState(
 @HiltViewModel
 class WelcomeViewModel @Inject constructor(
     @ApplicationContext val context: Context,
-    private val configInitializer: ConfigInitializer,
+    private val oaidProvider: DefaultOAIDProvider,
     val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
@@ -80,7 +80,7 @@ class WelcomeViewModel @Inject constructor(
 
         viewModelScope.launch(Dispatchers.Default) {
             when (permission) {
-                Manifest.permission.READ_PHONE_STATE -> configInitializer.init(reload = true)
+                Manifest.permission.READ_PHONE_STATE -> oaidProvider.initOAID()
 
                 else -> {}
             }

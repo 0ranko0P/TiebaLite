@@ -13,6 +13,7 @@ dependencies {
     api(project(":core:network"))
 
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.liyujiang.oaid)
 
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.kotlinx.serialization.json)

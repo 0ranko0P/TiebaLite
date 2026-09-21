@@ -1,4 +1,4 @@
-package com.huanchengfly.tieba.post.utils
+package com.huanchengfly.tieba.post.core.data.util
 
 import android.os.Environment
 import android.os.StatFs
@@ -8,7 +8,16 @@ import java.util.Locale
 import java.util.regex.Pattern
 import kotlin.math.round
 
-object DeviceUtils {
+/**
+ * 设备工具类
+ *
+ * 原位置: com.huanchengfly.tieba.post.utils.DeviceUtils
+ *
+ * @author HuanChengFly
+ *
+ * @since 4.0.0 dev 13
+ * */
+internal object DeviceUtils {
     var coreNum = -1
     private const val CPU_MAX_INFO_FORMAT = "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq"
     private const val MEM_INFO_FILE = "/proc/meminfo"

@@ -13,9 +13,9 @@ data class OAID(
     val isTrackLimited: Int,
 ) {
     constructor(oaidProvider: OAIDProvider): this(
-        encodedOAID = oaidProvider.getEncodedOAID(),
-        statusCode = oaidProvider.getStatusCode(),
-        support = if (oaidProvider.isOAIDSupported()) 1 else 0,
-        isTrackLimited = if (oaidProvider.isTrackLimited()) 1 else 0,
+        encodedOAID = oaidProvider.encodedOAID,
+        statusCode = oaidProvider.statusCode,
+        support = if (oaidProvider.isOAIDSupported) 1 else 0,
+        isTrackLimited = if (oaidProvider.isTrackLimited) 1 else 0,
     )
 }

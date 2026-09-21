@@ -19,7 +19,6 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import coil3.SingletonImageLoader
 import com.huanchengfly.tieba.post.activities.CrashActivity
-import com.huanchengfly.tieba.post.components.ConfigInitializer
 import com.huanchengfly.tieba.post.components.coil.TbImageLoaderFactory
 import com.huanchengfly.tieba.post.core.data.di.SettingsEntryPoint
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
@@ -43,13 +42,6 @@ class App : Application(), Configuration.Provider {
     val powerManager: PowerManager by lazy {
         getSystemService(POWER_SERVICE) as PowerManager
     }
-
-    /**
-     * OAID config initializer
-     *
-     * @see [App.Config]
-     * */
-    @Inject lateinit var configInit : ConfigInitializer
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
 
@@ -84,7 +76,6 @@ class App : Application(), Configuration.Provider {
         if (processName?.endsWith("error_handler") == true) return
 
         setupUncaughtExceptionHandler(this)
-        configInit.init()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             if (processName != null && packageName != processName) { //判断不等于默认进程名称
                 WebView.setDataDirectorySuffix(processName)
@@ -141,19 +132,6 @@ class App : Application(), Configuration.Provider {
         for (activity in mActivityList) {
             activity.finish()
         }
-    }
-
-    object Config {
-        var inited: Boolean = false
-
-        var isOAIDSupported: Boolean = false
-        var statusCode: Int = -200
-        var oaid: String = ""
-        var encodedOAID: String = ""
-        var isTrackLimited: Boolean = false
-        var userAgent: String? = null
-        var appFirstInstallTime: Long = 0L
-        var appLastUpdateTime: Long = 0L
     }
 
     object ScreenInfo {
