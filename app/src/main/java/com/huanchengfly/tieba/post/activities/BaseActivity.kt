@@ -7,7 +7,6 @@ import android.util.DisplayMetrics
 import androidx.appcompat.app.AppCompatActivity
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
-import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.ui.widgets.VoicePlayerView
 import kotlinx.coroutines.runBlocking
 import kotlin.math.abs
@@ -28,7 +27,6 @@ abstract class BaseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        NetworkObserver.observeOnLifecycle(this)
         getDeviceDensity()
         INSTANCE.addActivity(this)
     }

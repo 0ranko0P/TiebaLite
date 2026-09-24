@@ -15,18 +15,21 @@ import android.webkit.URLUtil
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
 import androidx.media3.common.MimeTypes
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.components.NetworkObserver
 import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
 import com.huanchengfly.tieba.post.core.common.ktx.ensureParents
 import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
-import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.core.data.model.settings.ImageLoadType
+import com.huanchengfly.tieba.post.core.network.di.NetUtilsEntryPoint
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.util.NetworkMonitor
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.ImageUtil.downloadForShare
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
 import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -56,6 +59,11 @@ object ImageUtil {
     private const val TAG = "ImageUtil"
 
     private const val MIME_TYPE_GIF = "image/gif"
+
+    // TODO: Refactor
+    private val networkMonitor: NetworkMonitor by lazy {
+        EntryPointAccessors.fromApplication<NetUtilsEntryPoint>(App.INSTANCE).networkMonitor()
+    }
 
     private fun isGifFile(body: ResponseBody): Boolean {
         val type = body.contentType()
@@ -254,7 +262,7 @@ object ImageUtil {
 
     private fun loadWorst(@ImageLoadType loadType: Int): Boolean {
         return if (loadType == ImageLoadType.SMART_ORIGIN) {
-            !NetworkObserver.isNetworkUnmetered.value
+            !networkMonitor.isCurrentlyNotMetered()
         } else {
             loadType != ImageLoadType.ALL_ORIGIN
         }
