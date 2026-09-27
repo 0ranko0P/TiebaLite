@@ -2,12 +2,10 @@ package com.huanchengfly.tieba.post.core.network.source
 
 import android.content.Context
 import android.net.Uri
-import com.huanchengfly.tieba.post.core.network.exception.TiebaApiException
-import com.huanchengfly.tieba.post.core.network.model.AddThreadBean
-import com.huanchengfly.tieba.post.core.network.model.CommonResponse
 import com.huanchengfly.tieba.post.core.network.model.MessageListBean
 import com.huanchengfly.tieba.post.core.network.model.UploadPictureResultBean
 import com.huanchengfly.tieba.post.core.network.model.protos.addPost.AddPostResponseData
+import com.huanchengfly.tieba.post.core.network.model.protos.addThread.AddThreadResponseData
 import com.huanchengfly.tieba.post.core.network.retrofit.ITiebaApi
 import com.huanchengfly.tieba.post.core.network.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.core.network.retrofit.firstOrThrow
@@ -31,7 +29,7 @@ interface ReplyNetworkDataSource {
         forumId: Long,
         forumName: String,
         title: String?,
-    ): AddThreadBean
+    ): AddThreadResponseData
 
     /**
      * 回贴（App 接口）
@@ -98,7 +96,7 @@ internal class RetrofitReplyNetworkDataSource @Inject constructor(
         forumId: Long,
         forumName: String,
         title: String?,
-    ): AddThreadBean {
+    ): AddThreadResponseData {
         require(forumId > 0) { "Illegal Forum ID: $forumId" }
 
         return tiebaApi.addThreadFlow(
@@ -110,12 +108,7 @@ internal class RetrofitReplyNetworkDataSource @Inject constructor(
             isTitle = if (title.isNullOrEmpty()) 1 else 0
         )
         .firstOrThrow()
-        .apply {
-            if (errorCode != "0") {
-                throw TiebaApiException(CommonResponse(errorCode?.toIntOrNull() ?: -1, errorMsg.orEmpty()))
-            }
-            requireNotNull(tid) { "Server returned null ThreadID"}
-        }
+        .data_!!
     }
 
     override suspend fun addPost(

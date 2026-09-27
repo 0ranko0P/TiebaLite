@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package tieba.addThread;
+
+option java_package = "com.huanchengfly.tieba.post.core.network.model.protos.addThread";
+
+import "AddThread/AddThreadResponseData.proto";
+import "Error.proto";
+
+message AddThreadResponse {
+    Error error = 1;
+    AddThreadResponseData data = 2;
+}
