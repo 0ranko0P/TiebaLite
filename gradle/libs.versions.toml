@@ -81,7 +81,6 @@ androidx-lifecycle-service = { module = "androidx.lifecycle:lifecycle-service", 
 androidx-lifecycle-viewModel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewmodel-savedstate = { module = "androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewModel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version = "2.9.8" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
 androidx-media3-ui-compose = { module = "androidx.media3:media3-ui-compose-material3", version.ref = "androidx-media3" }
 androidx-palette = { module = "androidx.palette:palette-ktx", version = "1.0.0" }

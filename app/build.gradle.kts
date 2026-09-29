@@ -149,7 +149,6 @@ dependencies {
 
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.androidx.hilt.compiler)
-    implementation(libs.androidx.navigation.compose)
 
     // Compose Accompanist
     implementation(libs.accompanist.drawablepainter)

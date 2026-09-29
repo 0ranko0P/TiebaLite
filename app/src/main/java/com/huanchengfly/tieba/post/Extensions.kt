@@ -22,9 +22,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.fastIsFinite
 import androidx.core.content.ContextCompat
-import androidx.navigation.NavController
-import androidx.navigation.NavOptions
-import androidx.navigation.Navigator
 import com.huanchengfly.tieba.post.utils.MD5Util
 import kotlin.math.roundToInt
 
@@ -125,18 +122,6 @@ internal inline fun <reified T : Activity> Context.goToActivityDebounced(pre: In
     if (currentTime - lastClickTime > NAVIGATION_MIN_DELAY_MS) {
         lastClickTime = currentTime
         startActivity(Intent(this, T::class.java).apply(pre))
-    }
-}
-
-internal fun <T : Any> NavController.navigateDebounced(
-    route: T,
-    navOptions: NavOptions? = null,
-    navigatorExtras: Navigator.Extras? = null,
-) {
-    val currentTime = SystemClock.elapsedRealtime()
-    if (currentTime - lastClickTime > NAVIGATION_MIN_DELAY_MS) {
-        lastClickTime = currentTime
-        navigate(route, navOptions, navigatorExtras)
     }
 }
 
