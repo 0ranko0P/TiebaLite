@@ -17,7 +17,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState.Companion.Saver
+
+var LocalNavSuiteScaffoldState = staticCompositionLocalOf<TbNavigationSuiteScaffoldState?> { null }
 
 class TbNavigationSuiteScaffoldState(
     var initialValue: NavigationSuiteScaffoldValue

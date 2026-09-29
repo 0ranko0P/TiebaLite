@@ -13,6 +13,7 @@ import androidx.navigation3.scene.DialogSceneStrategy
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.designsystem.component.PainterDetailPlaceholder
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.containsScene
@@ -51,13 +52,14 @@ fun appEntries(
     navigator: Navigator,
     settingsRepo: SettingsRepository,
     hazeState: TbHazeState? = null,
+    navSuiteScaffoldState: TbNavigationSuiteScaffoldState,
     sharedTransitionScope: SharedTransitionScope? = null,
 ): (NavKey) -> NavEntry<NavKey> = entryProvider {
     val onBack: () -> Unit = navigator::navigateUp
     val detailPaneMetadata = ListDetailSceneStrategy.detailPane() +
             DetailPaneBackHandlerSceneDecoratorStrategy.backHandler()
 
-    mainEntry(navigator, hazeState, sharedTransitionScope)
+    mainEntry(navigator, hazeState, navSuiteScaffoldState, sharedTransitionScope)
 
     entry<Destination.AppTheme> {
         AppThemePage(navigator::navigateUp)

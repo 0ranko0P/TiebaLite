@@ -113,6 +113,7 @@ import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.designsystem.component.IconNavigationItem
 import com.huanchengfly.tieba.post.core.designsystem.component.NavigationDrawerItem
 import com.huanchengfly.tieba.post.core.designsystem.component.floatingNavigationBarCompactScreenOffset
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.LocalNavSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.NavigationBarHeight
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.NavigationSuiteScaffoldLayout
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TallNavigationBarHeight
@@ -179,7 +180,8 @@ val MainDestination.iconRes: Int
     }
 
 val bottomNavigationPlaceholder: @Composable () -> Unit = {
-    val navigationSuiteType = calculateMainNavigationSuiteType()
+    val navSuiteScaffoldState = LocalNavSuiteScaffoldState.current
+    val navigationSuiteType = navSuiteScaffoldState?.layoutType ?: calculateMainNavigationSuiteType()
     if (navigationSuiteType.isNavigationBar) {
         Spacer(
             modifier = Modifier
@@ -319,7 +321,7 @@ fun MainPage(
             val onBack: () -> Unit = navigator::navigateUp
             NavDisplay(
                 entries = navigationState.toEntries(
-                    entryProvider = appEntries(navigator, settingsRepo, hazeState, sharedTransitionScope = this)
+                    entryProvider = appEntries(navigator, settingsRepo, hazeState, scaffoldState, this)
                 ),
                 sceneStrategies = listOf(listDetailStrategy, DialogSceneStrategy()),
                 sceneDecoratorStrategies = listOf(
@@ -758,7 +760,7 @@ private fun predictiveTransition(
             targetOffsetX = { if (event == NavigationEvent.EDGE_LEFT) it / 8 else -it / 8 }
         ) + scaleOut(
             targetScale = 0.9f
-        )
+        ) + fadeOut(animationSpec = tween(delayMillis = 280))
         EnterTransition.None togetherWith edgeExitTransition
     }
 }

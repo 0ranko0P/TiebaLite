@@ -24,6 +24,8 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.designsystem.component.PainterDetailPlaceholder
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.LocalNavSuiteScaffoldState
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.core.navigation.Navigator
@@ -40,10 +42,12 @@ import com.huanchengfly.tieba.post.utils.LocalAccount
 fun EntryProviderScope<NavKey>.mainEntry(
     navigator: Navigator,
     hazeState: TbHazeState? = null,
+    navSuiteScaffoldState: TbNavigationSuiteScaffoldState,
     sharedTransitionScope: SharedTransitionScope? = null,
 ) {
     animatedEntry<MainDestination.Home>(
         hazeState = hazeState,
+        navSuiteScaffoldState = navSuiteScaffoldState,
         sharedTransitionScope = sharedTransitionScope,
     ) {
         HomePage(
@@ -78,6 +82,7 @@ fun EntryProviderScope<NavKey>.mainEntry(
             }
         ),
         hazeState = hazeState,
+        navSuiteScaffoldState = navSuiteScaffoldState,
         sharedTransitionScope = sharedTransitionScope,
     ) {
         val loggedIn = LocalAccount.current != null
@@ -93,12 +98,17 @@ fun EntryProviderScope<NavKey>.mainEntry(
             }
         ),
         hazeState = hazeState,
+        navSuiteScaffoldState = navSuiteScaffoldState,
         sharedTransitionScope = sharedTransitionScope
     ) {
         NotificationsPage(fromHome = true, onNavigate = navigator::navigate)
     }
 
-    entry<MainDestination.User> {
+    animatedEntry<MainDestination.User>(
+        hazeState = null,
+        navSuiteScaffoldState = navSuiteScaffoldState,
+        sharedTransitionScope = sharedTransitionScope
+    ) {
         UserPage(navigator = navigator)
     }
 }
@@ -107,6 +117,7 @@ private inline fun <reified K : NavKey> EntryProviderScope<NavKey>.animatedEntry
     noinline clazzContentKey: (key: @JvmSuppressWildcards K) -> Any = { it.defaultContentKey },
     metadata: Map<String, Any> = emptyMap(),
     hazeState: TbHazeState?,
+    navSuiteScaffoldState: TbNavigationSuiteScaffoldState,
     sharedTransitionScope: SharedTransitionScope?,
     noinline content: @Composable AnimatedContentScope.(K) -> Unit,
 ) {
@@ -114,6 +125,7 @@ private inline fun <reified K : NavKey> EntryProviderScope<NavKey>.animatedEntry
         val reduceMotion = LocalUISettings.current.reduceMotion
         CompositionLocalProvider(
             LocalHazeState provides hazeState?.takeUnless { isListDetail() },
+            LocalNavSuiteScaffoldState provides navSuiteScaffoldState,
             LocalSharedTransitionScope provides sharedTransitionScope.takeUnless { reduceMotion },
         ) {
             LocalNavAnimatedContentScope.current.content(it)
