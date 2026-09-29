@@ -63,11 +63,9 @@
     public static *** i(...);
 }
 
-# Keep setting classes for SettingsSaver
--keep class com.huanchengfly.tieba.post.ui.models.settings.* { *; }
-
 # Keep navigation destination
 -keep public class * extends com.huanchengfly.tieba.post.ui.page.Destination
+-keep public class * extends com.huanchengfly.tieba.post.ui.page.main.MainDestination
 
 # WebView
 -keepclassmembers class * extends android.webkit.WebViewClient {
@@ -78,8 +76,7 @@
     public void *(android.webkit.WebView, java.lang.String);
 }
 
--keep class com.huanchengfly.tieba.post.models.** { *; }
--keep class com.huanchengfly.tieba.post.api.models.** { *; }
+-keepclassmembers class com.huanchengfly.tieba.post.core.network.model.** { *; }
 
 -keep class * implements com.google.gson.JsonDeserializer {
     *;

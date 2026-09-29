@@ -5,6 +5,12 @@ plugins {
 
 android {
     namespace = "com.huanchengfly.tieba.post.core.data"
+
+    buildTypes {
+        release {
+            consumerProguardFile("consumer-rules.pro")
+        }
+    }
 }
 
 dependencies {
