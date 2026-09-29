@@ -47,5 +47,9 @@ internal class RetrofitAuthNetworkDataSource @Inject constructor(
     override suspend fun syncClient(clientId: String?): Sync {
         return tiebaApi.syncFlow(clientId)
             .firstOrThrow()
+            .also {
+                requireNotNull(it.client) { "Null Client!" }
+                requireNotNull(it.wlConfig) { "Null Wl Config!" }
+            }
     }
 }

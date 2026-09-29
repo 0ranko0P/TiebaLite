@@ -24,13 +24,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
-import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.common.localSharedBounds
+import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
 import com.huanchengfly.tieba.post.ui.models.search.SearchForum
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Forum
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
@@ -45,6 +44,7 @@ fun SearchForumPage(
     contentPadding: PaddingValues,
     listState: LazyListState = rememberLazyListState(),
     viewModel: SearchForumViewModel = hiltViewModel(),
+    onNavigateForum: (Destination.Forum) -> Unit = {},
 ) {
 
     LaunchedEffect(keyword) {
@@ -67,11 +67,10 @@ fun SearchForumPage(
             onRefresh = viewModel::onRefresh,
             contentPadding = contentPadding,
         ) {
-            val navigator = LocalNavController.current
             val headerContentType = Integer.MAX_VALUE
 
             val onForumClickedListener: (SearchForum) -> Unit = {
-                navigator.navigateDebounced(route = Forum(forumName = it.name, avatar = it.avatar))
+                onNavigateForum(Forum(forumName = it.name, avatar = it.avatar))
             }
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()

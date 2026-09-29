@@ -68,22 +68,20 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.SearchToolbarSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.common.localSharedBounds
+import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.search.SearchForum
 import com.huanchengfly.tieba.post.ui.models.search.SearchSuggestion
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.rememberTopAppBarScrollBehaviors
 import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumItem
 import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumPage
@@ -112,7 +110,7 @@ private enum class SearchPages(val titleRes: Int) {
 
 @Composable
 fun SearchPage(
-    navigator: NavController,
+    navigator: Navigator,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -161,13 +159,24 @@ fun SearchPage(
                 val modifier = Modifier.nestedScroll(scrollBehaviors[page.ordinal].nestedScrollConnection)
                 val listState = listStates[page.ordinal]
                 when(page) {
-                    SearchPages.Forum -> SearchForumPage(modifier, keyword, contentPadding, listState)
-
-                    SearchPages.Thread -> {
-                        SearchThreadPage(modifier, keyword, threadSortType, contentPadding, listState)
+                    SearchPages.Forum -> SearchForumPage(modifier, keyword, contentPadding, listState) {
+                        navigator.navigate(it)
                     }
 
-                    SearchPages.User -> SearchUserPage(modifier, keyword, contentPadding, listState)
+                    SearchPages.Thread -> SearchThreadPage(
+                        modifier = modifier,
+                        keyword = keyword,
+                        threadSortType = threadSortType,
+                        contentPadding = contentPadding,
+                        onNavigateForum = navigator::navigate,
+                        onNavigateThread = navigator::navigate,
+                        onNavigateUser = navigator::navigate,
+                        listState = listState,
+                    )
+
+                    SearchPages.User -> SearchUserPage(modifier, keyword, contentPadding, listState) {
+                        navigator.navigate(it)
+                    }
                 }
             }
         }
@@ -281,21 +290,19 @@ fun SearchPage(
                         keyboardController?.hide()
                         focusManager.clearFocus(force = true)
                         val transitionKey = f.id.toString() // use forum ID as transition animation key
-                        navigator.navigateDebounced(Destination.Forum(forumName = f.name, avatar = f.avatar, transitionKey))
+                        navigator.navigate(Destination.Forum(forumName = f.name, avatar = f.avatar, transitionKey))
                     },
                     onItemClick = onKeywordSubmit
                 )
             }
         } else if (isKeywordNotEmpty) { // Search result pager
-            ProvideNavigator(navigator = navigator) {
-                HorizontalPager(
-                    state = pagerState,
-                    key = { pages[it].titleRes },
-                    modifier = Modifier.fillMaxSize(),
-                    flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
-                ) { i ->
-                    movablePageContents[i](contentPadding, uiState.submittedKeyword, uiState.sortType)
-                }
+            HorizontalPager(
+                state = pagerState,
+                key = { pages[it].titleRes },
+                modifier = Modifier.fillMaxSize(),
+                flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
+            ) { i ->
+                movablePageContents[i](contentPadding, uiState.submittedKeyword, uiState.sortType)
             }
         }
     }

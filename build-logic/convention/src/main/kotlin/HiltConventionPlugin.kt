@@ -42,6 +42,10 @@ class HiltConventionPlugin : Plugin<Project> {
                 apply(plugin = "dagger.hilt.android.plugin")
                 dependencies {
                     "implementation"(libs.findLibrary("hilt.android").get())
+                    // Override outdated dependencies form hilt
+                    "implementation"(libs.findLibrary("androidx.core.ktx").get())
+                    "implementation"(libs.findLibrary("androidx.lifecycle.runtime").get())
+                    "implementation"(libs.findLibrary("androidx.lifecycle.viewmodel.savedstate").get())
                 }
             }
         }

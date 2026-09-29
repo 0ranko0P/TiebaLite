@@ -15,12 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
-import com.huanchengfly.tieba.post.navigateDebounced
-import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
-import com.huanchengfly.tieba.post.ui.page.Destination.Forum
-import com.huanchengfly.tieba.post.ui.page.Destination.Thread
-import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadItem
@@ -33,6 +28,9 @@ fun SearchThreadPage(
     keyword: String,
     @SearchThreadSortType threadSortType: Int = SearchThreadSortType.NEWEST,
     contentPadding: PaddingValues,
+    onNavigateForum: (Destination.Forum) -> Unit = {},
+    onNavigateThread: (Destination.Thread) -> Unit = {},
+    onNavigateUser: (Destination.UserProfile) -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
     viewModel: SearchThreadViewModel = hiltViewModel(),
 ) {
@@ -56,12 +54,6 @@ fun SearchThreadPage(
         onReload = viewModel::onRefresh,
         screenPadding = contentPadding,
     ) {
-        val navigator = LocalNavController.current
-
-        val threadClickListener: (SearchThreadInfo) -> Unit = {
-            navigator.navigateDebounced(Thread(threadId = it.tid))
-        }
-
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = viewModel::onRefresh,
@@ -92,13 +84,15 @@ fun SearchThreadPage(
 
                     SearchThreadItem(
                         item = item,
-                        onClick = threadClickListener,
+                        onClick = {
+                            onNavigateThread(Destination.Thread(threadId = it.tid))
+                        },
                         onValidUserClick = {
                             val transitionKey = item.lazyListKey.toString()
-                            navigator.navigateDebounced(UserProfile(user = item.author, transitionKey))
+                            onNavigateUser(Destination.UserProfile(user = item.author, transitionKey))
                         },
                         onForumClick = { (forumName, forumAvatar), transitionKey ->
-                            navigator.navigateDebounced(Forum(forumName, forumAvatar, transitionKey))
+                            onNavigateForum(Destination.Forum(forumName, forumAvatar, transitionKey))
                         }
                     )
                 }

@@ -6,12 +6,15 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.database.model.BlockForum
@@ -93,6 +96,7 @@ class PersonalizedViewModel @Inject constructor(
 
     init {
         refreshInternal(cached = true)
+        observeThreadLike()
     }
 
     override fun createInitialState(): PersonalizedUiState = PersonalizedUiState()
@@ -185,19 +189,14 @@ class PersonalizedViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Called when navigating back from thread page.
-     *
-     * @param threadId target thread ID
-     * @param like latest thread like status
-     * */
-    fun onThreadResult(threadId: Long, like: Like): Unit = launchInVM {
+    private fun observeThreadLike() = viewModelScope.onGlobalEvent<GlobalEvent.ThreadLike> { event ->
+        val threadId = event.threadId
+        val like: Like = event.like
         val newData = currentState.data.updateLikeStatus(threadId, like)
         if (newData != null) {
             _uiState.update { it.copy(data = newData) }
             exploreRepo.updateCachedThreadLike(threadId, like, from = ExploreType.PERSONALIZED)
         }
-        // else -> empty or no status changes
     }
 }
 

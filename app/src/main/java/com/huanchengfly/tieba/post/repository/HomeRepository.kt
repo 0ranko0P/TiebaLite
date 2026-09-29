@@ -8,7 +8,7 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.BuildConfig
-import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.database.dao.LikedForumDao
 import com.huanchengfly.tieba.post.core.database.dao.TimestampDao

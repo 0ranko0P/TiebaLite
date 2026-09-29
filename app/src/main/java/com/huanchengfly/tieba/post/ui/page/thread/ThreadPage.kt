@@ -76,7 +76,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -96,12 +95,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
-import com.huanchengfly.tieba.post.NoWindowInsets
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -109,16 +108,18 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isFullyCollapsed
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.designsystem.layout.NoWindowInsets
+import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
+import com.huanchengfly.tieba.post.core.navigation.Navigator
+import com.huanchengfly.tieba.post.core.navigation.popUpNavigate
+import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.core.ui.animation.animateEnterExit
+import com.huanchengfly.tieba.post.core.ui.animation.defaultVerticalEnterTransition
+import com.huanchengfly.tieba.post.core.ui.animation.defaultVerticalExitTransition
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
-import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
-import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
-import com.huanchengfly.tieba.post.ui.common.animateEnterExit
-import com.huanchengfly.tieba.post.ui.common.defaultVerticalEnterTransition
-import com.huanchengfly.tieba.post.ui.common.defaultVerticalExitTransition
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
@@ -128,9 +129,7 @@ import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.Destination.Forum
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.setResult
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadViewModel.Companion.ThreadVmFactory
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStoreUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -171,16 +170,6 @@ private val ThreadToolbarContainerHeight = 48.dp
  * Offset from the edge of the screen used for [ThreadFloatingToolbar].
  * */
 private val ThreadToolbarScreenOffset = FloatingToolbarDefaults.ScreenOffset / 2
-
-const val ThreadResultKey = "THREAD_PAGE"
-
-private fun createResult(threadId: Long, like: Like?, markedPostId: Long?): ThreadResult? {
-    return if (like != null) {
-        ThreadResult(threadId, liked = like.liked, likes = like.count, markedPostId = markedPostId)
-    } else {
-        null
-    }
-}
 
 @Composable
 private fun ToggleButton(
@@ -226,14 +215,18 @@ private fun LazyListState.middleVisiblePost(uiState: ThreadUiState): PostData? =
 
 @Composable
 fun ThreadPage(
-    threadId: Long,
-    postId: Long = 0,
-    extra: ThreadFrom? = null,
-    navigator: NavController,
-    viewModel: ThreadViewModel,
+    navKey: Destination.Thread,
+    navigator: Navigator,
+    viewModel: ThreadViewModel = hiltViewModel<ThreadViewModel, ThreadVmFactory> { factory ->
+        factory.create(navKey)
+    },
 ) = trace(MacrobenchmarkConstant.TRACE_THREAD) {
+    val threadId: Long = navKey.threadId
+    val postId: Long = navKey.postId
+    val extra: ThreadFrom? = navKey.from
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val isListDetail = !LocalBackButtonState.current
     val snackbarHostState = rememberSnackbarHostState()
     val useStickyHeader = LocalHabitSettings.current.stickyHeader
     val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
@@ -301,9 +294,11 @@ fun ThreadPage(
                 }
             }
 
-            is ThreadUiEvent.ToReplyDestination -> navigator.navigateDebounced(it.direction)
+            is ThreadUiEvent.ToReplyDestination -> navigator.navigate(it.direction)
 
-            is ThreadUiEvent.ToSubPostsDestination -> navigator.navigateDebounced(it.direction)
+            is ThreadUiEvent.ToSubPostsDestination -> {
+                navigator.popUpNavigate<Destination.Thread>(it.direction)
+            }
 
             is ThreadLikeUiEvent -> it.toMessage(context)
 
@@ -367,13 +362,6 @@ fun ThreadPage(
         viewModel.requestLoad(0, postId)
     }
 
-    state.thread?.let { thread ->
-        LaunchedEffect(thread.like, thread.collectMarkPid, newMarkedCollectionPost?.id) {
-            val markedPostId = newMarkedCollectionPost?.id ?: thread.collectMarkPid
-            navigator.setResult(ThreadResultKey, createResult(threadId, thread.like, markedPostId))
-        }
-    }
-
     val onBackPressedCallback: () -> Unit = {
         if (bottomSheetState.isVisible) {
             closeBottomSheet()
@@ -427,12 +415,14 @@ fun ThreadPage(
                     title = {
                         state.forum?.let { forum ->
                             ForumTitleChip(forum = forum) {
-                                navigator.navigateDebounced(route = Forum(forumName = forum.second))
+                                navigator.navigate(Destination.Forum(forumName = forum.second))
                             }
                         }
                     },
                     navigationIcon = {
-                        BackNavigationIcon(onBackPressed = onBackPressedCallback)
+                        if (!isListDetail) {
+                            BackNavigationIcon(onBackPressed = onBackPressedCallback)
+                        }
                     },
                     actions = {
                         val scrollToTopVisible by remember { // Not on top or Toolbar is collapsed
@@ -455,7 +445,7 @@ fun ThreadPage(
                     scrollBehavior = topAppBarScrollBehavior
                 ) {
                     if (useStickyHeaderWorkaround && state.thread?.replyNum != null) {
-                        Container {
+                        Container(fluid = isListDetail) {
                             StickyHeaderOverlay(state = lazyListState) {
                                 ThreadHeader(uiState = state, viewModel = viewModel)
                             }
@@ -464,18 +454,19 @@ fun ThreadPage(
                 }
             },
             bottomBar = {
-                Container {
+                Container(fluid = isListDetail) {
                     ThreadFloatingToolbar(
                         modifier = Modifier
                             .windowInsetsPadding(WindowInsets.navigationBars)
                             .offset(y = -ThreadToolbarScreenOffset)
                             .padding(horizontal = CardHorizontalSpacing)
-                            .animateEnterExit(
-                                animatedVisibilityScope = LocalAnimatedVisibilityScope.current,
-                                sharedTransitionScope = LocalSharedTransitionScope.current,
-                                enter = defaultVerticalEnterTransition(topToBottom = false),
-                                exit = defaultVerticalExitTransition(topToBottom = false),
-                            ),
+                            .withNonNull(LocalSharedTransitionScope.current) {
+                                Modifier.animateEnterExit(
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    enter = defaultVerticalEnterTransition(topToBottom = false),
+                                    exit = defaultVerticalExitTransition(topToBottom = false),
+                                )
+                            },
                         user = state.user,
                         onClickReply = viewModel::onReplyThread.takeUnless { viewModel.hideReply },
                         onClickMore =  openBottomSheet,
@@ -494,21 +485,18 @@ fun ThreadPage(
             val hazeState = LocalHazeState.current
             // Ignore Scaffold padding top changes if workaround enabled
             val contentPadding = padding.fixedTopBarPadding()
-
-            Container(modifier = Modifier.clipToBounds()) {
-                ProvideNavigator(navigator = navigator) {
-                    ThreadContent(
-                        modifier = Modifier
-                            .hazeSource(hazeState?.state)
-                            .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
-                            .nestedScroll(toolbarScrollBehavior),
-                        viewModel = viewModel,
-                        lazyListState = lazyListState,
-                        contentPadding = contentPadding,
-                        topAppBarScrollBehavior = topAppBarScrollBehavior,
-                        useStickyHeader = useStickyHeader && !useStickyHeaderWorkaround
-                    )
-                }
+            Container(fluid = isListDetail) {
+                ThreadContent(
+                    modifier = Modifier
+                        .hazeSource(hazeState?.state)
+                        .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
+                        .nestedScroll(toolbarScrollBehavior),
+                    viewModel = viewModel,
+                    lazyListState = lazyListState,
+                    contentPadding = contentPadding,
+                    topAppBarScrollBehavior = topAppBarScrollBehavior,
+                    useStickyHeader = useStickyHeader && !useStickyHeaderWorkaround
+                )
             }
 
             if (showBottomSheet) {
@@ -558,7 +546,7 @@ fun ThreadPage(
                         onCopyLinkClick = viewModel::onCopyThreadLink,
                         onReportClick = {
                             val postId = state.firstPost!!.id
-                            navigator.navigateDebounced(Destination.Report(postId))
+                            navigator.navigate(Destination.Report(postId))
                         },
                         onDeleteClick = viewModel::onDeleteThread.takeIf { isMyThread },
                         requestCloseMenu = closeBottomSheet,

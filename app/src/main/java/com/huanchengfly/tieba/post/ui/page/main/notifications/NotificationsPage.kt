@@ -20,15 +20,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavKey
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.Destination.Search
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
-import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.ui.page.main.OnMainNavigationScrollTopEvent
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
@@ -48,7 +44,8 @@ import kotlinx.coroutines.launch
 fun NotificationsPage(
     initialPage: NotificationsType = NotificationsType.ReplyMe,
     fromHome: Boolean = false,
-    navigator: NavController = LocalNavController.current
+    onBack: () -> Unit = {},
+    onNavigate: (NavKey) -> Unit = {},
 ) {
     val pages = NotificationsType.entries
     val pagerState = rememberPagerState(initialPage = initialPage.ordinal, pageCount = { pages.size })
@@ -66,7 +63,8 @@ fun NotificationsPage(
         useMD2Layout = true,
         topBar = {
             NotificationsToolBar(
-                navigator = navigator,
+                onBack = onBack,
+                onNavigate = onNavigate,
                 fromHome = fromHome,
                 scrollBehavior = scrollBehavior,
                 canScrollBackward = {
@@ -106,25 +104,25 @@ fun NotificationsPage(
         bottomBar = if (fromHome) bottomNavigationPlaceholder else BlurNavigationBarPlaceHolder,
         bottomBarAtop = calculateMainNavigationSuiteType().isFloatingNavigationBar,
     ) { contentPadding ->
-        ProvideNavigator(navigator = navigator) {
-            HorizontalPager(
-                state = pagerState,
-                key = { pages[it] }
-            ) {
-                NotificationsListPage(
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                    type = NotificationsType.entries[it],
-                    listState = listStates[pagerState.currentPage],
-                    contentPadding = contentPadding
-                )
-            }
+        HorizontalPager(
+            state = pagerState,
+            key = { pages[it] }
+        ) {
+            NotificationsListPage(
+                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                type = NotificationsType.entries[it],
+                onNavigate = onNavigate,
+                listState = listStates[pagerState.currentPage],
+                contentPadding = contentPadding
+            )
         }
     }
 }
 
 @Composable
 private fun NotificationsToolBar(
-    navigator: NavController,
+    onBack: () -> Unit,
+    onNavigate: (NavKey) -> Unit,
     fromHome: Boolean,
     scrollBehavior: TopAppBarScrollBehavior?,
     canScrollBackward: () -> Boolean,
@@ -134,13 +132,13 @@ private fun NotificationsToolBar(
         TopAppBarPaged(
             title = { Text(text = stringResource(R.string.title_notifications)) },
             navigationIcon = {
-                AccountNavIconIfCompact(onLoginClicked = { navigator.navigate(Destination.Login) })
+                AccountNavIconIfCompact(onLoginClicked = { onNavigate(Destination.Login) })
             },
             actions = {
                 ActionItem(
                     icon = Icons.Rounded.Search,
                     contentDescription = stringResource(id = R.string.title_search),
-                    onClick = { navigator.navigateDebounced(Search) }
+                    onClick = { onNavigate(Destination.Search) }
                 )
             },
             scrollBehavior = scrollBehavior,
@@ -152,7 +150,7 @@ private fun NotificationsToolBar(
             title = { Text(text = stringResource(R.string.title_notifications)) },
             titleHorizontalAlignment = Alignment.CenterHorizontally,
             navigationIcon = {
-                BackNavigationIcon(onBackPressed = navigator::navigateUp)
+                BackNavigationIcon(onBackPressed = onBack)
             },
             scrollBehavior = scrollBehavior,
             canScrollBackward = canScrollBackward,

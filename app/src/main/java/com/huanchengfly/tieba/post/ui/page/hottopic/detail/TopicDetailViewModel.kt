@@ -1,42 +1,42 @@
 package com.huanchengfly.tieba.post.ui.page.hottopic.detail
 
 import androidx.compose.runtime.Stable
-import androidx.lifecycle.SavedStateHandle
-import androidx.navigation.toRoute
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.stateInViewModel
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.network.model.TopicInfoBean
 import com.huanchengfly.tieba.post.repository.HotTopicRepository
-import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
-import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.TopicDetailVmFactory
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
 import com.huanchengfly.tieba.post.utils.extension.set
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 @Stable
-@HiltViewModel
-class TopicDetailViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = TopicDetailVmFactory::class)
+class TopicDetailViewModel @AssistedInject constructor(
+    @Assisted val topicId: Long,
+    @Assisted val topicName: String,
     private val hotTopicRepo: HotTopicRepository,
     settingsRepo: SettingsRepository,
-    savedStateHandle: SavedStateHandle
 ) : BaseStateViewModel<TopicDetailUiState>() {
-
-    private val param = savedStateHandle.toRoute<Destination.HotTopicDetail>()
-    val topicId: Long = param.topicId
-    val topicName: String = param.topicName
 
     override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, suppressed ->
         // Allow user browse existing content on suppressed exceptions
@@ -54,6 +54,7 @@ class TopicDetailViewModel @Inject constructor(
 
     init {
         refreshInternal()
+        observeThreadLike()
     }
 
     override fun createInitialState(): TopicDetailUiState = TopicDetailUiState()
@@ -116,12 +117,11 @@ class TopicDetailViewModel @Inject constructor(
     }
 
     /**
-     * Called when navigating back from thread page with the latest [Like] status
-     *
-     * @param threadId target thread ID
-     * @param like like status of target thread
+     * Observe [Like] status changes from thread page
      * */
-    fun onThreadResult(threadId: Long, like: Like) = launchInVM {
+    private fun observeThreadLike() = viewModelScope.onGlobalEvent<GlobalEvent.ThreadLike> { event ->
+        val threadId = event.threadId
+        val like: Like = event.like
         val stateSnapshot = currentState
         // compare and update with latest like status
         val newThreads = stateSnapshot.threads.updateLikeStatus(threadId, like)
@@ -132,8 +132,12 @@ class TopicDetailViewModel @Inject constructor(
     }
 
     companion object {
-
         private const val TAG = "TopicDetailViewModel"
+
+        @AssistedFactory
+        interface TopicDetailVmFactory {
+            fun create(topicId: Long, topicName: String): TopicDetailViewModel
+        }
 
         val ThreadItem.feedId: Long
             get() = id

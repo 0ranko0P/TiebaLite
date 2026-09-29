@@ -51,18 +51,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isFullyCollapsed
 import com.huanchengfly.tieba.post.arch.isOverlapping
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
-import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
@@ -70,11 +70,7 @@ import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.CopyText
 import com.huanchengfly.tieba.post.ui.page.Destination.Reply
-import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
-import com.huanchengfly.tieba.post.ui.page.Destination.Thread
-import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsViewModel.Companion.SubPostsVmFactory
 import com.huanchengfly.tieba.post.ui.page.thread.PostCard
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
@@ -107,48 +103,21 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-@NonRestartableComposable
-@Composable
-fun SubPostsSheetPage(
-    params: SubPosts,
-    navigator: NavController,
-    viewModel: SubPostsViewModel = hiltViewModel()
-) {
-    ProvideNavigator(navigator) {
-        with(params) {
-            SubPostsContent(viewModel, threadId, postId, true, navigator::navigateUp)
-        }
-    }
-}
-
-@NonRestartableComposable
-@Composable
-fun SubPostsPage(
-    params: SubPosts,
-    navigator: NavController,
-    viewModel: SubPostsViewModel = hiltViewModel()
-) {
-    ProvideNavigator(navigator) {
-        with(params) {
-            SubPostsContent(viewModel, threadId, postId, isSheet = false, navigator::navigateUp)
-        }
-    }
-}
-
 private const val PostContentType = 0
 private val HeaderContentType = Unit
 // SubpostContentType use Null by default
 
 @Composable
-private fun SubPostsContent(
-    viewModel: SubPostsViewModel,
-    threadId: Long,
-    postId: Long,
-    isSheet: Boolean = false,
-    onNavigateUp: () -> Unit = {},
+fun SubPostsPage(
+    navKey: Destination.SubPosts,
+    navigator: Navigator,
+    viewModel: SubPostsViewModel = hiltViewModel<SubPostsViewModel, SubPostsVmFactory> { factory ->
+        factory.create(navKey)
+    },
 ) {
+    val threadId: Long = navKey.threadId
+    val isSheet: Boolean = navKey.isSheet
     val context = LocalContext.current
-    val navigator = LocalNavController.current
     val useStickyHeader = LocalHabitSettings.current.stickyHeader
     val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
     val account = LocalAccount.current
@@ -160,7 +129,7 @@ private fun SubPostsContent(
     val hasMore = uiState.page.hasMore
     val forumName = uiState.forumName
     val forumId = viewModel.forumId
-    val postId = uiState.post?.id ?: postId
+    val postId = uiState.post?.id ?: navKey.postId
 
     val lazyListState = rememberLazyListState()
 
@@ -229,7 +198,7 @@ private fun SubPostsContent(
 
         // Initialize nullable click listeners:
         val onReplySubPostClickedListener: ((SubPostItemData) -> Unit)? = { item: SubPostItemData ->
-            navigator.navigateDebounced(
+            navigator.navigate(
                 Reply(
                     forumId = forumId,
                     forumName = forumName.orEmpty(),
@@ -244,7 +213,7 @@ private fun SubPostsContent(
         }.takeIf { canReply && forumId > 0 }
 
         val onReplyPostClickedListener: ((PostData) -> Unit)? =  { it: PostData ->
-            navigator.navigateDebounced(
+            navigator.navigate(
                 Reply(
                     forumId = forumId,
                     forumName = forumName.orEmpty(),
@@ -258,7 +227,7 @@ private fun SubPostsContent(
         }.takeIf { canReply && forumId > 0 }
 
         val onOpenThreadClickedListener: () -> Unit = {
-            navigator.navigateDebounced(route = Thread(threadId, forumId, postId = postId))
+            navigator.navigate(key = Destination.Thread(threadId, forumId, postId = postId))
         }
 
         // non-nullable, initialize here for convenience
@@ -272,7 +241,7 @@ private fun SubPostsContent(
             topBar = {
                 TitleBar(
                     post = uiState.post,
-                    onBack = onNavigateUp,
+                    onBack = navigator::navigateUp,
                     onOpenThread = onOpenThreadClickedListener.takeIf { !isSheet },
                     onScrollToTop = onScrollToTopClicked.takeIf { lazyListState.canScrollBackward && canReply },
                     scrollBehavior = topAppBarScrollBehavior
@@ -326,12 +295,12 @@ private fun SubPostsContent(
             ) {
                 val postItem = uiState.post ?: return@SwipeUpLazyLoadColumn
                 item(key = "Post$postId", contentType = PostContentType) {
-                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides null) {
+                    CompositionLocalProvider(LocalSharedTransitionScope provides null) {
                         Column {
                             PostCard(
                                 post = postItem,
                                 onUserClick = {
-                                    navigator.navigateDebounced(UserProfile(postItem.author))
+                                    navigator.navigate(Destination.UserProfile(postItem.author))
                                 },
                                 onReplyClick = onReplyPostClickedListener,
                                 onMenuCopyClick = onCopyClickedListener,
@@ -360,16 +329,15 @@ private fun SubPostsContent(
                 items(items = uiState.subPosts, key = { subPost -> subPost.id }) { item ->
                     SubPostItem(
                         item = item,
-                        onUserClick = {
-                            navigator.navigateDebounced(
-                                route = UserProfile(user = it, transitionKey = item.id.toString())
-                            )
+                        onUserClick = { user ->
+                            val transitionKey = item.id.toString()
+                            navigator.navigate(key = Destination.UserProfile(user, transitionKey))
                         },
                         onAgree = viewModel::onSubPostLikeClicked,
                         onMenuReplyClick = onReplySubPostClickedListener,
                         onMenuCopyClick = onCopyClickedListener,
                         onMenuReportClick = {
-                            navigator.navigateDebounced(Destination.Report(postId = it.id))
+                            navigator.navigate(key = Destination.Report(postId = it.id))
                         },
                         onMenuDeleteClick = viewModel::onDeleteSubPost.takeIf { item.authorId == myUid } // Check is my SubPost
                     )
@@ -400,6 +368,7 @@ private fun TitleBar(
             )
         },
         navigationIcon = {
+            if (!isSheet && !LocalBackButtonState.current) return@CenterAlignedTopAppBar
             ActionItem(
                 icon = if (isSheet) Icons.Rounded.Close else Icons.AutoMirrored.Rounded.ArrowBack,
                 contentDescription = R.string.btn_close,

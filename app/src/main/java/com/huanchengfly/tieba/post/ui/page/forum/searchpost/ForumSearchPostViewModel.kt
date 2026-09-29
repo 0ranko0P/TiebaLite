@@ -1,23 +1,23 @@
 package com.huanchengfly.tieba.post.ui.page.forum.searchpost
 
-import androidx.lifecycle.SavedStateHandle
-import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.repository.SearchRepository
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
-import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.forum.searchpost.ForumSearchPostViewModel.Companion.ForumSearchPostVmFactory
 import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.utils.extension.set
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
-import javax.inject.Inject
 
 /**
  * UiState for the ForumSearchPostPage
@@ -37,16 +37,12 @@ data class ForumSearchPostUiState(
     val isKeywordNotEmpty: Boolean = keyword.isNotEmpty() && keyword.isNotBlank()
 }
 
-@HiltViewModel
-class ForumSearchPostViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = ForumSearchPostVmFactory::class)
+class ForumSearchPostViewModel @AssistedInject constructor(
+    @Assisted val forumName: String,
+    @Assisted val forumId: Long,
     private val searchRepo: SearchRepository,
-    savedStateHandle: SavedStateHandle
 ) : BaseStateViewModel<ForumSearchPostUiState>() {
-
-    private val params = savedStateHandle.toRoute<Destination.ForumSearchPost>()
-
-    val forumName: String = params.forumName
-    val forumId: Long = params.forumId
 
     override val errorHandler = TbLiteExceptionHandler(TAG) { _, e, _ ->
         _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
@@ -155,9 +151,16 @@ class ForumSearchPostViewModel @Inject constructor(
             searchPostInternal(keyword = uiStateSnapshot.keyword, sort = sortType)
         }
     }
-}
 
-private const val TAG = "ForumSearchPostViewMode"
+    companion object {
+        private const val TAG = "ForumSearchPostViewMode"
+
+        @AssistedFactory
+        interface ForumSearchPostVmFactory {
+            fun create(forumName: String, forumId: Long): ForumSearchPostViewModel
+        }
+    }
+}
 
 object ForumSearchPostSortType {
     const val NEWEST = 1

@@ -73,7 +73,6 @@ import androidx.core.util.getOrDefault
 import androidx.core.util.set
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -85,21 +84,24 @@ import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.core.data.model.settings.ForumFAB
 import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.common.localSharedBounds
+import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
+import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.forum.GoodClassify
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumDetail
 import com.huanchengfly.tieba.post.ui.page.Destination.ForumSearchPost
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.forum.ForumViewModel.Companion.ForumViewVmFactory
 import com.huanchengfly.tieba.post.ui.page.forum.generaltablist.GeneralTabListPage
 import com.huanchengfly.tieba.post.ui.page.forum.generaltablist.GeneralTabListUiEvent
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadList
@@ -174,7 +176,9 @@ private fun ForumAvatar(
                 .clickable {
                     PhotoViewActivity.launchSinglePhoto(context, url = avatar)
                 }
-                .localSharedBounds(ForumAvatarSharedBoundsKey(forum, transitionKey)),
+                .onCase(!isListDetail()) {
+                    localSharedBounds(ForumAvatarSharedBoundsKey(forum, transitionKey))
+                },
         )
     }
 }
@@ -184,8 +188,10 @@ fun ForumPage(
     forumName: String,
     avatarUrl: String?,
     transitionKey: String?,
-    navigator: NavController,
-    viewModel: ForumViewModel = hiltViewModel(),
+    navigator: Navigator,
+    viewModel: ForumViewModel = hiltViewModel<ForumViewModel, ForumViewVmFactory> { factory ->
+        factory.create(forumName)
+    },
 ) {
     val context = LocalContext.current
     val loggedIn = LocalAccount.current != null
@@ -216,8 +222,8 @@ fun ForumPage(
             is ForumUiEvent.AddThread -> when {
                 !loggedIn -> toastShort(R.string.title_not_logged_in)
 
-                it.forumId != null -> navigator.navigateDebounced(
-                    route = Destination.Reply(forumId = it.forumId, forumName, threadId = 0L)
+                it.forumId != null -> navigator.navigate(
+                    key = Destination.Reply(forumId = it.forumId, forumName, threadId = 0L)
                 )
 
                 else -> getString(R.string.toast_add_thread_failed)
@@ -274,13 +280,14 @@ fun ForumPage(
     }
 
     val threadClickListeners = remember(navigator) {
-        createThreadClickListeners(onNavigate = navigator::navigateDebounced)
+        createThreadClickListeners(onNavigate = navigator::navigate)
     }
     val forumThreadPages = remember(threadClickListeners) {
         ForumType.entries.map { forumType ->
             movableContentOf<PaddingValues, ForumData, Int> { contentPadding, forum, initialSortType ->
                 ForumThreadList(
                     threadClickListeners = threadClickListeners,
+                    onForumRuleClicked = { navigator.navigate(Destination.ForumRuleDetail(forum.id)) },
                     forumId = forum.id,
                     forumName = forum.name,
                     forumRuleTitle = forum.forumRuleTitle.takeUnless { forumType == ForumType.Good },
@@ -314,7 +321,7 @@ fun ForumPage(
                     scrollBehavior.isOverlapping) && uiState.error == null
         },
         topBar = {
-            val onTitleClicked: () -> Unit = { navigator.navigateDebounced(ForumDetail(forumName)) }
+            val onTitleClicked: () -> Unit = { navigator.navigate(key = ForumDetail(forumName)) }
 
             CollapsingAvatarTopAppBar(
                 avatar = {
@@ -346,7 +353,9 @@ fun ForumPage(
                     }
                 },
                 navigationIcon = {
-                    BackNavigationIcon(onBackPressed = navigator::navigateUp)
+                    if (LocalBackButtonState.current) {
+                        BackNavigationIcon(onBackPressed = navigator::navigateUp)
+                    }
                 },
                 actions = {
                     if (forumData == null) return@CollapsingAvatarTopAppBar // Loading
@@ -366,7 +375,7 @@ fun ForumPage(
                     ActionItem(
                         icon = Icons.Rounded.Search,
                         contentDescription = R.string.btn_search_in_forum,
-                        onClick = { navigator.navigateDebounced(ForumSearchPost(forumName, forumData.id)) }
+                        onClick = { navigator.navigate(ForumSearchPost(forumName, forumData.id)) }
                     )
 
                     ClickMenu(
@@ -447,9 +456,7 @@ fun ForumPage(
             },
             screenPadding = contentPadding
         ) {
-            if (forumData == null) return@StateScreen
-
-            ProvideNavigator(navigator = navigator) {
+            if (forumData != null) {
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),

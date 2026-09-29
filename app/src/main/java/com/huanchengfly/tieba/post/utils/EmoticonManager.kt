@@ -11,13 +11,14 @@ import coil3.imageLoader
 import coil3.network.HttpException
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
+import com.google.gson.annotations.SerializedName
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.ControlledRunner
-import com.huanchengfly.tieba.post.fromJson
-import com.huanchengfly.tieba.post.core.common.ktx.toJson
-import com.huanchengfly.tieba.post.utils.CoilUtil.downloadOnly
 import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
+import com.huanchengfly.tieba.post.core.common.ktx.fromJson
+import com.huanchengfly.tieba.post.core.common.ktx.toJson
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.utils.CoilUtil.downloadOnly
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,8 +38,10 @@ data class Emoticon(
 )
 
 private data class EmoticonCache(
-    var ids: Set<String> = emptySet(),
-    var mapping: Map<String, String> = emptyMap()
+    @SerializedName("ids")
+    val ids: Set<String> = emptySet(),
+    @SerializedName("mapping")
+    val mapping: Map<String, String> = emptyMap()
 )
 
 object EmoticonManager {

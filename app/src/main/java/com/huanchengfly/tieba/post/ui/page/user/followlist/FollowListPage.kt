@@ -48,19 +48,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
-import com.huanchengfly.tieba.post.ui.icons.PartnerHeart
-import com.huanchengfly.tieba.post.ui.icons.PersonHeart
+import com.huanchengfly.tieba.post.core.designsystem.icon.PartnerHeart
+import com.huanchengfly.tieba.post.core.designsystem.icon.PersonHeart
 import com.huanchengfly.tieba.post.ui.models.user.ConcernType
 import com.huanchengfly.tieba.post.ui.models.user.FollowUser
-import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.user.followlist.FollowListViewModel.Companion.FollowListFilter
+import com.huanchengfly.tieba.post.ui.page.user.followlist.FollowListViewModel.Companion.FollowListVmFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
@@ -93,8 +92,11 @@ private const val HeaderContentType = ""
 @Composable
 fun FollowListPage(
     uid: Long = 0,
-    navigator: NavController,
-    viewModel: FollowListViewModel = hiltViewModel(),
+    onBack: () -> Unit,
+    onUserClicked: (uid: Long) -> Unit,
+    viewModel: FollowListViewModel = hiltViewModel<FollowListViewModel, FollowListVmFactory> { factory ->
+        factory.create(uid)
+    },
 ) {
     val showActions = (uid == 0L || uid == LocalAccount.current?.uid)
     val lazyListState = rememberLazyListState()
@@ -130,7 +132,7 @@ fun FollowListPage(
                 title = {
                     Text(text = stringResource(id = R.string.title_follow_list))
                 },
-                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) },
+                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
                 actions = {
                     ClickMenu(
                         menuContent = {
@@ -190,7 +192,7 @@ fun FollowListPage(
                 },
                 onLazyLoad = viewModel::onLoadMore.takeIf { uiState.hasMore },
                 onClick = {
-                    navigator.navigate(Destination.UserProfile(uid = it.uid))
+                    onUserClicked(it.uid)
                 },
                 onFollowActionClicked = { user: FollowUser ->
                     when (user.concernType) {

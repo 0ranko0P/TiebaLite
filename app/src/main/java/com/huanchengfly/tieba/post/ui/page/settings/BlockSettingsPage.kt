@@ -54,13 +54,12 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
-import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.BlockBackupMetadata
 import com.huanchengfly.tieba.post.core.data.model.settings.BlockSettings
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
@@ -80,7 +79,10 @@ import java.util.Locale
 @Composable
 fun BlockSettingsPage(
     settings: Settings<BlockSettings>,
-    navigator: NavController,
+    onBack: () -> Unit = {},
+    onNavigateForumBlock: () -> Unit = {},
+    onNavigateKeywordBlock: () -> Unit = {},
+    onNavigateUserBlock: () -> Unit = {},
     viewModel: BlockSettingsViewModel = hiltViewModel(),
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -102,7 +104,7 @@ fun BlockSettingsPage(
 
     SettingsScaffold(
         titleRes = R.string.title_block_settings,
-        onBack = navigator::navigateUp,
+        onBack = onBack,
         settings = settings,
         initialValue = BlockSettings(),
         snackbarHostState = snackbarHostState,
@@ -128,27 +130,21 @@ fun BlockSettingsPage(
                 title = R.string.settings_block_forum,
                 leadingIcon = Icons.Outlined.Forum,
                 trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                onClick = {
-                    navigator.navigate(route = SettingsDestination.ForumBlockList)
-                }
+                onClick = onNavigateForumBlock,
             )
 
             preference(
                 title = R.string.settings_block_user,
                 leadingIcon = Icons.Outlined.NoAccounts,
                 trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                onClick = {
-                    navigator.navigate(route = SettingsDestination.UserBlockList)
-                }
+                onClick = onNavigateUserBlock
             )
 
             preference(
                 title = R.string.settings_block_keyword,
                 leadingIcon = Icons.Outlined.Block,
                 trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                onClick = {
-                    navigator.navigate(route = SettingsDestination.KeywordBlockList)
-                }
+                onClick = onNavigateKeywordBlock,
             )
 
             customPreference {

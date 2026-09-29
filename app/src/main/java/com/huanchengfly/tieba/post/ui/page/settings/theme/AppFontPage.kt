@@ -33,6 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
@@ -68,6 +69,7 @@ private fun getSizeTextHint(sliderPosition: Float): Int {
 fun AppFontPage(onBack: () -> Unit, vm: AppFontViewModel = hiltViewModel()) {
     MyScaffold(
         topBar = {
+            if (isListDetail()) return@MyScaffold
             TitleCentredToolbar(
                 title =  stringResource(id = R.string.title_custom_font_size),
                 navigationIcon = {

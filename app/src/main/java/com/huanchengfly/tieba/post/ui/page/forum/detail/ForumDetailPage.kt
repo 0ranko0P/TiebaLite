@@ -45,6 +45,7 @@ import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.forum.ForumManager
+import com.huanchengfly.tieba.post.ui.page.forum.detail.ForumDetailViewModel.Companion.ForumDetailVmFactory
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -55,9 +56,12 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 
 @Composable
 fun ForumDetailPage(
-    viewModel: ForumDetailViewModel = hiltViewModel(),
+    forumName: String,
     onManagerClicked: (uid: Long) -> Unit,
     onBack: () -> Unit,
+    viewModel: ForumDetailViewModel = hiltViewModel<ForumDetailViewModel, ForumDetailVmFactory> {
+        it.create(forumName)
+    },
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
 

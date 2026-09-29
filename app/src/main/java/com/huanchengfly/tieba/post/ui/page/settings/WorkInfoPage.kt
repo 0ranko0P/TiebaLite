@@ -48,7 +48,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.workers.NewMessageWorker
 import com.huanchengfly.tieba.post.workers.OKSignWorker
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,7 +59,7 @@ fun WorkInfoPage(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     val workers = remember {
-        persistentListOf(OKSignWorker.TAG, NewMessageWorker.TAG)
+        listOf(OKSignWorker.TAG, NewMessageWorker.TAG)
     }
     val pagerState = rememberPagerState { workers.size }
 

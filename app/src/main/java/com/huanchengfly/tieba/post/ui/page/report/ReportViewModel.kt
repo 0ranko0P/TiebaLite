@@ -2,18 +2,18 @@ package com.huanchengfly.tieba.post.ui.page.report
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.report.ReportViewModel.Companion.ReportVmFactory
 import com.huanchengfly.tieba.post.utils.extension.set
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * UI State for the Report Page
@@ -28,13 +28,11 @@ data class ReportUiState(
 }
 
 @Stable
-@HiltViewModel
-class ReportViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = ReportVmFactory::class)
+class ReportViewModel @AssistedInject constructor(
+    @Assisted val postId: Long,
     private val threadRepo: PbPageRepository,
-    savedStateHandle: SavedStateHandle
 ): BaseStateViewModel<ReportUiState>() {
-
-    val postId = savedStateHandle.toRoute<Destination.Report>().postId
 
     init {
         onRefresh()
@@ -53,6 +51,13 @@ class ReportViewModel @Inject constructor(
                 .onSuccess { reportUrl ->
                     _uiState.update { ReportUiState(reportUrl = reportUrl) }
                 }
+        }
+    }
+
+    companion object {
+        @AssistedFactory
+        interface ReportVmFactory{
+            fun create(postId: Long): ReportViewModel
         }
     }
 }

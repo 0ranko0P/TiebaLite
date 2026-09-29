@@ -31,22 +31,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.core.network.model.TopicInfoBean
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
+import com.huanchengfly.tieba.post.core.network.model.TopicInfoBean
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.TopicDetailVmFactory
 import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.feedId
-import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
-import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.ThreadBlockedTip
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
@@ -66,8 +63,13 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun TopicDetailPage(
-    navigator: NavController,
-    viewModel: TopicDetailViewModel = hiltViewModel<TopicDetailViewModel>()
+    topicId: Long,
+    topicName: String,
+    onBack: () -> Unit = {},
+    threadClickListeners: ThreadClickListeners,
+    viewModel: TopicDetailViewModel = hiltViewModel<TopicDetailViewModel, TopicDetailVmFactory> {
+        it.create(topicId, topicName)
+    }
 ) {
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -86,8 +88,6 @@ fun TopicDetailPage(
         }
     }
 
-    ConsumeThreadPageResult<Destination.HotTopicDetail>(navigator, viewModel::onThreadResult)
-
     StateScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = uiState.isEmpty,
@@ -97,11 +97,6 @@ fun TopicDetailPage(
     ) {
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
         val scrollOrientationConnection = rememberScrollOrientationConnection()
-
-        val threadClickListeners = remember(navigator) {
-            createThreadClickListeners(onNavigate = navigator::navigateDebounced)
-        }
-
         val hideBlockedContent by viewModel.hideBlockedContent.collectAsStateWithLifecycle()
 
         BlurScaffold(
@@ -109,11 +104,9 @@ fun TopicDetailPage(
                 blurEnabled = scrollBehavior.isOverlapping
             },
             topBar = {
-                TopicToolbar(
-                    topicInfo = uiState.topicInfo ?: return@BlurScaffold,
-                    onBack = navigator::navigateUp,
-                    scrollBehavior = scrollBehavior
-                )
+                uiState.topicInfo?.let {
+                    TopicToolbar(topicInfo = it, onBack = onBack, scrollBehavior = scrollBehavior)
+                }
             },
             floatingActionButton = {
                 val fabVisible by remember {
@@ -132,40 +125,39 @@ fun TopicDetailPage(
                 onRefresh = viewModel::onRefresh,
                 contentPadding = contentPadding,
             ) {
-                Container (
+                Container(
                     modifier = Modifier
                         .nestedScroll(connection = scrollOrientationConnection)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    fluid = !LocalBackButtonState.current,
                 ) {
-                    ProvideNavigator(navigator) {
-                        SwipeUpLazyLoadColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            state = lazyListState,
-                            contentPadding = contentPadding,
-                            isLoading = uiState.isLoadingMore,
-                            onLazyLoad = viewModel::onLoadMore.takeIf { uiState.hasMore },
-                            bottomIndicator = defaultBottomIndicator,
-                        ) {
-                            itemsIndexed(
-                                items = uiState.threads,
-                                key = { _, item -> item.feedId },
-                            ) { index, item ->
-                                BlockableContent(
-                                    blocked = item.blocked,
-                                    blockedTip = ThreadBlockedTip,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    hideBlockedContent = hideBlockedContent
-                                ) {
-                                    FeedCard(
-                                        thread = item,
-                                        onClick = threadClickListeners.onClicked,
-                                        onLike = viewModel::onThreadLikeClicked,
-                                        onClickReply = threadClickListeners.onReplyClicked,
-                                        onClickUser = threadClickListeners.onAuthorClicked,
-                                        onClickForum = threadClickListeners.onForumClicked,
-                                        cardDivider = index < uiState.threads.lastIndex,
-                                    )
-                                }
+                    SwipeUpLazyLoadColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        state = lazyListState,
+                        contentPadding = contentPadding,
+                        isLoading = uiState.isLoadingMore,
+                        onLazyLoad = viewModel::onLoadMore.takeIf { uiState.hasMore },
+                        bottomIndicator = defaultBottomIndicator,
+                    ) {
+                        itemsIndexed(
+                            items = uiState.threads,
+                            key = { _, item -> item.feedId },
+                        ) { index, item ->
+                            BlockableContent(
+                                blocked = item.blocked,
+                                blockedTip = ThreadBlockedTip,
+                                modifier = Modifier.fillMaxWidth(),
+                                hideBlockedContent = hideBlockedContent
+                            ) {
+                                FeedCard(
+                                    thread = item,
+                                    onClick = threadClickListeners.onClicked,
+                                    onLike = viewModel::onThreadLikeClicked,
+                                    onClickReply = threadClickListeners.onReplyClicked,
+                                    onClickUser = threadClickListeners.onAuthorClicked,
+                                    onClickForum = threadClickListeners.onForumClicked,
+                                    cardDivider = index < uiState.threads.lastIndex,
+                                )
                             }
                         }
                     }

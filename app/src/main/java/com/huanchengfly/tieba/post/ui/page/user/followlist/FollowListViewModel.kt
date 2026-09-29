@@ -3,8 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.user.followlist
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.SavedStateHandle
-import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.UiEvent
@@ -15,10 +13,13 @@ import com.huanchengfly.tieba.post.core.network.model.FollowListBean.FollowUserB
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
 import com.huanchengfly.tieba.post.ui.models.user.ConcernType
 import com.huanchengfly.tieba.post.ui.models.user.FollowUser
-import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.user.followlist.FollowListViewModel.Companion.FollowListFilter
+import com.huanchengfly.tieba.post.ui.page.user.followlist.FollowListViewModel.Companion.FollowListVmFactory
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.extension.set
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -30,7 +31,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.util.Objects
-import javax.inject.Inject
 
 sealed interface FollowListUiEvent : UiEvent {
     data class FollowFailed(val message: String) : FollowListUiEvent
@@ -51,20 +51,17 @@ data class FollowListUiState(
     val users: List<FollowUser> = emptyList(),
 ) : UiState
 
-@HiltViewModel
-class FollowListViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = FollowListVmFactory::class)
+class FollowListViewModel @AssistedInject constructor(
     @param:ApplicationContext val context: Context,
+    @Assisted val uid: Long,
     private val userProfileRepo: UserProfileRepository,
-    savedStateHandle: SavedStateHandle
 ) : BaseStateViewModel<FollowListUiState>() {
 
     override val errorHandler = CoroutineExceptionHandler { _, e ->
         Log.e(TAG, "onError: ", e)
         _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, error = e) }
     }
-
-    private val param = savedStateHandle.toRoute<Destination.UserFollowList>()
-    val uid: Long = param.uid
 
     val filteredUsers: StateFlow<List<FollowUser>> = _uiState
         .distinctUntilChangedBy { Objects.hash(it.filter, it.users) }
@@ -190,6 +187,11 @@ class FollowListViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "FollowListViewModel"
+
+        @AssistedFactory
+        interface FollowListVmFactory {
+            fun create(uid: Long): FollowListViewModel
+        }
 
         enum class FollowListFilter { All, Mutual }
 

@@ -16,7 +16,6 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.common.di.CoroutinesEntryPoint
-import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -108,19 +107,16 @@ class ShortcutInitializer : Initializer<Unit>{
             return TbShortcut.entries.firstOrNull { it.id == id }
         }
 
-        /**
-         * Note: Keep sync with [com.huanchengfly.tieba.post.ui.page.RootNavGraph]
-         * */
         private fun createIntent(context: Context, shortcut: TbShortcut): Intent {
             val flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             val intent = when(shortcut) {
                 TbShortcut.OK_SIGN -> Intent(ACTION_OKSIGN)
 
-                TbShortcut.COLLECTION -> Intent(Intent.ACTION_VIEW, "$TB_LITE_DOMAIN://favorite".toUri())
+                TbShortcut.COLLECTION -> Intent(Intent.ACTION_VIEW, TbDeepLinkMatcher.URL_FAVORITE.toUri())
 
-                TbShortcut.SEARCH -> Intent(Intent.ACTION_VIEW, "$TB_LITE_DOMAIN://search".toUri())
+                TbShortcut.SEARCH -> Intent(Intent.ACTION_VIEW, TbDeepLinkMatcher.URL_SEARCH.toUri())
 
-                TbShortcut.NOTIFICATIONS -> Intent(Intent.ACTION_VIEW, "$TB_LITE_DOMAIN://notifications?type=0".toUri())
+                TbShortcut.NOTIFICATIONS -> Intent(Intent.ACTION_VIEW, TbDeepLinkMatcher.URL_NOTIFICATION_BASE.toUri())
             }
             return intent.apply {
                 addFlags(flags)

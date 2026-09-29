@@ -29,16 +29,16 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.widgets.compose.PbContentText
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadViewModel.Companion.UserThreadVmFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.PbContentText
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadMedia
@@ -52,10 +52,11 @@ fun UserThreadPage(
     uid: Long,
     fluid: Boolean = false,
     lazyListState: LazyListState = rememberLazyListState(),
+    onNavigate: (Destination) -> Unit,
     viewModel: UserThreadViewModel = hiltViewModel<UserThreadViewModel, UserThreadVmFactory> { it.create(uid) },
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavController.current
+    val threadClickListeners = remember { createThreadClickListeners(onNavigate) }
 
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = UserThreadUiState::isRefreshing,
@@ -85,10 +86,6 @@ fun UserThreadPage(
         onReload = viewModel::onRefresh,
         screenPadding = PaddingNone,
     ) {
-        val threadClickListeners = remember(navigator) {
-            createThreadClickListeners(onNavigate = navigator::navigate)
-        }
-
         Container(fluid = fluid) {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val data = uiState.data

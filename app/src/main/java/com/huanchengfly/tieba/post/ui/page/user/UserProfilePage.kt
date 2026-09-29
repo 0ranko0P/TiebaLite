@@ -94,7 +94,7 @@ import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.lerp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.transformations
@@ -107,24 +107,25 @@ import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.components.coil.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
-import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.core.database.model.UserProfile
+import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.core.ui.animation.animateEnterExit
+import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.theme.FloatProducer
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
-import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
-import com.huanchengfly.tieba.post.ui.common.animateEnterExit
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.models.user.PermissionList
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
+import com.huanchengfly.tieba.post.ui.page.user.UserProfileViewModel.Companion.UserProfileVmFactory
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
@@ -240,14 +241,17 @@ private fun rememberAvatarTopBarColors(): TopAppBarColors {
 
 @Composable
 fun UserProfilePage(
-    uid: Long,
-    avatar: String?,
-    nickname: String?,
-    username: String?,
-    transitionKey: String?,
-    navigator: NavController,
-    viewModel: UserProfileViewModel = hiltViewModel(),
+    params: Destination.UserProfile,
+    navigator: Navigator,
+    viewModel: UserProfileViewModel = hiltViewModel<UserProfileViewModel, UserProfileVmFactory> { factory ->
+        factory.create(params)
+    },
 ) {
+    val uid: Long = params.uid
+    val avatar: String? = params.avatar
+    val nickname: String? = params.nickname
+    val username: String? = params.username
+    val transitionKey: String? = params.transitionKey
     val context = LocalContext.current
     val onBack: () -> Unit = navigator::navigateUp
     val snackbarHostState = rememberSnackbarHostState()
@@ -289,7 +293,10 @@ fun UserProfilePage(
         error = uiState.error,
         onReload = viewModel::onRefresh,
         loadingScreen = {
-            LoadingScreen(Modifier, uid, avatar, nickname, username, transitionKey, onBack)
+            val modifier = Modifier.onCase(avatarUrl.isNullOrEmpty()) {
+                background(MaterialTheme.colorScheme.background)
+            }
+            LoadingScreen(modifier, uid, avatar, nickname, username, transitionKey, onBack)
         }
     ) {
         val userProfile = uiState.userProfile ?: return@StateScreen
@@ -336,16 +343,18 @@ fun UserProfilePage(
                 movableContentOf<Boolean> { fluid ->
                     val lazyListState = lazyListStates[i]
                     when (tab) {
-                        Tab.THREADS -> UserThreadPage(uid, fluid, lazyListState)
+                        Tab.THREADS -> {
+                            UserThreadPage(uid, fluid, lazyListState, navigator::navigate)
+                        }
 
-                        Tab.POSTS -> UserPostPage(uid, fluid, lazyListState)
+                        Tab.POSTS -> UserPostPage(uid, fluid, lazyListState, navigator::navigate)
 
                         Tab.FORUMS -> when {
                             !isSelf && userProfile.privateForum -> UserPageHide(hiddenTab = tab)
 
                             userProfile.forum == 0 -> UserPageEmpty()
 
-                            else -> UserLikeForumPage(uid, fluid, lazyListState)
+                            else -> UserLikeForumPage(uid, fluid, lazyListState, navigator::navigate)
                         }
                     }
                 }
@@ -358,9 +367,7 @@ fun UserProfilePage(
                     UserProfileTabRow(tabs, pagerState, collapseFraction)
 
                     HorizontalPager(pagerState, Modifier.fillMaxSize() then modifier, key = { it }) {
-                        ProvideNavigator(navigator) {
-                            pagerContents[it](fluid)
-                        }
+                        pagerContents[it](fluid)
                     }
                 }
             }
@@ -612,15 +619,14 @@ private fun UserAvatar(modifier: Modifier = Modifier, avatar: String?, uid: Long
 @Composable
 private fun AnimatedBackButton(modifier: Modifier = Modifier, onBackPressed: () -> Unit) {
     BackNavigationIcon(
-        modifier = modifier.animateEnterExit(
-            zIndexInOverlay = 0f,
-            animatedVisibilityScope = LocalAnimatedVisibilityScope.current,
-            sharedTransitionScope = LocalSharedTransitionScope.current,
-            enter = fadeIn(),
-            exit = fadeOut(
-                animationSpec = tween(durationMillis = 150)
-            ) + slideOutHorizontally { -it }
-        ),
+        modifier = modifier.withNonNull(LocalSharedTransitionScope.current) {
+            Modifier.animateEnterExit(
+                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                zIndexInOverlay = 0f,
+                enter = fadeIn(),
+                exit = fadeOut(animationSpec = tween(durationMillis = 150)) + slideOutHorizontally { -it }
+            )
+        },
         onBackPressed = onBackPressed
     )
 }
@@ -999,9 +1005,7 @@ private fun StateScreenScope.LoadingScreen(
         }
     }
 
-    Column(
-        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-    ) {
+    Column(modifier = modifier.fillMaxSize()) {
         if (!landscapeLayout) {
             val titleModifier = Modifier.padding(start = 2.dp)
             CollapsingAvatarTopAppBar(

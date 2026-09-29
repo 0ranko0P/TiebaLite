@@ -9,18 +9,18 @@ import android.provider.Settings
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
-import androidx.navigation.NavController
 import androidx.work.WorkManager
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
 import java.io.IOException
 
 fun launchUrl(
     context: Context,
-    navigator: NavController,
+    navigator: Navigator,
     url: String,
 ) {
     val uri = Uri.parse(url)
@@ -52,7 +52,7 @@ fun launchUrl(
         navigator.navigate(route)
     }
     if (!blocked) {
-        navigator.navigate(route = Destination.WebView(url))
+        navigator.navigate(Destination.WebView(url))
     }
 }
 

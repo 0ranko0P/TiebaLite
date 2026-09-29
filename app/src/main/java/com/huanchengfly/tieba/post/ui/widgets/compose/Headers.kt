@@ -37,7 +37,7 @@ import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
+import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
@@ -155,7 +155,7 @@ fun SharedTransitionUserHeader(
             Text(
                 text = user.name,
                 modifier = Modifier
-                    .onCase(sharedTransition && LocalAnimatedVisibilityScope.current != null) {
+                    .onCase(sharedTransition && LocalSharedTransitionScope.current != null) {
                         sharedUserNickname(nickname = user.name, extraKey = extraKey)
                     }
             )
@@ -222,7 +222,7 @@ private fun SharedTransitionUserName(
     bawuType: String? = null,
     extraKey: Any? = null,
 ) {
-    val sharedTransition = LocalAnimatedVisibilityScope.current != null && !LocalHabitSettings.current.showBothName
+    val sharedTransition = LocalSharedTransitionScope.current != null && !LocalHabitSettings.current.showBothName
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(4.dp),

@@ -73,7 +73,7 @@ import com.huanchengfly.tieba.post.api.models.protos.buildRenders
 import com.huanchengfly.tieba.post.api.models.protos.getPicUrl
 import com.huanchengfly.tieba.post.api.models.protos.isExpired
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.core.network.model.protos.Media
 import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo

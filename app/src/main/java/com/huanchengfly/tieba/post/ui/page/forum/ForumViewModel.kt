@@ -5,12 +5,11 @@ import android.content.Intent
 import android.util.SparseIntArray
 import androidx.compose.runtime.Stable
 import androidx.core.net.toUri
-import androidx.lifecycle.SavedStateHandle
-import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.components.TbDeepLinkMatcher.URL_FORUM_BASE
 import com.huanchengfly.tieba.post.core.data.model.settings.ForumFAB
 import com.huanchengfly.tieba.post.core.data.model.settings.ForumSortType
 import com.huanchengfly.tieba.post.core.database.model.ForumHistory
@@ -19,13 +18,15 @@ import com.huanchengfly.tieba.post.core.network.model.SignResultBean
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
-import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
+import com.huanchengfly.tieba.post.ui.page.forum.ForumViewModel.Companion.ForumViewVmFactory
 import com.huanchengfly.tieba.post.ui.page.forum.generaltablist.GeneralTabListUiEvent
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListUiEvent
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.extension.set
 import com.huanchengfly.tieba.post.utils.requestPinShortcut
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -33,19 +34,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
 
 @Stable
-@HiltViewModel
-class ForumViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = ForumViewVmFactory::class)
+class ForumViewModel @AssistedInject constructor(
     @ApplicationContext val context: Context,
+    @Assisted val forumName: String,
     private val forumRepo: ForumRepository,
     private val historyRepo: HistoryRepository,
-    savedStateHandle: SavedStateHandle
 ) : BaseStateViewModel<ForumUiState>() {
-
-    private val param = savedStateHandle.toRoute<Destination.Forum>()
-    private val forumName: String = param.forumName
 
     private var historyRecorded = false
 
@@ -176,7 +173,7 @@ class ForumViewModel @Inject constructor(
             "forum_${forum.id}",
             forum.avatar,
             label,
-            Intent(Intent.ACTION_VIEW, "$TB_LITE_DOMAIN://forum/${forum.name}".toUri())
+            Intent(Intent.ACTION_VIEW, "$URL_FORUM_BASE/${forum.name}".toUri())
         )
         .onSuccess {
             emitUiEvent(ForumUiEvent.PinShortcut.Success)
@@ -199,6 +196,11 @@ class ForumViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "ForumViewModel"
+
+        @AssistedFactory
+        interface ForumViewVmFactory {
+            fun create(forumName: String): ForumViewModel
+        }
 
         private fun ForumData.updateSignIn(info: SignResultBean.UserInfo): ForumData {
             return copy(

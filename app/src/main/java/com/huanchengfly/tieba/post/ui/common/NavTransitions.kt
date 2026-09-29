@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.common
 
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.AnimationConstants
@@ -12,16 +13,24 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 
 @Immutable
 class NavTransitions(
     val enterTransition: EnterTransition,
     val exitTransition: ExitTransition,
-    val popEnterTransition: EnterTransition,
-    val popExitTransition: ExitTransition,
+    val popEnterTransition: EnterTransition = enterTransition,
+    val popExitTransition: ExitTransition = exitTransition,
 ) {
+
+    val transitionSpec: ContentTransform
+        get() = enterTransition togetherWith exitTransition
+
+    val popTransitionSpec: ContentTransform
+        get() = popEnterTransition togetherWith popExitTransition
+
     companion object {
         private val DefaultAnimationSpec: FiniteAnimationSpec<Any> = tween(
             durationMillis = AnimationConstants.DefaultDurationMillis,
@@ -31,6 +40,13 @@ class NavTransitions(
         @Suppress("UNCHECKED_CAST")
         fun <T> defaultAnimationSpec(): FiniteAnimationSpec<T> {
             return DefaultAnimationSpec as FiniteAnimationSpec<T>
+        }
+
+        val FadeTransitions: NavTransitions by unsafeLazy {
+            NavTransitions(
+                enterTransition = fadeIn(animationSpec = defaultAnimationSpec()),
+                exitTransition = fadeOut(animationSpec = defaultAnimationSpec()),
+            )
         }
 
         val DefaultTransitions: NavTransitions by unsafeLazy {

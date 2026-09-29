@@ -4,8 +4,6 @@ package com.huanchengfly.tieba.post.di
 
 import android.content.Context
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
-import com.huanchengfly.tieba.post.repository.AddPostRepository
-import com.huanchengfly.tieba.post.repository.AddPostRepositoryImpl
 import com.huanchengfly.tieba.post.repository.source.local.ExploreAssetsDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalFileDataSource
@@ -23,9 +21,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 interface RepositoryModule {
-
-    @Binds
-    fun bindAddPostRepository(repository: AddPostRepositoryImpl): AddPostRepository
 
     @Binds
     fun bindOKSignRepository(repository: OKSignRepositoryImp): OKSignRepository

@@ -61,7 +61,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
@@ -71,7 +72,9 @@ import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.core.database.model.ForumHistory
 import com.huanchengfly.tieba.post.core.database.model.History
 import com.huanchengfly.tieba.post.core.database.model.ThreadHistory
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.core.ui.animation.animateEnterExit
+import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
 import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.repository.UserHistory
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
@@ -79,13 +82,9 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
-import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
-import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
-import com.huanchengfly.tieba.post.ui.common.animateEnterExit
-import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
+import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import com.huanchengfly.tieba.post.ui.page.user.sharedUserAvatar
 import com.huanchengfly.tieba.post.ui.page.user.sharedUserNickname
@@ -117,8 +116,9 @@ private const val HistoryItemContentType = "history"
 
 @Composable
 fun HistoryPage(
-    navigator: NavController,
-    viewModel: HistoryViewModel = hiltViewModel()
+    onBack: () -> Unit,
+    onNavigateHistory: (NavKey) -> Unit,
+    viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -135,7 +135,7 @@ fun HistoryPage(
     }
 
     val onHistoryClicked: (History) -> Unit = {
-        val route = when(it) {
+        val navKey = when(it) {
             is ThreadHistory -> {
                 Destination.Thread(threadId = it.id, postId = it.pid, seeLz = it.isSeeLz, from = ThreadFrom.History)
             }
@@ -155,7 +155,7 @@ fun HistoryPage(
 
             else -> throw RuntimeException("Unknow history type: ${ it::class.simpleName }")
         }
-        navigator.navigateDebounced(route = route)
+        onNavigateHistory(navKey)
     }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -174,14 +174,13 @@ fun HistoryPage(
     MyScaffold(
         topBar = {
             TopAppBarPaged(
-                modifier = Modifier.animateEnterExit(
-                    animatedVisibilityScope = LocalAnimatedVisibilityScope.current,
-                    sharedTransitionScope = sharedTransitionScope,
-                ),
+                modifier = Modifier.withNonNull(sharedTransitionScope) {
+                    Modifier.animateEnterExit(LocalNavAnimatedContentScope.current)
+                },
                 title = { Text(text = stringResource(R.string.title_history)) },
                 navigationIcon = {
                     if (sharedTransitionScope?.isTransitionActive != true) {
-                        BackNavigationIcon(onBackPressed = navigator::navigateUp)
+                        BackNavigationIcon(onBackPressed = onBack)
                     } else {
                         Spacer(modifier = Modifier.minimumInteractiveComponentSize())
                     }
@@ -205,7 +204,7 @@ fun HistoryPage(
                             ) {
                                 viewModel.onDeleteAll()
                                 context.toastShort(R.string.toast_clear_success)
-                                navigator.navigateUp()
+                                onBack()
                             }
                         },
                         triggerShape = CircleShape,
@@ -257,46 +256,43 @@ fun HistoryPage(
         },
     ) { paddingValues ->
         val contentPadding = paddingValues + scaffoldContentPadding
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.onCase(!selectMode) {
+                nestedScroll(scrollBehavior.nestedScrollConnection)
+            },
+            key = { it },
+            userScrollEnabled = !selectMode
+        ) { index ->
+            val pagingData = when (tabs[index]) {
+                R.string.title_history_thread -> viewModel.threadHistory
 
-        ProvideNavigator(navigator = navigator) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.onCase(!selectMode) {
-                    nestedScroll(scrollBehavior.nestedScrollConnection)
-                },
-                key = { it },
-                userScrollEnabled = !selectMode
-            ) { index ->
-                val pagingData = when (tabs[index]) {
-                    R.string.title_history_thread -> viewModel.threadHistory
+                R.string.title_history_forum -> viewModel.forumHistory
 
-                    R.string.title_history_forum -> viewModel.forumHistory
+                R.string.title_history_user -> viewModel.userHistory
 
-                    R.string.title_history_user -> viewModel.userHistory
-
-                    else -> throw RuntimeException()
-                }
-
-                HistoryColumn(
-                    state = listStates[index],
-                    contentPadding = contentPadding,
-                    pagedItems = pagingData.collectAsLazyPagingItems(),
-                    selectedItems = selectedItems,
-                    onClick = { it: History ->
-                        if (selectMode) {
-                            if (selectedItems.contains(it)) selectedItems -= it else selectedItems += it
-                        } else {
-                            onHistoryClicked(it)
-                        }
-                    },
-                    onLongClick = { history ->
-                        if (!isUpdating && !selectMode) {
-                            selectedItems += history
-                            selectMode = true
-                        }
-                    }
-                )
+                else -> throw RuntimeException()
             }
+
+            HistoryColumn(
+                state = listStates[index],
+                contentPadding = contentPadding,
+                pagedItems = pagingData.collectAsLazyPagingItems(),
+                selectedItems = selectedItems,
+                onClick = { it: History ->
+                    if (selectMode) {
+                        if (selectedItems.contains(it)) selectedItems -= it else selectedItems += it
+                    } else {
+                        onHistoryClicked(it)
+                    }
+                },
+                onLongClick = { history ->
+                    if (!isUpdating && !selectMode) {
+                        selectedItems += history
+                        selectMode = true
+                    }
+                }
+            )
         }
     }
 }

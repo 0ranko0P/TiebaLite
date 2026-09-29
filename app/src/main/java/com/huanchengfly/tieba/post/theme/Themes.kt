@@ -8,7 +8,7 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.Typography
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
@@ -35,7 +35,7 @@ fun TiebaLiteTheme(
 ) {
     CompositionLocalProvider(
         LocalExtendedColorScheme provides colorSchemeExt,
-        LocalWindowAdaptiveInfo provides currentWindowAdaptiveInfo(),
+        LocalWindowAdaptiveInfo provides currentWindowAdaptiveInfoV2(),
     ) {
         MaterialExpressiveTheme(
             colorScheme = colorSchemeExt.colorScheme,

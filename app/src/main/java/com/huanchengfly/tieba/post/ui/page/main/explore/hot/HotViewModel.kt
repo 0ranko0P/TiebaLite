@@ -4,10 +4,14 @@ import android.util.SparseArray
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.core.util.forEach
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.HOT_THREAD_TAB_ALL
 import com.huanchengfly.tieba.post.ui.models.Like
@@ -19,9 +23,10 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
 import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -46,6 +51,7 @@ data class HotUiState(
 @Stable
 @HiltViewModel
 class HotViewModel @Inject constructor(
+    @ApplicationScope private val scope: CoroutineScope,
     private val exploreRepo: ExploreRepository
 ) : BaseStateViewModel<HotUiState>() {
 
@@ -60,6 +66,7 @@ class HotViewModel @Inject constructor(
 
     init {
         refreshInternal(cached = true)
+        observeThreadLike()
     }
 
     override fun createInitialState(): HotUiState {
@@ -154,29 +161,22 @@ class HotViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Called when navigating back from thread page.
-     *
-     * @param threadId target thread ID
-     * @param like like status of target thread
-     * */
-    fun onThreadResult(threadId: Long, like: Like) {
-        launchInVM {
-            val stateSnapshot = currentState
-            val selectedTab = stateSnapshot.selectedTab
-            val newThreads = stateSnapshot.threads?.updateLikeStatus(threadId, like)
-            // Like data changed, update in-memory and local cache
-            if (newThreads != null) {
-                _uiState.update { it.copy(threads = newThreads) }
-                updateCache(selectedTab, newThreads)
-                exploreRepo.updateCachedThreadLike(threadId, like, from = ExploreType.HOT, selectedTab)
-            }
-            // else: empty or no status changes
+    private fun observeThreadLike() = viewModelScope.onGlobalEvent<GlobalEvent.ThreadLike> { event ->
+        val stateSnapshot = currentState
+        val threadId = event.threadId
+        val like: Like = event.like
+        val selectedTab = stateSnapshot.selectedTab
+        val newThreads = stateSnapshot.threads?.updateLikeStatus(threadId, like)
+        // Like data changed, update in-memory and local cache
+        if (newThreads != null) {
+            _uiState.update { it.copy(threads = newThreads) }
+            updateCache(selectedTab, newThreads)
+            exploreRepo.updateCachedThreadLike(threadId, like, from = ExploreType.HOT, selectedTab)
         }
+        // else: empty or no status changes
     }
 
     override fun onCleared() {
-        runBlocking(errorHandler) { clearCached() }
-        super.onCleared()
+        scope.launch(errorHandler) { clearCached() }
     }
 }

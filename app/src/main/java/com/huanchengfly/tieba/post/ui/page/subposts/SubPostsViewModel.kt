@@ -4,8 +4,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMap
-import androidx.lifecycle.SavedStateHandle
-import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
@@ -20,8 +18,12 @@ import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.models.ThreadInfoData
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsViewModel.Companion.SubPostsVmFactory
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.utils.extension.set
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,7 +33,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 sealed interface SubPostsUiEvent : UiEvent {
     class DeletePostFailed(val message: String) : SubPostsUiEvent
@@ -57,14 +58,12 @@ data class SubPostsUiState(
 }
 
 @Stable
-@HiltViewModel
-class SubPostsViewModel @Inject constructor(
-    private val threadRepo: PbPageRepository,
+@HiltViewModel(assistedFactory = SubPostsVmFactory::class)
+class SubPostsViewModel @AssistedInject constructor(
+    @Assisted private val params: Destination.SubPosts,
     private val credentialProvider: CredentialProvider,
-    savedStateHandle: SavedStateHandle
+    private val threadRepo: PbPageRepository,
 ) : BaseStateViewModel<SubPostsUiState>() {
-
-    private val params = savedStateHandle.toRoute<Destination.SubPosts>()
 
     private var scrollToSubpostId: Long = params.subPostId
 
@@ -232,6 +231,11 @@ class SubPostsViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "SubPostsViewModel"
+
+        @AssistedFactory
+        interface SubPostsVmFactory {
+            fun create(params: Destination.SubPosts): SubPostsViewModel
+        }
 
         private fun SubPostsUiState.updateLikesById(id: Long, liked: Boolean, loading: Boolean) = copy(
             subPosts = subPosts.fastMap {

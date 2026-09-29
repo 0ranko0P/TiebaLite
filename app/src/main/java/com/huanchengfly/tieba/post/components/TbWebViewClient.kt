@@ -9,7 +9,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import androidx.core.net.toUri
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isBaidu
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission

@@ -39,8 +39,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.core.data.util.blockSet
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.STATE_ALLOW
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.STATE_DENY
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.STATE_UNSET
@@ -48,8 +50,7 @@ import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Compan
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.CLIPBOARD
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.File
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission.LOCATION
-import com.huanchengfly.tieba.post.getInt
-import com.huanchengfly.tieba.post.putInt
+import com.huanchengfly.tieba.post.core.data.util.getInt
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogContentPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
@@ -153,8 +154,7 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
     }
 
     private fun onGrantClicked() {
-        val permission = this.permission
-        when(permission) {
+        when(val permission = this.permission) {
             is File -> {
                 filePickerLauncher!!.launch(permission.intent)
             }
@@ -181,8 +181,8 @@ class WebPermissionDialog<Result>(): ResultDialog<Result>() {
         mResult.trySend(result as Result)
 
         if (result is Boolean && retainPermission) {
-            requireContext().permissionDataStore.putInt(
-                key = permission.toKey(host),
+            requireContext().permissionDataStore.blockSet(
+                key = intPreferencesKey(permission.toKey(host)),
                 value = if (result) STATE_ALLOW else STATE_DENY
             )
         }

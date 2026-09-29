@@ -29,16 +29,10 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
-import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.Destination.ForumRuleDetail
-import com.huanchengfly.tieba.post.ui.page.Destination.Thread
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListViewModel.Companion.ForumVMFactory
-import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
@@ -99,6 +93,7 @@ private val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
 fun ForumThreadList(
     modifier: Modifier = Modifier,
     threadClickListeners: ThreadClickListeners,
+    onForumRuleClicked: () -> Unit,
     forumId: Long,
     forumName: String,
     type: ForumType,
@@ -112,9 +107,8 @@ fun ForumThreadList(
         it.create(forumName, forumId, type, initialSortType)
     }
 ) {
-    val navigator = LocalNavController.current
-
     viewModel.uiEvent.collectCommonUiEventWithLifecycle()
+    val isListDetail = !LocalBackButtonState.current
 
     onGlobalEvent<ForumThreadListUiEvent.Refresh>(
         filter = { it.type == type },
@@ -131,8 +125,6 @@ fun ForumThreadList(
             viewModel.onSortTypeChanged(sortType = it.sortType)
         }
     }
-
-    ConsumeThreadPageResult<Destination.Forum>(navigator, viewModel::onThreadResult)
 
     val threadList by viewModel.uiState.collectPartialAsState(
         prop1 = ForumThreadListUiState::threads,
@@ -156,7 +148,7 @@ fun ForumThreadList(
         val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-        Container {
+        Container(fluid = isListDetail) {
             SwipeUpLazyLoadColumn(
                 modifier = modifier.fillMaxSize(),
                 state = listState,
@@ -173,7 +165,7 @@ fun ForumThreadList(
                     item(key = "ForumRule") {
                         TopThreadItem(
                             title = rule,
-                            onClick = { navigator.navigateDebounced(ForumRuleDetail(forumId)) },
+                            onClick = onForumRuleClicked,
                             modifier = Modifier.fillMaxWidth(),
                             type = stringResource(id = R.string.desc_forum_rule)
                         )
@@ -184,10 +176,6 @@ fun ForumThreadList(
                     threads = threadList,
                     threadClickListeners = threadClickListeners,
                     onLikeClicked = viewModel::onThreadLikeClicked,
-                    onOriginThreadClicked = {
-                        val route = Thread(threadId = it.tid.toLong(), forumId = it.fid)
-                        navigator.navigateDebounced(route)
-                    },
                     hideBlocked = hideBlocked,
                 )
             }
@@ -199,7 +187,6 @@ fun LazyListScope.forumThreadList(
     threads: List<ThreadItem>,
     threadClickListeners: ThreadClickListeners,
     onLikeClicked: (ThreadItem) -> Unit,
-    onOriginThreadClicked: (OriginThreadInfo) -> Unit = {},
     hideBlocked: Boolean = false,
 ) {
     itemsIndexed(threads, key = { _, it -> it.id }, ThreadContentType) { index, thread ->
@@ -226,7 +213,7 @@ fun LazyListScope.forumThreadList(
                     onClickReply = threadClickListeners.onReplyClicked,
                     onClickUser = threadClickListeners.onAuthorClicked,
                     cardDivider = true,
-                    onClickOriginThread = onOriginThreadClicked,
+                    onClickOriginThread = threadClickListeners.onOriginThreadClicked,
                 )
             }
         }

@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.rounded.Add
@@ -70,10 +69,11 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.core.database.model.BlockKeyword
 import com.huanchengfly.tieba.post.core.database.model.BlockUser
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
-import com.huanchengfly.tieba.post.ui.icons.RegularExpression
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultToggleFloatingActionButton
@@ -306,6 +306,7 @@ private fun <T> BlockListScaffold(
 
     MyScaffold(
         topBar = {
+            if (isListDetail()) return@MyScaffold
             CenterAlignedTopAppBar(
                 titleRes = title,
                 navigationIcon = {
@@ -421,8 +422,8 @@ private fun BlockFloatingActionButtonMenu(
 
     val items = remember {
         listOf(
-            Icons.AutoMirrored.Rounded.Notes to context.getString(R.string.button_add_keyword),
-            Icons.Rounded.RegularExpression to context.getString(R.string.button_add_regex)
+            TbIcons.Notes to context.getString(R.string.button_add_keyword),
+            TbIcons.RegularExpression to context.getString(R.string.button_add_regex)
         )
     }
 
@@ -527,9 +528,9 @@ private fun KeywordItem(modifier: Modifier = Modifier, keyword: String, isRegex:
         contentDescription = keyword,
         icon = {
             if (isRegex) {
-                Icon(imageVector = Icons.Rounded.RegularExpression, contentDescription = null)
+                Icon(imageVector = TbIcons.RegularExpression, contentDescription = null)
             } else {
-                Icon(imageVector = Icons.AutoMirrored.Rounded.Notes, contentDescription = null)
+                Icon(imageVector = TbIcons.Notes, contentDescription = null)
             }
         },
     )

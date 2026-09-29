@@ -31,10 +31,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
-import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.models.search.SearchUser
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.user.sharedUserAvatar
 import com.huanchengfly.tieba.post.ui.page.user.sharedUserNickname
 import com.huanchengfly.tieba.post.ui.page.user.sharedUsername
@@ -52,6 +51,7 @@ fun SearchUserPage(
     contentPadding: PaddingValues,
     listState: LazyListState = rememberLazyListState(),
     viewModel: SearchUserViewModel = hiltViewModel(),
+    onNavigateUser: (Destination.UserProfile) -> Unit = {},
 ) {
 
     LaunchedEffect(keyword) {
@@ -75,13 +75,9 @@ fun SearchUserPage(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
-            val navigator = LocalNavController.current
-            val headerContentType = Integer.MAX_VALUE
-
             val onUserClickedListener: (SearchUser) -> Unit = { user ->
                 val transitionKey = user.id.toString()
-                val route = user.run { UserProfile(id, avatar, nickname, username, transitionKey) }
-                navigator.navigateDebounced(route)
+                onNavigateUser(user.run { UserProfile(id, avatar, nickname, username, transitionKey) })
             }
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -93,6 +89,8 @@ fun SearchUserPage(
                 state = listState,
                 contentPadding = contentPadding,
             ) {
+                val headerContentType = Integer.MAX_VALUE
+
                 if (exactMatchUser != null) {
                     item(key = "ExactMatchHeader", contentType = headerContentType) {
                         Chip(

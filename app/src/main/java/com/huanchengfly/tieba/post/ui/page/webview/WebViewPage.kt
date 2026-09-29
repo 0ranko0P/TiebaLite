@@ -32,17 +32,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.core.net.toUri
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TbWebChromeClient
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.createTopAppBarColors
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebViewClient
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
@@ -153,7 +152,12 @@ private fun WebviewTopAppBar(
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun WebViewPage(initialUrl: String, customClient: Boolean, navigator: NavController) {
+fun WebViewPage(
+    initialUrl: String,
+    customClient: Boolean,
+    onBack: () -> Unit,
+    onNavigate: (Destination) -> Unit,
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val webViewState = rememberSaveableWebViewState()
@@ -169,7 +173,7 @@ fun WebViewPage(initialUrl: String, customClient: Boolean, navigator: NavControl
 
     MyScaffold(
         topBar = {
-            WebviewTopAppBar(state = webViewState, onBack = navigator::navigateUp) {
+            WebviewTopAppBar(state = webViewState, onBack = onBack) {
                 val webview = webViewState.webView ?: return@WebviewTopAppBar
                 ClickMenu(
                     menuContent = {
@@ -212,9 +216,9 @@ fun WebViewPage(initialUrl: String, customClient: Boolean, navigator: NavControl
                 onDispose = TiebaWebView::dispose,
                 client = remember {
                     if (!customClient) return@remember AccompanistWebViewClient()
-                    TbWebViewClient(context, coroutineScope) { route ->
-                        if ((webViewState.webView as TiebaWebView).canNavigate(route)) {
-                            navigator.navigateDebounced(route = route)
+                    TbWebViewClient(context, coroutineScope) { navKey ->
+                        if ((webViewState.webView as TiebaWebView).canNavigate(navKey)) {
+                            onNavigate(navKey)
                         }
                     }
                 },

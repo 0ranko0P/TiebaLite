@@ -29,6 +29,7 @@ import okio.buffer
 import okio.sink
 import okio.source
 import java.io.ByteArrayOutputStream
+import java.io.EOFException
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -90,8 +91,12 @@ internal class ImageUploader(
                 val image = File(tempDir, "img_$i").writeAll(contentResolver, uri)
                 uploadSinglePicture(image, watermarkType, isOriginImage)
             }
-        } catch (e: Throwable) {
-            throw e
+        } catch (e: IOException) {
+            if (e.cause != null && e.cause is EOFException) { // 垃圾VPN
+                throw IOException("网络错误!", e.cause)
+            } else {
+                throw e
+            }
         } finally {
             runCatching { tempDir.deleteRecursively() } // Cleanup quietly
         }

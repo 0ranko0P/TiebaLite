@@ -61,10 +61,12 @@ internal class ConnectivityManagerNetworkMonitor @Inject constructor(
                         networks += network
                     }
                     val newState = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
-                    Log.w(TAG, "onCapabilitiesChanged: Network $network, isValidated: $isValidated, isUnmetered: $unmetered to $newState")
-                    if (isValidated && unmetered != newState) {
-                        unmetered = newState
-                        channel.trySend(networks.isNotEmpty() to newState)
+                    if (unmetered != newState) {
+                        Log.w(TAG, "onCapabilitiesChanged: Network $network, isValidated: $isValidated, isUnmetered: $unmetered to $newState")
+                        if (isValidated) {
+                            unmetered = newState
+                            channel.trySend(networks.isNotEmpty() to newState)
+                        }
                     }
                 }
             }
@@ -106,8 +108,8 @@ internal class ConnectivityManagerNetworkMonitor @Inject constructor(
     }
 
     override fun isCurrentlyNotMetered(): Boolean {
-        val network = connectivityManager?.activeNetwork ?: return false
-        val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        val network = connectivityManager?.activeNetwork ?: return true
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return true
         return networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
     }
 }

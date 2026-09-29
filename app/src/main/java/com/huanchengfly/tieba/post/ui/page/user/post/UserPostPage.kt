@@ -24,12 +24,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.ui.models.user.PostContent
 import com.huanchengfly.tieba.post.ui.models.user.PostListItem
-import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
-import com.huanchengfly.tieba.post.ui.page.Destination.Thread
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostViewModel.Companion.UserPostVmFactory
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -43,10 +40,9 @@ fun UserPostPage(
     uid: Long,
     fluid: Boolean = false,
     lazyListState: LazyListState = rememberLazyListState(),
+    onNavigate: (navKey: Destination) -> Unit = {},
     viewModel: UserPostViewModel = hiltViewModel<UserPostViewModel, UserPostVmFactory> { it.create(uid) },
 ) {
-    val navigator = LocalNavController.current
-
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = UserPostUiState::isRefreshing,
         initial = true
@@ -75,16 +71,16 @@ fun UserPostPage(
         val onPostContentClicked: (PostListItem, PostContent) -> Unit = { post, content ->
             val threadId = post.threadId
             val forumId = post.forumId
-            val route = if (content.isSubPost) {
-                SubPosts(threadId, forumId, subPostId = content.postId)
+            val navKey = if (content.isSubPost) {
+                Destination.SubPosts(threadId, forumId, subPostId = content.postId)
             } else {
-                Thread(threadId, forumId, postId = content.postId, scrollToReply = true)
+                Destination.Thread(threadId, forumId, postId = content.postId, scrollToReply = true)
             }
-            navigator.navigateDebounced(route)
+            onNavigate(navKey)
         }
 
         val onOriginThreadClicked: (PostListItem) -> Unit = {
-            navigator.navigateDebounced(Thread(threadId = it.threadId))
+            onNavigate(Destination.Thread(threadId = it.threadId))
         }
 
         Container(fluid = fluid) {

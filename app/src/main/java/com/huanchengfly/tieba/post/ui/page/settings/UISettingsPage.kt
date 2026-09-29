@@ -28,14 +28,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.data.model.settings.DarkPreference
 import com.huanchengfly.tieba.post.core.data.model.settings.LauncherIcons
 import com.huanchengfly.tieba.post.core.data.model.settings.NavigationLabel
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
-import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AppFont
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegmentedPrefsScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
@@ -46,14 +44,15 @@ import kotlinx.collections.immutable.persistentMapOf
 @Composable
 fun UISettingsPage(
     settings: Settings<UISettings>,
-    navigator: NavController
+    onBack: () -> Unit,
+    onNavigateAppFont: () -> Unit,
 ) {
     val context = LocalContext.current
     val toyFansIcon = AnimatedImageVector.animatedVectorResource(R.drawable.ic_animated_toy_fans)
 
     SettingsScaffold(
         titleRes = R.string.title_settings_custom,
-        onBack = navigator::navigateUp,
+        onBack = onBack,
         settings = settings,
         initialValue = UISettings(),
     ) {
@@ -62,9 +61,7 @@ fun UISettingsPage(
                 title = R.string.title_custom_font_size,
                 leadingIcon = Icons.Outlined.FontDownload,
                 trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                onClick = {
-                    navigator.navigate(AppFont)
-                }
+                onClick = onNavigateAppFont,
             )
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

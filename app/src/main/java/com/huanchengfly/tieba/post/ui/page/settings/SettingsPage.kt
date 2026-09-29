@@ -4,8 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -23,11 +23,9 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,23 +36,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.window.core.layout.WindowSizeClass
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.core.database.model.Account
-import com.huanchengfly.tieba.post.navigateDebounced
-import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.database.model.Account
+import com.huanchengfly.tieba.post.core.navigation.Navigator
+import com.huanchengfly.tieba.post.core.navigation.popUpNavigate
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
+import com.huanchengfly.tieba.post.plus
 import com.huanchengfly.tieba.post.theme.BlueGrey700
 import com.huanchengfly.tieba.post.theme.Cyan700
 import com.huanchengfly.tieba.post.theme.Green700
 import com.huanchengfly.tieba.post.theme.Purple700
 import com.huanchengfly.tieba.post.theme.Red700
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
-import com.huanchengfly.tieba.post.ui.page.Destination.Login
+import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
-import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.AccountManage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingTopAppBar
@@ -70,6 +66,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegment
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
+
+private fun Navigator.navigateSetting(navKey: SettingsDestination) {
+    popUpNavigate<SettingsDestination.Settings>(navKey)
+}
 
 private fun SegmentedPrefsScope.accountPreference(
     account: Account?,
@@ -104,110 +104,91 @@ private fun SegmentedPrefsScope.accountPreference(
 }
 
 @Composable
-fun SettingsPage(navigator: NavController) {
+fun SettingsPage(navigator: Navigator) {
     val account = LocalAccount.current
+    MyScaffold { contentPadding ->
+        SegmentedTextPrefsScreen(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding + SettingsContentPadding,
+        ) {
+            group(verticalPadding = SettingsGroupVerticalPadding) {
+                accountPreference(
+                    account = account,
+                    onManageAccountClicked = {
+                        navigator.navigateSetting(SettingsDestination.AccountManage)
+                    },
+                    onLoginClicked = { navigator.navigate(key = Destination.Login) },
+                    iconTint = Purple700,
+                )
 
-    SettingsScaffold(
-        titleRes = R.string.title_settings,
-        titleHorizontalAlignment = Alignment.CenterHorizontally,
-        onBack = navigator::navigateUp,
-    ) {
-        group(verticalPadding = SettingsGroupVerticalPadding) {
-            accountPreference(
-                account = account,
-                onManageAccountClicked = {
-                    navigator.navigateDebounced(route = AccountManage)
-                },
-                onLoginClicked = { navigator.navigateDebounced(route = Login) },
-                iconTint = Purple700,
-            )
-
-            mainPreference(
-                title = R.string.title_oksign,
-                summary = R.string.summary_settings_oksign,
-                icon = Icons.Rounded.Checklist,
-                iconContainer = Purple700,
-                enabled = account != null
-            ) {
-                navigator.navigateDebounced(SettingsDestination.OKSign)
-            }
-        }
-
-        group(verticalPadding = SettingsGroupVerticalPadding) {
-            mainPreference(
-                title = R.string.title_block_settings,
-                summary = R.string.summary_block_settings,
-                icon = Icons.Rounded.DoNotDisturbOff,
-                iconContainer = Red700,
-            ) {
-                navigator.navigateDebounced(SettingsDestination.BlockSettings)
-            }
-        }
-
-        group(verticalPadding = SettingsGroupVerticalPadding) {
-            mainPreference(
-                title = R.string.title_settings_custom,
-                summary = R.string.summary_settings_custom,
-                icon = Icons.Outlined.FormatPaint,
-                iconContainer = Green700,
-            ) {
-                navigator.navigateDebounced(SettingsDestination.UI)
+                mainPreference(
+                    title = R.string.title_oksign,
+                    summary = R.string.summary_settings_oksign,
+                    icon = Icons.Rounded.Checklist,
+                    iconContainer = Purple700,
+                    enabled = account != null,
+                    onClick = { navigator.navigateSetting(SettingsDestination.OKSign) },
+                )
             }
 
-            mainPreference(
-                title = R.string.title_settings_read_habit,
-                summary = R.string.summary_settings_habit,
-                icon = Icons.Outlined.DashboardCustomize,
-                iconContainer = Green700,
-            ) {
-                navigator.navigateDebounced(SettingsDestination.Habit)
-            }
-        }
-
-        group(verticalPadding = SettingsGroupVerticalPadding) {
-            mainPreference(
-                title = R.string.title_settings_privacy,
-                summary = R.string.summary_settings_privacy,
-                icon = Icons.Outlined.Shield,
-                iconContainer = Cyan700,
-            ) {
-                navigator.navigateDebounced(SettingsDestination.Privacy)
-            }
-        }
-
-        group(verticalPadding = SettingsGroupVerticalPadding) {
-            mainPreference(
-                title = R.string.title_settings_more,
-                summary = R.string.summary_settings_more,
-                icon =  Icons.Rounded.MoreHoriz,
-                iconContainer = BlueGrey700
-            ) {
-                navigator.navigateDebounced(SettingsDestination.More)
+            group(verticalPadding = SettingsGroupVerticalPadding) {
+                mainPreference(
+                    title = R.string.title_block_settings,
+                    summary = R.string.summary_block_settings,
+                    icon = Icons.Rounded.DoNotDisturbOff,
+                    iconContainer = Red700,
+                    onClick = { navigator.navigateSetting(SettingsDestination.BlockSettings) },
+                )
             }
 
-            mainPreference(
-                title = R.string.title_about,
-                summary = R.string.summary_settings_about,
-                icon = Icons.Outlined.Info,
-                iconContainer = BlueGrey700
-            ) {
-                navigator.navigate(About)
+            group(verticalPadding = SettingsGroupVerticalPadding) {
+                mainPreference(
+                    title = R.string.title_settings_custom,
+                    summary = R.string.summary_settings_custom,
+                    icon = Icons.Outlined.FormatPaint,
+                    iconContainer = Green700,
+                    onClick = { navigator.navigateSetting(SettingsDestination.UI) },
+                )
+
+                mainPreference(
+                    title = R.string.title_settings_read_habit,
+                    summary = R.string.summary_settings_habit,
+                    icon = Icons.Outlined.DashboardCustomize,
+                    iconContainer = Green700,
+                    onClick = { navigator.navigateSetting(SettingsDestination.Habit) },
+                )
+            }
+
+            group(verticalPadding = SettingsGroupVerticalPadding) {
+                mainPreference(
+                    title = R.string.title_settings_privacy,
+                    summary = R.string.summary_settings_privacy,
+                    icon = Icons.Outlined.Shield,
+                    iconContainer = Cyan700,
+                    onClick = { navigator.navigateSetting(SettingsDestination.Privacy) },
+                )
+            }
+
+            group(verticalPadding = SettingsGroupVerticalPadding) {
+                mainPreference(
+                    title = R.string.title_settings_more,
+                    summary = R.string.summary_settings_more,
+                    icon =  Icons.Rounded.MoreHoriz,
+                    iconContainer = BlueGrey700,
+                    onClick = { navigator.navigateSetting(SettingsDestination.More) },
+                )
+
+                mainPreference(
+                    title = R.string.title_about,
+                    summary = R.string.summary_settings_about,
+                    icon = Icons.Outlined.Info,
+                    iconContainer = BlueGrey700,
+                    onClick = { navigator.navigateSetting(About) }
+                )
             }
         }
     }
 }
-
-/** The default expanded height of a [SettingsTopAppBar] */
-private val SettingsAppbarExpandHeight: Dp
-    @Composable @ReadOnlyComposable get() = with(LocalWindowAdaptiveInfo.current.windowSizeClass) {
-        when {
-            isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND) -> TopAppBarDefaults.LargeAppBarExpandedHeight
-
-            // isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND) ->
-
-            else -> TopAppBarDefaults.MediumAppBarExpandedHeight
-        }
-    }
 
 /** Extra padding to be applied to the [SegmentedPrefsScreen] */
 private val SettingsContentPadding: PaddingValues = PaddingValues(16.dp)
@@ -251,44 +232,28 @@ private fun SegmentedPrefsScope.mainPreference(
 }
 
 @Composable
-fun SettingsTopAppBar(
+private fun SettingsTopAppBar(
     modifier: Modifier = Modifier,
     @StringRes titleRes: Int,
     titleHorizontalAlignment: Alignment.Horizontal = Alignment.Start,
     navigationIcon: @Composable () -> Unit = {},
-    actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
-    val colors = TopAppBarDefaults.topAppBarColors(
-        containerColor = MaterialTheme.colorScheme.surface.copy(0.01f) // Nearly transparent
+    CollapsingTopAppBar(
+        modifier = modifier,
+        title = {
+            Text(
+                text = stringResource(id = titleRes),
+                modifier = Modifier.padding(start = 4.dp),
+                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.headlineSmall,
+            )
+        },
+        titleHorizontalAlignment = titleHorizontalAlignment,
+        navigationIcon = navigationIcon,
+        expandedHeight = TopAppBarDefaults.LargeAppBarExpandedHeight,
+        scrollBehavior = scrollBehavior,
     )
-    if (isWindowHeightCompact()) {
-        TopAppBar(
-            modifier = modifier,
-            title = { Text(text = stringResource(id = titleRes)) },
-            navigationIcon = navigationIcon,
-            actions = actions,
-            colors = colors,
-        )
-    } else {
-        CollapsingTopAppBar(
-            modifier = modifier,
-            title = {
-                Text(
-                    text = stringResource(id = titleRes),
-                    modifier = Modifier.padding(start = 4.dp),
-                    fontWeight = FontWeight.Medium,
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-            },
-            titleHorizontalAlignment = titleHorizontalAlignment,
-            navigationIcon = navigationIcon,
-            actions = actions,
-            expandedHeight = SettingsAppbarExpandHeight,
-            scrollBehavior = scrollBehavior,
-            colors = colors,
-        )
-    }
 }
 
 @Composable
@@ -303,11 +268,13 @@ fun <T> SettingsScaffold(
     snackbarHost: @Composable () -> Unit = { SwipeToDismissSnackbarHost(LocalSnackbarHostState.current) },
     content: SettingsSegmentedPrefsScope<T>.() -> Unit
 ) {
+    val isListDetail = isListDetail()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     MyScaffold(
         modifier = modifier,
         topBar = {
+            if (isListDetail) return@MyScaffold
             SettingsTopAppBar(
                 titleRes = titleRes,
                 titleHorizontalAlignment = titleHorizontalAlignment,
@@ -321,7 +288,7 @@ fun <T> SettingsScaffold(
         SegmentedPrefsScreen(
             modifier = Modifier
                 .fillMaxHeight()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+                .onCase(!isListDetail) { nestedScroll(scrollBehavior.nestedScrollConnection) },
             settings = settings,
             initialValue = initialValue,
             contentPadding = contentPadding + SettingsContentPadding,
@@ -340,11 +307,13 @@ fun SettingsScaffold(
     snackbarHost: @Composable () -> Unit = { SwipeToDismissSnackbarHost(LocalSnackbarHostState.current) },
     content: SegmentedPrefsScope.() -> Unit
 ) {
+    val isListDetail = isListDetail()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     MyScaffold(
         modifier = modifier,
         topBar = {
+            if (isListDetail) return@MyScaffold
             SettingsTopAppBar(
                 titleRes = titleRes,
                 titleHorizontalAlignment = titleHorizontalAlignment,
@@ -358,7 +327,7 @@ fun SettingsScaffold(
         SegmentedTextPrefsScreen(
             modifier = Modifier
                 .fillMaxHeight()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+                .onCase(!isListDetail) { nestedScroll(scrollBehavior.nestedScrollConnection) },
             contentPadding = contentPadding + SettingsContentPadding,
             content = content
         )

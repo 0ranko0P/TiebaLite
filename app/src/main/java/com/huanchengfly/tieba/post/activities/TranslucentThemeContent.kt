@@ -17,11 +17,14 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -65,6 +68,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -249,6 +253,7 @@ fun SideBySideWallpaper(
                     painter = painter,
                     contentDescription = null,
                     modifier = modifier,
+                    contentScale = ContentScale.Crop,
                     colorFilter = if (alpha < 1) {
                         ColorFilter.tint(Color.Black.copy(1 - alpha), BlendMode.SrcAtop)
                     } else {
@@ -308,6 +313,7 @@ private fun WallpaperOverlay(
         val scale = ScaleFactor(targetSize.width / screen.width, targetSize.height / screen.height)
         AboutPage(
             modifier = Modifier
+                .consumeWindowInsets(WindowInsets.safeDrawing)
                 .size(targetSize)
                 .requiredSize(screen)
                 .graphicsLayer {

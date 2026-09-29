@@ -12,7 +12,6 @@ import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.runtime.Composable
@@ -26,15 +25,10 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import androidx.navigation.Navigator
-import com.google.gson.reflect.TypeToken
-import com.huanchengfly.tieba.post.utils.GsonUtil
 import com.huanchengfly.tieba.post.utils.MD5Util
-import java.io.File
 import kotlin.math.roundToInt
 
 val PaddingNone = PaddingValues.Zero
-
-val NoWindowInsets = WindowInsets(0, 0, 0, 0)
 
 private const val NAVIGATION_MIN_DELAY_MS = 500
 
@@ -105,16 +99,6 @@ fun Int.pxToDpFloat(): Float =
 
 val IntSize.aspectRatio: Float?
     get() = (width / height.toFloat()).takeIf { it.fastIsFinite() }
-
-inline fun <reified Data> String.fromJson(): Data {
-    val type = object : TypeToken<Data>() {}.type
-    return GsonUtil.getGson().fromJson(this, type)
-}
-
-inline fun <reified Data> File.fromJson(): Data {
-    val type = object : TypeToken<Data>() {}.type
-    return GsonUtil.getGson().fromJson(reader(), type)
-}
 
 fun String.toMD5(): String = MD5Util.toMd5(this)
 

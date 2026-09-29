@@ -50,15 +50,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.theme.isDarkScheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
@@ -228,8 +227,7 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun UserPage(viewModel: UserViewModel = hiltViewModel()) {
-    val navigator = LocalNavController.current
+fun UserPage(viewModel: UserViewModel = hiltViewModel(), navigator: Navigator) {
     val colorScheme = MaterialTheme.colorScheme
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val windowSizeClass = LocalWindowAdaptiveInfo.current.windowSizeClass
@@ -259,7 +257,7 @@ fun UserPage(viewModel: UserViewModel = hiltViewModel()) {
                     InfoCard(
                         modifier = Modifier
                             .clickable {
-                                navigator.navigateDebounced(Destination.UserProfile(uid = account.uid))
+                                navigator.navigate(Destination.UserProfile(uid = account.uid))
                             }
                             .padding(horizontal = 16.dp, vertical = 16.dp),
                         userName = account.nickname ?: account.name,
@@ -277,7 +275,7 @@ fun UserPage(viewModel: UserViewModel = hiltViewModel()) {
                             fans = account.fans,
                             concerned = account.concerned,
                             onFollowClick = {
-                                navigator.navigateDebounced(Destination.UserFollowList(uid = account.uid))
+                                navigator.navigate(Destination.UserFollowList(uid = account.uid))
                             }
                         )
                     }
@@ -292,18 +290,18 @@ fun UserPage(viewModel: UserViewModel = hiltViewModel()) {
                     Spacer(modifier = Modifier.weight(0.7f))
                 }
                 UserMenu(
-                    onThreadStoreClicked = { navigator.navigateDebounced(Destination.ThreadStore) }.takeIf { account != null },
+                    onThreadStoreClicked = { navigator.navigate(Destination.ThreadStore) }.takeIf { account != null },
                     onHistoryClicked = {
-                        navigator.navigateDebounced(Destination.History)
+                        navigator.navigate(Destination.History)
                     },
-                    onThemeClicked = { navigator.navigateDebounced(Destination.AppTheme) },
+                    onThemeClicked = { navigator.navigate(Destination.AppTheme) },
                     onServiceCenterClicked = {
-                        navigator.navigateDebounced(Destination.WebView(viewModel.getUegServiceCenterUrl()))
+                        navigator.navigate(Destination.WebView(viewModel.getUegServiceCenterUrl()))
                     }.takeIf { account != null },
-                    onSettingsClicked = { navigator.navigateDebounced(SettingsDestination.Settings) },
-                    onAboutClicked = { navigator.navigateDebounced(SettingsDestination.About) },
+                    onSettingsClicked = { navigator.navigate(SettingsDestination.Settings) },
+                    onAboutClicked = { navigator.navigate(SettingsDestination.About) },
                     onNavigateUiSettings = {
-                        navigator.navigateDebounced(route = SettingsDestination.UI)
+                        navigator.navigate(SettingsDestination.UI)
                     }
                 )
                 if (isWindowHeightExpanded) {

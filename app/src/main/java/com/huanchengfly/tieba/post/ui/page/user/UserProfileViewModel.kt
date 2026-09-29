@@ -3,9 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.user
 import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
@@ -24,8 +22,12 @@ import com.huanchengfly.tieba.post.repository.BlockRepository
 import com.huanchengfly.tieba.post.repository.UserProfileRepository
 import com.huanchengfly.tieba.post.ui.models.user.PermissionList
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.page.user.UserProfileViewModel.Companion.UserProfileVmFactory
 import com.huanchengfly.tieba.post.utils.CoilUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +38,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 sealed interface UserBlockState {
 
@@ -67,15 +68,14 @@ data class UserProfileUiState(
     val error: Throwable? = null,
 ) : UiState
 
-@HiltViewModel
-class UserProfileViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = UserProfileVmFactory::class)
+class UserProfileViewModel @AssistedInject constructor(
     @param:ApplicationContext val context: Context,
+    @Assisted private val params: Destination.UserProfile,
     private val userProfileRepo: UserProfileRepository,
     private val blockRepo: BlockRepository,
-    savedStateHandle: SavedStateHandle
 ) : BaseStateViewModel<UserProfileUiState>() {
 
-    private val params = savedStateHandle.toRoute<Destination.UserProfile>()
     val uid: Long = params.uid
 
     val blockState: StateFlow<UserBlockState> = blockRepo.observeUser(uid)
@@ -115,13 +115,15 @@ class UserProfileViewModel @Inject constructor(
         }
     }
 
-    val imageProcessor: ImageProcessor by lazy {
+    private val _imageProcessor: Lazy<ImageProcessor> = lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             RenderEffectImageProcessor()
         } else {
             RenderScriptImageProcessor(context)
         }
     }
+    val imageProcessor: ImageProcessor
+        get() = _imageProcessor.value
 
     init {
         refreshInternal(forceRefresh = false)
@@ -236,11 +238,17 @@ class UserProfileViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
-        imageProcessor?.cleanup()
+        if (_imageProcessor.isInitialized()) {
+            imageProcessor.cleanup()
+        }
     }
 
     companion object {
         private const val TAG = "UserProfileViewModel"
+
+        @AssistedFactory
+        interface UserProfileVmFactory {
+            fun create(params: Destination.UserProfile): UserProfileViewModel
+        }
     }
 }

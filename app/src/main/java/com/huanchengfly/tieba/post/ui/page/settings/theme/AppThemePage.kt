@@ -111,7 +111,6 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.imageLoader
 import coil3.request.ImageRequest
@@ -120,6 +119,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity
 import com.huanchengfly.tieba.post.core.data.model.settings.Theme
 import com.huanchengfly.tieba.post.core.database.model.Account
+import com.huanchengfly.tieba.post.core.designsystem.component.NavigationDrawerItem
 import com.huanchengfly.tieba.post.theme.TiebaBlue
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.colorscheme.BlueColorScheme
@@ -133,9 +133,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.models.Like
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
-import com.huanchengfly.tieba.post.ui.page.main.NavigationDrawerItem
 import com.huanchengfly.tieba.post.ui.page.main.home.HistoryItem
 import com.huanchengfly.tieba.post.ui.page.main.iconRes
 import com.huanchengfly.tieba.post.ui.page.main.titleRes
@@ -226,7 +224,7 @@ private fun AppThemeSaveDialog(
 
 @Composable
 fun AppThemePage(
-    navigator: NavController = LocalNavController.current,
+    onBack: () -> Unit = {},
     viewModel: AppThemeViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -255,16 +253,18 @@ fun AppThemePage(
 
     val onSaveThemeClicked: () -> Unit = {
         saveThemeDialogState.show()
-        viewModel
-            .onSaveClicked(isFeatured = pagerState.currentTheme == ThemePage.Featured)
-            .invokeOnCompletion { navigator.navigateUp() }
+        viewModel.onSaveClicked(isFeatured = pagerState.currentTheme == ThemePage.Featured)
+            .invokeOnCompletion {
+                saveThemeDialogState.show = false
+                onBack()
+            }
     }
 
     if (saveThemeDialogState.show) {
         AppThemeSaveDialog(
             state = saveThemeDialogState,
             isSaving = uiState.savingTheme,
-            onDiscardClicked = navigator::navigateUp,
+            onDiscardClicked = onBack,
             onSaveClicked = onSaveThemeClicked
         )
     }
@@ -282,7 +282,7 @@ fun AppThemePage(
         topBar = {
             TitleCentredToolbar(
                 title = stringResource(id = R.string.title_theme),
-                navigationIcon = { BackNavigationIcon(onBackPressed = navigator::navigateUp) },
+                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
                 actions = {
                     val themeChanged by when (pagerState.currentTheme) {
                         ThemePage.Featured -> viewModel.isBuiltInThemeChanged.collectAsStateWithLifecycle()

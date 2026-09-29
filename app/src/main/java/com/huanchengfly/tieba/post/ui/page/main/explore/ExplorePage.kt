@@ -1,8 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -35,32 +34,24 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
-import androidx.navigation.NavController
-import androidx.navigation.NavOptions
-import androidx.navigation.Navigator
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
+import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
-import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
-import com.huanchengfly.tieba.post.ui.common.animateEnterExit
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
-import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.explore.ExploreType
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.Destination.HotTopicList
-import com.huanchengfly.tieba.post.ui.page.Destination.Search
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
-import com.huanchengfly.tieba.post.ui.page.consumeResult
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
-import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType
-import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.ui.page.main.OnMainNavigationScrollTopEvent
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
@@ -68,8 +59,6 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadResult
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadResultKey
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
@@ -83,6 +72,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
+import dev.chrisbanes.haze.HazeTint
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -102,34 +92,37 @@ class ThreadClickListeners(
     val onReplyClicked: (ThreadItem) -> Unit,
     val onAuthorClicked: (ThreadItem) -> Unit,
     val onForumClicked: (ThreadItem) -> Unit,
+    val onOriginThreadClicked: (OriginThreadInfo) -> Unit,
     val onNavigateHotTopicList: () -> Unit // Not a thread click listener, place here just for convenience
 )
 
 fun createThreadClickListeners(
-    onNavigate: (Destination, navOptions: NavOptions?, navigatorExtras: Navigator.Extras?) -> Unit
+    onNavigate: (Destination) -> Unit
 ) = ThreadClickListeners(
     onClicked = { thread ->
         val (forumId, _, _) = thread.simpleForum
-        onNavigate(Destination.Thread(threadId = thread.id, forumId), null, null)
+        onNavigate(Destination.Thread(threadId = thread.id, forumId))
     },
     onReplyClicked = { thread ->
         val (forumId, _, _) = thread.simpleForum
-        onNavigate(Destination.Thread(threadId = thread.id, forumId, scrollToReply = true), null, null)
+        onNavigate(Destination.Thread(threadId = thread.id, forumId, scrollToReply = true))
     },
     onAuthorClicked = { thread ->
-        val route = thread.run {
+        val navKey = thread.run {
             Destination.UserProfile(user = author, transitionKey = this.id.toString())
         }
-        onNavigate(route, null, null)
+        onNavigate(navKey)
     },
     onForumClicked = { thread ->
         val (_, forumName, forumAvatar) = thread.simpleForum
         val extraKey = thread.id.toString()
-        onNavigate(Destination.Forum(forumName, forumAvatar, extraKey), null, null)
+        onNavigate(Destination.Forum(forumName, forumAvatar, extraKey))
     },
-    onNavigateHotTopicList = {
-        onNavigate(HotTopicList, null, null)
-    }
+    onOriginThreadClicked = {
+        val navKey = Destination.Thread(threadId = it.tid.toLong(), forumId = it.fid)
+        onNavigate(navKey)
+    },
+    onNavigateHotTopicList = { onNavigate(Destination.HotTopicList) }
 )
 
 @Composable
@@ -174,15 +167,18 @@ private fun ExplorePageTab(
     }
 }
 
-// Note: Obtain Root AnimatedVisibilityScope by LocalAnimatedVisibilityScope.current
 @Composable
-fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
+fun AnimatedContentScope.ExplorePage(
+    loggedIn: Boolean,
+    navigator: Navigator,
+) {
     val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
     val coroutineScope = rememberCoroutineScope()
-    val navigator = LocalNavController.current
     val navigationSuiteType = calculateMainNavigationSuiteType()
     // Hide FAB on FloatingNavigationBarCompact
-    val isFloatingNavBarCompat = navigationSuiteType === MainNavigationSuiteType.FloatingNavigationBarCompact
+    val isFloatingNavBarCompat = navigationSuiteType === TbNavigationSuiteType.FloatingNavigationBarCompact
+    val isListDetail = isListDetail()
     val hazeState = LocalHazeState.current
     val sharedTransitionScope = LocalSharedTransitionScope.current
 
@@ -197,10 +193,14 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
     val listStates = rememberPagerListStates(pages.size)
 
     val scrollOrientationConnection = rememberScrollOrientationConnection()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = if (!isListDetail) TopAppBarDefaults.enterAlwaysScrollBehavior() else null
 
     // FAB visibility of each page
     var fabHideStates by remember(pages) { mutableStateOf(BooleanBitSet()) }
+
+    val threadClickListeners = remember(navigator) {
+        createThreadClickListeners(onNavigate = navigator::navigate)
+    }
 
     // Like event from explorePages
     onGlobalEvent<ThreadLikeUiEvent>(coroutineScope) {
@@ -209,7 +209,7 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
 
     OnMainNavigationScrollTopEvent<MainDestination.Explore>(
         coroutineScope = coroutineScope,
-        topAppBarState = scrollBehavior.state,
+        topAppBarState = scrollBehavior?.state,
         listState = { listStates.getOrNull(pagerState.currentPage) }
     )
 
@@ -219,8 +219,7 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
             TopAppBarPaged(
                 modifier = Modifier
                     .topAppBarBlurEffect(
-                        sharedTransitionScope = sharedTransitionScope,
-                        rootAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current,
+                        transitionTint = HazeTint(colorScheme.surface),
                         hazeState = hazeState,
                         blurEnabled = { !fabHideStates[pagerState.currentPage] || pagerState.isScrolling }
                     ),
@@ -232,7 +231,7 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
                     ActionItem(
                         icon = Icons.Rounded.Search,
                         contentDescription = R.string.title_search,
-                        onClick = { navigator.navigateDebounced(route = Search) }
+                        onClick = { navigator.navigate(key = Destination.Search) }
                     )
                 },
                 scrollBehavior = scrollBehavior,
@@ -263,7 +262,8 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
         floatingActionButtonPosition = if (isFloatingNavBarCompat) FabPosition.EndOverlay else FabPosition.End,
     ) { contentPadding ->
         Container(
-            modifier = Modifier.onNotNull(hazeState) { hazeSource(state = it.state) }
+            modifier = Modifier.onNotNull(hazeState) { hazeSource(state = it.state) },
+            fluid = isListDetail,
         ) {
             HorizontalPager(
                 state = pagerState,
@@ -275,7 +275,7 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
                 flingBehavior = PagerDefaults.flingBehavior(pagerState, snapPositionalThreshold = 0.75f)
             ) { index ->
                 // Attach ScrollBehavior connections
-                val modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                val modifier = scrollBehavior?.let { Modifier.nestedScroll(it.nestedScrollConnection) } ?: Modifier
                 val onHideFab: (Boolean) -> Unit = { hideFab ->
                     fabHideStates = fabHideStates.set(index, hideFab)
                 }
@@ -283,40 +283,40 @@ fun AnimatedVisibilityScope.ExplorePage(loggedIn: Boolean) {
 
                 when (pages[index]) {
                     ExploreType.CONCERN -> {
-                        ConcernPage(modifier, contentPadding, listState, navigator, onHideFab)
+                        ConcernPage(modifier, contentPadding, threadClickListeners, listState, onHideFab)
                     }
 
                     ExploreType.PERSONALIZED -> {
-                        PersonalizedPage(modifier, contentPadding, listState, navigator, onHideFab)
+                        PersonalizedPage(modifier, contentPadding, threadClickListeners, listState, onHideFab)
                     }
 
-                    ExploreType.HOT -> {
-                        HotPage(modifier, contentPadding, listState, navigator, onHideFab)
-                    }
+                    ExploreType.HOT -> HotPage(
+                        modifier = modifier,
+                        contentPadding = contentPadding,
+                        listState = listState,
+                        threadClickListeners = threadClickListeners,
+                        onNavigateHotTopic = { navigator.navigate(key = it) },
+                        onHideFab = onHideFab,
+                    )
                 }
             }
         }
     }
 }
 
-context(mainAnimatedContentScope: AnimatedVisibilityScope)
+context(animatedContentScope: AnimatedContentScope)
 fun Modifier.topAppBarBlurEffect(
-    sharedTransitionScope: SharedTransitionScope?,
-    rootAnimatedVisibilityScope: AnimatedVisibilityScope?,
+    transitionTint: HazeTint = HazeTint.Unspecified,
     hazeState: TbHazeState?,
     blurEnabled: () -> Boolean,
 ): Modifier = this then Modifier
-    .onNotNull(rootAnimatedVisibilityScope, sharedTransitionScope) { (rootAnimatedVisibilityScope, sharedTransitionScope) ->
-        animateEnterExit(
-            zIndexInOverlay = 1.0f,
-            animatedVisibilityScope = rootAnimatedVisibilityScope,
-            sharedTransitionScope = sharedTransitionScope
-        )
-    }
     .withNonNull(hazeState) {
         Modifier.defaultHazeEffect {
             // Disable background blur when MainNavHost transition is running
-            this.blurEnabled = !mainAnimatedContentScope.transition.isRunning && blurEnabled()
+            this.blurEnabled = !animatedContentScope.transition.isRunning && blurEnabled()
+            if (transitionTint !== HazeTint.Unspecified) {
+                this.fallbackTint = if (this.blurEnabled) HazeTint.Unspecified else transitionTint
+            }
         }
     }
 
@@ -331,17 +331,5 @@ fun LaunchedFabStateEffect(
 
     LaunchedEffect(noScrollBackward, onHideFab, isRefreshing, isError) {
         onHideFab(noScrollBackward || isRefreshing || isError)
-    }
-}
-
-@Composable
-inline fun <reified Route : Any> ConsumeThreadPageResult(
-    navigator: NavController,
-    crossinline onThreadResult: (threadId: Long, Like) -> Unit
-) {
-    LaunchedEffect(Unit) {
-        navigator.consumeResult<Route, ThreadResult>(ThreadResultKey)?.run {
-            onThreadResult(threadId, Like(liked, likes))
-        }
     }
 }

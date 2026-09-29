@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant.testColumn
 import com.huanchengfly.tieba.post.R
@@ -42,14 +41,11 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
-import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
-import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.CardHorizontalSpacing
@@ -74,8 +70,8 @@ val ThreadBlockedTip: @Composable BoxScope.() -> Unit = {
 fun PersonalizedPage(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
+    threadClickListeners: ThreadClickListeners,
     listState: LazyListState = rememberLazyListState(),
-    navigator: NavController,
     onHideFab: (Boolean) -> Unit,
     viewModel: PersonalizedViewModel = hiltViewModel(),
 ) {
@@ -101,12 +97,6 @@ fun PersonalizedPage(
             is CommonUiEvent.ToastError -> toastShort(R.string.toast_exception, it.message)
         }
     }
-
-    val threadClickListeners = remember(navigator) {
-        createThreadClickListeners(onNavigate = navigator::navigateDebounced)
-    }
-
-    ConsumeThreadPageResult<Destination.Main>(navigator, viewModel::onThreadResult)
 
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = PersonalizedUiState::isRefreshing,
@@ -170,6 +160,7 @@ fun PersonalizedPage(
                                 onClickReply = threadClickListeners.onReplyClicked,
                                 onClickUser = threadClickListeners.onAuthorClicked,
                                 onClickForum = threadClickListeners.onForumClicked,
+                                onClickOriginThread = threadClickListeners.onOriginThreadClicked,
                                 dislikeAction = {
                                     if (thread.dislikeResource.isNullOrEmpty()) return@FeedCard
                                     Dislike(

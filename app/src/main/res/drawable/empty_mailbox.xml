@@ -1,0 +1,33 @@
+<!--
+     Copyright 2026 Katerina Limpitsouni
+
+     https://undraw.co/license
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:height="94.5dp"
+    android:width="96dp"
+    android:viewportHeight="800"
+    android:viewportWidth="812.16">
+      
+    <path android:fillColor="#f2f2f2" android:pathData="M278,793c13,-11 21,-28 19,-45.3s-15,-32.5 -32,-36 -36,6 -41,23c-2.8,-31 -6,-64 -23,-91 -15,-24 -41,-42 -70,-45s-58,9 -76,31 -22,55 -10,81c9.12,19 26,33 44,44a280,280 0,0 0,192 42"/>
+      
+    <path android:fillColor="#fff" android:pathData="M30,578a530,530 0,0 1,74 73,530 530,0 0,1 83,139c1.5,4 -4,5 -6,2a526,526 0,0 0,-48 -90A528,528 0,0 0,26 583C23,580 27,576 30,578Z"/>
+      
+    <path android:fillColor="#f2f2f2" android:pathData="M258,794c-11,-9 -18,-24 -16,-39s13,-28 27,-31 31,5 35,19c2.4,-27 5,-55 19.5,-78 13,-21 35.4,-36 60,-38s50,7.4 65,27 19,47 8,69c-8,16 -22,28 -37,38a241,241 0,0 1,-165 36"/>
+      
+    <path android:fillColor="#fff" android:pathData="M424,635A398,398 0,0 0,307 793c-1,3 3.32,4 4.43,1A394,394 0,0 1,427 638C430,636 426,633 424,635Z"/>
+      
+    <path android:fillColor="#f2f2f2" android:pathData="M308,310m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0"/>
+      
+    <path android:fillColor="#f2f2f2" android:pathData="M153,136L499,136L499,155L197,155A135,135 0,0 0,62 290L62,506L24,506a6,6 0,0 1,-6 -6L18,272A135,135 0,0 1,153 136Z"/>
+      
+    <path android:fillColor="#3f3d56" android:pathData="M220,793L220,505h84L304,793a7,7 0,0 1,-7 7L227,800A7,7 0,0 1,220 793Z"/>
+      
+    <path android:fillColor="#3f3d56" android:pathData="M0,499L0,265A141,141 0,0 1,140 125L498,125L498,507L8,507a8,8 0,0 1,-8 -8ZM494,128L140,128A137,137 0,0 0,3 265L3,499a5,5 0,0 0,5 5L494,504Z"/>
+      
+    <path android:fillColor="#6c63ff" android:pathData="M308,336a29,29 0,0 1,-29 -29L279,97a5,5 0,0 0,-5 -5L160,92a8,8 0,0 1,-8 -8v-76a8,8 0,0 1,8 -8L329,0a8,8 0,0 1,8 8L337,306A29,29 0,0 1,308 336Z"/>
+      
+    <path android:fillColor="#3f3d56" android:pathData="M511,122h0a92,92 0,0 1,92 92L603,480L785,480a28,28 0,0 1,28 28L418,507v-294A92,92 0,0 1,511 122Z"/>
+
+    <path android:fillColor="#fff" android:pathData="M308,306.4m-11.35,0a11.35,11.35 0,1 1,23 0a11,11 0,1 1,-23 0"/>
+</vector>

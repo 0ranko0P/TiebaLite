@@ -26,7 +26,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,13 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant.testColumn
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
@@ -53,9 +50,8 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.explore.HotTab
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
-import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
@@ -76,8 +72,9 @@ fun HotPage(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
     listState: LazyListState = rememberLazyListState(),
-    navigator: NavController,
+    threadClickListeners: ThreadClickListeners,
     onHideFab: (Boolean) -> Unit,
+    onNavigateHotTopic: (Destination.HotTopicDetail) -> Unit,
     viewModel: HotViewModel = hiltViewModel()
 ) {
     val isRefreshing by viewModel.uiState.collectPartialAsState(
@@ -94,12 +91,6 @@ fun HotPage(
     viewModel.uiEvent.collectCommonUiEventWithLifecycle()
 
     LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
-
-    val threadClickListeners = remember(navigator) {
-        createThreadClickListeners(onNavigate = navigator::navigateDebounced)
-    }
-
-    ConsumeThreadPageResult<Destination.Main>(navigator, viewModel::onThreadResult)
 
     StateScreen(
         isLoading = isRefreshing,
@@ -143,7 +134,7 @@ fun HotPage(
                                     modifier = Modifier
                                         .padding(vertical = 8.dp)
                                         .clickable {
-                                            navigator.navigateDebounced(Destination.HotTopicDetail(topicId, topicName))
+                                            onNavigateHotTopic(Destination.HotTopicDetail(topicId, topicName))
                                         }
                                 ) {
                                     Text(
@@ -243,6 +234,7 @@ fun HotPage(
                             onClickReply = threadClickListeners.onReplyClicked,
                             onClickUser = threadClickListeners.onAuthorClicked,
                             onClickForum = threadClickListeners.onForumClicked,
+                            onClickOriginThread = threadClickListeners.onOriginThreadClicked,
                             cardDivider = index != threadList.lastIndex,
                         ) {
                             HotRankText(rank = index + 1, hotNum = thread.hotNum)

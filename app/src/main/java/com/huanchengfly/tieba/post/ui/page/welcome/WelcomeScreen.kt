@@ -63,7 +63,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import com.huanchengfly.tieba.post.R
@@ -76,7 +75,6 @@ import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.settings.collectSeeLzPreference
 import com.huanchengfly.tieba.post.ui.page.settings.darkImagePreference
 import com.huanchengfly.tieba.post.ui.page.settings.darkThemeModePreference
@@ -107,7 +105,12 @@ private fun PagerState.nextPage(scope: CoroutineScope) {
 }
 
 @Composable
-fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hiltViewModel()) {
+fun WelcomeScreen(
+    onNavigateAppTheme: () -> Unit,
+    onNavigateLogin: () -> Unit,
+    onNavigateMain: () -> Unit,
+    viewModel: WelcomeViewModel = hiltViewModel()
+) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -126,9 +129,7 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
     val pagerState = rememberPagerState { pages.size }
 
     fun finishSetup(login: Boolean) {
-        navController.navigate(route = if (login) Destination.Login else Destination.Main) {
-            popUpTo(navController.graph.id) { inclusive = true }
-        }
+        if (login) onNavigateLogin() else onNavigateMain()
         viewModel.onSetupFinished()
     }
 
@@ -201,9 +202,10 @@ fun WelcomeScreen(navController: NavController, viewModel: WelcomeViewModel = hi
 
                 R.string.welcome_habit -> HabitPage(habitSettings = settingsRepo.habitSettings)
 
-                R.string.title_settings_custom -> CustomPage(uiSettings = settingsRepo.uiSettings) {
-                    navController.navigate(route = Destination.AppTheme)
-                }
+                R.string.title_settings_custom -> CustomPage(
+                    uiSettings = settingsRepo.uiSettings,
+                    onThemeClicked = onNavigateAppTheme
+                )
 
                 R.string.welcome_completed -> CompletePage()
             }

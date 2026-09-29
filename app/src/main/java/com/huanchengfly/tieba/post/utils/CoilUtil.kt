@@ -11,8 +11,10 @@ import coil3.decode.BlackholeDecoder
 import coil3.decode.Decoder
 import coil3.imageLoader
 import coil3.request.CachePolicy
+import coil3.request.ErrorResult
 import coil3.request.ImageRequest
-import com.huanchengfly.tieba.post.arch.unsafeLazy
+import coil3.request.SuccessResult
+import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import okhttp3.internal.closeQuietly
 import java.io.File
 import java.io.IOException
@@ -47,8 +49,12 @@ object CoilUtil {
                 .data(url)
                 .downloadOnly()
                 .build()
-            imageLoader.execute(request)
-            snapshot = diskCache.openSnapshot(url)!!
+            val result = imageLoader.execute(request)
+            if (result is SuccessResult) {
+                snapshot = diskCache.openSnapshot(url)!!
+            } else {
+                throw (result as ErrorResult).throwable
+            }
         }
 
         return snapshot.data.toFile()

@@ -63,7 +63,7 @@ import com.huanchengfly.tieba.post.MacrobenchmarkConstant.testColumn
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.network.model.protos.PollOption
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
@@ -74,7 +74,6 @@ import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.CopyText
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.subposts.PostLikeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
@@ -292,7 +291,7 @@ fun StateScreenScope.ThreadContent(
     topAppBarScrollBehavior: TopAppBarScrollBehavior,
     useStickyHeader: Boolean // Bug: StickyHeader doesn't respect content padding
 ) {
-    val navigator = LocalNavController.current
+    val navigator = LocalNavigator.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val collectPid = state.thread?.collectMarkPid ?: -1
     val latestPosts = state.latestPosts
@@ -333,7 +332,7 @@ fun StateScreenScope.ThreadContent(
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                         ) {
                             val threadId = info.item.tid.toLong()
-                            navigator.navigateDebounced(route = Thread(threadId, forumId = info.get { fid }))
+                            navigator.navigate(Thread(threadId, forumId = info.get { fid }))
                         }
                     }
 
@@ -460,12 +459,10 @@ private fun LazyListScope.postTipItem(isDesc: Boolean) = this.item("LatestPostsT
 
 @Composable
 private fun PostCardItem(viewModel: ThreadViewModel, post: PostData, localUid: Long?, collectPid: Long) {
-    val navigator = LocalNavController.current
+    val navigator = LocalNavigator.current
     val loggedIn = localUid != null
     val onUserClickedListener: () -> Unit = {
-        navigator.navigateDebounced(
-            route = UserProfile(user = post.author, transitionKey = post.id.toString())
-        )
+        navigator.navigate(UserProfile(user = post.author, transitionKey = post.id.toString()))
     }
 
     if (loggedIn) {
@@ -612,7 +609,7 @@ fun PostCard(
     onMenuDeleteClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavController.current
+    val navigator = LocalNavigator.current
 
     val hasPadding = post.floor > 1 && !immersiveMode
     val paddingModifier = if (hasPadding) Modifier.padding(start = Sizes.Small + 8.dp) else Modifier
@@ -641,7 +638,7 @@ fun PostCard(
                     onMenuCopyClick(if (post.floor == 1) post.title + "\n" + post.plainText else post.plainText)
                 }
                 TextMenuItem(text = R.string.title_report) {
-                    navigator.navigateDebounced(Destination.Report(postId = post.id))
+                    navigator.navigate(Destination.Report(postId = post.id))
                 }
                 if (onMenuFavoriteClick != null) {
                     TextMenuItem(
@@ -757,7 +754,7 @@ private fun SubPostItem(
     onOpenSubPosts: (Long) -> Unit,
     onMenuCopyClick: (String) -> Unit,
 ) {
-    val navigator = LocalNavController.current
+    val navigator = LocalNavigator.current
     val menuState = rememberMenuState()
 
     LongClickMenu(
@@ -770,7 +767,7 @@ private fun SubPostItem(
                 onMenuCopyClick(subPost.plainText)
             }
             TextMenuItem(text = R.string.title_report) {
-                navigator.navigateDebounced(Destination.Report(postId = subPost.id))
+                navigator.navigate(Destination.Report(postId = subPost.id))
             }
         },
         indication = null,

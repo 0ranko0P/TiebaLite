@@ -33,7 +33,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.core.data.model.HmTime
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.TimePickerDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -535,19 +534,17 @@ fun <T> SegmentedPrefsScreen(
         context = Dispatchers.IO
     )
 
-    Container {
-        LazyColumn(
-            modifier = modifier,
-            contentPadding = contentPadding,
-            verticalArrangement = verticalArrangement,
-        ) {
-            val scope = SettingsSegmentedPrefsScopeImpl(
-                lazyListScope = this,
-                state = settingsState,
-                saver = settingsSaver
-            )
-            scope.latestContent()
-        }
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = contentPadding,
+        verticalArrangement = verticalArrangement,
+    ) {
+        val scope = SettingsSegmentedPrefsScopeImpl(
+            lazyListScope = this,
+            state = settingsState,
+            saver = settingsSaver
+        )
+        scope.latestContent()
     }
 }
 
@@ -559,15 +556,12 @@ fun SegmentedTextPrefsScreen(
     content: SegmentedPrefsScope.() -> Unit
 ) {
     val latestContent by rememberUpdatedState(content)
-
-    Container {
-        LazyColumn(
-            modifier = modifier,
-            contentPadding = contentPadding,
-            verticalArrangement = verticalArrangement,
-        ) {
-            SegmentedPrefsScopeImpl(lazyListScope = this).latestContent()
-        }
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = contentPadding,
+        verticalArrangement = verticalArrangement,
+    ) {
+        SegmentedPrefsScopeImpl(lazyListScope = this).latestContent()
     }
 }
 

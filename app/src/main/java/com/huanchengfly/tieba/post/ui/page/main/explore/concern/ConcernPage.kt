@@ -7,18 +7,13 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.navigateDebounced
-import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
-import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
@@ -30,8 +25,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 fun ConcernPage(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
+    threadClickListeners: ThreadClickListeners,
     listState: LazyListState = rememberLazyListState(),
-    navigator: NavController,
     onHideFab: (Boolean) -> Unit,
     viewModel: ConcernViewModel = hiltViewModel(),
 ) {
@@ -51,12 +46,6 @@ fun ConcernPage(
     viewModel.uiEvent.collectCommonUiEventWithLifecycle()
 
     LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError = error != null)
-
-    val threadClickListeners = remember(navigator) {
-        createThreadClickListeners(onNavigate = navigator::navigateDebounced)
-    }
-
-    ConsumeThreadPageResult<Destination.Main>(navigator, viewModel::onThreadResult)
 
     StateScreen(
         isEmpty = isEmpty,
@@ -90,6 +79,7 @@ fun ConcernPage(
                         onClickReply = threadClickListeners.onReplyClicked,
                         onClickUser = threadClickListeners.onAuthorClicked,
                         onClickForum = threadClickListeners.onForumClicked,
+                        onClickOriginThread = threadClickListeners.onOriginThreadClicked,
                         cardDivider = i < data.lastIndex
                     )
                 }

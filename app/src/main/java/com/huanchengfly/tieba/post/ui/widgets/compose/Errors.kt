@@ -36,11 +36,13 @@ import com.huanchengfly.tieba.post.core.network.exception.TiebaApiException
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
+import java.net.ConnectException
 
 @Composable
 fun TipScreen(
@@ -52,7 +54,7 @@ fun TipScreen(
     actions: (@Composable () -> Unit)? = null,
 ) {
     val typography = MaterialTheme.typography
-    val widthFraction = if (isWindowWidthCompact() || isWindowHeightCompact()) 0.9f else 0.5f
+    val widthFraction = if (isListDetail() || isWindowWidthCompact() || isWindowHeightCompact()) 0.9f else 0.5f
 
     Column(
         modifier = modifier
@@ -202,7 +204,8 @@ private fun toKnownErrorType(context: Context, err: Throwable?): ErrorType? {
     return when (err) {
         null -> ErrorType(R.string.title_unknown_error, context.getString(R.string.message_unknown_error), R.raw.lottie_bug_hunting)
 
-        is NoConnectivityException -> ErrorType(
+        is NoConnectivityException,
+        is ConnectException -> ErrorType(
             title = R.string.title_no_internet_connectivity,
             message = context.getString(R.string.message_no_internet_connectivity, err.getErrorMessage()),
             lottieResId = R.raw.lottie_no_internet

@@ -20,13 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.PaddingNone
-import com.huanchengfly.tieba.post.ui.models.user.UserLikeForum
-import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.ui.page.Destination.Forum
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.ui.models.user.UserLikeForum
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -42,10 +41,9 @@ fun UserLikeForumPage(
     uid: Long,
     fluid: Boolean = false,
     lazyListState: LazyListState = rememberLazyListState(),
+    onNavigate: (navKey: Destination) -> Unit = {},
     viewModel: UserLikeForumViewModel = pageViewModel(),
 ) {
-    val navigator = LocalNavController.current
-
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(UserLikeForumUiIntent.Refresh(uid))
         viewModel.initialized = true
@@ -105,7 +103,7 @@ fun UserLikeForumPage(
             ) {
                 items(items = forums, key = { it.id }) { forum ->
                     UserLikeForumItem(Modifier.fillMaxWidth(), item = forum) {
-                        forum.name.let { navigator.navigate(Forum(forumName = it)) }
+                        onNavigate(Destination.Forum(forumName = forum.name))
                     }
                 }
             }

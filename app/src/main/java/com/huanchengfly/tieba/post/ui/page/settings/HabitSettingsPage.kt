@@ -18,8 +18,8 @@ import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
 import com.huanchengfly.tieba.post.core.data.model.settings.ImageLoadType
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.WaterType
-import com.huanchengfly.tieba.post.ui.icons.Autoplay
-import com.huanchengfly.tieba.post.ui.icons.PageHeader
+import com.huanchengfly.tieba.post.core.designsystem.icon.PageHeader
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegmentedPrefsScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.toggleablePreference
@@ -60,7 +60,7 @@ fun HabitSettingsPage(
             toggleablePreference(
                 property = HabitSettings::videoAutoplay,
                 title = R.string.settings_video_autoplay,
-                leadingIcon = Icons.Rounded.Autoplay,
+                leadingIcon = TbIcons.Autoplay,
                 enabled = !currentPreference.hideMedia,
             )
         }

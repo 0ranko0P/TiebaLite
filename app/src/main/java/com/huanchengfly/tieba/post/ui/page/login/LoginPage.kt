@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.webkit.CookieManager
 import android.webkit.WebView
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
@@ -19,10 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
-import com.huanchengfly.tieba.post.components.SessionManager
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.ui.page.webview.WebviewTopAppBar
@@ -46,9 +43,8 @@ private const val LOGIN_URL =
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun LoginPage(
-    navigator: NavController,
+    onBack: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel(),
-    onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -118,8 +114,8 @@ fun LoginPage(
                     }
                 },
                 onDispose = TiebaWebView::dispose,
-                client = remember(navigator) {
-                    LoginWebViewClient(context, coroutineScope, viewModel::onLogin)
+                client = remember {
+                    LoginWebViewClient(context, coroutineScope, onLoggIn = viewModel::onLogin)
                 },
             )
         }
@@ -132,8 +128,6 @@ fun LoginPage(
             }
         }
     }
-
-    BackHandler(onBack = onBack) // Navigate to main page on setup
 }
 
 private class LoginWebViewClient(

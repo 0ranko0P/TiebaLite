@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.view.View
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -94,22 +93,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.widget.doAfterTextChanged
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.page.Destination.Reply
+import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.EMOJI
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.IMAGE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.NONE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyViewModel.Companion.MAX_SELECTABLE_IMAGE
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyViewModel.Companion.ReplyVmFactory
 import com.huanchengfly.tieba.post.ui.utils.imeNestedScroll
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BaseTextField
@@ -132,7 +132,6 @@ import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.keyboardAnimationHeight
 import com.huanchengfly.tieba.post.utils.keyboardMaxHeight
 import com.huanchengfly.tieba.post.utils.showKeyboard
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -156,9 +155,11 @@ private val threadTitleTextStyle: TextStyle
 
 @Composable
 fun ReplyPageBottomSheet(
-    params: Reply,
+    params: Destination.Reply,
     onBack: () -> Unit,
-    viewModel: ReplyViewModel = pageViewModel(),
+    viewModel: ReplyViewModel = hiltViewModel<ReplyViewModel, ReplyVmFactory> { factory ->
+        factory.create(params)
+    },
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -173,11 +174,9 @@ fun ReplyPageBottomSheet(
             ReplyPageContent(
                 viewModel = viewModel,
                 onBack = onBack,
-                forumName = params.forumName,
                 postId = params.postId,
                 subPostId = params.subPostId,
                 replyUserName = params.replyUserName,
-                tbs = params.tbs
             )
         }
     }
@@ -188,71 +187,45 @@ fun ReplyPageBottomSheet(
 private fun ReplyPageContent(
     viewModel: ReplyViewModel,
     onBack: () -> Unit,
-    forumName: String,
     postId: Long? = null,
     subPostId: Long? = null,
     replyUserName: String? = null,
-    tbs: String? = null,
 ) {
     val haptic = LocalHapticFeedback.current
     val pickMediasLauncher = rememberLauncherForActivityResult(PickMultipleVisualMedia(MAX_SELECTABLE_IMAGE)) { uris ->
         if (uris.isEmpty()) return@rememberLauncherForActivityResult
-        viewModel.send(ReplyUiIntent.AddImage(uris.map { it.toString() }))
+        viewModel.onAddImage(uris)
     }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val account = LocalAccount.current
-    val curTbs = tbs ?: account?.tbs.orEmpty()
     val colors = MaterialTheme.colorScheme
 
-    val isUploading by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::isUploading,
-        initial = false
-    )
-    val isSending by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::isSending,
-        initial = false
-    )
-    val isReplying by remember { derivedStateOf { isUploading || isSending } }
-    val selectedImageList by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::selectedImageList,
-        initial = persistentListOf()
-    )
-    val isOriginImage by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::isOriginImage,
-        initial = false
-    )
-
-    val topTitle = when (viewModel.replyType) {
-        ReplyType.TOPIC_THREAD -> context.getString(R.string.title_thread)
-        else -> context.getString(R.string.title_reply)
-    }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isTopicThread = viewModel.isTopicThread
 
     var inputLength by remember { mutableIntStateOf(0) }
     var editTextView by remember { mutableStateOf<UndoableEditText?>(null) }
     val (threadTitle, setThreadTitle) = remember { mutableStateOf("") }
 
-    viewModel.onEvent<CommonUiEvent.Toast> {
-        Toast.makeText(context, it.message, it.length).show()
-    }
+    viewModel.uiEvent.collectUiEventWithLifecycle {
+        when (it) {
+            is ReplyUiEvent.ReplySuccess -> {
+                if (it.expInc.isEmpty()) {
+                    toastShort(R.string.toast_add_thread_success_default)
+                } else {
+                    toastShort(R.string.toast_reply_success, it.expInc)
+                }
+                viewModel.deleteDraft()
+                onBack()
+            }
 
-    viewModel.onEvent<ReplyUiEvent.ReplySuccess> {
-        if (it.expInc.isEmpty()) {
-            context.toastShort(R.string.toast_add_thread_success_default)
-        } else {
-            context.toastShort(R.string.toast_reply_success, it.expInc)
-        }
-        viewModel.deleteDraft()
-        onBack()
-    }
+            is ReplyUiEvent.ReplyFailure -> toastShort(R.string.toast_reply_failed, it.code, it.message)
 
-    var waitUploadSuccessToSend by remember { mutableStateOf(false) }
-    viewModel.onEvent<ReplyUiEvent.UploadSuccess> {
-        if (waitUploadSuccessToSend) {
-            waitUploadSuccessToSend = false
-            viewModel.onSendReplyWithImage(it.resultList, threadTitle, curTbs)
+            is ReplyUiEvent.UploadFailure -> toastShort(R.string.toast_upload_image_failed, it.message)
+
+            is CommonUiEvent.Toast -> toastShort(it.message)
         }
     }
 
@@ -329,7 +302,10 @@ private fun ReplyPageContent(
                 Spacer(modifier = Modifier.width(8.dp))
             }
             Text(
-                text = topTitle,
+                text = when (viewModel.replyType) {
+                    ReplyType.TOPIC_THREAD -> context.getString(R.string.title_thread)
+                    else -> context.getString(R.string.title_reply)
+                },
                 modifier = Modifier.weight(1f),
                 fontWeight = FontWeight.Bold
             )
@@ -424,17 +400,16 @@ private fun ReplyPageContent(
 
         ImeActionRow(
             onPanelClicked = ::switchToPanel,
-            selectedImageProvider = { selectedImageList }.takeIf { postId == null || postId == 0L }, // Not reply post
-            isReplying = { isReplying },
+            selectedImageSize = { uiState.selectedImageList.size }.takeIf { postId == null || postId == 0L }, // Not reply post
+            isReplying = uiState.isReplying(),
             canReply = {
-                inputLength > 0 || selectedImageList.isNotEmpty()
+                inputLength > 0 || uiState.selectedImageList.isNotEmpty()
             },
             onReplyClicked = {
-                if (selectedImageList.isEmpty()) {
-                    viewModel.onSendReply(threadTitle, curTbs)
+                if (uiState.selectedImageList.isEmpty()) {
+                    viewModel.onSendReply(threadTitle)
                 } else {
-                    waitUploadSuccessToSend = true
-                    viewModel.send(ReplyUiIntent.UploadImages(forumName, selectedImageList, isOriginImage))
+                    viewModel.onSendReplyWithImage(threadTitle)
                 }
             }
         )
@@ -473,17 +448,13 @@ private fun ReplyPageContent(
 
                 IMAGE -> {
                     ImagePanel(
-                        selectedImages = selectedImageList,
+                        selectedImages = uiState.selectedImageList,
                         onAddImageClicked = {
                             pickMediasLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
                         },
-                        onRemoveImage = {
-                            viewModel.send(ReplyUiIntent.RemoveImage(it))
-                        },
-                        isOriginImage = isOriginImage,
-                        onIsOriginImageChange = {
-                            viewModel.send(ReplyUiIntent.ToggleIsOriginImage(it))
-                        },
+                        onRemoveImage = viewModel::onRemoveImage,
+                        isOriginImage = uiState.isOriginImage,
+                        onIsOriginImageChanged = viewModel::onIsOriginImageChanged,
                         modifier = Modifier.height(panelHeightAni)
                     )
                 }
@@ -539,8 +510,8 @@ private fun ThreadTitleTextField(
 private fun ImeActionRow(
     modifier: Modifier = Modifier,
     onPanelClicked: (ReplyPanelType) -> Unit = {},
-    selectedImageProvider: (() -> List<String>)?, // Null to disable ImagePanel
-    isReplying: () -> Boolean = { false },
+    selectedImageSize: (() -> Int)?, // Null to disable ImagePanel
+    isReplying: Boolean = false,
     canReply: () -> Boolean = { true },
     onReplyClicked: () -> Unit = {}
 ) {
@@ -559,7 +530,7 @@ private fun ImeActionRow(
             )
         }
 
-        if (selectedImageProvider != null) {
+        if (selectedImageSize != null) {
             Box (
                 modifier = Modifier
                     .size(size = Sizes.Tiny)
@@ -567,12 +538,11 @@ private fun ImeActionRow(
             ) {
                 BadgedBox(
                     badge = {
-                        val selectedImageList = selectedImageProvider()
-                        if (selectedImageList.isNotEmpty()) {
+                        if (selectedImageSize() > 0) {
                             Badge(
                                 containerColor = colorScheme.primary,
                                 contentColor = colorScheme.onPrimary,
-                                content = { Text(text = selectedImageList.size.toString()) }
+                                content = { Text(text = selectedImageSize().toString()) }
                             )
                         }
                     }
@@ -596,7 +566,7 @@ private fun ImeActionRow(
 //                )
 //            }
         Spacer(modifier = Modifier.weight(1f))
-        if (isReplying()) {
+        if (isReplying) {
             CircularProgressIndicator(
                 modifier = Modifier.size(Sizes.Tiny),
                 strokeWidth = 2.dp,
@@ -648,11 +618,11 @@ private fun EmoticonPanel(
 
 @Composable
 private fun ImagePanel(
-    selectedImages: List<String>,
+    selectedImages: List<Uri>,
     onAddImageClicked: () -> Unit,
     onRemoveImage: (Int) -> Unit,
     isOriginImage: Boolean,
-    onIsOriginImageChange: (Boolean) -> Unit,
+    onIsOriginImageChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val iconButtonColors = IconButtonDefaults.iconButtonColors(
@@ -721,12 +691,12 @@ private fun ImagePanel(
             modifier = Modifier
                 .padding(vertical = 16.dp)
                 .clickableNoIndication {
-                    onIsOriginImageChange(!isOriginImage)
+                    onIsOriginImageChanged(!isOriginImage)
                 },
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Checkbox(checked = isOriginImage, onCheckedChange = onIsOriginImageChange)
+            Checkbox(checked = isOriginImage, onCheckedChange = onIsOriginImageChanged)
             Text(text = stringResource(id = R.string.origin_image))
         }
     }
@@ -828,8 +798,8 @@ private fun ImeActionRowPreview() = TiebaLiteTheme {
     Surface(modifier = Modifier.padding(12.dp)) {
         ImeActionRow(
             onPanelClicked = {},
-            selectedImageProvider = null,
-            isReplying = { true },
+            selectedImageSize = null,
+            isReplying = true,
         )
     }
 }
@@ -839,11 +809,11 @@ private fun ImeActionRowPreview() = TiebaLiteTheme {
 private fun ImagePanelPreview() = TiebaLiteTheme {
     Surface(modifier = Modifier.height(260.dp)) { // Normal keyboard height
         ImagePanel(
-            selectedImages = listOf("null.jpg"),
+            selectedImages = emptyList(),
             onAddImageClicked = {},
             onRemoveImage = {},
             isOriginImage = false,
-            onIsOriginImageChange = {}
+            onIsOriginImageChanged = {}
         )
     }
 }

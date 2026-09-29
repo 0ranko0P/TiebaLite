@@ -22,7 +22,7 @@
   <tr>
    <td><code>core:data</code>
    </td>
-   <td>Fetching app data from multiple sources, shared by different features. <code>当前迁移进度: 1%</code>
+   <td>Fetching app data from multiple sources, shared by different features. <code>当前迁移进度: 2%</code>
    </td>
   </tr>
   <tr>
@@ -32,10 +32,22 @@
    </td>
   </tr>
   <tr>
+   <td><code>core:designsystem</code>
+   </td>
+   <td>Design system which includes Core UI components (many of which are customized Material 3 components), app theme and icons.
+   </td>
+  </tr>
+  <tr>
    <td>core:network
    </td>
    <td>Making network requests and handling responses from a remote data source.
    </td>
+  </tr>
+  <tr>
+   <td><code>core:ui</code>
+   </td>
+   <td>Composite UI components and resources used by feature modules. Unlike the <code>designsystem</code> module, it is dependent on the data layer since it renders models.
+    <code>当前迁移进度: ?</code>
   </tr>
   <tr>
    <td><code>...</code>

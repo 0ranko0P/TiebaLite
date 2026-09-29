@@ -46,18 +46,17 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.forum.searchpost.ForumSearchPostViewModel.Companion.ForumSearchPostVmFactory
 import com.huanchengfly.tieba.post.ui.page.search.SearchHistoryList
 import com.huanchengfly.tieba.post.ui.page.search.SearchUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
@@ -78,8 +77,11 @@ import kotlinx.collections.immutable.persistentMapOf
 @Composable
 fun ForumSearchPostPage(
     forumName: String,
-    navigator: NavController,
-    viewModel: ForumSearchPostViewModel = hiltViewModel(),
+    forumId: Long,
+    navigator: Navigator,
+    viewModel: ForumSearchPostViewModel = hiltViewModel<ForumSearchPostViewModel, ForumSearchPostVmFactory> {
+        it.create(forumName, forumId)
+    },
 ) {
     val context = LocalContext.current
     val snackbarHostState = rememberSnackbarHostState()
@@ -128,14 +130,14 @@ fun ForumSearchPostPage(
     }
 
     val threadClickListener: (SearchThreadInfo) -> Unit = {
-        val route = when {
+        val navKey = when {
             it.postInfoContent != null -> SubPosts(threadId = it.tid, subPostId = it.cid)
 
             it.mainPostTitle != null -> Thread(threadId = it.tid, postId = it.pid, scrollToReply = true)
 
             else -> Thread(threadId = it.tid)
         }
-        navigator.navigateDebounced(route)
+        navigator.navigate(navKey)
     }
 
     BlurScaffold(
@@ -217,38 +219,36 @@ fun ForumSearchPostPage(
                     onRefresh = viewModel::onRefresh,
                     contentPadding = contentPadding
                 ) {
-                    ProvideNavigator(navigator = navigator) {
-                        SwipeUpLazyLoadColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .nestedScroll(scrollBehavior.nestedScrollConnection),
-                            contentPadding = contentPadding,
-                            isLoading = isLoadingMore,
-                            onLazyLoad = viewModel::onLoadMore.takeIf { hasMore },
-                            bottomIndicator = defaultBottomIndicator
-                        ) {
-                            itemsIndexed(data) { index, item ->
-                                if (index > 0) {
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                }
-                                SearchThreadItem(
-                                    item = item,
-                                    onClick = threadClickListener,
-                                    onValidUserClick = {
-                                        val transitionKey = item.lazyListKey.toString()
-                                        navigator.navigateDebounced(UserProfile(item.author, transitionKey))
-                                    },
-                                    onForumClick = null, // Hide forum info
-                                    onQuotePostClick = {
-                                        navigator.navigateDebounced(
-                                            Thread(threadId = item.tid, postId = item.pid, scrollToReply = true)
-                                        )
-                                    },
-                                    onMainPostClick = {
-                                        navigator.navigateDebounced(Thread(threadId = item.tid))
-                                    }
-                                )
+                    SwipeUpLazyLoadColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                        contentPadding = contentPadding,
+                        isLoading = isLoadingMore,
+                        onLazyLoad = viewModel::onLoadMore.takeIf { hasMore },
+                        bottomIndicator = defaultBottomIndicator
+                    ) {
+                        itemsIndexed(data) { index, item ->
+                            if (index > 0) {
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                             }
+                            SearchThreadItem(
+                                item = item,
+                                onClick = threadClickListener,
+                                onValidUserClick = {
+                                    val transitionKey = item.lazyListKey.toString()
+                                    navigator.navigate(UserProfile(item.author, transitionKey))
+                                },
+                                onForumClick = null, // Hide forum info
+                                onQuotePostClick = {
+                                    navigator.navigate(
+                                        Thread(threadId = item.tid, postId = item.pid, scrollToReply = true)
+                                    )
+                                },
+                                onMainPostClick = {
+                                    navigator.navigate(Thread(threadId = item.tid))
+                                }
+                            )
                         }
                     }
                 }

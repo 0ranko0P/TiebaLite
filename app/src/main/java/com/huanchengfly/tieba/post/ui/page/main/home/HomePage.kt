@@ -1,8 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page.main.home
 
 import androidx.activity.compose.ReportDrawnWhen
+import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -43,6 +44,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,6 +52,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.derivedMediaQuery
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -70,6 +73,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
+import androidx.window.core.layout.WindowSizeClass
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -79,24 +83,22 @@ import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.core.database.model.History
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.WidthSizeClasses
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
+import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.SearchToolbarSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
-import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
-import com.huanchengfly.tieba.post.ui.common.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.models.LikedForum
-import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
-import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.ui.page.main.OnMainNavigationScrollTopEvent
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
@@ -122,6 +124,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeSource
 import kotlin.random.Random
 
@@ -147,6 +150,7 @@ private fun DummySearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
+            .widthIn(max = 480.dp)
             .fillMaxWidth()
             .then(modifier),
         shape = MaterialTheme.shapes.small,
@@ -392,17 +396,19 @@ private sealed interface ForumType {
     object GridItem: ForumType
 }
 
-// Note: Obtain Root AnimatedVisibilityScope by LocalAnimatedVisibilityScope.current
 @Composable
-fun AnimatedVisibilityScope.HomePage(
+fun AnimatedContentScope.HomePage(
+    onExploreClicked: () -> Unit = {},
+    onLoginClicked: () -> Unit,
+    onSearchClicked: () -> Unit,
+    onForumClicked: (LikedForum) -> Unit,
+    onHistoryClicked: (History) -> Unit,
     viewModel: HomeViewModel = hiltViewModel<HomeViewModel>(),
-    onOpenExplore: () -> Unit = {},
 ) {
     val loggedIn = LocalAccount.current != null
     val hazeState = LocalHazeState.current
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val context = LocalContext.current
-    val navigator = LocalNavController.current
     val gridState = rememberLazyGridState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -424,17 +430,36 @@ fun AnimatedVisibilityScope.HomePage(
     MyScaffold(
         useMD2Layout = hazeState == null,
         topBar = {
+            val searchBoxMovableContent = remember { movableContentOf {
+                DummySearchBox(
+                    modifier = Modifier.localSharedBounds(SearchToolbarSharedBoundsKey, zIndexInOverlay = 2.0f),
+                    onClick = onSearchClicked
+                )
+            } }
+            val expandedSearch by derivedMediaQuery {
+                windowWidth <= WindowSizeClass.WidthSizeClasses.Medium
+            }
+
             TopAppBarPaged(
                 modifier = Modifier
                     .topAppBarBlurEffect(
-                        sharedTransitionScope = sharedTransitionScope,
-                        rootAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current,
+                        transitionTint = HazeTint(MaterialTheme.colorScheme.surface),
                         hazeState = hazeState,
                         blurEnabled = { gridState.canScrollBackward || scrollBehavior.isOverlapping }
                     ),
-                title = { Text(text = stringResource(R.string.title_main)) },
+                title = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(text = stringResource(R.string.title_main))
+                        if (!expandedSearch) {
+                            searchBoxMovableContent()
+                        }
+                    }
+                },
                 navigationIcon = {
-                    AccountNavIconIfCompact(onLoginClicked = { navigator.navigate(Destination.Login) })
+                    AccountNavIconIfCompact(onLoginClicked)
                 },
                 actions = {
                     if (loggedIn) {
@@ -459,11 +484,10 @@ fun AnimatedVisibilityScope.HomePage(
                     sharedTransitionScope?.isTransitionActive != true && !transition.isRunning && gridState.canScrollBackward
                 },
             ) {
-                DummySearchBox(
-                    modifier = Modifier.localSharedBounds(key = SearchToolbarSharedBoundsKey, zIndexInOverlay = 2.0f),
-                    onClick = { navigator.navigateDebounced(route = Destination.Search) }
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+                if (expandedSearch) {
+                    searchBoxMovableContent()
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
             }
         },
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
@@ -484,14 +508,6 @@ fun AnimatedVisibilityScope.HomePage(
             if (listSingle) GridCells.Fixed(1) else GridCells.Adaptive(180.dp)
         }
 
-        // Initialize click listeners now
-        val onForumClickedListener: (LikedForum) -> Unit = {
-            navigator.navigateDebounced(route = Destination.Forum(forumName = it.name, avatar = it.avatar))
-        }
-        val onHistoryClickedListener: (History) -> Unit = {
-            navigator.navigateDebounced(route = Destination.Forum(forumName = it.name))
-        }
-
         val onUnfollow: (LikedForum) -> Unit = {
             unfollowForum = it
             confirmUnfollowDialog.show()
@@ -510,16 +526,14 @@ fun AnimatedVisibilityScope.HomePage(
             isLoading = uiState.isLoading,
             onReload = viewModel::onRefresh.takeIf { loggedIn },
             emptyScreen = {
-                EmptyScreen(onExploreClicked = onOpenExplore)
+                EmptyScreen(onExploreClicked = onExploreClicked)
             },
             loadingScreen = {
                 HomePageSkeletonScreen(listSingle = listSingle, gridCells = gridCells)
             },
             errorScreen = {
                 if (uiState.error is TiebaNotLoggedInException) {
-                    GuestScreen(onExploreClicked = onOpenExplore) {
-                        navigator.navigateDebounced(Destination.Login)
-                    }
+                    GuestScreen(onExploreClicked = onExploreClicked, onLoginClicked = onLoginClicked)
                 } else  {
                     ErrorScreen(error = uiState.error)
                 }
@@ -542,7 +556,7 @@ fun AnimatedVisibilityScope.HomePage(
                 ) {
                     historyForums?.takeUnless { it.isEmpty() }?.let {
                         item(key = ForumType.History.hashCode(), DefaultGridSpan, { ForumType.History }) {
-                            HistoryRow(history = it, onClick = onHistoryClickedListener)
+                            HistoryRow(history = it, onClick = onHistoryClicked)
                         }
                     }
 
@@ -558,7 +572,7 @@ fun AnimatedVisibilityScope.HomePage(
                             forums = pinnedForums,
                             isTopPinnedForum = true,
                             showAvatar = listSingle,
-                            onClick = onForumClickedListener,
+                            onClick = onForumClicked,
                             onUnfollow = onUnfollow,
                             onPinnedForumChanged = viewModel::onPinnedForumChanged,
                         )
@@ -573,7 +587,7 @@ fun AnimatedVisibilityScope.HomePage(
                         forums = forums,
                         isTopPinnedForum = false,
                         showAvatar = listSingle,
-                        onClick = onForumClickedListener,
+                        onClick = onForumClicked,
                         onUnfollow = onUnfollow,
                         onPinnedForumChanged = viewModel::onPinnedForumChanged,
                     )
@@ -625,6 +639,7 @@ private fun GuestScreen(
         },
         modifier = modifier,
         image = {
+            if (isWindowHeightCompact()) return@TipScreen
             val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_astronaut))
             LottieAnimation(
                 composition = composition,
@@ -638,9 +653,11 @@ private fun GuestScreen(
             Text(text = stringResource(R.string.home_empty_login), textAlign = TextAlign.Center)
         },
         actions = {
-            PositiveButton(R.string.button_login, Modifier.fillMaxWidth(), onClick = onLoginClicked)
+            Column(Modifier.widthIn(max = 400.dp)) {
+                PositiveButton(R.string.button_login, Modifier.fillMaxWidth(), onClick = onLoginClicked)
 
-            ExploreButton(modifier = Modifier.fillMaxWidth(), onClick = onExploreClicked)
+                ExploreButton(modifier = Modifier.fillMaxWidth(), onClick = onExploreClicked)
+            }
         }
     )
 }
@@ -653,6 +670,7 @@ private fun EmptyScreen(modifier: Modifier = Modifier, onExploreClicked: () -> U
         },
         modifier = modifier,
         image = {
+            if (isWindowHeightCompact()) return@TipScreen
             val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_astronaut))
             LottieAnimation(
                 composition = composition,
@@ -662,7 +680,9 @@ private fun EmptyScreen(modifier: Modifier = Modifier, onExploreClicked: () -> U
                     .aspectRatio(2f)
             )
         },
-        actions = { ExploreButton(modifier = Modifier.fillMaxWidth(), onClick = onExploreClicked) },
+        actions = {
+            ExploreButton(Modifier.widthIn(max = 400.dp).fillMaxWidth(), onClick = onExploreClicked)
+        },
     )
 }
 

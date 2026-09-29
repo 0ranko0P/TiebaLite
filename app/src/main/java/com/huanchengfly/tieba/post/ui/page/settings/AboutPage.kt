@@ -35,10 +35,9 @@ import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.icons.GitHubInvertocat
-import com.huanchengfly.tieba.post.ui.icons.License
 import com.huanchengfly.tieba.post.ui.page.welcome.UaWebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
@@ -156,14 +155,14 @@ fun AboutPage(
             preference(
                 title = context.getString(R.string.about_source_code),
                 summary = URL_PROJECT_GITHUB,
-                icon = GitHubInvertocat,
+                icon = TbIcons.GitHub,
                 onClick = onHomePageClicked,
             )
 
             preference(
                 title = context.getString(R.string.about_license),
                 summary = "GNU GENERAL PUBLIC LICENSE Version 3",
-                icon = Icons.Rounded.License,
+                icon = TbIcons.License,
                 onClick = onLicenseClicked,
             )
         }

@@ -5,7 +5,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import com.huanchengfly.tieba.post.arch.unsafeLazy
+import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.core.database.dao.ForumHistoryDao
 import com.huanchengfly.tieba.post.core.database.dao.ThreadHistoryDao
 import com.huanchengfly.tieba.post.core.database.dao.TransactionRunner

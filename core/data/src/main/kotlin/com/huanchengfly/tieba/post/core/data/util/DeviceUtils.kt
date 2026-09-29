@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.core.data.util
 import android.os.Environment
 import android.os.StatFs
 import java.io.File
-import java.io.IOException
 import java.util.Locale
 import java.util.regex.Pattern
 import kotlin.math.round
@@ -98,8 +97,7 @@ internal object DeviceUtils {
     private fun getContentFromFileInfo(filePath: String): String {
         return try {
             File(filePath).bufferedReader().use { it.readLine() }
-        } catch (e: IOException) {
-            e.printStackTrace()
+        } catch (_: Throwable) {
             ""
         }
     }

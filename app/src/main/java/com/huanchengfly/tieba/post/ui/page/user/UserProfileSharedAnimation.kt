@@ -2,8 +2,8 @@ package com.huanchengfly.tieba.post.ui.page.user
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
-import com.huanchengfly.tieba.post.ui.common.DefaultTextBoundsTransform
-import com.huanchengfly.tieba.post.ui.common.localSharedBounds
+import com.huanchengfly.tieba.post.core.ui.animation.DefaultTextBoundsTransform
+import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
 import java.util.Objects
 
 /** 用户头像过渡动画唯一标识键 */

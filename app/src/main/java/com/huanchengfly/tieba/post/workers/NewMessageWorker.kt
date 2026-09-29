@@ -26,10 +26,10 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.huanchengfly.tieba.post.MainActivityV2
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.TbDeepLinkMatcher.URL_NOTIFICATION_BASE
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.repository.HomeRepository
-import com.huanchengfly.tieba.post.ui.page.TB_LITE_DOMAIN
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.utils.NotificationUtils
 import com.huanchengfly.tieba.post.utils.NotificationUtils.notificationManager
@@ -94,7 +94,7 @@ class NewMessageWorker @AssistedInject constructor(
      * */
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun updateNotification(type: NotificationsType, newMsgCount: Int) {
-        val uri = "$TB_LITE_DOMAIN://notifications?type=${type.ordinal}".toUri()
+        val uri = "$URL_NOTIFICATION_BASE?type=${type.ordinal}".toUri()
         val intent = Intent(ACTION_VIEW, uri, context, MainActivityV2::class.java)
         when (type) {
             NotificationsType.AtMe -> {

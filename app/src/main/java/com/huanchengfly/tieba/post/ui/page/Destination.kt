@@ -1,44 +1,19 @@
 package com.huanchengfly.tieba.post.ui.page
 
-import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Parcelable
-import androidx.navigation.NavType
+import androidx.navigation3.runtime.NavKey
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
-sealed interface Destination {
-
-    @Serializable
-    data object Main: Destination
+sealed interface Destination: NavKey {
 
     @Serializable
     data object AppTheme: Destination
 
     @Serializable
-    data object History: Destination
-
-    @Serializable
-    data object HotTopicList: Destination
-
-    @Serializable
-    data class HotTopicDetail(val topicId: Long, val topicName: String): Destination
-
-    @Serializable
-    data class Notification(
-        val type: Int = NotificationsType.ReplyMe.ordinal
-    ): Destination
-
-    @Serializable
-    data object Login: Destination
-
-    @Serializable
-    data object Search: Destination
+    data class CopyText(val text: String): Destination
 
     /**
      * @param forumName 吧名
@@ -59,6 +34,51 @@ sealed interface Destination {
     data class ForumRuleDetail(val forumId: Long): Destination
 
     @Serializable
+    data object History: Destination
+
+    @Serializable
+    data object HotTopicList: Destination
+
+    @Serializable
+    data class HotTopicDetail(val topicId: Long, val topicName: String): Destination
+
+    @Serializable
+    data object Login: Destination
+
+    @Serializable
+    data class Notification(
+        val type: Int = NotificationsType.ReplyMe.ordinal
+    ): Destination
+
+    @Serializable
+    data class Reply(
+        val forumId: Long,
+        val forumName: String,
+        val threadId: Long,
+        val postId: Long? = null,
+        val subPostId: Long? = null,
+        val replyUserId: Long? = null,
+        val replyUserName: String? = null,
+        val replyUserPortrait: String? = null,
+        val isDialog: Boolean = false,
+    ): Destination
+
+    @Serializable
+    data class Report(val postId: Long): Destination
+
+    @Serializable
+    data object Search: Destination
+
+    @Serializable
+    data class SubPosts(
+        val threadId: Long,
+        val forumId: Long = 0L,
+        val postId: Long = 0L,
+        val subPostId: Long = 0L,
+        val isSheet: Boolean = true,
+    ): Destination
+
+    @Serializable
     data class Thread(
         val threadId: Long,
         val forumId: Long? = null,
@@ -71,35 +91,6 @@ sealed interface Destination {
 
     @Serializable
     data object ThreadStore: Destination
-
-    @Serializable
-    data class SubPosts(
-        val threadId: Long,
-        val forumId: Long = 0L,
-        val postId: Long = 0L,
-        val subPostId: Long = 0L,
-        val isSheet: Boolean = true,
-    ): Destination
-
-    @Serializable
-    data class CopyText(val text: String): Destination
-
-    @Serializable
-    data class Reply(
-        val forumId: Long,
-        val forumName: String,
-        val threadId: Long,
-        val postId: Long? = null,
-        val subPostId: Long? = null,
-        val replyUserId: Long? = null,
-        val replyUserName: String? = null,
-        val replyUserPortrait: String? = null,
-        val tbs: String? = null,
-        val isDialog: Boolean = false,
-    ): Destination
-
-    @Serializable
-    data class Report(val postId: Long): Destination
 
     @Serializable
     data class UserFollowList(val uid: Long): Destination
@@ -145,48 +136,4 @@ sealed interface Destination {
     @Serializable
     object Welcome: Destination
 
-    @Serializable
-    data object Settings: Destination
-
-    companion object {
-
-        inline fun <reified T> navTypeOf(
-            isNullableAllowed: Boolean = false,
-            json: Json = Json
-        ) = object : NavType<T>(isNullableAllowed = isNullableAllowed) {
-
-            override fun get(bundle: Bundle, key: String): T? {
-                return bundle.getString(key)?.let(json::decodeFromString)
-            }
-
-            override fun put(bundle: Bundle, key: String, value: T) {
-                bundle.putString(key, json.encodeToString(value))
-            }
-
-            override fun parseValue(value: String): T = json.decodeFromString(Uri.decode(value))
-
-            override fun serializeAsValue(value: T): String = Uri.encode(json.encodeToString(value))
-        }
-        inline fun <reified T : Parcelable> parcelableListType(
-            isNullableAllowed: Boolean = false,
-            json: Json = Json,
-        ) = object : NavType<List<T>>(isNullableAllowed = isNullableAllowed) {
-            override fun get(bundle: Bundle, key: String): List<T>? {
-                return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    bundle.getParcelableArrayList(key, T::class.java)
-                } else {
-                    @Suppress("DEPRECATION")
-                    bundle.getParcelableArrayList(key)
-                }
-            }
-
-            override fun parseValue(value: String): List<T> = json.decodeFromString(Uri.decode(value))
-
-            override fun serializeAsValue(value: List<T>): String = Uri.encode(json.encodeToString(value))
-
-            override fun put(bundle: Bundle, key: String, value: List<T>) {
-                bundle.putParcelableArrayList(key, value as? ArrayList ?: ArrayList(value))
-            }
-        }
-    }
 }

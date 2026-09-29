@@ -26,9 +26,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
-import com.huanchengfly.tieba.post.ui.icons.CommentNew
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 
 @NonRestartableComposable
@@ -95,7 +95,7 @@ fun ThreadActionButtonRow(
         ActionBtn(
             modifier = Modifier.weight(1f),
             text = context.shortNumString(replies.toLong(), R.string.title_reply),
-            icon = Icons.Rounded.CommentNew,
+            icon = TbIcons.CommentNew,
             contentDescription = stringResource(id = R.string.desc_comment),
             onClick = onReplyClicked
         )

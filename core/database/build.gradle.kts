@@ -21,6 +21,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     api(libs.androidx.room.ktx)
     api(libs.androidx.room.paging)
+    api(libs.androidx.paging.common)
 
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.core)

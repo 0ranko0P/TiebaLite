@@ -3,11 +3,14 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.util.fastMap
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
@@ -61,6 +64,7 @@ class ConcernViewModel @Inject constructor(
 
     init {
         refreshInternal(cached = true)
+        observeThreadLike()
     }
 
     private fun refreshInternal(cached: Boolean) = launchInVM(errorHandler) {
@@ -112,22 +116,16 @@ class ConcernViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Called when navigating back from thread page.
-     *
-     * @param threadId target thread ID
-     * @param like latest like status
-     * */
-    fun onThreadResult(threadId: Long, like: Like) {
-         launchInVM {
-            // compare and update with latest like status
-            val newData = currentState.data.updateLikeStatus(threadId, like)
-            if (newData != null) {
-                _uiState.update { it.copy(data = newData) }
-                exploreRepo.updateCachedThreadLike(threadId, like, from = ExploreType.CONCERN)
-            }
-            // else: empty or no status changes
+    private fun observeThreadLike() = viewModelScope.onGlobalEvent<GlobalEvent.ThreadLike> { event ->
+        val threadId = event.threadId
+        val like: Like = event.like
+        // compare and update with latest like status
+        val newData = currentState.data.updateLikeStatus(threadId, like)
+        if (newData != null) {
+            _uiState.update { it.copy(data = newData) }
+            exploreRepo.updateCachedThreadLike(threadId, like, from = ExploreType.CONCERN)
         }
+        // else: empty or no status changes
     }
 
     companion object {

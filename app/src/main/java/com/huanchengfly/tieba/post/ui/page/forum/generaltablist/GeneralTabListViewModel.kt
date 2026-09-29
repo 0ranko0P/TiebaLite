@@ -2,12 +2,15 @@ package com.huanchengfly.tieba.post.ui.page.forum.generaltablist
 
 import android.util.Log
 import androidx.compose.runtime.Stable
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.core.data.model.settings.ForumSortType
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
@@ -15,7 +18,6 @@ import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.forum.generaltablist.GeneralTabListViewModel.Companion.GeneralTabListVMFactory
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
@@ -59,6 +61,7 @@ class GeneralTabListViewModel @AssistedInject constructor(
     init {
         Log.d(TAG, "onInit: $forumName tabID: ${tabInfo.tabId}, initialSort: $initialSortType")
         refreshInternal(sortType = initialSortType)
+        observeThreadEvent()
     }
 
     private fun refreshInternal(@ForumSortType sortType: Int, forceNew: Boolean = false) {
@@ -136,10 +139,15 @@ class GeneralTabListViewModel @AssistedInject constructor(
         }
     }
 
-    fun onThreadResult(threadId: Long, like: Like): Unit = launchInVM {
-        val newThreads = currentState.threads.updateLikeStatus(threadId, like)
+    /**
+     * Observe thread like event from thread page
+     * */
+    private fun observeThreadEvent() = viewModelScope.onGlobalEvent<GlobalEvent.ThreadLike>(
+        filter = { it.forumId == this.forumId }
+    ) {
+        val newThreads = currentState.threads.updateLikeStatus(threadId = it.threadId, like = it.like)
         if (newThreads != null) {
-            _uiState.update { it.copy(threads = newThreads) }
+            _uiState.update { s -> s.copy(threads = newThreads) }
         }
     }
 

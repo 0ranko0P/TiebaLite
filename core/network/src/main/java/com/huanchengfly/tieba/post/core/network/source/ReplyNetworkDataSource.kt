@@ -2,12 +2,15 @@ package com.huanchengfly.tieba.post.core.network.source
 
 import android.content.Context
 import android.net.Uri
+import com.huanchengfly.tieba.post.core.network.exception.TiebaApiException
 import com.huanchengfly.tieba.post.core.network.model.AddThreadBean
+import com.huanchengfly.tieba.post.core.network.model.CommonResponse
 import com.huanchengfly.tieba.post.core.network.model.MessageListBean
 import com.huanchengfly.tieba.post.core.network.model.UploadPictureResultBean
-import com.huanchengfly.tieba.post.core.network.model.protos.addPost.AddPostResponse
+import com.huanchengfly.tieba.post.core.network.model.protos.addPost.AddPostResponseData
 import com.huanchengfly.tieba.post.core.network.retrofit.ITiebaApi
 import com.huanchengfly.tieba.post.core.network.retrofit.RetrofitTiebaApi
+import com.huanchengfly.tieba.post.core.network.retrofit.firstOrThrow
 import com.huanchengfly.tieba.post.core.network.session.ClientConfigProvider
 import com.huanchengfly.tieba.post.core.network.util.ImageUploader
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -16,31 +19,65 @@ import javax.inject.Inject
 
 interface ReplyNetworkDataSource {
 
-    fun addThread(
+    /**
+     * 发帖
+     * @param content 帖子内容
+     * @param forumId 吧id
+     * @param forumName 吧名
+     * @param title 标题(无标题是null/留空)
+     */
+    suspend fun addThread(
         content: String,
         forumId: Long,
         forumName: String,
         title: String?,
-        isHide: Int?,
-        isTitle: Int?
-    ): Flow<AddThreadBean>
+    ): AddThreadBean
 
-    fun addPost(
+    /**
+     * 回贴（App 接口）
+     *
+     * @param content 回复内容
+     * @param forumId 吧 ID（不可为null，0）
+     * @param forumName 吧名
+     * @param threadId 贴子 ID
+     * @param tbs tbs
+     * @param postId 回复楼 ID，为空则回复贴子
+     * @param subPostId 回复楼中楼 ID
+     * @param replyUserId 楼中楼回复用户 ID
+     */
+    suspend fun addPost(
         content: String,
         forumId: Long,
         forumName: String,
         threadId: Long,
-        tbs: String?,
-        nameShow: String?,
+        tbs: String,
         postId: Long?,
         subPostId: Long?,
         replyUserId: Long?,
-    ): Flow<AddPostResponse>
+    ): AddPostResponseData
 
+    /**
+     * 提到我的消息列表
+     *
+     * @param page 分页页码（从 1 开始）
+     */
     fun atMeFlow(page: Int = 1): Flow<MessageListBean>
 
+    /**
+     * 回复我的消息列表
+     *
+     * @param page 分页页码（从 1 开始）
+     */
     fun replyMeFlow(page: Int = 1): Flow<MessageListBean>
 
+    /**
+     * 上传图片
+     *
+     * @param forumName 吧名
+     * @param images 图片Uri
+     * @param watermarkType 图片上传水印, see com.huanchengfly.tieba.post.core.data.model.settings.WaterType
+     * @param isOriginImage 上传原图
+     * */
     suspend fun upload(
         forumName: String,
         images: List<Uri>,
@@ -56,46 +93,54 @@ internal class RetrofitReplyNetworkDataSource @Inject constructor(
     private val retrofitTiebaApi: RetrofitTiebaApi,
 ) : ReplyNetworkDataSource {
 
-    override fun addThread(
+    override suspend fun addThread(
         content: String,
         forumId: Long,
         forumName: String,
         title: String?,
-        isHide: Int?,
-        isTitle: Int?
-    ): Flow<AddThreadBean> {
+    ): AddThreadBean {
+        require(forumId > 0) { "Illegal Forum ID: $forumId" }
+
         return tiebaApi.addThreadFlow(
-            content,
-            forumName,
-            forumId.toString(),
-            title.orEmpty(),
-            requireNotNull(isHide),
-            requireNotNull(isTitle)
+            threadContent = content,
+            kw = forumName,
+            fid = forumId.toString(),
+            title = title.orEmpty(),
+            isHide = 1,
+            isTitle = if (title.isNullOrEmpty()) 1 else 0
         )
+        .firstOrThrow()
+        .apply {
+            if (errorCode != "0") {
+                throw TiebaApiException(CommonResponse(errorCode?.toIntOrNull() ?: -1, errorMsg.orEmpty()))
+            }
+            requireNotNull(tid) { "Server returned null ThreadID"}
+        }
     }
 
-    override fun addPost(
+    override suspend fun addPost(
         content: String,
         forumId: Long,
         forumName: String,
         threadId: Long,
-        tbs: String?,
-        nameShow: String?,
+        tbs: String,
         postId: Long?,
         subPostId: Long?,
         replyUserId: Long?
-    ): Flow<AddPostResponse> {
+    ): AddPostResponseData {
         return tiebaApi.addPostFlow(
-            content,
-            forumId.toString(),
-            forumName,
-            threadId.toString(),
-            tbs,
-            nameShow,
-            postId?.toString(),
-            subPostId?.toString(),
-            replyUserId?.toString()
+            content = content,
+            forumId = forumId.toString(),
+            forumName = forumName,
+            threadId = threadId.toString(),
+            tbs = tbs,
+            nameShow = null,
+            postId = postId?.toString(),
+            subPostId = subPostId?.toString(),
+            replyUserId = replyUserId?.toString()
         )
+        .firstOrThrow()
+        .data_!!
     }
 
     override fun atMeFlow(page: Int): Flow<MessageListBean> {

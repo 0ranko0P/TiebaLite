@@ -29,12 +29,11 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.takeOrElse
 import androidx.compose.ui.util.fastFirstOrNull
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.ui.common.LocalPbInlineContentCache
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.utils.DisplayUtil.plus
 import com.huanchengfly.tieba.post.utils.DisplayUtil.sp2px
 import com.huanchengfly.tieba.post.utils.launchUrl
@@ -104,7 +103,7 @@ fun PbContentText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavController.current
+    val navigator = LocalNavigator.current
 
     var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     BasicPbContentText(
@@ -130,7 +129,7 @@ fun PbContentText(
 
                             TAG_USER -> {
                                 val uid = annotation.item.toLong()
-                                navigator.navigateDebounced(Destination.UserProfile(uid))
+                                navigator.navigate(Destination.UserProfile(uid))
                             }
                         }
                     }

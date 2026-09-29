@@ -9,6 +9,7 @@ android {
 }
 
 dependencies {
+    api(project(":core:common"))
     api(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.savedstate.compose)
     implementation(libs.androidx.lifecycle.viewModel.navigation3)

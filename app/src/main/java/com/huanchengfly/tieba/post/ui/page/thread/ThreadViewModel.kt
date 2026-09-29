@@ -7,37 +7,41 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMap
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
 import com.huanchengfly.tieba.post.core.common.ktx.booleanToString
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.database.model.ThreadHistory
 import com.huanchengfly.tieba.post.core.network.Error
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.network.model.protos.Page
-import com.huanchengfly.tieba.post.core.database.model.ThreadHistory
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.repository.PageData
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.repository.PbPageUiResponse
 import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
-import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.Destination.Companion.navTypeOf
 import com.huanchengfly.tieba.post.ui.page.Destination.Reply
 import com.huanchengfly.tieba.post.ui.page.Destination.SubPosts
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadViewModel.Companion.ThreadVmFactory
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStoreUiEvent
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.extension.set
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -55,30 +59,25 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
-import kotlin.reflect.typeOf
 
 @Stable
-@HiltViewModel
-class ThreadViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = ThreadVmFactory::class)
+class ThreadViewModel @AssistedInject constructor(
+    @Assisted val navKey: Destination.Thread,
     @ApplicationContext val context: Context,
     @ApplicationScope private val coroutineScope: CoroutineScope,
     private val historyRepo: HistoryRepository,
     private val storeRepo: ThreadStoreRepository,
     private val threadRepo: PbPageRepository,
     settingsRepository: SettingsRepository,
-    savedStateHandle: SavedStateHandle
 ) : BaseStateViewModel<ThreadUiState>() {
 
-    private val params = savedStateHandle.toRoute<Destination.Thread>(
-        typeMap = mapOf(typeOf<ThreadFrom?>() to navTypeOf<ThreadFrom?>(isNullableAllowed = true))
-    )
+    private val threadId: Long
+        get() = navKey.threadId
 
-    private val threadId: Long = params.threadId
-    private val postId: Long = params.postId
     private val historyTimeStamp = System.currentTimeMillis()
 
-    private var from: String = params.from?.tag ?: ""
+    private var from: String = navKey.from?.tag ?: ""
 
     /**
      * Post or Thread(FirstPost) marked for deletion.
@@ -134,17 +133,17 @@ class ThreadViewModel @Inject constructor(
         get() = currentState.firstPost?.id ?: 0L
 
     private val forumId: Long?
-        get() = params.forumId ?: currentState.forum?.first
+        get() = navKey.forumId ?: currentState.forum?.first
 
     private val forumName: String?
         get() = currentState.forum?.second
 
     override fun createInitialState(): ThreadUiState {
-        return ThreadUiState(seeLz = params.seeLz, sortType = params.sortType)
+        return ThreadUiState(seeLz = navKey.seeLz, sortType = navKey.sortType)
     }
 
     init {
-        requestLoad(page = 0, postId = postId, scrollToReply = params.scrollToReply)
+        requestLoad(page = 0, postId = navKey.postId, scrollToReply = navKey.scrollToReply)
         viewModelScope.launch {
             hideReply = settingsRepository.habitSettings.snapshot().hideReply
         }
@@ -391,6 +390,7 @@ class ThreadViewModel @Inject constructor(
                         it.copy(thread = it.thread!!.copy(collectMarkPid = markedPost.id))
                     }
                     emitUiEvent(ThreadStoreUiEvent.Add.Success(markedPost.floor))
+                    emitGlobalEventSuspend(GlobalEvent.ThreadStore(threadId, markedPost.id))
                 }
         }
     }
@@ -416,6 +416,7 @@ class ThreadViewModel @Inject constructor(
             .onSuccess {
                 _uiState.update { it.copy(thread = it.thread!!.copy(collectMarkPid = null)) }
                 emitUiEvent(ThreadStoreUiEvent.Delete.Success)
+                emitGlobalEventSuspend(GlobalEvent.ThreadStoreDelete(threadId))
             }
         }
     }
@@ -474,6 +475,7 @@ class ThreadViewModel @Inject constructor(
             _uiState.update { // Update like loading status
                 it.copy(thread = it.thread!!.updateLikeStatus(liked = !like.liked, loading = false))
             }
+            viewModelScope.emitGlobalEvent(GlobalEvent.ThreadLike(threadId, !like, forumId ?: -1))
         }
     }
 
@@ -695,6 +697,11 @@ class ThreadViewModel @Inject constructor(
     companion object {
 
         private const val TAG = "ThreadViewModel"
+
+        @AssistedFactory
+        interface ThreadVmFactory {
+            fun create(navKey: Destination.Thread): ThreadViewModel
+        }
 
         private fun PageData.nextPage(sortType: Int): Int {
             val page = if (sortType == ThreadSortType.BY_DESC) current - 1 else current + 1

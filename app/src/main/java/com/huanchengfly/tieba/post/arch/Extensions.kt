@@ -26,7 +26,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.core.network.exception.NoConnectivityException
 import com.huanchengfly.tieba.post.toastShort
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +40,6 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -129,9 +127,6 @@ fun <E: UiEvent> Flow<E>.collectCommonUiEventWithLifecycle(
         }
     }
 }
-
-@Throws(NoConnectivityException::class)
-suspend inline fun <T> Flow<T>.firstOrThrow(): T = firstOrNull() ?: throw NoConnectivityException()
 
 @Composable
 inline fun <reified Event : UiEvent> Flow<UiEvent>.onEvent(
@@ -252,5 +247,3 @@ val PagerState.isFirstPage
 
 val PagerState.isLastPage
     get() = currentPage == pageCount - 1
-
-fun <T> unsafeLazy(initializer: () -> T): Lazy<T> = lazy(LazyThreadSafetyMode.NONE, initializer)

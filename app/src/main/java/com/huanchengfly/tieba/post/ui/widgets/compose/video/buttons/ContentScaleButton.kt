@@ -41,8 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.icons.FitPageHeight
-import com.huanchengfly.tieba.post.ui.icons.FitPageWidth
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.LocalPlayerGestureState
 
 /**
@@ -197,8 +196,8 @@ private val ContentScale.icon: ImageVector
     get() = when (this) {
         ContentScale.Crop -> Icons.Sharp.Crop
         ContentScale.Fit -> Icons.Sharp.AspectRatio
-        ContentScale.FillHeight -> Icons.Outlined.FitPageHeight
-        ContentScale.FillWidth -> Icons.Outlined.FitPageWidth
+        ContentScale.FillHeight -> TbIcons.FitPageHeight
+        ContentScale.FillWidth -> TbIcons.FitPageWidth
         ContentScale.FillBounds -> Icons.Sharp.FitScreen
         ContentScale.Inside -> Icons.Outlined.ZoomInMap
         else -> throw IllegalArgumentException()

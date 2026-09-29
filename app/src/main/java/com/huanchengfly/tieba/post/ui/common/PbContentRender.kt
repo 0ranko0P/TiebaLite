@@ -24,11 +24,10 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.components.media.MediaCache.getBdMediaId
 import com.huanchengfly.tieba.post.models.PhotoViewData
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedVideoShutter
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.PbContentText
@@ -205,12 +204,12 @@ class VideoContentRender(
                 isPipMode = previewState?.videoViewMediaId == mediaId && previewState.isInPipMode
             )
         } else {
-            val navigator = LocalNavController.current
+            val navigator = LocalNavigator.current
             AsyncImage(
                 model  = picUrl,
                 contentDescription = stringResource(id = R.string.desc_video),
                 modifier = picModifier.clickable {
-                    navigator.navigateDebounced(Destination.WebView(webUrl))
+                    navigator.navigate(Destination.WebView(webUrl))
                 },
                 contentScale = ContentScale.Crop
             )

@@ -24,8 +24,8 @@ internal object MobileInfoUtil {
             return DEFAULT_IMEI
         }
         try {
-            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-            return telephonyManager.deviceId
+            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+            return telephonyManager?.deviceId ?: DEFAULT_IMEI
         } catch (e: Throwable) {
             e.printStackTrace()
             return DEFAULT_IMEI

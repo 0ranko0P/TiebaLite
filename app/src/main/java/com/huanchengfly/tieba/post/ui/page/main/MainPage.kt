@@ -1,25 +1,30 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
-import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +32,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -39,7 +45,7 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalShortNavigationBarOverride
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItemDefaults
@@ -49,25 +55,23 @@ import androidx.compose.material3.ShortNavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuite
+import androidx.compose.material3.VerticalDragHandle
+import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
+import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
+import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
+import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
+import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteColors
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldState
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldValue
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
@@ -85,22 +89,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.lerp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.NavBackStackEntry
-import androidx.navigation.NavController
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.scene.DialogSceneStrategy
+import androidx.navigation3.scene.Scene
+import androidx.navigation3.ui.NavDisplay
+import androidx.navigationevent.NavigationEvent
 import androidx.window.embedding.SplitAttributes.LayoutDirection
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
@@ -108,38 +107,58 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.core.data.model.settings.NavigationLabel
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.designsystem.component.IconNavigationItem
+import com.huanchengfly.tieba.post.core.designsystem.component.NavigationDrawerItem
+import com.huanchengfly.tieba.post.core.designsystem.component.floatingNavigationBarCompactScreenOffset
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.NavigationBarHeight
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.NavigationSuiteScaffoldLayout
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TallNavigationBarHeight
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuite
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState.Companion.isVisible
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState.Companion.rememberNavigationSuiteScaffoldState
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.toNavigationSuiteType
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.calculateNavigationType
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.navigationSuiteScaffoldConsumeWindowInsets
+import com.huanchengfly.tieba.post.core.designsystem.component.vibrantFloatingNavigationBarColor
+import com.huanchengfly.tieba.post.core.designsystem.component.vibrantFloatingNavigationBarContentColor
+import com.huanchengfly.tieba.post.core.navigation.NavigationState
+import com.huanchengfly.tieba.post.core.navigation.Navigator
+import com.huanchengfly.tieba.post.core.navigation.containsType
+import com.huanchengfly.tieba.post.core.navigation.defaultContentKey
+import com.huanchengfly.tieba.post.core.navigation.toEntries
+import com.huanchengfly.tieba.post.core.ui.scenes.rememberDetailPaneBackHandlerSceneDecoratorStrategy
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
-import com.huanchengfly.tieba.post.ui.common.LocalAnimatedVisibilityScope
-import com.huanchengfly.tieba.post.ui.common.LocalSharedTransitionScope
-import com.huanchengfly.tieba.post.ui.common.animateEnterExit
-import com.huanchengfly.tieba.post.ui.common.defaultVerticalEnterTransition
-import com.huanchengfly.tieba.post.ui.common.defaultVerticalExitTransition
+import com.huanchengfly.tieba.post.ui.common.NavTransitions
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.main.MainNavigationSuiteType.Companion.isFloatingNavigationBar
-import com.huanchengfly.tieba.post.ui.utils.calculateNavigationPosition
-import com.huanchengfly.tieba.post.ui.utils.calculateNavigationType
+import com.huanchengfly.tieba.post.ui.page.appEntries
+import com.huanchengfly.tieba.post.ui.page.settings.rememberSettingsSceneStrategy
+import com.huanchengfly.tieba.post.ui.scenes.rememberTbThemeSceneDecoratorStrategy
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
-import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationBarHeight
-import com.huanchengfly.tieba.post.ui.widgets.compose.NavigationSuiteScaffoldLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.TallNavigationBarHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.TbHazeState
-import com.huanchengfly.tieba.post.ui.widgets.compose.isNavigationBar
-import com.huanchengfly.tieba.post.ui.widgets.compose.navigationSuiteScaffoldConsumeWindowInsets
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberTbHazeState
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.HazeTint
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/**
+ * List of [androidx.navigation3.runtime.NavEntry.contentKey]
+ * */
+private typealias NavEntryContentKeyList = List<Any>
 
 @Stable
 val MainDestination.titleRes: Int
@@ -167,12 +186,12 @@ val bottomNavigationPlaceholder: @Composable () -> Unit = {
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .height(
                     when (navigationSuiteType) {
-                        MainNavigationSuiteType.ShortNavigationBarCompact -> NavigationBarHeight
-                        MainNavigationSuiteType.FloatingNavigationBar -> {
+                        TbNavigationSuiteType.ShortNavigationBarCompact -> NavigationBarHeight
+                        TbNavigationSuiteType.FloatingNavigationBar -> {
                             TallNavigationBarHeight + floatingNavigationBarCompactScreenOffset
                         }
 
-                        MainNavigationSuiteType.FloatingNavigationBarCompact -> {
+                        TbNavigationSuiteType.FloatingNavigationBarCompact -> {
                             NavigationBarHeight + floatingNavigationBarCompactScreenOffset
                         }
 
@@ -185,42 +204,22 @@ val bottomNavigationPlaceholder: @Composable () -> Unit = {
     }
 }
 
-/**
- * Gets the current navigation [MainDestination] as a [MutableState]. When the given navController
- * changes the back stack due to a [NavController.navigate] or [NavController.popBackStack] this
- * will trigger a recompose and return the top destination on the back stack.
- *
- * @return a mutable state of the current [MainDestination]
- */
-@Composable
-private fun NavController.currentMainDestinationAsState(destinations: List<MainDestination>): State<MainDestination?> {
-    val lifecycle = LocalLifecycleOwner.current
-    return produceState(initialValue = null, destinations, currentBackStackEntryFlow, lifecycle) {
-        withContext(Dispatchers.Default) {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                currentBackStackEntryFlow.collect {
-                    value = destinations.fastFirstOrNull { dest -> it.destination.hasRoute(dest::class) }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 fun MainPage(
-    navHostController: NavHostController,
-    startDestination: MainDestination = MainDestination.Home,
+    navigator: Navigator,
+    settingsRepo: SettingsRepository,
     vm: MainPageViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val nestedNavController = rememberNavController()
-    val scaffoldState = rememberNavigationSuiteScaffoldState()
     val uiSettings = LocalUISettings.current
-    val windowAdaptiveInfo = LocalWindowAdaptiveInfo.current
-    val navigationSuiteType = calculateMainNavigationSuiteType()
-
+    val navigationState = navigator.state
+    val navTransitions = if (!uiSettings.reduceMotion) {
+        NavTransitions.DefaultTransitions
+    } else {
+        NavTransitions.SlideTransitions
+    }
     val loggedIn = LocalAccount.current != null
-    val destinations = remember(loggedIn, uiSettings.hideExplore) {
+    val mainDestinations: List<MainDestination> = remember(loggedIn, uiSettings.hideExplore) {
         listOfNotNull(
             MainDestination.Home,
             MainDestination.Explore.takeUnless { uiSettings.hideExplore },
@@ -228,12 +227,26 @@ fun MainPage(
             MainDestination.User,
         )
     }
+    val mainDestContentKeys: NavEntryContentKeyList = remember(mainDestinations) {
+        mainDestinations.fastMap { it.defaultContentKey }
+    }
+
+    val windowAdaptiveInfo = LocalWindowAdaptiveInfo.current
+    val directive = remember(windowAdaptiveInfo) {
+        calculatePaneScaffoldDirective(windowAdaptiveInfo).copy(horizontalPartitionSpacerSize = 0.dp)
+    }
+    val scaffoldState = rememberNavigationSuiteScaffoldState(
+        initialValue = NavigationSuiteScaffoldValue.Hidden,
+        floating = uiSettings.bottomNavFloating,
+        noLabel = uiSettings.bottomNavLabel == NavigationLabel.NONE,
+        windowAdaptiveInfo = windowAdaptiveInfo
+    )
+    val navigationSuiteType = scaffoldState.layoutType
 
     val blurEffect = !uiSettings.reduceEffect && !MaterialTheme.colorScheme.isTranslucent
     val hazeState = if (blurEffect) rememberTbHazeState() else null
     val navigationSuiteColors = mainNavigationSuiteColors(uiSettings.bottomNavFloating, blurEffect)
 
-    val currentDestination by nestedNavController.currentMainDestinationAsState(destinations)
     MainNavigationSuiteScaffold(
         state = scaffoldState,
         hazeState = hazeState.takeIf { navigationSuiteType.isNavigationBar },
@@ -241,17 +254,11 @@ fun MainPage(
             val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
 
             MainNavigationItems(
-                items = destinations,
-                isSelected = { dest -> dest === currentDestination },
+                items = mainDestinations,
+                isSelected = { it === navigationState.currentTopLevelKey },
                 onSelect = { dest ->
-                    nestedNavController.navigate(route = dest) {
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(route = startDestination) {
-                            saveState = true
-                        }
-                    }
-                    if (dest == MainDestination.Notification) vm.onNavigateNotification()
+                    navigator.navigate(key = dest)
+                    if (dest === MainDestination.Notification) vm.onNavigateNotification()
                 },
                 onReSelect = { dest ->
                     coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(dest))
@@ -263,22 +270,22 @@ fun MainPage(
         },
         mainNavSuiteType = navigationSuiteType,
         navigationSuiteColors = navigationSuiteColors,
-        navigationVerticalArrangement = calculateNavigationPosition(windowAdaptiveInfo),
+        navigationVerticalArrangement = Arrangement.Center,
         primaryActionContent = {
-            val onLoginClicked: () -> Unit = { navHostController.navigate(Destination.Login) }
+            val onLoginClicked: () -> Unit = { navigator.navigate(Destination.Login) }
             when (navigationSuiteType) {
-                MainNavigationSuiteType.WideNavigationRailCollapsed,
-                MainNavigationSuiteType.WideNavigationRailExpanded -> {
+                TbNavigationSuiteType.WideNavigationRailCollapsed,
+                TbNavigationSuiteType.WideNavigationRailExpanded -> {
                     AccountNavIcon(onLoginClicked, modifier = Modifier.padding(start = 32.dp))
                 }
-                MainNavigationSuiteType.NavigationRail -> {
+                TbNavigationSuiteType.NavigationRail -> {
                     AccountNavIcon(onLoginClicked, modifier = Modifier.padding(top = 10.dp))
                 }
-                MainNavigationSuiteType.NavigationDrawer -> TbDrawerNavigationAction(onLoginClicked)
+                TbNavigationSuiteType.NavigationDrawer -> TbDrawerNavigationAction(onLoginClicked)
 
-                MainNavigationSuiteType.FloatingNavigationBarCompact -> {
+                TbNavigationSuiteType.FloatingNavigationBarCompact -> {
                     if (uiSettings.hideExplore) return@MainNavigationSuiteScaffold
-                    ExplorePrimaryAction(visible = MainDestination.Explore === currentDestination) {
+                    ExplorePrimaryAction(visible = MainDestination.Explore === navigationState.currentTopLevelKey) {
                         coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(MainDestination.Explore))
                     }
                 }
@@ -287,68 +294,78 @@ fun MainPage(
             }
         }
     ) {
-        val parentAnimatedVisibilityScope = LocalAnimatedVisibilityScope.current
-        val parentSharedTransitionScope = LocalSharedTransitionScope.current
-        val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-            mainEnterTransition(navigationSuiteType, destinations)
-        }
-        val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-            mainExitTransition(navigationSuiteType, destinations)
-        }
+        SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
+            val listDetailStrategy = rememberListDetailSceneStrategy<NavKey>(
+                directive = directive,
+                paneExpansionDragHandle = { state ->
+                    val interactionSource = remember { MutableInteractionSource() }
+                    VerticalDragHandle(
+                        modifier =
+                            Modifier.paneExpansionDraggable(
+                                state,
+                                LocalMinimumInteractiveComponentSize.current,
+                                interactionSource,
+                            ), interactionSource = interactionSource
+                    )
+                },
+                paneExpansionState = rememberPaneExpansionState(
+                    anchors = listOf(
+                        PaneExpansionAnchor.Proportion(0.35f),
+                        PaneExpansionAnchor.Proportion(0.5f),
+                    )
+                )
+            )
 
-        NavHost(
-            navController = nestedNavController,
-            startDestination = startDestination,
-            modifier = Modifier.onNotNull(hazeState) {
-                hazeSource(state = it.state, zIndex = 1f)
-            },
-            enterTransition = enterTransition,
-            exitTransition = exitTransition,
-            popEnterTransition = enterTransition,
-            popExitTransition = exitTransition
-        ) {
-            mainNavGraph(
-                navController = navHostController,
-                nestedNavController = nestedNavController,
-                hazeState = hazeState,
-                parentAnimatedVisibilityScope = parentAnimatedVisibilityScope,
-                parentSharedTransitionScope = parentSharedTransitionScope,
+            val onBack: () -> Unit = navigator::navigateUp
+            NavDisplay(
+                entries = navigationState.toEntries(
+                    entryProvider = appEntries(navigator, settingsRepo, hazeState, sharedTransitionScope = this)
+                ),
+                sceneStrategies = listOf(listDetailStrategy, DialogSceneStrategy()),
+                sceneDecoratorStrategies = listOf(
+                    rememberDetailPaneBackHandlerSceneDecoratorStrategy(onBack),
+                    rememberTbThemeSceneDecoratorStrategy(directive, sharedTransitionScope = this),
+                    rememberSettingsSceneStrategy(),
+                ),
+                sharedTransitionScope = this,
+                transitionSpec = mainEnterTransition(navigationSuiteType, mainDestContentKeys, navTransitions.transitionSpec),
+                popTransitionSpec = {
+                    if (targetState.key in mainDestContentKeys) {
+                        MAIN_FADE_IN_TRANSITION togetherWith navTransitions.popExitTransition
+                    } else {
+                        navTransitions.popTransitionSpec
+                    }
+                },
+                predictivePopTransitionSpec = predictiveTransition(navigationSuiteType, navTransitions),
+                onBack = onBack,
             )
         }
-    }
 
-    currentDestination?.let {
-        BackHandler(it !== startDestination) {
-            nestedNavController.popBackStack(route = startDestination::class, inclusive = false, saveState = true)
-        }
+        LaunchedBottomNavigationEffect(directive, scaffoldState, navigationState)
     }
 }
 
-@NonRestartableComposable
 @Composable
-private fun MainNavigationSuite(
-    mainNavigationSuiteType: MainNavigationSuiteType,
-    modifier: Modifier = Modifier,
-    colors: NavigationSuiteColors = NavigationSuiteDefaults.colors(),
-    verticalArrangement: Arrangement.Vertical = NavigationSuiteDefaults.verticalArrangement,
-    primaryActionContent: @Composable (() -> Unit) = {},
-    content: @Composable () -> Unit,
+private fun LaunchedBottomNavigationEffect(
+    directive: PaneScaffoldDirective,
+    state: TbNavigationSuiteScaffoldState,
+    navigationState: NavigationState,
 ) {
-    val shortNavBarOverride = when (mainNavigationSuiteType) {
-        MainNavigationSuiteType.FloatingNavigationBar -> FloatingNavigationBarOverride
-        MainNavigationSuiteType.FloatingNavigationBarCompact -> FloatingIconNavigationBarOverride
-        MainNavigationSuiteType.NavigationBar -> DefaultNavigationBarOverride
-        else -> androidx.compose.material3.DefaultShortNavigationBarOverride
+    val fullScreenNavKey = remember {
+        listOf(Destination.UserProfile::class, Destination.Login::class, Destination.Welcome::class)
     }
-    CompositionLocalProvider(LocalShortNavigationBarOverride provides shortNavBarOverride) {
-        NavigationSuite(
-            navigationSuiteType = mainNavigationSuiteType.toNavigationSuiteType(),
-            modifier = modifier,
-            colors = colors,
-            verticalArrangement = verticalArrangement,
-            primaryActionContent = primaryActionContent,
-            content = content,
-        )
+    LaunchedEffect(navigationState.currentKey) {
+        val navState = withContext(Dispatchers.Default) {
+            when {
+                navigationState.currentKey is MainDestination -> NavigationSuiteScaffoldValue.Visible
+                directive.maxHorizontalPartitions > 1 && // is list-detail
+                        !fullScreenNavKey.containsType(navigationState.currentKey) -> {
+                    NavigationSuiteScaffoldValue.Visible
+                }
+                else -> NavigationSuiteScaffoldValue.Hidden
+            }
+        }
+        if (navState !== state.targetValue) state.setState(navState)
     }
 }
 
@@ -363,45 +380,32 @@ private fun MainNavigationSuiteScaffold(
     navigationItems: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     hazeState: TbHazeState? = null,
-    mainNavSuiteType: MainNavigationSuiteType = calculateMainNavigationSuiteType(),
+    mainNavSuiteType: TbNavigationSuiteType = calculateMainNavigationSuiteType(),
     navigationBarAtop: Boolean = true,
-    navigationSuiteColors: NavigationSuiteColors = NavigationSuiteDefaults.colors(),
+    navigationSuiteColors: NavigationSuiteColors = navigationSuiteColors(mainNavSuiteType),
     navigationVerticalArrangement: Arrangement.Vertical = NavigationSuiteDefaults.verticalArrangement,
-    state: NavigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState(),
+    state: TbNavigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState(),
     primaryActionContent: @Composable (() -> Unit) = {},
     primaryActionContentHorizontalAlignment: Alignment.Horizontal =
         NavigationSuiteScaffoldDefaults.primaryActionContentAlignment,
     content: @Composable () -> Unit = {},
 ) {
     val navigationSuiteType = mainNavSuiteType.toNavigationSuiteType()
-    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
-    // Override navbar container color when there is ongoing transition
-    val colorsOnTransition = if (navigationSuiteType.isNavigationBar && animatedVisibilityScope != null) {
-        animatedVisibilityScope.navigationSuiteTransitionColors(mainNavSuiteType, navigationSuiteColors).value
-    } else {
-        null
-    }
+    val hazeTintOnTransition = HazeTint(color = MaterialTheme.colorScheme.surface)
 
     NavigationSuiteScaffoldLayout(
         modifier = modifier,
         navigationSuite = {
-            MainNavigationSuite(
-                mainNavigationSuiteType = mainNavSuiteType,
+            TbNavigationSuite(
+                tbNavigationSuiteType = mainNavSuiteType,
                 modifier = Modifier
                     .withNonNull(hazeState) {
                         Modifier.defaultHazeEffect {
-                            blurEnabled = animatedVisibilityScope?.transition?.isRunning != true
+                            blurEnabled = state.currentValue.isVisible
+                            fallbackTint = if (blurEnabled) HazeTint.Unspecified else hazeTintOnTransition
                         }
-                    }
-                    .onNotNull(colorsOnTransition) {
-                        animateEnterExit(
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            sharedTransitionScope = LocalSharedTransitionScope.current,
-                            enter = defaultVerticalEnterTransition(topToBottom = false),
-                            exit = defaultVerticalExitTransition(topToBottom = false)
-                        )
                     },
-                colors = colorsOnTransition ?: navigationSuiteColors,
+                colors = navigationSuiteColors,
                 verticalArrangement = navigationVerticalArrangement,
                 primaryActionContent = primaryActionContent,
                 content = navigationItems,
@@ -442,7 +446,7 @@ private fun MainNavigationItems(
     modifier: Modifier = Modifier,
     onSelect: (MainDestination) -> Unit = {},
     onReSelect: (MainDestination) -> Unit = {},
-    mainNavigationSuiteType: MainNavigationSuiteType = calculateMainNavigationSuiteType(),
+    mainNavigationSuiteType: TbNavigationSuiteType = calculateMainNavigationSuiteType(),
     bottomNavLabel: NavigationLabel = NavigationLabel.ALWAYS,
     messageCount: () -> String? = { null },
 ) {
@@ -464,7 +468,7 @@ private fun MainNavigationItems(
                     contentDescription = stringResource(destination.titleRes),
                 )
             },
-            label = if (mainNavigationSuiteType != MainNavigationSuiteType.NavigationRail &&
+            label = if (mainNavigationSuiteType != TbNavigationSuiteType.NavigationRail &&
                 (!isNavigationBar || bottomNavLabel.visible(selected))
             ) {
                 { Text(stringResource(id = destination.titleRes)) }
@@ -472,7 +476,7 @@ private fun MainNavigationItems(
                 null
             },
             modifier = modifier
-                .onCase(mainNavigationSuiteType == MainNavigationSuiteType.NavigationDrawer) {
+                .onCase(mainNavigationSuiteType == TbNavigationSuiteType.NavigationDrawer) {
                     padding(horizontal = 16.dp)
                 },
             mainNavigationSuiteType = mainNavigationSuiteType,
@@ -501,13 +505,13 @@ private fun MainNavigationSuiteItem(
     icon: @Composable () -> Unit,
     label: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
-    mainNavigationSuiteType: MainNavigationSuiteType,
+    mainNavigationSuiteType: TbNavigationSuiteType,
     enabled: Boolean = true,
     badge: @Composable (() -> Unit)? = null,
     colors: NavigationItemColors? = null,
     interactionSource: MutableInteractionSource? = null,
 ) {
-    if (mainNavigationSuiteType == MainNavigationSuiteType.FloatingNavigationBarCompact) {
+    if (mainNavigationSuiteType == TbNavigationSuiteType.FloatingNavigationBarCompact) {
         IconNavigationItem(
             selected = selected,
             onClick = onClick,
@@ -523,7 +527,7 @@ private fun MainNavigationSuiteItem(
             modifier = modifier,
             interactionSource = interactionSource,
         )
-    } else if (mainNavigationSuiteType != MainNavigationSuiteType.NavigationDrawer) {
+    } else if (mainNavigationSuiteType != TbNavigationSuiteType.NavigationDrawer) {
         androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem(
             selected = selected,
             onClick = onClick,
@@ -592,10 +596,7 @@ private fun mainNavigationSuiteColors(floatingNavBar: Boolean, blur: Boolean): N
 
 // Override navigation bar container color when there is ongoing transition
 @Composable
-private fun AnimatedVisibilityScope.navigationSuiteTransitionColors(
-    navigationSuiteType: MainNavigationSuiteType,
-    defaultColors: NavigationSuiteColors
-): State<NavigationSuiteColors> {
+private fun navigationSuiteColors(navigationSuiteType: TbNavigationSuiteType): NavigationSuiteColors {
     // Replace with NavigationSuiteColors.copy()!!
     val colorsInTransition = NavigationSuiteDefaults.colors(
         navigationBarContainerColor = MaterialTheme.colorScheme.surface,
@@ -605,17 +606,14 @@ private fun AnimatedVisibilityScope.navigationSuiteTransitionColors(
             MaterialTheme.colorScheme.surface
         },
     )
-    return remember(defaultColors) {
-        derivedStateOf { if (transition.isRunning) colorsInTransition else defaultColors }
-    }
+    return colorsInTransition
 }
 
 @Composable
 private fun ExplorePrimaryAction(modifier: Modifier = Modifier, visible: Boolean, onClick: () -> Unit) {
-    val isTransitionActive = LocalAnimatedVisibilityScope.current?.transition?.isRunning == true
     val screenOffset = floatingNavigationBarCompactScreenOffset
     val visibilityAnimation by animateFloatAsState(
-        targetValue = if (visible && !isTransitionActive) 1f else 0f,
+        targetValue = if (visible) 1f else 0f,
         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
     )
     DefaultBackToTopFAB(
@@ -703,77 +701,70 @@ private val Saver: Saver<List<TopAppBarState>, *> = listSaver(
     }
 )
 
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainTransitionDirection(
-    navigationSuiteType: MainNavigationSuiteType,
-    items: List<MainDestination>,
+private fun AnimatedContentTransitionScope<Scene<NavKey>>.mainTransitionDirection(
+    navigationSuiteType: TbNavigationSuiteType,
+    contentKeys: NavEntryContentKeyList,
 ): LayoutDirection? {
     var from = -1
     var to = -1
-    items.fastForEachIndexed { i, dest ->
-        if (from == -1 && initialState.destination.hasRoute(dest::class)) {
+    val initialKey = initialState.entries.lastOrNull()?.contentKey
+    val targetKey = targetState.entries.lastOrNull()?.contentKey
+    contentKeys.fastForEachIndexed { i, dest ->
+        if (from == -1 && initialKey == dest) {
             from = i
-        } else if (to == -1 && targetState.destination.hasRoute(dest::class)) {
+        } else if (to == -1 && targetKey == dest) {
             to = i
         }
     }
     return when {
-        from == -1 || to == -1 -> null // Edge case: initialize
+        from == -1 || to == -1 -> null
 
         navigationSuiteType.isNavigationBar ->
             if (from > to) LayoutDirection.RIGHT_TO_LEFT else LayoutDirection.LEFT_TO_RIGHT
 
-        navigationSuiteType == MainNavigationSuiteType.None -> null
+        navigationSuiteType == TbNavigationSuiteType.None -> null
 
         else -> if (from > to) LayoutDirection.BOTTOM_TO_TOP else LayoutDirection.TOP_TO_BOTTOM
     }
 }
 
 // Pager style enter transition
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainEnterTransition(
-    navigationSuiteType: MainNavigationSuiteType,
-    items: List<MainDestination>,
-): EnterTransition {
-    return when(val direction = mainTransitionDirection(navigationSuiteType, items)) {
-        LayoutDirection.RIGHT_TO_LEFT, LayoutDirection.LEFT_TO_RIGHT -> {
-            slideInHorizontally(
-                animationSpec = MAIN_TRANSITION_SPEC,
-                initialOffsetX = { if (direction == LayoutDirection.LEFT_TO_RIGHT) it else -it }
-            ) + MAIN_FADE_IN_TRANSITION
-        }
-        LayoutDirection.TOP_TO_BOTTOM, LayoutDirection.BOTTOM_TO_TOP -> {
-            slideInVertically(
-                animationSpec = MAIN_TRANSITION_SPEC,
-                initialOffsetY = { if (direction == LayoutDirection.TOP_TO_BOTTOM) it else -it }
-            ) + MAIN_FADE_IN_TRANSITION
-        }
-        else -> MAIN_FADE_IN_TRANSITION
+private fun mainEnterTransition(
+    navigationSuiteType: TbNavigationSuiteType,
+    contentKeys: NavEntryContentKeyList,
+    defaultSpect: ContentTransform,
+): AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform = {
+    when(mainTransitionDirection(navigationSuiteType, contentKeys)) {
+        LayoutDirection.RIGHT_TO_LEFT -> SlideRtl
+
+        LayoutDirection.LEFT_TO_RIGHT -> SlideLtr
+
+        LayoutDirection.TOP_TO_BOTTOM -> SlideTtb
+
+        LayoutDirection.BOTTOM_TO_TOP -> SlideBtt
+
+        else -> defaultSpect
     }
 }
 
-// Pager style exit transition
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.mainExitTransition(
-    navigationSuiteType: MainNavigationSuiteType,
-    items: List<MainDestination>,
-): ExitTransition {
-    return when(val direction = mainTransitionDirection(navigationSuiteType, items)) {
-        LayoutDirection.RIGHT_TO_LEFT, LayoutDirection.LEFT_TO_RIGHT -> {
-            slideOutHorizontally(
-                animationSpec = MAIN_TRANSITION_SPEC,
-                targetOffsetX = { if (direction == LayoutDirection.LEFT_TO_RIGHT) -it else it }
-            ) + MAIN_FADE_OUT_TRANSITION
-        }
-        LayoutDirection.TOP_TO_BOTTOM, LayoutDirection.BOTTOM_TO_TOP -> {
-            slideOutVertically(
-                animationSpec = MAIN_TRANSITION_SPEC,
-                targetOffsetY = { if (direction == LayoutDirection.TOP_TO_BOTTOM) -it else it }
-            ) + MAIN_FADE_OUT_TRANSITION
-        }
-        else -> MAIN_FADE_OUT_TRANSITION
+private fun predictiveTransition(
+    navigationSuiteType: TbNavigationSuiteType,
+    navTransitions: NavTransitions,
+): AnimatedContentTransitionScope<Scene<NavKey>>.(@NavigationEvent.SwipeEdge Int) -> ContentTransform = { event ->
+    if (!navigationSuiteType.isNavigationBar || navTransitions === NavTransitions.DefaultTransitions) {
+        NavTransitions.DefaultTransitions.popTransitionSpec
+    } else {
+        val edgeExitTransition = slideOutHorizontally(
+            targetOffsetX = { if (event == NavigationEvent.EDGE_LEFT) it / 8 else -it / 8 }
+        ) + scaleOut(
+            targetScale = 0.9f
+        )
+        EnterTransition.None togetherWith edgeExitTransition
     }
 }
 
 private val MAIN_TRANSITION_SPEC: FiniteAnimationSpec<IntOffset> =
-    tween(durationMillis = 250, easing = FastOutSlowInEasing)
+    spring(stiffness = Spring.StiffnessMediumLow, visibilityThreshold = IntOffset.VisibilityThreshold)
 
 private val MAIN_FADE_IN_TRANSITION: EnterTransition =
     fadeIn(tween(durationMillis = 300, easing = FastOutSlowInEasing))
@@ -781,40 +772,54 @@ private val MAIN_FADE_IN_TRANSITION: EnterTransition =
 private val MAIN_FADE_OUT_TRANSITION: ExitTransition =
     fadeOut(tween(durationMillis = 300, easing = FastOutSlowInEasing))
 
+private val SlideRtl: ContentTransform by unsafeLazy {
+    ContentTransform(
+        slideInHorizontally(MAIN_TRANSITION_SPEC, initialOffsetX = { -it }) + MAIN_FADE_IN_TRANSITION,
+        slideOutHorizontally(MAIN_TRANSITION_SPEC, targetOffsetX = { it }) + MAIN_FADE_OUT_TRANSITION,
+    )
+}
+
+private val SlideLtr: ContentTransform by unsafeLazy {
+    ContentTransform(
+        slideInHorizontally(MAIN_TRANSITION_SPEC, initialOffsetX = { it }) + MAIN_FADE_IN_TRANSITION,
+        slideOutHorizontally(MAIN_TRANSITION_SPEC, targetOffsetX = { -it }) + MAIN_FADE_OUT_TRANSITION
+    )
+}
+
+private val SlideTtb: ContentTransform by unsafeLazy {
+    ContentTransform(
+        slideInVertically(MAIN_TRANSITION_SPEC, initialOffsetY = { it }) + MAIN_FADE_IN_TRANSITION,
+        slideOutVertically(MAIN_TRANSITION_SPEC, targetOffsetY = { -it }) + MAIN_FADE_OUT_TRANSITION
+    )
+}
+
+private val SlideBtt: ContentTransform by unsafeLazy {
+    ContentTransform(
+        slideInVertically(MAIN_TRANSITION_SPEC, initialOffsetY = { -it }) + MAIN_FADE_IN_TRANSITION,
+        slideOutVertically(MAIN_TRANSITION_SPEC, targetOffsetY = { it }) + MAIN_FADE_OUT_TRANSITION
+    )
+}
+
 @ReadOnlyComposable
 @Composable
-fun calculateMainNavigationSuiteType(): MainNavigationSuiteType {
+fun calculateMainNavigationSuiteType(): TbNavigationSuiteType {
     val uiSettings = LocalUISettings.current
-    return MainNavigationSuiteType.fromNavigationSuiteType(
+    return TbNavigationSuiteType.fromNavigationSuiteType(
         type = calculateNavigationType(LocalWindowAdaptiveInfo.current),
         floating = uiSettings.bottomNavFloating,
         noLabel = uiSettings.bottomNavLabel == NavigationLabel.NONE
     )
 }
 
-private val MainNavigationSuiteType.isNavigationBar
+private val TbNavigationSuiteType.isNavigationBar
     get() = when (this) {
-        MainNavigationSuiteType.FloatingNavigationBar,
-        MainNavigationSuiteType.FloatingNavigationBarCompact,
-        MainNavigationSuiteType.ShortNavigationBarCompact,
-        MainNavigationSuiteType.ShortNavigationBarMedium,
-        MainNavigationSuiteType.NavigationBar -> true
+        TbNavigationSuiteType.FloatingNavigationBar,
+        TbNavigationSuiteType.FloatingNavigationBarCompact,
+        TbNavigationSuiteType.ShortNavigationBarCompact,
+        TbNavigationSuiteType.ShortNavigationBarMedium,
+        TbNavigationSuiteType.NavigationBar -> true
         else -> false
     }
-
-@Stable
-private fun MainNavigationSuiteType.toNavigationSuiteType(): NavigationSuiteType = when (this) {
-    MainNavigationSuiteType.FloatingNavigationBar,
-    MainNavigationSuiteType.FloatingNavigationBarCompact,
-    MainNavigationSuiteType.ShortNavigationBarCompact -> NavigationSuiteType.ShortNavigationBarCompact
-    MainNavigationSuiteType.ShortNavigationBarMedium -> NavigationSuiteType.ShortNavigationBarMedium
-    MainNavigationSuiteType.WideNavigationRailCollapsed -> NavigationSuiteType.WideNavigationRailCollapsed
-    MainNavigationSuiteType.WideNavigationRailExpanded -> NavigationSuiteType.WideNavigationRailExpanded
-    MainNavigationSuiteType.NavigationBar -> NavigationSuiteType.NavigationBar
-    MainNavigationSuiteType.NavigationRail -> NavigationSuiteType.NavigationRail
-    MainNavigationSuiteType.NavigationDrawer -> NavigationSuiteType.NavigationDrawer
-    MainNavigationSuiteType.None -> NavigationSuiteType.None
-}
 
 @Preview("MainNavigationItems", device = Devices.PIXEL_TABLET)
 @Composable
@@ -824,13 +829,13 @@ private fun MainNavigationItemsPreview() = TiebaLiteTheme {
 
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
-            MainNavigationSuiteType.WideNavigationRailCollapsed,
-            MainNavigationSuiteType.WideNavigationRailExpanded,
-            MainNavigationSuiteType.NavigationRail,
-            MainNavigationSuiteType.NavigationDrawer,
+            TbNavigationSuiteType.WideNavigationRailCollapsed,
+            TbNavigationSuiteType.WideNavigationRailExpanded,
+            TbNavigationSuiteType.NavigationRail,
+            TbNavigationSuiteType.NavigationDrawer,
         )
         .forEach { type ->
-            MainNavigationSuite(mainNavigationSuiteType = type, verticalArrangement = Arrangement.Center) {
+            TbNavigationSuite(type, verticalArrangement = Arrangement.Center) {
                 MainNavigationItems(destinations, isSelected, mainNavigationSuiteType = type)
             }
         }
@@ -845,14 +850,14 @@ private fun MainBottomNavigationItemsPreview() = TiebaLiteTheme {
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
-            MainNavigationSuiteType.FloatingNavigationBar,
-            MainNavigationSuiteType.FloatingNavigationBarCompact,
-            MainNavigationSuiteType.ShortNavigationBarCompact,
-            MainNavigationSuiteType.ShortNavigationBarMedium,
-            MainNavigationSuiteType.NavigationBar,
+            TbNavigationSuiteType.FloatingNavigationBar,
+            TbNavigationSuiteType.FloatingNavigationBarCompact,
+            TbNavigationSuiteType.ShortNavigationBarCompact,
+            TbNavigationSuiteType.ShortNavigationBarMedium,
+            TbNavigationSuiteType.NavigationBar,
         )
         .forEach { type ->
-            MainNavigationSuite(mainNavigationSuiteType = type, verticalArrangement = Arrangement.Center) {
+            TbNavigationSuite(type, verticalArrangement = Arrangement.Center) {
                 MainNavigationItems(destinations, isSelected, mainNavigationSuiteType = type)
             }
         }

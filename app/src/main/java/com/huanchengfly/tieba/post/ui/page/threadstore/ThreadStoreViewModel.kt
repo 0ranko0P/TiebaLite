@@ -3,12 +3,13 @@ package com.huanchengfly.tieba.post.ui.page.threadstore
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMap
-import androidx.compose.ui.util.fastMapNotNull
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.repository.ThreadStoreRepository
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
@@ -49,6 +50,8 @@ class ThreadStoreViewModel @Inject constructor(
 
     init {
         refreshInternal()
+        observeThreadStore()
+        observeThreadStoreDel()
     }
 
     override fun createInitialState(): ThreadStoreUiState = ThreadStoreUiState()
@@ -102,26 +105,36 @@ class ThreadStoreViewModel @Inject constructor(
         }
     }
 
-    fun onThreadResult(threadId: Long, markedPostId: Long?) = launchInVM {
+    /**
+     * Observe thread store event from thread page
+     * */
+    private fun observeThreadStore() = viewModelScope.onGlobalEvent<GlobalEvent.ThreadStore> { event ->
+        val threadId = event.threadId
+        val markedPostId: Long = event.markedPostId
         val newData = withContext(Dispatchers.Default) {
-            if (markedPostId != null) {
-                // Update
-                currentState.data.fastMap {
-                    when {
-                        // No changes, return null list
-                        it.id == threadId && it.markPid == markedPostId -> return@withContext null
-                        it.id == threadId -> it.copy(markPid = markedPostId)
-                        else -> it
-                    }
+            currentState.data.fastMap {
+                when {
+                    // No changes, return null list
+                    it.id == threadId && it.markPid == markedPostId -> return@withContext null
+                    it.id == threadId -> it.copy(markPid = markedPostId)
+                    else -> it
                 }
-            } else {
-                // Filter out
-                currentState.data.fastMapNotNull { if (it.id != threadId) it else null }
             }
         }
         if (newData != null) {
             _uiState.update { it.copy(data = newData) }
         }
+    }
+
+    /**
+     * Observe thread store deletion event from thread page
+     * */
+    private fun observeThreadStoreDel() = viewModelScope.onGlobalEvent<GlobalEvent.ThreadStoreDelete> { event ->
+        val threadId = event.threadId
+        val newData = withContext(Dispatchers.Default) {
+            currentState.data.fastFilter { it.id != threadId } // Filter deleted thread
+        }
+        _uiState.update { it.copy(data = newData) }
     }
 
     companion object {

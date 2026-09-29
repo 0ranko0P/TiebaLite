@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import com.huanchengfly.tieba.post.ui.models.Like
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
@@ -25,6 +26,27 @@ sealed interface GlobalEvent : UiEvent {
         val subPostId: Long? = null,
         val newSubPostId: Long? = null,
     ) : GlobalEvent
+
+    data class ThreadLike(
+        val threadId: Long,
+        val like: Like,
+        val forumId: Long = -1,
+    ): GlobalEvent
+
+    /**
+     * 全局事件: 帖子收藏/更新
+     *
+     * @param threadId 帖子 ID
+     * @param markedPostId 收藏到的楼 ID
+     * */
+    data class ThreadStore(val threadId: Long, val markedPostId: Long): GlobalEvent
+
+    /**
+     * 全局事件: 帖子取消收藏
+     *
+     * @param threadId 帖子 ID
+     * */
+    data class ThreadStoreDelete(val threadId: Long): GlobalEvent
 
     data class AddThreadSuccess(
         val newThreadId: Long,

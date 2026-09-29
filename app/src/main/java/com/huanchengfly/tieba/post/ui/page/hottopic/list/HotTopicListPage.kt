@@ -34,12 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.core.network.model.protos.topicList.NewTopicList
-import com.huanchengfly.tieba.post.navigateDebounced
 import com.huanchengfly.tieba.post.theme.Grey300
 import com.huanchengfly.tieba.post.theme.OrangeA700
 import com.huanchengfly.tieba.post.theme.RedA700
@@ -242,8 +240,9 @@ private fun HotTopicList(
 
 @Composable
 fun HotTopicListPage(
+    onBack: () -> Unit,
+    onNavigateHotTopic: (Destination.HotTopicDetail) -> Unit,
     viewModel: HotTopicListViewModel = hiltViewModel<HotTopicListViewModel>(),
-    navigator: NavController
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -253,10 +252,8 @@ fun HotTopicListPage(
         uiState = uiState,
         onRefresh = viewModel::onRefresh,
         onTopicClicked = { item ->
-            navigator.navigateDebounced(
-                route = Destination.HotTopicDetail(item.topic_id, item.topic_name)
-            )
+            onNavigateHotTopic(Destination.HotTopicDetail(item.topic_id, item.topic_name))
         },
-        navigateUp = navigator::navigateUp,
+        navigateUp = onBack,
     )
 }

@@ -350,8 +350,8 @@ private object ClientConfigTransformer: PreferenceTransformer<ClientConfig> {
         config.sampleId?.let { id -> it[stringPreferencesKey(KEY_SAMPLE_ID)] = id }
         config.baiduId?.let { id -> it[stringPreferencesKey(KEY_BAIDU_ID)] = id }
         it[longPreferencesKey(KEY_ACTIVE_TIMESTAMP)] = config.activeTimestamp
-        it[longPreferencesKey(KEY_INSTALL_TIME)] = config.firstInstallTime!!
-        it[longPreferencesKey(KEY_UPDATE_TIME)] = config.lastUpdateTime!!
+        config.firstInstallTime?.let { time -> it[longPreferencesKey(KEY_INSTALL_TIME)] = time }
+        config.lastUpdateTime?.let { time -> it[longPreferencesKey(KEY_UPDATE_TIME)] = time }
     }
 
     private const val KEY_CLIENT_ID = "client_id"

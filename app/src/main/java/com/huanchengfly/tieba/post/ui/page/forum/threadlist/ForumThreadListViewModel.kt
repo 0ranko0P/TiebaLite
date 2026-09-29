@@ -1,20 +1,22 @@
 package com.huanchengfly.tieba.post.ui.page.forum.threadlist
 
 import androidx.compose.runtime.Stable
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.BaseStateViewModel
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
+import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
 import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
+import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.stateInViewModel
+import com.huanchengfly.tieba.post.core.data.model.settings.ForumSortType
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.repository.ExploreRepository.Companion.distinctById
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
-import com.huanchengfly.tieba.post.core.data.model.settings.ForumSortType
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListViewModel.Companion.ForumVMFactory
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatus
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernViewModel.Companion.updateLikeStatusUiStateCommon
@@ -61,6 +63,7 @@ class ForumThreadListViewModel @AssistedInject constructor(
             val sortType = if (type == ForumType.Latest) initialSortType else 0
             loadInternal(sortType, classifyId = null)
         }
+        observeThreadEvent()
     }
 
     private suspend fun loadInternal(sortType: Int, classifyId: Int?, forceNew: Boolean = false) {
@@ -164,15 +167,14 @@ class ForumThreadListViewModel @AssistedInject constructor(
     }
 
     /**
-     * Called when navigating back from thread page.
-     *
-     * @param threadId target thread ID
-     * @param like latest thread like
+     * Observe thread like event from thread page
      * */
-    fun onThreadResult(threadId: Long, like: Like): Unit = launchInVM {
-        val newThreads = currentState.threads.updateLikeStatus(threadId, like)
+    private fun observeThreadEvent() = viewModelScope.onGlobalEvent<GlobalEvent.ThreadLike>(
+        filter = { it.forumId == this.forumId }
+    ) {
+        val newThreads = currentState.threads.updateLikeStatus(threadId = it.threadId, like = it.like)
         if (newThreads != null) {
-            _uiState.update { it.copy(threads = newThreads) }
+            _uiState.update { s -> s.copy(threads = newThreads) }
         }
     }
 

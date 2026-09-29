@@ -25,15 +25,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavKey
 import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.network.Error
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
-import com.huanchengfly.tieba.post.navigateDebounced
-import com.huanchengfly.tieba.post.ui.widgets.compose.BasicPbContentText
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListViewModel.Companion.NotificationsListVmFactory
+import com.huanchengfly.tieba.post.ui.widgets.compose.BasicPbContentText
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
@@ -50,13 +49,13 @@ import java.util.Objects
 fun NotificationsListPage(
     modifier: Modifier = Modifier,
     type: NotificationsType,
+    onNavigate: (NavKey) -> Unit,
     listState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingNone,
     viewModel: NotificationsListViewModel = hiltViewModel<NotificationsListViewModel, NotificationsListVmFactory>(
-        key = Objects.hash(type.name, LocalAccount.current?.uid).toString()
-    ) {
-        it.create(type)
-    }
+        key = Objects.hash(type.name, LocalAccount.current?.uid).toString(),
+        creationCallback = { factory -> factory.create(type) }
+    ),
 ) {
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(NotificationsListUiIntent.Refresh)
@@ -82,6 +81,7 @@ fun NotificationsListPage(
         NotificationsListContent(
             modifier = modifier,
             type = type,
+            onNavigate = onNavigate,
             listState = listState,
             hideBlocked = hideBlocked,
             contentPadding = contentPadding,
@@ -100,6 +100,7 @@ fun NotificationsListPage(
 private fun NotificationsListContent(
     modifier: Modifier = Modifier,
     type: NotificationsType,
+    onNavigate: (NavKey) -> Unit,
     listState: LazyListState = rememberLazyListState(),
     hideBlocked: Boolean = false,
     contentPadding: PaddingValues = PaddingNone,
@@ -107,7 +108,6 @@ private fun NotificationsListContent(
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
 ) {
-    val navigator = LocalNavController.current
     val context = LocalContext.current
     val isLoadingMore = uiState.isLoadingMore
 
@@ -150,7 +150,7 @@ private fun NotificationsListContent(
                                 } else {
                                     Destination.Thread(threadId = info.threadId, postId = info.postId)
                                 }
-                                navigator.navigateDebounced(route)
+                                onNavigate(route)
                             }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -159,7 +159,7 @@ private fun NotificationsListContent(
                             name = info.replyUser.nameShow,
                             avatar = info.replyUser.avatarUrl,
                             onClick = {
-                                navigator.navigateDebounced(Destination.UserProfile(info.replyUser.id))
+                                onNavigate(Destination.UserProfile(info.replyUser.id))
                             },
                             desc = remember { DateTimeUtils.getRelativeTimeString(context, info.time) }
                         )
@@ -191,7 +191,7 @@ private fun NotificationsListContent(
                                     } else {
                                         Destination.Thread(info.threadId)
                                     }
-                                    navigator.navigateDebounced(route)
+                                    onNavigate(route)
                                 }
                                 .background(MaterialTheme.colorScheme.secondaryContainer)
                                 .padding(8.dp),

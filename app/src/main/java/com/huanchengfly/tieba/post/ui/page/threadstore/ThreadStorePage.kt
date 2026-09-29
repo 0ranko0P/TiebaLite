@@ -10,7 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -19,22 +18,17 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
-import com.huanchengfly.tieba.post.navigateDebounced
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.ThreadStore
-import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.Destination.Thread
 import com.huanchengfly.tieba.post.ui.page.Destination.UserProfile
-import com.huanchengfly.tieba.post.ui.page.consumeResult
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadFrom
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadResult
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadResultKey
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
@@ -49,7 +43,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 
 @Composable
 fun ThreadStorePage(
-    navigator: NavController,
+    navigator: Navigator,
     viewModel: ThreadStoreViewModel = hiltViewModel()
 ) {
     MyScaffold(
@@ -118,12 +112,12 @@ fun ThreadStorePage(
             // Initialize click listeners now
             val onUserClicked: (Author, String) -> Unit = { author, extraKey ->
                 val route = author.run { UserProfile(id, avatarUrl, name, transitionKey = extraKey) }
-                navigator.navigateDebounced(route)
+                navigator.navigate(route)
             }
 
             val onThreadClicked: (ThreadStore) -> Unit = { thread ->
-                navigator.navigateDebounced(
-                    route = Thread(
+                navigator.navigate(
+                    key = Thread(
                         threadId = thread.id,
                         postId = thread.markPid,
                         seeLz = habit.favoriteSeeLz,
@@ -158,12 +152,6 @@ fun ThreadStorePage(
                         )
                     }
                 }
-            }
-        }
-
-        LaunchedEffect(Unit) {
-            navigator.consumeResult<Destination.ThreadStore, ThreadResult>(ThreadResultKey)?.run {
-                viewModel.onThreadResult(threadId, markedPostId)
             }
         }
     }

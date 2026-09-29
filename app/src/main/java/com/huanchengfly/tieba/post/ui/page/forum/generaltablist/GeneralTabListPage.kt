@@ -17,12 +17,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
-import com.huanchengfly.tieba.post.navigateDebounced
-import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.LocalNavController
+import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
 import com.huanchengfly.tieba.post.ui.page.forum.generaltablist.GeneralTabListViewModel.Companion.GeneralTabListVMFactory
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.forumThreadList
-import com.huanchengfly.tieba.post.ui.page.main.explore.ConsumeThreadPageResult
 import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -48,8 +45,7 @@ fun GeneralTabListPage(
         it.create(forumName, forumId, navTabInfo, initialSortType)
     },
 ) {
-    val navigator = LocalNavController.current
-
+    val isListDetail = !LocalBackButtonState.current
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = GeneralTabListUiState::isRefreshing,
         initial = false
@@ -71,8 +67,6 @@ fun GeneralTabListPage(
         viewModel.onRefresh()
     }
 
-    ConsumeThreadPageResult<Destination.Forum>(navigator, viewModel::onThreadResult)
-
     StateScreen(
         isEmpty = threadList.isEmpty(),
         isLoading = isRefreshing,
@@ -82,7 +76,7 @@ fun GeneralTabListPage(
         val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-        Container {
+        Container(fluid = isListDetail) {
             SwipeUpLazyLoadColumn(
                 modifier = modifier.fillMaxSize(),
                 state = listState,
@@ -111,10 +105,6 @@ fun GeneralTabListPage(
                     threads = threadList,
                     threadClickListeners = threadClickListeners,
                     onLikeClicked = viewModel::onThreadLikeClicked,
-                    onOriginThreadClicked = {
-                        val route = Destination.Thread(threadId = it.tid.toLong(), forumId = it.fid)
-                        navigator.navigateDebounced(route)
-                    },
                     hideBlocked = hideBlocked,
                 )
             }

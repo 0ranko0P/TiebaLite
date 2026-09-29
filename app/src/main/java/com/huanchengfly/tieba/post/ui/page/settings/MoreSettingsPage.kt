@@ -26,7 +26,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.navigation.NavController
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView.Companion.dumpWebViewVersion
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
@@ -40,12 +39,15 @@ import kotlinx.coroutines.launch
 
 @SuppressLint("WebViewApiAvailability")
 @Composable
-fun MoreSettingsPage(navigator: NavController) {
+fun MoreSettingsPage(
+    onBack: () -> Unit = {},
+    onNavigateWorkInfo: () -> Unit = {},
+) {
     val context = LocalContext.current
 
     SettingsScaffold(
         titleRes = R.string.title_settings_more,
-        onBack = navigator::navigateUp,
+        onBack = onBack,
     ) {
         group(title = R.string.summary_settings_more) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -69,9 +71,7 @@ fun MoreSettingsPage(navigator: NavController) {
 
             preference(
                 title = R.string.title_settings_worker,
-                onClick = {
-                    navigator.navigate(route = SettingsDestination.WorkInfo)
-                },
+                onClick = onNavigateWorkInfo,
                 leadingIcon = Icons.Outlined.Analytics,
             )
         }

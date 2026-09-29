@@ -59,8 +59,9 @@ class ClientConfigManager @Inject constructor(
 
     fun refreshActiveTimestamp() {
         val activeTimestamp = System.currentTimeMillis()
-        this.activeTimestamp = activeTimestamp
-        clientConfigSettings.save { it.copy(activeTimestamp = activeTimestamp) }
+        if (activeTimestamp - this.activeTimestamp >= 60 * 1000) {
+            this.activeTimestamp = activeTimestamp
+        }
     }
 
     private fun sync(clientId: String?) = coroutineScope.launch {

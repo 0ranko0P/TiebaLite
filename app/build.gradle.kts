@@ -111,10 +111,9 @@ android {
 kotlin {
     compilerOptions {
         freeCompilerArgs.addAll(
-            "-Xcontext-parameters",
-            "-opt-in=kotlin.RequiresOptIn",
             "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
             "-opt-in=androidx.compose.ui.ExperimentalMediaQueryApi",
+            "-opt-in=androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
@@ -130,6 +129,9 @@ configurations.configureEach {
 
 dependencies {
     implementation(project(":core:data"))
+    implementation(project(":core:designsystem"))
+    implementation(project(":core:navigation"))
+    implementation(project(":core:ui"))
 
     implementation(libs.jetbrains.annotations)
     implementation(libs.kotlin.stdlib)
@@ -158,6 +160,8 @@ dependencies {
 
     // Material compose
     implementation(libs.bundles.compose.md3)
+    implementation(libs.androidx.compose.material3.adaptive)
+    implementation(libs.androidx.compose.material3.adaptive.nav3)
     implementation(libs.androidx.compose.material.iconsCore)
     // Optional - Add full set of material icons
     implementation(libs.androidx.compose.material.iconsExtended)

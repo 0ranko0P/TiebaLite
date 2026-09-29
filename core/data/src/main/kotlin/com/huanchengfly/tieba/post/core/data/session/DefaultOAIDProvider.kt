@@ -32,14 +32,12 @@ import javax.inject.Singleton
 class DefaultOAIDProvider @Inject constructor(
     @param:ApplicationContext val context: Context,
     private val clientConfigManagerProvider: Provider<ClientConfigManager>,
-    settingsRepository: SettingsRepository
+    private val settingsRepositoryProvider: Provider<SettingsRepository>
 ): OAIDProvider {
 
     init {
         initOAID()
     }
-
-    private val clientSettings = settingsRepository.clientConfig
 
     override var appFirstInstallTime: Long = 0
 
@@ -73,9 +71,10 @@ class DefaultOAIDProvider @Inject constructor(
         appLastUpdateTime = config.lastUpdateTime ?: context.packageInfo.lastUpdateTime
 
         // Make app install time constant, save to settings
-        if (config.firstInstallTime == null) {
+        if (config.firstInstallTime == null || config.lastUpdateTime == null) {
             config = config.copy(firstInstallTime = appFirstInstallTime, lastUpdateTime = appLastUpdateTime)
-            clientSettings.set(config)
+            val clientSettings = settingsRepositoryProvider.get().clientConfig
+            clientSettings.save { it.copy(firstInstallTime = appFirstInstallTime, lastUpdateTime = appLastUpdateTime) }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
             context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PERMISSION_GRANTED
