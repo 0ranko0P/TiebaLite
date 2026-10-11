@@ -49,6 +49,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.flow.filterIsInstance
 
 @Composable
@@ -170,9 +172,9 @@ private fun DislikeMenu(
                     onDismiss?.invoke()
                 },
                 modifier = modifier.withNonNull(hazeState) {
+                    val hazeTints = listOf(HazeTint(MaterialTheme.colorScheme.background.copy(alpha = 0.74f)))
                     Modifier.hazeSource(state, zIndex = 1f)
-                        .defaultHazeEffect()
-                        .background(color = MaterialTheme.colorScheme.background.copy(alpha = 0.74f))
+                        .hazeEffect(state) { tints = hazeTints }
                 },
                 offset = DpOffset.Zero,
                 shape = menuShape,

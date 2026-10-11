@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -60,6 +61,7 @@ import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
 import com.huanchengfly.tieba.post.core.navigation.Navigator
+import com.huanchengfly.tieba.post.core.ui.util.isPostExitAniRunning
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
@@ -117,6 +119,7 @@ fun SubPostsPage(
 ) {
     val threadId: Long = navKey.threadId
     val isSheet: Boolean = navKey.isSheet
+    val animatedContentScope = LocalNavAnimatedContentScope.current
     val context = LocalContext.current
     val useStickyHeader = LocalHabitSettings.current.stickyHeader
     val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
@@ -236,6 +239,7 @@ fun SubPostsPage(
         BlurScaffold(
             topHazeBlock = {
                 blurEnabled = !topAppBarScrollBehavior.isFullyCollapsed &&
+                        !animatedContentScope.isPostExitAniRunning &&
                         (lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping)
             },
             topBar = {

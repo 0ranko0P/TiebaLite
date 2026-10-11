@@ -20,6 +20,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -42,6 +43,7 @@ import dev.chrisbanes.haze.HazeEffectScope
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 
@@ -57,14 +59,21 @@ class TbHazeState(colorScheme: ExtendedColorScheme) {
     // Disable input scale on dark mode to reduce banding artifact
     val inputScale = if (colorScheme.darkTheme) HazeInputScale.None else DefaultHazeInputScale
 
+    /***
+     * Default scrim used whenever background blur is disabled.
+     * */
+    val fallbackTint = HazeTint(color = colorScheme.colorScheme.surface)
+
     fun Modifier.defaultHazeEffect(
         style: HazeStyle = hazeStyle,
+        fallbackTint: HazeTint = this@TbHazeState.fallbackTint,
         block: (HazeEffectScope.() -> Unit)? = null,
     ): Modifier = this.hazeEffect(state, style) {
         if (block != null) {
             block()
         }
-        inputScale = this@TbHazeState.inputScale
+        this.inputScale = this@TbHazeState.inputScale
+        this.fallbackTint = if (blurEnabled) HazeTint.Unspecified else fallbackTint
     }
 
     companion object {
@@ -84,6 +93,12 @@ fun rememberTbHazeState(): TbHazeState {
     val colorSchemeExt = LocalExtendedColorScheme.current
 
     return remember(colorSchemeExt.colorScheme) { TbHazeState(colorSchemeExt) }
+}
+
+@ReadOnlyComposable
+@Composable
+fun isHazeBlurEnabled(): Boolean {
+    return !MaterialTheme.colorScheme.isTranslucent && !LocalUISettings.current.reduceMotion
 }
 
 /**
@@ -122,7 +137,7 @@ private inline fun TbHazeState.HazeBox(
     noinline hazeBlock: (HazeEffectScope.() -> Unit)? = null,
 ) {
     Box(
-        modifier = modifier.defaultHazeEffect(style, hazeBlock),
+        modifier = modifier.defaultHazeEffect(style, block = hazeBlock),
         content = { content() }
     )
 }
@@ -131,8 +146,6 @@ private inline fun TbHazeState.HazeBox(
  * Material Scaffold with real-time backdrop blurring effect on [topBar] and [bottomBar].
  *
  * @param modifier the [Modifier] to be applied to this scaffold
- * @param attachHazeContentState whether or not [content] is captured as background
- *   content for [hazeEffect] child nodes.
  * @param topBar top app bar of the screen, typically a [TopAppBar]
  * @param topHazeBlock define the styling and visual properties for [TopAppBar]
  * @param bottomBar bottom bar of the screen, typically a [NavigationBar]
@@ -152,7 +165,6 @@ private inline fun TbHazeState.HazeBox(
 @Composable
 fun BlurScaffold(
     modifier: Modifier = Modifier,
-    attachHazeContentState: Boolean = true,
     topBar: @Composable () -> Unit = {},
     topHazeBlock: (HazeEffectScope.() -> Unit)? = null,
     bottomBar: @Composable () -> Unit = BlurNavigationBarPlaceHolder,
@@ -165,8 +177,7 @@ fun BlurScaffold(
     contentColor: Color = MaterialTheme.colorScheme.onBackground,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    val isTranslucent = MaterialTheme.colorScheme.isTranslucent
-    if (!isTranslucent && !LocalUISettings.current.reduceEffect) {
+    if (isHazeBlurEnabled()) {
         val hazeState = rememberTbHazeState()
 
         CompositionLocalProvider(
@@ -189,11 +200,7 @@ fun BlurScaffold(
                 containerColor = backgroundColor,
                 contentColor = contentColor
             ) { paddingValues ->
-                if (attachHazeContentState) {
-                    Box(modifier = Modifier.hazeSource(hazeState.state)) {
-                        content(paddingValues)
-                    }
-                } else {
+                Box(modifier = Modifier.hazeSource(hazeState.state)) {
                     content(paddingValues)
                 }
             }
@@ -201,7 +208,7 @@ fun BlurScaffold(
     } else {
         MyScaffold(
             modifier = modifier,
-            useMD2Layout = isTranslucent,
+            useMD2Layout = MaterialTheme.colorScheme.isTranslucent,
             topBar = topBar,
             bottomBar = bottomBar,
             snackbarHostState = snackbarHostState,

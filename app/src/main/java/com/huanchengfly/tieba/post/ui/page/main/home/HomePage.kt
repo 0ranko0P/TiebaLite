@@ -124,7 +124,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeSource
 import kotlin.random.Random
 
@@ -443,7 +442,6 @@ fun AnimatedContentScope.HomePage(
             TopAppBarPaged(
                 modifier = Modifier
                     .topAppBarBlurEffect(
-                        transitionTint = HazeTint(MaterialTheme.colorScheme.surface),
                         hazeState = hazeState,
                         blurEnabled = { gridState.canScrollBackward || scrollBehavior.isOverlapping }
                     ),

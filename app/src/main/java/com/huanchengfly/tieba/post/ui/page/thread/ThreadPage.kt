@@ -99,7 +99,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.LocalHabitSettings
-import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -116,6 +115,7 @@ import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.ui.animation.animateEnterExit
 import com.huanchengfly.tieba.post.core.ui.animation.defaultVerticalEnterTransition
 import com.huanchengfly.tieba.post.core.ui.animation.defaultVerticalExitTransition
+import com.huanchengfly.tieba.post.core.ui.util.isPostExitAniRunning
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
@@ -134,7 +134,6 @@ import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStoreUiEvent
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.CardHorizontalSpacing
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
@@ -142,25 +141,29 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
-import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
+import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PlainTooltipBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
+import com.huanchengfly.tieba.post.ui.widgets.compose.TbHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.collapsedFraction
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.fixedTopBarPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
+import com.huanchengfly.tieba.post.ui.widgets.compose.isHazeBlurEnabled
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberTbHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.useStickyHeaderWorkaround
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.trace
+import dev.chrisbanes.haze.HazeTint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -224,12 +227,14 @@ fun ThreadPage(
     val threadId: Long = navKey.threadId
     val postId: Long = navKey.postId
     val extra: ThreadFrom? = navKey.from
+    val animatedContentScope = LocalNavAnimatedContentScope.current
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val isListDetail = !LocalBackButtonState.current
     val snackbarHostState = rememberSnackbarHostState()
     val useStickyHeader = LocalHabitSettings.current.stickyHeader
     val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
+    val hazeState = if (isHazeBlurEnabled()) rememberTbHazeState() else null
 
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val isEmpty by remember {
@@ -404,14 +409,17 @@ fun ThreadPage(
         error = state.error,
         onReload = onRefreshClicked,
     ) {
-        BlurScaffold(
-            topHazeBlock = {
-                blurEnabled = !topAppBarScrollBehavior.isFullyCollapsed &&
-                        (lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping)
-            },
-            attachHazeContentState = false, // Attach manually since we're blurring the BottomSheet
+        MyScaffold(
+            useMD2Layout = hazeState == null,
             topBar = {
                 CenterAlignedTopAppBar(
+                    modifier = Modifier.withNonNull(hazeState) {
+                        Modifier.defaultHazeEffect {
+                            blurEnabled = !topAppBarScrollBehavior.isFullyCollapsed &&
+                                    !animatedContentScope.isPostExitAniRunning &&
+                                    (lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping)
+                        }
+                    },
                     title = {
                         state.forum?.let { forum ->
                             ForumTitleChip(forum = forum) {
@@ -462,7 +470,7 @@ fun ThreadPage(
                             .padding(horizontal = CardHorizontalSpacing)
                             .withNonNull(LocalSharedTransitionScope.current) {
                                 Modifier.animateEnterExit(
-                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    animatedVisibilityScope = animatedContentScope,
                                     enter = defaultVerticalEnterTransition(topToBottom = false),
                                     exit = defaultVerticalExitTransition(topToBottom = false),
                                 )
@@ -473,16 +481,15 @@ fun ThreadPage(
                         onJumpPage = jumpToPageDialogState::show,
                         like = state.thread?.like ?: LikeZero,
                         onLiked = viewModel::onThreadLikeClicked,
+                        hazeState = hazeState,
                         scrollBehavior = toolbarScrollBehavior
                     )
                 }
             },
-            bottomHazeBlock = { blurEnabled = false },
             snackbarHostState = snackbarHostState,
             snackbarHost = { SwipeToDismissSnackbarHost(hostState = snackbarHostState) },
             backgroundColor = Color.Transparent,
         ) { padding ->
-            val hazeState = LocalHazeState.current
             // Ignore Scaffold padding top changes if workaround enabled
             val contentPadding = padding.fixedTopBarPadding()
             Container(fluid = isListDetail) {
@@ -843,13 +850,15 @@ private fun ThreadFloatingToolbar(
     onJumpPage: () -> Unit = {},
     like: Like = LikeZero,
     onLiked: () -> Unit = {},
+    hazeState: TbHazeState? = null,
     scrollBehavior: FloatingToolbarScrollBehavior? = null,
     shadowElevation: Dp = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
 ) {
+    val animatedContentScope = LocalNavAnimatedContentScope.current
     val colorScheme = MaterialTheme.colorScheme
     // Default: FloatingToolbarTokens.VibrantContainerColor
     val toolbarContainerColor = colorScheme.primaryContainer.let {
-        if (!colorScheme.isTranslucent && !LocalUISettings.current.reduceEffect) it.copy(alpha = 0.7f) else it
+        if (hazeState != null) it.copy(alpha = 0.7f) else it
     }
 
     ProvideContentColor(colorScheme.onPrimaryContainer) {
@@ -864,7 +873,11 @@ private fun ThreadFloatingToolbar(
                     this.shape = CircleShape
                     this.clip = true
                 }
-                .withNonNull(LocalHazeState.current) { Modifier.defaultHazeEffect() }
+                .withNonNull(hazeState) {
+                    Modifier.defaultHazeEffect(fallbackTint = HazeTint(colorScheme.primaryContainer)) {
+                        blurEnabled = !animatedContentScope.transition.isRunning
+                    }
+                }
                 .background(color = toolbarContainerColor, shape = CircleShape)
                 .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,

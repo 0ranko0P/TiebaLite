@@ -39,9 +39,12 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
-import com.huanchengfly.tieba.post.core.navigation.Navigator
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
@@ -49,9 +52,6 @@ import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.explore.ExploreType
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
-import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType
-import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
-import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.ui.page.main.OnMainNavigationScrollTopEvent
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
@@ -72,7 +72,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
-import dev.chrisbanes.haze.HazeTint
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -173,7 +172,6 @@ fun AnimatedContentScope.ExplorePage(
     navigator: Navigator,
 ) {
     val context = LocalContext.current
-    val colorScheme = MaterialTheme.colorScheme
     val coroutineScope = rememberCoroutineScope()
     val navigationSuiteType = calculateMainNavigationSuiteType()
     // Hide FAB on FloatingNavigationBarCompact
@@ -219,7 +217,6 @@ fun AnimatedContentScope.ExplorePage(
             TopAppBarPaged(
                 modifier = Modifier
                     .topAppBarBlurEffect(
-                        transitionTint = HazeTint(colorScheme.surface),
                         hazeState = hazeState,
                         blurEnabled = { !fabHideStates[pagerState.currentPage] || pagerState.isScrolling }
                     ),
@@ -306,19 +303,14 @@ fun AnimatedContentScope.ExplorePage(
 
 context(animatedContentScope: AnimatedContentScope)
 fun Modifier.topAppBarBlurEffect(
-    transitionTint: HazeTint = HazeTint.Unspecified,
     hazeState: TbHazeState?,
     blurEnabled: () -> Boolean,
-): Modifier = this then Modifier
-    .withNonNull(hazeState) {
-        Modifier.defaultHazeEffect {
-            // Disable background blur when MainNavHost transition is running
-            this.blurEnabled = !animatedContentScope.transition.isRunning && blurEnabled()
-            if (transitionTint !== HazeTint.Unspecified) {
-                this.fallbackTint = if (this.blurEnabled) HazeTint.Unspecified else transitionTint
-            }
-        }
+): Modifier = this.withNonNull(hazeState) {
+    Modifier.defaultHazeEffect {
+        // Disable background blur when MainNavHost transition is running
+        this.blurEnabled = !animatedContentScope.transition.isRunning && blurEnabled()
     }
+}
 
 @Composable
 fun LaunchedFabStateEffect(
