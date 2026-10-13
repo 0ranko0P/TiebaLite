@@ -14,13 +14,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -32,23 +31,28 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FormatPaint
 import androidx.compose.material.icons.rounded.PsychologyAlt
 import androidx.compose.material.icons.rounded.SentimentVerySatisfied
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ComposeUiFlags
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.derivedMediaQuery
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -56,7 +60,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -74,7 +81,10 @@ import com.huanchengfly.tieba.post.components.TiebaWebView.Companion.launchCusto
 import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
+import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.page.settings.collectSeeLzPreference
 import com.huanchengfly.tieba.post.ui.page.settings.darkImagePreference
 import com.huanchengfly.tieba.post.ui.page.settings.darkThemeModePreference
@@ -85,13 +95,13 @@ import com.huanchengfly.tieba.post.ui.page.settings.imageLoadPreference
 import com.huanchengfly.tieba.post.ui.page.settings.reduceEffectPreference
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
-import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.containerColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.contentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPrefsScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedTextPrefsScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewState
 import kotlinx.coroutines.CoroutineScope
@@ -144,7 +154,7 @@ fun WelcomeScreen(
     }
 
     val backBtnEnabled by remember {
-        derivedStateOf { !pagerState.isFirstPage }
+        derivedStateOf { !pagerState.isFirstPage && !pagerState.isLastPage }
     }
 
     // Setup nullable button click listeners
@@ -165,15 +175,27 @@ fun WelcomeScreen(
 
     MyScaffold(
         bottomBar = {
-            BottomBar(
+            val isWindowWidthCompact = isWindowWidthCompact()
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Make buttons visually aligned with dual title
-                    .padding(22.dp, Dp.Hairline, 30.dp, 30.dp),
-                onBack = onBackClicked.takeIf { backBtnEnabled },
-                onLogin = onLoginClicked.takeIf { pagerState.isLastPage },
-                onProceed = onProceedClicked.takeIf { proceedBtnEnabled }
-            )
+                    .windowInsetsPadding(NavigationBarDefaults.windowInsets),
+                contentAlignment = Alignment.TopEnd
+            ) {
+                BottomBar(
+                    modifier = Modifier
+                        .fillMaxWidth(if (isWindowWidthCompact) 1.0f else 0.5f)
+                        // Make buttons visually aligned with dual title's box content
+                        .padding(if (isWindowWidthCompact) {
+                            PaddingValues(16.dp, Dp.Hairline, 16.dp, 30.dp)
+                        } else {
+                            PaddingValues(12.dp, Dp.Hairline, 48.dp, 30.dp)
+                        }),
+                    onBack = onBackClicked.takeIf { backBtnEnabled },
+                    onLogin = onLoginClicked.takeIf { pagerState.isLastPage },
+                    onProceed = onProceedClicked.takeIf { proceedBtnEnabled }
+                )
+            }
         },
     ) { contentPadding ->
         HorizontalPager(
@@ -222,7 +244,7 @@ private fun BottomBar(
     onLogin: (() -> Unit)?,
     onProceed: (() -> Unit)?
 ) = Row(
-    modifier = modifier.windowInsetsPadding(WindowInsets.navigationBars)
+    modifier = modifier
 ) {
     val none: () -> Unit = { }
 
@@ -241,11 +263,15 @@ private fun BottomBar(
     Spacer(modifier = Modifier.width(8.dp))
 
     // Proceed button always visible
-    PositiveButton(
-        text = stringResource(if (onLogin == null) R.string.button_next else R.string.button_no_login),
+    Button(
         enabled = onProceed != null,
         onClick = onProceed ?: none
-    )
+    ) {
+        Text(
+            text = stringResource(if (onLogin == null) R.string.button_next else R.string.button_no_login),
+            fontWeight = FontWeight.Bold
+        )
+    }
 }
 
 @Composable
@@ -256,35 +282,68 @@ fun DualTitleContent(
     @StringRes subtitle: Int,
     content: (@Composable BoxScope.() -> Unit)? = null
 ) {
-    Column(
-        modifier = modifier.fillMaxSize(),
-    ) {
-        Column(
-            modifier = Modifier.padding(30.dp)
-        ) {
-            Box(modifier = Modifier.size(size = Sizes.Small), content = icon)
+    val movableTitleContent = remember {
+        movableContentOf<Alignment.Horizontal> { horizontalAlignment ->
+            val largerText by derivedMediaQuery { windowHeight >= 800.dp }
+            Column(
+                modifier = Modifier.padding(30.dp),
+                horizontalAlignment = horizontalAlignment,
+            ) {
+                Box(
+                    modifier = Modifier.size(size = if (largerText) Sizes.Large else Sizes.Small),
+                    content = icon
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(title),
-                style = MaterialTheme.typography.headlineSmall
-            )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(title),
+                    style = MaterialTheme.typography.run {
+                        if (largerText) headlineMediumEmphasized else headlineSmallEmphasized
+                    },
+                )
 
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(subtitle),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.titleMedium
-            )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(subtitle),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.run {
+                        if (largerText) titleLarge else titleMedium
+                    }
+                )
+            }
         }
+    }
 
-        if (content != null) {
-            Spacer(modifier = Modifier.weight(0.75f))
-            Box(
-                modifier = Modifier.padding(start = 12.dp, end = 18.dp), // Visually aligned
-                content = content
-            )
-            Spacer(modifier = Modifier.weight(0.25f))
+    if (isWindowWidthCompact()) {
+        Column(
+            modifier = modifier.fillMaxSize(),
+        ) {
+            movableTitleContent(Alignment.Start)
+            if (content != null) {
+                Spacer(modifier = Modifier.weight(0.75f))
+                Box(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    content = content
+                )
+                Spacer(modifier = Modifier.weight(0.25f))
+            }
+        }
+    } else {
+        Row(
+            modifier = modifier.fillMaxSize(),
+        ) {
+            Box(Modifier.weight(1.0f), contentAlignment = Alignment.TopCenter) {
+                movableTitleContent(Alignment.CenterHorizontally)
+            }
+            if (content != null) {
+                Box(
+                    modifier = Modifier
+                        .weight(1.0f)
+                        .padding(start = 12.dp, top = 30.dp, end = 48.dp, bottom = 24.dp)
+                        .align(Alignment.Bottom),
+                    content = content
+                )
+            }
         }
     }
 }
@@ -332,7 +391,7 @@ private fun UaPage(modifier: Modifier = Modifier, accepted: Boolean, onAcceptCha
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = if (isWindowWidthCompact()) 16.dp else 42.dp),
     ) {
         UaWebView(modifier = Modifier.weight(1.0f), uaAcceptable = uaAcceptable) {
             uaAcceptable = true
@@ -477,6 +536,27 @@ fun UaWebView(
             // Make UA acceptable immediately when WebView non-scrollable
             if (!(state.webView as TiebaWebView).isContentVerticalScrollable) {
                 onUaAcceptable()
+            }
+        }
+    }
+}
+
+@Preview("DualTitleContent")
+@Preview("DualTitleContentExpanded", device = Devices.PIXEL_FOLD)
+@Composable
+private fun DualTitleContentPreview() = TiebaLiteTheme {
+    ComposeUiFlags.isMediaQueryIntegrationEnabled = true
+    Surface {
+        DualTitleContent(
+            modifier = Modifier.fillMaxSize(),
+            icon = rememberVectorPainter(Icons.Rounded.PsychologyAlt),
+            title = R.string.welcome_habit,
+            subtitle = R.string.welcome_habit_subtitle,
+        ) {
+            SegmentedTextPrefsScreen {
+                repeat(5) { i ->
+                    preference(title = "Item $i", icon = TbIcons.RegularExpression)
+                }
             }
         }
     }
