@@ -83,9 +83,9 @@ import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.core.database.model.History
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.LocalNavSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.WidthSizeClasses
-import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
@@ -101,7 +101,6 @@ import com.huanchengfly.tieba.post.ui.models.LikedForum
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.OnMainNavigationScrollTopEvent
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
-import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.explore.topAppBarBlurEffect
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
@@ -489,7 +488,7 @@ fun AnimatedContentScope.HomePage(
             }
         },
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
-        bottomBarAtop = calculateMainNavigationSuiteType().isFloatingNavigationBar,
+        bottomBarAtop = LocalNavSuiteScaffoldState.current.layoutType.isFloatingNavigationBar,
     ) { contentPaddings ->
         val coroutineScope = rememberCoroutineScope()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -524,18 +523,16 @@ fun AnimatedContentScope.HomePage(
             isLoading = uiState.isLoading,
             onReload = viewModel::onRefresh.takeIf { loggedIn },
             emptyScreen = {
-                EmptyScreen(onExploreClicked = onExploreClicked)
+                if (loggedIn) {
+                    EmptyScreen(onExploreClicked = onExploreClicked)
+                } else {
+                    GuestScreen(onExploreClicked = onExploreClicked, onLoginClicked = onLoginClicked)
+                }
             },
             loadingScreen = {
                 HomePageSkeletonScreen(listSingle = listSingle, gridCells = gridCells)
             },
-            errorScreen = {
-                if (uiState.error is TiebaNotLoggedInException) {
-                    GuestScreen(onExploreClicked = onExploreClicked, onLoginClicked = onLoginClicked)
-                } else  {
-                    ErrorScreen(error = uiState.error)
-                }
-            },
+            errorScreen = { ErrorScreen(error = uiState.error) },
             screenPadding = contentPaddings
         ) {
             PullToRefreshBox(

@@ -7,6 +7,8 @@ import kotlin.reflect.KClass
 
 inline fun <reified T : NavKey> Navigator.popUpNavigate(key: NavKey, inclusive: Boolean = false) {
     val backStack = state.currentSubStack
+    if (backStack.firstOrNull() == key) return
+
     val index = backStack.indexOfLast { it is T }
 
     if (index != -1) {

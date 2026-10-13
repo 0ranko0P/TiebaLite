@@ -20,10 +20,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState.Companion.Saver
 
-var LocalNavSuiteScaffoldState = staticCompositionLocalOf<TbNavigationSuiteScaffoldState?> { null }
+val LocalNavSuiteScaffoldState = staticCompositionLocalOf<TbNavigationSuiteScaffoldState> {
+    error("No TbNavigationSuiteScaffoldState is available")
+}
 
 class TbNavigationSuiteScaffoldState(
-    var initialValue: NavigationSuiteScaffoldValue
+    val initialValue: NavigationSuiteScaffoldValue
 ): NavigationSuiteScaffoldState {
 
     var layoutType by mutableStateOf(TbNavigationSuiteType.None)

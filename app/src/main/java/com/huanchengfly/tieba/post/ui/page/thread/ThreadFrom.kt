@@ -23,9 +23,9 @@ sealed class ThreadFrom(val tag: String) {
 
     data class Store(val maxPid: Long, val maxFloor: Int): ThreadFrom(FROM_STORE)
 
-    object Personalized: ThreadFrom(FROM_PERSONALIZED)
+    data object Personalized: ThreadFrom(FROM_PERSONALIZED)
 
-    object History: ThreadFrom(FROM_HISTORY)
+    data object History: ThreadFrom(FROM_HISTORY)
 }
 
 object ThreadFromSerializer: KSerializer<ThreadFrom> {

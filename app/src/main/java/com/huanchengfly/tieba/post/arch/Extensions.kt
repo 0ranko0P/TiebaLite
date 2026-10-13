@@ -37,7 +37,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flowOn
@@ -94,15 +93,13 @@ inline fun <T> Flow<T>.stateInViewModel(
 @Composable
 inline fun <E: UiEvent> Flow<E>.collectUiEventWithLifecycle(
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
-    minActiveState: Lifecycle.State = Lifecycle.State.CREATED,
+    minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
     crossinline collector: suspend Context.(E) -> Unit
 ) {
     val context = LocalContext.current
-    LaunchedEffect(this) {
-        flowWithLifecycle(lifecycleOwner.lifecycle, minActiveState).collectLatest {
-            with(context) {
-                collector(it)
-            }
+    LaunchedEffect(this, lifecycleOwner.lifecycle) {
+        flowWithLifecycle(lifecycleOwner.lifecycle, minActiveState).collect { event ->
+            context.collector(event)
         }
     }
 }

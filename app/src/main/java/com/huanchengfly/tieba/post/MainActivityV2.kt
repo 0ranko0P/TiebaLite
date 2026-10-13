@@ -58,6 +58,7 @@ import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.rememberNavigator
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.ui.common.LocalPbInlineContentCache
 import com.huanchengfly.tieba.post.ui.common.PbInlineContentCache.Companion.rememberPbInlineContentCache
@@ -148,6 +149,8 @@ class MainActivityV2 : BaseComposeActivity() {
     @Composable
     override fun Content() {
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        TiebaBackground(uiState.themeColor)
+
         val habitSettings = uiState.habitSettings ?: return // Initializing ...
         val uiSettings = uiState.uiSettings ?: return
         val videoPreviewState = if (!habitSettings.hideMedia && habitSettings.videoAutoplay) {
@@ -176,7 +179,6 @@ class MainActivityV2 : BaseComposeActivity() {
                 colorScheme = uiState.themeColor.colorScheme,
                 motionScheme = if (!uiSettings.reduceMotion) MotionScheme.expressive() else MotionScheme.standard(),
             ) {
-                TiebaBackground()
                 MainPage(navigator, settingsRepo = viewModel.settingsRepository)
             }
         }
@@ -199,12 +201,12 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     @Composable
-    private fun TiebaBackground() {
+    private fun TiebaBackground(colorSchemeExt: ExtendedColorScheme) {
         val backgroundImage by viewModel.translucentThemeBackground.collectAsStateWithLifecycle()
         if (backgroundImage != null) {
             TranslucentThemeBackground(modifier = Modifier.fillMaxSize(), file = backgroundImage)
         } else {
-            val background = MaterialTheme.colorScheme.background
+            val background = colorSchemeExt.colorScheme.background
             Spacer(modifier = Modifier.fillMaxSize().background(color = background))
         }
     }

@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.database.model.ForumHistory
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.repository.HistoryRepository
 import com.huanchengfly.tieba.post.repository.HomeRepository
 import com.huanchengfly.tieba.post.repository.user.OKSignRepository
@@ -103,7 +104,11 @@ class HomeViewModel @Inject constructor(
 
     private fun refreshInternal(cached: Boolean): Unit = launchInVM {
         _uiState.update { HomeUiState(isLoading = true) }
-        homeRepo.refresh(cached)
+        try {
+            homeRepo.refresh(cached)
+        } catch (_: TiebaNotLoggedInException) {
+            // Ignore
+        }
         delay(200) // wait 200ms for data mapping in forumListsFlow
         _uiState.update { it.copy(isLoading = false, error = null) }
     }

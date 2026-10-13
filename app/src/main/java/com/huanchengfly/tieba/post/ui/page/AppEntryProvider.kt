@@ -1,19 +1,15 @@
 package com.huanchengfly.tieba.post.ui.page
 
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.DialogProperties
-import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.scene.DialogSceneStrategy
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.designsystem.component.PainterDetailPlaceholder
-import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.containsScene
@@ -30,13 +26,11 @@ import com.huanchengfly.tieba.post.ui.page.hottopic.list.HotTopicListPage
 import com.huanchengfly.tieba.post.ui.page.login.LoginPage
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListeners
-import com.huanchengfly.tieba.post.ui.page.main.mainEntry
 import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPageBottomSheet
 import com.huanchengfly.tieba.post.ui.page.report.ReportPage
 import com.huanchengfly.tieba.post.ui.page.search.SearchPage
-import com.huanchengfly.tieba.post.ui.page.settings.settingsEntry
 import com.huanchengfly.tieba.post.ui.page.settings.theme.AppThemePage
 import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsPage
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPage
@@ -45,21 +39,15 @@ import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.user.followlist.FollowListPage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.TbHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.LocalVideoPreviewState
 
-fun appEntries(
+fun EntryProviderScope<NavKey>.appEntry(
+    isListDetail: Boolean,
     navigator: Navigator,
-    settingsRepo: SettingsRepository,
-    hazeState: TbHazeState? = null,
-    navSuiteScaffoldState: TbNavigationSuiteScaffoldState,
-    sharedTransitionScope: SharedTransitionScope? = null,
-): (NavKey) -> NavEntry<NavKey> = entryProvider {
+) {
     val onBack: () -> Unit = navigator::navigateUp
     val detailPaneMetadata = ListDetailSceneStrategy.detailPane() +
             DetailPaneBackHandlerSceneDecoratorStrategy.backHandler()
-
-    mainEntry(navigator, hazeState, navSuiteScaffoldState, sharedTransitionScope)
 
     entry<Destination.AppTheme> {
         AppThemePage(navigator::navigateUp)
@@ -70,7 +58,7 @@ fun appEntries(
     }
 
     entry<Destination.Forum>(
-        metadata = if (navigator.containsScene<Destination.Forum, Destination.Thread>()) {
+        metadata = if (isListDetail && navigator.containsScene<Destination.Forum, Destination.Thread>()) {
             ListDetailSceneStrategy.listPane()
         } else {
             detailPaneMetadata
@@ -179,7 +167,7 @@ fun appEntries(
     }
 
     entry<Destination.Thread>(
-        metadata = if (navigator.containsScene<Destination.Thread, Destination.SubPosts>()) {
+        metadata = if (isListDetail && navigator.containsScene<Destination.Thread, Destination.SubPosts>()) {
             ListDetailSceneStrategy.listPane()
         } else {
             detailPaneMetadata
@@ -229,6 +217,4 @@ fun appEntries(
             onNavigateMain = { navigator.navigate(MainDestination.Home) }
         )
     }
-
-    settingsEntry(navigator, settingsRepo)
 }

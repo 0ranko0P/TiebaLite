@@ -433,7 +433,9 @@ fun ForumPage(
             // FAB visibility: no error, scrolling forward, pager is not scrolling
             val fabVisible by remember {
                 derivedStateOf {
-                    uiState.error == null && scrollOrientationConnection.isScrollingForward && !pagerState.isScrolling
+                    uiState.error == null && scrollOrientationConnection.isScrollingForward &&
+                            navigator.state.currentKey is Destination.Forum && // No FAB on list pane
+                            !pagerState.isScrolling
                 }
             }
 

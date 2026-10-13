@@ -410,7 +410,7 @@ fun ThreadPage(
         onReload = onRefreshClicked,
     ) {
         MyScaffold(
-            useMD2Layout = hazeState == null,
+            useMD2Layout = MaterialTheme.colorScheme.isTranslucent,
             topBar = {
                 CenterAlignedTopAppBar(
                     modifier = Modifier.withNonNull(hazeState) {
@@ -486,6 +486,7 @@ fun ThreadPage(
                     )
                 }
             },
+            bottomBarAtop = true,
             snackbarHostState = snackbarHostState,
             snackbarHost = { SwipeToDismissSnackbarHost(hostState = snackbarHostState) },
             backgroundColor = Color.Transparent,

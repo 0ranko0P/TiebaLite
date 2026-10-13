@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.derivedMediaQuery
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.rememberAsyncImagePainter
 import coil3.compose.rememberConstraintsSizeResolver
 import coil3.imageLoader
@@ -47,11 +49,12 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.crossfade
 import coil3.request.transformations
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeViewModel.Companion.CROP_FILE_PREFIX
 import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUCropResult
 import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.HeightSizeClasses
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.WidthSizeClasses
 import com.huanchengfly.tieba.post.theme.DefaultColors
 import com.huanchengfly.tieba.post.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
@@ -59,7 +62,6 @@ import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.FadedVisibility
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
@@ -155,10 +157,13 @@ class TranslucentThemeActivity : AppCompatActivity() {
                         )
                     },
                 ) { paddingValues ->
-                    val windowSize = LocalWindowAdaptiveInfo.current.windowSizeClass
+                    val useRowLayout by derivedMediaQuery {
+                        (windowHeight < 800.dp && windowWidth > WindowSizeClass.WidthSizeClasses.Expanded) ||
+                                windowHeight <= WindowSizeClass.HeightSizeClasses.Medium
+                    }
                     val state by vm.uiState.collectAsStateWithLifecycle()
 
-                    val wallpaperContent = remember(windowSize) {
+                    val wallpaperContent = remember(useRowLayout) {
                         movableContentOf<Modifier> { modifier ->
                             val sizeResolver = rememberConstraintsSizeResolver()
                             val painter = rememberAsyncImagePainter(
@@ -209,7 +214,7 @@ class TranslucentThemeActivity : AppCompatActivity() {
                         }
                     }
 
-                    if (windowSize.isLooseWindowWidth()) {
+                    if (useRowLayout) {
                         Row(modifier = Modifier.padding(paddingValues)) {
                             wallpaperContent(Modifier.weight(1.0f).fillMaxHeight())
                             themeContent(Modifier.weight(1.0f).fillMaxHeight(), RectangleShape)

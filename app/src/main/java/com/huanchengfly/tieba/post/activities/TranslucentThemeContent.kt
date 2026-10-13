@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.ConstraintsSizeResolver
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.theme.Grey800
 import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
@@ -299,8 +300,9 @@ private fun WallpaperOverlay(
     primary: Color,
     isDarkColor: Boolean
 ) {
-    val colors = remember(primary, isDarkColor) {
-        translucentColorScheme(primary, colorMode = isDarkColor).lightColor
+    val colorSchemeExt = remember(primary, isDarkColor) {
+        val colorScheme = translucentColorScheme(primary, colorMode = isDarkColor).lightColor
+        ExtendedColorScheme(colorScheme, darkTheme = isDarkColor)
     }
     val typography = MaterialTheme.typography.run { // Scale font size up
         copy(
@@ -309,7 +311,7 @@ private fun WallpaperOverlay(
         )
     }
 
-    MaterialTheme(colorScheme = colors, typography = typography) {
+    TiebaLiteTheme(colorSchemeExt, typography = typography) {
         val scale = ScaleFactor(targetSize.width / screen.width, targetSize.height / screen.height)
         AboutPage(
             modifier = Modifier

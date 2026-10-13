@@ -57,3 +57,12 @@ inline fun <T> List<T>.fastIndexOfLast(predicate: (T) -> Boolean): Int {
     }
     return -1
 }
+
+@Suppress("BanInlineOptIn")
+@OptIn(ExperimentalContracts::class)
+inline fun <T, R> List<T>.fastMap(transform: (T) -> R): List<R> {
+    contract { callsInPlace(transform) }
+    val target = ArrayList<R>(size)
+    for (index in indices) { target += transform(this[index]) }
+    return target
+}

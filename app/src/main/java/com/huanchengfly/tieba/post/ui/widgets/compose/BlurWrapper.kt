@@ -98,7 +98,7 @@ fun rememberTbHazeState(): TbHazeState {
 @ReadOnlyComposable
 @Composable
 fun isHazeBlurEnabled(): Boolean {
-    return !MaterialTheme.colorScheme.isTranslucent && !LocalUISettings.current.reduceMotion
+    return !MaterialTheme.colorScheme.isTranslucent && !LocalUISettings.current.reduceEffect
 }
 
 /**

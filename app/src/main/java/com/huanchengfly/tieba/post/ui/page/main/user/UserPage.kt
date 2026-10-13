@@ -57,9 +57,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
-import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
@@ -234,10 +232,9 @@ fun UserPage(viewModel: UserViewModel = hiltViewModel(), navigator: Navigator) {
     val isWindowHeightExpanded = windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND)
 
     MyScaffold(
-        modifier = Modifier.fillMaxSize(),
         useMD2Layout = true,
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
-        bottomBarAtop = calculateMainNavigationSuiteType().isFloatingNavigationBar,
+        bottomBarAtop = false,
     ) { contentPaddings ->
         val account = LocalAccount.current
 

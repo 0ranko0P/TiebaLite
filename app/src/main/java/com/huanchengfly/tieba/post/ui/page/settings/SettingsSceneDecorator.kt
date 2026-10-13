@@ -2,6 +2,8 @@ package com.huanchengfly.tieba.post.ui.page.settings
 
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.annotation.StringRes
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -22,30 +24,49 @@ import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneDecoratorStrategy
 import androidx.navigation3.scene.SceneDecoratorStrategyScope
 import androidx.navigation3.scene.SceneStrategy
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import com.huanchengfly.tieba.post.core.ui.layout.cacheSize
+import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 
 data class SettingsSceneDecorator<T : Any>(
     private val scene: Scene<T>,
+    private val sharedTransitionScope: SharedTransitionScope,
     private val title: Int,
 ) : Scene<T> by scene {
     override val key = scene::class to scene.key
 
     override val content: @Composable (() -> Unit) = {
+        val animatedContentScope = LocalNavAnimatedContentScope.current
+        val isMovableContentCaller =
+            animatedContentScope.transition.targetState == EnterExitState.Visible
+
         Column(modifier = Modifier.fillMaxSize()) {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(title),
-                        fontWeight = FontWeight.Medium,
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-                },
-                navigationIcon = {
-                    LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher?.let { dispatcher ->
-                        BackNavigationIcon(onBackPressed = dispatcher::onBackPressed)
+            Box(
+                modifier = Modifier
+                    .cacheSize(!isMovableContentCaller)
+                    .withNonNull(sharedTransitionScope) {
+                        Modifier.sharedElement(
+                            sharedContentState = rememberSharedContentState("settings-title"),
+                            animatedVisibilityScope = animatedContentScope
+                        )
                     }
-                },
-            )
+            ) {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(title),
+                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                    },
+                    navigationIcon = {
+                        LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher?.let { dispatcher ->
+                            BackNavigationIcon(onBackPressed = dispatcher::onBackPressed)
+                        }
+                    },
+                )
+            }
             Box(Modifier.weight(1f).consumeWindowInsets(TopAppBarDefaults.windowInsets)) {
                 scene.content()
             }
@@ -57,12 +78,14 @@ data class SettingsSceneDecorator<T : Any>(
  * A [SceneStrategy] that returns a [SettingsSceneDecorator] if there is a scene that wants to
  * display settings title.
  */
-class SettingsSceneDecoratorStrategy<T : Any> : SceneDecoratorStrategy<T> {
+class SettingsSceneDecoratorStrategy<T : Any>(
+    private val sharedTransitionScope: SharedTransitionScope,
+) : SceneDecoratorStrategy<T> {
 
     override fun SceneDecoratorStrategyScope<T>.decorateScene(scene: Scene<T>): Scene<T> {
         val (title, alwaysVisible) = scene.metadata[SettingsDecoratorKey] ?: return scene
         return if (alwaysVisible || scene.entries.size > 1) {
-            SettingsSceneDecorator(scene, title)
+            SettingsSceneDecorator(scene, sharedTransitionScope, title)
         } else {
             scene
         }
@@ -78,8 +101,10 @@ class SettingsSceneDecoratorStrategy<T : Any> : SceneDecoratorStrategy<T> {
 }
 
 @Composable
-fun <T : Any> rememberSettingsSceneStrategy(): SettingsSceneDecoratorStrategy<T> {
-    return remember {
-        SettingsSceneDecoratorStrategy()
+fun <T : Any> rememberSettingsSceneStrategy(
+    sharedTransitionScope: SharedTransitionScope
+): SettingsSceneDecoratorStrategy<T> {
+    return remember(sharedTransitionScope) {
+        SettingsSceneDecoratorStrategy(sharedTransitionScope)
     }
 }

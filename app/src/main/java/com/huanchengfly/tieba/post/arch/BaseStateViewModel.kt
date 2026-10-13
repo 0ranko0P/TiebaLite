@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -27,7 +28,9 @@ abstract class BaseStateViewModel<State>: ViewModel() {
     }
     open val uiState: StateFlow<State> get() = _uiState
 
-    protected val _uiEvent: MutableSharedFlow<UiEvent> by lazy { MutableSharedFlow() }
+    protected val _uiEvent: MutableSharedFlow<UiEvent> by lazy {
+        MutableSharedFlow(0, 1, BufferOverflow.DROP_OLDEST)
+    }
     val uiEvent: SharedFlow<UiEvent> get() = _uiEvent
 
     open val currentState: State

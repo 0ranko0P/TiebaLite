@@ -39,6 +39,7 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.LocalNavSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.core.navigation.Navigator
@@ -46,7 +47,6 @@ import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.explore.ExploreType
@@ -54,7 +54,6 @@ import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.OnMainNavigationScrollTopEvent
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
-import com.huanchengfly.tieba.post.ui.page.main.calculateMainNavigationSuiteType
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
@@ -173,7 +172,7 @@ fun AnimatedContentScope.ExplorePage(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val navigationSuiteType = calculateMainNavigationSuiteType()
+    val navigationSuiteType = LocalNavSuiteScaffoldState.current.layoutType
     // Hide FAB on FloatingNavigationBarCompact
     val isFloatingNavBarCompat = navigationSuiteType === TbNavigationSuiteType.FloatingNavigationBarCompact
     val isListDetail = isListDetail()
@@ -248,6 +247,7 @@ fun AnimatedContentScope.ExplorePage(
             val visible by remember {
                 derivedStateOf {
                     !transition.isRunning && scrollOrientationConnection.isScrollingForward &&
+                            navigator.state.currentKey === MainDestination.Explore && // No FAB on list pane
                             !pagerState.isScrolling && !listStates[pagerState.currentPage].isScrollInProgress &&
                             !fabHideStates[pagerState.currentPage]
                 }
@@ -259,7 +259,7 @@ fun AnimatedContentScope.ExplorePage(
         floatingActionButtonPosition = if (isFloatingNavBarCompat) FabPosition.EndOverlay else FabPosition.End,
     ) { contentPadding ->
         Container(
-            modifier = Modifier.onNotNull(hazeState) { hazeSource(state = it.state) },
+            modifier = Modifier.hazeSource(hazeState?.state),
             fluid = isListDetail,
         ) {
             HorizontalPager(

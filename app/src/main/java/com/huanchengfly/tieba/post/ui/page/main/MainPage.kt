@@ -19,7 +19,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
@@ -57,7 +57,6 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
-import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
 import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
 import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
@@ -96,11 +95,11 @@ import androidx.compose.ui.util.lerp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.NavigationEvent
-import androidx.window.embedding.SplitAttributes.LayoutDirection
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
@@ -122,7 +121,6 @@ import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.T
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState.Companion.isVisible
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState.Companion.rememberNavigationSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType
-import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.toNavigationSuiteType
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.calculateNavigationType
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.navigationSuiteScaffoldConsumeWindowInsets
@@ -140,8 +138,9 @@ import com.huanchengfly.tieba.post.ui.common.NavTransitions
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.ui.page.appEntries
+import com.huanchengfly.tieba.post.ui.page.appEntry
 import com.huanchengfly.tieba.post.ui.page.settings.rememberSettingsSceneStrategy
+import com.huanchengfly.tieba.post.ui.page.settings.settingsEntry
 import com.huanchengfly.tieba.post.ui.scenes.rememberTbThemeSceneDecoratorStrategy
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
@@ -149,12 +148,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TbHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberTbHazeState
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import dev.chrisbanes.haze.HazeTint
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * List of [androidx.navigation3.runtime.NavEntry.contentKey]
@@ -180,8 +176,7 @@ val MainDestination.iconRes: Int
     }
 
 val bottomNavigationPlaceholder: @Composable () -> Unit = {
-    val navSuiteScaffoldState = LocalNavSuiteScaffoldState.current
-    val navigationSuiteType = navSuiteScaffoldState?.layoutType ?: calculateMainNavigationSuiteType()
+    val navigationSuiteType = LocalNavSuiteScaffoldState.current.layoutType
     if (navigationSuiteType.isNavigationBar) {
         Spacer(
             modifier = Modifier
@@ -215,11 +210,6 @@ fun MainPage(
     val coroutineScope = rememberCoroutineScope()
     val uiSettings = LocalUISettings.current
     val navigationState = navigator.state
-    val navTransitions = if (!uiSettings.reduceMotion) {
-        NavTransitions.DefaultTransitions
-    } else {
-        NavTransitions.SlideTransitions
-    }
     val loggedIn = LocalAccount.current != null
     val mainDestinations: List<MainDestination> = remember(loggedIn, uiSettings.hideExplore) {
         listOfNotNull(
@@ -237,21 +227,21 @@ fun MainPage(
     val directive = remember(windowAdaptiveInfo) {
         calculatePaneScaffoldDirective(windowAdaptiveInfo).copy(horizontalPartitionSpacerSize = 0.dp)
     }
+    val isListDetail = directive.maxHorizontalPartitions > 1
     val scaffoldState = rememberNavigationSuiteScaffoldState(
         initialValue = NavigationSuiteScaffoldValue.Hidden,
         floating = uiSettings.bottomNavFloating,
         noLabel = uiSettings.bottomNavLabel == NavigationLabel.NONE,
         windowAdaptiveInfo = windowAdaptiveInfo
     )
-    val navigationSuiteType = scaffoldState.layoutType
 
-    val blurEffect = !uiSettings.reduceEffect && !MaterialTheme.colorScheme.isTranslucent
+    val isTranslucent = MaterialTheme.colorScheme.isTranslucent
+    val blurEffect = !uiSettings.reduceEffect && !isTranslucent
     val hazeState = if (blurEffect) rememberTbHazeState() else null
-    val navigationSuiteColors = mainNavigationSuiteColors(uiSettings.bottomNavFloating, blurEffect)
 
     MainNavigationSuiteScaffold(
         state = scaffoldState,
-        hazeState = hazeState.takeIf { navigationSuiteType.isNavigationBar },
+        hazeState = hazeState,
         navigationItems = {
             val messageCount by vm.messageCountFlow.collectAsStateWithLifecycle()
 
@@ -265,17 +255,16 @@ fun MainPage(
                 onReSelect = { dest ->
                     coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(dest))
                 },
-                mainNavigationSuiteType = navigationSuiteType,
+                mainNavigationSuiteType = scaffoldState.layoutType,
                 bottomNavLabel = uiSettings.bottomNavLabel,
                 messageCount = { messageCount },
             )
         },
-        mainNavSuiteType = navigationSuiteType,
-        navigationSuiteColors = navigationSuiteColors,
+        navigationSuiteColors = mainNavigationSuiteColors(uiSettings.bottomNavFloating, blurEffect),
         navigationVerticalArrangement = Arrangement.Center,
         primaryActionContent = {
             val onLoginClicked: () -> Unit = { navigator.navigate(Destination.Login) }
-            when (navigationSuiteType) {
+            when (scaffoldState.layoutType) {
                 TbNavigationSuiteType.WideNavigationRailCollapsed,
                 TbNavigationSuiteType.WideNavigationRailExpanded -> {
                     AccountNavIcon(onLoginClicked, modifier = Modifier.padding(start = 32.dp))
@@ -319,53 +308,69 @@ fun MainPage(
             )
 
             val onBack: () -> Unit = navigator::navigateUp
+            val navTransitions = if (!uiSettings.reduceMotion || isListDetail || isTranslucent) {
+                NavTransitions.DefaultTransitions
+            } else {
+                NavTransitions.SlideTransitions
+            }
             NavDisplay(
                 entries = navigationState.toEntries(
-                    entryProvider = appEntries(navigator, settingsRepo, hazeState, scaffoldState, this)
+                    entryProvider = entryProvider {
+                        mainEntry(navigator, hazeState, scaffoldState)
+
+                        appEntry(isListDetail, navigator)
+
+                        settingsEntry(navigator, settingsRepo)
+                    }
                 ),
                 sceneStrategies = listOf(listDetailStrategy, DialogSceneStrategy()),
                 sceneDecoratorStrategies = listOf(
                     rememberDetailPaneBackHandlerSceneDecoratorStrategy(onBack),
                     rememberTbThemeSceneDecoratorStrategy(directive, sharedTransitionScope = this),
-                    rememberSettingsSceneStrategy(),
+                    rememberSettingsSceneStrategy(sharedTransitionScope = this),
                 ),
                 sharedTransitionScope = this,
-                transitionSpec = mainEnterTransition(navigationSuiteType, mainDestContentKeys, navTransitions.transitionSpec),
+                transitionSpec = topTransitionSpec(
+                    navSuiteScaffoldState = scaffoldState,
+                    contentKeys = mainDestContentKeys,
+                    defaultSpect = navTransitions.transitionSpec
+                ),
                 popTransitionSpec = {
-                    if (targetState.key in mainDestContentKeys) {
-                        MAIN_FADE_IN_TRANSITION togetherWith navTransitions.popExitTransition
-                    } else {
-                        navTransitions.popTransitionSpec
+                    when {
+                        targetState.key in mainDestContentKeys -> {
+                            MAIN_FADE_IN_TRANSITION togetherWith navTransitions.popExitTransition
+                        }
+
+                        else -> navTransitions.popTransitionSpec
                     }
                 },
-                predictivePopTransitionSpec = predictiveTransition(navigationSuiteType, navTransitions),
+                predictivePopTransitionSpec = predictiveTransition(scaffoldState, navTransitions),
                 onBack = onBack,
             )
         }
 
-        LaunchedBottomNavigationEffect(directive, scaffoldState, navigationState)
+        LaunchedBottomNavigationEffect(isListDetail, scaffoldState, navigationState)
     }
 }
 
 @Composable
 private fun LaunchedBottomNavigationEffect(
-    directive: PaneScaffoldDirective,
+    isListDetail: Boolean,
     state: TbNavigationSuiteScaffoldState,
     navigationState: NavigationState,
 ) {
     val fullScreenNavKey = remember {
-        listOf(Destination.UserProfile::class, Destination.Login::class, Destination.Welcome::class)
+        listOf(Destination.Login::class, Destination.AppTheme::class, Destination.UserProfile::class, Destination.Welcome::class)
     }
-    LaunchedEffect(navigationState.currentKey) {
-        val navState = withContext(Dispatchers.Default) {
-            when {
-                navigationState.currentKey is MainDestination -> NavigationSuiteScaffoldValue.Visible
-                directive.maxHorizontalPartitions > 1 && // is list-detail
-                        !fullScreenNavKey.containsType(navigationState.currentKey) -> {
-                    NavigationSuiteScaffoldValue.Visible
-                }
-                else -> NavigationSuiteScaffoldValue.Hidden
+    LaunchedEffect(navigationState.currentKey, isListDetail) {
+        val navState = when {
+            navigationState.currentKey is MainDestination -> NavigationSuiteScaffoldValue.Visible
+
+            isListDetail && !fullScreenNavKey.containsType(navigationState.currentKey) -> {
+                NavigationSuiteScaffoldValue.Visible
             }
+
+            else -> NavigationSuiteScaffoldValue.Hidden
         }
         if (navState !== state.targetValue) state.setState(navState)
     }
@@ -382,9 +387,8 @@ private fun MainNavigationSuiteScaffold(
     navigationItems: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     hazeState: TbHazeState? = null,
-    mainNavSuiteType: TbNavigationSuiteType = calculateMainNavigationSuiteType(),
     navigationBarAtop: Boolean = true,
-    navigationSuiteColors: NavigationSuiteColors = navigationSuiteColors(mainNavSuiteType),
+    navigationSuiteColors: NavigationSuiteColors = NavigationSuiteDefaults.colors(),
     navigationVerticalArrangement: Arrangement.Vertical = NavigationSuiteDefaults.verticalArrangement,
     state: TbNavigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState(),
     primaryActionContent: @Composable (() -> Unit) = {},
@@ -392,8 +396,8 @@ private fun MainNavigationSuiteScaffold(
         NavigationSuiteScaffoldDefaults.primaryActionContentAlignment,
     content: @Composable () -> Unit = {},
 ) {
+    val mainNavSuiteType = state.layoutType
     val navigationSuiteType = mainNavSuiteType.toNavigationSuiteType()
-    val hazeTintOnTransition = HazeTint(color = MaterialTheme.colorScheme.surface)
 
     NavigationSuiteScaffoldLayout(
         modifier = modifier,
@@ -401,11 +405,8 @@ private fun MainNavigationSuiteScaffold(
             TbNavigationSuite(
                 tbNavigationSuiteType = mainNavSuiteType,
                 modifier = Modifier
-                    .withNonNull(hazeState) {
-                        Modifier.defaultHazeEffect {
-                            blurEnabled = state.currentValue.isVisible
-                            fallbackTint = if (blurEnabled) HazeTint.Unspecified else hazeTintOnTransition
-                        }
+                    .withNonNull(hazeState?.takeIf { mainNavSuiteType.isNavigationBar }) {
+                        Modifier.defaultHazeEffect { blurEnabled = state.currentValue.isVisible }
                     },
                 colors = navigationSuiteColors,
                 verticalArrangement = navigationVerticalArrangement,
@@ -596,21 +597,6 @@ private fun mainNavigationSuiteColors(floatingNavBar: Boolean, blur: Boolean): N
     }
 }
 
-// Override navigation bar container color when there is ongoing transition
-@Composable
-private fun navigationSuiteColors(navigationSuiteType: TbNavigationSuiteType): NavigationSuiteColors {
-    // Replace with NavigationSuiteColors.copy()!!
-    val colorsInTransition = NavigationSuiteDefaults.colors(
-        navigationBarContainerColor = MaterialTheme.colorScheme.surface,
-        shortNavigationBarContainerColor = if (navigationSuiteType.isFloatingNavigationBar) {
-            MaterialTheme.colorScheme.vibrantFloatingNavigationBarColor
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
-    )
-    return colorsInTransition
-}
-
 @Composable
 private fun ExplorePrimaryAction(modifier: Modifier = Modifier, visible: Boolean, onClick: () -> Unit) {
     val screenOffset = floatingNavigationBarCompactScreenOffset
@@ -703,10 +689,13 @@ private val Saver: Saver<List<TopAppBarState>, *> = listSaver(
     }
 )
 
-private fun AnimatedContentTransitionScope<Scene<NavKey>>.mainTransitionDirection(
-    navigationSuiteType: TbNavigationSuiteType,
+// Pager style transition
+private fun <T : Any> topTransitionSpec(
+    navSuiteScaffoldState: TbNavigationSuiteScaffoldState,
     contentKeys: NavEntryContentKeyList,
-): LayoutDirection? {
+    defaultSpect: ContentTransform,
+): AnimatedContentTransitionScope<Scene<T>>.() -> ContentTransform = {
+    val navigationSuiteType = navSuiteScaffoldState.layoutType
     var from = -1
     var to = -1
     val initialKey = initialState.entries.lastOrNull()?.contentKey
@@ -718,50 +707,36 @@ private fun AnimatedContentTransitionScope<Scene<NavKey>>.mainTransitionDirectio
             to = i
         }
     }
-    return when {
-        from == -1 || to == -1 -> null
+    when {
+        from == -1 || to == -1 -> defaultSpect
 
-        navigationSuiteType.isNavigationBar ->
-            if (from > to) LayoutDirection.RIGHT_TO_LEFT else LayoutDirection.LEFT_TO_RIGHT
+        navigationSuiteType.isNavigationBar -> if (from > to) SlideRtl else SlideLtr
 
-        navigationSuiteType == TbNavigationSuiteType.None -> null
+        navigationSuiteType === TbNavigationSuiteType.None -> defaultSpect
 
-        else -> if (from > to) LayoutDirection.BOTTOM_TO_TOP else LayoutDirection.TOP_TO_BOTTOM
-    }
-}
-
-// Pager style enter transition
-private fun mainEnterTransition(
-    navigationSuiteType: TbNavigationSuiteType,
-    contentKeys: NavEntryContentKeyList,
-    defaultSpect: ContentTransform,
-): AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform = {
-    when(mainTransitionDirection(navigationSuiteType, contentKeys)) {
-        LayoutDirection.RIGHT_TO_LEFT -> SlideRtl
-
-        LayoutDirection.LEFT_TO_RIGHT -> SlideLtr
-
-        LayoutDirection.TOP_TO_BOTTOM -> SlideTtb
-
-        LayoutDirection.BOTTOM_TO_TOP -> SlideBtt
-
-        else -> defaultSpect
+        else -> if (from > to) SlideBtt else SlideTtb
     }
 }
 
 private fun predictiveTransition(
-    navigationSuiteType: TbNavigationSuiteType,
+    navSuiteScaffoldState: TbNavigationSuiteScaffoldState,
     navTransitions: NavTransitions,
 ): AnimatedContentTransitionScope<Scene<NavKey>>.(@NavigationEvent.SwipeEdge Int) -> ContentTransform = { event ->
-    if (!navigationSuiteType.isNavigationBar || navTransitions === NavTransitions.DefaultTransitions) {
+    // Use scale predictive transition if isReduceMotion, list-detail or isTranslucent is true
+    if (navTransitions === NavTransitions.DefaultTransitions || !navSuiteScaffoldState.layoutType.isNavigationBar) {
         NavTransitions.DefaultTransitions.popTransitionSpec
     } else {
+        val edgeEnterTransition = slideInHorizontally(
+            initialOffsetX = { if (event == NavigationEvent.EDGE_LEFT) -it / 8 else it / 8 }
+        ) + scaleIn(
+            initialScale = 0.9f
+        )
         val edgeExitTransition = slideOutHorizontally(
-            targetOffsetX = { if (event == NavigationEvent.EDGE_LEFT) it / 8 else -it / 8 }
-        ) + scaleOut(
-            targetScale = 0.9f
-        ) + fadeOut(animationSpec = tween(delayMillis = 280))
-        EnterTransition.None togetherWith edgeExitTransition
+            targetOffsetX = { if (event == NavigationEvent.EDGE_LEFT) it * 6 / 10 else -it * 6 / 10 }
+        ) + fadeOut(
+            animationSpec = tween(delayMillis = 100)
+        )
+        edgeEnterTransition togetherWith edgeExitTransition
     }
 }
 
@@ -804,7 +779,7 @@ private val SlideBtt: ContentTransform by unsafeLazy {
 
 @ReadOnlyComposable
 @Composable
-fun calculateMainNavigationSuiteType(): TbNavigationSuiteType {
+private fun calculateMainNavigationSuiteType(): TbNavigationSuiteType {
     val uiSettings = LocalUISettings.current
     return TbNavigationSuiteType.fromNavigationSuiteType(
         type = calculateNavigationType(LocalWindowAdaptiveInfo.current),

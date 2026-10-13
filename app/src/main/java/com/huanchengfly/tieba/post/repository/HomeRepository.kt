@@ -64,7 +64,7 @@ class HomeRepository @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getLikedForums(pinned: Boolean): Flow<PagingData<LikedForum>> = settingsRepo.accountUid
         .flatMapLatest { uid ->
-            if (uid <= 0) throw TiebaNotLoggedInException()
+            if (uid <= 0) return@flatMapLatest flowOf(PagingData.empty())
             Pager(
                 config = homePagingConfig,
                 pagingSourceFactory = {
