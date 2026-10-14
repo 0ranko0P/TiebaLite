@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi
 import androidx.compose.material3.LocalShortNavigationBarOverride
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuite
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteColors
@@ -15,7 +14,6 @@ import com.huanchengfly.tieba.post.core.designsystem.component.FloatingIconNavig
 import com.huanchengfly.tieba.post.core.designsystem.component.FloatingNavigationBarOverride
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.toNavigationSuiteType
 
-@ExperimentalMaterial3ComponentOverrideApi
 @NonRestartableComposable
 @Composable
 fun TbNavigationSuite(

@@ -22,6 +22,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
 import org.jetbrains.kotlin.compose.compiler.gradle.ComposeCompilerGradlePluginExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 /**
  * Configure Compose-specific options
@@ -63,5 +64,17 @@ internal fun Project.configureAndroidCompose(
         @Suppress("UnstableApiUsage")
         stabilityConfigurationFiles
             .add(isolated.rootProject.projectDirectory.file("compose_stability_configuration.txt"))
+    }
+
+    // 0Ranko0p changes: Opt-in experimental APIs
+    configure<KotlinAndroidProjectExtension> {
+        compilerOptions.freeCompilerArgs.addAll(
+            "-opt-in=androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
+            "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
+            "-opt-in=androidx.compose.ui.ExperimentalMediaQueryApi",
+        )
     }
 }

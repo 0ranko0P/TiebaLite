@@ -22,8 +22,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -70,7 +68,6 @@ import com.huanchengfly.tieba.post.core.designsystem.component.FloatingNavigatio
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.NavigationBarHeight
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TallNavigationBarHeight
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 val floatingNavigationBarCompactScreenOffset: Dp
     @Composable
     get() = if (WindowInsets.navigationBars.getBottom(LocalDensity.current) > 0) {
@@ -131,7 +128,6 @@ fun NavigationDrawerItem(
  *   for this item. You can create and pass in your own `remember`ed instance to observe
  *   [Interaction]s and customize the appearance / behavior of this item in different states
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 fun IconNavigationItem(
     selected: Boolean,
@@ -200,7 +196,6 @@ private fun BoxScope.Indicator(
     )
 }
 
-@ExperimentalMaterial3ComponentOverrideApi
 context(scope: ShortNavigationBarOverrideScope)
 private fun Modifier.floatingNavBarContainer(
     height: Dp,
@@ -224,7 +219,6 @@ private fun Modifier.floatingNavBarContainer(
 /**
  * This override provides the default behavior of the [ShortNavigationBar] component.
  */
-@ExperimentalMaterial3ComponentOverrideApi
 object FloatingNavigationBarOverride : ShortNavigationBarOverride {
     @Composable
     override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
@@ -250,7 +244,6 @@ object FloatingNavigationBarOverride : ShortNavigationBarOverride {
 /**
  * This override provides the default behavior of the [ShortNavigationBar] component.
  */
-@ExperimentalMaterial3ComponentOverrideApi
 object FloatingIconNavigationBarOverride : ShortNavigationBarOverride {
     @Composable
     override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
@@ -271,7 +264,6 @@ object FloatingIconNavigationBarOverride : ShortNavigationBarOverride {
     }
 }
 
-@ExperimentalMaterial3ComponentOverrideApi
 object DefaultNavigationBarOverride : ShortNavigationBarOverride {
     @Composable
     override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
