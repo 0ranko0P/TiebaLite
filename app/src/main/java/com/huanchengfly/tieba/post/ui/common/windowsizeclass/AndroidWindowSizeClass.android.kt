@@ -10,7 +10,7 @@ import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_L
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
 import androidx.window.layout.WindowMetricsCalculator
 import androidx.window.layout.adapter.computeWindowSizeClass
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 
 @Composable
 fun calculateWindowSizeClass(activity: Activity): WindowSizeClass {

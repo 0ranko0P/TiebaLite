@@ -37,7 +37,7 @@ import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInExcept
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.ui.util.isListDetail
-import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.core.ui.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact

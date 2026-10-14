@@ -32,11 +32,11 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.huanchengfly.tieba.post.BuildConfig
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.welcome.UaWebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog

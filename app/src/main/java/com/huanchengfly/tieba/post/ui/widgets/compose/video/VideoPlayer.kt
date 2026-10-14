@@ -83,11 +83,11 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.error
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.media.MediaCache
 import com.huanchengfly.tieba.post.findActivity
-import com.huanchengfly.tieba.post.theme.Grey100
+import com.huanchengfly.tieba.post.core.designsystem.theme.Grey100
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase

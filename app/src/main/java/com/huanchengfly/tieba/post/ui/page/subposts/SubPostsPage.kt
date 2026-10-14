@@ -62,9 +62,9 @@ import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.ui.util.isPostExitAniRunning
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.FadedVisibility
+import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.PostData
 import com.huanchengfly.tieba.post.ui.models.SubPostItemData

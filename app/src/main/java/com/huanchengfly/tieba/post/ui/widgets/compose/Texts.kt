@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -29,8 +30,6 @@ import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.pxToSpFloat
 import com.huanchengfly.tieba.post.spToPxFloat
-import com.huanchengfly.tieba.post.theme.tokens.ColorSchemeKeyTokens
-import com.huanchengfly.tieba.post.theme.tokens.value
 
 @Composable
 fun rememberChipInlineContent(
@@ -38,8 +37,6 @@ fun rememberChipInlineContent(
     padding: PaddingValues = PaddingValues(vertical = 2.dp, horizontal = 4.dp),
     textStyle: TextStyle = LocalTextStyle.current,
     chipTextStyle: TextStyle = LocalTextStyle.current,
-    containerColor: ColorSchemeKeyTokens = ColorSchemeKeyTokens.Tertiary,
-    color: ColorSchemeKeyTokens = ColorSchemeKeyTokens.OnTertiary
 ): InlineTextContent {
     val textMeasurer = rememberTextMeasurer()
     val textSize = remember(text, textStyle) { textMeasurer.measure(text, textStyle).size }
@@ -76,11 +73,11 @@ fun rememberChipInlineContent(
                         )
                     ),
                     textAlign = TextAlign.Center,
-                    color = color.value,
+                    color = MaterialTheme.colorScheme.onTertiary,
                     modifier = Modifier
                         .padding(horizontal = 1.dp)
                         .fillMaxWidth()
-                        .background(containerColor.value, CircleShape)
+                        .background(MaterialTheme.colorScheme.tertiary, CircleShape)
                         .padding(padding)
                 )
             }

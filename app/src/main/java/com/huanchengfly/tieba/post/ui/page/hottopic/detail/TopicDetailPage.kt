@@ -36,10 +36,10 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
 import com.huanchengfly.tieba.post.core.network.model.TopicInfoBean
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.theme.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.TopicDetailVmFactory
 import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.feedId

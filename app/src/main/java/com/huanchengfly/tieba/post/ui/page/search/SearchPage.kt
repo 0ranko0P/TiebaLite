@@ -75,7 +75,7 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.core.navigation.Navigator
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.SearchToolbarSharedBoundsKey
 import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication

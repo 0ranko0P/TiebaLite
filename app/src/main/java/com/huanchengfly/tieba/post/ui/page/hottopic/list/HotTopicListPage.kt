@@ -37,12 +37,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
+import com.huanchengfly.tieba.post.core.designsystem.theme.BebasFamily
+import com.huanchengfly.tieba.post.core.designsystem.theme.Grey300
+import com.huanchengfly.tieba.post.core.designsystem.theme.OrangeA700
+import com.huanchengfly.tieba.post.core.designsystem.theme.RedA700
+import com.huanchengfly.tieba.post.core.designsystem.theme.YellowA700
 import com.huanchengfly.tieba.post.core.network.model.protos.topicList.NewTopicList
-import com.huanchengfly.tieba.post.theme.Grey300
-import com.huanchengfly.tieba.post.theme.OrangeA700
-import com.huanchengfly.tieba.post.theme.RedA700
-import com.huanchengfly.tieba.post.theme.YellowA700
-import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.TopicTag
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection

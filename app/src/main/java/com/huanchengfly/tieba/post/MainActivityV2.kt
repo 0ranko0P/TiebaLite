@@ -22,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -33,7 +32,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -54,12 +52,13 @@ import com.huanchengfly.tieba.post.components.TbDeepLinkMatcher.isTbLiteDeepLink
 import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
 import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.core.data.session.ClientConfigManager
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
+import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.rememberNavigator
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
-import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.ui.common.LocalPbInlineContentCache
 import com.huanchengfly.tieba.post.ui.common.PbInlineContentCache.Companion.rememberPbInlineContentCache
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -92,8 +91,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Provider
-
-val LocalWindowAdaptiveInfo = staticCompositionLocalOf<WindowAdaptiveInfo> { error("No WindowAdaptiveInfo provided!") }
 
 val LocalHabitSettings = compositionLocalOf<HabitSettings> { error("No HabitSettings provided!") }
 

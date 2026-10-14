@@ -16,9 +16,9 @@ import com.huanchengfly.tieba.post.core.data.model.settings.Theme
 import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.database.model.Account
+import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -98,7 +98,6 @@ class MainViewModel @Inject constructor(
     fun onClipBoardDetectDialogDismiss() = ClipBoardLinkDetector.clear()
 
     override fun onCleared() {
-        super.onCleared()
         if (_playerPool.isInitialized()) {
             _playerPool.value.dispose()
         }

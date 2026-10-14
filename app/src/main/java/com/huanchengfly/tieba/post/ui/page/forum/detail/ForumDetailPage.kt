@@ -41,8 +41,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
+import com.huanchengfly.tieba.post.core.designsystem.theme.BebasFamily
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.forum.ForumManager
 import com.huanchengfly.tieba.post.ui.page.forum.detail.ForumDetailViewModel.Companion.ForumDetailVmFactory

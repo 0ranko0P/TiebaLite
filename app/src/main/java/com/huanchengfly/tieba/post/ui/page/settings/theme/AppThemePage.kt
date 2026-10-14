@@ -40,7 +40,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -120,13 +120,13 @@ import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity
 import com.huanchengfly.tieba.post.core.data.model.settings.Theme
 import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.core.designsystem.component.NavigationDrawerItem
-import com.huanchengfly.tieba.post.theme.TiebaBlue
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.theme.colorscheme.BlueColorScheme
-import com.huanchengfly.tieba.post.theme.colorscheme.GreenColorScheme
-import com.huanchengfly.tieba.post.theme.isDarkScheme
-import com.huanchengfly.tieba.post.theme.isTranslucent
-import com.huanchengfly.tieba.post.ui.common.FadedVisibility
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaBlue
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme.BlueColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme.GreenColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.util.isDarkScheme
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
+import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
@@ -833,7 +833,7 @@ private fun GeneralThemePickerRow(
             modifier = Modifier.padding(all = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            itemsIndexed(items = builtInThemes, key = { _, item -> item.name }) { index, theme ->
+            items(items = builtInThemes, key = { it.name }) { theme ->
                 val selected = selected()?.theme == theme.theme
                 val colorScheme = theme.getColorScheme(isDarkMode())
                 val onClick = { onThemePicked(theme) }
@@ -893,7 +893,7 @@ private fun VariantThemePickerRow(
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                itemsIndexed(items = variantList, key = { _, it -> it.name }) { index, theme ->
+                items(items = variantList, key = { it.name }) { theme ->
                     ColorSchemeItem(
                         themeColor = theme.getColorScheme(isDarkMode()),
                         selected = selected()?.variant == theme.variant,

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.huanchengfly.tieba.post.theme
+package com.huanchengfly.tieba.post.core.ui
 
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle

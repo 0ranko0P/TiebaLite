@@ -97,9 +97,9 @@ import androidx.compose.ui.util.fastMaxOfOrNull
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.fastSumBy
 import androidx.compose.ui.util.lerp
-import com.huanchengfly.tieba.post.theme.FloatProducer
-import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.ui.FloatProducer
+import com.huanchengfly.tieba.post.core.ui.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt

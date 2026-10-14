@@ -72,8 +72,8 @@ import com.huanchengfly.tieba.post.core.database.model.BlockUser
 import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.plus
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.FadedVisibility
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultToggleFloatingActionButton

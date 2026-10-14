@@ -15,7 +15,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_LOWER_BOUND
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 
 @Composable
 @NonRestartableComposable

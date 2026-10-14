@@ -30,9 +30,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.LocalUISettings
-import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
-import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
-import com.huanchengfly.tieba.post.theme.isTranslucent
+import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.LocalExtendedColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_3BUTTON
 import com.huanchengfly.tieba.post.utils.DisplayUtil.GESTURE_DEFAULT

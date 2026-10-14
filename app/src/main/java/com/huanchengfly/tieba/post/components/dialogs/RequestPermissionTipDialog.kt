@@ -42,9 +42,9 @@ import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.dialogs.RequestPermissionTipDialog.Companion.PermissionRationale
 import com.huanchengfly.tieba.post.components.dialogs.RequestPermissionTipDialog.Companion.PermissionTip
+import com.huanchengfly.tieba.post.core.designsystem.theme.Grey700
+import com.huanchengfly.tieba.post.core.designsystem.theme.Grey800
 import com.huanchengfly.tieba.post.enableBackgroundBlur
-import com.huanchengfly.tieba.post.theme.Grey700
-import com.huanchengfly.tieba.post.theme.Grey800
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogContentPadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogMargin

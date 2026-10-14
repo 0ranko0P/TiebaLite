@@ -1,13 +1,15 @@
-package com.huanchengfly.tieba.post.theme.colorscheme
+package com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme
 
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
-import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
-import com.huanchengfly.tieba.post.theme.MerlotPink
+import com.huanchengfly.tieba.post.core.designsystem.theme.ColorSchemeDayNight
+import com.huanchengfly.tieba.post.core.designsystem.theme.MerlotPink
 
 /**
- * Primary:   0xFFE986A7 [MerlotPink]
+ * [MerlotPink] Dark Light theme color scheme
+ *
+ * Primary:   0xFFE986A7
  * Secondary: 0xFFE99686
  * Tertiary:  0xFFCF265E
  * Neutral:   0xFFEFA9C0

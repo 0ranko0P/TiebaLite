@@ -45,6 +45,7 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.compose.rememberConstraintsSizeResolver
 import coil3.imageLoader
 import coil3.memory.MemoryCache
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.crossfade
@@ -55,13 +56,13 @@ import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUC
 import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.HeightSizeClasses
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.WidthSizeClasses
-import com.huanchengfly.tieba.post.theme.DefaultColors
-import com.huanchengfly.tieba.post.theme.DefaultDarkColors
-import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.theme.isTranslucent
+import com.huanchengfly.tieba.post.core.designsystem.theme.DefaultColors
+import com.huanchengfly.tieba.post.core.designsystem.theme.DefaultDarkColors
+import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
+import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.FadedVisibility
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
@@ -175,7 +176,7 @@ class TranslucentThemeActivity : AppCompatActivity() {
                                         placeholderMemoryCacheKey(placeHolder)
                                     }
                                     .size(sizeResolver)
-                                    .diskCachePolicy(coil3.request.CachePolicy.DISABLED)
+                                    .diskCachePolicy(CachePolicy.DISABLED)
                                     .listener(onSuccess = coilWallpaperListener)
                                     .build()
                             )

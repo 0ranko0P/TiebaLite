@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.automirrored.outlined.LabelImportant
 import androidx.compose.material.icons.automirrored.outlined.LabelOff
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.AutoAwesomeMotion
 import androidx.compose.material.icons.outlined.BlurOn
@@ -34,6 +33,7 @@ import com.huanchengfly.tieba.post.core.data.model.settings.LauncherIcons
 import com.huanchengfly.tieba.post.core.data.model.settings.NavigationLabel
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegmentedPrefsScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
@@ -60,7 +60,7 @@ fun UISettingsPage(
             preference(
                 title = R.string.title_custom_font_size,
                 leadingIcon = Icons.Outlined.FontDownload,
-                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                trailingIcon = TbIcons.KeyboardArrowRight,
                 onClick = onNavigateAppFont,
             )
 

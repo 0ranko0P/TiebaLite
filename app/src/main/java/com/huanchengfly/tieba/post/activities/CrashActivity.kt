@@ -22,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.MainActivityV2
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorStackTraceScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.utils.CrashLogUtil

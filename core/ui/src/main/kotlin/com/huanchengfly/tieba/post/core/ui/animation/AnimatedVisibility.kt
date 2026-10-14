@@ -1,6 +1,6 @@
 @file:Suppress("NOTHING_TO_INLINE")
 
-package com.huanchengfly.tieba.post.ui.common
+package com.huanchengfly.tieba.post.core.ui.animation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -27,7 +27,7 @@ inline fun RowScope.FadedVisibility(
     visible: Boolean,
     modifier: Modifier = Modifier,
     label: String = "FadedVisibility",
-    noinline content: @Composable() AnimatedVisibilityScope.() -> Unit,
+    noinline content: @Composable AnimatedVisibilityScope.() -> Unit,
 ) =
     AnimatedVisibility(visible, modifier, fadeIn(), fadeOut(), label, content)
 

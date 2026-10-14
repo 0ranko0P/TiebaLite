@@ -17,8 +17,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,11 +40,12 @@ import com.huanchengfly.tieba.post.MacrobenchmarkConstant.testColumn
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.theme.OrangeA700
-import com.huanchengfly.tieba.post.theme.RedA700
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.theme.YellowA700
-import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
+import com.huanchengfly.tieba.post.core.designsystem.theme.BebasFamily
+import com.huanchengfly.tieba.post.core.designsystem.theme.OrangeA700
+import com.huanchengfly.tieba.post.core.designsystem.theme.RedA700
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.YellowA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.explore.HotTab
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -179,7 +178,7 @@ fun HotPage(
                                             fontWeight = FontWeight.Bold
                                         )
                                         Icon(
-                                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                            imageVector = TbIcons.KeyboardArrowRight,
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp)
                                         )

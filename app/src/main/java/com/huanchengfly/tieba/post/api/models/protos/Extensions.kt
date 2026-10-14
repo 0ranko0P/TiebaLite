@@ -19,7 +19,7 @@ import com.huanchengfly.tieba.post.core.network.model.protos.Post
 import com.huanchengfly.tieba.post.core.network.model.protos.PostInfoList
 import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
 import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
-import com.huanchengfly.tieba.post.theme.RedA700
+import com.huanchengfly.tieba.post.core.designsystem.theme.RedA700
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER

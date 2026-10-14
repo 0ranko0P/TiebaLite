@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import com.huanchengfly.tieba.post.PaddingNone
-import com.huanchengfly.tieba.post.theme.isTranslucent
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import kotlinx.coroutines.launch
 
 @Composable

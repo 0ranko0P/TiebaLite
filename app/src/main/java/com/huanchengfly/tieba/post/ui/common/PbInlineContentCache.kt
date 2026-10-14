@@ -24,9 +24,9 @@ import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.core.designsystem.theme.RedA700
 import com.huanchengfly.tieba.post.pxToDp
 import com.huanchengfly.tieba.post.pxToSp
-import com.huanchengfly.tieba.post.theme.RedA700
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonInlineImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.PbContentText
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberChipInlineContent

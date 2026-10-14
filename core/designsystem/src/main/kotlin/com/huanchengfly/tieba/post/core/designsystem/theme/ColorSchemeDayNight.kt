@@ -1,7 +1,8 @@
-package com.huanchengfly.tieba.post.theme
+package com.huanchengfly.tieba.post.core.designsystem.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 
 data class ColorSchemeDayNight(
     val lightColor: ColorScheme,

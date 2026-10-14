@@ -1,8 +1,8 @@
-package com.huanchengfly.tieba.post.theme.colorscheme
+package com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme
 
 import androidx.annotation.FloatRange
 import com.google.android.material.color.utilities.Variant
-import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
+import com.huanchengfly.tieba.post.core.designsystem.theme.ColorSchemeDayNight
 
 /**
  * Creating ColorScheme dynamically with given source color.

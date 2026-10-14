@@ -78,8 +78,8 @@ import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.core.network.model.protos.Media
 import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
-import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.ui.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase

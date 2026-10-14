@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.huanchengfly.tieba.post.theme.FloatProducer
+import com.huanchengfly.tieba.post.core.ui.FloatProducer
 
 @Composable
 fun VerticalProgressIndicator(

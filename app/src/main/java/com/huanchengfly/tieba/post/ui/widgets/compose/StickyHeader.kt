@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.util.fastFirstOrNull
 import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.copy
-import com.huanchengfly.tieba.post.theme.isTranslucent
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import kotlinx.coroutines.delay
 
 // Workaround to enable background blurring on StickyHeader

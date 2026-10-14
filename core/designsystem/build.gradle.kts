@@ -9,8 +9,9 @@ android {
 }
 
 dependencies {
-    api(libs.androidx.activity.compose)
+    api(project(":material-color-utilities"))
 
+    api(libs.androidx.activity.compose)
     api(libs.androidx.compose.material.iconsCore)
     api(libs.androidx.compose.material.iconsExtended)
     api(libs.bundles.compose.md3)

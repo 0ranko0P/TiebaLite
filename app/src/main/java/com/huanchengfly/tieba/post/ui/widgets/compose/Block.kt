@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.theme.ProvideContentColorTextStyle
+import com.huanchengfly.tieba.post.core.ui.ProvideContentColorTextStyle
 
 @Composable
 fun BlockTip(

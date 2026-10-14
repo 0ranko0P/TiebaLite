@@ -82,7 +82,7 @@ import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.page.settings.collectSeeLzPreference

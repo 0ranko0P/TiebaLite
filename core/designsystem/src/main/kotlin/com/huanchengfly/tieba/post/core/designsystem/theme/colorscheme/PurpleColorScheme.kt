@@ -1,13 +1,15 @@
-package com.huanchengfly.tieba.post.theme.colorscheme
+package com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme
 
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
-import com.huanchengfly.tieba.post.theme.BlueViolet
-import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
+import com.huanchengfly.tieba.post.core.designsystem.theme.BlueViolet
+import com.huanchengfly.tieba.post.core.designsystem.theme.ColorSchemeDayNight
 
 /**
- * Primary:   0xFF8A2BE2 [BlueViolet]
+ * [BlueViolet] Dark Light theme color scheme
+ *
+ * Primary:   0xFF8A2BE2
  * Secondary: 0xFF2F2BE2
  * Tertiary:  0xFFE22BDE
  * Neutral:   0xFFB981EE

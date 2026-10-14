@@ -1,8 +1,8 @@
-package com.huanchengfly.tieba.post.theme.colorscheme
+package com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
+import com.huanchengfly.tieba.post.core.designsystem.theme.ColorSchemeDayNight
 
 // TranslucentColorScheme can not switch Day/Night mode
 fun translucentColorScheme(primaryColor: Color, colorMode: Boolean): ColorSchemeDayNight {

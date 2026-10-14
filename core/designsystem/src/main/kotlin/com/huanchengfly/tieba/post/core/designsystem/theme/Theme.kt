@@ -1,4 +1,4 @@
-package com.huanchengfly.tieba.post.theme
+package com.huanchengfly.tieba.post.core.designsystem.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -13,18 +13,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
-import com.huanchengfly.tieba.post.theme.colorscheme.BlueColorScheme
-import com.huanchengfly.tieba.post.utils.ColorUtils
-
-val LocalExtendedColorScheme = staticCompositionLocalOf { DefaultColors }
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
+import com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme.BlueColorScheme
 
 val DefaultColors = ExtendedColorScheme(BlueColorScheme.lightColor, darkTheme = false)
 
 val DefaultDarkColors = ExtendedColorScheme(BlueColorScheme.darkColor, darkTheme = true)
 
+val LocalExtendedColorScheme = staticCompositionLocalOf { DefaultColors }
+
+/**
+ * Tieba Lite theme.
+ *
+ * @param colorSchemeExt A complete definition of the Material Color theme ext for this hierarchy
+ * @param motionScheme A complete definition of the Material motion theme for this hierarchy
+ * @param shapes A set of corner shapes to be used as this hierarchy's shape system
+ * @param typography A set of text styles to be used as this hierarchy's typography system
+ * @param content The content inheriting this theme
+ */
 @Composable
 fun TiebaLiteTheme(
     colorSchemeExt: ExtendedColorScheme = if (isSystemInDarkTheme()) DefaultDarkColors else DefaultColors,
@@ -46,12 +52,6 @@ fun TiebaLiteTheme(
         )
     }
 }
-
-val ColorScheme.isTranslucent: Boolean
-    get() = surface == Color.Transparent
-
-val ColorScheme.isDarkScheme: Boolean
-    get() = ColorUtils.isColorLight(onSurface.toArgb())
 
 /**
  * Contains functions to access the current theme values provided at the call site's position in the

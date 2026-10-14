@@ -32,10 +32,10 @@ import com.huanchengfly.tieba.post.components.imageProcessor.RenderScriptImagePr
 import com.huanchengfly.tieba.post.core.common.ktx.deleteQuietly
 import com.huanchengfly.tieba.post.core.data.model.settings.Theme
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.theme.BlueViolet
-import com.huanchengfly.tieba.post.theme.MerlotPink
-import com.huanchengfly.tieba.post.theme.SunsetOrange
-import com.huanchengfly.tieba.post.theme.TiebaBlue
+import com.huanchengfly.tieba.post.core.designsystem.theme.BlueViolet
+import com.huanchengfly.tieba.post.core.designsystem.theme.MerlotPink
+import com.huanchengfly.tieba.post.core.designsystem.theme.SunsetOrange
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaBlue
 import com.huanchengfly.tieba.post.utils.ImageUtil.toFile
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.extension.set

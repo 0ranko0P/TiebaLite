@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Search
@@ -86,10 +85,11 @@ import com.huanchengfly.tieba.post.core.database.model.History
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.LocalNavSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.WidthSizeClasses
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
+import com.huanchengfly.tieba.post.core.designsystem.theme.DefaultDarkColors
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
-import com.huanchengfly.tieba.post.theme.DefaultDarkColors
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.SearchToolbarSharedBoundsKey
@@ -260,7 +260,7 @@ private fun HistoryRow(modifier: Modifier = Modifier, history: List<History>, on
             Spacer(modifier = Modifier.weight(1f))
 
             Icon(
-                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                imageVector = TbIcons.KeyboardArrowRight,
                 contentDescription = stringResource(id = R.string.desc_show),
                 modifier = Modifier.graphicsLayer {
                     rotationZ = degrees

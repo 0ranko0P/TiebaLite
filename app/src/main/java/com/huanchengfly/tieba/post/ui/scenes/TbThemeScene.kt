@@ -11,8 +11,8 @@ import androidx.navigation3.scene.SceneDecoratorStrategyScope
 import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
-import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
-import com.huanchengfly.tieba.post.theme.isTranslucent
+import com.huanchengfly.tieba.post.core.designsystem.theme.LocalExtendedColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 
 // TODO: Move to core:ui
 data class TbThemeScene<T : Any>(

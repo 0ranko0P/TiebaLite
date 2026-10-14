@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.settings
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.outlined.CalendarViewDay
 import androidx.compose.material.icons.outlined.PhotoSizeSelectActual
@@ -18,7 +17,6 @@ import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
 import com.huanchengfly.tieba.post.core.data.model.settings.ImageLoadType
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.WaterType
-import com.huanchengfly.tieba.post.core.designsystem.icon.PageHeader
 import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegmentedPrefsScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.preference
@@ -80,8 +78,8 @@ fun HabitSettingsPage(
                 title = R.string.title_settings_sticky_header,
                 summary = R.string.tip_sticky_header,
                 onClick = onStickyHeaderClicked,
-                leadingIcon = Icons.Rounded.PageHeader,
-                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                leadingIcon = TbIcons.PageHeader,
+                trailingIcon = TbIcons.KeyboardArrowRight,
             )
 
             collectSeeLzPreference() // 收藏贴自动只看楼主

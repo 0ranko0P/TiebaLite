@@ -48,12 +48,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
-import com.huanchengfly.tieba.post.LocalWindowAdaptiveInfo
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.core.designsystem.theme.BebasFamily
+import com.huanchengfly.tieba.post.core.designsystem.util.isDarkScheme
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.navigation.Navigator
-import com.huanchengfly.tieba.post.theme.isDarkScheme
-import com.huanchengfly.tieba.post.theme.isTranslucent
-import com.huanchengfly.tieba.post.ui.common.theme.compose.BebasFamily
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.page.Destination

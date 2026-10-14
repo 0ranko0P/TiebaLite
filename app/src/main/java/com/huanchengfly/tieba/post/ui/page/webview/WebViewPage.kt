@@ -37,9 +37,9 @@ import com.huanchengfly.tieba.post.components.TbWebChromeClient
 import com.huanchengfly.tieba.post.components.TbWebViewClient
 import com.huanchengfly.tieba.post.components.TiebaWebView
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.theme.createTopAppBarColors
-import com.huanchengfly.tieba.post.theme.isTranslucent
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.util.createTopAppBarColors
+import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebViewClient

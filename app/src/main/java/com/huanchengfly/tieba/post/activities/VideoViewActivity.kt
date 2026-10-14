@@ -56,9 +56,9 @@ import com.huanchengfly.tieba.post.components.media.MediaCache.getBdMediaId
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
 import com.huanchengfly.tieba.post.goToActivity
-import com.huanchengfly.tieba.post.theme.DefaultDarkColors
-import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.DefaultDarkColors
+import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.TopControls
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayer

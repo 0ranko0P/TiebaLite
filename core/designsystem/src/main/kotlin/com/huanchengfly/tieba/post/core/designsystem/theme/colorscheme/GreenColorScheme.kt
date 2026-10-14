@@ -1,13 +1,15 @@
-package com.huanchengfly.tieba.post.theme.colorscheme
+package com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme
 
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
-import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
-import com.huanchengfly.tieba.post.theme.JadeGreen
+import com.huanchengfly.tieba.post.core.designsystem.theme.ColorSchemeDayNight
+import com.huanchengfly.tieba.post.core.designsystem.theme.JadeGreen
 
 /**
- * Primary:  0xFF019C74 [JadeGreen]
+ * [JadeGreen] Dark Light theme color scheme
+ *
+ * Primary:  0xFF019C74
  * Tertiary: 0xFF01779C
  * Neutral:  0xFF9AFEE5
  * */

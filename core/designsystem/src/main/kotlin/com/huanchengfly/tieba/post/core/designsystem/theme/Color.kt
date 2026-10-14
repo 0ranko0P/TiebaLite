@@ -1,4 +1,4 @@
-package com.huanchengfly.tieba.post.theme
+package com.huanchengfly.tieba.post.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 

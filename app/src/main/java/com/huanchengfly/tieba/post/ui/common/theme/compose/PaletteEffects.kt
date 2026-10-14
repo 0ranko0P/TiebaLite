@@ -29,8 +29,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.huanchengfly.tieba.post.theme.Blue200
-import com.huanchengfly.tieba.post.theme.Purple100
+import com.huanchengfly.tieba.post.core.designsystem.theme.Blue200
+import com.huanchengfly.tieba.post.core.designsystem.theme.Purple100
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import kotlinx.collections.immutable.persistentListOf
 

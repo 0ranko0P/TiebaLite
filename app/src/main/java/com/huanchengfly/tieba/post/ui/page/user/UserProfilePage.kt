@@ -108,12 +108,12 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.components.coil.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.core.database.model.UserProfile
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.navigation.Navigator
+import com.huanchengfly.tieba.post.core.ui.FloatProducer
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.ui.animation.animateEnterExit
 import com.huanchengfly.tieba.post.goToActivity
-import com.huanchengfly.tieba.post.core.navigation.Navigator
-import com.huanchengfly.tieba.post.theme.FloatProducer
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase

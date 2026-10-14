@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.core.designsystem.icon
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Notes
 
 object TbIcons {
@@ -10,6 +11,7 @@ object TbIcons {
     val FitPageHeight = Icons.Outlined.FitPageHeight
     val FitPageWidth = Icons.Outlined.FitPageWidth
     val GitHub = GitHubInvertocat
+    val KeyboardArrowRight = Icons.AutoMirrored.Rounded.KeyboardArrowRight
     val License = Icons.Rounded.License
     val Notes = Icons.AutoMirrored.Rounded.Notes
     val PageHeader = Icons.Rounded.PageHeader

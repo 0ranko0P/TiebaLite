@@ -34,7 +34,7 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.enableBackgroundBlur
 import com.huanchengfly.tieba.post.findActivity
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultDialogMargin
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.Dispatchers

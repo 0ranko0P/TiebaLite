@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.huanchengfly.tieba.post.theme.colorscheme
+package com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme
 
 import android.app.WallpaperManager
 import android.content.Context
@@ -28,8 +28,8 @@ import androidx.compose.ui.graphics.Color
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.Variant
-import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
-import com.huanchengfly.tieba.post.theme.DynamicSchemes
+import com.huanchengfly.tieba.post.core.designsystem.theme.ColorSchemeDayNight
+import com.huanchengfly.tieba.post.core.designsystem.theme.DynamicSchemes
 
 /**
  * 0Ranko0p changes:

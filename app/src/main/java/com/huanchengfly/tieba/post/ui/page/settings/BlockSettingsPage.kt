@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.HideSource
@@ -59,6 +58,7 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.core.data.model.settings.BlockBackupMetadata
 import com.huanchengfly.tieba.post.core.data.model.settings.BlockSettings
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
@@ -129,21 +129,21 @@ fun BlockSettingsPage(
             preference(
                 title = R.string.settings_block_forum,
                 leadingIcon = Icons.Outlined.Forum,
-                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                trailingIcon = TbIcons.KeyboardArrowRight,
                 onClick = onNavigateForumBlock,
             )
 
             preference(
                 title = R.string.settings_block_user,
                 leadingIcon = Icons.Outlined.NoAccounts,
-                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                trailingIcon = TbIcons.KeyboardArrowRight,
                 onClick = onNavigateUserBlock
             )
 
             preference(
                 title = R.string.settings_block_keyword,
                 leadingIcon = Icons.Outlined.Block,
-                trailingIcon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                trailingIcon = TbIcons.KeyboardArrowRight,
                 onClick = onNavigateKeywordBlock,
             )
 

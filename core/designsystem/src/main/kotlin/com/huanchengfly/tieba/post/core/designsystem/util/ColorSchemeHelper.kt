@@ -1,21 +1,16 @@
-package com.huanchengfly.tieba.post.theme
+package com.huanchengfly.tieba.post.core.designsystem.util
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.TopAppBarColors
-import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.ColorUtils.calculateLuminance
 
-@Immutable
-data class ExtendedColorScheme(
-    val colorScheme: ColorScheme,
-    val darkTheme: Boolean,
-    val appBarColors: TopAppBarColors = colorScheme.createTopAppBarColors(),
-    val navigationContainer: Color = colorScheme.surfaceContainer,
-) {
+val ColorScheme.isTranslucent: Boolean
+    get() = surface == Color.Transparent
 
-    val sheetContainerColor: Color
-        get() = if (colorScheme.isTranslucent) colorScheme.surfaceContainerLow else navigationContainer
-}
+val ColorScheme.isDarkScheme: Boolean
+    get() = isColorLight(onSurface)
 
 fun ColorScheme.createTopAppBarColors(
     containerColor: Color = surface,
@@ -33,4 +28,9 @@ fun ColorScheme.createTopAppBarColors(
         actionIconContentColor = actionIconContentColor,
         subtitleContentColor = subtitleContentColor
     )
+}
+
+/** Determines if a color should be considered light or dark.  */
+private fun isColorLight(color: Color): Boolean {
+    return color != Color.Transparent && calculateLuminance(color.toArgb()) > 0.5
 }

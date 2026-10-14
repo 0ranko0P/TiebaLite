@@ -55,7 +55,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.aspectRatio
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.models.PhotoViewData
-import com.huanchengfly.tieba.post.theme.LocalExtendedColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication

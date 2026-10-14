@@ -80,10 +80,10 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.ConstraintsSizeResolver
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.theme.ExtendedColorScheme
-import com.huanchengfly.tieba.post.theme.Grey800
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.Grey800
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme.translucentColorScheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
 import com.huanchengfly.tieba.post.ui.page.settings.AboutPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes

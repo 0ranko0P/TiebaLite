@@ -9,12 +9,12 @@ import androidx.compose.ui.graphics.toArgb
 import com.google.android.material.color.utilities.Variant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeViewModel.Companion.translucentBackground
-import com.huanchengfly.tieba.post.theme.ColorSchemeDayNight
-import com.huanchengfly.tieba.post.theme.colorscheme.dynamicColorScheme
-import com.huanchengfly.tieba.post.theme.colorscheme.translucentColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.ColorSchemeDayNight
+import com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme.dynamicColorScheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme.translucentColorScheme
 import com.huanchengfly.tieba.post.core.data.model.settings.Theme
 import com.huanchengfly.tieba.post.core.data.model.settings.ThemeSettings
-import com.huanchengfly.tieba.post.theme.TiebaBlue
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaBlue
 import java.io.File
 
 @Stable

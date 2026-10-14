@@ -59,9 +59,9 @@ import com.huanchengfly.tieba.post.activities.UCropActivity
 import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUCropResult
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.collectIn
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.FadedVisibility
+import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
 import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.user.EditProfile
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem

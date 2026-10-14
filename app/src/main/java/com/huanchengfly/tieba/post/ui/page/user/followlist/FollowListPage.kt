@@ -51,11 +51,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
+import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.plus
-import com.huanchengfly.tieba.post.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
-import com.huanchengfly.tieba.post.core.designsystem.icon.PartnerHeart
-import com.huanchengfly.tieba.post.core.designsystem.icon.PersonHeart
 import com.huanchengfly.tieba.post.ui.models.user.ConcernType
 import com.huanchengfly.tieba.post.ui.models.user.FollowUser
 import com.huanchengfly.tieba.post.ui.page.user.followlist.FollowListViewModel.Companion.FollowListFilter
@@ -226,8 +225,8 @@ private fun FollowListFilter(
 ) {
     val filters = remember {
         listOf(
-            FollowListFilter.All to Icons.Rounded.PersonHeart,
-            FollowListFilter.Mutual to Icons.Rounded.PartnerHeart,
+            FollowListFilter.All to TbIcons.PersonHeart,
+            FollowListFilter.Mutual to TbIcons.PartnerHeart,
         )
     }
     FloatingTabRow(
