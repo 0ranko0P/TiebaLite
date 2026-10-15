@@ -136,6 +136,7 @@ internal fun MixedTiebaApiImpl.buildCommonRequest(
             start_type = 1,
             stoken = credentialProvider.getSToken(),
             swan_game_ver = "1038000",
+            tbs = tbs,
             user_agent = retrofitTiebaApi.getUserAgent("tieba/${clientVersion.version}"),
             z_id = credentialProvider.getZid()
         )

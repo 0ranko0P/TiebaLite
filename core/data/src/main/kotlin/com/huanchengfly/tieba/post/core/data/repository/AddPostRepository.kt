@@ -71,10 +71,14 @@ internal class AddPostRepositoryImpl @Inject constructor(
             forumName = forumName,
             title = title,
         )
+        val msg = result.toast?.content
+            ?.joinToString("") { it.text }
+            ?.takeIf { it.isNotEmpty() }
+            ?: result.msg
         return AddThreadResult(
-            message = result.errorMsg.orEmpty(),
-            pid = result.pid?.toLongOrNull() ?: 0,
-            tid = result.tid!!.toLong(),
+            message = msg,
+            pid = result.pid.toLongOrNull() ?: 0,
+            tid = result.tid.toLong(),
         )
     }
 

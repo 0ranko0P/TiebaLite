@@ -5,6 +5,7 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.components.SessionManager
+import com.huanchengfly.tieba.post.core.network.ClientVersion
 import com.huanchengfly.tieba.post.core.network.Error.ERROR_NETWORK
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
@@ -52,6 +53,6 @@ class UserViewModel @Inject constructor(
 
     fun getUegServiceCenterUrl(): String {
         val newCuid = uidManager.newCUID
-        return "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=$newCuid&cuid_galaxy2=$newCuid&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
+        return "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=$newCuid&cuid_galaxy2=$newCuid&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=${ClientVersion.TIEBA_V12.version}&nohead=1"
     }
 }

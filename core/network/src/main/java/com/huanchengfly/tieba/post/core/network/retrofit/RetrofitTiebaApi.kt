@@ -123,7 +123,7 @@ internal class RetrofitTiebaApi(
     val HYBRID_TIEBA_API: AppHybridTiebaApi by lazy {
         createJsonApi<AppHybridTiebaApi>("https://tieba.baidu.com/",
             CommonHeaderInterceptor(
-                Header.USER_AGENT to { getUserAgent("tieba/12.35.1.0 skin/default") },
+                Header.USER_AGENT to { getUserAgent("tieba/${ClientVersion.TIEBA_V12.version} skin/default") },
                 Header.HOST to { "tieba.baidu.com" },
                 Header.PRAGMA to { "no-cache" },
                 Header.CACHE_CONTROL to { "no-cache" },
@@ -185,7 +185,7 @@ internal class RetrofitTiebaApi(
         createJsonApi<OfficialTiebaApi>(
             "http://c.tieba.baidu.com/",
             CommonHeaderInterceptor(
-                Header.USER_AGENT to { "bdtb for Android 12.41.7.1" },
+                Header.USER_AGENT to { "bdtb for Android ${ClientVersion.TIEBA_V12.version}" },
                 Header.COOKIE to { "CUID=${uidManager.newCUID};ka=open;TBBRAND=${Build.MODEL};BAIDUID=${clientConfigProvider.getBaiduId()};" },
                 Header.CUID to { uidManager.newCUID },
                 Header.CUID_GALAXY2 to { uidManager.newCUID },
@@ -223,7 +223,7 @@ internal class RetrofitTiebaApi(
                 Param.START_SCHEME to { "" },
                 Param.START_TYPE to { "1" },
                 Param.SWAN_GAME_VER to { "1038000" },
-                Param.CLIENT_VERSION to { "12.41.7.1" },
+                Param.CLIENT_VERSION to { ClientVersion.TIEBA_V12.version },
                 Param.CUID_GALAXY3 to { uidManager.getAid() },
                 Param.OAID to { OAID(oaidProvider).toJson() },
             ),

@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.core.network.retrofit.interfaces
 
 import com.huanchengfly.tieba.post.core.network.model.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.addPollPost.AddPollPostReponse
+import com.huanchengfly.tieba.post.core.network.model.protos.addThread.AddThreadResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.forumGuide.ForumGuideResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.forumRecommend.ForumRecommendResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.forumRuleDetail.ForumRuleDetailResponse
@@ -96,6 +97,11 @@ internal interface OfficialProtobufTiebaApi {
     fun addPostFlow(
         @Body body: MyMultipartBody,
     ): Flow<AddPostResponse>
+
+    @POST("/c/c/thread/add?cmd=309730&format=protobuf")
+    fun addThreadFlow(
+        @Body body: MyMultipartBody,
+    ): Flow<AddThreadResponse>
 
     @POST("/c/s/searchSug?cmd=309438&format=protobuf")
     fun searchSugFlow(

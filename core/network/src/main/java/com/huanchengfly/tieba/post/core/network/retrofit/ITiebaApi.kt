@@ -4,6 +4,7 @@ import com.huanchengfly.tieba.post.core.network.model.*
 import com.huanchengfly.tieba.post.core.network.model.protos.GeneralTabList.GeneralTabListResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.addPollPost.AddPollPostReponse
+import com.huanchengfly.tieba.post.core.network.model.protos.addThread.AddThreadResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.forumGuide.ForumGuideResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.forumRecommend.ForumRecommendResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.forumRuleDetail.ForumRuleDetailResponse
@@ -1532,7 +1533,7 @@ internal interface ITiebaApi {
         title: String,
         isHide: Int,
         isTitle: Int,
-    ): Flow<AddThreadBean>
+    ): Flow<AddThreadResponse>
 
     /**
      * 禁止用户互动（转、评、赞踩、@）
