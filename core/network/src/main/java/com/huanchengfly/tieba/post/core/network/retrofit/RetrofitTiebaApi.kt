@@ -168,7 +168,7 @@ internal class RetrofitTiebaApi(
                 Header.USER_AGENT to { "bdtb for Android 7.2.0.0" },
                 Header.CUID to { uidManager.finalCUID },
                 Header.CUID_GALAXY2 to { uidManager.finalCUID },
-                "client_logid" to { "$initTime" }
+                Header.CLIENT_LOG_ID to { "$initTime" }
             ),
             defaultCommonParamInterceptor + CommonParamInterceptor(
                 Param.CUID to { uidManager.finalCUID },
@@ -193,7 +193,7 @@ internal class RetrofitTiebaApi(
                 Header.CUID_GALAXY3 to { uidManager.getAid() },
                 Header.CLIENT_TYPE to { "2" },
                 Header.CHARSET to { "UTF-8" },
-                "client_logid" to { "$initTime" }
+                Header.CLIENT_LOG_ID to { "$initTime" }
             ),
             defaultCommonParamInterceptor + CommonParamInterceptor(
                 Param.ACTIVE_TIMESTAMP to { clientConfigProvider.activeTimestamp.toString() },
@@ -265,6 +265,7 @@ internal class RetrofitTiebaApi(
             CommonHeaderInterceptor(
                 Header.CHARSET to { "UTF-8" },
                 Header.CLIENT_TYPE to { "2" },
+                Header.CLIENT_LOG_ID to { "$initTime" },
                 Header.CLIENT_USER_TOKEN to { credentialProvider.getUid() },
                 Header.COOKIE to {
                     getCookie(
@@ -278,6 +279,31 @@ internal class RetrofitTiebaApi(
                 Header.CUID_GID to { "" },
                 Header.CUID_GALAXY3 to { uidManager.getAid() },
                 Header.USER_AGENT to { getUserAgent("tieba/${ClientVersion.TIEBA_V12.version}") },
+                Header.X_BD_DATA_TYPE to { "protobuf" },
+            ),
+            stParamInterceptor,
+        )
+    }
+
+    val OFFICIAL_PROTOBUF_TIEBA_V22_API: OfficialProtobufTiebaApi by lazy {
+        createProtobufApi<OfficialProtobufTiebaApi>(
+            "https://tiebac.baidu.com/",
+            CommonHeaderInterceptor(
+                Header.CHARSET to { "UTF-8" },
+                Header.CLIENT_TYPE to { "2" },
+                Header.CLIENT_USER_TOKEN to { credentialProvider.getUid() },
+                Header.COOKIE to {
+                    getCookie(
+                        "ka" to { "open" },
+                        "CUID" to { uidManager.newCUID },
+                        "TBBRAND" to { Build.MODEL }
+                    )
+                },
+                Header.CUID to { uidManager.newCUID },
+                Header.CUID_GALAXY2 to { uidManager.newCUID },
+                Header.CUID_GID to { "" },
+                Header.CUID_GALAXY3 to { uidManager.getAid() },
+                Header.USER_AGENT to { getUserAgent("tieba/${ClientVersion.TIEBA_V22.version}") },
                 Header.X_BD_DATA_TYPE to { "protobuf" },
             ),
             stParamInterceptor,

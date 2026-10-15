@@ -154,6 +154,7 @@ internal class MixedTiebaApiImpl(
     internal val uidManager: UIDManager,
     internal val retrofitTiebaApi: RetrofitTiebaApi,
 ) : ITiebaApi {
+
     override fun personalized(loadType: Int, page: Int): Call<PersonalizedBean> =
         retrofitTiebaApi.MINI_TIEBA_API.personalized(
             loadType,
@@ -1477,11 +1478,11 @@ internal class MixedTiebaApiImpl(
         page: Int,
         subPostId: Long
     ): Flow<PbFloorResponse> {
-        return retrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.pbFloorFlow(
+        return retrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V22_API.pbFloorFlow(
             buildProtobufRequestBody(
                 PbFloorRequest(
                     PbFloorRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
+                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V22),
                         forum_id = forumId,
                         kz = threadId,
                         pid = postId,
@@ -1494,7 +1495,7 @@ internal class MixedTiebaApiImpl(
                         ori_ugc_type = 0
                     )
                 ),
-                clientVersion = ClientVersion.TIEBA_V12,
+                clientVersion = ClientVersion.TIEBA_V22,
                 needSToken = false
             )
         )
