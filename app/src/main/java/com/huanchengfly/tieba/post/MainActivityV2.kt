@@ -177,21 +177,20 @@ class MainActivityV2 : BaseComposeActivity() {
                 motionScheme = if (!uiSettings.reduceMotion) MotionScheme.expressive() else MotionScheme.standard(),
             ) {
                 MainPage(navigator, settingsRepo = viewModel.settingsRepository)
-            }
-        }
 
-        if (setupFinished) {
-            LaunchedDeepLinkEffect(navigator)
+                if (setupFinished) {
+                    LaunchedDeepLinkEffect(navigator)
 
-            StrongBox {
-                val preview by viewModel.previewInfoFlow.collectAsStateWithLifecycle()
-                ClipBoardDetectDialog(preview, viewModel::onClipBoardDetectDialogDismiss) {
-                    val navKey: Destination = it.clipBoardLink.toRoute(avatarUrl = it.icon?.url)
-                    navigator.navigate(navKey)
-                }
-
-                if (uiState.autoSignRestricted) {
-                    BatteryOpDialog(onOpenSettings = ::requestIgnoreBatteryOptimizations)
+                    StrongBox {
+                        val preview by viewModel.previewInfoFlow.collectAsStateWithLifecycle()
+                        ClipBoardDetectDialog(preview, viewModel::onClipBoardDetectDialogDismiss) {
+                            val navKey: Destination = it.clipBoardLink.toRoute(avatarUrl = it.icon?.url)
+                            navigator.navigate(navKey)
+                        }
+                        if (uiState.autoSignRestricted) {
+                            BatteryOpDialog(onOpenSettings = ::requestIgnoreBatteryOptimizations)
+                        }
+                    }
                 }
             }
         }
