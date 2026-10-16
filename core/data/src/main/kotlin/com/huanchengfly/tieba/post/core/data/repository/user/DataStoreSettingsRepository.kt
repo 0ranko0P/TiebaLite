@@ -339,7 +339,6 @@ private object ClientConfigTransformer: PreferenceTransformer<ClientConfig> {
             clientId = it[stringPreferencesKey(KEY_CLIENT_ID)],
             sampleId = it[stringPreferencesKey(KEY_SAMPLE_ID)],
             baiduId = it[stringPreferencesKey(KEY_BAIDU_ID)],
-            activeTimestamp = it[longPreferencesKey(KEY_ACTIVE_TIMESTAMP)] ?: System.currentTimeMillis(),
             firstInstallTime = it[longPreferencesKey(KEY_INSTALL_TIME)],
             lastUpdateTime = it[longPreferencesKey(KEY_UPDATE_TIME)]
         )
@@ -349,7 +348,7 @@ private object ClientConfigTransformer: PreferenceTransformer<ClientConfig> {
         config.clientId?.let { id -> it[stringPreferencesKey(KEY_CLIENT_ID)] = id }
         config.sampleId?.let { id -> it[stringPreferencesKey(KEY_SAMPLE_ID)] = id }
         config.baiduId?.let { id -> it[stringPreferencesKey(KEY_BAIDU_ID)] = id }
-        it[longPreferencesKey(KEY_ACTIVE_TIMESTAMP)] = config.activeTimestamp
+        it.remove(longPreferencesKey(KEY_ACTIVE_TIMESTAMP))
         config.firstInstallTime?.let { time -> it[longPreferencesKey(KEY_INSTALL_TIME)] = time }
         config.lastUpdateTime?.let { time -> it[longPreferencesKey(KEY_UPDATE_TIME)] = time }
     }
@@ -357,6 +356,12 @@ private object ClientConfigTransformer: PreferenceTransformer<ClientConfig> {
     private const val KEY_CLIENT_ID = "client_id"
     private const val KEY_SAMPLE_ID = "sample_id"
     private const val KEY_BAIDU_ID = "baidu_id"
+
+    /**
+     * @since 4.0.0 alpha 14
+     *
+     * TODO: Remove
+     * */
     private const val KEY_ACTIVE_TIMESTAMP = "active_timestamp"
     private const val KEY_INSTALL_TIME = "se_install_time"
     private const val KEY_UPDATE_TIME = "se_update_time"
