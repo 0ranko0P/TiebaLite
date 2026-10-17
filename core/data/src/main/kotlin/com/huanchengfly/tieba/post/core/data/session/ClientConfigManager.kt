@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -22,11 +23,16 @@ import javax.inject.Singleton
 private const val TAG = "ClientConfigManager"
 
 /**
- * From com.huanchengfly.tieba.post.utils.ClientUtils
+ * 原位置: com.huanchengfly.tieba.post.utils.ClientUtils
+ *
+ * @author 0Ranko0P
+ * @author HuanChengFly
+ *
+ * @since 4.0.0 alpha 14
  * */
 @Singleton
 class ClientConfigManager @Inject constructor(
-    @ApplicationScope private val coroutineScope: CoroutineScope,
+    @param:ApplicationScope private val coroutineScope: CoroutineScope,
     private val authDataSourceProvider: Provider<AuthNetworkDataSource>,
     settingsRepo: SettingsRepository,
 ): ClientConfigProvider {
@@ -66,21 +72,20 @@ class ClientConfigManager @Inject constructor(
 
     private fun sync(clientId: String?) = coroutineScope.launch {
         val start = System.currentTimeMillis()
-        runCatching { authDataSourceProvider.get().syncClient(clientId) }
-            .onFailure {
-                Log.e(TAG, "onSync: Failed: ${it.getErrorMessage()}")
-            }
-            .onSuccess { rec ->
-                val client = rec.client
-                val wlConfig = rec.wlConfig
-                if (clientId == client.clientId && getSampleId() == wlConfig.sampleId) {
-                    return@onSuccess
-                }
+        try {
+            val rec = authDataSourceProvider.get().syncClient(clientId)
+            val client = rec.client
+            val wlConfig = rec.wlConfig
+            if (clientId != client.clientId || getSampleId() != wlConfig.sampleId) {
                 clientConfigSettings.save {
                     it.copy(clientId = client.clientId, sampleId = wlConfig.sampleId)
                 }
-                val cost = System.currentTimeMillis() - start
-                Log.w(TAG, "onSync: Done, cost ${cost}ms")
             }
+            Log.w(TAG, "onSync: Cost ${System.currentTimeMillis() - start}ms")
+        } catch (e: IOException) {
+            Log.w(TAG, "onSync: Failed: ${e.getErrorMessage()}")
+        } catch (e: Throwable) {
+            Log.e(TAG, "onSync: Failed:", e)
+        }
     }
 }
