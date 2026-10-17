@@ -61,7 +61,7 @@ data class TopicInfoBean(
     val topicId: String,
     @SerialName("topic_name")
     val topicName: String,
-    val candle: String,
+    val candle: String? = null,
     @SerialName("topic_desc")
     val topicDesc: String,
     @SerialName("discuss_num")
@@ -73,7 +73,7 @@ data class TopicInfoBean(
     @SerialName("share_pic")
     val sharePic: String,
     @SerialName("is_video_topic")
-    val isVideoTopic: Int,
+    val isVideoTopic: Int = 0,
     @SerialName("idx_num")
     val idxNum: Int,
 )

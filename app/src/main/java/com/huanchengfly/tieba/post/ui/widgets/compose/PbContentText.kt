@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import androidx.collection.ArraySet
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -31,12 +32,15 @@ import androidx.compose.ui.unit.takeOrElse
 import androidx.compose.ui.util.fastFirstOrNull
 import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.ui.common.LocalPbInlineContentCache
-import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
-import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
+import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.utils.DisplayUtil.plus
 import com.huanchengfly.tieba.post.utils.DisplayUtil.sp2px
 import com.huanchengfly.tieba.post.utils.launchUrl
+
+private val clickablePbAnnotationsTags: Set<String> = ArraySet(
+    arrayOf(PbContentRender.TAG_TOPIC, PbContentRender.TAG_URL, PbContentRender.TAG_USER)
+)
 
 @Composable
 fun BasicPbContentText(
@@ -114,7 +118,7 @@ fun PbContentText(
                 val annotation =
                     layoutResult?.getOffsetForPosition(change.position)?.let { offset ->
                         text.getStringAnnotations(start = offset, end = offset)
-                            .fastFirstOrNull { it.tag == TAG_URL || it.tag == TAG_USER }
+                            .fastFirstOrNull { it.tag in clickablePbAnnotationsTags }
                     }
                 if (annotation != null) {
                     if (change.pressed != change.previousPressed) change.consume()
@@ -122,12 +126,16 @@ fun PbContentText(
                         waitForUpOrCancellation()?.also { if (it.pressed != it.previousPressed) it.consume() }
                     if (up != null) {
                         when (annotation.tag) {
-                            TAG_URL -> {
+                            PbContentRender.TAG_TOPIC -> {
+                                val topicName = annotation.item
+                                navigator.navigate(Destination.HotTopicDetail(0, topicName))
+                            }
+                            PbContentRender.TAG_URL -> {
                                 val url = annotation.item
                                 launchUrl(context, navigator, url)
                             }
 
-                            TAG_USER -> {
+                            PbContentRender.TAG_USER -> {
                                 val uid = annotation.item.toLong()
                                 navigator.navigate(Destination.UserProfile(uid))
                             }

@@ -12,6 +12,7 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import androidx.core.net.toUri
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isTieba
+import com.huanchengfly.tieba.post.core.designsystem.theme.RedA700
 import com.huanchengfly.tieba.post.core.network.model.protos.Abstract
 import com.huanchengfly.tieba.post.core.network.model.protos.Media
 import com.huanchengfly.tieba.post.core.network.model.protos.PbContent
@@ -19,10 +20,7 @@ import com.huanchengfly.tieba.post.core.network.model.protos.Post
 import com.huanchengfly.tieba.post.core.network.model.protos.PostInfoList
 import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
 import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
-import com.huanchengfly.tieba.post.core.designsystem.theme.RedA700
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
-import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_URL
-import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.common.PbInlineType
 import com.huanchengfly.tieba.post.ui.common.PicContentRender
 import com.huanchengfly.tieba.post.ui.common.PureTextContentRender
@@ -193,14 +191,14 @@ fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRen
                         buildAnnotatedString {
                             appendInlineContent(PbInlineType.LINK_MALICIOUS.name, alternateText = "🔗")
                             // Display actual link when it's malicious
-                            withAnnotation(tag = TAG_URL, annotation = it.link) {
+                            withAnnotation(tag = PbContentRender.TAG_URL, annotation = it.link) {
                                 withStyle(redHighLightStyle) { append(it.link) }
                             }
                         }
                     } else {
                         buildAnnotatedString {
                             appendInlineContent(PbInlineType.LINK.name, alternateText = "🔗")
-                            withAnnotation(tag = TAG_URL, annotation = it.link) {
+                            withAnnotation(tag = PbContentRender.TAG_URL, annotation = it.link) {
                                 withStyle(highLightStyle) { append(it.text) }
                             }
                         }
@@ -230,7 +228,7 @@ fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRen
 
                 4 -> {
                     val text = buildAnnotatedString {
-                        withAnnotation(tag = TAG_USER, annotation = "${it.uid}") {
+                        withAnnotation(tag = PbContentRender.TAG_USER, annotation = "${it.uid}") {
                             withStyle(highLightStyle) {
                                 append(it.text)
                             }
@@ -252,7 +250,7 @@ fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRen
                     } else {
                         val text = buildAnnotatedString {
                             appendInlineContent(PbInlineType.VIDEO.name, alternateText = "🎥")
-                            withAnnotation(tag = TAG_URL, annotation = it.text) {
+                            withAnnotation(tag = PbContentRender.TAG_URL, annotation = it.text) {
                                 withStyle(highLightStyle) {
                                     append(PbContentRender.MEDIA_VIDEO)
                                     append(it.text)
@@ -265,6 +263,18 @@ fun List<PbContent>.buildRenders(imageLoadType: Int): ImmutableList<PbContentRen
 
                 10 -> {
                     renders.add(VoiceContentRender(it.voiceMD5, it.duringTime))
+                }
+
+                18 -> {
+                    val topic = it.text.substring(1, it.text.length - 1) // Trim Hash Tag: #话题#
+                    val text = buildAnnotatedString {
+                        withAnnotation(tag = PbContentRender.TAG_TOPIC, annotation = topic) {
+                            withStyle(highLightStyle) {
+                                append(it.text)
+                            }
+                        }
+                    }
+                    renders.appendText(text)
                 }
 
                 20 -> {

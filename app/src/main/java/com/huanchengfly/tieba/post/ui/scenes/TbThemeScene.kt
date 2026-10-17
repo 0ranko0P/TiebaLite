@@ -9,10 +9,10 @@ import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneDecoratorStrategy
 import androidx.navigation3.scene.SceneDecoratorStrategyScope
 import com.huanchengfly.tieba.post.LocalUISettings
-import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
-import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.designsystem.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
+import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
+import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 
 // TODO: Move to core:ui
 data class TbThemeScene<T : Any>(
@@ -40,7 +40,7 @@ data class TbThemeScene<T : Any>(
         }
 
         CompositionLocalProvider(
-            LocalBackButtonState provides (scene.entries.size <= 1),
+            LocalBackButtonState provides !isListDetail,
             LocalExtendedColorScheme provides colorSchemeExt,
             LocalSharedTransitionScope provides sharedTransitionScope.takeUnless { uiSettings.reduceMotion },
             LocalUISettings provides uiSettings,

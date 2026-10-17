@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -38,8 +39,8 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
-import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
 import com.huanchengfly.tieba.post.core.network.model.TopicInfoBean
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.TopicDetailVmFactory
 import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.feedId
@@ -71,9 +72,9 @@ fun TopicDetailPage(
         it.create(topicId, topicName)
     }
 ) {
+    val animatedContentScope = LocalNavAnimatedContentScope.current
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     viewModel.uiEvent.collectUiEventWithLifecycle {
@@ -87,39 +88,38 @@ fun TopicDetailPage(
             is CommonUiEvent.ToastError -> toastShort(R.string.toast_exception, it.message)
         }
     }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollOrientationConnection = rememberScrollOrientationConnection()
 
-    StateScreen(
-        modifier = Modifier.fillMaxSize(),
-        isEmpty = uiState.isEmpty,
-        isLoading = uiState.isRefreshing && uiState.isEmpty,
-        error = uiState.error,
-        onReload = viewModel::onRefresh
-    ) {
-        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-        val scrollOrientationConnection = rememberScrollOrientationConnection()
-        val hideBlockedContent by viewModel.hideBlockedContent.collectAsStateWithLifecycle()
-
-        BlurScaffold(
-            topHazeBlock = {
-                blurEnabled = scrollBehavior.isOverlapping
-            },
-            topBar = {
-                uiState.topicInfo?.let {
-                    TopicToolbar(topicInfo = it, onBack = onBack, scrollBehavior = scrollBehavior)
+    BlurScaffold(
+        topHazeBlock = {
+            blurEnabled = scrollBehavior.isOverlapping && !animatedContentScope.transition.isRunning
+        },
+        topBar = {
+            uiState.topicInfo?.let {
+                TopicToolbar(topicInfo = it, onBack = onBack, scrollBehavior = scrollBehavior)
+            }
+        },
+        floatingActionButton = {
+            val fabVisible by remember {
+                derivedStateOf { lazyListState.canScrollBackward && scrollOrientationConnection.isScrollingForward }
+            }
+            DefaultBackToTopFAB(visible = fabVisible) {
+                coroutineScope.launch {
+                    lazyListState.animateScrollToItem(0)
+                    scrollBehavior.state.contentOffset = 0f
                 }
-            },
-            floatingActionButton = {
-                val fabVisible by remember {
-                    derivedStateOf { lazyListState.canScrollBackward && scrollOrientationConnection.isScrollingForward }
-                }
-                DefaultBackToTopFAB(visible = fabVisible) {
-                    coroutineScope.launch {
-                        lazyListState.animateScrollToItem(0)
-                        scrollBehavior.state.contentOffset = 0f
-                    }
-                }
-            },
-        ) { contentPadding ->
+            }
+        },
+    ) { contentPadding ->
+        StateScreen(
+            modifier = Modifier.fillMaxSize(),
+            isEmpty = uiState.isEmpty,
+            isLoading = uiState.isRefreshing && uiState.isEmpty,
+            error = uiState.error,
+            onReload = viewModel::onRefresh
+        ) {
+            val hideBlockedContent by viewModel.hideBlockedContent.collectAsStateWithLifecycle()
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,
                 onRefresh = viewModel::onRefresh,
@@ -129,7 +129,7 @@ fun TopicDetailPage(
                     modifier = Modifier
                         .nestedScroll(connection = scrollOrientationConnection)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    fluid = !LocalBackButtonState.current,
+                    fluid = isListDetail(),
                 ) {
                     SwipeUpLazyLoadColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -181,7 +181,7 @@ private fun TopicToolbar(
     Box(
         modifier = modifier,
     ) {
-        if (!TiebaLiteTheme.colorScheme.isTranslucent) {
+        if (!TiebaLiteTheme.colorScheme.isTranslucent && !isListDetail()) {
             val gradientColors = listOf(
                 Color.Transparent,
                 topAppBarColors.containerColor.copy(alpha = 0.5f),
@@ -219,9 +219,9 @@ private fun TopicToolbar(
                     modifier = Modifier.padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = stringResource(id = R.string.topic_index, topicInfo.idxNum),
-                    )
+                    if (topicInfo.idxNum > 0) {
+                        Text(text = stringResource(id = R.string.topic_index, topicInfo.idxNum))
+                    }
 
                     Text(
                         text = stringResource(id = R.string.hot_num, topicInfo.discussNum.getShortNumString()),

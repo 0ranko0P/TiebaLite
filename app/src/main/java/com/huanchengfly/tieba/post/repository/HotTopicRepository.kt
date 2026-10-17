@@ -46,7 +46,7 @@ class HotTopicRepository @Inject constructor(
         offset: Int = 0,
         lastId: Long? = null,
     ): TopicDetailData {
-        require(topicId > 0)
+        require(topicId >= 0)
         require(offset >= 0)
         require(lastId == null || lastId > 0) {
             "The lastId is expected to be null or greater than zero, current: $lastId"

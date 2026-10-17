@@ -44,6 +44,7 @@ interface PbContentRender {
     fun toAnnotationString(): AnnotatedString = highlightContent(toString())
 
     companion object {
+        const val TAG_TOPIC = "topic"
         const val TAG_URL = "url"
         const val TAG_USER = "user"
 
