@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -62,7 +63,10 @@ data class SettingsSceneDecorator<T : Any>(
                     },
                     navigationIcon = {
                         LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher?.let { dispatcher ->
-                            BackNavigationIcon(onBackPressed = dispatcher::onBackPressed)
+                            BackNavigationIcon(
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(),
+                                onBackPressed = dispatcher::onBackPressed
+                            )
                         }
                     },
                 )

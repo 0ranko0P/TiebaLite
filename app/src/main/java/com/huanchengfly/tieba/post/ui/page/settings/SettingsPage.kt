@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.DoNotDisturbOff
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -236,7 +237,7 @@ private fun SettingsTopAppBar(
     modifier: Modifier = Modifier,
     @StringRes titleRes: Int,
     titleHorizontalAlignment: Alignment.Horizontal = Alignment.Start,
-    navigationIcon: @Composable () -> Unit = {},
+    onBack: () -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
     CollapsingTopAppBar(
@@ -250,8 +251,17 @@ private fun SettingsTopAppBar(
             )
         },
         titleHorizontalAlignment = titleHorizontalAlignment,
-        navigationIcon = navigationIcon,
+        navigationIcon = {
+            BackNavigationIcon(
+                colors = IconButtonDefaults.filledTonalIconButtonColors(),
+                onBackPressed = onBack,
+            )
+        },
         expandedHeight = TopAppBarDefaults.LargeAppBarExpandedHeight,
+        colors = TopAppBarDefaults.topAppBarColors(
+            // Disable container color animation
+            scrolledContainerColor = MaterialTheme.colorScheme.surface
+        ),
         scrollBehavior = scrollBehavior,
     )
 }
@@ -278,7 +288,7 @@ fun <T> SettingsScaffold(
             SettingsTopAppBar(
                 titleRes = titleRes,
                 titleHorizontalAlignment = titleHorizontalAlignment,
-                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+                onBack = onBack,
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -317,7 +327,7 @@ fun SettingsScaffold(
             SettingsTopAppBar(
                 titleRes = titleRes,
                 titleHorizontalAlignment = titleHorizontalAlignment,
-                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+                onBack = onBack,
                 scrollBehavior = scrollBehavior,
             )
         },

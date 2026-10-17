@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
@@ -143,8 +144,12 @@ fun ActionItem(
 )
 
 @Composable
-fun BackNavigationIcon(modifier: Modifier = Modifier, onBackPressed: () -> Unit) {
-    IconButton(onClick = onBackPressed, modifier = modifier) {
+fun BackNavigationIcon(
+    modifier: Modifier = Modifier,
+    colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
+    onBackPressed: () -> Unit
+) {
+    IconButton(onClick = onBackPressed, modifier = modifier, colors = colors) {
         Icon(
             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
             contentDescription = stringResource(id = R.string.button_back)
