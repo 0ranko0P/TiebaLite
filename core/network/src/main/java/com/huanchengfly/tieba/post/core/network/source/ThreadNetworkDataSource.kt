@@ -179,7 +179,11 @@ internal class RetrofitThreadNetworkDataSource @Inject constructor(
         val lz = data.thread?.author ?: throw TiebaException("Null Lz data")
         val userMap = data.user_list.associateBy { it.id }
         val postList = withContext(Dispatchers.Default) {
-            data.post_list.map {
+            var postList = data.post_list
+            if (data.top_answer != null) {
+                postList = (postList + data.top_answer).sortedBy { post -> post.floor }
+            }
+            postList.map {
                 val author = it.author ?: userMap[it.author_id] ?: throw TiebaException("Null author of post: ${it.id}")
                 it.copy(
                     author_id = author.id,

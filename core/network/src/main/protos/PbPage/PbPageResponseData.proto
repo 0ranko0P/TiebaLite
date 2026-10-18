@@ -112,4 +112,5 @@ message PbPageResponseData {
   string pb_notice = 67;
   int32 has_fold_comment = 68;
   int64 fold_comment_num = 70;
+  Post top_answer = 73;
 }
