@@ -9,6 +9,7 @@ import com.huanchengfly.tieba.post.core.common.ktx.booleanToInt
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.database.dao.UserProfileDao
 import com.huanchengfly.tieba.post.core.database.model.UserProfile
+import com.huanchengfly.tieba.post.core.network.model.FanListBean
 import com.huanchengfly.tieba.post.core.network.model.FollowBean
 import com.huanchengfly.tieba.post.core.network.model.FollowListBean
 import com.huanchengfly.tieba.post.core.network.model.PermissionListBean
@@ -48,7 +49,7 @@ import javax.inject.Singleton
 
 @Singleton
 class UserProfileRepository @Inject constructor(
-    @ApplicationContext val context: Context,
+    @param:ApplicationContext val context: Context,
     private val threadRepo: PbPageRepository,
     private val userProfileDao: UserProfileDao,
     private val localDataSource: UserProfileLocalDataSource,
@@ -129,11 +130,19 @@ class UserProfileRepository @Inject constructor(
         return forums.mapToUiModel() to hasMore
     }
 
+    suspend fun loadUserFanList(uid: Long, page: Int = 1): FanListBean {
+        val start = System.currentTimeMillis()
+        val result = networkDataSource.loadUserFanList(uid, page)
+        val cost = System.currentTimeMillis() - start
+        Log.i(TAG, "onLoadUserFanList: Done, cost ${cost}ms for page $page, size: ${result.userList.size}")
+        return result
+    }
+
     suspend fun loadUserFollowList(uid: Long, page: Int = 1): FollowListBean {
         val start = System.currentTimeMillis()
         val result = networkDataSource.loadUserFollowList(uid, page)
         val cost = System.currentTimeMillis() - start
-        Log.i(TAG, "onloadUserFollowList: Done, cost ${cost}ms for page $page, size: ${result.followList.size}")
+        Log.i(TAG, "onLoadUserFollowList: Done, cost ${cost}ms for page $page, size: ${result.followList.size}")
         return result
     }
 

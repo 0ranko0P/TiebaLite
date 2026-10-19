@@ -36,6 +36,7 @@ import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsPage
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPage
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStorePage
 import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
+import com.huanchengfly.tieba.post.ui.page.user.fans.UserFansPage
 import com.huanchengfly.tieba.post.ui.page.user.followlist.FollowListPage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
@@ -178,6 +179,14 @@ fun EntryProviderScope<NavKey>.appEntry(
 
     entry<Destination.ThreadStore> {
         ThreadStorePage(navigator)
+    }
+
+    entry<Destination.UserFans> { navKey ->
+        UserFansPage(
+            uid = navKey.uid,
+            onBack = onBack,
+            onUserClicked = { navigator.navigate(Destination.UserProfile(uid = it)) }
+        )
     }
 
     entry<Destination.UserFollowList> { navKey ->

@@ -115,6 +115,14 @@ internal interface OfficialTiebaApi {
     ): Flow<CommonResponse>
 
     @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
+    @POST("/c/u/fans/page")
+    @FormUrlEncoded
+    fun fansListFlow(
+        @Field("pn") page: Int = 1,
+        @Field("uid") uid: Long? = null,
+    ): Flow<FanListBean>
+
+    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
     @POST("/c/c/user/unfollow")
     @FormUrlEncoded
     fun unfollowFlow(

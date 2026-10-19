@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -48,14 +49,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
-import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.core.designsystem.theme.BebasFamily
 import com.huanchengfly.tieba.post.core.designsystem.util.isDarkScheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
@@ -90,7 +90,7 @@ fun StatCard(
     fans: String?,
     concerned: String?,
     modifier: Modifier = Modifier,
-    onFollowClick: (() -> Unit)? = null
+    onStatClicked: (Int) -> Unit = {}
 ) {
     Row(
         modifier = modifier
@@ -101,14 +101,14 @@ fun StatCard(
         StatCardItem(title = stringResource(R.string.title_stat_posts_num), stat = posts)
         VerticalDivider(color = MaterialTheme.colorScheme.outline)
 
-        StatCardItem(title = stringResource(R.string.text_stat_fans), stat = fans)
+        StatCardItem(title = stringResource(R.string.text_stat_fans), stat = fans) {
+            onStatClicked(R.string.text_stat_fans)
+        }
         VerticalDivider(color = MaterialTheme.colorScheme.outline)
 
-        StatCardItem(
-            modifier = Modifier.onNotNull(onFollowClick) { clickable(onClick = it) },
-            title = stringResource(R.string.text_stat_follow),
-            stat = concerned,
-        )
+        StatCardItem(title = stringResource(R.string.text_stat_follow), stat = concerned) {
+            onStatClicked(R.string.text_stat_follow)
+        }
     }
 }
 
@@ -182,9 +182,18 @@ private fun InfoCard(
 }
 
 @Composable
-private fun RowScope.StatCardItem(title: String, stat: String?, modifier: Modifier = Modifier) {
+private fun RowScope.StatCardItem(
+    title: String,
+    stat: String?,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+) {
     Column(
-        modifier = modifier.weight(1f),
+        modifier = modifier
+            .weight(1f)
+            .padding(horizontal = 2.dp)
+            .clip(MaterialTheme.shapes.small)
+            .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(text = stat ?: 0.toString(), fontSize = 20.sp, fontFamily = BebasFamily)
@@ -267,14 +276,18 @@ fun UserPage(viewModel: UserViewModel = hiltViewModel(), navigator: Navigator) {
                         shape = MaterialTheme.shapes.small,
                         color = colorScheme.secondaryContainer,
                     ) {
-                        StatCard(
-                            posts = account.posts,
-                            fans = account.fans,
-                            concerned = account.concerned,
-                            onFollowClick = {
-                                navigator.navigate(Destination.UserFollowList(uid = account.uid))
+                        account.run {
+                            StatCard(posts, fans, concerned) { resId ->
+                                val navKey = when (resId) {
+                                    R.string.text_stat_follow -> Destination.UserFollowList(uid)
+
+                                    R.string.text_stat_fans -> Destination.UserFans(uid)
+
+                                    else -> return@StatCard
+                                }
+                                navigator.navigate(navKey)
                             }
-                        )
+                        }
                     }
                 } else if (isLoading) {
                     InfoCardPlaceHolder(modifier = Modifier.padding(16.dp))

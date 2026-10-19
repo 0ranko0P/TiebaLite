@@ -797,6 +797,19 @@ internal interface ITiebaApi {
     ): Flow<CommonResponse>
 
     /**
+     * 粉丝列表
+     *
+     * **需登录**
+     *
+     * @param page 分页页码
+     * @param uid 用户 uid，留空表示当前登录用户
+     */
+    fun fanListFlow(
+        page: Int = 1,
+        uid: Long? = null,
+    ): Flow<FanListBean>
+
+    /**
      * 关注用户（web 接口）
      *
      * **需登录**

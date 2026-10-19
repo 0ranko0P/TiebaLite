@@ -93,6 +93,9 @@ sealed interface Destination: NavKey {
     data object ThreadStore: Destination
 
     @Serializable
+    data class UserFans(val uid: Long): Destination
+
+    @Serializable
     data class UserFollowList(val uid: Long): Destination
 
     /**

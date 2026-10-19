@@ -33,11 +33,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ComposeUiFlags
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -70,6 +72,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MoreMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.containerWidthFraction
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedListItemColors
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSnackbarHostState
@@ -218,7 +221,7 @@ fun FollowListPage(
 }
 
 @Composable
-private fun FollowListFilter(
+fun FollowListFilter(
     filter: FollowListFilter,
     onFilterChange: (FollowListFilter) -> Unit,
     modifier: Modifier = Modifier,
@@ -250,6 +253,26 @@ private fun FollowListFilter(
     }
 }
 
+@NonRestartableComposable
+@Composable
+fun FollowListTipsItem(modifier: Modifier = Modifier, tips: String) {
+    Column(
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.TipsAndUpdates,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+        )
+        Text(
+            text = tips,
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
 @Composable
 private fun FollowList(
     data: List<FollowUser>,
@@ -267,6 +290,7 @@ private fun FollowList(
     val listItemColors = SegmentedListItemColors
     val listItemElevation = ListItemElevation(Dp.Hairline, Dp.Hairline)
     val listItemContentPadding = PaddingValues(10.dp) // ListItem.InteractiveListStartPadding
+    val listItemWidthFraction by containerWidthFraction()
 
     SwipeUpLazyLoadColumn(
         modifier = Modifier.fillMaxSize() then modifier,
@@ -279,21 +303,7 @@ private fun FollowList(
     ) {
         tipsText?.let {
             item(key = TipsContentType, contentType = TipsContentType) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.TipsAndUpdates,
-                        contentDescription = tipsText,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    Text(
-                        text = it,
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                FollowListTipsItem(tips = it)
             }
         }
 
@@ -319,13 +329,18 @@ private fun FollowList(
                     onClick(user)
                 },
                 shapes = ListItemDefaults.segmentedShapes(index, count = data.size),
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth(listItemWidthFraction)
+                    .padding(horizontal = 16.dp),
                 leadingContent = {
                     Avatar(data = user.avatar, size = Sizes.Small)
                 },
-                trailingContent = onFollowActionClicked?.let {
-                    { FollowListFollowButton(user, onClick = { onFollowActionClicked(user) }) }
-                },
+                trailingContent = onFollowActionClicked?.let { {
+                    UserFollowButton(
+                        concernType = user.concernType,
+                        onClick = { onFollowActionClicked(user) }
+                    )
+                } },
                 verticalAlignment = Alignment.CenterVertically,
                 colors = listItemColors,
                 elevation = listItemElevation,
@@ -356,16 +371,16 @@ private fun FollowList(
 }
 
 @Composable
-private fun FollowListFollowButton(
-    user: FollowUser,
+fun UserFollowButton(
+    @ConcernType concernType: Int,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     Button(
         onClick = onClick,
         modifier = modifier,
-        enabled = user.concernType != ConcernType.UPDATING,
-        colors = if (user.concernType <= ConcernType.NONE) {
+        enabled = concernType != ConcernType.UPDATING,
+        colors = if (concernType <= ConcernType.NONE) {
             ButtonDefaults.buttonColors()
         } else {
             ButtonDefaults.filledTonalButtonColors()
@@ -373,9 +388,9 @@ private fun FollowListFollowButton(
         elevation = null,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
     ) {
-        if (user.concernType != ConcernType.UPDATING) {
+        if (concernType != ConcernType.UPDATING) {
             Text(
-                text = when (user.concernType) {
+                text = when (concernType) {
                     ConcernType.FANS,
                     ConcernType.NONE -> stringResource(id = R.string.button_follow)
                     ConcernType.FOLLOWING -> stringResource(id = R.string.text_followed)
@@ -420,6 +435,7 @@ private fun ConfirmUnfollowDialog(
 @Preview("FollowListPreview")
 @Composable
 private fun FollowListPreview() = TiebaLiteTheme {
+    ComposeUiFlags.isMediaQueryIntegrationEnabled = true
     val users = LongRange(0, 20).map { i ->
         FollowUser(
             uid = i,

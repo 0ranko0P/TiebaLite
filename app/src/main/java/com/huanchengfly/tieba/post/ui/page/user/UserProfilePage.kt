@@ -79,6 +79,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.mediaQuery
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -95,6 +96,7 @@ import androidx.compose.ui.util.lerp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.transformations
@@ -108,6 +110,7 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.components.coil.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.core.database.model.UserProfile
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.WidthSizeClasses
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.ui.FloatProducer
@@ -119,7 +122,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isLooseWindowWidth
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.models.user.PermissionList
@@ -190,7 +192,9 @@ private val UserAppbarExpandHeight: Dp
 
 /** Whether to use landscape layout or not */
 private val ContentLandscapeLayout: Boolean
-    @Composable @ReadOnlyComposable get() = isLooseWindowWidth()
+    @Composable @ReadOnlyComposable get() = mediaQuery {
+        windowWidth >= WindowSizeClass.WidthSizeClasses.Expanded
+    }
 
 // Blurry avatar background
 @Composable
@@ -306,9 +310,6 @@ fun UserProfilePage(
         val onAppealClicked: (() -> Unit)? = {
             navigator.navigate(Destination.WebView("https://c.tieba.baidu.com/mo/q/userappeal"))
         }.takeIf { isSelf }
-        val onNavigateFollowList: () -> Unit = {
-            navigator.navigate(Destination.UserFollowList(uid))
-        }
 
         val permList = uiState.permList
         val permissionDialogState = rememberDialogState()
@@ -373,6 +374,24 @@ fun UserProfilePage(
             }
         }
 
+        val movableUserProfileDetail = remember {
+            movableContentOf<Modifier, Boolean> { modifier, isLandscape->
+                UserProfileDetail(
+                    modifier = modifier,
+                    profile = userProfile,
+                    block = blockState,
+                    transitionKey = transitionKey,
+                    landscape = isLandscape,
+                    onNavigateFans = {
+                        navigator.navigate(Destination.UserFans(uid))
+                    },
+                    onNavigateFollowList = {
+                        navigator.navigate(Destination.UserFollowList(uid))
+                    }
+                )
+            }
+        }
+
         val contentLandscapeLayout = ContentLandscapeLayout
         MyScaffold(
             topBar = {
@@ -395,10 +414,10 @@ fun UserProfilePage(
                     block = blockState,
                     onBlackListClicked = viewModel::onUserBlacklisted,
                     onWhiteListClicked = viewModel::onUserWhitelisted,
-                    onNavigateFollowList = onNavigateFollowList,
                     onSetUserBlack = if (permList != null) permissionDialogState::show else null,
                     onBack = onBack,
                     scrollBehavior = scrollBehavior,
+                    detailContent = movableUserProfileDetail,
                 ) {
                     UserIntro(
                         modifier = Modifier.padding(start = 16.dp),
@@ -425,13 +444,7 @@ fun UserProfilePage(
                                 .verticalScroll(rememberScrollState())
                                 .padding(start = 16.dp, bottom = 16.dp)
                         ) {
-                            UserProfileDetail(
-                                profile = userProfile,
-                                block = blockState,
-                                transitionKey = transitionKey,
-                                landscape = true,
-                                onNavigateFollowList = onNavigateFollowList,
-                            )
+                            movableUserProfileDetail(Modifier.fillMaxWidth(), true/* isLandscape */)
 
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -464,10 +477,10 @@ private fun UserProfileTopAppBar(
     onRefreshClicked: () -> Unit = {},
     onBlackListClicked: () -> Unit = {},
     onWhiteListClicked: () -> Unit = {},
-    onNavigateFollowList: () -> Unit = {},
     onSetUserBlack: (() -> Unit)? = null,
     onBack: () -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior,
+    detailContent: @Composable (Modifier, isLandscape: Boolean) -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val actionsMenu: @Composable RowScope.() -> Unit = {
@@ -536,7 +549,7 @@ private fun UserProfileTopAppBar(
                 Nickname(modifier = titleModifier, nickname, transitionKey, block)
             },
             subtitle = {
-                UserProfileDetail(titleModifier, profile, block, transitionKey, landscape = false, onNavigateFollowList)
+                detailContent(titleModifier, false /* isLandscape */)
             },
             navigationIcon = navIcon,
             actions = actionsMenu,
@@ -731,6 +744,7 @@ private fun UserProfileDetail(
     block: UserBlockState = UserBlockState.None,
     transitionKey: String? = null,
     landscape: Boolean,
+    onNavigateFans: () -> Unit = {},
     onNavigateFollowList: () -> Unit = {},
 ) {
     val isWindowHeightCompact = isWindowHeightCompact()
@@ -790,8 +804,12 @@ private fun UserProfileDetail(
                 ) {
                     userStats.fastForEachIndexed { i, (titleRes, number) ->
                         StatText(
-                            modifier = Modifier.onCase(titleRes == R.string.text_stat_follow) {
-                                clickable(onClick = onNavigateFollowList)
+                            modifier = Modifier.block {
+                                when (titleRes) {
+                                    R.string.text_stat_fans -> clickable(onClick = onNavigateFans)
+                                    R.string.text_stat_follow -> clickable(onClick = onNavigateFollowList)
+                                    else -> null
+                                }
                             },
                             title = stringResource(id = titleRes),
                             num = number,

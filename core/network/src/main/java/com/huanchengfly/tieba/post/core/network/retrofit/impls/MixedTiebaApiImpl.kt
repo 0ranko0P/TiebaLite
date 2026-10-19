@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.core.network.model.AgreeBean
 import com.huanchengfly.tieba.post.core.network.model.CheckReportBean
 import com.huanchengfly.tieba.post.core.network.model.CollectDataBean
 import com.huanchengfly.tieba.post.core.network.model.CommonResponse
+import com.huanchengfly.tieba.post.core.network.model.FanListBean
 import com.huanchengfly.tieba.post.core.network.model.FollowBean
 import com.huanchengfly.tieba.post.core.network.model.FollowListBean
 import com.huanchengfly.tieba.post.core.network.model.ForumGuideBean
@@ -705,6 +706,9 @@ internal class MixedTiebaApiImpl(
             listOf(dislikeBean).toJson(),
             stoken = credentialProvider.getSToken()!!
         )
+
+    override fun fanListFlow(page: Int, uid: Long?): Flow<FanListBean> =
+        retrofitTiebaApi.OFFICIAL_TIEBA_API.fansListFlow(page, uid)
 
     override fun follow(
         portrait: String, tbs: String

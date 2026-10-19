@@ -5,6 +5,7 @@ import com.huanchengfly.tieba.post.core.network.exception.TiebaApiException
 import com.huanchengfly.tieba.post.core.network.exception.TiebaException
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.core.network.model.CommonResponse
+import com.huanchengfly.tieba.post.core.network.model.FanListBean
 import com.huanchengfly.tieba.post.core.network.model.FollowBean
 import com.huanchengfly.tieba.post.core.network.model.FollowListBean
 import com.huanchengfly.tieba.post.core.network.model.PermissionListBean
@@ -28,6 +29,8 @@ interface UserProfileNetworkDataSource {
     suspend fun loadUserThreadPost(uid: Long, page: Int, isThread: Boolean): List<PostInfoList>
 
     suspend fun loadUserProfile(uid: Long): Pair<User, Anti?>
+
+    suspend fun loadUserFanList(uid: Long, page: Int): FanListBean
 
     suspend fun loadUserFollowList(uid: Long, page: Int): FollowListBean
 
@@ -112,6 +115,18 @@ internal class UserProfileNetworkDataSourceImpl @Inject constructor(
             .run {
                 if (data_?.user == null) throw TiebaException("Null user data")
                 data_.user to data_.anti_stat
+            }
+    }
+
+    override suspend fun loadUserFanList(uid: Long, page: Int): FanListBean {
+        require(uid > 0) { "Invalid user ID: $uid." }
+        require(page > 0) { "Invalid page: $page" }
+
+        return tiebaApi
+            .fanListFlow(page, uid)
+            .firstOrThrow()
+            .apply {
+                if (errorCode != 0) throw TiebaApiException(CommonResponse(errorCode, errorMsg.orEmpty()))
             }
     }
 

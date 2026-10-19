@@ -5,17 +5,27 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.derivedMediaQuery
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
-import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_LOWER_BOUND
-import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
-import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
+import androidx.window.core.layout.WindowSizeClass
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.WidthSizeClasses
+
+@Composable
+fun containerWidthFraction(): State<Float> = derivedMediaQuery {
+    when {
+        windowWidth >= WindowSizeClass.WidthSizeClasses.Expanded -> 0.75f
+        windowWidth >= WindowSizeClass.WidthSizeClasses.Medium -> 0.87f
+        else -> 1f
+    }
+}
 
 @Composable
 @NonRestartableComposable
@@ -24,22 +34,18 @@ fun Container(
     fluid: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val info = LocalWindowAdaptiveInfo.current
-    val widthFraction = when {
-        fluid -> 1f
-        info.windowSizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_EXPANDED_LOWER_BOUND) -> 0.75f
-        info.windowSizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND) -> 0.87f
-        else -> 1f
-    }
-
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
-    ) {
+    if (fluid) {
         Box(
-            modifier = modifier.fillMaxWidth(widthFraction),
+            modifier = modifier.fillMaxWidth(),
+            content = content
+        )
+    } else {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
         ) {
-            content()
+            val widthFraction by containerWidthFraction()
+            Box(modifier = modifier.fillMaxWidth(widthFraction), content = content)
         }
     }
 }
