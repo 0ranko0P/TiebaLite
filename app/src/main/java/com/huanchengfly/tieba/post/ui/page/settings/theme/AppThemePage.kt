@@ -141,11 +141,11 @@ import com.huanchengfly.tieba.post.ui.page.main.user.StatCard
 import com.huanchengfly.tieba.post.ui.page.subposts.PostLikeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ChipText
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.FilledTonalBackNavigation
 import com.huanchengfly.tieba.post.ui.widgets.compose.FloatingTab
 import com.huanchengfly.tieba.post.ui.widgets.compose.FloatingTabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -282,7 +282,7 @@ fun AppThemePage(
         topBar = {
             TitleCentredToolbar(
                 title = stringResource(id = R.string.title_theme),
-                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+                navigationIcon = { FilledTonalBackNavigation(onBackPressed = onBack) },
                 actions = {
                     val themeChanged by when (pagerState.currentTheme) {
                         ThemePage.Featured -> viewModel.isBuiltInThemeChanged.collectAsStateWithLifecycle()

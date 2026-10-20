@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -28,7 +27,7 @@ import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.core.ui.layout.cacheSize
 import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
-import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.FilledTonalBackNavigation
 
 data class SettingsSceneDecorator<T : Any>(
     private val scene: Scene<T>,
@@ -63,10 +62,7 @@ data class SettingsSceneDecorator<T : Any>(
                     },
                     navigationIcon = {
                         LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher?.let { dispatcher ->
-                            BackNavigationIcon(
-                                colors = IconButtonDefaults.filledTonalIconButtonColors(),
-                                onBackPressed = dispatcher::onBackPressed
-                            )
+                            FilledTonalBackNavigation(onBackPressed = dispatcher::onBackPressed)
                         }
                     },
                 )

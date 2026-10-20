@@ -19,7 +19,6 @@ import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.DoNotDisturbOff
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -53,8 +52,8 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination.About
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingTopAppBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.FilledTonalBackNavigation
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
@@ -252,10 +251,7 @@ private fun SettingsTopAppBar(
         },
         titleHorizontalAlignment = titleHorizontalAlignment,
         navigationIcon = {
-            BackNavigationIcon(
-                colors = IconButtonDefaults.filledTonalIconButtonColors(),
-                onBackPressed = onBack,
-            )
+            FilledTonalBackNavigation(onBackPressed = onBack)
         },
         expandedHeight = TopAppBarDefaults.LargeAppBarExpandedHeight,
         colors = TopAppBarDefaults.topAppBarColors(

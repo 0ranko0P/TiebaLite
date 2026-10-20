@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
@@ -40,10 +39,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupPositionProvider
-import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.calculateNavigationType
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.isNavigationBar
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -143,6 +142,7 @@ fun ActionItem(
     onClick = onClick
 )
 
+@NonRestartableComposable
 @Composable
 fun BackNavigationIcon(
     modifier: Modifier = Modifier,
@@ -155,6 +155,12 @@ fun BackNavigationIcon(
             contentDescription = stringResource(id = R.string.button_back)
         )
     }
+}
+
+@NonRestartableComposable
+@Composable
+fun FilledTonalBackNavigation(modifier: Modifier = Modifier, onBackPressed: () -> Unit) {
+    BackNavigationIcon(modifier, IconButtonDefaults.filledTonalIconButtonColors(), onBackPressed)
 }
 
 @NonRestartableComposable
