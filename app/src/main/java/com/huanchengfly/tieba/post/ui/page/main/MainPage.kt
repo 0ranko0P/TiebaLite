@@ -732,7 +732,7 @@ private fun predictiveTransition(
             initialScale = 0.9f
         )
         val edgeExitTransition = slideOutHorizontally(
-            targetOffsetX = { if (event == NavigationEvent.EDGE_LEFT) it * 6 / 10 else -it * 6 / 10 }
+            targetOffsetX = { if (event == NavigationEvent.EDGE_LEFT) it else -it }
         ) + fadeOut(
             animationSpec = tween(delayMillis = 100)
         )

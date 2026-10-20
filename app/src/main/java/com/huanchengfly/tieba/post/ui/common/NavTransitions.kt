@@ -42,13 +42,6 @@ class NavTransitions(
             return DefaultAnimationSpec as FiniteAnimationSpec<T>
         }
 
-        val FadeTransitions: NavTransitions by unsafeLazy {
-            NavTransitions(
-                enterTransition = fadeIn(animationSpec = defaultAnimationSpec()),
-                exitTransition = fadeOut(animationSpec = defaultAnimationSpec()),
-            )
-        }
-
         val DefaultTransitions: NavTransitions by unsafeLazy {
             NavTransitions(
                 enterTransition = scaleIn(
@@ -101,8 +94,6 @@ class NavTransitions(
                 popExitTransition = slideOutHorizontally(
                     animationSpec = defaultAnimationSpec(),
                     targetOffsetX = { it }
-                ) + fadeOut(
-                    animationSpec = tween(delayMillis = 100)
                 )
             )
         }
