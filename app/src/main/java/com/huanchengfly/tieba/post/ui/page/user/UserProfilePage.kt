@@ -110,6 +110,7 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.components.coil.BlurTransformation
 import com.huanchengfly.tieba.post.components.imageProcessor.ImageProcessor
 import com.huanchengfly.tieba.post.core.database.model.UserProfile
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.HeightSizeClasses
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.WidthSizeClasses
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.navigation.Navigator
@@ -130,7 +131,7 @@ import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.user.UserProfileViewModel.Companion.UserProfileVmFactory
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
-import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
+import com.huanchengfly.tieba.post.ui.page.user.post.UserPostList
 import com.huanchengfly.tieba.post.ui.page.user.thread.UserThreadPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -193,7 +194,8 @@ private val UserAppbarExpandHeight: Dp
 /** Whether to use landscape layout or not */
 private val ContentLandscapeLayout: Boolean
     @Composable @ReadOnlyComposable get() = mediaQuery {
-        windowWidth >= WindowSizeClass.WidthSizeClasses.Expanded
+        windowHeight <= WindowSizeClass.HeightSizeClasses.Medium ||
+                windowWidth >= WindowSizeClass.WidthSizeClasses.Expanded
     }
 
 // Blurry avatar background
@@ -348,7 +350,7 @@ fun UserProfilePage(
                             UserThreadPage(uid, fluid, lazyListState, navigator::navigate)
                         }
 
-                        Tab.POSTS -> UserPostPage(uid, fluid, lazyListState, navigator::navigate)
+                        Tab.POSTS -> UserPostList(uid, fluid, lazyListState, navigator::navigate)
 
                         Tab.FORUMS -> when {
                             !isSelf && userProfile.privateForum -> UserPageHide(hiddenTab = tab)

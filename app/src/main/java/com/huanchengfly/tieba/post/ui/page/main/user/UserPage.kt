@@ -98,7 +98,9 @@ fun StatCard(
             .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StatCardItem(title = stringResource(R.string.title_stat_posts_num), stat = posts)
+        StatCardItem(title = stringResource(R.string.text_stat_posts), stat = posts) {
+            onStatClicked(R.string.text_stat_posts)
+        }
         VerticalDivider(color = MaterialTheme.colorScheme.outline)
 
         StatCardItem(title = stringResource(R.string.text_stat_fans), stat = fans) {
@@ -280,9 +282,8 @@ fun UserPage(viewModel: UserViewModel = hiltViewModel(), navigator: Navigator) {
                             StatCard(posts, fans, concerned) { resId ->
                                 val navKey = when (resId) {
                                     R.string.text_stat_follow -> Destination.UserFollowList(uid)
-
                                     R.string.text_stat_fans -> Destination.UserFans(uid)
-
+                                    R.string.text_stat_posts -> Destination.UserPosts(uid)
                                     else -> return@StatCard
                                 }
                                 navigator.navigate(navKey)

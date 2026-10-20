@@ -98,6 +98,9 @@ sealed interface Destination: NavKey {
     @Serializable
     data class UserFollowList(val uid: Long): Destination
 
+    @Serializable
+    data class UserPosts(val uid: Long): Destination
+
     /**
      * @param uid 用户ID
      * @param avatar 用户头像Url

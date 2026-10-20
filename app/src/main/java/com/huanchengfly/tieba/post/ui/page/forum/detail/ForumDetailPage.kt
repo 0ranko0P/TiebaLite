@@ -170,7 +170,7 @@ private fun ForumDetailContent(
                 VerticalDivider(color = MaterialTheme.colorScheme.outline)
                 StatCardItem(
                     statNum = postCount,
-                    statTitle = R.string.title_stat_posts_num
+                    statTitle = R.string.text_stat_posts
                 )
             }
         }

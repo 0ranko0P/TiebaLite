@@ -38,6 +38,7 @@ import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStorePage
 import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.user.fans.UserFansPage
 import com.huanchengfly.tieba.post.ui.page.user.followlist.FollowListPage
+import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.LocalVideoPreviewState
@@ -194,6 +195,14 @@ fun EntryProviderScope<NavKey>.appEntry(
             uid = navKey.uid,
             onBack = onBack,
             onUserClicked = { navigator.navigate(Destination.UserProfile(uid = it)) }
+        )
+    }
+
+    entry<Destination.UserPosts> { navKey ->
+        UserPostPage(
+            uid = navKey.uid,
+            onNavigate = navigator::navigate,
+            onBack = onBack,
         )
     }
 

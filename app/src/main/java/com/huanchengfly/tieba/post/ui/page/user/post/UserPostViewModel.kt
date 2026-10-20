@@ -56,7 +56,7 @@ class UserPostViewModel @AssistedInject constructor(
         _uiState.update { UserPostUiState(isRefreshing = true) }
         val data = userProfileRepo.loadUserPost(uid, page = 1, cached)
         _uiState.update {
-            UserPostUiState(isRefreshing = false, data = data, currentPage = 1, hasMore = data.size >= 60)
+            UserPostUiState(isRefreshing = false, data = data, currentPage = 1, hasMore = data.size >= 5)
         }
     }
 
