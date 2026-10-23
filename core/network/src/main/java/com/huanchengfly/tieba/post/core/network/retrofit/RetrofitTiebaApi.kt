@@ -51,6 +51,7 @@ private const val READ_TIMEOUT = 60L
 private const val CONNECT_TIMEOUT = 60L
 private const val WRITE_TIMEOUT = 60L
 
+@Suppress("PropertyName")
 internal class RetrofitTiebaApi(
     private val clientConfigProvider: ClientConfigProvider,
     private val credentialProvider: CredentialProvider,
@@ -89,7 +90,7 @@ internal class RetrofitTiebaApi(
 
     val NEW_TIEBA_API: NewTiebaApi by lazy {
         createJsonApi<NewTiebaApi>(
-            "http://c.tieba.baidu.com/",
+            "https://c.tieba.baidu.com/",
             defaultCommonHeaderInterceptor,
             CommonHeaderInterceptor(
                 Header.USER_AGENT to { "bdtb for Android 8.2.2" },
@@ -162,7 +163,7 @@ internal class RetrofitTiebaApi(
 
     val MINI_TIEBA_API: MiniTiebaApi by lazy {
         createJsonApi<MiniTiebaApi>(
-            "http://c.tieba.baidu.com/",
+            "https://c.tieba.baidu.com/",
             defaultCommonHeaderInterceptor,
             CommonHeaderInterceptor(
                 Header.USER_AGENT to { "bdtb for Android 7.2.0.0" },
@@ -183,7 +184,7 @@ internal class RetrofitTiebaApi(
 
     val OFFICIAL_TIEBA_API: OfficialTiebaApi by lazy {
         createJsonApi<OfficialTiebaApi>(
-            "http://c.tieba.baidu.com/",
+            "https://c.tieba.baidu.com/",
             CommonHeaderInterceptor(
                 Header.USER_AGENT to { "bdtb for Android ${ClientVersion.TIEBA_V12.version}" },
                 Header.COOKIE to { "CUID=${uidManager.newCUID};ka=open;TBBRAND=${Build.MODEL};BAIDUID=${clientConfigProvider.getBaiduId()};" },
