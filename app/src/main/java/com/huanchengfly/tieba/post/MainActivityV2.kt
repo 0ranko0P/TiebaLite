@@ -127,7 +127,15 @@ class MainActivityV2 : BaseComposeActivity() {
                 welcomeScreen = extras?.getBoolean(EXTRA_WELCOME_SETUP, false)
             }
             ShortcutInitializer.getTbShortcut(this)?.also { onNewShortcut(it) }
-            data?.normalizeScheme()?.let { pendingAppLink = appLinkToNavRoute(uri = it) }
+            data?.normalizeScheme()?.let { uri ->
+                if (uri.scheme == TB_LITE_DOMAIN) {
+                    // Navigate after the root graph starts so Back returns to the main page.
+                    pendingDeepLink = NavDeepLinkRequest.Builder.fromUri(uri).build()
+                    data = null
+                } else {
+                    pendingAppLink = appLinkToNavRoute(uri)
+                }
+            }
         }
     }
 
@@ -143,6 +151,7 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
         if (intent.action == Intent.ACTION_VIEW) {
             ShortcutInitializer.getTbShortcut(intent)?.also { onNewShortcut(it) }
             val uri = intent.data?.normalizeScheme() ?: return
@@ -157,8 +166,6 @@ class MainActivityV2 : BaseComposeActivity() {
                 // TiebaWebView.launchCustomTab(this, uri)
                 pendingAppLink = Destination.WebView(initialUrl = uri.toString(), customClient = false)
             }
-        } else {
-            super.onNewIntent(intent)
         }
     }
 

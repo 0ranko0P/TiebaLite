@@ -114,7 +114,7 @@ fun NotificationsPage(
                 NotificationsListPage(
                     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                     type = NotificationsType.entries[it],
-                    listState = listStates[pagerState.currentPage],
+                    listState = listStates[it],
                     contentPadding = contentPadding
                 )
             }

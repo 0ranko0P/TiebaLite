@@ -26,6 +26,7 @@ import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.StringUtil
+import com.huanchengfly.tieba.post.workers.NewMessageWorker
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -104,6 +105,7 @@ private class NotificationsListPartialChangeProducer(
             val data =
                 ((if (type == NotificationsType.ReplyMe) messageListBean.replyList else messageListBean.atList)
                     ?: emptyList()).mapUiModel(context, type, isBlocked)
+            NewMessageWorker.clearNotification(type)
             NotificationsListPartialChange.Refresh.Success(
                 data = data,
                 hasMore = messageListBean.page?.hasMore == "1"
@@ -121,6 +123,7 @@ private class NotificationsListPartialChangeProducer(
             val data =
                 ((if (type == NotificationsType.ReplyMe) messageListBean.replyList else messageListBean.atList)
                     ?: emptyList()).mapUiModel(context, type, isBlocked)
+            NewMessageWorker.clearNotification(type)
             NotificationsListPartialChange.LoadMore.Success(
                 currentPage = page,
                 data = data,

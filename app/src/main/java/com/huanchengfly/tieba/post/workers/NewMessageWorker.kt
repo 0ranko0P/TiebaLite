@@ -53,6 +53,12 @@ class NewMessageWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result = try {
         val newMessage = homeRepository.fetchNewMessage()
+        if (newMessage.replyMe == 0) {
+            clearNotification(NotificationsType.ReplyMe)
+        }
+        if (newMessage.atMe == 0) {
+            clearNotification(NotificationsType.AtMe)
+        }
         if (NotificationUtils.checkPermission(context)) {
             if (newMessage.replyMe > 0) {
                 updateNotification(NotificationsType.ReplyMe, newMsgCount = newMessage.replyMe)
@@ -147,6 +153,15 @@ class NewMessageWorker @AssistedInject constructor(
 
         private const val ID_REPLY = 20
         private const val ID_AT = 21
+
+        fun clearNotification(type: NotificationsType) {
+            notificationManager.cancel(
+                when (type) {
+                    NotificationsType.ReplyMe -> ID_REPLY
+                    NotificationsType.AtMe -> ID_AT
+                }
+            )
+        }
 
         fun schedulePeriodically(workManager: WorkManager) {
             val request = PeriodicWorkRequestBuilder<NewMessageWorker>(

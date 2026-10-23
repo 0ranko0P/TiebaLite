@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -124,7 +125,10 @@ private fun SharedTransitionScope.buildRootNavGraph(
             deepLinks = listOf(navDeepLink<Destination.Notification>(basePath = "$TB_LITE_DOMAIN://notifications"))
         ) { backStackEntry ->
             val type = backStackEntry.toRoute<Destination.Notification>().type
-            NotificationsPage(initialPage = NotificationsType.entries[type], navigator = navController)
+            // A singleTop notification intent can replace this entry with new arguments.
+            key(backStackEntry) {
+                NotificationsPage(initialPage = NotificationsType.entries[type], navigator = navController)
+            }
         }
 
         animatedComposable<Destination.Forum>(
