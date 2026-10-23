@@ -100,8 +100,6 @@ import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.NavigationEvent
-import com.huanchengfly.tieba.post.LocalUISettings
-import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
@@ -126,6 +124,7 @@ import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.c
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.navigationSuiteScaffoldConsumeWindowInsets
 import com.huanchengfly.tieba.post.core.designsystem.component.vibrantFloatingNavigationBarColor
 import com.huanchengfly.tieba.post.core.designsystem.component.vibrantFloatingNavigationBarContentColor
+import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.navigation.NavigationState
@@ -133,10 +132,11 @@ import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.containsType
 import com.huanchengfly.tieba.post.core.navigation.defaultContentKey
 import com.huanchengfly.tieba.post.core.navigation.toEntries
+import com.huanchengfly.tieba.post.core.ui.context.LocalUISettings
+import com.huanchengfly.tieba.post.core.ui.modifier.onCase
+import com.huanchengfly.tieba.post.core.ui.modifier.withNonNull
 import com.huanchengfly.tieba.post.core.ui.scenes.rememberDetailPaneBackHandlerSceneDecoratorStrategy
 import com.huanchengfly.tieba.post.ui.common.NavTransitions
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.appEntry
 import com.huanchengfly.tieba.post.ui.page.settings.rememberSettingsSceneStrategy

@@ -29,11 +29,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.core.util.getOrDefault
-import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.core.data.model.settings.ForumSortType
 import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
+import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.Options

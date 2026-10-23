@@ -20,10 +20,10 @@ import android.content.Context
 import android.os.Build
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.core.common.ktx.ensureParents
-import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.utils.FileUtil.createFileInCacheDir
 import com.huanchengfly.tieba.post.utils.FileUtil.toSharedUri
-import com.huanchengfly.tieba.post.utils.extension.toShareIntent
+import com.huanchengfly.tieba.post.core.ui.util.toShareIntent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext

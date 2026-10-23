@@ -1,59 +1,12 @@
 package com.huanchengfly.tieba.post
 
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
-import android.content.Intent
 import android.content.res.ColorStateList
-import android.os.Build
-import android.os.SystemClock
-import android.view.WindowManager
-import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.util.fastIsFinite
 import androidx.core.content.ContextCompat
 import com.huanchengfly.tieba.post.utils.MD5Util
 import kotlin.math.roundToInt
-
-val PaddingNone = PaddingValues.Zero
-
-private const val NAVIGATION_MIN_DELAY_MS = 500
-
-private var lastClickTime = -1L
-
-fun PaddingValues.copy(
-    direction: LayoutDirection,
-    start: Dp = calculateStartPadding(direction),
-    top: Dp = calculateTopPadding(),
-    end: Dp = calculateEndPadding(direction),
-    bottom: Dp = calculateBottomPadding()
-): PaddingValues = PaddingValues(
-    start = start,
-    top = top,
-    end = end,
-    bottom = bottom
-).takeUnless { it == PaddingNone } ?: PaddingNone
-
-@Stable @Composable
-operator fun PaddingValues.plus(other: PaddingValues): PaddingValues {
-    val layoutDirection = LocalLayoutDirection.current
-    return PaddingValues(
-        start = calculateStartPadding(layoutDirection) + other.calculateStartPadding(layoutDirection),
-        top = calculateTopPadding() + other.calculateTopPadding(),
-        end = calculateEndPadding(layoutDirection) + other.calculateEndPadding(layoutDirection),
-        bottom = calculateBottomPadding() + other.calculateBottomPadding()
-    )
-}
 
 private val Context.scaledDensity: Float
     get() = resources.displayMetrics.scaledDensity
@@ -94,9 +47,6 @@ fun Int.pxToSpFloat(): Float = this.toFloat().pxToSpFloat()
 fun Int.pxToDpFloat(): Float =
     this.toFloat().pxToDpFloat()
 
-val IntSize.aspectRatio: Float?
-    get() = (width / height.toFloat()).takeIf { it.fastIsFinite() }
-
 fun String.toMD5(): String = MD5Util.toMd5(this)
 
 fun ByteArray.toMD5(): String = MD5Util.toMd5(this)
@@ -107,43 +57,4 @@ fun Context.getColorCompat(@ColorRes id: Int): Int {
 
 fun Context.getColorStateListCompat(id: Int): ColorStateList {
     return AppCompatResources.getColorStateList(this, id)
-}
-
-inline fun <reified T : Activity> Context.goToActivity() {
-    startActivity(Intent(this, T::class.java))
-}
-
-inline fun <reified T : Activity> Context.goToActivity(pre: Intent.() -> Unit) {
-    startActivity(Intent(this, T::class.java).apply(pre))
-}
-
-internal inline fun <reified T : Activity> Context.goToActivityDebounced(pre: Intent.() -> Unit = {}) {
-    val currentTime = SystemClock.elapsedRealtime()
-    if (currentTime - lastClickTime > NAVIGATION_MIN_DELAY_MS) {
-        lastClickTime = currentTime
-        startActivity(Intent(this, T::class.java).apply(pre))
-    }
-}
-
-fun Context.toastShort(text: CharSequence) {
-    runCatching { Toast.makeText(this, text, Toast.LENGTH_SHORT).show() }
-}
-
-fun Context.toastShort(resId: Int, vararg args: Any) {
-    toastShort(getString(resId, *args))
-}
-
-fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
-
-fun WindowManager.LayoutParams.enableBackgroundBlur(radius: Int = 56) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
-        blurBehindRadius = radius
-    } else {
-        dimAmount = 0.6f
-    }
 }

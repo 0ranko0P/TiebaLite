@@ -25,15 +25,16 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.data.model.settings.PrivacySettings
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
+import com.huanchengfly.tieba.post.core.ui.util.PermissionUtils.askPermission
+import com.huanchengfly.tieba.post.core.ui.util.PermissionUtils.onDenied
+import com.huanchengfly.tieba.post.core.ui.util.PermissionUtils.onGranted
 import com.huanchengfly.tieba.post.ui.page.settings.appLinkPreference
 import com.huanchengfly.tieba.post.ui.page.settings.clipboardPreference
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPreference
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPrefsScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPrefsScreen
-import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
-import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
-import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.core.ui.R as coreUiR
 
 private val PermissionTitleVerticalPadding: Dp = 8.dp
 
@@ -138,14 +139,14 @@ private fun List<String>.mapToPermissionInfo(): List<PermissionInfo> = map {
     when (it) {
         Manifest.permission.READ_PHONE_STATE -> PermissionInfo(
             icon = Icons.Rounded.PhoneAndroid,
-            name = R.string.common_permission_phone,
+            name = coreUiR.string.core_ui_permission_phone,
             description = R.string.tip_permission_phone,
             permission = it
         )
 
         Manifest.permission.POST_NOTIFICATIONS -> PermissionInfo(
             icon = Icons.Rounded.NotificationsActive,
-            name = R.string.common_permission_post_notifications,
+            name = coreUiR.string.core_ui_permission_post_notifications,
             description = R.string.desc_permission_post_notifications,
             permission = it
         )

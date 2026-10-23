@@ -45,13 +45,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.core.ui.component.PlainTooltipBox
+import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ExtendedFabHeight
-import com.huanchengfly.tieba.post.ui.widgets.compose.PlainTooltipBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.ToolbarToFabGap
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+import com.huanchengfly.tieba.post.core.ui.R as CoreUiR
 
 @Composable
 fun CopyTextDialogPage(
@@ -123,7 +124,7 @@ fun CopyTextDialogPage(
                     elevation = fabElevation
                 )
 
-                val shareContentDescription = stringResource(R.string.title_share)
+                val shareContentDescription = stringResource(CoreUiR.string.core_ui_title_share)
                 PlainTooltipBox(
                     positionProvider = rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
                     contentDescription = shareContentDescription,

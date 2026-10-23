@@ -9,13 +9,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.PrivacySettings
+import com.huanchengfly.tieba.post.core.data.model.settings.Settings
+import com.huanchengfly.tieba.post.core.ui.util.buildAppSettingsIntent
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPreference
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SettingsSegmentedPrefsScope
-import com.huanchengfly.tieba.post.utils.buildAppSettingsIntent
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.core.ui.R as coreUiR
 
 @Composable
 fun PrivacySettingsPage(settings: Settings<PrivacySettings>, onBack: () -> Unit) {
@@ -52,8 +53,9 @@ fun SettingsSegmentedPrefsScope<PrivacySettings>.appLinkPreference() = customPre
                 )
             }
             .onFailure {
+                val message = context.getString(coreUiR.string.core_ui_error_open_settings)
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar(context.getString(R.string.error_open_settings))
+                    snackbarHostState.showSnackbar(message)
                 }
             }
         }

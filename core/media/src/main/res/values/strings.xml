@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="btn_full_screen">全屏</string>
+    <string name="btn_media_info">视频信息</string>
+    <string name="btn_picture_in_picture">画中画</string>
+    <string name="btn_replay">重播</string>
+    <string name="desc_audio">音频</string>
+    <string name="desc_video">视频</string>
+    <string name="media_bitrate">比特率</string>
+    <string name="media_channel_count">声道</string>
+    <string name="media_codec">编码</string>
+    <string name="media_fps">帧率</string>
+    <string name="media_resolution">分辨率</string>
+    <string name="media_sample_rate">采样率</string>
+    <string name="media_size">文件大小</string>
+    <string name="text_scale_crop">裁剪</string>
+    <string name="text_scale_fit">自动</string>
+    <string name="text_scale_fill">拉伸</string>
+    <string name="text_scale_fill_height">等高</string>
+    <string name="text_scale_fill_width">等宽</string>
+    <string name="text_scale_inside">等比缩放</string>
+    <string name="tip_permission_storage_save_pic">用于保存图片</string>
+    <string name="title_content_scale">缩放</string>
+    <string name="toast_enable_pip_from_settings">已停用画中画。在设置中启用它可使用此功能</string>
+    <string name="toast_no_permission_storage">未授予「存储空间」权限，无法保存下载内容</string>
+    <string name="toast_photo_saved">图片保存在 %1$s</string>
+</resources>

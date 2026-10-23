@@ -33,12 +33,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
+import com.huanchengfly.tieba.post.core.ui.util.DisplayUtil.toDpOffset
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.Options
-import com.huanchengfly.tieba.post.utils.DisplayUtil.toDpOffset
 import kotlinx.coroutines.flow.filterIsInstance
 
 val DefaultMenuItemContentPadding: PaddingValues = MenuDefaults.DropdownMenuItemContentPadding
@@ -206,7 +205,7 @@ fun ClickMenu(
                     menuState.dismiss()
                     onDismiss?.invoke()
                 },
-                offset = menuState.offset.toDpOffset(LocalDensity.current),
+                offset = menuState.offset.toDpOffset(),
                 modifier = modifier,
             ) {
                 DropdownMenuGroup(
@@ -257,7 +256,7 @@ fun LongClickMenu(
             DropdownMenuPopup(
                 expanded = menuState.expanded,
                 onDismissRequest = menuState::dismiss,
-                offset = menuState.offset.toDpOffset(LocalDensity.current),
+                offset = menuState.offset.toDpOffset(),
                 modifier = modifier,
             ) {
                 val menuScope = MenuScope(menuState, menuItemContentPadding)

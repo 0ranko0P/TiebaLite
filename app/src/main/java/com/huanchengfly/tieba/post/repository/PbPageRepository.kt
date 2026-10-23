@@ -8,24 +8,22 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
+import com.huanchengfly.tieba.post.api.models.protos.buildContentRenders
+import com.huanchengfly.tieba.post.api.models.protos.buildRenders
+import com.huanchengfly.tieba.post.api.models.protos.plainText
+import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.network.exception.TiebaException
 import com.huanchengfly.tieba.post.core.network.model.protos.Page
 import com.huanchengfly.tieba.post.core.network.model.protos.Post
 import com.huanchengfly.tieba.post.core.network.model.protos.SubPostList
 import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
 import com.huanchengfly.tieba.post.core.network.model.protos.User
-import com.huanchengfly.tieba.post.api.models.protos.buildContentRenders
-import com.huanchengfly.tieba.post.api.models.protos.buildRenders
 import com.huanchengfly.tieba.post.core.network.model.protos.pbFloor.PbFloorResponseData
 import com.huanchengfly.tieba.post.core.network.model.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.core.network.model.protos.pbPage.PbPageResponseData
-import com.huanchengfly.tieba.post.api.models.protos.plainText
-import com.huanchengfly.tieba.post.core.network.exception.TiebaException
-import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.core.network.model.PicPageBean
 import com.huanchengfly.tieba.post.core.network.source.ThreadNetworkDataSource
-import com.huanchengfly.tieba.post.core.network.source.ThreadPictureDataSource
-import com.huanchengfly.tieba.post.models.LoadPicPageData
-import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbContentRender.Companion.TAG_USER
 import com.huanchengfly.tieba.post.ui.common.PbInlineType
@@ -42,7 +40,6 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.normalized
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -91,7 +88,6 @@ class PbFloorUiResponse(
 class PbPageRepository @Inject constructor(
     private val blockRepo: BlockRepository,
     private val networkDataSource: ThreadNetworkDataSource,
-    private val pictureNetworkDataSource: ThreadPictureDataSource,
     settingsRepo: SettingsRepository,
 ) {
 
@@ -194,17 +190,6 @@ class PbPageRepository @Inject constructor(
                 hasPrevious = pageData.total_page > 1 && pageData.current_page > 1
             )
         )
-    }
-
-    suspend fun picturePage(
-        data: LoadPicPageData,
-        picId: String = data.picId,
-        picIndex: Int = data.picIndex,
-        prev: Boolean,
-    ): PicPageBean {
-        return with(data) {
-            pictureNetworkDataSource.picturePage(forumId, forumName, threadId, seeLz, picId, picIndex, objType, prev)
-        }
     }
 
     suspend fun deletePost(postId: Long, thread: ThreadInfoData, tbs: String?, delMyPost: Boolean) {

@@ -36,11 +36,12 @@ import com.huanchengfly.tieba.post.core.network.exception.TiebaApiException
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.core.ui.ProvideContentColorTextStyle
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.component.PositiveButton
+import com.huanchengfly.tieba.post.core.ui.modifier.onCase
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowHeightCompact
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import java.net.ConnectException
 

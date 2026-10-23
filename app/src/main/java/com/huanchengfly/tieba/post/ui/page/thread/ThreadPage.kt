@@ -98,7 +98,6 @@ import androidx.compose.ui.util.fastFirstOrNull
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
-import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
@@ -113,16 +112,20 @@ import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.popUpNavigate
+import com.huanchengfly.tieba.post.core.ui.ProvideContentColor
 import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.ui.animation.animateEnterExit
 import com.huanchengfly.tieba.post.core.ui.animation.defaultVerticalEnterTransition
 import com.huanchengfly.tieba.post.core.ui.animation.defaultVerticalExitTransition
+import com.huanchengfly.tieba.post.core.ui.component.ActionItem
+import com.huanchengfly.tieba.post.core.ui.component.PlainTooltipBox
+import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
+import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
+import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
+import com.huanchengfly.tieba.post.core.ui.modifier.withNonNull
 import com.huanchengfly.tieba.post.core.ui.util.isPostExitAniRunning
-import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
-import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.models.LikeZero
 import com.huanchengfly.tieba.post.ui.models.PostData
@@ -131,7 +134,6 @@ import com.huanchengfly.tieba.post.ui.models.UserData
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadViewModel.Companion.ThreadVmFactory
 import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStoreUiEvent
-import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CardHorizontalSpacing
@@ -142,9 +144,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.PlainTooltipBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
-import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.StickyHeaderOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
@@ -166,6 +166,7 @@ import com.huanchengfly.tieba.post.utils.trace
 import dev.chrisbanes.haze.HazeTint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.core.ui.R as CoreUiR
 
 private val ThreadToolbarContainerHeight = 48.dp
 
@@ -414,7 +415,9 @@ fun ThreadPage(
             topBar = {
                 CenterAlignedTopAppBar(
                     modifier = Modifier.withNonNull(hazeState) {
-                        Modifier.defaultHazeEffect {
+                        Modifier.defaultHazeEffect(
+                            fallbackTint = if (useStickyHeader) fallbackTint else HazeTint.Unspecified
+                        ) {
                             blurEnabled = !topAppBarScrollBehavior.isFullyCollapsed &&
                                     !animatedContentScope.isPostExitAniRunning &&
                                     (lazyListState.canScrollBackward || topAppBarScrollBehavior.isOverlapping)
@@ -700,7 +703,7 @@ private fun ThreadMenu(
         Column {
             ListMenuItem(
                 icon = Icons.Rounded.Share,
-                text = stringResource(id = R.string.title_share),
+                text = stringResource(id = CoreUiR.string.core_ui_title_share),
                 onClick = {
                     requestCloseMenu()
                     onShareClick()
@@ -930,7 +933,7 @@ private fun ThreadFloatingToolbar(
 
 @Composable
 private fun LikeAction(modifier: Modifier = Modifier, like: Like, onClick: () -> Unit) {
-    val contentDescription = stringResource(R.string.button_like)
+    val contentDescription = stringResource(id = CoreUiR.string.core_ui_btn_like)
     PlainTooltipBox(
         modifier = modifier,
         positionProvider = rememberTooltipPositionProvider(TooltipAnchorPosition.Above),

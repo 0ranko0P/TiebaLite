@@ -8,7 +8,6 @@ import com.huanchengfly.tieba.post.activities.TranslucentThemeViewModel.Companio
 import com.huanchengfly.tieba.post.arch.stateInViewModel
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.SessionManager
-import com.huanchengfly.tieba.post.components.media.ExoPlayerPool
 import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
 import com.huanchengfly.tieba.post.core.data.model.settings.PrivacySettings
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
@@ -17,9 +16,10 @@ import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.database.model.Account
 import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
+import com.huanchengfly.tieba.post.core.media.util.ExoPlayerPool
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -58,7 +58,11 @@ class MainViewModel @Inject constructor(
         settingsRepository.habitSettings,
         settingsRepository.uiSettings,
         settingsRepository.signConfig.map { it.autoSign },
-        ThemeUtil.getExtendedColorFlow(settingsRepository, context),
+        ThemeUtil.getExtendedColorFlow(
+            themeSettings = settingsRepository.themeSettings,
+            uiSettings = settingsRepository.uiSettings,
+            context = context
+        ),
     ) { habitSettings, uiSettings, autoSign, themeColor ->
         // Show warning dialog when background activity is restricted
         val autoSignRestricted = autoSign && !context.isIgnoringBatteryOptimizations()

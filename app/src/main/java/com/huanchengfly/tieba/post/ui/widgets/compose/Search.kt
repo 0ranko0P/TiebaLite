@@ -50,13 +50,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
+import com.huanchengfly.tieba.post.core.media.VideoThumbnail
 import com.huanchengfly.tieba.post.core.network.model.SearchThreadBean
+import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
 import com.huanchengfly.tieba.post.ui.models.search.SearchMedia
 import com.huanchengfly.tieba.post.ui.models.search.SearchThreadInfo
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
 import kotlin.math.min
 
 @Composable

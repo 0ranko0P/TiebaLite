@@ -41,7 +41,7 @@ import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.network.model.TopicInfoBean
 import com.huanchengfly.tieba.post.core.ui.util.isListDetail
-import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.TopicDetailVmFactory
 import com.huanchengfly.tieba.post.ui.page.hottopic.detail.TopicDetailViewModel.Companion.feedId
 import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners

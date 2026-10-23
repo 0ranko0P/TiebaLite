@@ -15,8 +15,8 @@ import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isBaidu
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isHttp
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isLogin
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.utils.loadPackageLabel
-import com.huanchengfly.tieba.post.utils.queryDeepLink
+import com.huanchengfly.tieba.post.core.ui.util.loadPackageLabel
+import com.huanchengfly.tieba.post.core.ui.util.queryDeepLink
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.full.createType

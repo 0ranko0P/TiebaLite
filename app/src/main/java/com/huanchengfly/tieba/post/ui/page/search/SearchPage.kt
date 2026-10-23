@@ -68,17 +68,16 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.CommonUiEvent
 import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.arch.isScrolling
-import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.SearchToolbarSharedBoundsKey
+import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
-import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
+import com.huanchengfly.tieba.post.ui.SearchToolbarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.models.search.SearchForum
 import com.huanchengfly.tieba.post.ui.models.search.SearchSuggestion
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -311,7 +310,7 @@ fun SearchPage(
 @Composable
 private fun SearchSuggestionList(
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingNone,
+    contentPadding: PaddingValues = PaddingValues.Zero,
     suggestion: SearchSuggestion,
     onForumClick: (SearchForum) -> Unit = {},
     onItemClick: (String) -> Unit = {},

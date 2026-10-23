@@ -62,8 +62,9 @@ import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
-import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
+import com.huanchengfly.tieba.post.core.ui.component.ActionItem
+import com.huanchengfly.tieba.post.core.ui.util.DisplayUtil
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState
@@ -72,9 +73,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.DisplayUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil.setAppearanceLightNavigationBars
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil.setAppearanceLightNavigationBars
 import com.yalantis.ucrop.UCrop
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay

@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.user.thread
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,12 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
@@ -84,7 +84,7 @@ fun UserThreadPage(
         isLoading = isRefreshing,
         error = error,
         onReload = viewModel::onRefresh,
-        screenPadding = PaddingNone,
+        screenPadding = PaddingValues.Zero,
     ) {
         Container(fluid = fluid) {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()

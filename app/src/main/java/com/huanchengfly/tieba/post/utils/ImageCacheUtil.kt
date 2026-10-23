@@ -3,7 +3,7 @@ package com.huanchengfly.tieba.post.utils
 import android.content.Context
 import androidx.annotation.WorkerThread
 import coil3.imageLoader
-import com.huanchengfly.tieba.post.utils.ImageUtil.FILE_PROVIDER_SHARE_DIR
+import com.huanchengfly.tieba.post.core.media.util.ImageDownloadUtil.FILE_PROVIDER_SHARE_DIR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

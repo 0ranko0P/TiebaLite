@@ -13,8 +13,8 @@ import com.huanchengfly.tieba.post.activities.BaseActivity
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
-import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil.setAppearanceLightNavigationBars
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil.setAppearanceLightNavigationBars
 
 abstract class BaseComposeActivity : BaseActivity() {
 

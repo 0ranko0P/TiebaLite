@@ -83,8 +83,11 @@ import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.component.NegativeButton
+import com.huanchengfly.tieba.post.core.ui.component.containerColor
+import com.huanchengfly.tieba.post.core.ui.component.contentColor
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.page.settings.collectSeeLzPreference
 import com.huanchengfly.tieba.post.ui.page.settings.darkImagePreference
 import com.huanchengfly.tieba.post.ui.page.settings.darkThemeModePreference
@@ -94,12 +97,9 @@ import com.huanchengfly.tieba.post.ui.page.settings.hideReplyPreference
 import com.huanchengfly.tieba.post.ui.page.settings.imageLoadPreference
 import com.huanchengfly.tieba.post.ui.page.settings.reduceEffectPreference
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.NegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebViewState
-import com.huanchengfly.tieba.post.ui.widgets.compose.containerColor
-import com.huanchengfly.tieba.post.ui.widgets.compose.contentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedPrefsScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.preference.SegmentedTextPrefsScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator

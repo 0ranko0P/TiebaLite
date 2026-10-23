@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -29,15 +30,15 @@ import com.github.iielse.imageviewer.utils.Config
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.components.viewer.SimpleImageLoader
+import com.huanchengfly.tieba.post.core.data.model.PhotoViewData
+import com.huanchengfly.tieba.post.core.data.model.PicItem
+import com.huanchengfly.tieba.post.core.media.util.ImageDownloadUtil
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.goToActivityDebounced
-import com.huanchengfly.tieba.post.models.PhotoViewData
-import com.huanchengfly.tieba.post.models.PicItem
-import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.utils.DisplayUtil.doOnApplyWindowInsets
+import com.huanchengfly.tieba.post.core.ui.util.getParcelableExtraCompat
+import com.huanchengfly.tieba.post.core.ui.util.goToActivityDebounced
+import com.huanchengfly.tieba.post.core.ui.util.toShareIntent
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import com.huanchengfly.tieba.post.utils.extension.getParcelableExtraCompat
-import com.huanchengfly.tieba.post.utils.extension.toShareIntent
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -134,7 +135,9 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         when (item.itemId) {
             R.id.menu_share -> onShareImage()
 
-            R.id.menu_download -> ImageUtil.download(this, url = getCurrentItem()?.originUrl)
+            R.id.menu_download -> {
+                ImageDownloadUtil.download(this, url = getCurrentItem()?.originUrl)
+            }
 
             else -> return super.onOptionsItemSelected(item)
         }
@@ -162,10 +165,15 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
         val currentImg = getCurrentItem() ?: return
         toastShort(R.string.toast_preparing_share_pic)
         lifecycleScope.launch {
-            ImageUtil.downloadForShare(applicationContext, currentImg.originUrl)
-                .onSuccess {
-                    val intent = it.toShareIntent(this@PhotoViewActivity, MimeTypes.IMAGE_JPEG, getString(R.string.title_share_pic))
-                    runCatching { startActivity(intent) }
+            ImageDownloadUtil.downloadForShare(application, currentImg.originUrl)
+                .onSuccess { uri ->
+                    runCatching {
+                        startActivity(uri.toShareIntent(
+                            context = this@PhotoViewActivity,
+                            type = MimeTypes.IMAGE_JPEG,
+                            message = getString(R.string.title_share_pic)
+                        ))
+                    }
                 }
                 .onFailure {
                     toastShort(it.getErrorMessage())
@@ -226,5 +234,14 @@ class PhotoViewActivity : AppCompatActivity(), OverlayCustomizer, ViewerCallback
                     visibility = if (value) View.VISIBLE else View.GONE
                 }
             }
+
+        /**
+         * @see View.setOnApplyWindowInsetsListener
+         * */
+        private fun View.doOnApplyWindowInsets(onApply: View.(insets: WindowInsetsCompat) -> Boolean) {
+            ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+                if (onApply(insets)) WindowInsetsCompat.CONSUMED else insets
+            }
+        }
     }
 }

@@ -36,8 +36,8 @@ import com.huanchengfly.tieba.post.core.designsystem.theme.BlueViolet
 import com.huanchengfly.tieba.post.core.designsystem.theme.MerlotPink
 import com.huanchengfly.tieba.post.core.designsystem.theme.SunsetOrange
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaBlue
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
 import com.huanchengfly.tieba.post.utils.ImageUtil.toFile
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext

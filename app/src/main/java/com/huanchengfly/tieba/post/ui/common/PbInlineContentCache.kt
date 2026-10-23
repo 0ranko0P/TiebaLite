@@ -32,6 +32,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PbContentText
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberChipInlineContent
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonUtil
+import com.huanchengfly.tieba.post.core.media.R as mediaUiR
 
 val LocalPbInlineContentCache = staticCompositionLocalOf<PbInlineContentCache> { error("No PbInlineContentCache provided!") }
 
@@ -122,7 +123,7 @@ class PbInlineContentCache private constructor(
                 PbInlineType.VIDEO.name to InlineTextContent(placeholder = placeholder) {
                     Icon(
                         imageVector = Icons.Rounded.SlowMotionVideo,
-                        contentDescription = stringResource(id = R.string.desc_video),
+                        contentDescription = stringResource(id = mediaUiR.string.desc_video),
                         modifier = Modifier.size(sizeDp),
                         tint = MaterialTheme.colorScheme.primaryContainer,
                     )

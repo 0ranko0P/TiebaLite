@@ -44,16 +44,15 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.core.view.WindowCompat
-import com.huanchengfly.tieba.post.LocalUISettings
-import com.huanchengfly.tieba.post.enableBackgroundBlur
+import com.huanchengfly.tieba.post.core.ui.context.LocalUISettings
+import com.huanchengfly.tieba.post.core.ui.util.enableBackgroundBlur
 import kotlinx.coroutines.delay
 
+@Composable
+private fun getDialogWindow(): Window? = (LocalView.current.parent as? DialogWindowProvider)?.window
 
 @Composable
-fun getDialogWindow(): Window? = (LocalView.current.parent as? DialogWindowProvider)?.window
-
-@Composable
-fun getActivityWindow(): Window? = LocalView.current.context.getActivityWindow()
+private fun getActivityWindow(): Window? = LocalView.current.context.getActivityWindow()
 
 tailrec fun Context.getActivityWindow(): Window? = when (this) {
     is Activity -> window

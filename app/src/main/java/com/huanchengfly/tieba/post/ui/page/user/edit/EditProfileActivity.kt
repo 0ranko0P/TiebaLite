@@ -60,11 +60,12 @@ import com.huanchengfly.tieba.post.activities.UCropActivity.Companion.registerUC
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
-import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
+import com.huanchengfly.tieba.post.core.ui.component.ActionItem
+import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.models.user.EditProfile
-import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -73,7 +74,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.OutlineCounterTextField
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.yalantis.ucrop.UCrop
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.collections.immutable.persistentMapOf

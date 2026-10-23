@@ -18,6 +18,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.coil.SubsamplingScaleTarget.Companion.SubsamplingImage
 import com.huanchengfly.tieba.post.components.coil.SubsamplingScaleTarget.Companion.load
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewItem
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultErrorResource
 
 class SimpleImageLoader(
     private val lifecycle: Lifecycle,
@@ -32,7 +33,7 @@ class SimpleImageLoader(
 
         view.setOnClickListener(onClick)
         view.load(data = it, imageLoader = loader) {
-            error(R.drawable.ic_error)
+            error(DefaultErrorResource)
             size(SizeResolver.ORIGINAL)
             lifecycle(lifecycle)
             // Set animation on first ImageView
@@ -53,7 +54,7 @@ class SimpleImageLoader(
 
         subsamplingView.setOnClickListener(onClick)
         subsamplingView.load(data = data.originUrl, imageLoader = loader) {
-            error(R.drawable.ic_error)
+            error(DefaultErrorResource)
             lifecycle(lifecycle)
             listener(
                 onStart = {

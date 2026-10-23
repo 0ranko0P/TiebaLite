@@ -10,6 +10,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.scene.DialogSceneStrategy
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.designsystem.component.PainterDetailPlaceholder
+import com.huanchengfly.tieba.post.core.media.state.LocalVideoPreviewState
 import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.containsScene
@@ -41,7 +42,6 @@ import com.huanchengfly.tieba.post.ui.page.user.followlist.FollowListPage
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.LocalVideoPreviewState
 
 fun EntryProviderScope<NavKey>.appEntry(
     isListDetail: Boolean,

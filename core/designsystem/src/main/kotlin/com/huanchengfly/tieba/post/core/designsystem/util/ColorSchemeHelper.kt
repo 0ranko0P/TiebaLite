@@ -31,6 +31,6 @@ fun ColorScheme.createTopAppBarColors(
 }
 
 /** Determines if a color should be considered light or dark.  */
-private fun isColorLight(color: Color): Boolean {
+fun isColorLight(color: Color): Boolean {
     return color != Color.Transparent && calculateLuminance(color.toArgb()) > 0.5
 }

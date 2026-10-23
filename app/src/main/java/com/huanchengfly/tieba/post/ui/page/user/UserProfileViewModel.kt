@@ -23,7 +23,7 @@ import com.huanchengfly.tieba.post.repository.UserProfileRepository
 import com.huanchengfly.tieba.post.ui.models.user.PermissionList
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.user.UserProfileViewModel.Companion.UserProfileVmFactory
-import com.huanchengfly.tieba.post.utils.CoilUtil
+import com.huanchengfly.tieba.post.core.ui.util.CoilUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory

@@ -22,9 +22,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.util.fastFirstOrNull
-import com.huanchengfly.tieba.post.LocalHabitSettings
-import com.huanchengfly.tieba.post.copy
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
+import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
+import com.huanchengfly.tieba.post.core.ui.util.copy
 import kotlinx.coroutines.delay
 
 // Workaround to enable background blurring on StickyHeader
@@ -63,7 +63,7 @@ fun PaddingValues.fixedTopBarPadding(topBarHeight: Dp = TopAppBarDefaults.TopApp
         calculateBottomPadding()
     ) {
         with(density) {
-            copy(direction, top = statusBarWindowInsets.getTop(density).toDp() + topBarHeight)
+            copy(top = statusBarWindowInsets.getTop(density).toDp() + topBarHeight)
         }
     }
 }

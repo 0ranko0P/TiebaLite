@@ -73,7 +73,6 @@ import androidx.core.util.getOrDefault
 import androidx.core.util.set
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
@@ -89,13 +88,17 @@ import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
 import com.huanchengfly.tieba.post.core.ui.FloatProducer
 import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
+import com.huanchengfly.tieba.post.core.ui.component.ActionItem
+import com.huanchengfly.tieba.post.core.ui.component.Chip
+import com.huanchengfly.tieba.post.core.ui.component.OutlinedIconTextButton
+import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowHeightCompact
+import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
+import com.huanchengfly.tieba.post.core.ui.modifier.onCase
 import com.huanchengfly.tieba.post.core.ui.util.isListDetail
-import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.ForumAvatarSharedBoundsKey
 import com.huanchengfly.tieba.post.ui.ForumTitleSharedBoundsKey
-import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
 import com.huanchengfly.tieba.post.ui.models.forum.ForumData
 import com.huanchengfly.tieba.post.ui.models.forum.GoodClassify
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -111,11 +114,9 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.createThreadClickListene
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
-import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingAvatarTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
@@ -125,7 +126,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.MoreMenuItem
-import com.huanchengfly.tieba.post.ui.widgets.compose.OutlinedIconTextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeToDismissSnackbarHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -138,6 +138,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
+import com.huanchengfly.tieba.post.core.ui.R as CoreUiR
 
 /** The default expanded height of a Forum TopAppBar */
 private val ForumAppbarExpandHeight: Dp = 144.dp
@@ -380,7 +381,10 @@ fun ForumPage(
 
                     ClickMenu(
                         menuContent = {
-                            TextMenuItem(text = R.string.title_share, onClick = viewModel::shareForum)
+                            TextMenuItem(
+                                text = CoreUiR.string.core_ui_title_share,
+                                onClick = viewModel::shareForum
+                            )
 
                             TextMenuItem(text = R.string.title_send_to_desktop) {
                                 viewModel.sendToDesktop(context.getString(R.string.title_forum, forumData.name))
@@ -416,7 +420,7 @@ fun ForumPage(
 
                 val classifyVisible by remember { derivedStateOf { pagerState.currentPage == TAB_FORUM_GOOD } }
                 val goodClassifies = uiState.forum?.goodClassifies ?: return@CollapsingAvatarTopAppBar
-                // Compose classify inside TopBar for background blur
+                // Compose ClassifyTabs inside the TopAppBar for background blurring
                 AnimatedVisibility(visible = classifyVisible) {
                     ClassifyTabs(
                         goodClassifies = goodClassifies,

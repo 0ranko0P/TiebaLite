@@ -23,11 +23,12 @@ import androidx.lifecycle.lifecycleScope
 import com.huanchengfly.tieba.post.MainActivityV2
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.ui.component.PositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorStackTraceScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.PositiveButton
 import com.huanchengfly.tieba.post.utils.CrashLogUtil
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.core.ui.R as CoreUiR
 
 class CrashActivity : ComponentActivity() {
 
@@ -66,7 +67,7 @@ class CrashActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth(),
                         enabled = dumpLogJob == null
                     ) {
-                        Text(text = stringResource(id = R.string.title_share))
+                        Text(text = stringResource(id = CoreUiR.string.core_ui_title_share))
                     }
                 }
             }

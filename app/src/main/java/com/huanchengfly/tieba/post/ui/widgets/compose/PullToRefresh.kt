@@ -13,7 +13,6 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.huanchengfly.tieba.post.PaddingNone
 
 /**
  * compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/pulltorefresh/PullToRefresh.kt
@@ -52,7 +51,7 @@ fun PullToRefreshBox(
     enabled: Boolean = true,
     state: PullToRefreshState = rememberPullToRefreshState(),
     contentAlignment: Alignment = Alignment.TopCenter,
-    contentPadding: PaddingValues = PaddingNone,
+    contentPadding: PaddingValues = PaddingValues.Zero,
     indicator: @Composable BoxScope.() -> Unit = {
         PullToRefreshDefaults.LoadingIndicator(
             state = state,

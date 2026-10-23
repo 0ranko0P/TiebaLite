@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
-import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.network.Error
 import com.huanchengfly.tieba.post.core.network.exception.getErrorCode
@@ -51,7 +50,7 @@ fun NotificationsListPage(
     type: NotificationsType,
     onNavigate: (NavKey) -> Unit,
     listState: LazyListState = rememberLazyListState(),
-    contentPadding: PaddingValues = PaddingNone,
+    contentPadding: PaddingValues = PaddingValues.Zero,
     viewModel: NotificationsListViewModel = hiltViewModel<NotificationsListViewModel, NotificationsListVmFactory>(
         key = Objects.hash(type.name, LocalAccount.current?.uid).toString(),
         creationCallback = { factory -> factory.create(type) }
@@ -103,7 +102,7 @@ private fun NotificationsListContent(
     onNavigate: (NavKey) -> Unit,
     listState: LazyListState = rememberLazyListState(),
     hideBlocked: Boolean = false,
-    contentPadding: PaddingValues = PaddingNone,
+    contentPadding: PaddingValues = PaddingValues.Zero,
     uiState: NotificationsListUiState,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,

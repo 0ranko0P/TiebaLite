@@ -35,11 +35,11 @@ import com.airbnb.lottie.SimpleColorFilter
 import com.airbnb.lottie.model.KeyPath
 import com.airbnb.lottie.value.LottieValueCallback
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.core.ui.util.DisplayUtil
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ColorStateListUtils
-import com.huanchengfly.tieba.post.utils.DisplayUtil
 import com.huanchengfly.tieba.post.utils.FileUtil
 import com.huanchengfly.tieba.post.utils.PopupUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
 import java.io.IOException
 import java.util.Timer
 import java.util.TimerTask

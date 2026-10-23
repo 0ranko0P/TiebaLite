@@ -65,7 +65,6 @@ import androidx.compose.ui.util.fastForEach
 import androidx.media3.exoplayer.ExoPlayer
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
 import com.huanchengfly.tieba.post.api.models.protos.aspectRatio
@@ -73,35 +72,37 @@ import com.huanchengfly.tieba.post.api.models.protos.buildRenders
 import com.huanchengfly.tieba.post.api.models.protos.getPicUrl
 import com.huanchengfly.tieba.post.api.models.protos.isExpired
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
+import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.media.PreviewVideoPlayer
+import com.huanchengfly.tieba.post.core.media.VideoThumbnail
+import com.huanchengfly.tieba.post.core.media.state.LocalVideoPreviewState
+import com.huanchengfly.tieba.post.core.media.util.MediaUtil
 import com.huanchengfly.tieba.post.core.network.model.protos.Media
 import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
 import com.huanchengfly.tieba.post.core.ui.ProvideContentColorTextStyle
-import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.block
-import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.modifier.block
+import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
+import com.huanchengfly.tieba.post.core.ui.modifier.onCase
+import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
 import com.huanchengfly.tieba.post.ui.models.Author
 import com.huanchengfly.tieba.post.ui.models.SimpleForum
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.LocalVideoPreviewState
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.PreviewVideoPlayer
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoThumbnail
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
-import com.huanchengfly.tieba.post.utils.MediaUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlin.math.max
 import kotlin.math.min
+import com.huanchengfly.tieba.post.core.media.R as MediaUiR
 
 enum class FeedType {
     Top, PlainText, SingleMedia, MultiMedia, Video
@@ -365,11 +366,11 @@ fun ThreadMedia(
                     icon = {
                         Icon(
                             imageVector = Icons.Rounded.OndemandVideo,
-                            contentDescription = stringResource(id = R.string.desc_video)
+                            contentDescription = stringResource(id = MediaUiR.string.desc_video)
                         )
                     },
                     text = {
-                        Text(text = stringResource(id = R.string.desc_video))
+                        Text(text = stringResource(id = MediaUiR.string.desc_video))
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -618,7 +619,7 @@ fun FeedVideoShutter(
         ) {
             Icon(
                 imageVector = Icons.Rounded.PictureInPictureAlt,
-                contentDescription = stringResource(R.string.btn_picture_in_picture),
+                contentDescription = stringResource(MediaUiR.string.btn_picture_in_picture),
                 modifier = Modifier.size(Sizes.Large),
                 tint = Color.White
             )

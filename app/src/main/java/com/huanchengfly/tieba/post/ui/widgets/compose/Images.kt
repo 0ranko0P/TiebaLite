@@ -50,34 +50,28 @@ import coil3.compose.rememberConstraintsSizeResolver
 import coil3.memory.MemoryCache
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
-import com.huanchengfly.tieba.post.LocalUISettings
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.aspectRatio
-import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.models.PhotoViewData
+import com.huanchengfly.tieba.post.core.data.model.PhotoViewData
 import com.huanchengfly.tieba.post.core.designsystem.theme.LocalExtendedColorScheme
-import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.block
-import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.ui.component.Chip
+import com.huanchengfly.tieba.post.core.ui.component.FullScreen
+import com.huanchengfly.tieba.post.core.ui.context.LocalUISettings
+import com.huanchengfly.tieba.post.core.ui.modifier.block
+import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
+import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
+import com.huanchengfly.tieba.post.core.ui.util.CoilUtil
+import com.huanchengfly.tieba.post.core.ui.util.DisplayUtil.aspectRatio
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
-import com.huanchengfly.tieba.post.utils.CoilUtil
 import com.huanchengfly.tieba.post.utils.EmoticonManager
+import com.huanchengfly.tieba.post.core.ui.R as CoreUiR
 
 @DrawableRes
-val DefaultErrorResource: Int = R.drawable.ic_error
+val DefaultErrorResource: Int = CoreUiR.drawable.ic_error
 
 @Composable
-fun CircularLoadingPlaceholder() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
+@NonRestartableComposable
 fun PlaceholderRetry(onRetry: () -> Unit) {
     Column (
         modifier = Modifier
@@ -87,13 +81,13 @@ fun PlaceholderRetry(onRetry: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
-            painter = painterResource(R.drawable.ic_error),
+            painter = painterResource(DefaultErrorResource),
             contentDescription = stringResource(R.string.desc_image_failed),
             modifier = Modifier.weight(1.0f).aspectRatio(1.0f)
         )
 
         Chip(
-            text = stringResource(R.string.button_retry),
+            text = stringResource(CoreUiR.string.core_ui_btn_retry),
             prefixIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Refresh,
@@ -113,7 +107,7 @@ fun ErrorImage(modifier: Modifier = Modifier, tip: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Image(painter = painterResource(R.drawable.ic_error), contentDescription = null)
+        Image(painter = painterResource(DefaultErrorResource), contentDescription = null)
 
         Text(
             text = tip,
@@ -143,7 +137,7 @@ fun EmoticonInlineImage(
             model = EmoticonManager.getEmoticonUri(id),
             contentDescription = description,
             modifier = Modifier.matchParentSize(),
-            error = painterResource(R.drawable.ic_error),
+            error = painterResource(DefaultErrorResource),
             onError = onError
         )
     }
@@ -193,7 +187,7 @@ private fun PreviewImage(
                     )
 
                     if (state !is AsyncImagePainter.State.Success) {
-                        CircularLoadingPlaceholder()
+                        CircularProgressIndicator()
                     }
                 }
 
@@ -254,8 +248,8 @@ fun NetworkImage(
                         onTap = {
                             val photos = dataProvider() ?: return@detectTapGestures
                             // bug from caller
-                            if (photos.data != null && photos.data.forumName.isEmpty()) {
-                                context.toastShort(R.string.title_unknown_error)
+                            if (photos.data?.forumName.isNullOrEmpty()) {
+                                context.toastShort(R.string.desc_image_failed)
                             } else {
                                 PhotoViewActivity.launch(context, photos)
                             }

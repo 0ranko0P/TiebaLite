@@ -1,10 +1,7 @@
-@file:androidx.annotation.OptIn(UnstableApi::class)
-
 package com.huanchengfly.tieba.post.activities
 
 import android.Manifest
 import android.app.DownloadManager
-import android.app.PictureInPictureParams
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -35,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
+import androidx.core.util.component1
+import androidx.core.util.component2
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LifecycleStartEffect
@@ -46,32 +45,33 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.compose.material3.text.rememberDefaultErrorMessageProvider
 import androidx.media3.ui.compose.state.observeState
 import coil3.imageLoader
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
-import com.huanchengfly.tieba.post.components.media.MediaCache.BD_VIDEO_HOST
-import com.huanchengfly.tieba.post.components.media.MediaCache.getBdMediaId
-import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
-import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.core.data.di.settingRepository
 import com.huanchengfly.tieba.post.core.designsystem.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.TopControls
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayer
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPreviewState
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.initialize
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberPlayerGestureState
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.retainVideoPlayer
+import com.huanchengfly.tieba.post.core.media.TopControls
+import com.huanchengfly.tieba.post.core.media.VideoPlayer
+import com.huanchengfly.tieba.post.core.media.retainVideoPlayer
+import com.huanchengfly.tieba.post.core.media.state.VideoPreviewState
+import com.huanchengfly.tieba.post.core.media.state.rememberPlayerGestureState
+import com.huanchengfly.tieba.post.core.media.util.MediaCache.BD_VIDEO_HOST
+import com.huanchengfly.tieba.post.core.media.util.MediaCache.getBdMediaId
+import com.huanchengfly.tieba.post.core.media.util.MediaUtil
+import com.huanchengfly.tieba.post.core.media.util.MediaUtil.initialize
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
+import com.huanchengfly.tieba.post.core.ui.util.PermissionUtils.askPermission
+import com.huanchengfly.tieba.post.core.ui.util.PermissionUtils.onDenied
+import com.huanchengfly.tieba.post.core.ui.util.PermissionUtils.onGranted
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
+import com.huanchengfly.tieba.post.core.ui.util.goToActivityDebounced
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.utils.DownloadUtil
-import com.huanchengfly.tieba.post.utils.MediaUtil
-import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
-import com.huanchengfly.tieba.post.utils.PermissionUtils.onDenied
-import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
@@ -104,7 +104,7 @@ class VideoViewActivity: AppCompatActivity() {
 
     private val darkColorSchemeFlow by unsafeLazy {
         ThemeUtil.savedColorSchemeFlow(
-            themeSettings = App.INSTANCE.settingRepository.themeSettings,
+            themeSettings = applicationContext.settingRepository.themeSettings,
             context = this
         )
         .map { ExtendedColorScheme(colorScheme = it.darkColor, darkTheme = true) }
@@ -121,7 +121,7 @@ class VideoViewActivity: AppCompatActivity() {
         val data = intent.data ?: throw NullPointerException("No video provided!")
         val mediaId = intent.getStringExtra(EXTRA_MEDIA_ID) ?: data.getBdMediaId()
         var thumbnailUrl by mutableStateOf(intent.getStringExtra(EXTRA_THUMBNAIL))
-        val initPositionMs = intent.getLongExtra(EXTRA_INITIAL_POSITION_MS, C.TIME_UNSET)
+        var initPositionMs = intent.getLongExtra(EXTRA_INITIAL_POSITION_MS, C.TIME_UNSET)
         applyInitialOrientation(initAspectRatio = intent.getFloatExtra(EXTRA_INITIAL_ASPECT_RATIO, 0f))
 
         setContent {
@@ -157,6 +157,7 @@ class VideoViewActivity: AppCompatActivity() {
                 LaunchedEffect(Unit) {
                     MediaUtil.handleSeekToAction(player, initPositionMs)
                     player.playWhenReady = true
+                    initPositionMs = C.TIME_UNSET
                 }
             }
 
@@ -248,7 +249,7 @@ class VideoViewActivity: AppCompatActivity() {
 
     /**
      * Finish as soon as possible if [isInPictureInPictureMode], see
-     *   [PictureInPictureParams.Builder.setCloseAction].
+     *   [android.app.PictureInPictureParams.Builder.setCloseAction].
      * */
     override fun onStop() {
         super.onStop()
@@ -277,17 +278,16 @@ class VideoViewActivity: AppCompatActivity() {
             positionMs: Long = C.TIME_UNSET,
         ) {
             val data = Uri.parse(videoUrl).normalizeScheme()
-
             // Check tb-video is unauthorized or expired
             if (data.host == BD_VIDEO_HOST && videoUrl.endsWith(".mp4")) {
-                context.toastShort(R.string.desc_expired_video_link)
+                context.toastShort(R.string.toast_video_link_expired)
                 return
             }
 
             // Free more memory now
             context.imageLoader.memoryCache?.run { trimToSize((maxSize * 0.2).roundToLong()) }
 
-            context.goToActivity<VideoViewActivity> {
+            context.goToActivityDebounced<VideoViewActivity> {
                 this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 this.data = data
                 if (!thumbnailUrl.isNullOrEmpty()) putExtra(EXTRA_THUMBNAIL, thumbnailUrl)
@@ -309,18 +309,20 @@ class VideoViewActivity: AppCompatActivity() {
             }
         }
 
+        @androidx.annotation.OptIn(UnstableApi::class)
         @Composable
         private fun ObservePlayerError(player: Player) {
             val context = LocalContext.current
+            val errorMessageProvider = rememberDefaultErrorMessageProvider()
             val playerObserver = remember(player) {
-                player.observeState(
-                    Player.EVENT_PLAYER_ERROR,
-                ) {
+                player.observeState(Player.EVENT_PLAYER_ERROR) {
                     player.playerError?.let { e ->
-                        context.toastShort(R.string.toast_exception, e.getErrorMessage())
+                        val (_, message) = errorMessageProvider.getErrorMessage(e)
+                        context.toastShort(text = message)
                     }
                 }
             }
+
             LaunchedEffect(player) {
                 playerObserver.observe()
             }

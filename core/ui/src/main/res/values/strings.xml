@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_ui_btn_back">返回</string>
+    <string name="core_ui_btn_delete">删除</string>
+    <string name="core_ui_btn_download">下载</string>
+    <string name="core_ui_btn_like">点赞</string>
+    <string name="core_ui_btn_grant_manually">手动授权</string>
+    <string name="core_ui_btn_retry">重试</string>
+    <string name="core_ui_error_open_settings">无法打开应用设置, 请自行打开设置页面</string>
+    <string name="core_ui_name_multi_app">应用</string>
+    <string name="core_ui_permission_ignore_battery_optimize">忽略电池优化</string>
+    <string name="core_ui_permission_image_and_video">照片和视频</string>
+    <string name="core_ui_permission_location">定位</string>
+    <string name="core_ui_permission_location_background">后台定位</string>
+    <string name="core_ui_permission_microphone">麦克风</string>
+    <string name="core_ui_permission_music_and_audio">音乐和音频</string>
+    <string name="core_ui_permission_phone">电话</string>
+    <string name="core_ui_permission_post_notifications">发送通知</string>
+    <string name="core_ui_permission_rationale_title">申请权限</string>
+    <string name="core_ui_permission_storage">存储</string>
+    <string name="core_ui_request_permission">贴吧 Lite 正在请求“%1$s”权限</string>
+    <string name="core_ui_request_permission_rationale">前往设置页面并手动授予“%1$s”权限</string>
+    <string name="core_ui_request_permission_tip">授权后，将%1$s</string>
+    <string name="core_ui_title_share">分享</string>
+</resources>

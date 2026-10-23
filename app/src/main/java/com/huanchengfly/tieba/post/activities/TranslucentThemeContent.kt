@@ -72,6 +72,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -84,14 +85,14 @@ import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.core.designsystem.theme.Grey800
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme.translucentColorScheme
+import com.huanchengfly.tieba.post.core.ui.util.DisplayUtil
+import com.huanchengfly.tieba.post.core.ui.util.DisplayUtil.toDpSize
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
 import com.huanchengfly.tieba.post.ui.page.settings.AboutPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.ColorPickerDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.ColorUtils
-import com.huanchengfly.tieba.post.utils.DisplayUtil
-import com.huanchengfly.tieba.post.utils.DisplayUtil.toDpSize
 import kotlin.math.abs
 
 private val ColorThumbSize = DpSize(4.dp, 38.dp)
@@ -245,7 +246,9 @@ fun SideBySideWallpaper(
 ) {
     val density = LocalDensity.current
     val context = LocalContext.current
-    val screen: DpSize = remember { DisplayUtil.getScreenPixels(context).toDpSize(density) }
+    val screen: DpSize = remember(LocalResources.current) {
+        DisplayUtil.getScreenPixels(context).toDpSize(density)
+    }
 
     val movableWallpaperContent = remember {
         movableContentOf<Modifier, Painter?, Float> { modifier, painter, alpha ->

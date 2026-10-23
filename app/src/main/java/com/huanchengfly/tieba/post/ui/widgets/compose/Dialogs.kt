@@ -55,8 +55,8 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.data.model.HmTime
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowHeightCompact
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState

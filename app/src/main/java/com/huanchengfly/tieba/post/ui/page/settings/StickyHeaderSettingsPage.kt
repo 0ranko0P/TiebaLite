@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import com.google.accompanist.placeholder.PlaceholderHighlight
-import com.huanchengfly.tieba.post.LocalHabitSettings
+import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.data.model.settings.Settings
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent

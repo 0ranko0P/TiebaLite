@@ -1,14 +1,12 @@
 package com.huanchengfly.tieba.post.ui.utils
 
+import com.huanchengfly.tieba.post.core.data.model.LoadPicPageData
+import com.huanchengfly.tieba.post.core.data.model.PhotoViewData
+import com.huanchengfly.tieba.post.core.data.model.PicItem
 import com.huanchengfly.tieba.post.core.network.model.protos.Media
 import com.huanchengfly.tieba.post.core.network.model.protos.Post
-import com.huanchengfly.tieba.post.models.LoadPicPageData
-import com.huanchengfly.tieba.post.models.PhotoViewData
-import com.huanchengfly.tieba.post.models.PicItem
 import com.huanchengfly.tieba.post.ui.common.PicContentRender
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 
 fun getPhotoViewData(
     post: Post,
@@ -28,7 +26,7 @@ fun getPhotoViewData(
             seeLz = seeLz,
             originUrl = content.originUrl,
         ),
-        picItems = persistentListOf(
+        picItems = listOf(
             PicItem(
                 picId = content.picId,
                 picIndex = 1,
@@ -66,7 +64,7 @@ fun getPhotoViewData(
                 originUrl = mediaItem.originPic,
                 postId = mediaItem.postId
             )
-        }.toImmutableList(),
+        },
         index = index
     )
 }

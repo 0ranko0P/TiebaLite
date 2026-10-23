@@ -26,7 +26,7 @@ import androidx.navigation3.scene.SceneDecoratorStrategyScope
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.core.ui.layout.cacheSize
-import com.huanchengfly.tieba.post.ui.common.theme.compose.withNonNull
+import com.huanchengfly.tieba.post.core.ui.modifier.withNonNull
 import com.huanchengfly.tieba.post.ui.widgets.compose.FilledTonalBackNavigation
 
 data class SettingsSceneDecorator<T : Any>(

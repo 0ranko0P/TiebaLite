@@ -20,6 +20,7 @@ import com.huanchengfly.tieba.post.core.network.model.protos.Post
 import com.huanchengfly.tieba.post.core.network.model.protos.PostInfoList
 import com.huanchengfly.tieba.post.core.network.model.protos.ThreadInfo
 import com.huanchengfly.tieba.post.core.network.model.protos.VideoInfo
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PbInlineType
 import com.huanchengfly.tieba.post.ui.common.PicContentRender
@@ -32,7 +33,6 @@ import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonUtil
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.singleEmoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 

@@ -31,11 +31,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.takeOrElse
 import androidx.compose.ui.util.fastFirstOrNull
 import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
+import com.huanchengfly.tieba.post.core.ui.util.DisplayUtil.plus
+import com.huanchengfly.tieba.post.core.ui.util.DisplayUtil.sp2px
 import com.huanchengfly.tieba.post.ui.common.LocalPbInlineContentCache
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.page.Destination
-import com.huanchengfly.tieba.post.utils.DisplayUtil.plus
-import com.huanchengfly.tieba.post.utils.DisplayUtil.sp2px
 import com.huanchengfly.tieba.post.utils.launchUrl
 
 private val clickablePbAnnotationsTags: Set<String> = ArraySet(

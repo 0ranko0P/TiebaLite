@@ -14,7 +14,7 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog
 import com.huanchengfly.tieba.post.components.dialogs.WebPermissionDialog.Companion.WebPermission
-import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebChromeClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.onFailure

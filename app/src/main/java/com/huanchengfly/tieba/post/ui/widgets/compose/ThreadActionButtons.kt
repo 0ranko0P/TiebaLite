@@ -28,8 +28,9 @@ import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onNotNull
+import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import com.huanchengfly.tieba.post.core.ui.R as CoreUiR
 
 @NonRestartableComposable
 @Composable
@@ -86,9 +87,9 @@ fun ThreadActionButtonRow(
     ) {
         ActionBtn(
             modifier = Modifier.weight(1f),
-            text = context.shortNumString(shares, R.string.title_share),
+            text = context.shortNumString(shares, CoreUiR.string.core_ui_title_share),
             icon = Icons.Rounded.SwapCalls,
-            contentDescription = stringResource(id = R.string.title_share),
+            contentDescription = stringResource(id = CoreUiR.string.core_ui_title_share),
             onClick = onShareClicked,
         )
 
@@ -108,8 +109,8 @@ fun ThreadActionButtonRow(
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
-            contentDescription = stringResource(id = R.string.button_like),
-            text = context.shortNumString(likes, R.string.button_like),
+            contentDescription = stringResource(id = CoreUiR.string.core_ui_btn_like),
+            text = context.shortNumString(likes, CoreUiR.string.core_ui_btn_like),
             onClick = onAgreeClicked
         )
     }

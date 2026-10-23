@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.user.likeforum
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -89,7 +89,7 @@ fun UserLikeForumPage(
             val throwable = error.getOrNull()
             ErrorScreen(error = throwable, showReload = throwable !is TiebaNotLoggedInException)
         },
-        screenPadding = PaddingNone,
+        screenPadding = PaddingValues.Zero,
     ) {
         Container(fluid = fluid) {
             SwipeUpLazyLoadColumn(

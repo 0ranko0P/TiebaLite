@@ -26,7 +26,6 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,16 +48,20 @@ import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.isHttp
 import com.huanchengfly.tieba.post.components.ShortcutInitializer
 import com.huanchengfly.tieba.post.components.TbDeepLinkMatcher
 import com.huanchengfly.tieba.post.components.TbDeepLinkMatcher.isTbLiteDeepLink
-import com.huanchengfly.tieba.post.core.data.model.settings.HabitSettings
-import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.core.data.session.ClientConfigManager
 import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.core.designsystem.theme.ExtendedColorScheme
 import com.huanchengfly.tieba.post.core.designsystem.theme.LocalExtendedColorScheme
+import com.huanchengfly.tieba.post.core.media.state.LocalVideoPreviewState
+import com.huanchengfly.tieba.post.core.media.state.rememberVideoPreviewState
 import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.rememberNavigator
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
+import com.huanchengfly.tieba.post.core.ui.context.LocalUISettings
+import com.huanchengfly.tieba.post.core.ui.util.PermissionUtils.askPermission
+import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.common.LocalPbInlineContentCache
 import com.huanchengfly.tieba.post.ui.common.PbInlineContentCache.Companion.rememberPbInlineContentCache
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -75,10 +78,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.LocalVideoPreviewState
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberVideoPreviewState
 import com.huanchengfly.tieba.post.utils.LocalAccount
-import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
@@ -91,10 +91,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Provider
-
-val LocalHabitSettings = compositionLocalOf<HabitSettings> { error("No HabitSettings provided!") }
-
-val LocalUISettings = compositionLocalOf { UISettings() }
 
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {

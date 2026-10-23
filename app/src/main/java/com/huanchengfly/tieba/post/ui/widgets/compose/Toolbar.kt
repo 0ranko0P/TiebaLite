@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -24,8 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -33,17 +30,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupPositionProvider
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.calculateNavigationType
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.isNavigationBar
 import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
+import com.huanchengfly.tieba.post.core.ui.component.PlainTooltipBox
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 
@@ -95,52 +90,6 @@ fun AccountNavIcon(
         )
     }
 }
-
-@Composable
-fun ActionItem(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    contentDescription: String,
-    positionProvider: PopupPositionProvider = rememberTooltipPositionProvider(
-        positioning = TooltipAnchorPosition.Above,
-        spacingBetweenTooltipAndAnchor = SpacingBetweenTooltipAndAnchor
-    ),
-    enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
-    onClick: () -> Unit
-) {
-    PlainTooltipBox(
-        modifier = modifier,
-        positionProvider = positionProvider,
-        contentDescription = contentDescription,
-        hasAction = true,
-    ) {
-        IconButton(onClick = onClick, enabled = enabled, colors = colors) {
-            Icon(imageVector = icon, contentDescription = contentDescription)
-        }
-    }
-}
-
-@NonRestartableComposable
-@Composable
-fun ActionItem(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    @StringRes contentDescription: Int,
-    positionProvider: PopupPositionProvider = rememberTooltipPositionProvider(
-        positioning = TooltipAnchorPosition.Above,
-        spacingBetweenTooltipAndAnchor = SpacingBetweenTooltipAndAnchor
-    ),
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) = ActionItem(
-    modifier = modifier,
-    icon = icon,
-    contentDescription = LocalContext.current.getString(contentDescription),
-    positionProvider = positionProvider,
-    enabled = enabled,
-    onClick = onClick
-)
 
 @NonRestartableComposable
 @Composable

@@ -140,6 +140,5 @@ sealed interface Destination: NavKey {
     data class WebView(val initialUrl: String, val customClient: Boolean = true): Destination
 
     @Serializable
-    object Welcome: Destination
-
+    data object Welcome: Destination
 }

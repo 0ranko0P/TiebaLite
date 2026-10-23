@@ -22,6 +22,7 @@ import com.huanchengfly.tieba.post.activities.CrashActivity
 import com.huanchengfly.tieba.post.components.coil.TbImageLoaderFactory
 import com.huanchengfly.tieba.post.core.data.di.SettingsEntryPoint
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.ui.util.goToActivity
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import dagger.hilt.android.EntryPointAccessors

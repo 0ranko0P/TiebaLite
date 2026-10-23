@@ -20,21 +20,21 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
-import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.VideoViewActivity
-import com.huanchengfly.tieba.post.components.media.MediaCache.getBdMediaId
-import com.huanchengfly.tieba.post.models.PhotoViewData
+import com.huanchengfly.tieba.post.core.data.model.PhotoViewData
+import com.huanchengfly.tieba.post.core.media.state.LocalVideoPreviewState
+import com.huanchengfly.tieba.post.core.media.util.MediaCache.getBdMediaId
 import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
-import com.huanchengfly.tieba.post.ui.common.theme.compose.clickableNoIndication
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
+import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedVideoShutter
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.PbContentText
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayer
-import com.huanchengfly.tieba.post.ui.widgets.compose.singleMediaFraction
-import com.huanchengfly.tieba.post.ui.widgets.compose.video.LocalVideoPreviewState
-import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.core.media.R as MediaUiR
 
 @Immutable
 interface PbContentRender {
@@ -134,7 +134,13 @@ value class TextContentRender(val value: AnnotatedString) : PbContentRender {
         NetworkImage(
             modifier = Modifier
                 .clip(shape = MaterialTheme.shapes.small)
-                .fillMaxWidth(singleMediaFraction)
+                .fillMaxWidth(
+                    fraction = when {
+                        isListDetail() -> 0.9f
+                        isWindowWidthCompact() -> 1.0f
+                        else -> 0.5f
+                    }
+                )
                 .aspectRatio(ratio = dimensions?.run { width * 1f / height } ?: 1.0f),
             imageUrl = picUrl,
             photoViewDataProvider = { photoViewData },
@@ -208,7 +214,7 @@ class VideoContentRender(
             val navigator = LocalNavigator.current
             AsyncImage(
                 model  = picUrl,
-                contentDescription = stringResource(id = R.string.desc_video),
+                contentDescription = stringResource(id = MediaUiR.string.desc_video),
                 modifier = picModifier.clickable {
                     navigator.navigate(Destination.WebView(webUrl))
                 },

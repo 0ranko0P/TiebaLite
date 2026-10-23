@@ -8,7 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneDecoratorStrategy
 import androidx.navigation3.scene.SceneDecoratorStrategyScope
-import com.huanchengfly.tieba.post.LocalUISettings
+import com.huanchengfly.tieba.post.core.ui.context.LocalUISettings
 import com.huanchengfly.tieba.post.core.designsystem.theme.LocalExtendedColorScheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState

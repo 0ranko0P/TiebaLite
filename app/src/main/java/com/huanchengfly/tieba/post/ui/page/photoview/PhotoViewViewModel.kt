@@ -7,20 +7,22 @@ import com.github.iielse.imageviewer.adapter.ItemType
 import com.github.iielse.imageviewer.core.DataProvider
 import com.github.iielse.imageviewer.core.Photo
 import com.huanchengfly.tieba.post.arch.TbLiteExceptionHandler
+import com.huanchengfly.tieba.post.core.common.Dispatcher
+import com.huanchengfly.tieba.post.core.common.TbDispatchers
+import com.huanchengfly.tieba.post.core.data.model.LoadPicPageData
+import com.huanchengfly.tieba.post.core.data.model.PhotoViewData
+import com.huanchengfly.tieba.post.core.data.model.PicItem
+import com.huanchengfly.tieba.post.core.data.repository.PhotoRepository
 import com.huanchengfly.tieba.post.core.network.exception.TiebaException
 import com.huanchengfly.tieba.post.core.network.model.PicPageBean
 import com.huanchengfly.tieba.post.core.network.model.bestQualitySrc
 import com.huanchengfly.tieba.post.core.network.model.isGif
 import com.huanchengfly.tieba.post.core.network.model.isLongPic
-import com.huanchengfly.tieba.post.models.LoadPicPageData
-import com.huanchengfly.tieba.post.models.PhotoViewData
-import com.huanchengfly.tieba.post.models.PicItem
-import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.utils.JobQueue
-import com.huanchengfly.tieba.post.utils.extension.set
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +35,8 @@ import javax.inject.Inject
 @Stable
 @HiltViewModel
 class PhotoViewViewModel @Inject constructor(
-    private val pbPageRepo: PbPageRepository,
+    @param:Dispatcher(TbDispatchers.Default) private val dispatcher: CoroutineDispatcher,
+    private val repo: PhotoRepository,
 ): ViewModel(), DataProvider {
 
     private val _state: MutableStateFlow<PhotoViewUiState> = MutableStateFlow(PhotoViewUiState())
@@ -59,48 +62,39 @@ class PhotoViewViewModel @Inject constructor(
         this.data = viewData.data
 
         if (viewData.data == null) {
-             _state.set {
-                 copy(
-                     data = viewData.picItems
-                         .mapIndexed { i, item -> PhotoViewItem(item = item, overallIndex = i + 1) },
-                     totalAmount = viewData.picItems.size,
-                     initialIndex = viewData.index
-                 )
-             }
+            val items = viewData.picItems.mapIndexed { i, item -> PhotoViewItem(item, overallIndex = i + 1) }
+            _state.update {
+                it.copy(data = items, totalAmount = viewData.picItems.size, initialIndex = viewData.index)
+            }
         } else {
-            viewModelScope.launch(Dispatchers.Default + handler) {
-                val picPageBean = pbPageRepo.picturePage(viewData.data, prev = false)
+            viewModelScope.launch(dispatcher + handler) {
+                val picPageBean = repo.picturePage(viewData.data!!, prev = false)
                 val stateSnapshot = _state.first()
                 val picAmount = picPageBean.picAmount ?: throw TiebaException("加载列表失败, 远古坟贴?")
                 val fetchedItems = picPageBean.picList.toUniquePhotoViewItems(old = stateSnapshot.data)
                 val firstItemIndex = fetchedItems.first().overallIndex
-                val localItems =
-                    if (viewData.data.picIndex == 1) emptyList() else viewData.picItems.subList(
-                        0,
-                        viewData.data.picIndex - 1
-                    ).mapIndexed { index, item ->
-                        PhotoViewItem(
-                            item = item,
-                            overallIndex = firstItemIndex - (viewData.data.picIndex - 1 - index),
-                        )
-                    }
+                val picIndex = viewData.data!!.picIndex
+                val picItems = if (picIndex <= 1) emptyList() else viewData.picItems.subList(0, picIndex - 1)
+                val localItems = picItems.mapIndexed { index, item ->
+                    PhotoViewItem(item, overallIndex = firstItemIndex - (picIndex - 1 - index))
+                }
                 val items = localItems + fetchedItems
                 val hasNext = items.last().overallIndex < picAmount
                 val hasPrev = items.first().overallIndex > 1
                 val initialIndex: Int? = items
-                    .indexOfFirst { it.picId == viewData.data.picId }
+                    .indexOfFirst { it.picId == viewData.data!!.picId }
                     .takeIf { it != -1 }
                 val newState = PhotoViewUiState(
                     data = items.toImmutableList(),
                     hasNext = hasNext,
                     hasPrev = hasPrev,
                     totalAmount = picAmount,
-                    initialIndex = initialIndex ?: (viewData.data.picIndex - 1),
+                    initialIndex = initialIndex ?: (picIndex - 1),
                 )
 
                 withContext(Dispatchers.Main.immediate) {
                     data = viewData.data
-                    _state.set { newState }
+                    _state.update { newState }
                 }
             }
         }
@@ -124,7 +118,7 @@ class PhotoViewViewModel @Inject constructor(
     }
 
     override fun loadBefore(key: Long, callback: (List<Photo>) -> Unit) {
-        queue.submit(Dispatchers.Default + handler) {
+        queue.submit(dispatcher + handler) {
             val uiState = _state.first()
             val items = uiState.data
             val index = items.indexOfFirst { it.id() == key }
@@ -135,13 +129,18 @@ class PhotoViewViewModel @Inject constructor(
                 callback(emptyList())
             } else {
                 val item: PhotoViewItem = items[index]
-                val picPageBean = pbPageRepo.picturePage(data!!, item.picId, picIndex = item.overallIndex, prev = true)
+                val picPageBean = repo.picturePage(
+                    data = data!!,
+                    picId = item.picId,
+                    picIndex = item.overallIndex,
+                    prev = true
+                )
                 val hasPrev = picPageBean.picList.first().overAllIndex.toInt() > 1
                 val uniqueItems = picPageBean.picList.toUniquePhotoViewItems(uiState.data)
                 val newItems = (uniqueItems + uiState.data).toImmutableList()
 
                 withContext(Dispatchers.Main.immediate) {
-                    _state.set { copy(data = newItems, hasPrev = hasPrev) }
+                    _state.update { it.copy(data = newItems, hasPrev = hasPrev) }
                     callback(uniqueItems)
                 }
             }
@@ -149,7 +148,7 @@ class PhotoViewViewModel @Inject constructor(
     }
 
     override fun loadAfter(key: Long, callback: (List<Photo>) -> Unit) {
-        queue.submit(Dispatchers.Default + handler) {
+        queue.submit(dispatcher + handler) {
             val uiState = _state.value
             val items = uiState.data
             val index = items.indexOfFirst { it.id() == key }
@@ -160,7 +159,7 @@ class PhotoViewViewModel @Inject constructor(
             }
 
             val item: PhotoViewItem = items[index]
-            val picPageBean = pbPageRepo.picturePage(data!!, item.picId, picIndex = item.overallIndex, prev = false)
+            val picPageBean = repo.picturePage(data!!, item.picId, picIndex = item.overallIndex, prev = false)
             val newData = picPageBean.picList
             val picAmount = picPageBean.picAmount ?: throw TiebaException("加载列表失败, 远古坟贴?")
             val hasNext = newData.last().overAllIndex.toInt() < picAmount
@@ -168,7 +167,7 @@ class PhotoViewViewModel @Inject constructor(
             val newItems = (uiState.data + uniqueItems).toImmutableList()
 
             withContext(Dispatchers.Main.immediate) {
-                _state.set { copy(data = newItems, hasNext = hasNext) }
+                _state.update { it.copy(data = newItems, hasNext = hasNext) }
                 callback(uniqueItems)
             }
         }

@@ -150,9 +150,3 @@ fun PlaceholderDecoration(
         CompositionLocalProvider(LocalContentColor provides placeholderColor, placeholder)
     }
 }
-
-@Composable
-@NonSkippableComposable
-fun ProvideContentColor(color: Color, content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalContentColor provides color, content)
-}

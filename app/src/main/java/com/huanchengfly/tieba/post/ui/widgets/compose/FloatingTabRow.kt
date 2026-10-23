@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.core.ui.component.containerColor
 
 @Composable
 fun FloatingTabRow(

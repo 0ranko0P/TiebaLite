@@ -15,8 +15,8 @@ import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.common.ktx.closeQuietly
 import com.huanchengfly.tieba.post.core.common.ktx.ensureParents
-import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
-import com.huanchengfly.tieba.post.utils.PermissionUtils.onGranted
+import com.huanchengfly.tieba.post.core.ui.util.PermissionUtils.askPermission
+import com.huanchengfly.tieba.post.core.ui.util.PermissionUtils.onGranted
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
@@ -37,24 +37,6 @@ object FileUtil {
     const val FILE_TYPE_VIDEO = 1
     const val FILE_TYPE_AUDIO = 2
     const val FILE_FOLDER = "TiebaLite"
-
-    private fun getDataColumn(
-        context: Context,
-        uri: Uri?,
-        selection: String?,
-        selectionArgs: Array<String>?,
-    ): String? {
-        val column = "_data"
-        val projection = arrayOf(column)
-        context.contentResolver.query(uri!!, projection, selection, selectionArgs, null)
-            .use { cursor ->
-                if (cursor != null && cursor.moveToFirst()) {
-                    val column_index = cursor.getColumnIndexOrThrow(column)
-                    return cursor.getString(column_index)
-                }
-            }
-        return null
-    }
 
     fun downloadBySystem(context: Context, fileType: Int, url: String?) {
         val fileName = URLUtil.guessFileName(url, null, null)
@@ -210,16 +192,5 @@ object FileUtil {
 
     fun File.isCacheExpired(expireMill: Long): Boolean {
         return lastModified() + expireMill < System.currentTimeMillis()
-    }
-
-    //修改文件扩展名
-    fun changeFileExtension(fileName: String, newExtension: String): String {
-        if (TextUtils.isEmpty(fileName)) {
-            return fileName
-        }
-        val index = fileName.lastIndexOf(".")
-        return if (index == -1) {
-            fileName + newExtension
-        } else fileName.substring(0, index) + newExtension
     }
 }

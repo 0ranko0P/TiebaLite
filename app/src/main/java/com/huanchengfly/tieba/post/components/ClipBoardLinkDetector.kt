@@ -8,13 +8,14 @@ import com.google.common.base.Preconditions.checkArgument
 import com.google.common.net.InternetDomainName
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
-import com.huanchengfly.tieba.post.core.common.ktx.urlDecode
 import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.checkClipBoard
+import com.huanchengfly.tieba.post.core.common.ktx.urlDecode
+import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
 import com.huanchengfly.tieba.post.ui.page.Destination
+import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultErrorResource
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.Icon
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil.PreviewInfo
@@ -148,7 +149,7 @@ object ClipBoardLinkDetector {
             .onFailure { e ->
                 yield()
                 _previewInfoStateFlow.update {
-                    PreviewInfo(clipBoardLink, title, e.getErrorMessage(), Icon(R.drawable.ic_error))
+                    PreviewInfo(clipBoardLink, title, e.getErrorMessage(), Icon(DefaultErrorResource))
                 }
             }
         }

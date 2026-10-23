@@ -1,15 +1,5 @@
 <resources>
 
-    <style name="Dialog.RequestPermissionTip" parent="Theme.AppCompat.DayNight.Dialog">
-        <item name="android:windowFrame">@null</item>
-        <item name="android:windowNoTitle">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:windowIsFloating">false</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-    </style>
-
     <style name="Animation.Fade" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/anim_fade_in</item>
         <item name="android:activityOpenExitAnimation">@anim/anim_fade_out</item>

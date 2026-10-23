@@ -8,7 +8,11 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:designsystem"))
+    api(project(":core:data"))
+    api(project(":core:designsystem"))
+    api(libs.bundles.coil3)
+    api(libs.squareup.okhttp3)
+    implementation(libs.androidx.appcompat)
 
     androidTestImplementation(libs.androidx.compose.ui.test)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

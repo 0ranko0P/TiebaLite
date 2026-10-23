@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.tblite.android.library)
     alias(libs.plugins.tblite.hilt)
+    alias(libs.plugins.kotlin.parcelize)
 }
 
 android {

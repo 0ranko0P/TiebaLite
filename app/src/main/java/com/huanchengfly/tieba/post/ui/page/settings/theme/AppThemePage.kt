@@ -127,11 +127,13 @@ import com.huanchengfly.tieba.post.core.designsystem.theme.colorscheme.GreenColo
 import com.huanchengfly.tieba.post.core.designsystem.util.isDarkScheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
+import com.huanchengfly.tieba.post.core.ui.component.ActionItem
+import com.huanchengfly.tieba.post.core.ui.component.ChipText
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowHeightCompact
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.modifier.animateBackground
+import com.huanchengfly.tieba.post.core.ui.modifier.onCase
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PaletteBackground
-import com.huanchengfly.tieba.post.ui.common.theme.compose.animateBackground
-import com.huanchengfly.tieba.post.ui.common.theme.compose.onCase
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowHeightCompact
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.isWindowWidthCompact
 import com.huanchengfly.tieba.post.ui.models.Like
 import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.home.HistoryItem
@@ -139,9 +141,7 @@ import com.huanchengfly.tieba.post.ui.page.main.iconRes
 import com.huanchengfly.tieba.post.ui.page.main.titleRes
 import com.huanchengfly.tieba.post.ui.page.main.user.StatCard
 import com.huanchengfly.tieba.post.ui.page.subposts.PostLikeButton
-import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.ChipText
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogState

@@ -19,7 +19,6 @@
     <string name="title_refresh">刷新</string>
     <string name="title_copy_link">复制链接</string>
     <string name="toast_copy_success">已复制到剪贴板</string>
-    <string name="title_share">分享</string>
     <string name="title_history">浏览记录</string>
     <string name="toast_delete_success">删除成功</string>
     <string name="title_about">关于</string>
@@ -103,7 +102,6 @@
     <string name="tip_good">精</string>
     <string name="button_no">否</string>
     <string name="button_yes">是</string>
-    <string name="button_like">点赞</string>
     <string name="title_copy_forum_name">复制吧名</string>
     <string name="title_clear_picture_cache">清除图片缓存</string>
     <string name="toast_clear_picture_cache_success">成功清除图片缓存</string>
@@ -113,7 +111,6 @@
     <string name="toast_no_permission_insert_photo">未授予「存储空间」权限，无法插入图片</string>
     <string name="tip_no_permission">权限未授予，部分功能可能无法使用</string>
     <string name="toast_no_permission_notification">未授予通知权限</string>
-    <string name="toast_no_permission_save_photo">未授予「存储空间」权限，无法保存图片</string>
     <string name="toast_no_permission_download_video">未授予「存储空间」权限，无法下载视频</string>
     <string name="text_ip_location">来自%s</string>
     <string name="tip_post_floor">第 %d 楼</string>
@@ -139,10 +136,8 @@
     <string name="title_ask_permission_location">%1$s 想要访问您的位置信息</string>
     <string name="title_ask_permission_clipboard">%1$s 想要写入您的剪贴板</string>
     <string name="title_start_app_permission">%1$s 想要启动%2$s</string>
-    <string name="name_multi_app">应用</string>
     <string name="settings_forum_single">吧列表单列显示</string>
     <string name="toast_clear_success">清除成功啦( •̀ ω •́ )✧</string>
-    <string name="button_retry">重试</string>
     <string name="tip_copy_text">长按自由复制</string>
     <string name="menu_copy">复制</string>
     <string name="button_load_new">加载最新</string>
@@ -183,7 +178,6 @@
     <string name="title_dialog_unfollow_user">确定要取消关注%s吗？</string>
     <string name="menu_save_audio">保存语音</string>
     <string name="title_hot_message_list">话题榜</string>
-    <string name="toast_photo_saved">图片保存在 %1$s</string>
     <string name="title_settings_default_sort_type">吧默认排序方式</string>
     <string name="toast_load_failed">加载失败</string>
     <string name="button_undo">撤销</string>
@@ -200,14 +194,12 @@
     <string name="text_oksign_done">共签到 %1$d 个吧</string>
     <string name="summary_copy_bduss">请勿泄露，否则可能会导致您的账号被盗用</string>
 
-    <string name="title_share_pic">分享图片</string>
     <string name="tip_permission_storage_download">用于下载文件</string>
     <string name="tip_permission_phone">获取您的 IMEI 以用于请求百度 API</string>
     <string name="title_show_both_username_and_nickname">同时显示用户名和昵称</string>
     <string name="title_dialog_clip_board_tieba_url">是否要打开剪贴板中的链接</string>
     <string name="subtitle_quick_preview_thread">来自%1$s吧，共 %2$d 条回复</string>
     <string name="subtitle_link">网页链接</string>
-    <string name="toast_preparing_share_pic">下载图片中…</string>
     <string name="title_select_pic">选择背景图片</string>
     <string name="title_translucent_theme_alpha">透明度</string>
     <string name="title_translucent_theme_blur">模糊度</string>
@@ -298,17 +290,6 @@
     <string name="title_ignore_battery_optimization">忽略“电池优化”</string>
     <string name="summary_battery_optimization_ignored">“电池优化”已忽略</string>
     <string name="button_redo">重做</string>
-    <string name="common_permission_location">定位</string>
-    <string name="common_permission_location_background">后台定位</string>
-    <string name="common_permission_microphone">麦克风</string>
-    <string name="common_permission_phone">电话</string>
-    <string name="common_permission_storage">存储</string>
-    <string name="common_permission_post_notifications">发送通知</string>
-    <string name="common_permission_image_and_video">照片和视频</string>
-    <string name="common_permission_music_and_audio">音乐和音频</string>
-    <string name="common_permission_ignore_battery_optimize">忽略电池优化</string>
-    <string name="title_request_permission_tip_dialog">贴吧 Lite 正在请求“%1$s”权限</string>
-    <string name="message_request_permission_tip_dialog">授权后，将%1$s</string>
     <string name="usage_webview_location_permission">用于向当前访问的网页提供你的位置信息，以便该网页向你提供相关服务。</string>
     <string name="relative_date_today">今天 %1$s</string>
     <string name="title_search_post_sort_by_time">时间倒序</string>
@@ -346,7 +327,6 @@
     <string name="desc_comment">评论</string>
     <string name="title_concern">关注</string>
     <string name="title_personalized">推荐</string>
-    <string name="desc_download_pic">下载图片</string>
     <string name="hot_topic_rank">话题榜</string>
     <string name="topic_tag_hot">热</string>
     <string name="topic_tag_new">新</string>
@@ -361,15 +341,12 @@
     <string name="button_signed_in">已签%d天</string>
     <string name="btn_search_in_forum">吧内搜索</string>
     <string name="btn_more">更多选项</string>
-    <string name="btn_download">下载</string>
-    <string name="btn_picture_in_picture">画中画</string>
     <string name="launcher_not_support_pin_shortcut">启动器不支持创建快捷方式</string>
     <string name="load_shortcut_icon_fail">加载图标失败</string>
     <string name="delete_store_success">取消收藏成功</string>
     <string name="delete_store_failure">取消收藏失败 %s</string>
     <string name="delete_history_failure">删除历史记录失败 %s</string>
     <string name="error_tip">出错了</string>
-    <string name="error_open_settings">无法打开应用设置, 请自行打开设置页面</string>
     <string name="insert_emotions">插入表情</string>
     <string name="send_reply">发送回复</string>
     <string name="insert_photo">插入图片</string>
@@ -383,7 +360,6 @@
     <string name="button_login">登录</string>
     <string name="button_no_login">以游客身份浏览</string>
     <string name="button_go_to_explore">随便看看</string>
-    <string name="button_go_to_grant">手动授权</string>
     <string name="no_internet_connectivity">无互联网连接</string>
     <string name="connectivity_timeout">连接超时</string>
     <string name="title_no_internet_connectivity">网络找不到了</string>
@@ -400,8 +376,6 @@
     <string name="message_sofire_blocked">请检查您的广告拦截器并临时放行此域名</string>
     <string name="tip_reply_thread">评论一番</string>
     <string name="btn_load_previous">查看上一页</string>
-    <string name="desc_video">视频</string>
-    <string name="desc_audio">音频</string>
     <string name="message_add_favorite_success">已收藏至第 %d 楼</string>
     <string name="message_update_collect_mark">本次阅读到第 %d 楼，是否更新收藏楼层？</string>
     <string name="message_update_collect_mark_failed">更新收藏楼层失败 %s</string>
@@ -411,8 +385,6 @@
     <string name="tip_blocked_post">由于你的屏蔽设置，第 %d 楼已被屏蔽</string>
     <string name="tip_blocked_sub_post">由于你的屏蔽设置，该回复已被屏蔽</string>
     <string name="settings_block_video">不看视频贴</string>
-    <string name="btn_full_screen">全屏</string>
-    <string name="btn_play">播放</string>
     <string name="title_sub_posts">%d 楼的回复</string>
     <string name="title_sub_posts_default">回复</string>
     <string name="title_sub_posts_header">%d 条回复</string>
@@ -428,7 +400,6 @@
     <string name="desc_image_empty_url">图片链接为空</string>
     <string name="desc_add_image">添加图片</string>
     <string name="desc_expired_image">图片已过期/清理</string>
-    <string name="desc_expired_video_link">视频链接已过期</string>
     <string name="toast_upload_image_failed">上传图片失败 %s</string>
     <string name="origin_image">原图</string>
     <string name="desc_remove_image">删除图片</string>
@@ -475,16 +446,7 @@
     <string name="title_forum_manager_none">本吧没有吧主</string>
     <string name="title_forum_intro">本吧简介</string>
     <string name="title_forum_rule">本吧吧规</string>
-    <string name="title_media_info">视频信息</string>
-    <string name="title_content_scale">缩放</string>
     <string name="desc_forum_rule">吧规</string>
-    <string name="text_media_bitrate">比特率</string>
-    <string name="text_media_channel_count">声道</string>
-    <string name="text_media_codec">编码</string>
-    <string name="text_media_fps">帧率</string>
-    <string name="text_media_resolution">分辨率</string>
-    <string name="text_media_sample_rate">采样率</string>
-    <string name="text_media_size">文件大小</string>
     <string name="text_stat_agrees">获赞</string>
     <string name="text_profile_ip_location">IP 属地：%s</string>
     <string name="text_profile_tb_age">%s 年</string>
@@ -501,12 +463,6 @@
     <string name="text_poll_votes">%1$d 人投票</string>
     <string name="text_poll_multi">(多选)</string>
     <string name="text_poll_single">(单选)</string>
-    <string name="text_scale_crop">裁剪</string>
-    <string name="text_scale_fit">自动</string>
-    <string name="text_scale_fill">拉伸</string>
-    <string name="text_scale_fill_height">等高</string>
-    <string name="text_scale_fill_width">等宽</string>
-    <string name="text_scale_inside">等比缩放</string>
     <string name="about_license">开源许可证</string>
     <string name="about_source_code">开源代码</string>
     <string name="ban_chat">禁止TA私信</string>
@@ -518,7 +474,6 @@
     <string name="button_backup">备份</string>
     <string name="button_restore">恢复</string>
     <string name="button_ok">我知道了</string>
-    <string name="button_replay">重播</string>
     <string name="button_sure">确定</string>
     <string name="button_back">返回</string>
     <string name="button_grant">授权</string>
@@ -530,7 +485,6 @@
     <string name="dialog_add_whitelist_regex">匹配的内容不会被屏蔽, 白名单优先级高于黑名单</string>
     <string name="dialog_ban">拉黑范围</string>
     <string name="dialog_ban_requesting">正在请求更新拉黑设置</string>
-    <string name="dialog_permission_rationale">前往设置页面并手动授予“%1$s”权限</string>
     <string name="dialog_restore_select_rules">选择要恢复的规则</string>
     <string name="dialog_content_wait">请坐和放宽</string>
     <string name="dialog_content_rule_restore_to">恢复至 %s 的状态</string>
@@ -575,6 +529,7 @@
     <string name="title_restore_forum">吧黑名单</string>
     <string name="title_restore_keyword">关键词</string>
     <string name="title_restore_user">用户</string>
+    <string name="title_share_pic">分享图片</string>
     <string name="theme_dialog_unsave">主题未保存</string>
     <string name="theme_dialog_unsave_msg">保存或放弃更改?</string>
     <string name="theme_dialog_saving">应用主题中</string>
@@ -585,13 +540,14 @@
     <string name="toast_connecting">连接中请稍候..</string>
     <string name="toast_download_manager_enqueued">任务已提交至系统下载器, 请查看通知</string>
     <string name="toast_exception">出错了 %1$s</string>
-    <string name="toast_enable_pip_from_settings">已停用画中画。在设置中启用它可使用此功能。</string>
     <string name="toast_bad_backup_rule">无效备份规则</string>
     <string name="toast_backup_done">备份完成</string>
     <string name="toast_ban_interact_failed">更新拉黑配置失败 %1$s</string>
     <string name="toast_block_rule_updated">本地屏蔽规则已更新</string>
+    <string name="toast_preparing_share_pic">下载图片中…</string>
     <string name="toast_preview_image_too_large">无法预览超大图</string>
     <string name="toast_video_downloaded">视频保存在 %1$s</string>
+    <string name="toast_video_link_expired">视频链接已过期</string>
     <string name="welcome_intro">欢迎使用贴吧 Lite</string>
     <string name="welcome_intro_subtitle">极简的贴吧第三方客户端</string>
     <string name="welcome_permission">隐私与权限</string>

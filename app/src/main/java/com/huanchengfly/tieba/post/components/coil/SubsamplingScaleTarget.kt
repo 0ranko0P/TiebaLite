@@ -17,9 +17,9 @@ import coil3.target.Target
 import coil3.toBitmap
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
-import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.utils.CoilUtil
-import com.huanchengfly.tieba.post.utils.CoilUtil.downloadOnly
+import com.huanchengfly.tieba.post.core.ui.R
+import com.huanchengfly.tieba.post.core.ui.util.CoilUtil
+import com.huanchengfly.tieba.post.core.ui.util.CoilUtil.downloadOnly
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -82,7 +82,6 @@ class SubsamplingScaleTarget(val view: SubsamplingScaleImageView): Target {
         private const val TAG = "SubsamplingScaleTarget"
 
         class SubsamplingImage(val fullImage: File): Image by BlackholeDecoder.Factory.EMPTY_IMAGE
-
 
         /**
          * Load the image referenced by [data] and set it on this [SubsamplingScaleImageView].

@@ -33,7 +33,7 @@ import com.huanchengfly.tieba.post.repository.HomeRepository
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.utils.NotificationUtils
 import com.huanchengfly.tieba.post.utils.NotificationUtils.notificationManager
-import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException

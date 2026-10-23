@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
-import com.huanchengfly.tieba.post.PaddingNone
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import kotlinx.coroutines.launch
 
@@ -246,7 +245,7 @@ private fun ScaffoldLayout(
     // change
     val contentPadding = remember {
         object : PaddingValues {
-            var paddingHolder by mutableStateOf(PaddingNone)
+            var paddingHolder by mutableStateOf(PaddingValues.Zero)
 
             override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
                 paddingHolder.calculateLeftPadding(layoutDirection)
