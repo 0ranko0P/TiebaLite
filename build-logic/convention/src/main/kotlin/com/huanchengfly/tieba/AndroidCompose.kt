@@ -39,6 +39,7 @@ internal fun Project.configureAndroidCompose(
             val bom = libs.findLibrary("androidx-compose-bom").get()
             "implementation"(platform(bom))
             "androidTestImplementation"(platform(bom))
+            "implementation"(libs.findLibrary("androidx.core.ktx").get())
             "implementation"(libs.findLibrary("androidx-compose-ui-tooling-preview").get())
             "debugImplementation"(libs.findLibrary("androidx-compose-ui-tooling").get())
         }
@@ -69,6 +70,7 @@ internal fun Project.configureAndroidCompose(
     // 0Ranko0p changes: Opt-in experimental APIs
     configure<KotlinAndroidProjectExtension> {
         compilerOptions.freeCompilerArgs.addAll(
+            "-opt-in=androidx.compose.foundation.layout.ExperimentalGridApi",
             "-opt-in=androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi",

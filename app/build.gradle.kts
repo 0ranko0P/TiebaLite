@@ -11,8 +11,6 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
-apply(from = "${rootProject.projectDir}/signing.gradle")
-
 android {
     defaultConfig {
         applicationId = "com.huanchengfly.tieba.post"
@@ -111,12 +109,6 @@ android {
 kotlin {
     compilerOptions {
         freeCompilerArgs.addAll(
-            "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
-            "-opt-in=androidx.compose.ui.ExperimentalMediaQueryApi",
-            "-opt-in=androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
             "-opt-in=dev.chrisbanes.haze.ExperimentalHazeApi",
         )
     }

@@ -15,6 +15,7 @@
  */
 
 import com.android.build.api.dsl.ApplicationExtension
+import com.huanchengfly.tieba.configureAndroidSigning
 import com.huanchengfly.tieba.configureKotlinAndroid
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -28,6 +29,7 @@ abstract class AndroidApplicationConventionPlugin : Plugin<Project> {
 
             extensions.configure<ApplicationExtension> {
                 configureKotlinAndroid(this)
+                configureAndroidSigning(this)
                 defaultConfig.targetSdk = 35
                 testOptions.animationsDisabled = true
                 // configureGradleManagedDevices(this)
