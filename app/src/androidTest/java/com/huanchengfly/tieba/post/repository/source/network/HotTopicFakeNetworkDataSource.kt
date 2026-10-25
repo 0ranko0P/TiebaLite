@@ -1,10 +1,13 @@
 package com.huanchengfly.tieba.post.repository.source.network
 
-import com.huanchengfly.tieba.post.api.models.TopicDetailDataBean
-import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponseData
-import javax.inject.Inject
+import com.huanchengfly.tieba.post.core.network.model.TopicDetailDataBean
+import com.huanchengfly.tieba.post.core.network.model.protos.topicList.TopicListResponseData
+import com.huanchengfly.tieba.post.core.network.source.HotTopicNetworkDataSource
 
-class HotTopicFakeNetworkDataSource @Inject constructor(): HotTopicNetworkDataSource {
+/**
+ * Fake implementation of the [HotTopicNetworkDataSource]
+ */
+internal object HotTopicFakeNetworkDataSource: HotTopicNetworkDataSource {
 
     override suspend fun topicList(): TopicListResponseData {
         throw RuntimeException("Not yet implemented")

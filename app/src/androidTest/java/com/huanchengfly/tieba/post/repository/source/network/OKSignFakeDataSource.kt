@@ -1,15 +1,18 @@
 package com.huanchengfly.tieba.post.repository.source.network
 
-import com.huanchengfly.tieba.post.api.booleanToString
-import com.huanchengfly.tieba.post.api.models.ForumRecommend
-import com.huanchengfly.tieba.post.api.models.GetForumListBean
-import com.huanchengfly.tieba.post.api.models.MSignBean.Info
-import com.huanchengfly.tieba.post.api.models.SignResultBean.UserInfo
+import com.huanchengfly.tieba.post.core.common.ktx.booleanToString
+import com.huanchengfly.tieba.post.core.network.model.ForumRecommend
+import com.huanchengfly.tieba.post.core.network.model.GetForumListBean
+import com.huanchengfly.tieba.post.core.network.model.MSignBean.Info
+import com.huanchengfly.tieba.post.core.network.model.SignResultBean.UserInfo
+import com.huanchengfly.tieba.post.core.network.source.OKSignNetworkDataSource
+import com.huanchengfly.tieba.post.core.network.source.OKSignNetworkDataSource.Companion.ForumSignParam
 import com.huanchengfly.tieba.post.repository.source.TestData
-import com.huanchengfly.tieba.post.repository.user.OKSignRepositoryImp.Companion.ForumSignParam
-import javax.inject.Inject
 
-class OKSignFakeDataSource @Inject constructor() : OKSignNetworkDataSource {
+/**
+ * Fake implementation of the [OKSignNetworkDataSource]
+ */
+internal object OKSignFakeDataSource : OKSignNetworkDataSource {
 
     private val mSignFailForums = hashSetOf<String>()
     private var mSignError: Throwable? = null

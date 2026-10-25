@@ -219,6 +219,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
+    androidTestImplementation(project(":core:data-test"))
 
     // UI Tests
     androidTestImplementation(libs.androidx.compose.ui.test)

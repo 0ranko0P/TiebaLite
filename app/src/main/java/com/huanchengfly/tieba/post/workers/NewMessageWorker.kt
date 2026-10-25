@@ -60,6 +60,8 @@ class NewMessageWorker @AssistedInject constructor(
             if (newMessage.atMe > 0) {
                 updateNotification(NotificationsType.AtMe, newMsgCount = newMessage.atMe)
             }
+        } else {
+            Log.e(TAG, "onDoWork: Permission denied, skip post new message notifications")
         }
         Result.success(
             workDataOf(KEY_NEW_MESSAGE_COUNT to newMessage.replyMe + newMessage.atMe)

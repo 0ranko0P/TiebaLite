@@ -1,29 +1,26 @@
 package com.huanchengfly.tieba.post.repository.source
 
-import com.huanchengfly.tieba.post.api.models.GetForumListBean
-import com.huanchengfly.tieba.post.models.database.Account
-import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.database.TbLiteDatabase
+import com.huanchengfly.tieba.post.core.database.model.Account
+import com.huanchengfly.tieba.post.core.network.model.GetForumListBean
 import com.huanchengfly.tieba.post.utils.GsonUtil
 import kotlinx.coroutines.runBlocking
 
 object TestData {
 
-    val DummyAccount = Account(uid = 123, name = "Test user", bduss = "", tbs = "test tbs", portrait = "test portrait", sToken = "token", cookie = "Test cookie")
+    val DummyAccount = Account(uid = 123, name = "Test user", bduss = "", tbs = "test tbs", portrait = "test portrait", sToken = "token", cookie = "Test cookie", zid = "000")
 
     // Simulate user login
     fun insertAccount(account: Account = DummyAccount, database: TbLiteDatabase, settingsRepository: SettingsRepository?) {
         runBlocking {
             database.accountDao().upsert(account)
             settingsRepository?.accountUid?.set(account.uid)
-            AccountUtil.getInstance().saveNewAccount(null, account)
         }
     }
 
     // Simulate user logout
     suspend fun purgeAccount(database: TbLiteDatabase, settingsRepository: SettingsRepository?) {
-        AccountUtil.getInstance().saveNewAccount(null, null)
         settingsRepository?.accountUid?.set(-1)
         database.accountDao().deleteAll()
     }

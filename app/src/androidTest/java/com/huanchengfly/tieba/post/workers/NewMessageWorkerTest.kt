@@ -8,14 +8,13 @@ import androidx.work.ListenableWorker.Result.Success
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
-import com.huanchengfly.tieba.post.api.models.MsgBean
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.database.TbLiteDatabase
+import com.huanchengfly.tieba.post.core.network.model.MsgBean
 import com.huanchengfly.tieba.post.coroutines.runTest
-import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
 import com.huanchengfly.tieba.post.repository.HomeRepository
 import com.huanchengfly.tieba.post.repository.source.TestData
-import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkFakeDataSource
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -44,9 +43,7 @@ class NewMessageWorkerTest {
     @Inject lateinit var tbLiteDatabase: TbLiteDatabase
     @Inject lateinit var settingsRepo: SettingsRepository
     @Inject lateinit var homeRepository: HomeRepository
-    @Inject lateinit var _networkDataSource: HomeNetworkDataSource
-    val networkDataSource: HomeNetworkFakeDataSource
-        get() = _networkDataSource as HomeNetworkFakeDataSource
+    private val networkDataSource = HomeNetworkFakeDataSource
 
     private lateinit var workerFactory: WorkerFactory
 
@@ -85,7 +82,8 @@ class NewMessageWorkerTest {
             .build()
 
         runTest {
-            settingsRepo.accountUid.set(-1) // Simulate user log out
+            // Simulate user log out
+            TestData.purgeAccount(tbLiteDatabase, settingsRepo)
             val result = worker.doWork()
             assertTrue(result is Failure)
         }

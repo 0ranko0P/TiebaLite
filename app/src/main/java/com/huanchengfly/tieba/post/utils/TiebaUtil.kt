@@ -13,10 +13,9 @@ import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.core.common.ktx.urlEncode
 import com.huanchengfly.tieba.post.core.ui.util.toShareIntent
 import com.huanchengfly.tieba.post.core.ui.util.toastShort
-import com.huanchengfly.tieba.post.di.RepositoryEntryPoint
+import com.huanchengfly.tieba.post.di.okSignRepository
 import com.huanchengfly.tieba.post.ui.page.webview.isTiebaHost
 import com.huanchengfly.tieba.post.workers.OKSignWorker
-import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
@@ -40,7 +39,7 @@ object TiebaUtil {
 
     @JvmStatic
     fun startSign(context: Context) {
-        val okSignRepo = EntryPointAccessors.fromApplication<RepositoryEntryPoint>(context).okSignRepository()
+        val okSignRepo = context.okSignRepository
         val isOKSignWorkerRunning = runBlocking { okSignRepo.isOKSignWorkerRunning.first() }
         if (isOKSignWorkerRunning) {
             context.toastShort(R.string.toast_oksign_start)

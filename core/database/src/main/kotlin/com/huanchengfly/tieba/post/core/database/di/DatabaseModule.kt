@@ -14,12 +14,12 @@ import java.util.concurrent.TimeUnit
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal object DatabaseModule {
+object DatabaseModule {
 
     @OptIn(ExperimentalRoomApi::class)
     @Provides
     @Singleton
-    fun provideDataBase(@ApplicationContext context: Context): TbLiteDatabase {
+    internal fun provideDataBase(@ApplicationContext context: Context): TbLiteDatabase {
         return Room.databaseBuilder(context, TbLiteDatabase::class.java, "tb_lite.db")
             .setAutoCloseTimeout(15, TimeUnit.MINUTES)
             .build()

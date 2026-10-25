@@ -4,6 +4,9 @@ package com.huanchengfly.tieba.post.di
 
 import android.content.Context
 import com.huanchengfly.tieba.post.MacrobenchmarkConstant
+import com.huanchengfly.tieba.post.core.data.util.ContextSingletonDelegate
+import com.huanchengfly.tieba.post.repository.HomeRepository
+import com.huanchengfly.tieba.post.repository.HomeRepositoryImpl
 import com.huanchengfly.tieba.post.repository.source.local.ExploreAssetsDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalDataSource
 import com.huanchengfly.tieba.post.repository.source.local.ExploreLocalFileDataSource
@@ -14,16 +17,20 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-interface RepositoryModule {
+abstract class RepositoryModule {
 
     @Binds
-    fun bindOKSignRepository(repository: OKSignRepositoryImp): OKSignRepository
+    internal abstract fun bindOKSignRepository(repository: OKSignRepositoryImp): OKSignRepository
+
+    @Binds
+    internal abstract fun bindHomeRepository(repo: HomeRepositoryImpl): HomeRepository
 }
 
 // TODO: Gradle Modularization
@@ -46,4 +53,9 @@ object ExploreLocalCacheModule {
 @InstallIn(SingletonComponent::class)
 interface RepositoryEntryPoint {
     fun okSignRepository(): OKSignRepository
+}
+
+/** For components without Hilt inject support */
+val Context.okSignRepository: OKSignRepository by ContextSingletonDelegate {
+    EntryPointAccessors.fromApplication<RepositoryEntryPoint>(this).okSignRepository()
 }

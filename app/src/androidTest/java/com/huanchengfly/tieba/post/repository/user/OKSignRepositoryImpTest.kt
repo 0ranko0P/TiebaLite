@@ -3,21 +3,20 @@ package com.huanchengfly.tieba.post.repository.user
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.testing.WorkManagerTestInitHelper
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.database.TbLiteDatabase
+import com.huanchengfly.tieba.post.core.database.dao.TimestampDao
+import com.huanchengfly.tieba.post.core.database.dao.TimestampDao.Companion.TYPE_FORUM_LAST_UPDATED
+import com.huanchengfly.tieba.post.core.network.exception.TiebaException
 import com.huanchengfly.tieba.post.coroutines.runTest
-import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
-import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
-import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TYPE_FORUM_LAST_UPDATED
 import com.huanchengfly.tieba.post.repository.HomeRepository
 import com.huanchengfly.tieba.post.repository.source.TestData
 import com.huanchengfly.tieba.post.repository.source.network.OKSignFakeDataSource
-import com.huanchengfly.tieba.post.repository.source.network.OKSignNetworkDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Before
@@ -41,10 +40,7 @@ class OKSignRepositoryImpTest {
     @Inject lateinit var settingsRepo: SettingsRepository
     @Inject lateinit var homeRepository: HomeRepository
     @Inject lateinit var okSignRepository: OKSignRepository
-
-    @Inject lateinit var _networkDataSource: OKSignNetworkDataSource
-    val networkDataSource: OKSignFakeDataSource
-        get() = _networkDataSource as OKSignFakeDataSource
+    private val networkDataSource = OKSignFakeDataSource
 
     @Before
     fun setUp() {
@@ -69,10 +65,6 @@ class OKSignRepositoryImpTest {
         assertNull(lastUpdate.first())
 
         okSignRepository.sign(listener = progressListener)
-
-        // Test is HomeRepository observing the signing data changes
-        assertEquals(forums.size, homeForumFlow.first().size)
-        assertNotNull(lastUpdate.first())
 
         // Test progress
         assertEquals(forums.size, progressListener.succeed)

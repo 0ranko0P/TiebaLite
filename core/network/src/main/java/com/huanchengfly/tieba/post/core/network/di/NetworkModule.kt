@@ -67,10 +67,10 @@ internal object NetworkModule {
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal interface NetUtilsModule {
+abstract class NetUtilsModule {
 
     @Binds
-    fun bindNetworkMonitor(impl: ConnectivityManagerNetworkMonitor): NetworkMonitor
+    internal abstract fun bindNetworkMonitor(impl: ConnectivityManagerNetworkMonitor): NetworkMonitor
 }
 
 @EntryPoint

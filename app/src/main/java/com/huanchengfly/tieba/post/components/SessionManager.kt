@@ -25,7 +25,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
@@ -78,8 +78,8 @@ internal class SessionManagerImpl @Inject constructor(
     private val accountUidSettings: Settings<Long> = settingsRepo.accountUid
 
     override val currentAccount: SharedFlow<Account?> = accountUidSettings
-        .flatMapMerge { uid ->
-            if (uid != -1L) accountDao.observeById(uid) else flowOf(null)
+        .flatMapLatest { uid ->
+            if (uid > 0) accountDao.observeById(uid) else flowOf(null)
         }
         .shareIn(scope, started = SharingStarted.Eagerly, replay = 1)
 
@@ -235,8 +235,8 @@ internal class SessionManagerImpl @Inject constructor(
 
     override fun isLoggedIn(): Boolean = getLoginInfo() != null
 
-    override fun requireUid(): Long {
-        return getLoginInfo()?.uid ?: throw TiebaNotLoggedInException()
+    override fun requireUid(): Long = runBlocking {
+        accountUidSettings.snapshot().takeUnless { it <= 0 } ?: throw TiebaNotLoggedInException()
     }
 
     companion object {

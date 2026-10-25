@@ -6,8 +6,8 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import com.huanchengfly.tieba.post.App.Companion.AppBackgroundScope
 import com.huanchengfly.tieba.post.BuildConfig
+import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
 import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.core.database.dao.LikedForumDao
@@ -25,8 +25,8 @@ import com.huanchengfly.tieba.post.core.network.source.ForumNetworkDataSource
 import com.huanchengfly.tieba.post.core.network.source.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.ui.models.LikedForum
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -38,6 +38,36 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+interface HomeRepository {
+
+    fun getLikedForums(pinned: Boolean): Flow<PagingData<LikedForum>>
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    suspend fun getLikedForums(): Flow<List<LikedForum>>
+
+    suspend fun refresh(cached: Boolean)
+
+    suspend fun updateLikedForums(uid: Long, forums: List<LocalLikedForum>)
+
+    suspend fun requestDislikeForum(forum: LikedForum)
+
+    suspend fun onDislikeForum(forumId: Long)
+
+    suspend fun onLikeForum() = refresh(cached = false)
+
+    suspend fun onForumSignedIn(forumId: Long)
+
+    suspend fun addTopForum(forum: LikedForum)
+
+    suspend fun removeTopForum(forum: LikedForum)
+
+    suspend fun fetchNewMessage(): MessageBean
+
+    fun observeNewMessage(): Flow<Int>
+
+    suspend fun clearNewMessage()
+}
+
 /**
  * Home Repository that manages LikedForum data.
  *
@@ -45,14 +75,15 @@ import javax.inject.Singleton
  * consistent and up-to-date forums.
  * */
 @Singleton
-class HomeRepository @Inject constructor(
+class HomeRepositoryImpl @Inject constructor(
     private val networkDataSource: HomeNetworkDataSource,
     private val forumNetworkDataSource: ForumNetworkDataSource,
     private val localDataSource: LikedForumDao,
     private val timestampDao: TimestampDao,
     private val settingsRepo: SettingsRepository,
     private val credentialProvider: CredentialProvider,
-) {
+    @param:ApplicationScope private val scope: CoroutineScope,
+): HomeRepository {
 
     private val homePagingConfig by unsafeLazy {
         PagingConfig(pageSize = 30, prefetchDistance = 4, maxSize = 60)
@@ -61,8 +92,7 @@ class HomeRepository @Inject constructor(
     /**
      * Get current user's liked forums paging source.
      * */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun getLikedForums(pinned: Boolean): Flow<PagingData<LikedForum>> = settingsRepo.accountUid
+    override fun getLikedForums(pinned: Boolean): Flow<PagingData<LikedForum>> = settingsRepo.accountUid
         .flatMapLatest { uid ->
             if (uid <= 0) return@flatMapLatest flowOf(PagingData.empty())
             Pager(
@@ -76,18 +106,17 @@ class HomeRepository @Inject constructor(
         .flowOn(Dispatchers.Default)
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    suspend fun getLikedForums(): Flow<List<LikedForum>> {
-        val uid = settingsRepo.accountUid.snapshot()
-        return localDataSource.observeAllSorted(uid)
-            .map {
-                it.map { forum -> mapUiModel(forum) }
+    override suspend fun getLikedForums(): Flow<List<LikedForum>> = settingsRepo.accountUid
+        .flatMapLatest { uid ->
+            localDataSource.observeAllSorted(uid).map { entityList ->
+                entityList.map(::mapUiModel)
             }
-    }
+        }
 
     /**
      * Refresh the current user's liked forums
      * */
-    suspend fun refresh(cached: Boolean) {
+    override suspend fun refresh(cached: Boolean) {
         val start = System.currentTimeMillis()
         val uid = credentialProvider.requireUid()
 
@@ -102,37 +131,37 @@ class HomeRepository @Inject constructor(
         }
     }
 
-    suspend fun updateLikedForums(uid: Long, forums: List<LocalLikedForum>) {
+    override suspend fun updateLikedForums(uid: Long, forums: List<LocalLikedForum>) {
         localDataSource.upsertAll(uid, forums)
         // save last update timestamp
         timestampDao.upsert(Timestamp(uid, TYPE_FORUM_LAST_UPDATED))
     }
 
-    suspend fun requestDislikeForum(forum: LikedForum) {
+    override suspend fun requestDislikeForum(forum: LikedForum) {
         val tbs = credentialProvider.requireTbs()
         forumNetworkDataSource.dislike(forumId = forum.id, forumName = forum.name, tbs)
         onDislikeForum(forumId = forum.id)
     }
 
-    suspend fun onDislikeForum(forumId: Long) {
-        AppBackgroundScope.async {
+    override suspend fun onDislikeForum(forumId: Long) {
+        scope.async {
             localDataSource.deleteById(uid = credentialProvider.requireUid(), forumId = forumId)
         }
         .await()
     }
 
-    suspend fun onLikeForum() = refresh(cached = false)
+    override suspend fun onLikeForum() = refresh(cached = false)
 
-    suspend fun onForumSignedIn(forumId: Long) {
+    override suspend fun onForumSignedIn(forumId: Long) {
         val uid = credentialProvider.requireUid()
         localDataSource.updateSignIn(uid, forumId, timestamp = System.currentTimeMillis())
     }
 
-    suspend fun addTopForum(forum: LikedForum) {
+    override suspend fun addTopForum(forum: LikedForum) {
         localDataSource.pinForum(forumId = forum.id)
     }
 
-    suspend fun removeTopForum(forum: LikedForum) {
+    override suspend fun removeTopForum(forum: LikedForum) {
         localDataSource.unpinForum(forumId = forum.id)
     }
 
@@ -141,7 +170,7 @@ class HomeRepository @Inject constructor(
         return lastUpdate + duration < System.currentTimeMillis()
     }
 
-    suspend fun fetchNewMessage(): MessageBean {
+    override suspend fun fetchNewMessage(): MessageBean {
         val timestamp = System.currentTimeMillis()
         val uid = settingsRepo.accountUid.snapshot()
         if (uid == -1L) {
@@ -152,8 +181,9 @@ class HomeRepository @Inject constructor(
             val duration = (timestamp - lastUpdate) / 1000 / 60
             Log.i(TAG, "onFetchNewMessage: last update $duration minutes ago.")
         }
-        return AppBackgroundScope.async {
-            val newMessage = networkDataSource.fetchNewMessage()
+        val newMessage = networkDataSource.fetchNewMessage()
+        // Save result to database, this is non-cancellable
+        return scope.async {
             newMessage.apply {
                 timestampDao.updateNewMessageCount(uid, timestamp, newMsgCount = replyMe + atMe)
                 val cost = System.currentTimeMillis() - timestamp
@@ -165,8 +195,7 @@ class HomeRepository @Inject constructor(
     /**
      * Observe the current user's new message count.
      * */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun observeNewMessage(): Flow<Int> = settingsRepo.accountUid.flatMapLatest { uid ->
+    override fun observeNewMessage(): Flow<Int> = settingsRepo.accountUid.flatMapLatest { uid ->
         if (uid != -1L) {
             timestampDao.observe(uid, TYPE_NEW_MESSAGE_COUNT).map { it?.toInt() ?: 0 }
         } else {
@@ -174,8 +203,8 @@ class HomeRepository @Inject constructor(
         }
     }
 
-    suspend fun clearNewMessage() {
-        AppBackgroundScope.async {
+    override suspend fun clearNewMessage() {
+        scope.async {
             val uid = settingsRepo.accountUid.snapshot()
             timestampDao.delete(uid, TYPE_NEW_MESSAGE_COUNT)
         }.await()

@@ -2,18 +2,17 @@ package com.huanchengfly.tieba.post.repository
 
 import android.database.sqlite.SQLiteConstraintException
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.huanchengfly.tieba.post.api.models.MsgBean
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
+import com.huanchengfly.tieba.post.core.database.TbLiteDatabase
+import com.huanchengfly.tieba.post.core.database.dao.TimestampDao
+import com.huanchengfly.tieba.post.core.database.dao.TimestampDao.Companion.TYPE_FORUM_LAST_UPDATED
+import com.huanchengfly.tieba.post.core.database.model.LocalLikedForum
+import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
+import com.huanchengfly.tieba.post.core.network.model.MsgBean
 import com.huanchengfly.tieba.post.coroutines.runTest
-import com.huanchengfly.tieba.post.models.database.LocalLikedForum
-import com.huanchengfly.tieba.post.models.database.TbLiteDatabase
-import com.huanchengfly.tieba.post.models.database.dao.TimestampDao
-import com.huanchengfly.tieba.post.models.database.dao.TimestampDao.Companion.TYPE_FORUM_LAST_UPDATED
-import com.huanchengfly.tieba.post.repository.HomeRepository.Companion.mapEntity
+import com.huanchengfly.tieba.post.repository.HomeRepositoryImpl.Companion.mapEntity
 import com.huanchengfly.tieba.post.repository.source.TestData
-import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.network.HomeNetworkFakeDataSource
-import com.huanchengfly.tieba.post.repository.user.SettingsRepository
 import com.huanchengfly.tieba.post.ui.models.LikedForum
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -39,9 +38,7 @@ class HomeRepositoryTest {
     @Inject lateinit var settingsRepo: SettingsRepository
     @Inject lateinit var homeRepository: HomeRepository
 
-    @Inject lateinit var _networkDataSource: HomeNetworkDataSource
-    val networkDataSource: HomeNetworkFakeDataSource
-        get() = _networkDataSource as HomeNetworkFakeDataSource
+    private val networkDataSource = HomeNetworkFakeDataSource
 
     private val dummyAccount = TestData.DummyAccount
 

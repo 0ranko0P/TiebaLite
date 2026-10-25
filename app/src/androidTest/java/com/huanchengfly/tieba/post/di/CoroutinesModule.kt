@@ -1,5 +1,11 @@
 package com.huanchengfly.tieba.post.di
 
+import com.huanchengfly.tieba.post.core.common.Dispatcher
+import com.huanchengfly.tieba.post.core.common.TbDispatchers
+import com.huanchengfly.tieba.post.core.common.di.ApplicationScope
+import com.huanchengfly.tieba.post.core.common.di.CoroutineScopesModule
+import com.huanchengfly.tieba.post.core.common.di.DispatchersModule
+import com.huanchengfly.tieba.post.di.TestCoroutinesModule.testScope
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.components.SingletonComponent
@@ -13,29 +19,34 @@ import javax.inject.Singleton
 @Module
 @TestInstallIn(
     components = [SingletonComponent::class],
-    replaces = [CoroutinesModule::class]
+    replaces = [CoroutineScopesModule::class]
 )
 object TestCoroutinesModule {
 
     val testScope = TestScope()
 
-    val IO: CoroutineDispatcher = StandardTestDispatcher(testScope.testScheduler, "TestIO")
-
-    val Main: CoroutineDispatcher = StandardTestDispatcher(testScope.testScheduler, "TestMain")
-
-    val Default: CoroutineDispatcher
-        get() = Main
-
-    @Provides
-    @IoDispatcher
-    fun providesIODispatcher(): CoroutineDispatcher = IO
-
-    @Provides
-    @DefaultDispatcher
-    fun providesDefaultDispatcher(): CoroutineDispatcher = Default
-
     @Provides
     @Singleton
     @ApplicationScope
     fun providesCoroutineScope(): CoroutineScope = testScope
+}
+
+@Module
+@TestInstallIn(
+    components = [SingletonComponent::class],
+    replaces = [DispatchersModule::class]
+)
+object TestDispatchersModule {
+
+    val IO: CoroutineDispatcher = StandardTestDispatcher(testScope.testScheduler, "TestIO")
+
+    val Default: CoroutineDispatcher = StandardTestDispatcher(testScope.testScheduler, "TestDefault")
+
+    @Provides
+    @Dispatcher(TbDispatchers.IO)
+    fun providesIODispatcher(): CoroutineDispatcher = this.IO
+
+    @Provides
+    @Dispatcher(TbDispatchers.Default)
+    fun providesDefaultDispatcher(): CoroutineDispatcher = this.Default
 }

@@ -1,13 +1,16 @@
 package com.huanchengfly.tieba.post.repository.source.network
 
-import com.huanchengfly.tieba.post.api.models.GetForumListBean.ForumInfo
-import com.huanchengfly.tieba.post.api.models.MsgBean
-import com.huanchengfly.tieba.post.api.models.ForumGuideBean.LikeForum
+import com.huanchengfly.tieba.post.core.network.model.ForumGuideBean.LikeForum
+import com.huanchengfly.tieba.post.core.network.model.GetForumListBean.ForumInfo
+import com.huanchengfly.tieba.post.core.network.model.MsgBean
+import com.huanchengfly.tieba.post.core.network.source.HomeNetworkDataSource
 import com.huanchengfly.tieba.post.repository.source.TestData
-import javax.inject.Inject
 import kotlin.random.Random
 
-class HomeNetworkFakeDataSource @Inject constructor(): HomeNetworkDataSource {
+/**
+ * Fake implementation of the [HomeNetworkDataSource]
+ */
+internal object HomeNetworkFakeDataSource: HomeNetworkDataSource {
 
     var nextMessage: MsgBean.MessageBean? = null
 

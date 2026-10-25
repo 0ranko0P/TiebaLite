@@ -11,13 +11,13 @@ import dagger.hilt.components.SingletonComponent
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal interface SessionModule {
+abstract class SessionModule {
 
     @Binds
-    fun bindCredentialProvider(impl: SessionManagerImpl): CredentialProvider
+    internal abstract fun bindCredentialProvider(impl: SessionManagerImpl): CredentialProvider
 
     @Binds
-    fun bindSessionManager(impl: SessionManagerImpl): SessionManager
+    internal abstract fun bindSessionManager(impl: SessionManagerImpl): SessionManager
 }
 
 @EntryPoint
