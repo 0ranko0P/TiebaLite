@@ -359,6 +359,7 @@ private fun LaunchedBottomNavigationEffect(
     state: TbNavigationSuiteScaffoldState,
     navigationState: NavigationState,
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val fullScreenNavKey = remember {
         listOf(Destination.Login::class, Destination.AppTheme::class, Destination.UserProfile::class, Destination.Welcome::class)
     }
@@ -372,7 +373,9 @@ private fun LaunchedBottomNavigationEffect(
 
             else -> NavigationSuiteScaffoldValue.Hidden
         }
-        if (navState !== state.targetValue) state.setState(navState)
+        if (navState !== state.targetValue) {
+            coroutineScope.launch { state.setState(navState) }
+        }
     }
 }
 

@@ -102,7 +102,7 @@ fun NotificationsPage(
             }
         },
         bottomBar = if (fromHome) bottomNavigationPlaceholder else BlurNavigationBarPlaceHolder,
-        bottomBarAtop = LocalNavSuiteScaffoldState.current.layoutType.isFloatingNavigationBar,
+        bottomBarAtop = fromHome && LocalNavSuiteScaffoldState.current.layoutType.isFloatingNavigationBar,
     ) { contentPadding ->
         HorizontalPager(
             state = pagerState,

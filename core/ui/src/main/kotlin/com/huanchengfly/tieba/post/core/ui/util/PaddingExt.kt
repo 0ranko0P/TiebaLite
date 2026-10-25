@@ -18,12 +18,12 @@ fun PaddingValues.copy(
             this@copy.calculateLeftPadding(layoutDirection)
         }
 
-    override fun calculateTopPadding(): Dp = top
+    override fun calculateTopPadding(): Dp = top.takeOrElse { this@copy.calculateTopPadding() }
 
     override fun calculateRightPadding(layoutDirection: LayoutDirection): Dp =
         (if (layoutDirection == LayoutDirection.Ltr) end else start).takeOrElse {
             this@copy.calculateRightPadding(layoutDirection)
         }
 
-    override fun calculateBottomPadding(): Dp = bottom
+    override fun calculateBottomPadding(): Dp = bottom.takeOrElse { this@copy.calculateBottomPadding() }
 }
