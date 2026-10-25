@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.core.data.util
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -37,4 +38,18 @@ fun DataStore<Preferences>.getInt(key: String, defaultValue: Int): Int {
 
 fun DataStore<Preferences>.getString(key: String, defaultValue: String): String {
     return blockGet(stringPreferencesKey(key), defaultValue)
+}
+
+/**
+ * Set a key value pair in MutablePreferences.
+ *
+ * @param key the preference to set
+ * @param value the value to set the preference to
+ */
+internal fun <T> MutablePreferences.setNullable(key: Preferences.Key<T>, value: T?) {
+    if (value != null) {
+        this[key] = value
+    } else {
+        remove(key)
+    }
 }

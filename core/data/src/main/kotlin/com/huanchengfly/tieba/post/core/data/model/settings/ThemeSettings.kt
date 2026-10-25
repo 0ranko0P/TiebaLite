@@ -18,9 +18,9 @@ data class ThemeSettings(
     val theme: Theme = Theme.BLUE,
     val customColor: Int? = null,
     val customVariant: Int? = null, // Variant.ordinal
-    val transColor: Int?,
-    val transAlpha: Float,
-    val transBlur: Float,
+    val transColor: Int? = null,
+    val transAlpha: Float = 1f,
+    val transBlur: Float = 0f,
     val transDarkColorMode: Boolean = false,
     val transBackground: String? = null
 )

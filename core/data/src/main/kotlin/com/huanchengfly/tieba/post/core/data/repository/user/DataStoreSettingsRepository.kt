@@ -1,23 +1,21 @@
 package com.huanchengfly.tieba.post.core.data.repository.user
 
-import android.content.Context
 import android.os.Build
-import android.util.Log
 import androidx.datastore.core.DataStore
-import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import com.huanchengfly.tieba.post.core.common.Dispatcher
+import com.huanchengfly.tieba.post.core.common.TbDispatchers.IO
 import com.huanchengfly.tieba.post.core.common.ktx.packFloats
 import com.huanchengfly.tieba.post.core.common.ktx.unpackFloat1
 import com.huanchengfly.tieba.post.core.common.ktx.unpackFloat2
+import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.core.data.model.HmTime
 import com.huanchengfly.tieba.post.core.data.model.settings.BlockSettings
 import com.huanchengfly.tieba.post.core.data.model.settings.ClientConfig
@@ -36,23 +34,13 @@ import com.huanchengfly.tieba.post.core.data.model.settings.UISettings
 import com.huanchengfly.tieba.post.core.data.model.settings.WaterType
 import com.huanchengfly.tieba.post.core.data.model.settings.randomSignTime
 import com.huanchengfly.tieba.post.core.data.util.SystemPropertyUtil
+import com.huanchengfly.tieba.post.core.data.util.setNullable
 import com.huanchengfly.tieba.post.utils.JobQueue
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val DATA_STORE_NAME = "app_preferences"
-
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
-    name = DATA_STORE_NAME,
-    corruptionHandler = ReplaceFileCorruptionHandler {
-        Log.wtf(DATA_STORE_NAME, "onHandleCorruption", it)
-        emptyPreferences()
-    }
-)
 
 private interface PreferenceTransformer<T> {
     val get: (preference: Preferences) -> T
@@ -64,22 +52,21 @@ private interface PreferenceTransformer<T> {
  */
 @Singleton
 internal class DataStoreSettingsRepository @Inject constructor(
-    @ApplicationContext context: Context,
+    private val dataStore: DataStore<Preferences>,
+    @param:Dispatcher(IO) val dispatcher: CoroutineDispatcher,
 ): SettingsRepository {
 
     private val queue = JobQueue()
-
-    private val dataStore = context.dataStore
 
     private inner class ComplexSettings<T>(val transformer: PreferenceTransformer<T>): Settings<T>(
         flow = dataStore.data.map(transform = transformer.get).distinctUntilChanged()
     ) {
 
-        override fun set(new: T) = queue.submit(Dispatchers.IO) {
+        override fun set(new: T) = queue.submit(dispatcher) {
             dataStore.edit { transformer.set(it, new) }
         }
 
-        override fun save(transform: (old: T) -> T) = queue.submit(Dispatchers.IO) {
+        override fun save(transform: (old: T) -> T) = queue.submit(dispatcher) {
             dataStore.edit {
                 val new = transform(transformer.get(it))
                 transformer.set(it, new)
@@ -91,9 +78,9 @@ internal class DataStoreSettingsRepository @Inject constructor(
         flow = dataStore.data.map { it[key] ?: default }.distinctUntilChanged()
     ) {
 
-        override fun set(new: T) = queue.submit(Dispatchers.IO) { dataStore.edit { it[key] = new } }
+        override fun set(new: T) = queue.submit(dispatcher) { dataStore.edit { it[key] = new } }
 
-        override fun save(transform: (T) -> T) = queue.submit(Dispatchers.IO) {
+        override fun save(transform: (T) -> T) = queue.submit(dispatcher) {
             dataStore.edit { it[key] = transform(it[key] ?: default) }
         }
     }
@@ -195,14 +182,15 @@ private object PrivacySettingsTransformer : PreferenceTransformer<PrivacySetting
 private object ThemeSettingsTransformer : PreferenceTransformer<ThemeSettings> {
     override val get: (Preferences) -> ThemeSettings = {
         val transFilters = it[longPreferencesKey(KEY_TRANSLUCENT_FILTERS)]
+            ?: packFloats(1.0f/*Default Alpha*/, 0f/*Default Blur*/)
 
         ThemeSettings(
             theme = it[intPreferencesKey(KEY_THEME)]?.let { i -> Theme.entries[i] } ?: Theme.BLUE,
             customColor = it[intPreferencesKey(KEY_CUSTOM_COLOR)],
             customVariant = it[intPreferencesKey(KEY_CUSTOM_VARIANT)],
             transColor = it[intPreferencesKey(KEY_TRANSLUCENT_COLOR)],
-            transAlpha = transFilters?.let { value -> unpackFloat1(value) } ?: 1.0f,
-            transBlur = transFilters?.let { value -> unpackFloat2(value) } ?: 0f,
+            transAlpha = unpackFloat1(transFilters),
+            transBlur = unpackFloat2(transFilters),
             transDarkColorMode = it[booleanPreferencesKey(KEY_TRANSLUCENT_DARK_COLOR_MODE)] == true,
             transBackground = it[stringPreferencesKey(KEY_TRANSLUCENT_BACKGROUND)]
         )
@@ -210,12 +198,12 @@ private object ThemeSettingsTransformer : PreferenceTransformer<ThemeSettings> {
 
     override val set: (MutablePreferences, ThemeSettings) -> Unit = { it, theme ->
         it[intPreferencesKey(KEY_THEME)] = theme.theme.ordinal
-        theme.customColor?.let { color -> it[intPreferencesKey(KEY_CUSTOM_COLOR)] = color }
-        theme.customVariant?.let { ordinal -> it[intPreferencesKey(KEY_CUSTOM_VARIANT)] = ordinal }
-        theme.transColor?.let { color -> it[intPreferencesKey(KEY_TRANSLUCENT_COLOR)] = color }
+        it.setNullable(intPreferencesKey(KEY_CUSTOM_COLOR), theme.customColor)
+        it.setNullable(intPreferencesKey(KEY_CUSTOM_VARIANT), theme.customVariant)
+        it.setNullable(intPreferencesKey(KEY_TRANSLUCENT_COLOR), theme.transColor)
         it[longPreferencesKey(KEY_TRANSLUCENT_FILTERS)] = packFloats(theme.transAlpha, theme.transBlur)
         it[booleanPreferencesKey(KEY_TRANSLUCENT_DARK_COLOR_MODE)] = theme.transDarkColorMode
-        theme.transBackground?.let { bg -> it[stringPreferencesKey(KEY_TRANSLUCENT_BACKGROUND)] = bg }
+        it.setNullable(stringPreferencesKey(KEY_TRANSLUCENT_BACKGROUND), theme.transBackground)
     }
 
     private const val KEY_THEME = "theme" // Theme.ordinal
@@ -231,8 +219,9 @@ private object ThemeSettingsTransformer : PreferenceTransformer<ThemeSettings> {
 
 private object UISettingsTransformer: PreferenceTransformer<UISettings> {
 
-    val PRODUCT_FIRST_API_LEVEL: Int
-        get() = SystemPropertyUtil.getInt("ro.product.first_api_level", default = Build.VERSION.SDK_INT)
+    val isShippingApiBelowS by unsafeLazy {
+        SystemPropertyUtil.getInt("ro.product.first_api_level", default = Build.VERSION.SDK_INT) < Build.VERSION_CODES.S
+    }
 
     override val get: (Preferences) -> UISettings = {
         val darkPrefOrdinal = it[intPreferencesKey(KEY_DARK_THEME_MODE)] ?: DarkPreference.FOLLOW_SYSTEM.ordinal
@@ -248,8 +237,8 @@ private object UISettingsTransformer: PreferenceTransformer<UISettings> {
             darkPreference = DarkPreference.entries[darkPrefOrdinal],
             darkenImage = it[booleanPreferencesKey(KEY_DARKEN_IMAGE_ON_NIGHT)] ?: true,
             hideExplore = it[booleanPreferencesKey(KEY_HIDE_EXPLORE)] == true,
-            reduceEffect = it[booleanPreferencesKey(KEY_REDUCE_EFFECT)] ?: (PRODUCT_FIRST_API_LEVEL < Build.VERSION_CODES.S),
-            reduceMotion = it[booleanPreferencesKey(KEY_REDUCE_MOTION)] ?: (PRODUCT_FIRST_API_LEVEL < Build.VERSION_CODES.S),
+            reduceEffect = it[booleanPreferencesKey(KEY_REDUCE_EFFECT)] ?: isShippingApiBelowS,
+            reduceMotion = it[booleanPreferencesKey(KEY_REDUCE_MOTION)] ?: isShippingApiBelowS,
             setupFinished = it[booleanPreferencesKey(KEY_SETUP_FINISHED)] == true,
             homeForumList = it[booleanPreferencesKey(KEY_HOME_SINGLE_FORUM_LIST)] == true,
             showHistoryInHome = it[booleanPreferencesKey(KEY_HOME_PAGE_SHOW_HISTORY)] ?: true,
@@ -310,12 +299,14 @@ private object BlockTransformer: PreferenceTransformer<BlockSettings> {
 }
 
 private object SignConfigTransformer: PreferenceTransformer<SignConfig> {
+    val defaultAutoSignTime = randomSignTime()
+
     override val get: (Preferences) -> SignConfig = {
         val hmTime = it[longPreferencesKey(KEY_OKSIGN_AUTO_TIME)]?.let { t -> HmTime(t) }
         SignConfig(
             autoSign = it[booleanPreferencesKey(KEY_OKSIGN_AUTO)] == true,
             autoSignSlow = it[booleanPreferencesKey(KEY_OKSIGN_SLOW)] ?: true,
-            autoSignTime = hmTime ?: randomSignTime(),
+            autoSignTime = hmTime ?: defaultAutoSignTime,
             okSignOfficial = it[booleanPreferencesKey(KEY_OKSIGN_OFFICIAL)] ?: true,
         )
     }
@@ -345,12 +336,12 @@ private object ClientConfigTransformer: PreferenceTransformer<ClientConfig> {
     }
 
     override val set: (MutablePreferences, ClientConfig) -> Unit = { it, config ->
-        config.clientId?.let { id -> it[stringPreferencesKey(KEY_CLIENT_ID)] = id }
-        config.sampleId?.let { id -> it[stringPreferencesKey(KEY_SAMPLE_ID)] = id }
-        config.baiduId?.let { id -> it[stringPreferencesKey(KEY_BAIDU_ID)] = id }
+        it.setNullable(stringPreferencesKey(KEY_CLIENT_ID), config.clientId)
+        it.setNullable(stringPreferencesKey(KEY_SAMPLE_ID), config.sampleId)
+        it.setNullable(stringPreferencesKey(KEY_BAIDU_ID), config.baiduId)
         it.remove(longPreferencesKey(KEY_ACTIVE_TIMESTAMP))
-        config.firstInstallTime?.let { time -> it[longPreferencesKey(KEY_INSTALL_TIME)] = time }
-        config.lastUpdateTime?.let { time -> it[longPreferencesKey(KEY_UPDATE_TIME)] = time }
+        it.setNullable(longPreferencesKey(KEY_INSTALL_TIME), config.firstInstallTime)
+        it.setNullable(longPreferencesKey(KEY_UPDATE_TIME), config.lastUpdateTime)
     }
 
     private const val KEY_CLIENT_ID = "client_id"
