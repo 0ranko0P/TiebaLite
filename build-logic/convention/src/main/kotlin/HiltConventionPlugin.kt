@@ -43,6 +43,7 @@ class HiltConventionPlugin : Plugin<Project> {
                 dependencies {
                     "implementation"(libs.findLibrary("hilt.android").get())
                     // Override outdated dependencies form hilt
+                    "implementation"(libs.findLibrary("androidx.activity").get())
                     "implementation"(libs.findLibrary("androidx.core.ktx").get())
                     "implementation"(libs.findLibrary("androidx.lifecycle.runtime").get())
                     "implementation"(libs.findLibrary("androidx.lifecycle.viewmodel.savedstate").get())

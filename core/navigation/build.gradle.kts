@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.tblite.android.library)
+    alias(libs.plugins.tblite.android.library.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -11,6 +11,7 @@ android {
 dependencies {
     api(project(":core:common"))
     api(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.savedstate.compose)
     implementation(libs.androidx.lifecycle.viewModel.navigation3)
 }

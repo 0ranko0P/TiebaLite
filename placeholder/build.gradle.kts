@@ -52,4 +52,5 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.util)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.savedstate.compose)
 }
