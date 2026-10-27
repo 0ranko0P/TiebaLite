@@ -56,9 +56,13 @@ class NewMessageWorker @AssistedInject constructor(
         if (NotificationUtils.checkPermission(context)) {
             if (newMessage.replyMe > 0) {
                 updateNotification(NotificationsType.ReplyMe, newMsgCount = newMessage.replyMe)
+            } else {
+                clearNotification(NotificationsType.ReplyMe)
             }
             if (newMessage.atMe > 0) {
                 updateNotification(NotificationsType.AtMe, newMsgCount = newMessage.atMe)
+            } else {
+                clearNotification(NotificationsType.AtMe)
             }
         } else {
             Log.e(TAG, "onDoWork: Permission denied, skip post new message notifications")
@@ -149,6 +153,15 @@ class NewMessageWorker @AssistedInject constructor(
 
         private const val ID_REPLY = 20
         private const val ID_AT = 21
+
+        fun clearNotification(type: NotificationsType) {
+            notificationManager.cancel(
+                when (type) {
+                    NotificationsType.ReplyMe -> ID_REPLY
+                    NotificationsType.AtMe -> ID_AT
+                }
+            )
+        }
 
         fun schedulePeriodically(workManager: WorkManager) {
             val request = PeriodicWorkRequestBuilder<NewMessageWorker>(
