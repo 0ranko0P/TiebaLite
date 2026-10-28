@@ -8,6 +8,8 @@ import android.content.Intent
 import android.os.Build
 import android.os.PowerManager
 import android.os.Process
+import android.os.StrictMode
+import android.os.StrictMode.ThreadPolicy
 import android.webkit.WebView
 import androidx.annotation.Keep
 import androidx.appcompat.app.AppCompatDelegate
@@ -86,6 +88,7 @@ class App : Application(), Configuration.Provider {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         EmoticonManager.init(this)
         if (BuildConfig.DEBUG) {
+            setStrictModePolicy()
             // Enable verbose Compose stack traces for local debugging
             Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.SourceInformation)
         } else {
@@ -132,6 +135,20 @@ class App : Application(), Configuration.Provider {
         //通过循环，把集合中的所有Activity销毁
         for (activity in mActivityList) {
             activity.finish()
+        }
+    }
+
+    /**
+     * Set a thread policy that detects all potential problems on the main thread, such as network
+     * and disk access.
+     *
+     * If a problem is found, the offending call will be logged and the application will be killed.
+     */
+    private fun setStrictModePolicy() {
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                ThreadPolicy.Builder().detectAll().penaltyLog().build(),
+            )
         }
     }
 
