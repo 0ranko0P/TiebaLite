@@ -2,19 +2,26 @@ package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -27,11 +34,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.huanchengfly.tieba.post.R
@@ -42,12 +48,13 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.LocalNavSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isNavigationBar
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.ui.component.ActionItem
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowHeightCompact
 import com.huanchengfly.tieba.post.core.ui.modifier.withNonNull
-import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.models.explore.ExploreType
@@ -60,16 +67,12 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadLikeUiEvent
 import com.huanchengfly.tieba.post.ui.utils.rememberScrollOrientationConnection
-import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
-import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
-import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TbHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarPaged
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberPagerListStates
 import com.huanchengfly.tieba.post.utils.BooleanBitSet
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -124,33 +127,27 @@ fun createThreadClickListeners(
 )
 
 @Composable
-private fun ExplorePageTab(
+private fun ExploreTabRow(
+    modifier: Modifier = Modifier,
     pagerState: PagerState,
     pages: List<ExploreType>
 ) {
     val coroutineScope = rememberCoroutineScope()
-
-    SecondaryTabRow(
-        selectedTabIndex = pagerState.currentPage,
-        indicator = {
-            FancyAnimatedIndicatorWithModifier(index = pagerState.currentPage)
-        },
-        containerColor = Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.primary,
+    val colors = ToggleButtonDefaults.toggleButtonColors(
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    )
+    val shapes = ToggleButtonDefaults.shapes(checkedShape = CircleShape)
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         pages.fastForEachIndexed { index, item ->
             val selected = pagerState.currentPage == index
-            Tab(
-                text = {
-                    Text(
-                        text = stringResource(id = item.title),
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                        letterSpacing = 1.sp
-                    )
-                },
-                selected = selected,
-                onClick = {
-                    if (selected) return@Tab
+            ToggleButton(
+                checked = selected,
+                onCheckedChange = {
+                    if (selected) return@ToggleButton
                     coroutineScope.launch {
                         if (abs(pagerState.currentPage - index) > 1) {
                             pagerState.scrollToPage(index)
@@ -159,8 +156,11 @@ private fun ExplorePageTab(
                         }
                     }
                 },
-                unselectedContentColor = MaterialTheme.colorScheme.onSurface
-            )
+                shapes = shapes,
+                colors = colors,
+            ) {
+                Text(text = stringResource(id = item.title), letterSpacing = 2.sp)
+            }
         }
     }
 }
@@ -175,7 +175,7 @@ fun AnimatedContentScope.ExplorePage(
     val navigationSuiteType = LocalNavSuiteScaffoldState.current.layoutType
     // Hide FAB on FloatingNavigationBarCompact
     val isFloatingNavBarCompat = navigationSuiteType === TbNavigationSuiteType.FloatingNavigationBarCompact
-    val isListDetail = isListDetail()
+    val compactTopAppBar = isFloatingNavBarCompat || navigationSuiteType.isNavigationBar || isWindowHeightCompact()
     val hazeState = LocalHazeState.current
     val sharedTransitionScope = LocalSharedTransitionScope.current
 
@@ -187,10 +187,12 @@ fun AnimatedContentScope.ExplorePage(
         )
     }
     val pagerState = rememberPagerState(initialPage = if (loggedIn) 1 else 0) { pages.size }
-    val listStates = rememberPagerListStates(pages.size)
+    val gridStates = MutableList(pages.size) {
+        rememberLazyStaggeredGridState()
+    }
 
     val scrollOrientationConnection = rememberScrollOrientationConnection()
-    val scrollBehavior = if (!isListDetail) TopAppBarDefaults.enterAlwaysScrollBehavior() else null
+    val scrollBehavior = if (hazeState != null) TopAppBarDefaults.pinnedScrollBehavior() else null
 
     // FAB visibility of each page
     var fabHideStates by remember(pages) { mutableStateOf(BooleanBitSet()) }
@@ -207,7 +209,7 @@ fun AnimatedContentScope.ExplorePage(
     OnMainNavigationScrollTopEvent<MainDestination.Explore>(
         coroutineScope = coroutineScope,
         topAppBarState = scrollBehavior?.state,
-        listState = { listStates.getOrNull(pagerState.currentPage) }
+        scrollableState = { gridStates.getOrNull(pagerState.currentPage) }
     )
 
     MyScaffold(
@@ -219,9 +221,12 @@ fun AnimatedContentScope.ExplorePage(
                         hazeState = hazeState,
                         blurEnabled = { !fabHideStates[pagerState.currentPage] || pagerState.isScrolling }
                     ),
-                title = { Text(text = stringResource(R.string.title_explore)) },
-                navigationIcon = {
-                    AccountNavIconIfCompact(onLoginClicked = { navigator.navigate(Destination.Login) })
+                title = {
+                    if (compactTopAppBar) {
+                        ExploreTabRow(pagerState = pagerState, pages = pages)
+                    } else {
+                        Text(text = stringResource(R.string.title_explore))
+                    }
                 },
                 actions = {
                     ActionItem(
@@ -233,10 +238,16 @@ fun AnimatedContentScope.ExplorePage(
                 scrollBehavior = scrollBehavior,
                 canScrollBackward = { // No transition running && canScrollBackward
                     sharedTransitionScope?.isTransitionActive != true && !transition.isRunning &&
-                            listStates[pagerState.currentPage].canScrollBackward
+                            gridStates[pagerState.currentPage].canScrollBackward
                 }
             ) {
-                ExplorePageTab(pagerState = pagerState, pages = pages)
+                if (!compactTopAppBar) {
+                    ExploreTabRow(
+                        modifier = Modifier.padding(start = 14.dp, bottom = 8.dp),
+                        pagerState = pagerState,
+                        pages = pages,
+                    )
+                }
             }
         },
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
@@ -248,7 +259,7 @@ fun AnimatedContentScope.ExplorePage(
                 derivedStateOf {
                     !transition.isRunning && scrollOrientationConnection.isScrollingForward &&
                             navigator.state.currentKey === MainDestination.Explore && // No FAB on list pane
-                            !pagerState.isScrolling && !listStates[pagerState.currentPage].isScrollInProgress &&
+                            !pagerState.isScrolling && !gridStates[pagerState.currentPage].isScrollInProgress &&
                             !fabHideStates[pagerState.currentPage]
                 }
             }
@@ -258,9 +269,8 @@ fun AnimatedContentScope.ExplorePage(
         },
         floatingActionButtonPosition = if (isFloatingNavBarCompat) FabPosition.EndOverlay else FabPosition.End,
     ) { contentPadding ->
-        Container(
+        Box(
             modifier = Modifier.hazeSource(hazeState?.state),
-            fluid = isListDetail,
         ) {
             HorizontalPager(
                 state = pagerState,
@@ -276,21 +286,28 @@ fun AnimatedContentScope.ExplorePage(
                 val onHideFab: (Boolean) -> Unit = { hideFab ->
                     fabHideStates = fabHideStates.set(index, hideFab)
                 }
-                val listState = listStates[index]
 
                 when (pages[index]) {
-                    ExploreType.CONCERN -> {
-                        ConcernPage(modifier, contentPadding, threadClickListeners, listState, onHideFab)
-                    }
+                    ExploreType.CONCERN -> ConcernPage(
+                        modifier = modifier,
+                        contentPadding = contentPadding,
+                        threadClickListeners = threadClickListeners,
+                        gridState = gridStates[index],
+                        onHideFab = onHideFab
+                    )
 
-                    ExploreType.PERSONALIZED -> {
-                        PersonalizedPage(modifier, contentPadding, threadClickListeners, listState, onHideFab)
-                    }
+                    ExploreType.PERSONALIZED -> PersonalizedPage(
+                        modifier = modifier,
+                        contentPadding = contentPadding,
+                        threadClickListeners = threadClickListeners,
+                        gridState = gridStates[index],
+                        onHideFab = onHideFab
+                    )
 
                     ExploreType.HOT -> HotPage(
                         modifier = modifier,
                         contentPadding = contentPadding,
-                        listState = listState,
+                        gridState = gridStates[index],
                         threadClickListeners = threadClickListeners,
                         onNavigateHotTopic = { navigator.navigate(key = it) },
                         onHideFab = onHideFab,
@@ -314,13 +331,12 @@ fun Modifier.topAppBarBlurEffect(
 
 @Composable
 fun LaunchedFabStateEffect(
-    listState: LazyListState,
+    scrollableState: ScrollableState,
     onHideFab: (Boolean) -> Unit,
     isRefreshing: Boolean,
     isError: Boolean
 ) {
-    val noScrollBackward by remember { derivedStateOf { !listState.canScrollBackward } }
-
+    val noScrollBackward = !scrollableState.canScrollBackward
     LaunchedEffect(noScrollBackward, onHideFab, isRefreshing, isError) {
         onHideFab(noScrollBackward || isRefreshing || isError)
     }

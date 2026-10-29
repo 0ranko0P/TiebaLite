@@ -43,7 +43,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,7 +50,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.derivedMediaQuery
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -72,7 +70,6 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import androidx.window.core.layout.WindowSizeClass
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -83,7 +80,7 @@ import com.huanchengfly.tieba.post.arch.isOverlapping
 import com.huanchengfly.tieba.post.core.database.model.History
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.LocalNavSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
-import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.WidthSizeClasses
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isNavigationBar
 import com.huanchengfly.tieba.post.core.designsystem.icon.TbIcons
 import com.huanchengfly.tieba.post.core.designsystem.theme.DefaultDarkColors
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
@@ -105,7 +102,6 @@ import com.huanchengfly.tieba.post.ui.page.main.MainDestination
 import com.huanchengfly.tieba.post.ui.page.main.OnMainNavigationScrollTopEvent
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.main.explore.topAppBarBlurEffect
-import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -147,7 +143,6 @@ private fun DummySearchBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
             .widthIn(max = 480.dp)
             .fillMaxWidth()
             .then(modifier),
@@ -407,8 +402,11 @@ fun AnimatedContentScope.HomePage(
     val hazeState = LocalHazeState.current
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val context = LocalContext.current
+    val navigationSuiteType = LocalNavSuiteScaffoldState.current.layoutType
+    val isFloatingNavigationBar = navigationSuiteType.isFloatingNavigationBar
+    val isNavigationBar = isFloatingNavigationBar || navigationSuiteType.isNavigationBar
     val gridState = rememberLazyGridState()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = if (hazeState != null) TopAppBarDefaults.pinnedScrollBehavior() else null
 
     var unfollowForum by remember { mutableStateOf<LikedForum?>(null) }
     val confirmUnfollowDialog = rememberDialogState()
@@ -428,40 +426,31 @@ fun AnimatedContentScope.HomePage(
     MyScaffold(
         useMD2Layout = hazeState == null,
         topBar = {
-            val searchBoxMovableContent = remember { movableContentOf {
-                DummySearchBox(
-                    modifier = Modifier.localSharedBounds(SearchToolbarSharedBoundsKey, zIndexInOverlay = 2.0f),
-                    onClick = onSearchClicked
-                )
-            } }
-            val expandedSearch by derivedMediaQuery {
-                windowWidth <= WindowSizeClass.WidthSizeClasses.Medium
-            }
-
             TopAppBarPaged(
                 modifier = Modifier
                     .topAppBarBlurEffect(
                         hazeState = hazeState,
-                        blurEnabled = { gridState.canScrollBackward || scrollBehavior.isOverlapping }
+                        blurEnabled = { gridState.canScrollBackward || scrollBehavior?.isOverlapping == true }
                     ),
                 title = {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(text = stringResource(R.string.title_main))
-                        if (!expandedSearch) {
-                            searchBoxMovableContent()
+                        if (!isNavigationBar) {
+                            Text(text = stringResource(R.string.title_main))
                         }
+                        DummySearchBox(
+                            modifier = Modifier.localSharedBounds(SearchToolbarSharedBoundsKey, zIndexInOverlay = 2.0f),
+                            onClick = onSearchClicked
+                        )
                     }
-                },
-                navigationIcon = {
-                    AccountNavIconIfCompact(onLoginClicked)
                 },
                 actions = {
                     if (loggedIn) {
                         val isSinging by viewModel.isOkSignWorkerRunning.collectAsStateWithLifecycle(true)
                         ActionItem(
+                            modifier = Modifier.padding(start = 8.dp),
                             icon = ImageVector.vectorResource(id = R.drawable.ic_oksign),
                             contentDescription = R.string.title_oksign,
                             enabled = !isSinging
@@ -481,14 +470,13 @@ fun AnimatedContentScope.HomePage(
                     sharedTransitionScope?.isTransitionActive != true && !transition.isRunning && gridState.canScrollBackward
                 },
             ) {
-                if (expandedSearch) {
-                    searchBoxMovableContent()
+                if (!isNavigationBar) {
                     Spacer(modifier = Modifier.height(4.dp))
                 }
             }
         },
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
-        bottomBarAtop = LocalNavSuiteScaffoldState.current.layoutType.isFloatingNavigationBar,
+        bottomBarAtop = isFloatingNavigationBar,
     ) { contentPaddings ->
         val coroutineScope = rememberCoroutineScope()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -512,9 +500,8 @@ fun AnimatedContentScope.HomePage(
 
         OnMainNavigationScrollTopEvent<MainDestination.Home>(
             coroutineScope = coroutineScope,
-            topAppBarState = scrollBehavior.state,
-            gridState = gridState,
-            listState = { null }
+            topAppBarState = scrollBehavior?.state,
+            scrollableState = { gridState },
         )
 
         StateScreen(
@@ -545,7 +532,7 @@ fun AnimatedContentScope.HomePage(
                     modifier = Modifier
                         .fillMaxSize()
                         .onNotNull(hazeState) { hazeSource(state = it.state) }
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                        .onNotNull(scrollBehavior) { nestedScroll(it.nestedScrollConnection) },
                     state = gridState,
                     contentPadding = contentPaddings,
                 ) {

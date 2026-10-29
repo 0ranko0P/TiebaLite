@@ -98,6 +98,15 @@ enum class TbNavigationSuiteType {
         val TbNavigationSuiteType.isFloatingNavigationBar
             get() = this == FloatingNavigationBar || this == FloatingNavigationBarCompact
 
+        val TbNavigationSuiteType.isNavigationBar
+            get() = when (this) {
+                FloatingNavigationBar,
+                FloatingNavigationBarCompact,
+                ShortNavigationBarCompact,
+                ShortNavigationBarMedium,
+                NavigationBar -> true
+                else -> false
+            }
     }
 }
 

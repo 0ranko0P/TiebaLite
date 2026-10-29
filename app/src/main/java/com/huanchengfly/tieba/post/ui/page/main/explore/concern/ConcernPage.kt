@@ -1,24 +1,31 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.core.ui.component.FeedGridItemSpacing
+import com.huanchengfly.tieba.post.core.ui.component.FeedLazyVerticalStaggeredGrid
+import com.huanchengfly.tieba.post.core.ui.component.defaultGridCells
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
-import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
-import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 
 @Composable
@@ -26,7 +33,7 @@ fun ConcernPage(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
     threadClickListeners: ThreadClickListeners,
-    listState: LazyListState = rememberLazyListState(),
+    gridState: LazyStaggeredGridState = rememberLazyStaggeredGridState(),
     onHideFab: (Boolean) -> Unit,
     viewModel: ConcernViewModel = hiltViewModel(),
 ) {
@@ -45,7 +52,7 @@ fun ConcernPage(
 
     viewModel.uiEvent.collectCommonUiEventWithLifecycle()
 
-    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError = error != null)
+    LaunchedFabStateEffect(gridState, onHideFab, isRefreshing, isError = error != null)
 
     StateScreen(
         isEmpty = isEmpty,
@@ -55,24 +62,27 @@ fun ConcernPage(
         screenPadding = contentPadding,
     ) {
         PullToRefreshBox(
+            modifier = Modifier.padding(horizontal = FeedGridItemSpacing),
             isRefreshing = isRefreshing,
             onRefresh = viewModel::onRefresh,
             contentPadding = contentPadding
         ) {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-            val isLoadingMore = uiState.isLoadingMore
-            val data = uiState.data
+            val itemModifier = Modifier
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
 
-            SwipeUpLazyLoadColumn(
+            FeedLazyVerticalStaggeredGrid(
+                columns = defaultGridCells(),
+                state = gridState,
                 modifier = modifier.fillMaxSize(),
-                state = listState,
                 contentPadding = contentPadding,
-                isLoading = isLoadingMore,
+                isLoading = { uiState.isLoadingMore },
                 onLazyLoad = viewModel::onLoadMore.takeIf { uiState.hasMore },
-                bottomIndicator = defaultBottomIndicator,
             ) {
-                itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { i, thread ->
+                itemsIndexed(uiState.data, key = { _, it -> it.id }, ThreadContentType) { _, thread ->
                     FeedCard(
+                        modifier = itemModifier,
                         thread = thread,
                         onClick = threadClickListeners.onClicked,
                         onLike = viewModel::onThreadLikeClicked,
@@ -80,7 +90,6 @@ fun ConcernPage(
                         onClickUser = threadClickListeners.onAuthorClicked,
                         onClickForum = threadClickListeners.onForumClicked,
                         onClickOriginThread = threadClickListeners.onOriginThreadClicked,
-                        cardDivider = i < data.lastIndex
                     )
                 }
             }

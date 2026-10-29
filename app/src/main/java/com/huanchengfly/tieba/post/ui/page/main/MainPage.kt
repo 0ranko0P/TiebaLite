@@ -25,6 +25,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,8 +40,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -81,6 +80,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
@@ -136,6 +136,7 @@ import com.huanchengfly.tieba.post.core.ui.context.LocalUISettings
 import com.huanchengfly.tieba.post.core.ui.modifier.onCase
 import com.huanchengfly.tieba.post.core.ui.modifier.withNonNull
 import com.huanchengfly.tieba.post.core.ui.scenes.rememberDetailPaneBackHandlerSceneDecoratorStrategy
+import com.huanchengfly.tieba.post.core.ui.util.scrollToTop
 import com.huanchengfly.tieba.post.ui.common.NavTransitions
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.appEntry
@@ -313,40 +314,42 @@ fun MainPage(
             } else {
                 NavTransitions.SlideTransitions
             }
-            NavDisplay(
-                entries = navigationState.toEntries(
-                    entryProvider = entryProvider {
-                        mainEntry(navigator, hazeState, scaffoldState)
+            LookaheadScope {
+                NavDisplay(
+                    entries = navigationState.toEntries(
+                        entryProvider = entryProvider {
+                            mainEntry(navigator, hazeState, scaffoldState)
 
-                        appEntry(isListDetail, navigator)
+                            appEntry(isListDetail, navigator)
 
-                        settingsEntry(navigator, settingsRepo)
-                    }
-                ),
-                sceneStrategies = listOf(listDetailStrategy, DialogSceneStrategy()),
-                sceneDecoratorStrategies = listOf(
-                    rememberDetailPaneBackHandlerSceneDecoratorStrategy(onBack),
-                    rememberTbThemeSceneDecoratorStrategy(directive, sharedTransitionScope = this),
-                    rememberSettingsSceneStrategy(sharedTransitionScope = this),
-                ),
-                sharedTransitionScope = this,
-                transitionSpec = topTransitionSpec(
-                    navSuiteScaffoldState = scaffoldState,
-                    contentKeys = mainDestContentKeys,
-                    defaultSpect = navTransitions.transitionSpec
-                ),
-                popTransitionSpec = {
-                    when {
-                        targetState.key in mainDestContentKeys -> {
-                            MAIN_FADE_IN_TRANSITION togetherWith navTransitions.popExitTransition
+                            settingsEntry(navigator, settingsRepo)
                         }
+                    ),
+                    sceneStrategies = listOf(listDetailStrategy, DialogSceneStrategy()),
+                    sceneDecoratorStrategies = listOf(
+                        rememberDetailPaneBackHandlerSceneDecoratorStrategy(onBack),
+                        rememberTbThemeSceneDecoratorStrategy(directive, sharedTransitionScope = this@SharedTransitionLayout),
+                        rememberSettingsSceneStrategy(sharedTransitionScope = this@SharedTransitionLayout),
+                    ),
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    transitionSpec = topTransitionSpec(
+                        navSuiteScaffoldState = scaffoldState,
+                        contentKeys = mainDestContentKeys,
+                        defaultSpect = navTransitions.transitionSpec
+                    ),
+                    popTransitionSpec = {
+                        when {
+                            targetState.key in mainDestContentKeys -> {
+                                MAIN_FADE_IN_TRANSITION togetherWith navTransitions.popExitTransition
+                            }
 
-                        else -> navTransitions.popTransitionSpec
-                    }
-                },
-                predictivePopTransitionSpec = predictiveTransition(scaffoldState, navTransitions),
-                onBack = onBack,
-            )
+                            else -> navTransitions.popTransitionSpec
+                        }
+                    },
+                    predictivePopTransitionSpec = predictiveTransition(scaffoldState, navTransitions),
+                    onBack = onBack,
+                )
+            }
         }
 
         LaunchedBottomNavigationEffect(isListDetail, scaffoldState, navigationState)
@@ -374,7 +377,9 @@ private fun LaunchedBottomNavigationEffect(
             else -> NavigationSuiteScaffoldValue.Hidden
         }
         if (navState !== state.targetValue) {
-            coroutineScope.launch { state.setState(navState) }
+            coroutineScope.launch {
+                if (state.layoutType.isNavigationBar) state.setState(navState) else state.snapTo(navState)
+            }
         }
     }
 }
@@ -623,19 +628,15 @@ private fun ExplorePrimaryAction(modifier: Modifier = Modifier, visible: Boolean
 inline fun <reified T: MainDestination> OnMainNavigationScrollTopEvent(
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
     topAppBarState: TopAppBarState? = null,
-    gridState: LazyGridState? = null,
-    crossinline listState: () -> LazyListState?,
+    crossinline scrollableState: () -> ScrollableState?,
 ) {
     val haptic = LocalHapticFeedback.current
     onGlobalEvent<GlobalEvent.ScrollToTop>(coroutineScope, filter = { it.tag is T }) {
-        val listState = listState()
-        if (listState?.canScrollBackward == true || gridState?.canScrollBackward == true) {
+        val state = scrollableState()
+        if (state?.canScrollBackward == true) {
             haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
             coroutineScope.launch {
-                listState?.run {
-                    if (firstVisibleItemIndex > 5) scrollToItem(0) else animateScrollToItem(0)
-                }
-                gridState?.animateScrollToItem(0)
+                state.scrollToTop()
             }
         }
         // Reset TopAppBarState

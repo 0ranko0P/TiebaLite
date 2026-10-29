@@ -288,7 +288,7 @@ fun ForumInfoChip(
         modifier = modifier
             .height(IntrinsicSize.Min)
             .clip(MaterialTheme.shapes.extraSmall)
-            .background(color = MaterialTheme.colorScheme.secondaryContainer)
+            .background(color = MaterialTheme.colorScheme.tertiaryContainer)
             .clickable(onClick = onClick)
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -303,7 +303,7 @@ fun ForumInfoChip(
         }
         Text(
             text = stringResource(id = R.string.title_forum_name, forumName),
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
             maxLines = 1,
             style = MaterialTheme.typography.bodySmall,
         )

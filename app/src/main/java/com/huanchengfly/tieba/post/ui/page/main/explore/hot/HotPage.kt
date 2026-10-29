@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.hot
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,26 +10,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -48,6 +48,11 @@ import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.designsystem.theme.YellowA700
 import com.huanchengfly.tieba.post.core.ui.ProvideContentColor
 import com.huanchengfly.tieba.post.core.ui.component.Chip
+import com.huanchengfly.tieba.post.core.ui.component.FeedGridItemSpacing
+import com.huanchengfly.tieba.post.core.ui.component.FeedLazyVerticalStaggeredGrid
+import com.huanchengfly.tieba.post.core.ui.component.defaultGridCells
+import com.huanchengfly.tieba.post.core.ui.component.singleLineItem
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthCompact
 import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.models.explore.HotTab
 import com.huanchengfly.tieba.post.ui.page.Destination
@@ -63,14 +68,14 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.trace
 
 private enum class HotType {
-    TopicHeader, TopicList, ThreadTabs, ThreadListTip, Thread, PlaceHolder
+    TopicHeader, TopicList, ThreadTabs, Thread, PlaceHolder
 }
 
 @Composable
 fun HotPage(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
-    listState: LazyListState = rememberLazyListState(),
+    gridState: LazyStaggeredGridState = rememberLazyStaggeredGridState(),
     threadClickListeners: ThreadClickListeners,
     onHideFab: (Boolean) -> Unit,
     onNavigateHotTopic: (Destination.HotTopicDetail) -> Unit,
@@ -89,7 +94,7 @@ fun HotPage(
 
     viewModel.uiEvent.collectCommonUiEventWithLifecycle()
 
-    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
+    LaunchedFabStateEffect(gridState, onHideFab, isRefreshing, isError)
 
     StateScreen(
         isLoading = isRefreshing,
@@ -98,6 +103,7 @@ fun HotPage(
         screenPadding = contentPadding
     ) {
         PullToRefreshBox(
+            modifier = Modifier.padding(horizontal = FeedGridItemSpacing),
             isRefreshing = isRefreshing,
             onRefresh = viewModel::onRefresh,
             contentPadding = contentPadding
@@ -106,24 +112,30 @@ fun HotPage(
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val topicList = uiState.topics
             val threadList = uiState.threads
+            val itemModifier = Modifier
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
 
-            LazyColumn(
+            FeedLazyVerticalStaggeredGrid(
+                columns = defaultGridCells(),
+                state = gridState,
                 modifier = modifier.fillMaxSize().testColumn(),
-                state = listState,
                 contentPadding = contentPadding,
+                verticalItemSpacing = Dp.Hairline
             ) {
                 if (topicList.isNotEmpty()) {
-                    item(key = HotType.TopicHeader, contentType = HotType.TopicHeader) {
-                        Chip(
+                    singleLineItem(key = HotType.TopicHeader, contentType = HotType.TopicHeader) {
+                        Text(
                             text = stringResource(id = R.string.hot_topic_rank),
-                            modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)
+                            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                            style = MaterialTheme.typography.titleSmallEmphasized
                         )
                     }
 
-                    item(key = HotType.TopicList, contentType = HotType.TopicList) {
+                    singleLineItem(key = HotType.TopicList, contentType = HotType.TopicList) {
                         VerticalGrid(
                             column = 2,
-                            modifier = Modifier.padding(horizontal = 16.dp),
+                            modifier = itemModifier.padding(horizontal = 16.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             itemsIndexed(items = topicList) { index, (topicId, topicName, topicTag) ->
@@ -187,37 +199,29 @@ fun HotPage(
                             }
                         }
                     }
-                    item(key = "TopicDivider") {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 8.dp),
-                            thickness = 2.dp
-                        )
-                    }
                 }
 
                 if (uiState.tabs.isNotEmpty()) {
-                    item(key = HotType.ThreadTabs, contentType = HotType.ThreadTabs) {
-                        ThreadTabs(uiState.tabs, uiState.selectedTab, viewModel::onTabSelected)
+                    singleLineItem(key = HotType.ThreadTabs, contentType = HotType.ThreadTabs) {
+                        Column(
+                            modifier = Modifier.padding(top = FeedGridItemSpacing, bottom = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            ThreadTabs(uiState.tabs, uiState.selectedTab, viewModel::onTabSelected)
+                            Text(
+                                text = stringResource(id = R.string.hot_thread_rank_rule),
+                                color = colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
 
                 if (threadList.isNullOrEmpty()) {
-                    items(4, contentType = { HotType.PlaceHolder }) {
+                    items(12, contentType = { HotType.PlaceHolder }) {
                         FeedCardPlaceholder()
                     }
-                    return@LazyColumn
-                }
-
-                item(key = HotType.ThreadListTip, contentType = HotType.ThreadListTip) {
-                    Box(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.hot_thread_rank_rule),
-                            color = colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                    return@FeedLazyVerticalStaggeredGrid
                 }
 
                 itemsIndexed(
@@ -227,6 +231,9 @@ fun HotPage(
                 ) { index, thread ->
                     trace(MacrobenchmarkConstant.TRACE_FEED_CARD) {
                         FeedCard(
+                            modifier = Modifier
+                                .padding(bottom = FeedGridItemSpacing)
+                                .then(itemModifier),
                             thread = thread,
                             onClick = threadClickListeners.onClicked,
                             onLike = viewModel::onThreadLikeClicked,
@@ -234,7 +241,6 @@ fun HotPage(
                             onClickUser = threadClickListeners.onAuthorClicked,
                             onClickForum = threadClickListeners.onForumClicked,
                             onClickOriginThread = threadClickListeners.onOriginThreadClicked,
-                            cardDivider = index != threadList.lastIndex,
                         ) {
                             HotRankText(rank = index + 1, hotNum = thread.hotNum)
                         }
@@ -268,10 +274,12 @@ private fun ThreadTabs(
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
-        modifier = modifier
-            .padding(8.dp)
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = if (isWindowWidthCompact()) {
+            Arrangement.SpaceBetween
+        } else {
+            Arrangement.spacedBy(16.dp)
+        },
     ) {
         items(items = tabs, key = { it.tabCode }) {
             Chip(

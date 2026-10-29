@@ -5,19 +5,21 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.plus
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -27,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
@@ -42,6 +45,9 @@ import com.huanchengfly.tieba.post.arch.collectUiEventWithLifecycle
 import com.huanchengfly.tieba.post.core.designsystem.theme.TiebaLiteTheme
 import com.huanchengfly.tieba.post.core.network.exception.TiebaNotLoggedInException
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
+import com.huanchengfly.tieba.post.core.ui.component.FeedGridItemSpacing
+import com.huanchengfly.tieba.post.core.ui.component.FeedLazyVerticalStaggeredGrid
+import com.huanchengfly.tieba.post.core.ui.component.defaultGridCells
 import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
@@ -52,9 +58,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.CardHorizontalSpacing
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
-import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
-import com.huanchengfly.tieba.post.ui.widgets.compose.defaultBottomIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.trace
 import kotlinx.coroutines.delay
@@ -71,7 +75,7 @@ fun PersonalizedPage(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
     threadClickListeners: ThreadClickListeners,
-    listState: LazyListState = rememberLazyListState(),
+    gridState: LazyStaggeredGridState = rememberLazyStaggeredGridState(),
     onHideFab: (Boolean) -> Unit,
     viewModel: PersonalizedViewModel = hiltViewModel(),
 ) {
@@ -82,7 +86,7 @@ fun PersonalizedPage(
     viewModel.uiEvent.collectUiEventWithLifecycle {
         when (it) {
             is PersonalizedUiEvent.RefreshSuccess -> coroutineScope.launch {
-                listState.scrollToItem(0, 0)
+                gridState.scrollToItem(0)
                 refreshCount = it.count // Show refresh tip
                 delay(2000)
                 refreshCount = 0        // Hide refresh tip
@@ -112,7 +116,7 @@ fun PersonalizedPage(
     )
     val isError = error != null
 
-    LaunchedFabStateEffect(listState, onHideFab, isRefreshing, isError)
+    LaunchedFabStateEffect(gridState, onHideFab, isRefreshing, isError)
 
     StateScreen(
         isEmpty = isEmpty,
@@ -130,30 +134,31 @@ fun PersonalizedPage(
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val data = uiState.data
-            val isLoadingMore = uiState.isLoadingMore
             val dislikeReasons = remember { mutableStateSetOf<Dislike>() }
             val itemPlacementSpec = MaterialTheme.motionScheme.slowSpatialSpec<IntOffset>()
+            val itemModifier = Modifier
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
 
-            SwipeUpLazyLoadColumn(
+            FeedLazyVerticalStaggeredGrid(
+                columns = defaultGridCells(),
+                state = gridState,
                 modifier = modifier.fillMaxSize().testColumn(),
-                state = listState,
-                contentPadding = contentPadding,
-                isLoading = isLoadingMore,
+                contentPadding = contentPadding + PaddingValues(horizontal = FeedGridItemSpacing),
+                isLoading = { uiState.isLoadingMore },
                 onLazyLoad = viewModel::onLoadMore.takeUnless { isRefreshing },
-                bottomIndicator = defaultBottomIndicator,
             ) {
-                itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { index, thread ->
-                    val isHidden = thread.blocked && hideBlockedContent
+                itemsIndexed(data, key = { _, it -> it.id }, ThreadContentType) { _, thread ->
                     trace(MacrobenchmarkConstant.TRACE_FEED_CARD) {
                         BlockableContent(
                             blocked = thread.blocked,
                             blockedTip = ThreadBlockedTip,
                             modifier = Modifier
-                                .fillMaxWidth()
                                 .animateItem(fadeInSpec = null, placementSpec = itemPlacementSpec, fadeOutSpec = null),
                             hideBlockedContent = hideBlockedContent
                         ) {
                             FeedCard(
+                                modifier = itemModifier,
                                 thread = thread,
                                 onClick = threadClickListeners.onClicked,
                                 onLike = viewModel::onThreadLikeClicked,
@@ -178,7 +183,6 @@ fun PersonalizedPage(
                                         viewModel.onThreadDislike(thread, dislikeReasons.toList())
                                     }
                                 },
-                                cardDivider = !isHidden && index < data.lastIndex,
                             )
                         }
                     }

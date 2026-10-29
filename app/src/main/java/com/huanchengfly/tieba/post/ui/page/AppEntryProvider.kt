@@ -1,8 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page
 
+import androidx.compose.animation.animateBounds
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation3.runtime.EntryProviderScope
@@ -15,6 +18,7 @@ import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.containsScene
 import com.huanchengfly.tieba.post.core.navigation.popUpNavigate
+import com.huanchengfly.tieba.post.core.ui.modifier.onCase
 import com.huanchengfly.tieba.post.core.ui.scenes.DetailPaneBackHandlerSceneDecoratorStrategy
 import com.huanchengfly.tieba.post.ui.page.dialogs.CopyTextDialogPage
 import com.huanchengfly.tieba.post.ui.page.forum.ForumPage
@@ -43,6 +47,7 @@ import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
 import com.huanchengfly.tieba.post.ui.page.welcome.WelcomeScreen
 
+context(lookaheadScope: LookaheadScope)
 fun EntryProviderScope<NavKey>.appEntry(
     isListDetail: Boolean,
     navigator: Navigator,
@@ -66,9 +71,14 @@ fun EntryProviderScope<NavKey>.appEntry(
             detailPaneMetadata
         },
     ) { navKey ->
-        with(navKey) {
-            ForumPage(forumName, avatarUrl = avatar, transitionKey, navigator)
-        }
+        ForumPage(
+            modifier = Modifier
+                .onCase(isListDetail) { animateBounds(lookaheadScope) },
+            forumName = navKey.forumName,
+            avatarUrl = navKey.avatar,
+            transitionKey = navKey.transitionKey,
+            navigator = navigator
+        )
     }
 
     entry<Destination.ForumDetail> { navKey ->
@@ -175,7 +185,12 @@ fun EntryProviderScope<NavKey>.appEntry(
             detailPaneMetadata
         },
     ) { navKey ->
-        ThreadPage(navKey, navigator)
+        ThreadPage(
+            modifier = Modifier
+                .onCase(isListDetail) { animateBounds(lookaheadScope) },
+            navKey = navKey,
+            navigator = navigator,
+        )
     }
 
     entry<Destination.ThreadStore> {

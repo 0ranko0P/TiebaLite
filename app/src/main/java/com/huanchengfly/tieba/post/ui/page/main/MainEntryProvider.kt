@@ -1,32 +1,20 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
 import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.core.designsystem.component.PainterDetailPlaceholder
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.LocalNavSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.defaultContentKey
-import com.huanchengfly.tieba.post.core.ui.util.isListDetail
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePage
 import com.huanchengfly.tieba.post.ui.page.main.home.HomePage
@@ -65,17 +53,6 @@ fun EntryProviderScope<NavKey>.mainEntry(
     }
 
     animatedEntry<MainDestination.Explore>(
-        metadata = ListDetailSceneStrategy.listPane(
-            detailPlaceholder = {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_astronaut))
-                    LottieAnimation(
-                        composition = composition,
-                        modifier = Modifier.requiredWidthIn(max = 400.dp).aspectRatio(2f),
-                    )
-                }
-            }
-        ),
         hazeState = hazeState,
         navSuiteScaffoldState = navSuiteScaffoldState,
     ) {
@@ -114,7 +91,7 @@ private inline fun <reified K : NavKey> EntryProviderScope<NavKey>.animatedEntry
 ) {
     addEntryProvider(K::class, clazzContentKey, { metadata }) {
         CompositionLocalProvider(
-            LocalHazeState provides hazeState?.takeUnless { isListDetail() },
+            LocalHazeState provides hazeState,
             LocalNavSuiteScaffoldState provides navSuiteScaffoldState,
         ) {
             LocalNavAnimatedContentScope.current.content(it)

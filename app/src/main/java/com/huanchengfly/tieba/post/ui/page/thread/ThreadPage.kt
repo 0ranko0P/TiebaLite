@@ -221,6 +221,7 @@ private fun LazyListState.middleVisiblePost(uiState: ThreadUiState): PostData? =
 fun ThreadPage(
     navKey: Destination.Thread,
     navigator: Navigator,
+    modifier: Modifier = Modifier,
     viewModel: ThreadViewModel = hiltViewModel<ThreadViewModel, ThreadVmFactory> { factory ->
         factory.create(navKey)
     },
@@ -404,7 +405,7 @@ fun ThreadPage(
     }
 
     StateScreen(
-        modifier = Modifier.background(MaterialTheme.colorScheme.surface),
+        modifier = Modifier.background(MaterialTheme.colorScheme.surface) then modifier,
         isEmpty =  isEmpty,
         isLoading = state.isRefreshing,
         error = state.error,

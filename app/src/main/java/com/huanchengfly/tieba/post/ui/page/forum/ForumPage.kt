@@ -190,6 +190,7 @@ fun ForumPage(
     avatarUrl: String?,
     transitionKey: String?,
     navigator: Navigator,
+    modifier: Modifier = Modifier,
     viewModel: ForumViewModel = hiltViewModel<ForumViewModel, ForumViewVmFactory> { factory ->
         factory.create(forumName)
     },
@@ -317,6 +318,7 @@ fun ForumPage(
     }
 
     BlurScaffold(
+        modifier = modifier,
         topHazeBlock = {
             blurEnabled = (listStates[pagerState.currentPage].canScrollBackward ||
                     scrollBehavior.isOverlapping) && uiState.error == null
