@@ -36,7 +36,7 @@ jobs:
           cache-provider: enhanced
 
       - name: Build project
-        run: ./gradlew assembleRelease --no-configuration-cache
+        run: ./gradlew assembleRelease
 
       - name: Rename release apk
         run: |
