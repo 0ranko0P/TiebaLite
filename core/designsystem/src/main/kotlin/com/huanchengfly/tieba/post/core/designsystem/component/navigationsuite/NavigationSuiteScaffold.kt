@@ -32,6 +32,9 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldValue
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
@@ -94,7 +97,12 @@ fun NavigationSuiteScaffoldLayout(
     Layout({
         // Wrap the navigation suite and content composables each in a Box to not propagate the
         // parent's (Surface) min constraints to its children (see b/312664933).
-        Box(Modifier.layoutId(NavigationSuiteLayoutIdTag)) { navigationSuite() }
+        Box(Modifier.layoutId(NavigationSuiteLayoutIdTag)) {
+            val visible by remember { derivedStateOf { animatable.value > 0.1f } }
+            if (visible) {
+                navigationSuite()
+            }
+        }
         Box(Modifier.layoutId(PrimaryActionContentLayoutIdTag)) { primaryActionContent() }
         Box(Modifier.layoutId(ContentLayoutIdTag)) { content() }
     },

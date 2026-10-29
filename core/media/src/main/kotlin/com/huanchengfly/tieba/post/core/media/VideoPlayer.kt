@@ -85,6 +85,7 @@ import androidx.media3.ui.compose.material3.buttons.SeekForwardButton
 import androidx.media3.ui.compose.material3.indicator.PositionAndDurationText
 import androidx.media3.ui.compose.modifiers.resizeWithContentScale
 import androidx.media3.ui.compose.state.rememberPresentationState
+import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_EXPANDED_LOWER_BOUND
 import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.core.media.buttons.ContentScaleButton
@@ -99,7 +100,6 @@ import com.huanchengfly.tieba.post.core.media.state.rememberPictureInPictureStat
 import com.huanchengfly.tieba.post.core.media.state.rememberPlayerGestureState
 import com.huanchengfly.tieba.post.core.media.util.MediaUtil.initialize
 import com.huanchengfly.tieba.post.core.ui.component.ActionItem
-import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthExpanded
 import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
 import com.huanchengfly.tieba.post.core.ui.modifier.onCase
 import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
@@ -134,10 +134,14 @@ internal val defaultControlButtonColors: IconButtonColors
     )
 
 internal val controlGesturePaddings: PaddingValues
-    @ReadOnlyComposable @Composable get() = if (isWindowWidthExpanded()) {
-        PaddingValues(horizontal = 48.dp, vertical = 12.dp)
-    } else {
-        PaddingValues.Zero
+    @ReadOnlyComposable @Composable get() = LocalWindowAdaptiveInfo.current.windowSizeClass.let {
+        if (it.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND) &&
+            it.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
+        ) {
+            PaddingValues(horizontal = 48.dp, vertical = 12.dp)
+        } else {
+            PaddingValues.Zero
+        }
     }
 
 @Composable

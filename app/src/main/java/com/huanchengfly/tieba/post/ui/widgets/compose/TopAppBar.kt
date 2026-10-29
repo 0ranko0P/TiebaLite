@@ -276,7 +276,7 @@ fun TopAppBarPaged(
     val targetColor by
         remember(colors, scrollBehavior) {
             derivedStateOf {
-                colors.containerColor(if (canScrollBackward()) 1f else 0f)
+                colors.containerColor(if (scrollBehavior != null && canScrollBackward()) 1f else 0f)
             }
         }
 
