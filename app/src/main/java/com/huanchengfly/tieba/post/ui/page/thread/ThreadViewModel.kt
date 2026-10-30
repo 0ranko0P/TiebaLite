@@ -581,7 +581,11 @@ class ThreadViewModel @AssistedInject constructor(
         historyRepo.saveHistory(history)
     }
 
-    fun onShareThread() = TiebaUtil.shareThread(context, currentState.thread?.title?: "", threadId)
+    fun onShareThread(activityContext: Context) {
+        val userName = currentState.firstPost?.author?.run { nameShow.takeUnless { it.isEmpty() } ?: name }
+        val title = currentState.thread?.title
+        TiebaUtil.shareThread(activityContext, title, threadId, userName)
+    }
 
     fun onCopyThreadLink() {
         val seeLz = currentState.seeLz

@@ -530,6 +530,7 @@
     <string name="title_restore_keyword">关键词</string>
     <string name="title_restore_user">用户</string>
     <string name="title_share_pic">分享图片</string>
+    <string name="title_share_thread">分享帖子</string>
     <string name="theme_dialog_unsave">主题未保存</string>
     <string name="theme_dialog_unsave_msg">保存或放弃更改?</string>
     <string name="theme_dialog_saving">应用主题中</string>

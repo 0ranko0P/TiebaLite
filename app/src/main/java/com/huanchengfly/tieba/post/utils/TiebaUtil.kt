@@ -10,6 +10,8 @@ import android.os.PersistableBundle
 import androidx.core.net.toUri
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
+import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.clipBoardManager
+import com.huanchengfly.tieba.post.components.dialogs.ShareThreadDialog
 import com.huanchengfly.tieba.post.core.common.ktx.urlEncode
 import com.huanchengfly.tieba.post.core.ui.util.toShareIntent
 import com.huanchengfly.tieba.post.core.ui.util.toastShort
@@ -29,9 +31,8 @@ object TiebaUtil {
     }
 
     fun copyText(context: Context, text: String?, isSensitive: Boolean = false) {
-        val cm: ClipboardManager = ClipBoardLinkDetector.clipBoardManager
         val clipData = ClipData.newPlainText("Tieba Lite", text).setIsSensitive(isSensitive)
-        cm.setPrimaryClip(clipData)
+        context.clipBoardManager.setPrimaryClip(clipData)
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
             context.toastShort(R.string.toast_copy_success)
         }
@@ -60,13 +61,9 @@ object TiebaUtil {
         ClipBoardLinkDetector.onCopyTiebaLink(link)
     }
 
-    fun shareThread(context: Context, title: String, threadId: Long) {
-        val link = "https://tieba.baidu.com/p/$threadId"
-        link.toUri()
-            .toShareIntent(context, "text/plain", title)
-            .let { runCatching { context.startActivity(it) } }
-
-        ClipBoardLinkDetector.onCopyTiebaLink(link)
+    fun shareThread(activityContext: Context, title: String?, threadId: Long, user: String?) {
+        ShareThreadDialog.newInstance(threadId, title.orEmpty(), user.orEmpty())
+            .show(activityContext)
     }
 
     fun openInBrowser(context: Context, url: String?): Result<Unit> = runCatching {

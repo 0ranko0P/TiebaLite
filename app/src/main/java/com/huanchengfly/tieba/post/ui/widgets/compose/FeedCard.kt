@@ -590,7 +590,8 @@ fun FeedCard(
                 likes = thread.like.count,
                 liked = thread.like.liked,
                 onShareClicked = {
-                    TiebaUtil.shareThread(context, thread.title, thread.id)
+                    val userName = thread.author.name
+                    TiebaUtil.shareThread(context, thread.title, thread.id, userName)
                 },
                 onReplyClicked = { onClickReply(thread) },
                 onAgreeClicked = { onLike(thread) }

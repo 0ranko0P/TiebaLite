@@ -554,7 +554,9 @@ fun ThreadPage(
                             val sortType = if (notDesc) ThreadSortType.BY_DESC else ThreadSortType.DEFAULT
                             viewModel.onSortChanged(sortType)
                         },
-                        onShareClick = viewModel::onShareThread,
+                        onShareClick = {
+                            viewModel.onShareThread(context)
+                        },
                         onCopyLinkClick = viewModel::onCopyThreadLink,
                         onReportClick = {
                             val postId = state.firstPost!!.id

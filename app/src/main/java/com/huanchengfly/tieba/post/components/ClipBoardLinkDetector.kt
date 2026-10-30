@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.ControlledRunner
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector.checkClipBoard
 import com.huanchengfly.tieba.post.core.common.ktx.urlDecode
+import com.huanchengfly.tieba.post.core.data.util.ContextSingletonDelegate
 import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
@@ -62,8 +63,8 @@ object ClipBoardLinkDetector {
         )
     }
 
-    val clipBoardManager by lazy {
-        App.INSTANCE.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val Context.clipBoardManager: ClipboardManager by ContextSingletonDelegate {
+        getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
 
     private val _previewInfoStateFlow = MutableStateFlow<PreviewInfo?>(null)
@@ -113,8 +114,8 @@ object ClipBoardLinkDetector {
     }
 
     suspend fun checkClipBoard(context: Context, forumRepo: ForumRepository, threadRepo: PbPageRepository) {
-        val clipBoardText = getClipBoardText()
-        if (clipBoardText == null || lastClipBoardHash == clipBoardText.hashCode()) return
+        val clipBoardText = getClipBoardText(context)
+        if (clipBoardText.isNullOrEmpty() || lastClipBoardHash == clipBoardText.hashCode()) return
 
         previewTaskRunner.cancelPreviousThenRun {
             val clipBoardLink = withContext(Dispatchers.Default) {
@@ -160,8 +161,8 @@ object ClipBoardLinkDetector {
         lastClipBoardHash = link.hashCode()
     }
 
-    fun getClipBoardText(): String? {
-        val data = clipBoardManager.primaryClip ?: return null
+    fun getClipBoardText(context: Context): String? {
+        val data = context.clipBoardManager.primaryClip ?: return null
         val item = data.getItemAt(0)
         return item?.text?.toString()
     }
