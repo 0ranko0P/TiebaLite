@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -52,6 +51,7 @@ import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.models.explore.Dislike
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.main.explore.exploreFeedItemBackground
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.CardHorizontalSpacing
@@ -138,7 +138,7 @@ fun PersonalizedPage(
             val itemPlacementSpec = MaterialTheme.motionScheme.slowSpatialSpec<IntOffset>()
             val itemModifier = Modifier
                 .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
+                .background(color = exploreFeedItemBackground)
 
             FeedLazyVerticalStaggeredGrid(
                 columns = defaultGridCells(),

@@ -73,11 +73,13 @@ import com.huanchengfly.tieba.post.arch.isScrolling
 import com.huanchengfly.tieba.post.core.database.model.ForumHistory
 import com.huanchengfly.tieba.post.core.database.model.History
 import com.huanchengfly.tieba.post.core.database.model.ThreadHistory
+import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
 import com.huanchengfly.tieba.post.core.ui.ProvideContentColorTextStyle
 import com.huanchengfly.tieba.post.core.ui.animation.FadedVisibility
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
 import com.huanchengfly.tieba.post.core.ui.animation.animateEnterExit
 import com.huanchengfly.tieba.post.core.ui.animation.localSharedBounds
+import com.huanchengfly.tieba.post.core.ui.component.DeleteIconButton
 import com.huanchengfly.tieba.post.core.ui.modifier.onCase
 import com.huanchengfly.tieba.post.core.ui.modifier.withNonNull
 import com.huanchengfly.tieba.post.core.ui.util.toastShort
@@ -93,7 +95,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultBackToTopFAB
-import com.huanchengfly.tieba.post.core.ui.component.DeleteIconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.ExtendedFabHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.FancyAnimatedIndicatorWithModifier
 import com.huanchengfly.tieba.post.ui.widgets.compose.MoreMenuItem
@@ -179,7 +180,7 @@ fun HistoryPage(
                 },
                 title = { Text(text = stringResource(R.string.title_history)) },
                 navigationIcon = {
-                    if (sharedTransitionScope?.isTransitionActive != true) {
+                    if (LocalBackButtonState.current && sharedTransitionScope?.isTransitionActive != true) {
                         BackNavigationIcon(onBackPressed = onBack)
                     } else {
                         Spacer(modifier = Modifier.minimumInteractiveComponentSize())

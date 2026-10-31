@@ -18,6 +18,7 @@ import com.huanchengfly.tieba.post.core.navigation.LocalNavigator
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.containsScene
 import com.huanchengfly.tieba.post.core.navigation.popUpNavigate
+import com.huanchengfly.tieba.post.core.ui.layout.AdaptiveThreadContainer
 import com.huanchengfly.tieba.post.core.ui.modifier.onCase
 import com.huanchengfly.tieba.post.core.ui.scenes.DetailPaneBackHandlerSceneDecoratorStrategy
 import com.huanchengfly.tieba.post.ui.page.dialogs.CopyTextDialogPage
@@ -82,11 +83,13 @@ fun EntryProviderScope<NavKey>.appEntry(
     }
 
     entry<Destination.ForumDetail> { navKey ->
-        ForumDetailPage(
-            forumName = navKey.forumName,
-            onManagerClicked = { navigator.navigate(Destination.UserProfile(uid = it)) },
-            onBack = onBack,
-        )
+        AdaptiveThreadContainer {
+            ForumDetailPage(
+                forumName = navKey.forumName,
+                onManagerClicked = { navigator.navigate(Destination.UserProfile(uid = it)) },
+                onBack = onBack,
+            )
+        }
     }
 
     entry<Destination.ForumRuleDetail>(

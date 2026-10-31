@@ -41,6 +41,7 @@ import com.huanchengfly.tieba.post.core.ui.component.NegativeButton
 import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
 import com.huanchengfly.tieba.post.ui.page.welcome.UaWebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.StrongBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import java.text.SimpleDateFormat
@@ -178,12 +179,14 @@ fun AboutPage(onBack: () -> Unit) {
         TiebaWebView.launchCustomTab(context, Uri.parse(url))
     }
 
-    AboutPage(
-        onBackClicked = onBack,
-        onDisclaimerClicked = disclaimerDialogState::show,
-        onHomePageClicked = { launchCustomTab(URL_PROJECT_GITHUB) },
-        onLicenseClicked = { launchCustomTab("${URL_PROJECT_GITHUB}/blob/main/LICENSE") },
-    )
+    Container {
+        AboutPage(
+            onBackClicked = onBack,
+            onDisclaimerClicked = disclaimerDialogState::show,
+            onHomePageClicked = { launchCustomTab(URL_PROJECT_GITHUB) },
+            onLicenseClicked = { launchCustomTab("${URL_PROJECT_GITHUB}/blob/main/LICENSE") },
+        )
+    }
 
     AlertDialog(
         dialogState = disclaimerDialogState,

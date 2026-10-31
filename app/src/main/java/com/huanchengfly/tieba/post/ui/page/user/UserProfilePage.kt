@@ -121,6 +121,7 @@ import com.huanchengfly.tieba.post.core.ui.component.Chip
 import com.huanchengfly.tieba.post.core.ui.component.PositiveButton
 import com.huanchengfly.tieba.post.core.ui.layout.isWindowHeightCompact
 import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthCompact
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthExpanded
 import com.huanchengfly.tieba.post.core.ui.modifier.block
 import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
 import com.huanchengfly.tieba.post.core.ui.modifier.onCase
@@ -295,6 +296,8 @@ fun UserProfilePage(
     }
 
     StateScreen(
+        modifier = Modifier
+            .onCase(isWindowWidthExpanded()) { padding(horizontal = 48.dp, vertical = 24.dp) },
         isLoading = uiState.isRefreshing || uiState.userProfile == null,
         error = uiState.error,
         onReload = viewModel::onRefresh,
@@ -444,11 +447,12 @@ fun UserProfilePage(
                                 .fillMaxHeight()
                                 .fillMaxWidth(0.35f)
                                 .verticalScroll(rememberScrollState())
-                                .padding(start = 16.dp, bottom = 16.dp)
+                                .padding(start = 16.dp, bottom = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             movableUserProfileDetail(Modifier.fillMaxWidth(), true/* isLandscape */)
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(Modifier.height(if (isWindowHeightCompact()) 8.dp else 24.dp))
 
                             UserIntro(profile = userProfile, landscape = true, onAppealClicked = onAppealClicked)
                         }
@@ -878,6 +882,7 @@ private fun UserIntro(
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = if (!landscape) Alignment.Start else Alignment.CenterHorizontally,
     ) {
         if (profile.blockDays > 0) {
             UserAccountBlockedTip(days = profile.blockDays, onAppealClicked = onAppealClicked)

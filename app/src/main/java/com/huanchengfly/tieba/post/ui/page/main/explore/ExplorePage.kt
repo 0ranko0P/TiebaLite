@@ -26,6 +26,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -49,6 +51,7 @@ import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.L
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isFloatingNavigationBar
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.isNavigationBar
+import com.huanchengfly.tieba.post.core.designsystem.util.isDarkScheme
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.network.model.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.core.ui.animation.LocalSharedTransitionScope
@@ -328,6 +331,9 @@ fun Modifier.topAppBarBlurEffect(
         this.blurEnabled = !animatedContentScope.transition.isRunning && blurEnabled()
     }
 }
+
+val exploreFeedItemBackground: Color
+    @ReadOnlyComposable @Composable get() = MaterialTheme.colorScheme.surfaceContainerLowest
 
 @Composable
 fun LaunchedFabStateEffect(

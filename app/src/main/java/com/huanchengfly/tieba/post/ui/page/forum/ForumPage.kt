@@ -92,6 +92,7 @@ import com.huanchengfly.tieba.post.core.ui.component.ActionItem
 import com.huanchengfly.tieba.post.core.ui.component.Chip
 import com.huanchengfly.tieba.post.core.ui.component.OutlinedIconTextButton
 import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
+import com.huanchengfly.tieba.post.core.ui.layout.AdaptiveThreadContainer
 import com.huanchengfly.tieba.post.core.ui.layout.isWindowHeightCompact
 import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
 import com.huanchengfly.tieba.post.core.ui.modifier.onCase
@@ -120,7 +121,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlurScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingAvatarTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
-import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.DefaultToggleFloatingActionButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.LinearProgressIndicator
@@ -324,6 +324,7 @@ fun ForumPage(
                     scrollBehavior.isOverlapping) && uiState.error == null
         },
         topBar = {
+            AdaptiveThreadContainer {
             val onTitleClicked: () -> Unit = { navigator.navigate(key = ForumDetail(forumName)) }
 
             CollapsingAvatarTopAppBar(
@@ -430,7 +431,7 @@ fun ForumPage(
                         onSelected = viewModel::onGoodClassifyChanged
                     )
                 }
-            }
+            } } // End of Adaptive Container
         },
         snackbarHostState = snackbarHostState,
         snackbarHost = { SwipeToDismissSnackbarHost(snackbarHostState) },
@@ -655,7 +656,7 @@ private fun ClassifyTabs(
 
 @Composable
 private fun ForumThreadsPlaceholder(modifier: Modifier = Modifier, threadCount: Int) {
-    Container(modifier = modifier) {
+    AdaptiveThreadContainer(modifier = modifier) {
         Column {
             repeat(times = threadCount) {
                 FeedCardPlaceholder()

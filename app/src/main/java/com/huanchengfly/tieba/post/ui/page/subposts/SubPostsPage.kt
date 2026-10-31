@@ -66,6 +66,7 @@ import com.huanchengfly.tieba.post.core.ui.component.ActionItem
 import com.huanchengfly.tieba.post.core.ui.component.FavoriteButton
 import com.huanchengfly.tieba.post.core.ui.component.PlainTooltipBox
 import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
+import com.huanchengfly.tieba.post.core.ui.layout.AdaptiveThreadContainer
 import com.huanchengfly.tieba.post.core.ui.util.isPostExitAniRunning
 import com.huanchengfly.tieba.post.core.ui.util.toastShort
 import com.huanchengfly.tieba.post.ui.models.Like
@@ -286,6 +287,7 @@ fun SubPostsPage(
         ) { padding ->
             val contentPadding = padding.fixedTopBarPadding()
 
+            AdaptiveThreadContainer {
             SwipeUpLazyLoadColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -346,7 +348,7 @@ fun SubPostsPage(
                         onMenuDeleteClick = viewModel::onDeleteSubPost.takeIf { item.authorId == myUid } // Check is my SubPost
                     )
                 }
-            }
+            } } // End of Adaptive Container
         }
     }
 }

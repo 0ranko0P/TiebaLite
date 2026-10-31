@@ -17,12 +17,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.core.network.model.protos.FrsTabInfo
-import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
+import com.huanchengfly.tieba.post.core.ui.component.Chip
+import com.huanchengfly.tieba.post.core.ui.layout.AdaptiveThreadContainer
 import com.huanchengfly.tieba.post.ui.page.forum.generaltablist.GeneralTabListViewModel.Companion.GeneralTabListVMFactory
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.forumThreadList
 import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
-import com.huanchengfly.tieba.post.core.ui.component.Chip
-import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -45,7 +44,6 @@ fun GeneralTabListPage(
         it.create(forumName, forumId, navTabInfo, initialSortType)
     },
 ) {
-    val isListDetail = !LocalBackButtonState.current
     val isRefreshing by viewModel.uiState.collectPartialAsState(
         prop1 = GeneralTabListUiState::isRefreshing,
         initial = false
@@ -76,7 +74,7 @@ fun GeneralTabListPage(
         val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-        Container(fluid = isListDetail) {
+        AdaptiveThreadContainer {
             SwipeUpLazyLoadColumn(
                 modifier = modifier.fillMaxSize(),
                 state = listState,

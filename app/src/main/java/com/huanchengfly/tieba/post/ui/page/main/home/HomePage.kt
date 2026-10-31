@@ -505,6 +505,8 @@ fun AnimatedContentScope.HomePage(
         )
 
         StateScreen(
+            modifier = Modifier
+                .onNotNull(hazeState) { hazeSource(state = it.state) },
             isEmpty = isEmpty,
             isError = uiState.error != null,
             isLoading = uiState.isLoading,
@@ -531,7 +533,6 @@ fun AnimatedContentScope.HomePage(
                     columns = gridCells,
                     modifier = Modifier
                         .fillMaxSize()
-                        .onNotNull(hazeState) { hazeSource(state = it.state) }
                         .onNotNull(scrollBehavior) { nestedScroll(it.nestedScrollConnection) },
                     state = gridState,
                     contentPadding = contentPaddings,

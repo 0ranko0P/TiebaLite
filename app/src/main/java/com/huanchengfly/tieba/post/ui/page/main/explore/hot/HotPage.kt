@@ -19,7 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -31,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -54,10 +54,12 @@ import com.huanchengfly.tieba.post.core.ui.component.defaultGridCells
 import com.huanchengfly.tieba.post.core.ui.component.singleLineItem
 import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthCompact
 import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
+import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
 import com.huanchengfly.tieba.post.ui.models.explore.HotTab
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.main.explore.exploreFeedItemBackground
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
@@ -112,9 +114,14 @@ fun HotPage(
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val topicList = uiState.topics
             val threadList = uiState.threads
+            val itemPlacementSpec = if (!isWindowWidthCompact()) {
+                MaterialTheme.motionScheme.slowSpatialSpec<IntOffset>()
+            } else {
+                null
+            }
             val itemModifier = Modifier
                 .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
+                .background(color = exploreFeedItemBackground)
 
             FeedLazyVerticalStaggeredGrid(
                 columns = defaultGridCells(),
@@ -233,6 +240,9 @@ fun HotPage(
                         FeedCard(
                             modifier = Modifier
                                 .padding(bottom = FeedGridItemSpacing)
+                                .onNotNull(itemPlacementSpec) {
+                                    animateItem(fadeInSpec = null, placementSpec = it, fadeOutSpec = null)
+                                }
                                 .then(itemModifier),
                             thread = thread,
                             onClick = threadClickListeners.onClicked,

@@ -29,14 +29,13 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.core.navigation.LocalBackButtonState
+import com.huanchengfly.tieba.post.core.ui.layout.AdaptiveThreadContainer
 import com.huanchengfly.tieba.post.core.ui.modifier.onCase
 import com.huanchengfly.tieba.post.ui.models.ThreadItem
 import com.huanchengfly.tieba.post.ui.page.forum.threadlist.ForumThreadListViewModel.Companion.ForumVMFactory
 import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
-import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SwipeUpLazyLoadColumn
@@ -108,7 +107,6 @@ fun ForumThreadList(
     }
 ) {
     viewModel.uiEvent.collectCommonUiEventWithLifecycle()
-    val isListDetail = !LocalBackButtonState.current
 
     onGlobalEvent<ForumThreadListUiEvent.Refresh>(
         filter = { it.type == type },
@@ -148,7 +146,7 @@ fun ForumThreadList(
         val hideBlocked by viewModel.hideBlocked.collectAsStateWithLifecycle()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-        Container(fluid = isListDetail) {
+        AdaptiveThreadContainer {
             SwipeUpLazyLoadColumn(
                 modifier = modifier.fillMaxSize(),
                 state = listState,

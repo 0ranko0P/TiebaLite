@@ -26,7 +26,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.gestures.ScrollableState
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,19 +41,15 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.NavigationItemColors
 import androidx.compose.material3.ShortNavigationBarDefaults
-import androidx.compose.material3.ShortNavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
-import androidx.compose.material3.VerticalDragHandle
+import androidx.compose.material3.WideNavigationRailState
+import androidx.compose.material3.WideNavigationRailValue
 import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
 import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
 import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
@@ -64,6 +59,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaul
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldValue
+import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
@@ -107,14 +103,14 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.core.common.ktx.unsafeLazy
 import com.huanchengfly.tieba.post.core.data.model.settings.NavigationLabel
 import com.huanchengfly.tieba.post.core.data.repository.user.SettingsRepository
-import com.huanchengfly.tieba.post.core.designsystem.component.IconNavigationItem
-import com.huanchengfly.tieba.post.core.designsystem.component.NavigationDrawerItem
+import com.huanchengfly.tieba.post.core.designsystem.component.NavigationRailHeader
 import com.huanchengfly.tieba.post.core.designsystem.component.floatingNavigationBarCompactScreenOffset
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.LocalNavSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.NavigationBarHeight
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.NavigationSuiteScaffoldLayout
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TallNavigationBarHeight
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuite
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteItem
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState.Companion.isVisible
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteScaffoldState.Companion.rememberNavigationSuiteScaffoldState
@@ -132,7 +128,9 @@ import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.navigation.containsType
 import com.huanchengfly.tieba.post.core.navigation.defaultContentKey
 import com.huanchengfly.tieba.post.core.navigation.toEntries
+import com.huanchengfly.tieba.post.core.ui.component.PaneExpansionDragHandle
 import com.huanchengfly.tieba.post.core.ui.context.LocalUISettings
+import com.huanchengfly.tieba.post.core.ui.layout.isWindowWidthExpanded
 import com.huanchengfly.tieba.post.core.ui.modifier.onCase
 import com.huanchengfly.tieba.post.core.ui.modifier.withNonNull
 import com.huanchengfly.tieba.post.core.ui.scenes.rememberDetailPaneBackHandlerSceneDecoratorStrategy
@@ -235,9 +233,12 @@ fun MainPage(
         noLabel = uiSettings.bottomNavLabel == NavigationLabel.NONE,
         windowAdaptiveInfo = windowAdaptiveInfo
     )
+    val navigationRailState = rememberWideNavigationRailState(
+        initialValue = if (isWindowWidthExpanded()) WideNavigationRailValue.Expanded else WideNavigationRailValue.Collapsed
+    )
 
     val isTranslucent = MaterialTheme.colorScheme.isTranslucent
-    val blurEffect = !uiSettings.reduceEffect && !isTranslucent
+    val blurEffect = !uiSettings.reduceEffect && !isTranslucent && !isListDetail
     val hazeState = if (blurEffect) rememberTbHazeState() else null
 
     MainNavigationSuiteScaffold(
@@ -257,18 +258,22 @@ fun MainPage(
                     coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop(dest))
                 },
                 mainNavigationSuiteType = scaffoldState.layoutType,
+                navigationRailState = navigationRailState,
                 bottomNavLabel = uiSettings.bottomNavLabel,
                 messageCount = { messageCount },
             )
         },
         navigationSuiteColors = mainNavigationSuiteColors(uiSettings.bottomNavFloating, blurEffect),
         navigationVerticalArrangement = Arrangement.Center,
+        navigationRailState = navigationRailState,
         primaryActionContent = {
             val onLoginClicked: () -> Unit = { navigator.navigate(Destination.Login) }
             when (scaffoldState.layoutType) {
-                TbNavigationSuiteType.WideNavigationRailCollapsed,
-                TbNavigationSuiteType.WideNavigationRailExpanded -> {
+                TbNavigationSuiteType.WideNavigationRailCollapsed -> {
                     AccountNavIcon(onLoginClicked, modifier = Modifier.padding(start = 32.dp))
+                }
+                TbNavigationSuiteType.WideNavigationRailExpanded -> {
+                    NavigationRailHeader(state = navigationRailState, scope = coroutineScope)
                 }
                 TbNavigationSuiteType.NavigationRail -> {
                     AccountNavIcon(onLoginClicked, modifier = Modifier.padding(top = 10.dp))
@@ -289,20 +294,10 @@ fun MainPage(
         SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
             val listDetailStrategy = rememberListDetailSceneStrategy<NavKey>(
                 directive = directive,
-                paneExpansionDragHandle = { state ->
-                    val interactionSource = remember { MutableInteractionSource() }
-                    VerticalDragHandle(
-                        modifier =
-                            Modifier.paneExpansionDraggable(
-                                state,
-                                LocalMinimumInteractiveComponentSize.current,
-                                interactionSource,
-                            ), interactionSource = interactionSource
-                    )
-                },
+                paneExpansionDragHandle = { PaneExpansionDragHandle(state = it) },
                 paneExpansionState = rememberPaneExpansionState(
                     anchors = listOf(
-                        PaneExpansionAnchor.Proportion(0.35f),
+                        PaneExpansionAnchor.Proportion(0.4f),
                         PaneExpansionAnchor.Proportion(0.5f),
                     )
                 )
@@ -398,6 +393,7 @@ private fun MainNavigationSuiteScaffold(
     navigationBarAtop: Boolean = true,
     navigationSuiteColors: NavigationSuiteColors = NavigationSuiteDefaults.colors(),
     navigationVerticalArrangement: Arrangement.Vertical = NavigationSuiteDefaults.verticalArrangement,
+    navigationRailState: WideNavigationRailState = rememberWideNavigationRailState(),
     state: TbNavigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState(),
     primaryActionContent: @Composable (() -> Unit) = {},
     primaryActionContentHorizontalAlignment: Alignment.Horizontal =
@@ -416,6 +412,7 @@ private fun MainNavigationSuiteScaffold(
                     .withNonNull(hazeState?.takeIf { mainNavSuiteType.isNavigationBar }) {
                         Modifier.defaultHazeEffect { blurEnabled = state.currentValue.isVisible }
                     },
+                railState = navigationRailState,
                 colors = navigationSuiteColors,
                 verticalArrangement = navigationVerticalArrangement,
                 primaryActionContent = primaryActionContent,
@@ -458,13 +455,13 @@ private fun MainNavigationItems(
     onSelect: (MainDestination) -> Unit = {},
     onReSelect: (MainDestination) -> Unit = {},
     mainNavigationSuiteType: TbNavigationSuiteType = calculateMainNavigationSuiteType(),
+    navigationRailState: WideNavigationRailState = rememberWideNavigationRailState(),
     bottomNavLabel: NavigationLabel = NavigationLabel.ALWAYS,
     messageCount: () -> String? = { null },
 ) {
-    val isNavigationBar = mainNavigationSuiteType.isNavigationBar
     items.fastForEach { destination ->
         val selected = isSelected(destination)
-        MainNavigationSuiteItem(
+        TbNavigationSuiteItem(
             selected = selected,
             onClick = {
                 if (selected) onReSelect(destination) else onSelect(destination)
@@ -479,9 +476,7 @@ private fun MainNavigationItems(
                     contentDescription = stringResource(destination.titleRes),
                 )
             },
-            label = if (mainNavigationSuiteType != TbNavigationSuiteType.NavigationRail &&
-                (!isNavigationBar || bottomNavLabel.visible(selected))
-            ) {
+            label = if (bottomNavLabel.visible(selected)) {
                 { Text(stringResource(id = destination.titleRes)) }
             } else {
                 null
@@ -491,6 +486,7 @@ private fun MainNavigationItems(
                     padding(horizontal = 16.dp)
                 },
             mainNavigationSuiteType = mainNavigationSuiteType,
+            navigationRailState = navigationRailState,
             badge = if (destination === MainDestination.Notification) {
                 {
                     messageCount()?.let { messageCountText ->
@@ -504,75 +500,6 @@ private fun MainNavigationItems(
                     }
                 }
             } else null,
-        )
-    }
-}
-
-// Override NavigationDrawer to use our old custom NavigationDrawerItem
-@Composable
-private fun MainNavigationSuiteItem(
-    selected: Boolean,
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit,
-    label: @Composable (() -> Unit)?,
-    modifier: Modifier = Modifier,
-    mainNavigationSuiteType: TbNavigationSuiteType,
-    enabled: Boolean = true,
-    badge: @Composable (() -> Unit)? = null,
-    colors: NavigationItemColors? = null,
-    interactionSource: MutableInteractionSource? = null,
-) {
-    if (mainNavigationSuiteType == TbNavigationSuiteType.FloatingNavigationBarCompact) {
-        IconNavigationItem(
-            selected = selected,
-            onClick = onClick,
-            icon = {
-                if (badge != null) {
-                    BadgedBox(badge = { badge.invoke() }, content = { icon() })
-                } else {
-                    icon()
-                }
-            },
-            colors = colors ?: ShortNavigationBarItemDefaults.colors(),
-            enabled = enabled,
-            modifier = modifier,
-            interactionSource = interactionSource,
-        )
-    } else if (mainNavigationSuiteType != TbNavigationSuiteType.NavigationDrawer) {
-        androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem(
-            selected = selected,
-            onClick = onClick,
-            icon = icon,
-            label = label,
-            modifier = modifier,
-            navigationSuiteType = mainNavigationSuiteType.toNavigationSuiteType(),
-            enabled = enabled,
-            badge = badge,
-            colors = colors,
-            interactionSource = interactionSource,
-        )
-    } else {
-        val actualColors = if (colors != null) {
-            NavigationDrawerItemDefaults.colors(
-                selectedIconColor = colors.selectedIconColor,
-                selectedTextColor = colors.selectedTextColor,
-                unselectedIconColor = colors.unselectedIconColor,
-                unselectedTextColor = colors.unselectedTextColor,
-                selectedContainerColor = colors.selectedIndicatorColor,
-            )
-        } else {
-            NavigationSuiteDefaults.itemColors().navigationDrawerItemColors
-        }
-
-        NavigationDrawerItem(
-            modifier = modifier,
-            selected = selected,
-            onClick = onClick,
-            icon = icon,
-            badge = badge,
-            label = { label?.invoke() ?: Text("") },
-            colors = actualColors,
-            interactionSource = interactionSource,
         )
     }
 }

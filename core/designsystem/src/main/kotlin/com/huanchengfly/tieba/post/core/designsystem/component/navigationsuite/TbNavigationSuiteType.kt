@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite
 
+import com.huanchengfly.tieba.post.core.designsystem.component.FloatingIconNavigationBar
 import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuite
@@ -14,7 +15,7 @@ enum class TbNavigationSuiteType {
 
     /**
      * A navigation suite type that instructs the [NavigationSuite] to expect a
-     * [FloatingIconNavigationBarOverride] with vertical [ShortNavigationBarItem]s that will be
+     * [FloatingIconNavigationBar] with vertical [ShortNavigationBarItem]s that will be
      * displayed at the bottom of the screen in floating style.
      *
      * @see [androidx.compose.material3.ShortNavigationBar]
@@ -23,8 +24,9 @@ enum class TbNavigationSuiteType {
 
     /**
      * A navigation suite type that instructs the [NavigationSuite] to expect a
-     * [FloatingNavigationBarOverride] with icon only [IconNavigationItem]s that will be displayed
-     * at the bottom of the screen in floating style.
+     * [FloatingNavigationBar][com.huanchengfly.tieba.post.core.designsystem.component.FloatingNavigationBar]
+     * with icon only [IconNavigationItem]s that will be displayed at the bottom of the screen in
+     * floating style.
      *
      * @see [androidx.compose.material3.ShortNavigationBar]
      */
@@ -123,7 +125,7 @@ fun calculateNavigationType(adaptiveInfo: WindowAdaptiveInfo): NavigationSuiteTy
         }
 
         windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_LARGE_LOWER_BOUND) -> {
-            NavigationSuiteType.NavigationDrawer
+            NavigationSuiteType.WideNavigationRailExpanded
         }
 
         windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND) -> {

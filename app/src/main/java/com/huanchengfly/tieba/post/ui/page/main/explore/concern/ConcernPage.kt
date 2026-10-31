@@ -8,12 +8,10 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.arch.collectCommonUiEventWithLifecycle
@@ -23,6 +21,7 @@ import com.huanchengfly.tieba.post.core.ui.component.FeedLazyVerticalStaggeredGr
 import com.huanchengfly.tieba.post.core.ui.component.defaultGridCells
 import com.huanchengfly.tieba.post.ui.page.main.explore.LaunchedFabStateEffect
 import com.huanchengfly.tieba.post.ui.page.main.explore.ThreadClickListeners
+import com.huanchengfly.tieba.post.ui.page.main.explore.exploreFeedItemBackground
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.ThreadContentType
@@ -70,7 +69,7 @@ fun ConcernPage(
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val itemModifier = Modifier
                 .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp))
+                .background(color = exploreFeedItemBackground)
 
             FeedLazyVerticalStaggeredGrid(
                 columns = defaultGridCells(),

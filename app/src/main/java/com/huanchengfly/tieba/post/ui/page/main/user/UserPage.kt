@@ -56,16 +56,19 @@ import com.huanchengfly.tieba.post.core.designsystem.util.isDarkScheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
 import com.huanchengfly.tieba.post.core.navigation.Navigator
 import com.huanchengfly.tieba.post.core.ui.modifier.onCase
+import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
 import com.huanchengfly.tieba.post.core.ui.util.ThemeUtil
 import com.huanchengfly.tieba.post.ui.page.Destination
 import com.huanchengfly.tieba.post.ui.page.main.bottomNavigationPlaceholder
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalHazeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.utils.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -239,10 +242,13 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
 fun UserPage(viewModel: UserViewModel = hiltViewModel(), navigator: Navigator) {
     val colorScheme = MaterialTheme.colorScheme
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val hazeState = LocalHazeState.current
     val windowSizeClass = LocalWindowAdaptiveInfo.current.windowSizeClass
     val isWindowHeightExpanded = windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND)
 
     MyScaffold(
+        modifier = Modifier
+            .onNotNull(hazeState) { hazeSource(state = it.state) },
         useMD2Layout = true,
         bottomBar = bottomNavigationPlaceholder, // MainPage BottomNavBar placeholder
         bottomBarAtop = false,

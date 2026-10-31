@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItemColors
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.NavigationItemColors
+import androidx.compose.material3.ShortNavigationBarDefaults
 import androidx.compose.material3.ShortNavigationBarOverride
 import androidx.compose.material3.ShortNavigationBarOverrideScope
 import androidx.compose.material3.Surface
@@ -63,8 +64,6 @@ import androidx.compose.ui.unit.constrain
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
-import com.huanchengfly.tieba.post.core.designsystem.component.FloatingIconNavigationBarOverride.ShortNavigationBar
-import com.huanchengfly.tieba.post.core.designsystem.component.FloatingNavigationBarOverride.ShortNavigationBar
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.NavigationBarHeight
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TallNavigationBarHeight
 
@@ -196,13 +195,11 @@ private fun BoxScope.Indicator(
     )
 }
 
-context(scope: ShortNavigationBarOverrideScope)
 private fun Modifier.floatingNavBarContainer(
     height: Dp,
     screenOffset: Dp,
-): Modifier = this then with(scope) {
-    Modifier
-        .windowInsetsPadding(windowInsets)
+): Modifier {
+    return this then Modifier
         .heightIn(min = height)
         .clickable(interactionSource = null, indication = null, onClick = {})
         .selectableGroup()
@@ -212,54 +209,60 @@ private fun Modifier.floatingNavBarContainer(
             this.translationY = -screenOffset.toPx()
             this.shadowElevation = FloatingNavigationBarElevation.toPx()
         }
-        .then(modifier)
-        .background(color = containerColor, shape = CircleShape)
 }
 
-/**
- * This override provides the default behavior of the [ShortNavigationBar] component.
- */
-object FloatingNavigationBarOverride : ShortNavigationBarOverride {
-    @Composable
-    override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
-        CompositionLocalProvider(LocalContentColor provides contentColor) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .floatingNavBarContainer(
-                        height = NavigationBarHeight,
-                        screenOffset = floatingNavigationBarCompactScreenOffset,
-                    )
-                    .padding(start = 24.dp, top = 6.dp, end = 24.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                content()
-            }
+@Composable
+fun FloatingNavigationBar(
+    modifier: Modifier = Modifier,
+    containerColor: Color = ShortNavigationBarDefaults.containerColor,
+    contentColor: Color = ShortNavigationBarDefaults.contentColor,
+    windowInsets: WindowInsets = ShortNavigationBarDefaults.windowInsets,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(LocalContentColor provides contentColor) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(windowInsets)
+                .padding(horizontal = 16.dp)
+                .floatingNavBarContainer(
+                    height = NavigationBarHeight,
+                    screenOffset = floatingNavigationBarCompactScreenOffset,
+                )
+                .then(modifier)
+                .background(color = containerColor, shape = CircleShape)
+                .padding(start = 24.dp, top = 6.dp, end = 24.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            content()
         }
     }
 }
 
-/**
- * This override provides the default behavior of the [ShortNavigationBar] component.
- */
-object FloatingIconNavigationBarOverride : ShortNavigationBarOverride {
-    @Composable
-    override fun ShortNavigationBarOverrideScope.ShortNavigationBar() {
-        CompositionLocalProvider(LocalContentColor provides contentColor) {
-            Row(
-                modifier = Modifier
-                    .floatingNavBarContainer(
-                        height = FloatingIconNavigationBarHeight,
-                        screenOffset = floatingNavigationBarCompactScreenOffset,
-                    )
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                content()
-            }
+@Composable
+fun FloatingIconNavigationBar(
+    modifier: Modifier = Modifier,
+    containerColor: Color = ShortNavigationBarDefaults.containerColor,
+    contentColor: Color = ShortNavigationBarDefaults.contentColor,
+    windowInsets: WindowInsets = ShortNavigationBarDefaults.windowInsets,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(LocalContentColor provides contentColor) {
+        Row(
+            modifier = Modifier
+                .windowInsetsPadding(windowInsets)
+                .floatingNavBarContainer(
+                    height = FloatingIconNavigationBarHeight,
+                    screenOffset = floatingNavigationBarCompactScreenOffset,
+                )
+                .then(modifier)
+                .background(color = containerColor, shape = CircleShape)
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            content()
         }
     }
 }

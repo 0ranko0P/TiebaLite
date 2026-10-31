@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_design_expanded">已展开</string>
+    <string name="core_design_collapsed">已收起</string>
+    <string name="core_design_btn_expand_rail">展开侧边导航栏</string>
+    <string name="core_design_btn_collapse_rail">收起侧边导航栏</string>
+</resources>

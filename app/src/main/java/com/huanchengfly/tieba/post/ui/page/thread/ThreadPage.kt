@@ -121,6 +121,7 @@ import com.huanchengfly.tieba.post.core.ui.animation.defaultVerticalExitTransiti
 import com.huanchengfly.tieba.post.core.ui.component.ActionItem
 import com.huanchengfly.tieba.post.core.ui.component.PlainTooltipBox
 import com.huanchengfly.tieba.post.core.ui.context.LocalHabitSettings
+import com.huanchengfly.tieba.post.core.ui.layout.AdaptiveThreadContainer
 import com.huanchengfly.tieba.post.core.ui.modifier.clickableNoIndication
 import com.huanchengfly.tieba.post.core.ui.modifier.onNotNull
 import com.huanchengfly.tieba.post.core.ui.modifier.withNonNull
@@ -139,7 +140,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.CardHorizontalSpacing
 import com.huanchengfly.tieba.post.ui.widgets.compose.CenterAlignedTopAppBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
-import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
@@ -232,7 +232,6 @@ fun ThreadPage(
     val animatedContentScope = LocalNavAnimatedContentScope.current
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-    val isListDetail = !LocalBackButtonState.current
     val snackbarHostState = rememberSnackbarHostState()
     val useStickyHeader = LocalHabitSettings.current.stickyHeader
     val useStickyHeaderWorkaround = useStickyHeaderWorkaround()
@@ -432,7 +431,7 @@ fun ThreadPage(
                         }
                     },
                     navigationIcon = {
-                        if (!isListDetail) {
+                        if (LocalBackButtonState.current) {
                             BackNavigationIcon(onBackPressed = onBackPressedCallback)
                         }
                     },
@@ -457,7 +456,7 @@ fun ThreadPage(
                     scrollBehavior = topAppBarScrollBehavior
                 ) {
                     if (useStickyHeaderWorkaround && state.thread?.replyNum != null) {
-                        Container(fluid = isListDetail) {
+                        AdaptiveThreadContainer {
                             StickyHeaderOverlay(state = lazyListState) {
                                 ThreadHeader(uiState = state, viewModel = viewModel)
                             }
@@ -466,7 +465,7 @@ fun ThreadPage(
                 }
             },
             bottomBar = {
-                Container(fluid = isListDetail) {
+                AdaptiveThreadContainer {
                     ThreadFloatingToolbar(
                         modifier = Modifier
                             .windowInsetsPadding(WindowInsets.navigationBars)
@@ -497,7 +496,7 @@ fun ThreadPage(
         ) { padding ->
             // Ignore Scaffold padding top changes if workaround enabled
             val contentPadding = padding.fixedTopBarPadding()
-            Container(fluid = isListDetail) {
+            AdaptiveThreadContainer {
                 ThreadContent(
                     modifier = Modifier
                         .hazeSource(hazeState?.state)

@@ -75,7 +75,7 @@ fun EntryProviderScope<NavKey>.mainEntry(
     }
 
     animatedEntry<MainDestination.User>(
-        hazeState = null,
+        hazeState = hazeState,
         navSuiteScaffoldState = navSuiteScaffoldState,
     ) {
         UserPage(navigator = navigator)

@@ -21,6 +21,7 @@ import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.W
 @Composable
 fun containerWidthFraction(): State<Float> = derivedMediaQuery {
     when {
+        windowWidth >= WindowSizeClass.WidthSizeClasses.Large -> 0.54f
         windowWidth >= WindowSizeClass.WidthSizeClasses.Expanded -> 0.75f
         windowWidth >= WindowSizeClass.WidthSizeClasses.Medium -> 0.87f
         else -> 1f

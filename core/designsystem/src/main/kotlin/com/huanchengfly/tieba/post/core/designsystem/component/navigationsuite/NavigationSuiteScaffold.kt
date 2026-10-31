@@ -16,31 +16,48 @@
 
 package com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.NavigationItemColors
 import androidx.compose.material3.NavigationRailDefaults
 import androidx.compose.material3.ShortNavigationBarDefaults
+import androidx.compose.material3.ShortNavigationBarItemDefaults
+import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRailDefaults
+import androidx.compose.material3.WideNavigationRailItemDefaults
+import androidx.compose.material3.WideNavigationRailState
+import androidx.compose.material3.WideNavigationRailValue
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuite
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldState
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldValue
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasurePolicy
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFirst
+import com.huanchengfly.tieba.post.core.designsystem.component.IconNavigationItem
+import com.huanchengfly.tieba.post.core.designsystem.component.NavigationDrawerItem
+import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.toNavigationSuiteType
 import com.huanchengfly.tieba.post.core.designsystem.layout.NoWindowInsets
 
 /**
@@ -97,12 +114,7 @@ fun NavigationSuiteScaffoldLayout(
     Layout({
         // Wrap the navigation suite and content composables each in a Box to not propagate the
         // parent's (Surface) min constraints to its children (see b/312664933).
-        Box(Modifier.layoutId(NavigationSuiteLayoutIdTag)) {
-            val visible by remember { derivedStateOf { animatable.value > 0.1f } }
-            if (visible) {
-                navigationSuite()
-            }
-        }
+        Box(Modifier.layoutId(NavigationSuiteLayoutIdTag)) { navigationSuite() }
         Box(Modifier.layoutId(PrimaryActionContentLayoutIdTag)) { primaryActionContent() }
         Box(Modifier.layoutId(ContentLayoutIdTag)) { content() }
     },
@@ -110,6 +122,10 @@ fun NavigationSuiteScaffoldLayout(
     ) { measurables, constraints ->
         val animationProgress = animatable.value
         val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+        if (animationProgress < 0.1f) {
+            return@Layout ContentOnlyMeasurePolicy.run { measure(measurables, constraints) }
+        }
+
         val primaryActionContentPlaceable =
             measurables
                 .fastFirst { it.layoutId == PrimaryActionContentLayoutIdTag }
@@ -232,6 +248,119 @@ fun NavigationSuiteScaffoldLayout(
     }
 }
 
+private object ContentOnlyMeasurePolicy : MeasurePolicy {
+    override fun MeasureScope.measure(
+        measurables: List<Measurable>,
+        constraints: Constraints
+    ): MeasureResult {
+        val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+        val contentPlaceable = measurables
+            .fastFirst { it.layoutId == ContentLayoutIdTag }
+            .measure(looseConstraints)
+        return layout(constraints.maxWidth, constraints.maxHeight) {
+            contentPlaceable.place(0, 0)
+        }
+    }
+}
+
+@Composable
+fun NavigationItemIcon(
+    icon: @Composable () -> Unit,
+    badge: (@Composable () -> Unit)? = null,
+) {
+    if (badge != null) {
+        BadgedBox(badge = { badge.invoke() }) { icon() }
+    } else {
+        icon()
+    }
+}
+
+@Composable
+fun TbNavigationSuiteItem(
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    label: @Composable (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    mainNavigationSuiteType: TbNavigationSuiteType,
+    navigationRailState: WideNavigationRailState,
+    enabled: Boolean = true,
+    badge: @Composable (() -> Unit)? = null,
+    colors: NavigationItemColors? = null,
+    interactionSource: MutableInteractionSource? = null,
+) = when (mainNavigationSuiteType) {
+    TbNavigationSuiteType.FloatingNavigationBarCompact -> {
+        IconNavigationItem(
+            selected = selected,
+            onClick = onClick,
+            icon = { NavigationItemIcon(icon = icon, badge = badge) },
+            colors = colors ?: ShortNavigationBarItemDefaults.colors(),
+            enabled = enabled,
+            modifier = modifier,
+            interactionSource = interactionSource,
+        )
+    }
+    TbNavigationSuiteType.WideNavigationRailExpanded -> {
+        val railExpanded = navigationRailState.targetValue === WideNavigationRailValue.Expanded
+        androidx.compose.material3.WideNavigationRailItem(
+            railExpanded = railExpanded,
+            selected = selected,
+            onClick = onClick,
+            icon = { NavigationItemIcon(icon = icon, badge = badge) },
+            label = if (label != null && railExpanded) { {
+                // Add label padding when the rail is expanded
+                Box(modifier = Modifier.width(ExpandedRailMaxLabelWidth).padding(start = 16.dp)) {
+                    label()
+                }
+            } } else {
+                label
+            },
+            modifier = modifier,
+            enabled = enabled,
+            colors = colors ?: WideNavigationRailItemDefaults.colors(),
+            interactionSource = interactionSource,
+        )
+    }
+    TbNavigationSuiteType.NavigationDrawer -> {
+        val actualColors = if (colors != null) {
+            NavigationDrawerItemDefaults.colors(
+                selectedIconColor = colors.selectedIconColor,
+                selectedTextColor = colors.selectedTextColor,
+                unselectedIconColor = colors.unselectedIconColor,
+                unselectedTextColor = colors.unselectedTextColor,
+                selectedContainerColor = colors.selectedIndicatorColor,
+            )
+        } else {
+            NavigationSuiteDefaults.itemColors().navigationDrawerItemColors
+        }
+
+        NavigationDrawerItem(
+            modifier = modifier,
+            selected = selected,
+            onClick = onClick,
+            icon = icon,
+            badge = badge,
+            label = { label?.invoke() ?: Text("") },
+            colors = actualColors,
+            interactionSource = interactionSource,
+        )
+    }
+    else -> {
+        androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem(
+            selected = selected,
+            onClick = onClick,
+            icon = icon,
+            label = label,
+            modifier = modifier,
+            navigationSuiteType = mainNavigationSuiteType.toNavigationSuiteType(),
+            enabled = enabled,
+            badge = badge,
+            colors = colors,
+            interactionSource = interactionSource,
+        )
+    }
+}
+
 @Composable
 fun Modifier.navigationSuiteScaffoldConsumeWindowInsets(
     navigationSuiteType: NavigationSuiteType,
@@ -268,6 +397,7 @@ private const val NavigationSuiteLayoutIdTag = "navigationSuite"
 private const val PrimaryActionContentLayoutIdTag = "primaryActionContent"
 private const val ContentLayoutIdTag = "content"
 
+val ExpandedRailMaxLabelWidth = 172.dp // NavigationRailExpandedTokens.ContainerWidthMinimum - 48 dp
 // androidx.compose.material3.tokens.NavigationBarTokens
 val TallNavigationBarHeight = 80.dp
 val NavigationBarHeight = 64.dp
