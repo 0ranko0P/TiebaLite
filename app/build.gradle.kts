@@ -15,8 +15,8 @@ android {
     defaultConfig {
         applicationId = "com.huanchengfly.tieba.post"
         //noinspection OldTargetApi
-        versionCode = 391033
-        versionName = "4.0.0 Beta 5.2"
+        versionCode = 391086
+        versionName = "4.0.0 Beta 6"
 
         // Configure custom runner to set up the Hilt test application
         testInstrumentationRunner = "$applicationId.TbLiteTestRunner"
