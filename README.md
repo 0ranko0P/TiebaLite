@@ -13,6 +13,7 @@
     <br/>
     <p>极简的贴吧<strong>第三方</strong>客户端</p>
     <img src="assets/Screenshots.png" alt="Screenshots" />
+    <img src="assets/Screenshots_foldable.png" alt="Screenshots_Foldable" />
 </div>
 
 ## 说明
@@ -23,7 +24,8 @@
 
 请使用[GitHub问题跟踪器](https://github.com/0ranko0P/TiebaLite/issues)来报告问题或提出新功能建议。
 
-**Tieba Lite 正在参考[Google NIA](https://github.com/android/nowinandroid) 迁移至模块化架构, 开PR 前请先开Issue**
+> [!IMPORTANT]
+> Tieba Lite 正在参考[Google NIA](https://github.com/android/nowinandroid) 迁移至模块化架构, 开PR 前请先开Issue
 
 ## 下载
 * [Github Releases](https://github.com/0ranko0P/TiebaLite/releases)
