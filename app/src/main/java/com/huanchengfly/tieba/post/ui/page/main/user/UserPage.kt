@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.derivedMediaQuery
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -48,9 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.window.core.layout.WindowSizeClass
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.core.designsystem.layout.LocalWindowAdaptiveInfo
 import com.huanchengfly.tieba.post.core.designsystem.theme.BebasFamily
 import com.huanchengfly.tieba.post.core.designsystem.util.isDarkScheme
 import com.huanchengfly.tieba.post.core.designsystem.util.isTranslucent
@@ -68,6 +68,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.containerWidthFraction
 import com.huanchengfly.tieba.post.ui.widgets.compose.hazeSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder
 import com.huanchengfly.tieba.post.utils.LocalAccount
@@ -243,8 +244,7 @@ fun UserPage(viewModel: UserViewModel = hiltViewModel(), navigator: Navigator) {
     val colorScheme = MaterialTheme.colorScheme
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val hazeState = LocalHazeState.current
-    val windowSizeClass = LocalWindowAdaptiveInfo.current.windowSizeClass
-    val isWindowHeightExpanded = windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND)
+    val isWindowHeightExpanded by derivedMediaQuery { windowWidth.value >= 800 }
 
     MyScaffold(
         modifier = Modifier
@@ -256,13 +256,15 @@ fun UserPage(viewModel: UserViewModel = hiltViewModel(), navigator: Navigator) {
         val account = LocalAccount.current
 
         PullToRefreshBox(
+            modifier = Modifier.fillMaxSize(),
             isRefreshing = isLoading,
             onRefresh = viewModel::onRefresh,
             contentPadding = contentPaddings,
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth(containerWidthFraction().value)
+                    .fillMaxHeight()
                     .onCase(!isWindowHeightExpanded) { verticalScroll(state = rememberScrollState()) }
                     .padding(contentPaddings)
             ) {

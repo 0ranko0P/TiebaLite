@@ -95,7 +95,9 @@ class UserProfileViewModel @AssistedInject constructor(
         // Wait transition animation
         if (profile != null && state.userProfile == null && !params.avatar.isNullOrEmpty()) {
             withContext(Dispatchers.IO) {
-                CoilUtil.downloadCancelable(context, StringUtil.getBigAvatarUrl(profile.portrait))
+                runCatching {
+                    CoilUtil.downloadCancelable(context, StringUtil.getBigAvatarUrl(profile.portrait))
+                }
             }
             delay(300)
         }

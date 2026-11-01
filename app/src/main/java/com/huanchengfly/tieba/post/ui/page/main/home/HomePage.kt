@@ -441,7 +441,9 @@ fun AnimatedContentScope.HomePage(
                             Text(text = stringResource(R.string.title_main))
                         }
                         DummySearchBox(
-                            modifier = Modifier.localSharedBounds(SearchToolbarSharedBoundsKey, zIndexInOverlay = 2.0f),
+                            modifier = Modifier
+                                .padding(end = 16.dp)
+                                .localSharedBounds(SearchToolbarSharedBoundsKey, zIndexInOverlay = 2.0f),
                             onClick = onSearchClicked
                         )
                     }
@@ -450,7 +452,6 @@ fun AnimatedContentScope.HomePage(
                     if (loggedIn) {
                         val isSinging by viewModel.isOkSignWorkerRunning.collectAsStateWithLifecycle(true)
                         ActionItem(
-                            modifier = Modifier.padding(start = 8.dp),
                             icon = ImageVector.vectorResource(id = R.drawable.ic_oksign),
                             contentDescription = R.string.title_oksign,
                             enabled = !isSinging
