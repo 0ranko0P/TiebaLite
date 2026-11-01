@@ -90,7 +90,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Provider
 
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
@@ -99,7 +98,7 @@ class MainActivityV2 : BaseComposeActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
-    @Inject lateinit var clientConfigManagerProvider: Provider<ClientConfigManager>
+    @Inject lateinit var clientConfig: dagger.Lazy<ClientConfigManager>
 
     /** Used to control the initial welcome screen state in Macrobenchmark */
     private var welcomeScreen: Boolean? = null
@@ -116,7 +115,7 @@ class MainActivityV2 : BaseComposeActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         lifecycleScope.launch {
-            clientConfigManagerProvider.get().refreshActiveTimestamp()
+            clientConfig.get().refreshActiveTimestamp()
             delay(2000L)
             runCatching {
                 requestNotificationPermission()

@@ -9,15 +9,14 @@ import com.huanchengfly.tieba.post.core.network.exception.getErrorMessage
 import com.huanchengfly.tieba.post.core.network.session.ClientConfigProvider
 import com.huanchengfly.tieba.post.core.network.source.AuthNetworkDataSource
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import javax.inject.Inject
-import javax.inject.Provider
 import javax.inject.Singleton
 
 private const val TAG = "ClientConfigManager"
@@ -33,14 +32,14 @@ private const val TAG = "ClientConfigManager"
 @Singleton
 class ClientConfigManager @Inject constructor(
     @param:ApplicationScope private val coroutineScope: CoroutineScope,
-    private val authDataSourceProvider: Provider<AuthNetworkDataSource>,
+    private val authDataSourceProvider: dagger.Lazy<AuthNetworkDataSource>,
     settingsRepo: SettingsRepository,
 ): ClientConfigProvider {
 
     private val clientConfigSettings: Settings<ClientConfig> = settingsRepo.clientConfig
 
-    val config: SharedFlow<ClientConfig> = clientConfigSettings
-        .shareIn(coroutineScope, started = SharingStarted.Eagerly, replay = 1)
+    val config: StateFlow<ClientConfig> = clientConfigSettings
+        .stateIn(coroutineScope, started = SharingStarted.Eagerly, runBlocking { clientConfigSettings.snapshot() })
 
     override var activeTimestamp: Long = System.currentTimeMillis()
         private set

@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
-import javax.inject.Provider
 import javax.inject.Singleton
 
 interface SessionManager: CredentialProvider {
@@ -66,12 +65,12 @@ interface SessionManager: CredentialProvider {
  * */
 @Singleton
 internal class SessionManagerImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
-    @ApplicationScope private val scope: CoroutineScope,
+    @param:ApplicationContext private val context: Context,
+    @param:ApplicationScope private val scope: CoroutineScope,
     private val accountDao: AccountDao,
     private val timeDao: TimestampDao,
-    private val authDataSourceProvider: Provider<AuthNetworkDataSource>,
-    private val userDataSourceProvider: Provider<UserProfileNetworkDataSource>,
+    private val authDataSourceProvider: dagger.Lazy<AuthNetworkDataSource>,
+    private val userDataSourceProvider: dagger.Lazy<UserProfileNetworkDataSource>,
     settingsRepo: SettingsRepository,
 ) : SessionManager {
 

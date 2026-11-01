@@ -15,7 +15,6 @@ import com.huanchengfly.tieba.post.core.network.session.OAIDProvider
 import com.huanchengfly.tieba.post.core.network.util.helios.Base32
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
@@ -31,8 +30,8 @@ import javax.inject.Singleton
 @Singleton
 class DefaultOAIDProvider @Inject constructor(
     @param:ApplicationContext val context: Context,
-    private val clientConfigManagerProvider: Provider<ClientConfigManager>,
-    private val settingsRepositoryProvider: Provider<SettingsRepository>
+    private val clientConfigManagerProvider: dagger.Lazy<ClientConfigManager>,
+    private val settingsRepositoryProvider: dagger.Lazy<SettingsRepository>
 ): OAIDProvider {
 
     init {
