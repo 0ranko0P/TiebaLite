@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFirst
 import com.huanchengfly.tieba.post.core.designsystem.component.IconNavigationItem
 import com.huanchengfly.tieba.post.core.designsystem.component.NavigationDrawerItem
+import com.huanchengfly.tieba.post.core.designsystem.component.RoundedIconNavigationItem
 import com.huanchengfly.tieba.post.core.designsystem.component.navigationsuite.TbNavigationSuiteType.Companion.toNavigationSuiteType
 import com.huanchengfly.tieba.post.core.designsystem.layout.NoWindowInsets
 
@@ -289,6 +290,18 @@ fun TbNavigationSuiteItem(
     colors: NavigationItemColors? = null,
     interactionSource: MutableInteractionSource? = null,
 ) = when (mainNavigationSuiteType) {
+    TbNavigationSuiteType.FloatingNavigationBar -> {
+        RoundedIconNavigationItem(
+            selected = selected,
+            onClick = onClick,
+            icon = { NavigationItemIcon(icon = icon, badge = badge) },
+            label = label,
+            modifier = modifier,
+            enabled = enabled,
+            colors = colors ?: ShortNavigationBarItemDefaults.colors(),
+            interactionSource = interactionSource,
+        )
+    }
     TbNavigationSuiteType.FloatingNavigationBarCompact -> {
         IconNavigationItem(
             selected = selected,
