@@ -118,20 +118,23 @@
                 <data
                     android:host="unidispatch"
                     android:scheme="com.baidu.tieba" />
+                <data android:path="/frs" />
+                <data android:path="/pb" />
 
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
 
-            <intent-filter>
+            <intent-filter android:autoVerify="false">
                 <data android:host="tieba.baidu.com"/>
                 <data android:scheme="http"/>
                 <data android:scheme="https"/>
+                <data android:path="/f" />
+                <data android:path="/mo/q/m" />
+                <data android:pathPrefix="/p/" />
 
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
@@ -157,13 +160,27 @@
                 <data android:scheme="tblite" />
             </intent-filter>
 
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <data
                     android:host="unidispatch"
                     android:scheme="com.baidu.tieba" />
+                <data android:path="/frs" />
+                <data android:path="/pb" />
 
                 <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+            </intent-filter>
 
+            <intent-filter android:autoVerify="false">
+                <data android:host="tieba.baidu.com"/>
+                <data android:scheme="http"/>
+                <data android:scheme="https"/>
+                <data android:path="/f" />
+                <data android:path="/mo/q/m" />
+                <data android:pathPrefix="/p/" />
+
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
@@ -189,13 +206,27 @@
                 <data android:scheme="tblite" />
             </intent-filter>
 
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <data
                     android:host="unidispatch"
                     android:scheme="com.baidu.tieba" />
+                <data android:path="/frs" />
+                <data android:path="/pb" />
 
                 <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+            </intent-filter>
 
+            <intent-filter android:autoVerify="false">
+                <data android:host="tieba.baidu.com"/>
+                <data android:scheme="http"/>
+                <data android:scheme="https"/>
+                <data android:path="/f" />
+                <data android:path="/mo/q/m" />
+                <data android:pathPrefix="/p/" />
+
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
@@ -221,13 +252,27 @@
                 <data android:scheme="tblite" />
             </intent-filter>
 
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <data
                     android:host="unidispatch"
                     android:scheme="com.baidu.tieba" />
+                <data android:path="/frs" />
+                <data android:path="/pb" />
 
                 <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+            </intent-filter>
 
+            <intent-filter android:autoVerify="false">
+                <data android:host="tieba.baidu.com"/>
+                <data android:scheme="http"/>
+                <data android:scheme="https"/>
+                <data android:path="/f" />
+                <data android:path="/mo/q/m" />
+                <data android:pathPrefix="/p/" />
+
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>

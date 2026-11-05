@@ -215,10 +215,10 @@ class MainActivityV2 : BaseComposeActivity() {
             uri.isTbLiteDeepLink() -> TbDeepLinkMatcher.resolveDeepLink(uri)
 
             uri.isHttp() -> appLinkToNavKey(uri) ?: uri.toString().let {
-                Destination.WebView(it, customClient = ClipBoardLinkDetector.isTieba(it))
+                Destination.WebView(it, customClient = false)
             }
 
-            else -> null
+            else -> appLinkToNavKey(uri)
         }
     }
 
