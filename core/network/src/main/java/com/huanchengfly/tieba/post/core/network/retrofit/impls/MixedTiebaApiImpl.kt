@@ -1796,17 +1796,23 @@ internal class MixedTiebaApiImpl(
     override fun addPollPostProtobuf(
         forumId: Long?,
         threadId: Long,
-        option: String
+        option: String,
+        tbs: String?,
     ): Flow<AddPollPostReponse> =
         retrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_POST_API.addPollPostProtobuf(
             buildProtobufRequestBody(
                 AddPollPostRequest(
                     AddPollPostRequestDate(
+                        common = buildCommonRequest(
+                            clientVersion = ClientVersion.TIEBA_V12_POST,
+                            tbs = tbs?.takeIf { it.isNotEmpty() } ?: credentialProvider.getTbs(),
+                        ),
                         forum_id = forumId ?: 0L,
                         thread_id = threadId,
                         options = option,
                     )
-                )
+                ),
+                clientVersion = ClientVersion.TIEBA_V12_POST,
             )
         )
 }
