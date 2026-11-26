@@ -531,12 +531,13 @@ class ThreadViewModel @AssistedInject constructor(
     }
 
     fun requestPollPost(options: List<Int>) = launchInVM {
-        val thread = currentState.thread!!
+        val state = currentState
+        val thread = state.thread!!
         if (thread.pollInfo!!.isLoading) return@launchInVM
 
         _uiState.update { it.copy(thread = thread.updatePollStatus(loading = true)) }
         runCatching {
-            threadRepo.requestPollPost(forumId, threadId, options)
+            threadRepo.requestPollPost(forumId, threadId, options, state.tbs)
         }
         .onFailure { e ->
             sendUiEvent(CommonUiEvent.ToastError(e))

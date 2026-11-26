@@ -9,5 +9,6 @@ import "CommonRequest.proto";
 message AddPollPostRequestDate {
     uint64 thread_id = 1;
     string options = 2;
+    CommonRequest common = 3;
     uint64 forum_id = 4;
 }

@@ -1617,5 +1617,6 @@ internal interface ITiebaApi {
         forumId: Long?,
         threadId: Long,
         option: String,
+        tbs: String? = null,
     ): Flow<AddPollPostReponse>
 }

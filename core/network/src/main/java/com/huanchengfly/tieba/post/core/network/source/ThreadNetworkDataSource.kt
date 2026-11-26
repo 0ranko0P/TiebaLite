@@ -31,7 +31,7 @@ interface ThreadNetworkDataSource {
 
     suspend fun requestLikeThread(threadId: Long, postId: Long, like: Boolean)
 
-    suspend fun requestPollPost(forumId: Long?, threadId: Long, options: String)
+    suspend fun requestPollPost(forumId: Long?, threadId: Long, options: String, tbs: String? = null)
 
     suspend fun pbPageRaw(
         threadId: Long,
@@ -112,10 +112,16 @@ internal class RetrofitThreadNetworkDataSource @Inject constructor(
         requestLike(threadId, postId, like, objType = 3)
     }
 
-    override suspend fun requestPollPost(forumId: Long?, threadId: Long, options: String) {
-        tiebaApi
-            .addPollPostProtobuf(forumId, threadId, options)
+    override suspend fun requestPollPost(forumId: Long?, threadId: Long, options: String, tbs: String?) {
+        val response = tiebaApi
+            .addPollPostProtobuf(forumId, threadId, options, tbs)
             .firstOrThrow()
+        response.error?.let {
+            if (it.error_code != 0) throw TiebaApiException(it.commonResponse)
+        }
+        response.data_?.let {
+            if (it.error_code != 0) throw TiebaApiException(CommonResponse(it.error_code, it.error_msg))
+        }
     }
 
     override suspend fun pbPageRaw(

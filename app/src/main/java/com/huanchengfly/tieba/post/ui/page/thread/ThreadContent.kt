@@ -167,11 +167,12 @@ private fun PollOption(
 private fun ThreadPoll(modifier: Modifier = Modifier, info: ThreadPollInfo, onPull: ((List<Int>) -> Unit)? = null) {
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
-    val percentages = remember(info.options) {
+    val percentages = remember(info.options, info.totalPoll) {
         val numberFormat = NumberFormat.getNumberInstance()
         numberFormat.maximumFractionDigits = 0
         info.options.fastMap {
-            "${numberFormat.format(it.num / info.totalPoll.toDouble() * 100)}%"
+            val percent = if (info.totalPoll > 0) it.num / info.totalPoll.toDouble() * 100 else 0.0
+            "${numberFormat.format(percent)}%"
         }
     }
     // ID of polled option
@@ -257,7 +258,7 @@ private fun ThreadPoll(modifier: Modifier = Modifier, info: ThreadPollInfo, onPu
 
             if (pollEnabled) {
                 AnimatedVisibility(
-                    visible = remember { derivedStateOf { polledIds.isNotEmpty() } }.value,
+                    visible = remember(polledIds) { derivedStateOf { polledIds.isNotEmpty() } }.value,
                     modifier = Modifier.align(Alignment.End),
                 ) {
                     OutlinedIconTextButton(

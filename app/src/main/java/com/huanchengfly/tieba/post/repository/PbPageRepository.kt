@@ -119,11 +119,16 @@ class PbPageRepository @Inject constructor(
         networkDataSource.requestLikeSubpost(threadId, subPost.id, like)
     }
 
-    suspend fun requestPollPost(forumId: Long?, threadId: Long, options: List<Int>): ThreadPollInfo {
+    suspend fun requestPollPost(
+        forumId: Long?,
+        threadId: Long,
+        options: List<Int>,
+        tbs: String? = null,
+    ): ThreadPollInfo {
         require(options.isNotEmpty())
-        networkDataSource.requestPollPost(forumId, threadId, options.joinToString(separator = ","))
+        networkDataSource.requestPollPost(forumId, threadId, options.joinToString(separator = ","), tbs)
         // Load latest poll info
-        return pbPage(threadId, forumId = forumId).thread.pollInfo!!
+        return pbPage(threadId, forumId = forumId).thread.pollInfo ?: throw TiebaException("Null poll info")
     }
 
     suspend fun pbPage(
@@ -341,8 +346,9 @@ class PbPageRepository @Inject constructor(
                 options = it.options,
                 endTime = it.end_time * 1000L,
                 isMulti = it.is_multi == 1,
-                polledValue = if (it.polled_value.isNotEmpty()) {
-                    it.polled_value.split(",").map { id -> id.toInt() }
+                polledValue = if (it.is_polled != 0 && it.polled_value.isNotEmpty()) {
+                    it.polled_value.split(",").mapNotNull { id -> id.trim().toIntOrNull() }
+                        .takeIf { list -> list.isNotEmpty() }
                 } else null
             )
         },
